@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
@@ -65,7 +66,7 @@ public abstract class AbstractHTTPSPDYTest
     protected final short version;
     protected Server server;
     protected SPDYClient.Factory clientFactory;
-    protected SPDYServerConnector connector;
+    protected HTTPSPDYServerConnector connector;
 
     protected AbstractHTTPSPDYTest(short version)
     {
@@ -89,12 +90,10 @@ public abstract class AbstractHTTPSPDYTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
-    protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
+    protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        SPDYServerConnector connector = new HTTPSPDYServerConnector(server);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
-        connector.setDefaultConnectionFactory(defaultFactory);
+        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version,new HttpChannelConfig(), new PushStrategy.None());
         return connector;
     }
 

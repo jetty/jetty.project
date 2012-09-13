@@ -29,7 +29,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -75,7 +75,7 @@ public class ProtocolNegotiationTest
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStore("src/test/resources/truststore.jks");
+        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setProtocol("TLSv1");
         sslContextFactory.setIncludeProtocols("TLSv1");
@@ -86,7 +86,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingHTTPSpeaksHTTP() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.putConnectionFactory("http/1.1", new HttpServerConnectionFactory(connector));
+        connector.addConnectionFactory(new HttpConnectionFactory());
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -142,7 +142,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingSPDYAndHTTPSpeaksHTTPWhenNegotiated() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.putConnectionFactory("http/1.1", new HttpServerConnectionFactory(connector));
+        connector.addConnectionFactory(new HttpConnectionFactory());
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -201,8 +201,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector));
-        connector.putConnectionFactory("http/1.1", connector.getDefaultConnectionFactory());
+        connector.addConnectionFactory(new HttpConnectionFactory());
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();

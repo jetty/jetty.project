@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -25,7 +27,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -57,10 +58,22 @@ public interface Connector extends LifeCycle, Graceful
     public ByteBufferPool getByteBufferPool();
 
     /**
-     * @return the {@link SslContextFactory} associated with this {@link Connector}
+     * @return the {@link ConnectionFactory} associated with the protocol name
      */
-    public SslContextFactory getSslContextFactory();
+    public ConnectionFactory getConnectionFactory(String nextProtocol);
+    
 
+    public <T extends ConnectionFactory> T getConnectionFactory(Class<T> factoryType);
+    
+    /**
+     * @return the default {@link ConnectionFactory} associated with the default protocol name
+     */
+    public ConnectionFactory getDefaultConnectionFactory();
+    
+    public Collection<ConnectionFactory> getConnectionFactories();
+    
+    public List<String> getProtocols();
+    
     /**
      * @return the dle timeout for connections in milliseconds
      */
@@ -199,4 +212,6 @@ public interface Connector extends LifeCycle, Graceful
          */
         public void connectionClosed(long duration, int messagesIn, int messagesOut);
     }
+
+
 }

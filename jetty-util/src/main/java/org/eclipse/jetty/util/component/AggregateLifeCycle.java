@@ -48,16 +48,19 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private boolean _started = false;
 
+    enum Managed { MANAGED, UNMANAGED, AUTO };
+    
     private class Bean
     {
         private final Object _bean;
-        private volatile boolean _managed = true;
+        private volatile Managed _managed = Managed.AUTO;
 
         private Bean(Object b)
         {
             _bean = b;
         }
 
+        @Override
         public String toString()
         {
             return String.format("{%s,%b}", _bean, _managed);
@@ -70,26 +73,34 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     @Override
     protected void doStart() throws Exception
     {
+        // indicate that we are started, so that addBean will start other beans added.
+        _started = true;
+        
+        // start our managed and auto beans
         for (Bean b : _beans)
         {
             if (b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
-                if (!l.isRunning())
+                switch(b._managed)
                 {
-                    if (b._managed)
-                        l.start();
+                    case MANAGED:
+                        if (!l.isRunning())
+                            l.start();
+                        break;
+                    case AUTO:
+                        if (l.isRunning())
+                            b._managed=Managed.UNMANAGED;
+                        else
+                        {
+                            b._managed=Managed.MANAGED;
+                            l.start();
+                        }
+                        break;
                 }
             }
-            if (b._managed && b._bean instanceof LifeCycle)
-            {
-                LifeCycle l = (LifeCycle)b._bean;
-                if (!l.isRunning())
-                    l.start();
-            }
         }
-        // indicate that we are started, so that addBean will start other beans added.
-        _started = true;
+ 
         super.doStart();
     }
 
@@ -105,7 +116,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         Collections.reverse(reverse);
         for (Bean b : reverse)
         {
-            if (b._managed && b._bean instanceof LifeCycle)
+            if (b._managed==Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
                 if (l.isRunning())
@@ -117,13 +128,14 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /**
      * Destroys the managed Destroyable beans in the reverse order they were added.
      */
+    @Override
     public void destroy()
     {
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
         for (Bean b : reverse)
         {
-            if (b._bean instanceof Destroyable && b._managed)
+            if (b._bean instanceof Destroyable && b._managed==Managed.MANAGED)
             {
                 Destroyable d = (Destroyable)b._bean;
                 d.destroy();
@@ -154,7 +166,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     {
         for (Bean b : _beans)
             if (b._bean == bean)
-                return b._managed;
+                return b._managed==Managed.MANAGED;
         return false;
     }
 
@@ -171,8 +183,12 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
      */
     public boolean addBean(Object o)
     {
-        // beans are joined unless they are started lifecycles
-        return addBean(o, !((o instanceof LifeCycle) && ((LifeCycle)o).isStarted()));
+        if (o instanceof LifeCycle)
+        {
+            LifeCycle l = (LifeCycle)o;
+            return addBean(o,l.isRunning()?Managed.UNMANAGED:Managed.AUTO);
+        }
+        return addBean(o,Managed.MANAGED);
     }
 
     /**
@@ -184,6 +200,11 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
      */
     public boolean addBean(Object o, boolean managed)
     {
+        return addBean(o,managed?Managed.MANAGED:Managed.UNMANAGED);
+    }
+
+    public boolean addBean(Object o, Managed managed)
+    {
         if (contains(o))
             return false;
 
@@ -191,26 +212,41 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         b._managed = managed;
         _beans.add(b);
 
-        if (o instanceof LifeCycle)
+        if (_started)
         {
-            LifeCycle l = (LifeCycle)o;
-
-            // Start the bean if we are started
-            if (managed && _started)
+            try
             {
-                try
+                if (o instanceof LifeCycle)
                 {
-                    l.start();
+                    LifeCycle l = (LifeCycle)o;
+
+                    switch(b._managed)
+                    {
+                        case MANAGED:
+                            if (!l.isRunning())
+                                l.start();
+                            break;
+                        case AUTO:
+                            if (l.isRunning())
+                                b._managed=Managed.UNMANAGED;
+                            else
+                            {
+                                b._managed=Managed.MANAGED;
+                                l.start();
+                            }
+                            break;
+                    }
                 }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
             }
         }
         return true;
     }
-
+    
+    
     /**
      * Manages a bean already contained by this aggregate, so that it is started/stopped/destroyed with this
      * aggregate.
@@ -223,7 +259,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         {
             if (b._bean == bean)
             {
-                b._managed = true;
+                b._managed = Managed.MANAGED;
                 return;
             }
         }
@@ -242,7 +278,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         {
             if (b._bean == bean)
             {
-                b._managed = false;
+                b._managed = Managed.UNMANAGED;
                 return;
             }
         }
@@ -389,6 +425,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
     }
 
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpThis(out);
@@ -400,18 +437,29 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         {
             i++;
 
-            if (b._managed)
+            switch(b._managed)
             {
-                out.append(indent).append(" +- ");
-                if (b._bean instanceof Dumpable)
-                    ((Dumpable)b._bean).dump(out, indent + (i == size ? "    " : " |  "));
-                else
+                case MANAGED:
+                    out.append(indent).append(" +- ");
+                    if (b._bean instanceof Dumpable)
+                        ((Dumpable)b._bean).dump(out, indent + (i == size ? "    " : " |  "));
+                    else
+                        dumpObject(out, b._bean);
+                    break;
+                    
+                case UNMANAGED:
+                    out.append(indent).append(" +~ ");
                     dumpObject(out, b._bean);
-            }
-            else
-            {
-                out.append(indent).append(" +~ ");
-                dumpObject(out, b._bean);
+                    break;
+                    
+                case AUTO:
+                    out.append(indent).append(" += ");
+                    if (b._bean instanceof Dumpable)
+                        ((Dumpable)b._bean).dump(out, indent + (i == size ? "    " : " |  "));
+                    else
+                        dumpObject(out, b._bean);
+                    break;
+                    
             }
         }
 

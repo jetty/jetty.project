@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.spdy;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,12 +40,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ResetStreamTest extends AbstractTest
 {

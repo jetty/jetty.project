@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -45,9 +48,6 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ProtocolViolationsTest extends AbstractTest
 {

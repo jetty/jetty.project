@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+
 /* ------------------------------------------------------------ */
 /**
  */
@@ -73,12 +74,37 @@ public class ArrayUtil
         }
         else
         {
-            // TODO: Replace with Arrays.copyOf(T[] original, int newLength) from Java 1.6+
+            T[] na = Arrays.copyOf(array,array.length+1);
+            na[array.length]=item;
+            return na;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Add element to the start of an array
+     * @param array The array to add to (or null)
+     * @param item The item to add
+     * @param type The type of the array (in case of null array)
+     * @return new array with contents of array plus item
+     */
+    public static<T> T[] prependToArray(T item, T[] array, Class<?> type)
+    {
+        if (array==null)
+        {
+            if (type==null && item!=null)
+                type= item.getClass();
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(type, 1);
+            na[0]=item;
+            return na;
+        }
+        else
+        {
             Class<?> c = array.getClass().getComponentType();
             @SuppressWarnings("unchecked")
             T[] na = (T[])Array.newInstance(c, Array.getLength(array)+1);
-            System.arraycopy(array, 0, na, 0, array.length);
-            na[array.length]=item;
+            System.arraycopy(array, 0, na, 1, array.length);
+            na[0]=item;
             return na;
         }
     }
@@ -93,6 +119,23 @@ public class ArrayUtil
         if (array==null || array.length==0)
             return new ArrayList<E>();
         return new ArrayList<E>(Arrays.asList(array));
+    }
+
+    /* ------------------------------------------------------------ */
+    public static <T> T[] removeNulls(T[] array)
+    {
+        for (T t : array)
+        {
+            if (t==null)
+            {
+                List<T> list = new ArrayList<>();
+                for (T t2:array)
+                    if (t2!=null)
+                        list.add(t2);
+                return list.toArray(Arrays.copyOf(array,list.size()));
+            }
+        }
+        return array;
     }
     
 }

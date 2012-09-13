@@ -19,39 +19,41 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.annotation.Name;
 
-public class HttpServerConnectionFactory implements ConnectionFactory
+public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpChannelConfig.ConnectionFactory
 {
-    private final Connector connector;
-    private final HttpConfiguration configuration;
+    private final HttpChannelConfig _config;
 
-    public HttpServerConnectionFactory(Connector connector)
+    public HttpConnectionFactory()
     {
-        this(connector, new HttpConfiguration(connector.getSslContextFactory(), connector.getSslContextFactory() != null));
+        this(new HttpChannelConfig());
+        setInputBufferSize(16384);
     }
-    public HttpServerConnectionFactory(Connector connector, HttpConfiguration configuration)
+    
+    public HttpConnectionFactory(@Name("config") HttpChannelConfig config)
     {
-        this.connector = connector;
-        this.configuration = configuration;
+        super(HttpVersion.HTTP_1_1.toString());
+        _config=config;
+        addBean(_config);
     }
-
-    public Connector getConnector()
+    
+    @Override
+    public HttpChannelConfig getHttpChannelConfig()
     {
-        return connector;
-    }
-
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return configuration;
+        return _config;
     }
 
     @Override
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return new HttpConnection(getHttpConfiguration(), getConnector(), endPoint);
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint);
+        connection.setInputBufferSize(getInputBufferSize()); // TODO constructor injection
+        return connection;
     }
+    
 }

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Response;
 
-public class StreamingResponseListener extends Response.Listener.Adapter
+public class StreamingResponseListener extends Response.Listener.Empty
 {
     public Response get(long timeout, TimeUnit seconds)
     {

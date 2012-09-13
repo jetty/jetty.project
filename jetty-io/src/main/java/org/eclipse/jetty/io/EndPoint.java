@@ -170,11 +170,12 @@ public interface EndPoint extends Closeable
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
+     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its 
+     * destination (ie is not buffering any data).
      *
-     * @return  the number of bytes written
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
-    int flush(ByteBuffer... buffer) throws IOException;
+    boolean flush(ByteBuffer... buffer) throws IOException;
 
     /* ------------------------------------------------------------ */
     /**
@@ -242,9 +243,4 @@ public interface EndPoint extends Closeable
     void onClose();
 
     
-    /**
-     * @return True if the endpoint is buffering output.
-     */
-    boolean isBufferingOutput();
-
 }

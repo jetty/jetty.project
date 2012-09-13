@@ -49,12 +49,12 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 output.write(kb);
         }
 
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         final AtomicLong requestTime = new AtomicLong();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .file(upload)
-                .listener(new Request.Listener.Adapter()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Request request)

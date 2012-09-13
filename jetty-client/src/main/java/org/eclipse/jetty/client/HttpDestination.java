@@ -91,7 +91,6 @@ public class HttpDestination implements Destination, AutoCloseable
         return port;
     }
 
-    @Override
     public void send(Request request, Response.Listener listener)
     {
         if (!scheme.equals(request.scheme()))

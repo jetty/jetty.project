@@ -20,7 +20,10 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -37,51 +40,63 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>Partial implementation of {@link Connector}</p>
+ * 
+ * <p>
+ * The connector keeps a collection of {@link ConnectionFactory} instances, each of which are known by their
+ * protocol name.  The protocol name may be a real protocol (eg http/1.1 or spdy/3) or it may be a private name
+ * that represents a special connection factory. For example, the name "SSL-http/1.1" is used for 
+ * an {@link SslConnectionFactory} that has been instantiated with the {@link HttpConnectionFactory} as it's
+ * next protocol.    
+ * <p>
+ * If NPN is used to select the real protocol used by an SSL connection, then the name "SSL-NPN" is used,
+ * which represents a {@link SslConnectionFactory} with a NPNConnectionFactory as the next protocol.  Once
+ * the NPN connection is established, it will get the next protocol from the NPN extension and then call
+ * {@link #getConnectionFactory(String)} to get the next connection factory.
+ * 
  */
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
     protected final Logger LOG = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap
-    private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
+    private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>();
     private final Statistics _stats = new ConnectorStatistics();
     private final Server _server;
-    private final SslContextFactory _sslContextFactory;
     private final Executor _executor;
     private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
     private volatile CountDownLatch _stopping;
-    private volatile long _idleTimeout = 200000;
-    private volatile ConnectionFactory defaultConnectionFactory;
+    private long _idleTimeout = 200000;
+    private String _defaultProtocol;
+    private ConnectionFactory _defaultConnectionFactory;
 
     /**
      * @param server The server this connector will be added to. Must not be null.
+     * @param factory TODO
+     * @param sslContextFactory the SSL context factory to make this connector SSL enabled, or null
      * @param executor An executor for this connector or null to use the servers executor
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
-     * @param sslContextFactory the SSL context factory to make this connector SSL enabled, or null
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      */
     public AbstractConnector(
             Server server,
             Executor executor,
             Scheduler scheduler,
-            ByteBufferPool pool,
-            SslContextFactory sslContextFactory,
-            int acceptors)
+            ByteBufferPool pool, 
+            int acceptors,
+            ConnectionFactory... factories)
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
         _scheduler=scheduler!=null?scheduler:new TimerScheduler();
         _byteBufferPool = pool!=null?pool:new ArrayByteBufferPool();
-        _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
         addBean(_executor);
@@ -89,9 +104,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             unmanage(_executor); // inherited from server
         addBean(_scheduler);
         addBean(_byteBufferPool);
-        addBean(_sslContextFactory);
         addBean(_stats,true);
 
+        for (ConnectionFactory factory:factories)
+            addConnectionFactory(factory);
+        
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
@@ -121,12 +138,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public ByteBufferPool getByteBufferPool()
     {
         return _byteBufferPool;
-    }
-
-    @Override
-    public SslContextFactory getSslContextFactory()
-    {
-        return _sslContextFactory;
     }
 
     @Override
@@ -162,10 +173,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _acceptors.length;
     }
 
-
     @Override
     protected void doStart() throws Exception
     {
+        _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
+        if(_defaultConnectionFactory==null)
+            throw new IllegalStateException("No protocol factory for default protocol: "+_defaultProtocol);
+
         super.doStart();
 
         _stopping=new CountDownLatch(_acceptors.length);
@@ -232,56 +246,97 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return isRunning();
     }
 
+    @Override
     public ConnectionFactory getConnectionFactory(String protocol)
     {
-        synchronized (factories)
+        synchronized (_factories)
         {
-            return factories.get(protocol);
+            return _factories.get(protocol.toLowerCase());
         }
     }
 
-    public ConnectionFactory putConnectionFactory(String protocol, ConnectionFactory factory)
+    @Override
+    public <T extends ConnectionFactory> T getConnectionFactory(Class<T> factoryType)
     {
-        synchronized (factories)
+        synchronized (_factories)
         {
-            return factories.put(protocol, factory);
+            for (ConnectionFactory f : _factories.values())
+                if (factoryType.isAssignableFrom(f.getClass()))
+                    return (T)f;
+            return null;
+        }
+    }
+
+    public void addConnectionFactory(ConnectionFactory factory)
+    {
+        synchronized (_factories)
+        {
+            ConnectionFactory old=_factories.remove(factory.getProtocol());
+            if (old!=null)
+                removeBean(old);
+            _factories.put(factory.getProtocol().toLowerCase(), factory);
+            addBean(factory);
+            if (_defaultProtocol==null)
+                _defaultProtocol=factory.getProtocol();
         }
     }
 
     public ConnectionFactory removeConnectionFactory(String protocol)
     {
-        synchronized (factories)
+        synchronized (_factories)
         {
-            return factories.remove(protocol);
+            ConnectionFactory factory= _factories.remove(protocol.toLowerCase());
+            removeBean(factory);
+            return factory;
         }
     }
 
-    public Map<String, ConnectionFactory> getConnectionFactories()
+    @Override
+    public Collection<ConnectionFactory> getConnectionFactories()
     {
-        synchronized (factories)
+        synchronized (_factories)
         {
-            return new LinkedHashMap<>(factories);
+            return _factories.values();
+        }
+    }
+    
+    @Override
+    public List<String> getProtocols()
+    {
+        synchronized (_factories)
+        {
+            return new ArrayList<>(_factories.keySet());
         }
     }
 
     public void clearConnectionFactories()
     {
-        synchronized (factories)
+        synchronized (_factories)
         {
-            factories.clear();
+            _factories.clear();
         }
     }
 
+    public String getDefaultProtocol()
+    {
+        return _defaultProtocol;
+    }
+
+    public void setDefaultProtocol(String defaultProtocol)
+    {
+        _defaultProtocol = defaultProtocol.toLowerCase();
+        if (isRunning())
+            _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
+    }
+
+    @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
-        return defaultConnectionFactory;
+        if (isStarted())
+            return _defaultConnectionFactory;
+        return getConnectionFactory(_defaultProtocol);
     }
-
-    public void setDefaultConnectionFactory(ConnectionFactory defaultConnectionFactory)
-    {
-        this.defaultConnectionFactory = defaultConnectionFactory;
-    }
-
+    
     private class Acceptor implements Runnable
     {
         private final int _acceptor;
@@ -357,5 +412,14 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public Scheduler getScheduler()
     {
         return _scheduler;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                getDefaultProtocol());
     }
 }

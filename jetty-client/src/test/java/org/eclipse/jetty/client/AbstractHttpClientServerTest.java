@@ -49,7 +49,8 @@ public class AbstractHttpClientServerTest
 
     public void start(Handler handler) throws Exception
     {
-        server = new Server();
+        if (server == null)
+            server = new Server();
         connector = new SelectChannelConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -62,11 +63,12 @@ public class AbstractHttpClientServerTest
     }
 
     @After
-    public void destroy() throws Exception
+    public void dispose() throws Exception
     {
         if (client != null)
             client.stop();
         if (server != null)
             server.stop();
+        server = null;
     }
 }

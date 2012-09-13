@@ -32,6 +32,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -62,7 +63,7 @@ public class SSLSelectChannelConnectorLoadTest
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();

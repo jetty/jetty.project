@@ -59,9 +59,9 @@ public class HttpParser
         CLOSED
     };
 
-    private final HttpHandler _handler;
-    private final RequestHandler _requestHandler;
-    private final ResponseHandler _responseHandler;
+    private final HttpHandler<ByteBuffer> _handler;
+    private final RequestHandler<ByteBuffer> _requestHandler;
+    private final ResponseHandler<ByteBuffer> _responseHandler;
     private final int _maxHeaderBytes;
     private HttpHeader _header;
     private String _headerString;
@@ -91,19 +91,19 @@ public class HttpParser
     private final Utf8StringBuilder _utf8=new Utf8StringBuilder();
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(RequestHandler handler)
+    public HttpParser(RequestHandler<ByteBuffer> handler)
     {
         this(handler,-1);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler handler)
+    public HttpParser(ResponseHandler<ByteBuffer> handler)
     {
         this(handler,-1);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(RequestHandler handler,int maxHeaderBytes)
+    public HttpParser(RequestHandler<ByteBuffer> handler,int maxHeaderBytes)
     {
         _handler=handler;
         _requestHandler=handler;
@@ -112,7 +112,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler handler,int maxHeaderBytes)
+    public HttpParser(ResponseHandler<ByteBuffer> handler,int maxHeaderBytes)
     {
         _handler=handler;
         _requestHandler=null;
@@ -931,12 +931,14 @@ public class HttpParser
                 case CLOSED:
                     if (BufferUtil.hasContent(buffer))
                     {
-                        _headerBytes+=buffer.remaining();
+                        int len=buffer.remaining();
+                        _headerBytes+=len;
                         if (_headerBytes>_maxHeaderBytes)
                         {
+                            Thread.sleep(100);
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IllegalStateException(this+" data when CLOSED: "+chars);
+                            throw new IllegalStateException(String.format("%s %d/%d data when CLOSED:%s",this,len,_headerBytes,chars));
                         }
                         BufferUtil.clear(buffer);
                     }
@@ -1109,6 +1111,11 @@ public class HttpParser
                         }
                         break;
                     }
+                    case CLOSED:
+                    {
+                        BufferUtil.clear(buffer);
+                        return false;
+                    }
                 }
             }
 
@@ -1157,7 +1164,7 @@ public class HttpParser
 
             case CLOSED:
                 break;
-                
+
             default:
                 setState(State.END);
                 if (!_headResponse)
@@ -1182,6 +1189,7 @@ public class HttpParser
         }
         setState(State.CLOSED);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+        _contentLength=-1;
         _contentPosition=0;
         _responseStatus=0;
         _headerBytes=0;
@@ -1194,6 +1202,7 @@ public class HttpParser
         // reset state
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+        _contentLength=-1;
         _contentPosition=0;
         _responseStatus=0;
         _contentChunk=null;
@@ -1204,8 +1213,6 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
-        if (_state==State.CLOSED && state==State.END)
-            new Throwable().printStackTrace();
         _state=state;
     }
 

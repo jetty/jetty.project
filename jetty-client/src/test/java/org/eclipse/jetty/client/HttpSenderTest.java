@@ -60,7 +60,7 @@ public class HttpSenderTest
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onHeaders(Request request)
@@ -121,7 +121,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -129,7 +129,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(request, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)
@@ -150,7 +150,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -158,7 +158,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(request, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)
@@ -188,7 +188,7 @@ public class HttpSenderTest
         request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes("UTF-8"))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onHeaders(Request request)
@@ -223,7 +223,7 @@ public class HttpSenderTest
         request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8"))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onHeaders(Request request)
@@ -265,7 +265,7 @@ public class HttpSenderTest
         });
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onHeaders(Request request)

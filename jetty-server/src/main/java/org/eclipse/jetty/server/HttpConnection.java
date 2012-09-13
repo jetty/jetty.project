@@ -45,18 +45,18 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport
 {
-    public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
+    public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
-    private final HttpConfiguration _configuration;
+    private final HttpChannelConfig _config;
     private final Connector _connector;
-    private final ByteBufferPool _bufferPool; // TODO: remove field, use a _connector.getByteBufferPool()
+    private final ByteBufferPool _bufferPool;
     private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
-    private ByteBuffer _requestBuffer = null;
-    private ByteBuffer _chunk = null;
+    private volatile ByteBuffer _requestBuffer = null;
+    private volatile ByteBuffer _chunk = null;
 
     public static HttpConnection getCurrentConnection()
     {
@@ -67,12 +67,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         __currentConnection.set(connection);
     }
+    
+    public HttpChannelConfig getHttpChannelConfig()
+    {
+        return _config;
+    }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
+    public HttpConnection(HttpChannelConfig config, Connector connector, EndPoint endPoint)
     {
         super(endPoint, connector.getExecutor());
 
-        _configuration = config;
+        _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = new HttpGenerator(); // TODO: consider moving the generator to the transport, where it belongs
@@ -98,7 +103,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _connector;
     }
 
-    public HttpChannel getHttpChannel()
+    public HttpChannel<?> getHttpChannel()
     {
         return _channel;
     }
@@ -145,8 +150,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         if (_requestBuffer != null && !_requestBuffer.hasRemaining())
         {
-            _bufferPool.release(_requestBuffer);
-            _requestBuffer = null;
+            ByteBuffer buffer=_requestBuffer;
+            _requestBuffer=null;
+            _bufferPool.release(buffer);
         }
     }
 
@@ -175,7 +181,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (!event && BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer == null)
-                        _requestBuffer = _bufferPool.acquire(_configuration.getRequestHeaderSize(), false);
+                        _requestBuffer = _bufferPool.acquire(getInputBufferSize(), false);
 
                     int filled = getEndPoint().fill(_requestBuffer);
                     if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
@@ -315,7 +321,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 case NEED_HEADER:
                 {
-                    header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), false);
+                    header = _bufferPool.acquire(_config.getResponseHeaderSize(), false);
                     continue;
                 }
                 case NEED_CHUNK:
@@ -533,7 +539,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                         // We will need a buffer to read into
                         if (_requestBuffer==null)
-                            _requestBuffer=_bufferPool.acquire(_configuration.getRequestBufferSize(),false);
+                            _requestBuffer=_bufferPool.acquire(getInputBufferSize(),false);
 
                         // read some data
                         int filled=getEndPoint().fill(_requestBuffer);
@@ -590,9 +596,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
-        public HttpChannelOverHttp(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+        public HttpChannelOverHttp(Connector connector, HttpChannelConfig config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
-            super(connector,configuration,endPoint,transport,input);
+            super(connector,config,endPoint,transport,input);
         }
 
         @Override

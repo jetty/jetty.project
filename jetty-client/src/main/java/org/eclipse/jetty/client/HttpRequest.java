@@ -27,38 +27,37 @@ import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.client.api.ContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.FutureCallback;
 
 public class HttpRequest implements Request
 {
     private static final AtomicLong ids = new AtomicLong();
 
+    private final HttpFields headers = new HttpFields();
+    private final Fields params = new Fields();
     private final HttpClient client;
     private final long id;
-    private String scheme;
     private final String host;
     private final int port;
+    private String scheme;
     private String path;
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
     private Listener listener;
     private ContentProvider content;
-    private final HttpFields headers = new HttpFields();
-    private final Fields params = new Fields();
+    private boolean followRedirects;
+    private volatile boolean aborted;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -82,6 +81,7 @@ public class HttpRequest implements Request
                 param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
             }
         }
+        followRedirects(client.isFollowRedirects());
     }
 
     private String urlDecode(String value)
@@ -199,9 +199,9 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request agent(String userAgent)
+    public Request agent(String agent)
     {
-        headers.put(HttpHeader.USER_AGENT, userAgent);
+        headers.put(HttpHeader.USER_AGENT, agent);
         return this;
     }
 
@@ -261,15 +261,22 @@ public class HttpRequest implements Request
         return content(new PathContentProvider(file));
     }
 
+//    @Override
+//    public Request decoder(ContentDecoder decoder)
+//    {
+//        return this;
+//    }
+
     @Override
-    public Request decoder(ContentDecoder decoder)
+    public boolean followRedirects()
     {
-        return this;
+        return followRedirects;
     }
 
     @Override
     public Request followRedirects(boolean follow)
     {
+        this.followRedirects = follow;
         return this;
     }
 
@@ -289,28 +296,27 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        final FutureCallback<ContentResponse> callback = new FutureCallback<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
-        {
-            @Override
-            public void onComplete(Result result)
-            {
-                super.onComplete(result);
-                HttpContentResponse contentResponse = new HttpContentResponse(result.getResponse(), content());
-                if (!result.isFailed())
-                    callback.completed(contentResponse);
-                else
-                    callback.failed(contentResponse, result.getFailure());
-            }
-        };
+        BlockingResponseListener listener = new BlockingResponseListener();
         send(listener);
-        return callback;
+        return listener;
     }
 
     @Override
     public void send(final Response.Listener listener)
     {
         client.send(this, listener);
+    }
+
+    @Override
+    public void abort()
+    {
+        aborted = true;
+    }
+
+    @Override
+    public boolean aborted()
+    {
+        return aborted;
     }
 
     @Override

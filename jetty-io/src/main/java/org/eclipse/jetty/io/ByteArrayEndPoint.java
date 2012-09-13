@@ -321,14 +321,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
     @Override
-    public int flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ByteBuffer... buffers) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
         if (_oshut)
             throw new IOException("OSHUT");
 
-        int flushed=0;
+        boolean flushed=true;
+        boolean idle=true;
 
         for (ByteBuffer b : buffers)
         {
@@ -345,13 +346,17 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     }
                 }
 
-                flushed+=BufferUtil.flipPutFlip(b,_out);
+                if (BufferUtil.flipPutFlip(b,_out)>0)
+                    idle=false;
 
                 if (BufferUtil.hasContent(b))
+                {
+                    flushed=false;
                     break;
+                }
             }
         }
-        if (flushed>0)
+        if (!idle)
             notIdle();
         return flushed;
     }

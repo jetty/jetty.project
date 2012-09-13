@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import static java.lang.Math.round;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
@@ -50,8 +53,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-
-import static java.lang.Math.round;
 
 /* ------------------------------------------------------------ */
 /**

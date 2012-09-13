@@ -179,7 +179,6 @@ public class SelectChannelEndPointTest
                             _endp.write(null, blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
-                        LOG.info("Finished writing {}", _writeCount);
                         progress = true;
                     }
 

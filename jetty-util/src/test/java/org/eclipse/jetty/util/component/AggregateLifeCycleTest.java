@@ -241,15 +241,41 @@ public class AggregateLifeCycleTest
         a0.addBean(aa0);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
-        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
 
         AggregateLifeCycle aa1 = new AggregateLifeCycle();
         a0.addBean(aa1);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
-        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
-        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump,"");
+        
+        AggregateLifeCycle aa2 = new AggregateLifeCycle();
+        a0.addBean(aa2,false);
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");
+        
+        aa1.start();
+        a0.start();
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");
+        
+        a0.manage(aa1);
+        a0.removeBean(aa2);
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");        
 
         AggregateLifeCycle aaa0 = new AggregateLifeCycle();
         aa0.addBean(aaa0);
@@ -300,7 +326,7 @@ public class AggregateLifeCycleTest
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"");
 
-        a2.addBean(aa0);
+        a2.addBean(aa0,true);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
         dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");

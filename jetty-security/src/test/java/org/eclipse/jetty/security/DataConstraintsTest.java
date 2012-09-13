@@ -28,8 +28,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -60,38 +60,25 @@ public class DataConstraintsTest
     public  void startServer()
     {
         _server = new Server();
-        _connector = new LocalConnector(_server);
+        
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpChannelConfig().setSecurePort(9999);
+        http.getHttpChannelConfig().setSecureScheme("BWTP");
+        _connector = new LocalConnector(_server,http);
         _connector.setIdleTimeout(300000);
-        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
-        httpConfiguration.setIntegralPort(9998);
-        httpConfiguration.setIntegralScheme("FTP");
-        httpConfiguration.setConfidentialPort(9999);
-        httpConfiguration.setConfidentialScheme("SPDY");
-        _connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(_connector, httpConfiguration));
 
-        _connectorS = new LocalConnector(_server);
-        _connectorS.setDefaultConnectionFactory(new HttpServerConnectionFactory(_connectorS, new HttpConfiguration(null,false)
+        HttpConnectionFactory https = new HttpConnectionFactory();
+        https.getHttpChannelConfig().addCustomizer(new HttpChannelConfig.Customizer()
         {
             @Override
-            public void customize(Request request) throws IOException
+            public void customize(Connector connector, HttpChannelConfig channelConfig, Request request)
             {
                 request.setScheme(HttpScheme.HTTPS.asString());
-                super.customize(request);
+                request.setSecure(true);
             }
-
-
-            @Override
-            public boolean isIntegral(Request request)
-            {
-                return true;
-            }
-
-            @Override
-            public boolean isConfidential(Request request)
-            {
-                return true;
-            }
-        }));
+        });
+        
+        _connectorS = new LocalConnector(_server,https);
         _server.setConnectors(new Connector[]{_connector,_connectorS});
 
         ContextHandler _context = new ContextHandler();
@@ -106,6 +93,7 @@ public class DataConstraintsTest
 
         _security.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
@@ -149,8 +137,8 @@ public class DataConstraintsTest
 
         response = _connector.getResponses("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: FTP://"));
-        assertThat(response, containsString(":9998"));
+        assertThat(response, containsString("Location: BWTP://"));
+        assertThat(response, containsString(":9999"));
 
         response = _connectorS.getResponses("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 404 Not Found"));
@@ -181,7 +169,7 @@ public class DataConstraintsTest
 
         response = _connector.getResponses("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: SPDY://"));
+        assertThat(response, containsString("Location: BWTP://"));
         assertThat(response, containsString(":9999"));
 
         response = _connectorS.getResponses("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
@@ -444,11 +432,14 @@ public class DataConstraintsTest
         {
             this.identityService = identityService;
         }
+        
+        @Override
         public String getName()
         {
             return "name";
         }
 
+        @Override
         public UserIdentity login(String username, Object credentials)
         {
             if("admin".equals(username) && "password".equals(credentials))
@@ -456,20 +447,24 @@ public class DataConstraintsTest
             return null;
         }
 
+        @Override
         public boolean validate(UserIdentity user)
         {
             return false;
         }
 
+        @Override
         public IdentityService getIdentityService()
         {
             return identityService;
         }
 
+        @Override
         public void setIdentityService(IdentityService service)
         {
         }
 
+        @Override
         public void logout(UserIdentity user)
         {
         }

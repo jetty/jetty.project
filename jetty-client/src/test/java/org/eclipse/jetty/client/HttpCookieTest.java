@@ -59,7 +59,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.status());
 
         Destination destination = client.getDestination(scheme, host, port);
-        List<HttpCookie> cookies = client.getCookieStore().getCookies(destination, path);
+        List<HttpCookie> cookies = client.getCookieStore().findCookies(destination, path);
         Assert.assertNotNull(cookies);
         Assert.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);

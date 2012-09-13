@@ -42,7 +42,7 @@ public class HttpExchange
         this.connection = connection;
         this.request = request;
         this.listener = listener;
-        this.response = new HttpResponse(listener);
+        this.response = new HttpResponse(this, listener);
     }
 
     public HttpConversation conversation()
@@ -115,6 +115,12 @@ public class HttpExchange
             return true;
         }
         return false;
+    }
+
+    public void abort()
+    {
+        LOG.debug("Aborting {}", response);
+        connection.abort(response);
     }
 
     @Override

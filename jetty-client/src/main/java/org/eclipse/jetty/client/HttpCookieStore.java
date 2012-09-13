@@ -35,7 +35,7 @@ public class HttpCookieStore implements CookieStore
     private final ConcurrentMap<String, Queue<HttpCookie>> allCookies = new ConcurrentHashMap<>();
 
     @Override
-    public List<HttpCookie> getCookies(Destination destination, String path)
+    public List<HttpCookie> findCookies(Destination destination, String path)
     {
         List<HttpCookie> result = new ArrayList<>();
 

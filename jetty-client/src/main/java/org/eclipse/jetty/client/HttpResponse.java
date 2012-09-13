@@ -25,13 +25,15 @@ import org.eclipse.jetty.http.HttpVersion;
 public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
+    private final HttpExchange exchange;
     private final Listener listener;
     private HttpVersion version;
     private int status;
     private String reason;
 
-    public HttpResponse(Response.Listener listener)
+    public HttpResponse(HttpExchange exchange, Listener listener)
     {
+        this.exchange = exchange;
         this.listener = listener;
     }
 
@@ -84,7 +86,7 @@ public class HttpResponse implements Response
     @Override
     public void abort()
     {
-//        request.abort();
+        exchange.abort();
     }
 
     @Override

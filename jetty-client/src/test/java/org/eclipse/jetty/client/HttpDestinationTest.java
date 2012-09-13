@@ -32,7 +32,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
     @Before
     public void init() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
     }
 
     @Test

@@ -57,7 +57,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testStoppingClosesConnections() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -84,14 +84,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, client.getDestinations().size());
         Assert.assertEquals(0, destination.getIdleConnections().size());
         Assert.assertEquals(0, destination.getActiveConnections().size());
-        Assert.assertEquals(0, client.getCookieStore().getCookies(destination, path).size());
+        Assert.assertEquals(0, client.getCookieStore().findCookies(destination, path).size());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
     @Test
     public void test_DestinationCount() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -111,7 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_GET_ResponseWithoutContent() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         Response response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
@@ -212,14 +212,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerAddress(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)
@@ -234,7 +234,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         }
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -245,7 +245,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onQueued(org.eclipse.jetty.client.api.Request request)
@@ -253,7 +253,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -270,7 +270,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerAddress(1);
         final long idleTimeout = 1000;
@@ -278,7 +278,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(3);
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)
@@ -299,7 +299,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
@@ -309,7 +309,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -326,7 +326,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         // Prepare a big file to upload
         Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
@@ -345,7 +345,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final AtomicLong responseTime = new AtomicLong();
         client.newRequest("localhost", connector.getLocalPort())
                 .file(file)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(org.eclipse.jetty.client.api.Request request)
@@ -354,7 +354,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -414,7 +414,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         return Arrays.asList(ByteBuffer.allocate(chunkSize), null).iterator();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -429,13 +429,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         final String host = "localhost";
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)
@@ -444,7 +444,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         destination.getActiveConnections().peek().close();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)

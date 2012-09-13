@@ -109,7 +109,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         Connection old = getConnection();
         super.setConnection(connection);
         if (old != null && old != connection)
+        { 
+            LOG.debug("Upgrading connection {} -> {} on endPoint {}", old, connection, this);
             _selector.getSelectorManager().connectionUpgraded(this, old);
+        }
     }
 
     @Override

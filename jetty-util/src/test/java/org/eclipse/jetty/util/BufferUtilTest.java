@@ -70,9 +70,9 @@ public class BufferUtilTest
 
         for (int i=0;i<val.length;i++)
         {
-            buffer.clear();
+            BufferUtil.clearToFill(buffer);
             BufferUtil.putDecInt(buffer,val[i]);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer,0);
             assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
         }
     }
@@ -94,9 +94,9 @@ public class BufferUtilTest
 
         for (int i=0;i<val.length;i++)
         {
-            buffer.clear();
+            BufferUtil.clearToFill(buffer);
             BufferUtil.putDecLong(buffer,val[i]);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer,0);
             assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
         }
     }
@@ -118,9 +118,9 @@ public class BufferUtilTest
 
         for (int i=0;i<val.length;i++)
         {
-            buffer.clear();
+            BufferUtil.clearToFill(buffer);
             BufferUtil.putHexInt(buffer,val[i]);
-            buffer.flip();
+            BufferUtil.flipToFlush(buffer,0);
             assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
         }
     }

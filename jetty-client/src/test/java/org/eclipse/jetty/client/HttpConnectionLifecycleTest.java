@@ -42,7 +42,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_SuccessfulRequest_ReturnsConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -58,7 +58,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
-                .listener(new Request.Listener.Adapter()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -66,7 +66,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onHeaders(Response response)
@@ -100,7 +100,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_FailedRequest_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -115,7 +115,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        client.newRequest(host, port).listener(new Request.Listener.Adapter()
+        client.newRequest(host, port).listener(new Request.Listener.Empty()
         {
             @Override
             public void onBegin(Request request)
@@ -129,7 +129,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             {
                 failureLatch.countDown();
             }
-        }).send(new Response.Listener.Adapter()
+        }).send(new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)
@@ -151,7 +151,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BadRequest_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -166,7 +166,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
-                .listener(new Request.Listener.Adapter()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -181,7 +181,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -209,7 +209,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_ConnectionFailure_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -226,7 +226,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
-                .listener(new Request.Listener.Adapter()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
                     public void onFailure(Request request, Throwable failure)
@@ -234,7 +234,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         failureLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -276,7 +276,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -321,7 +321,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
                 .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)

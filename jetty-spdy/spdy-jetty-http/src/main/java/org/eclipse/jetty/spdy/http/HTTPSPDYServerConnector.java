@@ -22,13 +22,19 @@ package org.eclipse.jetty.spdy.http;
 import java.util.Collections;
 import java.util.Map;
 
-import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.NPNServerConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.http.PushStrategy.None;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class HTTPSPDYServerConnector extends SPDYServerConnector
+public class HTTPSPDYServerConnector extends SelectChannelConnector
 {
     public HTTPSPDYServerConnector(Server server)
     {
@@ -47,21 +53,30 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
 
     public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
-        // We pass a null ServerSessionFrameListener because for
-        // HTTP over SPDY we need one that references the endPoint
-        super(server, sslContextFactory, null);
-        clearConnectionFactories();
-        // The "spdy/3" protocol handles HTTP over SPDY
-        putConnectionFactory("spdy/3", new ServerHTTPSPDYConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
-        // The "spdy/2" protocol handles HTTP over SPDY
-        putConnectionFactory("spdy/2", new ServerHTTPSPDYConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2, pushStrategies)));
-        // The "http/1.1" protocol handles browsers that support NPN but not SPDY
-        putConnectionFactory("http/1.1", new HttpServerConnectionFactory(this));
-        // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
-        setDefaultConnectionFactory(getConnectionFactory("http/1.1"));
+        this(server,new HttpChannelConfig(),sslContextFactory,pushStrategies);
     }
 
-    private PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
+    public HTTPSPDYServerConnector(Server server, short version, HttpChannelConfig httpChannelConfig, PushStrategy push)
+    {
+        super(server,new HTTPSPDYServerConnectionFactory(version,httpChannelConfig,push));
+       
+    }
+    
+    public HTTPSPDYServerConnector(Server server, HttpChannelConfig config, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
+    {
+        super(server,AbstractConnectionFactory.getFactories(sslContextFactory,
+            sslContextFactory==null
+            ?new ConnectionFactory[] {new HttpConnectionFactory(config)}
+            :new ConnectionFactory[] {new NPNServerConnectionFactory("spdy/3","spdy/2","http/1.1"),
+                new HttpConnectionFactory(config),
+                new HTTPSPDYServerConnectionFactory(SPDY.V3,new HttpChannelConfig(),getPushStrategy(SPDY.V3, pushStrategies)),
+                new HTTPSPDYServerConnectionFactory(SPDY.V2,new HttpChannelConfig(),getPushStrategy(SPDY.V2, pushStrategies))}));
+        if (getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol("http/1.1");
+    }
+
+
+    private static PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {
         PushStrategy pushStrategy = pushStrategies.get(version);
         if (pushStrategy == null)

@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
+
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -50,7 +51,7 @@ public class SPDYServerConnectorTest extends AbstractTest
         connector.stop();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(connector.getSessions().isEmpty());
+        Assert.assertTrue(connector.getConnectionFactory(SPDYServerConnectionFactory.class).getSessions().isEmpty());
     }
 
     @Test
@@ -64,6 +65,6 @@ public class SPDYServerConnectorTest extends AbstractTest
         // since it is done asynchronously by the selector thread
         TimeUnit.SECONDS.sleep(1);
 
-        Assert.assertTrue(connector.getSessions().isEmpty());
+        Assert.assertTrue(connector.getConnectionFactory(SPDYServerConnectionFactory.class).getSessions().isEmpty());
     }
 }

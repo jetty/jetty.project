@@ -16,19 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.client;
 
-public class ChannelHttpServer
+import org.eclipse.jetty.client.api.Request;
+
+public class HttpRequestException extends Throwable
 {
-    public static void main(String[] s) throws Exception
+    private final Request request;
+
+    public HttpRequestException(String message, Request request)
     {
-        Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector(server);
-        connector.setPort(8080);
-        server.addConnector(connector);
-        server.setHandler(new DumpHandler());
-        server.start();
-        server.dumpStdErr();
-        server.join();
+        super(message);
+        this.request = request;
+    }
+
+    public Request getRequest()
+    {
+        return request;
     }
 }

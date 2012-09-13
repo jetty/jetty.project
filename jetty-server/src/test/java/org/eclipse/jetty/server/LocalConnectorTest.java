@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class LocalConnectorTest
 {

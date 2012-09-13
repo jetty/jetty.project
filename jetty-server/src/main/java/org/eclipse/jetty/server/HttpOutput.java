@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -54,7 +55,7 @@ public class HttpOutput extends ServletOutputStream
     public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
-        _bufferSize = _channel.getHttpConfiguration().getResponseBufferSize();
+        _bufferSize = _channel.getHttpChannelConfig().getOutputBufferSize();
     }
 
     public boolean isWritten()
@@ -209,7 +210,7 @@ public class HttpOutput extends ServletOutputStream
             HttpContent httpContent = (HttpContent)content;
             Response response = _channel.getResponse();
             String contentType = httpContent.getContentType();
-            if (contentType != null)
+            if (contentType != null && !response.getHttpFields().containsKey(HttpHeader.CONTENT_TYPE.asString()))
                 response.getHttpFields().put(HttpHeader.CONTENT_TYPE, contentType);
 
             if (httpContent.getContentLength() > 0)

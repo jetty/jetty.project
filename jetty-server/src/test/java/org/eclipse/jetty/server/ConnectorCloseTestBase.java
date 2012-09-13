@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,8 +29,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * HttpServer Tester.

@@ -27,8 +27,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -65,13 +64,11 @@ public class LikeJettyXml
         mbContainer.addBean(new Log());
 
         // Setup Connectors
-        SelectChannelConnector connector = new SelectChannelConnector(server);
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpChannelConfig().setSecurePort(8443);        
+        SelectChannelConnector connector = new SelectChannelConnector(server,http);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
-        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
-        httpConfiguration.setConfidentialPort(8443);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
-        // TODO connector.setStatsOn(false);
 
         server.setConnectors(new Connector[]
         { connector });
@@ -80,7 +77,7 @@ public class LikeJettyXml
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStore(jetty_home + "/etc/keystore");
+        sslContextFactory.setTrustStorePath(jetty_home + "/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
                 new String[]{
@@ -94,7 +91,6 @@ public class LikeJettyXml
                 });
         SelectChannelConnector sslConnector = new SelectChannelConnector(server,sslContextFactory);
         sslConnector.setPort(8443);
-        // TODO sslConnector.setStatsOn(false);
         server.addConnector(sslConnector);
         sslConnector.open();
 

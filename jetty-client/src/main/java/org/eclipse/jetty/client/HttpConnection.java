@@ -146,7 +146,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().getCookies(getDestination(), request.path());
+        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.path());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {
@@ -161,9 +161,9 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        Authentication authentication = client.getAuthenticationStore().findAuthenticationResult(request.uri());
-        if (authentication != null)
-            authentication.authenticate(request);
+        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        if (authnResult != null)
+            authnResult.apply(request);
 
         // TODO: decoder headers
 
@@ -248,6 +248,11 @@ public class HttpConnection extends AbstractConnection implements Connection
         {
             throw new IllegalStateException();
         }
+    }
+
+    public void abort(HttpResponse response)
+    {
+        receiver.fail(new HttpResponseException("Response aborted", response));
     }
 
     @Override

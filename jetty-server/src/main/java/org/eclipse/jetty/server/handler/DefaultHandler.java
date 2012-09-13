@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -161,6 +162,10 @@ public class DefaultHandler extends AbstractHandler
                 writer.write("</li>\n");
             }
         }
+
+        writer.write("</ul><hr>");
+        writer.write("<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;");
+        writer.write("<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// Java Web Server</a><hr/>\n");
 
         writer.write("\n</BODY>\n</HTML>\n");
         writer.flush();

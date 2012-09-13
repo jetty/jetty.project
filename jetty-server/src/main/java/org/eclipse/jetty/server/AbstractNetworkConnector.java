@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -34,9 +33,9 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory, int acceptors)
+    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, sslContextFactory, acceptors);
+        super(server,executor,scheduler,pool,acceptors,factories);
     }
 
     public void setHost(String host)
@@ -110,8 +109,8 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     public String toString()
     {
-        return String.format("%s@%s:%d",
-                getClass().getSimpleName(),
+        return String.format("%s{%s:%d}",
+                super.toString(),
                 getHost() == null ? "0.0.0.0" : getHost(),
                 getLocalPort() <= 0 ? getPort() : getLocalPort());
     }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -30,8 +32,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class HttpWriterTest
 {
     private HttpOutput _httpOut;
@@ -42,16 +42,9 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        final HttpConfiguration configuration = new HttpConfiguration(null, false);
         final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        HttpChannel channel = new HttpChannel<ByteBuffer>(null,null,null,null,null)
+        HttpChannel<?> channel = new HttpChannel<ByteBuffer>(null,new HttpChannelConfig(),null,null,null)
         {
-            @Override
-            public HttpConfiguration getHttpConfiguration()
-            {
-                return configuration;
-            }
-
             @Override
             public ByteBufferPool getByteBufferPool()
             {

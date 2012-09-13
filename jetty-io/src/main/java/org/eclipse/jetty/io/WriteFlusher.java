@@ -297,12 +297,12 @@ abstract public class WriteFlusher
 
         try
         {
-            _endPoint.flush(buffers);
+            boolean flushed=_endPoint.flush(buffers);
 
             // Are we complete?
             for (ByteBuffer b : buffers)
             {
-                if (BufferUtil.hasContent(b))
+                if (!flushed||BufferUtil.hasContent(b))
                 {
                     PendingState<?> pending=new PendingState<>(buffers, context, callback);
                     if (updateState(__WRITING,pending))
@@ -311,17 +311,6 @@ abstract public class WriteFlusher
                         fail(new PendingState<>(buffers, context, callback));
                     return;
                 }
-            }
-            
-            // Handle buffering endpoint
-            if (_endPoint.isBufferingOutput())
-            {
-                PendingState<?> pending=new PendingState<>(buffers, context, callback);
-                if (updateState(__WRITING,pending))
-                    onIncompleteFlushed();
-                else
-                    fail(new PendingState<>(buffers, context, callback));
-                return;
             }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
@@ -368,12 +357,12 @@ abstract public class WriteFlusher
         {
             ByteBuffer[] buffers = pending.getBuffers();
 
-            _endPoint.flush(buffers);
+            boolean flushed=_endPoint.flush(buffers);
 
             // Are we complete?
             for (ByteBuffer b : buffers)
             {
-                if (BufferUtil.hasContent(b))
+                if (!flushed || BufferUtil.hasContent(b))
                 {
                     if (updateState(__COMPLETING,pending))
                         onIncompleteFlushed();
@@ -381,16 +370,6 @@ abstract public class WriteFlusher
                         fail(pending);
                     return;
                 }
-            }
-            
-            // Handle buffering endpoint
-            if (_endPoint.isBufferingOutput())
-            {
-                if (updateState(__COMPLETING,pending))
-                    onIncompleteFlushed();
-                else
-                    fail(pending);
-                return;
             }
             
             // If updateState didn't succeed, we don't care as our buffers have been written

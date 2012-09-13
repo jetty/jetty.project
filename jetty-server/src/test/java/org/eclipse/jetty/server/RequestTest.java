@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -29,6 +37,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -48,14 +57,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
@@ -67,15 +68,13 @@ public class RequestTest
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalConnector(_server);
-        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
-        httpConfiguration.setRequestHeaderSize(512);
-        httpConfiguration.setRequestBufferSize(1024);
-        httpConfiguration.setResponseHeaderSize(512);
-        httpConfiguration.setResponseBufferSize(2048);
-        httpConfiguration.setForwarded(true);
-        HttpServerConnectionFactory defaultConnectionFactory = new HttpServerConnectionFactory(_connector, httpConfiguration);
-        _connector.setDefaultConnectionFactory(defaultConnectionFactory);
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.setInputBufferSize(1024);
+        http.getHttpChannelConfig().setRequestHeaderSize(512);
+        http.getHttpChannelConfig().setResponseHeaderSize(512);
+        http.getHttpChannelConfig().setOutputBufferSize(2048);
+        http.getHttpChannelConfig().addCustomizer(new ForwardedRequestCustomizer());
+        _connector = new LocalConnector(_server,http);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);

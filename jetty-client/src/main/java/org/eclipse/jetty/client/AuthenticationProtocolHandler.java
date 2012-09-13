@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,21 +26,33 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-public class AuthenticationProtocolHandler extends Response.Listener.Adapter implements ProtocolHandler
+public class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    private static final Pattern WWW_AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(\\s*,\\s*)?(.*)", Pattern.CASE_INSENSITIVE);
+    public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
+    private static final Pattern WWW_AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\".*", Pattern.CASE_INSENSITIVE);
 
     private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpClient client;
+    private final int maxContentLength;
 
     public AuthenticationProtocolHandler(HttpClient client)
     {
+        this(client, 4096);
+    }
+
+    public AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
+    {
         this.client = client;
+        this.maxContentLength = maxContentLength;
     }
 
     @Override
@@ -51,102 +64,133 @@ public class AuthenticationProtocolHandler extends Response.Listener.Adapter imp
     @Override
     public Response.Listener getResponseListener()
     {
-        return this;
+        return new AuthenticationListener();
     }
 
-    @Override
-    public void onComplete(Result result)
+    private class AuthenticationListener extends BufferingResponseListener
     {
-        if (!result.isFailed())
+        private AuthenticationListener()
         {
-            List<WWWAuthenticate> wwwAuthenticates = parseWWWAuthenticate(result.getResponse());
+            super(maxContentLength);
+        }
+
+        @Override
+        public void onComplete(Result result)
+        {
+            Request request = result.getRequest();
+            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent());
+            if (result.isFailed())
+            {
+                Throwable failure = result.getFailure();
+                LOG.debug("Authentication challenge failed {}", failure);
+                forwardFailure(request, response, failure);
+                return;
+            }
+
+            List<WWWAuthenticate> wwwAuthenticates = parseWWWAuthenticate(response);
             if (wwwAuthenticates.isEmpty())
             {
-                // TODO
+                LOG.debug("Authentication challenge without WWW-Authenticate header");
+                forwardFailure(request, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
+                return;
             }
-            else
+
+            final String uri = request.uri();
+            Authentication authentication = null;
+            WWWAuthenticate wwwAuthenticate = null;
+            for (WWWAuthenticate wwwAuthn : wwwAuthenticates)
             {
-                Request request = result.getRequest();
-                final String uri = request.uri();
-                Authentication authentication = null;
-                for (WWWAuthenticate wwwAuthenticate : wwwAuthenticates)
-                {
-                    authentication = client.getAuthenticationStore().findAuthentication(wwwAuthenticate.type, uri, wwwAuthenticate.realm);
-                    if (authentication != null)
-                        break;
-                }
+                authentication = client.getAuthenticationStore().findAuthentication(wwwAuthn.type, uri, wwwAuthn.realm);
                 if (authentication != null)
                 {
-                    final Authentication authn = authentication;
-                    authn.authenticate(request);
-                    request.send(new Adapter()
-                    {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            if (!result.isFailed())
-                            {
-                                Authentication.Result authnResult = new Authentication.Result(uri, authn);
-                                client.getAuthenticationStore().addAuthenticationResult(authnResult);
-                            }
-                        }
-                    });
-                }
-                else
-                {
-                    noAuthentication(request, result.getResponse());
+                    wwwAuthenticate = wwwAuthn;
+                    break;
                 }
             }
-        }
-    }
-
-    private List<WWWAuthenticate> parseWWWAuthenticate(Response response)
-    {
-        List<WWWAuthenticate> result = new ArrayList<>();
-        List<String> values = Collections.list(response.headers().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
-        for (String value : values)
-        {
-            Matcher matcher = WWW_AUTHENTICATE_PATTERN.matcher(value);
-            if (matcher.matches())
+            if (authentication == null)
             {
-                String type = matcher.group(1);
-                String realm = matcher.group(2);
-                String params = matcher.group(4);
-                WWWAuthenticate wwwAuthenticate = new WWWAuthenticate(type, realm, params);
-                result.add(wwwAuthenticate);
+                LOG.debug("No authentication available for {}", request);
+                forwardSuccess(request, response);
+                return;
             }
-        }
-        return result;
-    }
 
-    private void noAuthentication(Request request, Response response)
-    {
-        HttpConversation conversation = client.getConversation(request);
-        Response.Listener listener = conversation.exchanges().peekFirst().listener();
-        notifier.notifyBegin(listener, response);
-        notifier.notifyHeaders(listener, response);
-        notifier.notifySuccess(listener, response);
-        // TODO: this call here is horrid, but needed... but here it is too late for the exchange
-        // TODO: to figure out that the conversation is finished, so we need to manually do it here, no matter what.
-        // TODO: However, we also need to make sure that requests are not resent with the same ID
-        // TODO: because here the connection has already been returned to the pool, so the "new" request may see
-        // TODO: the same conversation but it's not really the case.
-        // TODO: perhaps the factory for requests should be the conversation ?
-        conversation.complete();
-        notifier.notifyComplete(listener, new Result(request, response));
+            HttpConversation conversation = client.getConversation(request);
+            final Authentication.Result authnResult = authentication.authenticate(request, response, wwwAuthenticate.value, conversation);
+            LOG.debug("Authentication result {}", authnResult);
+            if (authnResult == null)
+            {
+                forwardSuccess(request, response);
+                return;
+            }
+
+            authnResult.apply(request);
+            request.send(new Response.Listener.Empty()
+            {
+                @Override
+                public void onSuccess(Response response)
+                {
+                    client.getAuthenticationStore().addAuthenticationResult(authnResult);
+                }
+            });
+        }
+
+        private void forwardFailure(Request request, Response response, Throwable failure)
+        {
+            HttpConversation conversation = client.getConversation(request);
+            Response.Listener listener = conversation.exchanges().peekFirst().listener();
+            notifier.notifyBegin(listener, response);
+            notifier.notifyHeaders(listener, response);
+            if (response instanceof ContentResponse)
+                notifier.notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+            notifier.notifyFailure(listener, response, failure);
+            conversation.complete();
+            notifier.notifyComplete(listener, new Result(request, response, failure));
+        }
+
+        private void forwardSuccess(Request request, Response response)
+        {
+            HttpConversation conversation = client.getConversation(request);
+            Response.Listener listener = conversation.exchanges().peekFirst().listener();
+            notifier.notifyBegin(listener, response);
+            notifier.notifyHeaders(listener, response);
+            if (response instanceof ContentResponse)
+                notifier.notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+            notifier.notifySuccess(listener, response);
+            conversation.complete();
+            notifier.notifyComplete(listener, new Result(request, response));
+        }
+
+        private List<WWWAuthenticate> parseWWWAuthenticate(Response response)
+        {
+            // TODO: these should be ordered by strength
+            List<WWWAuthenticate> result = new ArrayList<>();
+            List<String> values = Collections.list(response.headers().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
+            for (String value : values)
+            {
+                Matcher matcher = WWW_AUTHENTICATE_PATTERN.matcher(value);
+                if (matcher.matches())
+                {
+                    String type = matcher.group(1);
+                    String realm = matcher.group(2);
+                    WWWAuthenticate wwwAuthenticate = new WWWAuthenticate(value, type, realm);
+                    result.add(wwwAuthenticate);
+                }
+            }
+            return result;
+        }
     }
 
     private class WWWAuthenticate
     {
+        private final String value;
         private final String type;
         private final String realm;
-        private final String params;
 
-        public WWWAuthenticate(String type, String realm, String params)
+        public WWWAuthenticate(String value, String type, String realm)
         {
+            this.value = value;
             this.type = type;
             this.realm = realm;
-            this.params = params;
         }
     }
 }

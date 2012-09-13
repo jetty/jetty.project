@@ -298,10 +298,10 @@ public class XmlConfiguration
                     else
                     {
                         String namedAttribute = node.getAttribute("name");
+                        Object value=value(obj,(XmlParser.Node)o);
                         if (namedAttribute != null)
-                            namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
-
-                        arguments.add(value(obj, (XmlParser.Node)o));
+                            namedArgMap.put(namedAttribute,value);
+                        arguments.add(value);
                     }
                 }
 
@@ -745,18 +745,18 @@ public class XmlConfiguration
                     continue;
 
                 String namedAttribute = argNode.getAttribute("name");
+                Object value=value(obj,(XmlParser.Node)o);
                 if (namedAttribute != null)
-                    namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
-
-                arguments.add(value(obj,(XmlParser.Node)o));
+                    namedArgMap.put(namedAttribute,value);
+                arguments.add(value);
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + oClass);
 
+            Object n;
             try
             {
-                Object n;
                 if (namedArgMap.size() > 0)
                 {
                    LOG.debug("using named mapping");
@@ -767,14 +767,14 @@ public class XmlConfiguration
                     LOG.debug("using normal mapping");
                     n = TypeUtil.construct(oClass, arguments.toArray());
                 }
-
-                configure(n,node,argIndex);
-                return n;
             }
             catch (NoSuchMethodException e)
             {
                 throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
             }
+            
+            configure(n,node,argIndex);
+            return n;
         }
 
         /*
@@ -786,7 +786,7 @@ public class XmlConfiguration
         {
             String id = node.getAttribute("id");
             obj = _idMap.get(id);
-            if (obj == null)
+            if (obj == null && node.size()>0)
                 throw new IllegalStateException("No object for id=" + id);
             configure(obj,node,0);
             return obj;

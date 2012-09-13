@@ -19,13 +19,10 @@
 
 package org.eclipse.jetty.spdy.http;
 
-import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
+import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.spdy.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -34,40 +31,57 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
 
-public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
+public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory implements HttpChannelConfig.ConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.http.HTTPChannelOverSPDY";
-    private static final Logger logger = Log.getLogger(ServerHTTPSPDYConnectionFactory.class);
+    private static final Logger logger = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
 
-    private final Connector connector;
     private final PushStrategy pushStrategy;
-    private final HttpConfiguration configuration;
+    private final HttpChannelConfig httpChannelConfig;
 
-    public ServerHTTPSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, Scheduler scheduler, Connector connector, PushStrategy pushStrategy)
+    public HTTPSPDYServerConnectionFactory(
+        @Name("version") int version, 
+        @Name("config") HttpChannelConfig config)
     {
-        super(version, bufferPool, threadPool, scheduler);
-        this.connector = connector;
+        this(version,config,new PushStrategy.None());
+    }
+    
+    public HTTPSPDYServerConnectionFactory(
+        @Name("version") int version, 
+        @Name("config") HttpChannelConfig config, 
+        @Name("pushStrategy") PushStrategy pushStrategy)
+    {
+        super(version);
         this.pushStrategy = pushStrategy;
-        this.configuration = new HttpConfiguration(connector.getSslContextFactory(), connector.getSslContextFactory() != null);
+        httpChannelConfig = config;
+        addBean(httpChannelConfig);
     }
 
     @Override
-    protected ServerSessionFrameListener provideServerSessionFrameListener(EndPoint endPoint, Object attachment)
+    public HttpChannelConfig getHttpChannelConfig()
     {
-        return new HTTPServerFrameListener(endPoint);
+        return httpChannelConfig;
+    }
+    
+    @Override
+    protected ServerSessionFrameListener provideServerSessionFrameListener(Connector connector, EndPoint endPoint)
+    {
+        return new HTTPServerFrameListener(connector,endPoint);
     }
 
     private class HTTPServerFrameListener extends ServerSessionFrameListener.Adapter implements StreamFrameListener
     {
+        private final Connector connector;
         private final EndPoint endPoint;
 
-        public HTTPServerFrameListener(EndPoint endPoint)
+        public HTTPServerFrameListener(Connector connector,EndPoint endPoint)
         {
             this.endPoint = endPoint;
+            this.connector=connector;
         }
 
         @Override
@@ -82,9 +96,9 @@ public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
             logger.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
-            HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy, stream, headers);
+            HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpChannelConfig, endPoint, pushStrategy, stream, headers);
             HttpInputOverSPDY input = new HttpInputOverSPDY();
-            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, stream);
+            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, httpChannelConfig, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
             channel.requestStart(headers, synInfo.isClose());
