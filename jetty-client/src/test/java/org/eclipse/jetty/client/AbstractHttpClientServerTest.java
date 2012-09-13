@@ -63,11 +63,12 @@ public class AbstractHttpClientServerTest
     }
 
     @After
-    public void destroy() throws Exception
+    public void dispose() throws Exception
     {
         if (client != null)
             client.stop();
         if (server != null)
             server.stop();
+        server = null;
     }
 }
