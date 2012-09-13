@@ -336,19 +336,9 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                     i++;
                                     if (i+4<end)
                                         buffer.getStringBuilder().append(Character.toChars((convertHexDigit(raw[++i])<<12) +(convertHexDigit(raw[++i])<<8) + (convertHexDigit(raw[++i])<<4) +convertHexDigit(raw[++i])));
-                                    else
-                                    {
-                                        buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
-                                        i=end;
-                                    }
                                 }
                                 else
                                     buffer.append((byte)((convertHexDigit(raw[++i])<<4) + convertHexDigit(raw[++i])));
-                            }
-                            else
-                            {
-                                buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
-                                i=end;
                             }
                             break;
                             
@@ -366,13 +356,13 @@ public class UrlEncoded extends MultiMap implements Cloneable
             
             if (key != null)
             {
-                value = buffer.length()==0?"":buffer.toReplacedString();
+                value = buffer.length()==0?"":buffer.toString();
                 buffer.reset();
                 map.add(key,value);
             }
             else if (buffer.length()>0)
             {
-                map.add(buffer.toReplacedString(),"");
+                map.add(buffer.toString(),"");
             }
         }
     }
@@ -590,7 +580,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
         StringWriter buf = new StringWriter(8192);
         IO.copy(input,buf,maxLength);
         
-        decodeTo(buf.getBuffer().toString(),map,StringUtil.__UTF16,maxKeys);
+        decodeTo(buf.getBuffer().toString(),map,ENCODING,maxKeys);
     }
     
     /* -------------------------------------------------------------- */
@@ -773,10 +763,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                     buffer.getStringBuffer().append(unicode); 
                                 }
                                 else
-                                {
                                     i=length;
-                                    buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT); 
-                                }
                             }
                             else
                             {
@@ -786,22 +773,13 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                 buffer.append(b);
                             }
                         }
-                        catch(NotUtf8Exception e)
-                        {
-                            LOG.warn(e.toString());
-                            LOG.debug(e);
-                        }
                         catch(NumberFormatException nfe)
                         {
-                            LOG.debug(nfe);
                             buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT);  
                         }
                     }
                     else
-                    {
-                        buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT); 
                         i=length;
-                    }
                 }
                 else if (buffer!=null)
                     buffer.getStringBuffer().append(c);
@@ -814,7 +792,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                 return encoded.substring(offset,offset+length);
             }
 
-            return buffer.toReplacedString();
+            return buffer.toString();
         }
         else
         {
@@ -865,20 +843,12 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                     {
                                         if ('u'==encoded.charAt(offset+i+1))
                                         {
-                                            if (i+6<length)
-                                            {
-                                                int o=offset+i+2;
-                                                i+=6;
-                                                String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
-                                                byte[] reencoded = unicode.getBytes(charset);
-                                                System.arraycopy(reencoded,0,ba,n,reencoded.length);
-                                                n+=reencoded.length;
-                                            }
-                                            else
-                                            {
-                                                ba[n++] = (byte)'?';
-                                                i=length;
-                                            }
+                                            int o=offset+i+2;
+                                            i+=6;
+                                            String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
+                                            byte[] reencoded = unicode.getBytes(charset);
+                                            System.arraycopy(reencoded,0,ba,n,reencoded.length);
+                                            n+=reencoded.length;
                                         }
                                         else
                                         {
@@ -896,8 +866,8 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                 }
                                 else
                                 {
-                                    ba[n++] = (byte)'?';
-                                    i=length;
+                                    ba[n++] = (byte)'%';
+                                    i++;
                                 }
                             }
                             else if (c=='+')
