@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -636,6 +637,23 @@ public abstract class AbstractBuffer implements Buffer
                 return new String(bytes,getIndex(),length(),charset);
             return new String(asArray(), 0, length(),charset);
             
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e);
+            return new String(asArray(), 0, length());
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public String toString(Charset charset)
+    {
+        try
+        {
+            byte[] bytes=array();
+            if (bytes!=null)
+                return new String(bytes,getIndex(),length(),charset);
+            return new String(asArray(), 0, length(),charset);
         }
         catch(Exception e)
         {
