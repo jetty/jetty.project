@@ -18,17 +18,54 @@
 
 package org.eclipse.jetty.client.api;
 
+/**
+ * A store for {@link Authentication}s and {@link Authentication.Result}s.
+ */
 public interface AuthenticationStore
 {
+    /**
+     * @param authentication the {@link Authentication} to add
+     */
     public void addAuthentication(Authentication authentication);
 
+    /**
+     * @param authentication the {@link Authentication} to remove
+     */
     public void removeAuthentication(Authentication authentication);
 
+    /**
+     * Returns the authentication that matches the given type (for example, "Basic" or "Digest"),
+     * the given request URI and the given realm.
+     * If no such authentication can be found, returns null.
+     *
+     * @param type the {@link Authentication} type such as "Basic" or "Digest"
+     * @param uri the request URI
+     * @param realm the authentication realm
+     * @return the authentication that matches the given parameters, or null
+     */
     public Authentication findAuthentication(String type, String uri, String realm);
 
+    /**
+     * @param result the {@link Authentication.Result} to add
+     */
     public void addAuthenticationResult(Authentication.Result result);
 
-    public void removeAuthenticationResults();
+    /**
+     * @param result the {@link Authentication.Result} to remove
+     */
+    public void removeAuthenticationResult(Authentication.Result result);
 
+    /**
+     * Removes all authentication results stored
+     */
+    public void clearAuthenticationResults();
+
+    /**
+     * Returns an {@link Authentication.Result} that matches the given URI, or null if no
+     * {@link Authentication.Result}s match the given URI.
+     *
+     * @param uri the request URI
+     * @return the {@link Authentication.Result} that matches the given URI, or null
+     */
     public Authentication.Result findAuthenticationResult(String uri);
 }

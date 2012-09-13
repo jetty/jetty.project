@@ -37,7 +37,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1")));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/");
+        List<HttpCookie> result = cookies.findCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(1, result.size());
         HttpCookie cookie = result.get(0);
@@ -52,7 +52,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", "child.localhost", "/")));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/");
+        List<HttpCookie> result = cookies.findCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(1, result.size());
         HttpCookie cookie = result.get(0);
@@ -75,7 +75,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/path")));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/");
+        List<HttpCookie> result = cookies.findCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
     }
@@ -87,7 +87,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/")));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/path");
+        List<HttpCookie> result = cookies.findCookies(destination, "/path");
         Assert.assertNotNull(result);
         Assert.assertEquals(1, result.size());
         HttpCookie cookie = result.get(0);
@@ -108,7 +108,7 @@ public class HttpCookieStoreTest
         Destination grandChildDestination = new HttpDestination(client, "http", "grand.child.localhost.org", 80);
         Assert.assertTrue(cookies.addCookie(grandChildDestination, new HttpCookie("b", "2", null, "/")));
 
-        List<HttpCookie> result = cookies.getCookies(grandChildDestination, "/path");
+        List<HttpCookie> result = cookies.findCookies(grandChildDestination, "/path");
         Assert.assertNotNull(result);
         Assert.assertEquals(2, result.size());
     }
@@ -120,7 +120,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost.org", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", 0, false, false)));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/");
+        List<HttpCookie> result = cookies.findCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
     }
@@ -132,7 +132,7 @@ public class HttpCookieStoreTest
         Destination destination = new HttpDestination(client, "http", "localhost.org", 80);
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", -1, false, true)));
 
-        List<HttpCookie> result = cookies.getCookies(destination, "/");
+        List<HttpCookie> result = cookies.findCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
     }
@@ -145,6 +145,6 @@ public class HttpCookieStoreTest
         Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", -1, false, true)));
 
         cookies.clear();
-        Assert.assertEquals(0, cookies.getCookies(destination, "/").size());
+        Assert.assertEquals(0, cookies.findCookies(destination, "/").size());
     }
 }

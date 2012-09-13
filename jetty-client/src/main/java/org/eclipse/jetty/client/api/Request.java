@@ -35,6 +35,8 @@ import org.eclipse.jetty.util.Fields;
  * <p>You can create {@link Request} objects via {@link HttpClient#newRequest(String)} and
  * you can send them using either {@link #send()} for a blocking semantic, or
  * {@link #send(Response.Listener)} for an asynchronous semantic.</p>
+ *
+ * @see Response
  */
 public interface Request
 {

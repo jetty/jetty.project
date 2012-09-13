@@ -196,6 +196,9 @@ public class DigestAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
+            if (!request.uri().startsWith(uri))
+                return;
+
             MessageDigest digester = getMessageDigest(algorithm);
             if (digester == null)
                 return;

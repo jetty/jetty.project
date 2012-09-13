@@ -18,7 +18,13 @@
 
 package org.eclipse.jetty.client.api;
 
+/**
+ * A specialized {@link Response} that can hold a limited content in memory.
+ */
 public interface ContentResponse extends Response
 {
+    /**
+     * @return the response content
+     */
     byte[] content();
 }

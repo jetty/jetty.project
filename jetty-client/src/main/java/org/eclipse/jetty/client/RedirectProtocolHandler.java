@@ -45,7 +45,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             case 302:
             case 303:
             case 307:
-                return request.followRedirects() || client.isFollowRedirects();
+                return request.followRedirects();
         }
         return false;
     }

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client.api;
 
+/**
+ * The result of a request / response exchange, containing the {@link Request}, the {@link Response}
+ * and eventual failures of either.
+ */
 public class Result
 {
     private final Request request;
@@ -48,21 +52,49 @@ public class Result
         this.responseFailure = responseFailure;
     }
 
+    /**
+     * @return the request object
+     */
     public Request getRequest()
     {
         return request;
     }
 
+    /**
+     * @return the request failure, if any
+     */
+    public Throwable getRequestFailure()
+    {
+        return requestFailure;
+    }
+
+    /**
+     * @return the response object
+     */
     public Response getResponse()
     {
         return response;
     }
 
+    /**
+     * @return the response failure, if any
+     */
+    public Throwable getResponseFailure()
+    {
+        return responseFailure;
+    }
+
+    /**
+     * @return whether either the response or the request failed
+     */
     public boolean isFailed()
     {
         return getFailure() != null;
     }
 
+    /**
+     * @return the response failure, if any, otherwise the request failure, if any
+     */
     public Throwable getFailure()
     {
         return responseFailure != null ? responseFailure : requestFailure;

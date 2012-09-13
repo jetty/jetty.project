@@ -84,7 +84,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, client.getDestinations().size());
         Assert.assertEquals(0, destination.getIdleConnections().size());
         Assert.assertEquals(0, destination.getActiveConnections().size());
-        Assert.assertEquals(0, client.getCookieStore().getCookies(destination, path).size());
+        Assert.assertEquals(0, client.getCookieStore().findCookies(destination, path).size());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 

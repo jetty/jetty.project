@@ -69,6 +69,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * and HTTP parameters (such as whether to follow redirects).</p>
  * <p>{@link HttpClient} transparently pools connections to servers, but allows direct control of connections
  * for cases where this is needed.</p>
+ * <p>{@link HttpClient} also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
  * <p>Typical usage:</p>
  * <pre>
  * // One liner:
@@ -265,6 +266,11 @@ public class HttpClient extends AggregateLifeCycle
 
     public Destination getDestination(String scheme, String host, int port)
     {
+        return provideDestination(scheme, host, port);
+    }
+
+    private HttpDestination provideDestination(String scheme, String host, int port)
+    {
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
         if (destination == null)
@@ -321,7 +327,7 @@ public class HttpClient extends AggregateLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        getDestination(scheme, host, port).send(request, listener);
+        provideDestination(scheme, host, port).send(request, listener);
     }
 
     public Executor getExecutor()

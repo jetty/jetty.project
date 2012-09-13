@@ -18,8 +18,25 @@
 
 package org.eclipse.jetty.client.api;
 
+/**
+ * {@link Connection} represent a connection to a {@link Destination} and allow applications to send
+ * requests via {@link #send(Request, Response.Listener)}.
+ * <p />
+ * {@link Connection}s are normally pooled by {@link Destination}s, but unpooled {@link Connection}s
+ * may be created by applications that want to do their own connection management via
+ * {@link Destination#newConnection()}.
+ */
 public interface Connection extends AutoCloseable
 {
+    /**
+     * Sends a request with an associated response listener.
+     * <p />
+     * {@link Request#send(Response.Listener)} will eventually call this method to send the request.
+     * It is exposed to allow applications to send requests via unpooled connections.
+     *
+     * @param request the request to send
+     * @param listener the response listener
+     */
     void send(Request request, Response.Listener listener);
 
     @Override

@@ -146,7 +146,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().getCookies(getDestination(), request.path());
+        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.path());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {

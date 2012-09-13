@@ -56,7 +56,7 @@ public class HttpRequest implements Request
     private long idleTimeout;
     private Listener listener;
     private ContentProvider content;
-    private boolean followRedirects = true;
+    private boolean followRedirects;
     private volatile boolean aborted;
 
     public HttpRequest(HttpClient client, URI uri)
@@ -81,6 +81,7 @@ public class HttpRequest implements Request
                 param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
             }
         }
+        followRedirects(client.isFollowRedirects());
     }
 
     private String urlDecode(String value)

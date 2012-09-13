@@ -20,7 +20,21 @@ package org.eclipse.jetty.client.api;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.PathContentProvider;
+
+/**
+ * {@link ContentProvider} provides a repeatable source of request content.
+ * <p />
+ * Implementations should return a new "view" over the same content every time {@link #iterator()} is invoked.
+ * <p />
+ * Applications should rely on utility classes such as {@link ByteBufferContentProvider}
+ * or {@link PathContentProvider}.
+ */
 public interface ContentProvider extends Iterable<ByteBuffer>
 {
+    /**
+     * @return the content length, if known, or -1 if the content length is unknown
+     */
     long length();
 }

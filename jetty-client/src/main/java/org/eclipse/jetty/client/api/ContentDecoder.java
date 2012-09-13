@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.api;
 
-public interface ContentDecoder
+// TODO
+interface ContentDecoder
 {
 }

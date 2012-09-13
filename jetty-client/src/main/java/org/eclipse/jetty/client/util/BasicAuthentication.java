@@ -91,7 +91,8 @@ public class BasicAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            request.header(HttpHeader.AUTHORIZATION.asString(), value);
+            if (request.uri().startsWith(uri))
+                request.header(HttpHeader.AUTHORIZATION.asString(), value);
         }
 
         @Override

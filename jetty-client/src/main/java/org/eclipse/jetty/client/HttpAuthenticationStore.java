@@ -61,7 +61,13 @@ public class HttpAuthenticationStore implements AuthenticationStore
     }
 
     @Override
-    public void removeAuthenticationResults()
+    public void removeAuthenticationResult(Authentication.Result result)
+    {
+        results.remove(result.getURI());
+    }
+
+    @Override
+    public void clearAuthenticationResults()
     {
         results.clear();
     }
