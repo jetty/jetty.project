@@ -175,7 +175,7 @@ public class SslContextFactoryTest
         {
             SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,/foo): java.lang.IllegalStateException: SSL doesn't have a valid keystore...");
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
-            cf.setTrustStore("/foo");
+            cf.setTrustStorePath("/foo");
             cf.start();
             Assert.fail();
         }

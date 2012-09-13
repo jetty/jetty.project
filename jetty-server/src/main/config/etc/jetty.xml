@@ -29,6 +29,21 @@
     </Arg>
     <Arg name="container"><Ref id="Container"/></Arg>
 
+
+    <!-- =========================================================== -->
+    <!-- HttpChannel Configuration                                   -->
+    <!-- =========================================================== -->
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpChannelConfig">
+      <Set name="secureScheme">https</Set>
+      <Set name="securePort">8443</Set>
+      <Set name="outputBufferSize">32768</Set>
+      <Set name="requestHeaderSize">8192</Set>
+      <Set name="responseHeaderSize">8192</Set>
+      <Call name="addCustomizer">
+        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+      </Call>
+    </New>
+    
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->
     <!-- =========================================================== -->
@@ -36,6 +51,13 @@
       <Arg>
           <New class="org.eclipse.jetty.server.SelectChannelConnector">
             <Arg name="server"><Ref id="Server" /></Arg>
+            <Arg name="factories">
+              <Array type="org.eclipse.jetty.server.ConnectionFactory">
+              <Item><New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref id="httpConfig"/></Arg>
+              </New></Item>
+              </Array>
+            </Arg>
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8080"/></Set>
             <Set name="idleTimeout">30000</Set>
@@ -68,7 +90,7 @@
     <Set name="sendServerVersion">true</Set>
     <Set name="sendDateHeader">true</Set>
     <Set name="stopTimeout">1000</Set>
-    <Set name="dumpAfterStart">false</Set>
+    <Set name="dumpAfterStart">true</Set>
     <Set name="dumpBeforeStop">false</Set>
 
 </Configure>

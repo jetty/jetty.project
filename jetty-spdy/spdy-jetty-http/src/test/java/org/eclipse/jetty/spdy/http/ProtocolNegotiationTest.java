@@ -75,7 +75,7 @@ public class ProtocolNegotiationTest
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStore("src/test/resources/truststore.jks");
+        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setProtocol("TLSv1");
         sslContextFactory.setIncludeProtocols("TLSv1");

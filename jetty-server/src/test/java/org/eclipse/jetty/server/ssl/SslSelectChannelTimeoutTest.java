@@ -48,7 +48,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
         SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle

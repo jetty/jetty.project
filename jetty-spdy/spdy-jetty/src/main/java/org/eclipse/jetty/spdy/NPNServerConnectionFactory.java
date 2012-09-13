@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.util.annotation.Name;
 
 public class NPNServerConnectionFactory extends AbstractConnectionFactory
 {
@@ -38,7 +39,7 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
     /**
      * @param protocols List of supported protocols in priority order
      */
-    public NPNServerConnectionFactory(String... protocols)
+    public NPNServerConnectionFactory(@Name("protocols")String... protocols)
     {
         super("npn");
         _protocols=Arrays.asList(protocols);
@@ -80,5 +81,10 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
         
         return new NextProtoNegoServerConnection((DecryptedEndPoint)endPoint, connector,protocols,_defaultProtocol);
     }
-    
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,%s,%s}",this.getClass().getSimpleName(),hashCode(),getProtocol(),getDefaultProtocol(),getProtocols());
+    }
 }

@@ -754,9 +754,9 @@ public class XmlConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + oClass);
 
+            Object n;
             try
             {
-                Object n;
                 if (namedArgMap.size() > 0)
                 {
                    LOG.debug("using named mapping");
@@ -767,14 +767,13 @@ public class XmlConfiguration
                     LOG.debug("using normal mapping");
                     n = TypeUtil.construct(oClass, arguments.toArray());
                 }
-
-                configure(n,node,argIndex);
-                return n;
             }
             catch (NoSuchMethodException e)
             {
                 throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
             }
+            configure(n,node,argIndex);
+            return n;
         }
 
         /*

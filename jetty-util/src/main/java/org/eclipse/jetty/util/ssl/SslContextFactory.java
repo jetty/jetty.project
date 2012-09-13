@@ -516,7 +516,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param trustStorePath
      *            The file name or URL of the trust store location
      */
-    public void setTrustStore(String trustStorePath)
+    public void setTrustStorePath(String trustStorePath)
     {
         checkNotStarted();
 

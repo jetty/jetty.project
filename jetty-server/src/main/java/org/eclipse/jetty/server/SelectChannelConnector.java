@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -55,35 +56,50 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     private volatile int _lingerTime = -1;
 
     
-    public SelectChannelConnector(Server server)
+    public SelectChannelConnector(
+        @Name("server") Server server)
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
     
-    public SelectChannelConnector(Server server,ConnectionFactory... factories)
+    public SelectChannelConnector(
+        @Name("server") Server server,
+        @Name("factories") ConnectionFactory... factories)
     {
         this(server,null,null,null,0,0,factories);
     }
     
-    public SelectChannelConnector(Server server,SslContextFactory sslContextFactory)
+    public SelectChannelConnector(
+        @Name("server") Server server,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
     
-    public SelectChannelConnector(Server server,SslContextFactory sslContextFactory,ConnectionFactory... factories)
+    public SelectChannelConnector(
+        @Name("server") Server server,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory,
+        @Name("factories") ConnectionFactory... factories)
     {
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
     }
 
     /**
      * @param server    The server this connector will be added to. Must not be null.
-     * @param factory TODO
      * @param executor  An executor for this connector or null to use the servers executor
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool      A buffer pool for this connector or null to use a default {@link ByteBufferPool}
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     * @param factories Zero or more {@link ConnectionFactory} instances.
      */
-    public SelectChannelConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors,int selectors,ConnectionFactory... factories)
+    public SelectChannelConnector(
+        @Name("server") Server server, 
+        @Name("executor") Executor executor, 
+        @Name("scheduler") Scheduler scheduler, 
+        @Name("bufferPool") ByteBufferPool pool, 
+        @Name("acceptors") int acceptors,
+        @Name("selectors") int selectors,
+        @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,pool,acceptors,factories);
         _manager = new ConnectorSelectorManager(selectors > 0 ? selectors : Math.max(1, (Runtime.getRuntime().availableProcessors()) / 4));

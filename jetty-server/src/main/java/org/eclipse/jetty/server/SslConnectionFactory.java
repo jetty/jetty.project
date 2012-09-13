@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslConnectionFactory extends AbstractConnectionFactory
@@ -39,12 +40,12 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         this(null,HttpVersion.HTTP_1_1.asString());
     }
     
-    public SslConnectionFactory(String nextProtocol)
+    public SslConnectionFactory(@Name("next") String nextProtocol)
     {
         this(null,nextProtocol);
     }
     
-    public SslConnectionFactory(SslContextFactory factory,String nextProtocol)
+    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
     {
         super("SSL-"+nextProtocol);
         _sslContextFactory=factory==null?new SslContextFactory():factory;

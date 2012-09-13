@@ -103,7 +103,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
         SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
 

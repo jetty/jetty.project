@@ -31,6 +31,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,7 +43,17 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
     private final PushStrategy pushStrategy;
     private final HttpChannelConfig httpChannelConfig;
 
-    public HTTPSPDYServerConnectionFactory(int version, HttpChannelConfig config, PushStrategy pushStrategy)
+    public HTTPSPDYServerConnectionFactory(
+        @Name("version") int version, 
+        @Name("config") HttpChannelConfig config)
+    {
+        this(version,config,new PushStrategy.None());
+    }
+    
+    public HTTPSPDYServerConnectionFactory(
+        @Name("version") int version, 
+        @Name("config") HttpChannelConfig config, 
+        @Name("pushStrategy") PushStrategy pushStrategy)
     {
         super(version);
         this.pushStrategy = pushStrategy;

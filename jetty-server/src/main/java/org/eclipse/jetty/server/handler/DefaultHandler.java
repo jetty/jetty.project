@@ -163,6 +163,10 @@ public class DefaultHandler extends AbstractHandler
             }
         }
 
+        writer.write("</ul><hr>");
+        writer.write("<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;");
+        writer.write("<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// Java Web Server</a><hr/>\n");
+
         writer.write("\n</BODY>\n</HTML>\n");
         writer.flush();
         response.setContentLength(writer.size());

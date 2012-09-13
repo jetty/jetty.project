@@ -63,7 +63,7 @@ public class SslUploadTest
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();
