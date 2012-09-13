@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,6 +42,11 @@ import static org.junit.Assert.fail;
 
 public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 {
+    public HttpRequestAbortTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void testAbortOnQueued() throws Exception
     {
@@ -50,6 +56,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override
@@ -85,6 +92,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override
@@ -117,6 +125,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -158,6 +167,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override

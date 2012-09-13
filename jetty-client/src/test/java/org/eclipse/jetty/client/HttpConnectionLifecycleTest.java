@@ -34,17 +34,22 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
+    public HttpConnectionLifecycleTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void test_SuccessfulRequest_ReturnsConnection() throws Exception
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -58,6 +63,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
+                .scheme(scheme)
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -102,7 +108,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -115,7 +120,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        client.newRequest(host, port).listener(new Request.Listener.Empty()
+        client.newRequest(host, port).scheme(scheme).listener(new Request.Listener.Empty()
         {
             @Override
             public void onBegin(Request request)
@@ -153,7 +158,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -166,6 +170,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
+                .scheme(scheme)
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -211,7 +216,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -226,6 +230,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
+                .scheme(scheme)
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -263,7 +268,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -276,6 +280,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
+                .scheme(scheme)
                 .send(new Response.Listener.Empty()
                 {
                     @Override
@@ -307,7 +312,6 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -320,6 +324,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
+                .scheme(scheme)
                 .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
                 .send(new Response.Listener.Empty()
                 {

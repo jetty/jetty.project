@@ -36,11 +36,17 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 {
+    public HttpResponseAbortTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void testAbortOnBegin() throws Exception
     {
@@ -48,6 +54,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .send(new Response.Listener.Empty()
                 {
                     @Override
@@ -73,6 +80,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .send(new Response.Listener.Empty()
                 {
                     @Override
@@ -117,6 +125,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .send(new Response.Listener.Empty()
                 {
                     @Override
@@ -160,7 +169,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        Future<ContentResponse> future = client.newRequest("localhost", connector.getLocalPort()).send();
+        Future<ContentResponse> future = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).send();
         ref.set(future);
         latch.countDown();
 

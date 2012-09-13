@@ -200,8 +200,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = getExchange();
         if (exchange != null)
             exchange.receive();
-        else
-            throw new IllegalStateException();
+        // If there is no exchange, we just ignore because the selector may be woken up by a remote close
     }
 
     protected void receive()
@@ -258,7 +257,9 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     public void close()
     {
-        super.close();
+        getEndPoint().shutdownOutput();
+        LOG.debug("{} oshut", this);
+        getEndPoint().close();
         LOG.debug("{} closed", this);
     }
 

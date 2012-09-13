@@ -31,11 +31,17 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpCookieTest extends AbstractHttpClientServerTest
 {
+    public HttpCookieTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void test_CookieIsStored() throws Exception
     {
@@ -51,7 +57,6 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";
@@ -86,7 +91,6 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";

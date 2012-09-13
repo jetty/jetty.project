@@ -102,12 +102,11 @@ public class HttpClient extends AggregateLifeCycle
     private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
     private final CookieStore cookieStore = new HttpCookieStore();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
+    private final SslContextFactory sslContextFactory;
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
     private volatile SelectorManager selectorManager;
-    private volatile SslContextFactory sslContextFactory;
-
     private volatile String agent = "Jetty/" + Jetty.VERSION;
     private volatile boolean followRedirects = true;
     private volatile int maxConnectionsPerAddress = 8;
@@ -123,14 +122,10 @@ public class HttpClient extends AggregateLifeCycle
         this(null);
     }
 
-    public HttpClient(Executor executor)
+    public HttpClient(SslContextFactory sslContextFactory)
     {
-        this.executor = executor;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
+        this.sslContextFactory = sslContextFactory;
+        addBean(sslContextFactory);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -201,34 +196,6 @@ public class HttpClient extends AggregateLifeCycle
         return authenticationStore;
     }
 
-    public long getIdleTimeout()
-    {
-        return idleTimeout;
-    }
-
-    public void setIdleTimeout(long idleTimeout)
-    {
-        this.idleTimeout = idleTimeout;
-    }
-
-    /**
-     * @return the address to bind socket channels to
-     * @see #setBindAddress(SocketAddress)
-     */
-    public SocketAddress getBindAddress()
-    {
-        return bindAddress;
-    }
-
-    /**
-     * @param bindAddress the address to bind socket channels to
-     * @see #getBindAddress()
-     */
-    public void setBindAddress(SocketAddress bindAddress)
-    {
-        this.bindAddress = bindAddress;
-    }
-
     public Future<ContentResponse> GET(String uri)
     {
         return GET(URI.create(uri));
@@ -296,26 +263,6 @@ public class HttpClient extends AggregateLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    public String getUserAgent()
-    {
-        return agent;
-    }
-
-    public void setUserAgent(String agent)
-    {
-        this.agent = agent;
-    }
-
-    public boolean isFollowRedirects()
-    {
-        return followRedirects;
-    }
-
-    public void setFollowRedirects(boolean follow)
-    {
-        this.followRedirects = follow;
-    }
-
     public void send(Request request, Response.Listener listener)
     {
         String scheme = request.scheme().toLowerCase();
@@ -328,61 +275,6 @@ public class HttpClient extends AggregateLifeCycle
             port = "https".equals(scheme) ? 443 : 80;
 
         provideDestination(scheme, host, port).send(request, listener);
-    }
-
-    public Executor getExecutor()
-    {
-        return executor;
-    }
-
-    public int getMaxConnectionsPerAddress()
-    {
-        return maxConnectionsPerAddress;
-    }
-
-    public void setMaxConnectionsPerAddress(int maxConnectionsPerAddress)
-    {
-        this.maxConnectionsPerAddress = maxConnectionsPerAddress;
-    }
-
-    public int getMaxQueueSizePerAddress()
-    {
-        return maxQueueSizePerAddress;
-    }
-
-    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
-    {
-        this.maxQueueSizePerAddress = maxQueueSizePerAddress;
-    }
-
-    public int getRequestBufferSize()
-    {
-        return requestBufferSize;
-    }
-
-    public void setRequestBufferSize(int requestBufferSize)
-    {
-        this.requestBufferSize = requestBufferSize;
-    }
-
-    public int getResponseBufferSize()
-    {
-        return responseBufferSize;
-    }
-
-    public void setResponseBufferSize(int responseBufferSize)
-    {
-        this.responseBufferSize = responseBufferSize;
-    }
-
-    public int getMaxRedirects()
-    {
-        return maxRedirects;
-    }
-
-    public void setMaxRedirects(int maxRedirects)
-    {
-        this.maxRedirects = maxRedirects;
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
@@ -454,6 +346,134 @@ public class HttpClient extends AggregateLifeCycle
         return null;
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    {
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
+    /**
+     * @return the address to bind socket channels to
+     * @see #setBindAddress(SocketAddress)
+     */
+    public SocketAddress getBindAddress()
+    {
+        return bindAddress;
+    }
+
+    /**
+     * @param bindAddress the address to bind socket channels to
+     * @see #getBindAddress()
+     */
+    public void setBindAddress(SocketAddress bindAddress)
+    {
+        this.bindAddress = bindAddress;
+    }
+
+    public String getUserAgent()
+    {
+        return agent;
+    }
+
+    public void setUserAgent(String agent)
+    {
+        this.agent = agent;
+    }
+
+    public boolean isFollowRedirects()
+    {
+        return followRedirects;
+    }
+
+    public void setFollowRedirects(boolean follow)
+    {
+        this.followRedirects = follow;
+    }
+
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public void setExecutor(Executor executor)
+    {
+        this.executor = executor;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public void setScheduler(Scheduler scheduler)
+    {
+        this.scheduler = scheduler;
+    }
+
+    public int getMaxConnectionsPerAddress()
+    {
+        return maxConnectionsPerAddress;
+    }
+
+    public void setMaxConnectionsPerAddress(int maxConnectionsPerAddress)
+    {
+        this.maxConnectionsPerAddress = maxConnectionsPerAddress;
+    }
+
+    public int getMaxQueueSizePerAddress()
+    {
+        return maxQueueSizePerAddress;
+    }
+
+    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
+    {
+        this.maxQueueSizePerAddress = maxQueueSizePerAddress;
+    }
+
+    public int getRequestBufferSize()
+    {
+        return requestBufferSize;
+    }
+
+    public void setRequestBufferSize(int requestBufferSize)
+    {
+        this.requestBufferSize = requestBufferSize;
+    }
+
+    public int getResponseBufferSize()
+    {
+        return responseBufferSize;
+    }
+
+    public void setResponseBufferSize(int responseBufferSize)
+    {
+        this.responseBufferSize = responseBufferSize;
+    }
+
+    public int getMaxRedirects()
+    {
+        return maxRedirects;
+    }
+
+    public void setMaxRedirects(int maxRedirects)
+    {
+        this.maxRedirects = maxRedirects;
+    }
+
     protected class ClientSelectorManager extends SelectorManager
     {
         public ClientSelectorManager()
@@ -490,7 +510,7 @@ public class HttpClient extends AggregateLifeCycle
                 else
                 {
                     SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
-                    engine.setUseClientMode(false);
+                    engine.setUseClientMode(true);
 
                     SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
 

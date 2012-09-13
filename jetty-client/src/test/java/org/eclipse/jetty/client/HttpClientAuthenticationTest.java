@@ -40,12 +40,18 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
     private String realm = "TestRealm";
+
+    public HttpClientAuthenticationTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
 
     public void startBasic(Handler handler) throws Exception
     {
@@ -86,14 +92,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_BasicAuthentication() throws Exception
     {
         startBasic(new EmptyServerHandler());
-        test_Authentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        test_Authentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
     }
 
     @Test
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyServerHandler());
-        test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
+        test_Authentication(new DigestAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
     }
 
     private void test_Authentication(Authentication authentication) throws Exception
@@ -112,7 +118,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request without Authentication causes a 401
-        Request request = client.newRequest("localhost", connector.getLocalPort()).path("/test");
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/test");
         ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.status());

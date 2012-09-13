@@ -242,7 +242,6 @@ public class HttpSender
         BufferUtil.clear(header);
         BufferUtil.clear(chunk);
         releaseBuffers();
-        connection.getEndPoint().shutdownOutput();
         generator.abort();
         failed = true;
 

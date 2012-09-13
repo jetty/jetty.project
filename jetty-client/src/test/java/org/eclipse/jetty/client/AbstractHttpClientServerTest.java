@@ -18,18 +18,31 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.model.FrameworkMethod;
 
-public class AbstractHttpClientServerTest
+@RunWith(Parameterized.class)
+public abstract class AbstractHttpClientServerTest
 {
+    @Parameterized.Parameters
+    public static Collection<SslContextFactory[]> parameters()
+    {
+        return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});
+    }
+
     @Rule
     public final TestWatchman testName = new TestWatchman()
     {
@@ -43,22 +56,39 @@ public class AbstractHttpClientServerTest
         }
     };
 
+    protected SslContextFactory sslContextFactory;
+    protected String scheme;
     protected Server server;
     protected HttpClient client;
     protected NetworkConnector connector;
 
+    public AbstractHttpClientServerTest(SslContextFactory sslContextFactory)
+    {
+        this.sslContextFactory = sslContextFactory;
+        this.scheme = sslContextFactory == null ? "http" : "https";
+    }
+
     public void start(Handler handler) throws Exception
     {
+        if (sslContextFactory != null)
+        {
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+            sslContextFactory.setTrustStorePassword("storepwd");
+        }
+
         if (server == null)
             server = new Server();
-        connector = new SelectChannelConnector(server);
+        connector = new SelectChannelConnector(server, sslContextFactory);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
 
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
-        client = new HttpClient(executor);
+        client = new HttpClient(sslContextFactory);
+        client.setExecutor(executor);
         client.start();
     }
 
