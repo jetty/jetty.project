@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.client.util.StreamingResponseListener;
 import org.eclipse.jetty.http.HttpCookie;
@@ -82,7 +82,7 @@ public class Usage
         HttpClient client = new HttpClient();
         final AtomicReference<Response> responseRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", 8080).send(new Response.Listener.Adapter()
+        client.newRequest("localhost", 8080).send(new Response.Listener.Empty()
         {
             @Override
             public void onSuccess(Response response)
@@ -119,9 +119,9 @@ public class Usage
         try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", 8080);
-            BufferingResponseListener listener = new BufferingResponseListener();
+            BlockingResponseListener listener = new BlockingResponseListener();
             connection.send(request, listener);
-            Response response = listener.await(5, TimeUnit.SECONDS);
+            Response response = listener.get(5, TimeUnit.SECONDS);
             Assert.assertNotNull(response);
             Assert.assertEquals(200, response.status());
         }

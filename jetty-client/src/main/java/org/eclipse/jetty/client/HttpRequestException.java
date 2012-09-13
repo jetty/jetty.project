@@ -16,27 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.util;
+package org.eclipse.jetty.client;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.client.api.Request;
 
-import org.eclipse.jetty.client.api.Response;
-
-public class StreamingResponseListener extends Response.Listener.Empty
+public class HttpRequestException extends Throwable
 {
-    public Response get(long timeout, TimeUnit seconds)
+    private final Request request;
+
+    public HttpRequestException(String message, Request request)
     {
-        return null;
+        super(message);
+        this.request = request;
     }
 
-    public InputStream getInputStream()
+    public Request getRequest()
     {
-        return null;
-    }
-
-    public void writeTo(OutputStream outputStream)
-    {
+        return request;
     }
 }

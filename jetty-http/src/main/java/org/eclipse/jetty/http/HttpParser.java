@@ -1111,6 +1111,11 @@ public class HttpParser
                         }
                         break;
                     }
+                    case CLOSED:
+                    {
+                        BufferUtil.clear(buffer);
+                        return false;
+                    }
                 }
             }
 
@@ -1159,7 +1164,7 @@ public class HttpParser
 
             case CLOSED:
                 break;
-                
+
             default:
                 setState(State.END);
                 if (!_headResponse)

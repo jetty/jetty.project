@@ -129,7 +129,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(request, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)
@@ -158,7 +158,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(request, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)

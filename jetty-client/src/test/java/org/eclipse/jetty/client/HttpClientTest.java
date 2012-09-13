@@ -234,7 +234,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         }
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -253,7 +253,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -299,7 +299,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
@@ -309,7 +309,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -354,7 +354,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -414,7 +414,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         return Arrays.asList(ByteBuffer.allocate(chunkSize), null).iterator();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -444,7 +444,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         destination.getActiveConnections().peek().close();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)

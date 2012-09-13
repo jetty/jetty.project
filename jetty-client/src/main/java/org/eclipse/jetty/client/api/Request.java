@@ -231,6 +231,18 @@ public interface Request
     void send(Response.Listener listener);
 
     /**
+     * Attempts to abort the send of this request.
+     *
+     * @see #aborted()
+     */
+    void abort();
+
+    /**
+     * @return whether {@link #abort()} was called
+     */
+    boolean aborted();
+
+    /**
      * Listener for request events
      */
     public interface Listener

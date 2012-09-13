@@ -250,6 +250,11 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
+    public void abort(HttpResponse response)
+    {
+        receiver.fail(new HttpResponseException("Response aborted", response));
+    }
+
     @Override
     public void close()
     {

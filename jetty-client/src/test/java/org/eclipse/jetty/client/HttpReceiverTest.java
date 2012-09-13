@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -66,6 +66,7 @@ public class HttpReceiverTest
         HttpExchange exchange = new HttpExchange(conversation, connection, null, listener);
         conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
+        exchange.requestComplete(true);
         return exchange;
     }
 
@@ -78,7 +79,7 @@ public class HttpReceiverTest
                 "\r\n");
         final AtomicReference<Response> responseRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        HttpExchange exchange = newExchange(new Response.Listener.Adapter()
+        HttpExchange exchange = newExchange(new Response.Listener.Empty()
         {
             @Override
             public void onSuccess(Response response)
@@ -110,11 +111,11 @@ public class HttpReceiverTest
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
                 content);
-        BufferingResponseListener listener = new BufferingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener();
         HttpExchange exchange = newExchange(listener);
         exchange.receive();
 
-        Response response = listener.await(5, TimeUnit.SECONDS);
+        Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertEquals("OK", response.reason());
@@ -123,7 +124,7 @@ public class HttpReceiverTest
         Assert.assertNotNull(headers);
         Assert.assertEquals(1, headers.size());
         Assert.assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
-        String received = listener.contentAsString("UTF-8");
+        String received = listener.getContent("UTF-8");
         Assert.assertEquals(content, received);
     }
 
@@ -137,7 +138,7 @@ public class HttpReceiverTest
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
                 content1);
-        BufferingResponseListener listener = new BufferingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener();
         HttpExchange exchange = newExchange(listener);
         exchange.receive();
         endPoint.setInputEOF();
@@ -145,7 +146,7 @@ public class HttpReceiverTest
 
         try
         {
-            listener.await(5, TimeUnit.SECONDS);
+            listener.get(5, TimeUnit.SECONDS);
             Assert.fail();
         }
         catch (ExecutionException e)
@@ -161,7 +162,7 @@ public class HttpReceiverTest
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
-        BufferingResponseListener listener = new BufferingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener();
         HttpExchange exchange = newExchange(listener);
         exchange.receive();
         // Simulate an idle timeout
@@ -169,7 +170,7 @@ public class HttpReceiverTest
 
         try
         {
-            listener.await(5, TimeUnit.SECONDS);
+            listener.get(5, TimeUnit.SECONDS);
             Assert.fail();
         }
         catch (ExecutionException e)
@@ -185,13 +186,13 @@ public class HttpReceiverTest
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
-        BufferingResponseListener listener = new BufferingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener();
         HttpExchange exchange = newExchange(listener);
         exchange.receive();
 
         try
         {
-            listener.await(5, TimeUnit.SECONDS);
+            listener.get(5, TimeUnit.SECONDS);
             Assert.fail();
         }
         catch (ExecutionException e)

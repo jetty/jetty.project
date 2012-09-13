@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -66,31 +67,18 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
 
-    private class AuthenticationListener extends Response.Listener.Adapter
+    private class AuthenticationListener extends BufferingResponseListener
     {
-        private byte[] buffer = new byte[0];
-
-        @Override
-        public void onContent(Response response, ByteBuffer content)
+        private AuthenticationListener()
         {
-            if (buffer.length == maxContentLength)
-                return;
-
-            long newLength = buffer.length + content.remaining();
-            if (newLength > maxContentLength)
-                newLength = maxContentLength;
-
-            byte[] newBuffer = new byte[(int)newLength];
-            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-            content.get(newBuffer, buffer.length, content.remaining());
-            buffer = newBuffer;
+            super(maxContentLength);
         }
 
         @Override
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            ContentResponse response = new HttpContentResponse(result.getResponse(), buffer);
+            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent());
             if (result.isFailed())
             {
                 Throwable failure = result.getFailure();
@@ -136,7 +124,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             }
 
             authnResult.apply(request);
-            request.send(new Adapter()
+            request.send(new Response.Listener.Empty()
             {
                 @Override
                 public void onSuccess(Response response)

@@ -51,7 +51,7 @@ public interface Response
 
         public void onComplete(Result result);
 
-        public static class Adapter implements Listener
+        public static class Empty implements Listener
         {
             @Override
             public void onBegin(Response response)

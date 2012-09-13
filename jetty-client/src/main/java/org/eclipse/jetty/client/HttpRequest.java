@@ -31,15 +31,13 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.FutureCallback;
 
 public class HttpRequest implements Request
 {
@@ -59,6 +57,7 @@ public class HttpRequest implements Request
     private Listener listener;
     private ContentProvider content;
     private boolean followRedirects = true;
+    private volatile boolean aborted;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -296,28 +295,27 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        final FutureCallback<ContentResponse> callback = new FutureCallback<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
-        {
-            @Override
-            public void onComplete(Result result)
-            {
-                super.onComplete(result);
-                HttpContentResponse contentResponse = new HttpContentResponse(result.getResponse(), content());
-                if (!result.isFailed())
-                    callback.completed(contentResponse);
-                else
-                    callback.failed(contentResponse, result.getFailure());
-            }
-        };
+        BlockingResponseListener listener = new BlockingResponseListener();
         send(listener);
-        return callback;
+        return listener;
     }
 
     @Override
     public void send(final Response.Listener listener)
     {
         client.send(this, listener);
+    }
+
+    @Override
+    public void abort()
+    {
+        aborted = true;
+    }
+
+    @Override
+    public boolean aborted()
+    {
+        return aborted;
     }
 
     @Override

@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 
-public class RedirectProtocolHandler extends Response.Listener.Adapter implements ProtocolHandler
+public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
 {
     private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirect";
 
@@ -128,7 +128,7 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
             // Copy content
             redirect.content(request.content());
 
-            redirect.send(new Adapter());
+            redirect.send(new Response.Listener.Empty());
         }
         else
         {

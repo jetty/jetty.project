@@ -66,7 +66,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onHeaders(Response response)
@@ -129,7 +129,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             {
                 failureLatch.countDown();
             }
-        }).send(new Response.Listener.Adapter()
+        }).send(new Response.Listener.Empty()
         {
             @Override
             public void onComplete(Result result)
@@ -181,7 +181,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -234,7 +234,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         failureLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -276,7 +276,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -321,7 +321,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
                 .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener.Empty()
                 {
                     @Override
                     public void onComplete(Result result)

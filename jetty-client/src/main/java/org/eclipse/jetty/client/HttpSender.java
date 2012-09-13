@@ -60,12 +60,20 @@ public class HttpSender
 
     public void send(HttpExchange exchange)
     {
-        LOG.debug("Sending {}", exchange.request());
-        requestNotifier.notifyBegin(exchange.request());
-        ContentProvider content = exchange.request().content();
-        this.contentLength = content == null ? -1 : content.length();
-        this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
-        send();
+        Request request = exchange.request();
+        if (request.aborted())
+        {
+            fail(new HttpRequestException("Request aborted", request));
+        }
+        else
+        {
+            LOG.debug("Sending {}", request);
+            requestNotifier.notifyBegin(request);
+            ContentProvider content = request.content();
+            this.contentLength = content == null ? -1 : content.length();
+            this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
+            send();
+        }
     }
 
     private void send()
@@ -122,43 +130,45 @@ public class HttpSender
                     }
                     case FLUSH:
                     {
-                        StatefulExecutorCallback callback = new StatefulExecutorCallback(client.getExecutor())
+                        if (request.aborted())
                         {
-                            @Override
-                            protected void pendingCompleted()
+                            fail(new HttpRequestException("Request aborted", request));
+                        }
+                        else
+                        {
+                            StatefulExecutorCallback callback = new StatefulExecutorCallback(client.getExecutor())
+                            {
+                                @Override
+                                protected void pendingCompleted()
+                                {
+                                    if (!committed)
+                                        committed(request);
+                                    send();
+                                }
+
+                                @Override
+                                protected void failed(Throwable x)
+                                {
+                                    fail(x);
+                                }
+                            };
+                            if (header == null)
+                                header = BufferUtil.EMPTY_BUFFER;
+                            if (chunk == null)
+                                chunk = BufferUtil.EMPTY_BUFFER;
+                            endPoint.write(null, callback, header, chunk, content);
+                            if (callback.pending())
+                                return;
+
+                            if (callback.completed())
                             {
                                 if (!committed)
                                     committed(request);
-                                send();
+
+                                releaseBuffers();
+                                content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
+                                lastContent = !contentChunks.hasNext();
                             }
-
-                            @Override
-                            protected void failed(Throwable x)
-                            {
-                                fail(x);
-                            }
-                        };
-                        if (header == null)
-                            header = BufferUtil.EMPTY_BUFFER;
-                        if (chunk == null)
-                            chunk = BufferUtil.EMPTY_BUFFER;
-                        LOG.debug("Writing {} {} {}", header, chunk, content);
-                        endPoint.write(null, callback, header, chunk, content);
-                        if (callback.pending())
-                        {
-                            LOG.debug("Write incomplete {} {} {}", header, chunk, content);
-                            return;
-                        }
-
-                        if (callback.completed())
-                        {
-                            LOG.debug("Write complete {} {} {}", header, chunk, content);
-                            if (!committed)
-                                committed(request);
-
-                            releaseBuffers();
-                            content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
-                            lastContent = !contentChunks.hasNext();
                         }
                         break;
                     }
