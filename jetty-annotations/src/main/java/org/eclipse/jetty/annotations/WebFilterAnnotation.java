@@ -31,6 +31,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -52,6 +53,11 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
     public WebFilterAnnotation(WebAppContext context, String className)
     {
         super(context, className);
+    }
+    
+    public WebFilterAnnotation(WebAppContext context, String className, Resource resource)
+    {
+        super(context, className, resource);
     }
 
     /** 

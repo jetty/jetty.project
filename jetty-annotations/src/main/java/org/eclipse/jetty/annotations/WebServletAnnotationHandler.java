@@ -42,6 +42,11 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         super(context);
     }
     
+    public WebServletAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
+    {
+        super(context, list);
+    }
+    
     
     /** 
      * Handle discovering a WebServlet annotation.
@@ -55,7 +60,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         if (!"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;    
        
-        WebServletAnnotation annotation = new WebServletAnnotation (_context, className);
+        WebServletAnnotation annotation = new WebServletAnnotation (_context, className, _resource);
         addAnnotation(annotation);
     }
 
@@ -69,5 +74,12 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
                              List<Value> values)
     {
         LOG.warn ("@WebServlet annotation not supported for methods");
+    }
+
+
+    @Override
+    public String getAnnotationName()
+    {
+        return "javax.servlet.annotation.WebServlet";
     }    
 }

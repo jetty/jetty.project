@@ -40,11 +40,16 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     {
         super(context);
     }
-
+    
+    public WebFilterAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
+    {
+        super(context, list);
+    }
+    
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
-        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className);
+        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className, _resource);
         addAnnotation(wfAnnotation);
     }
 
@@ -58,6 +63,12 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
                              List<Value> values)
     {
         LOG.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
+    }
+
+    @Override
+    public String getAnnotationName()
+    {
+        return "javax.servlet.annotation.WebFilter";
     }
 
 }
