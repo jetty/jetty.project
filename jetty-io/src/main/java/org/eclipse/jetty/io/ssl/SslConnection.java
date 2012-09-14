@@ -21,6 +21,7 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -79,6 +80,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
+    private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
     private static final ByteBuffer __FLUSH_CALLED_FILL= BufferUtil.allocate(0);
     private final ByteBufferPool _bufferPool;
@@ -150,7 +152,7 @@ public class SslConnection extends AbstractConnection
             getEndPoint().close();
             throw new RuntimeIOException(x);
         }
-        
+
         super.onOpen();
     }
 
@@ -189,7 +191,8 @@ public class SslConnection extends AbstractConnection
         // to do the fill and/or flush again and these calls will do the actually
         // filling.
 
-        LOG.debug("onFillable enter {}", getEndPoint());
+        if (DEBUG)
+            LOG.debug("onFillable enter {}", getEndPoint());
 
         // wake up whoever is doing the fill or the flush so they can
         // do all the filling, unwrapping, wrapping and flushing
@@ -205,7 +208,8 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        LOG.debug("onFillable exit {}", getEndPoint());
+        if (DEBUG)
+            LOG.debug("onFillable exit {}", getEndPoint());
     }
 
     /* ------------------------------------------------------------ */
@@ -268,7 +272,8 @@ public class SslConnection extends AbstractConnection
                 // data.  In either case the appropriate callback is passed on.
                 synchronized (DecryptedEndPoint.this)
                 {
-                    LOG.debug("write.complete {}", SslConnection.this.getEndPoint());
+                    if (DEBUG)
+                        LOG.debug("write.complete {}", SslConnection.this.getEndPoint());
 
                     releaseEncryptedOutputBuffer();
 
@@ -292,7 +297,8 @@ public class SslConnection extends AbstractConnection
                 // data.  In either case the appropriate callback is passed on.
                 synchronized (DecryptedEndPoint.this)
                 {
-                    LOG.debug("{} write.failed", SslConnection.this, x);
+                    if (DEBUG)
+                        LOG.debug("{} write.failed", SslConnection.this, x);
                     if (_encryptedOutput != null)
                         BufferUtil.clear(_encryptedOutput);
                     releaseEncryptedOutputBuffer();
@@ -345,7 +351,8 @@ public class SslConnection extends AbstractConnection
             // if neither then we should just try the flush again.
             synchronized (DecryptedEndPoint.this)
             {
-                LOG.debug("onIncompleteFlush {}", getEndPoint());
+                if (DEBUG)
+                    LOG.debug("onIncompleteFlush {}", getEndPoint());
                 // If we have pending output data,
                 if (BufferUtil.hasContent(_encryptedOutput))
                 {
@@ -447,7 +454,8 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int fill(ByteBuffer buffer) throws IOException
         {
-            LOG.debug("{} fill enter", SslConnection.this);
+            if (DEBUG)
+                LOG.debug("{} fill enter", SslConnection.this);
             try
             {
                 // Do we already have some decrypted data?
@@ -474,7 +482,8 @@ public class SslConnection extends AbstractConnection
                 {
                     // Let's try reading some encrypted data... even if we have some already.
                     int net_filled = getEndPoint().fill(_encryptedInput);
-                    LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
+                    if (DEBUG)
+                        LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
                     if (net_filled > 0)
                         _underFlown = false;
 
@@ -483,7 +492,8 @@ public class SslConnection extends AbstractConnection
                     int pos = BufferUtil.flipToFill(app_in);
                     SSLEngineResult unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
                     BufferUtil.flipToFlush(app_in, pos);
-                    LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
+                    if (DEBUG)
+                        LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
 
                     // and deal with the results
                     switch (unwrapResult.getStatus())
@@ -528,7 +538,7 @@ public class SslConnection extends AbstractConnection
                                         // return -1 to the caller.
                                         return unwrapResult.bytesProduced();
                                     }
-                                    catch(IOException e)
+                                    catch (IOException e)
                                     {
                                         LOG.debug(e);
                                         // The flush failed, oh well nothing more to do than tell the app
@@ -614,7 +624,6 @@ public class SslConnection extends AbstractConnection
             catch (SSLException e)
             {
                 getEndPoint().close();
-                LOG.debug(e);
                 throw new EofException(e);
             }
             catch (Exception e)
@@ -641,7 +650,8 @@ public class SslConnection extends AbstractConnection
                     _bufferPool.release(_decryptedInput);
                     _decryptedInput = null;
                 }
-                LOG.debug("{} fill exit", SslConnection.this);
+                if (DEBUG)
+                    LOG.debug("{} fill exit", SslConnection.this);
             }
         }
 
@@ -655,12 +665,17 @@ public class SslConnection extends AbstractConnection
             // it is the applications responsibility to call flush again - either in a busy loop
             // or better yet by using EndPoint#write to do the flushing.
 
-            LOG.debug("{} flush enter {}", SslConnection.this, Arrays.toString(appOuts));
+            if (DEBUG)
+                LOG.debug("{} flush enter {}", SslConnection.this, Arrays.toString(appOuts));
             int consumed=0;
             try
             {
                 if (_cannotAcceptMoreAppDataToFlush)
+                {
+                    if (_sslEngine.isOutboundDone())
+                        throw new EofException(new ClosedChannelException());
                     return false;
+                }
 
                 // We will need a network buffer
                 if (_encryptedOutput == null)
@@ -673,7 +688,8 @@ public class SslConnection extends AbstractConnection
                     BufferUtil.compact(_encryptedOutput);
                     int pos = BufferUtil.flipToFill(_encryptedOutput);
                     SSLEngineResult wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
-                    LOG.debug("{} wrap {}", SslConnection.this, wrapResult);
+                    if (DEBUG)
+                        LOG.debug("{} wrap {}", SslConnection.this, wrapResult);
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
                     if (wrapResult.bytesConsumed()>0)
                         consumed+=wrapResult.bytesConsumed();
@@ -711,7 +727,7 @@ public class SslConnection extends AbstractConnection
                             throw new IllegalStateException();
 
                         default:
-                            if (LOG.isDebugEnabled())
+                            if (DEBUG)
                                 LOG.debug("{} {} {}", this, wrapResult.getStatus(), BufferUtil.toDetailString(_encryptedOutput));
 
                             // if we have net bytes, let's try to flush them
@@ -759,7 +775,8 @@ public class SslConnection extends AbstractConnection
             }
             finally
             {
-                LOG.debug("{} flush exit, consumed {}", SslConnection.this, consumed);
+                if (DEBUG)
+                    LOG.debug("{} flush exit, consumed {}", SslConnection.this, consumed);
                 releaseEncryptedOutputBuffer();
             }
         }
