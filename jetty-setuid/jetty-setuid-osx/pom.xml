@@ -68,7 +68,7 @@
         <extensions>true</extensions>
         <configuration>
           <javahOS>mac</javahOS>
-          <jdkIncludePath>${java.home}/include</jdkIncludePath>
+          <jdkIncludePath>/System/Library/Frameworks/JavaVM.framework/Headers</jdkIncludePath>
           <compilerStartOptions>
             <compilerStartOption>-fPIC -O</compilerStartOption>
           </compilerStartOptions>
