@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -35,6 +36,8 @@ public class HttpExchange
     private final Request request;
     private final Response.Listener listener;
     private final HttpResponse response;
+    private volatile Throwable requestFailure;
+    private volatile Throwable responseFailure;
 
     public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, Response.Listener listener)
     {
@@ -70,18 +73,20 @@ public class HttpExchange
         connection.receive();
     }
 
-    public boolean requestComplete(boolean success)
+    public Result requestComplete(Throwable failure)
     {
+        this.requestFailure = failure;
         int requestSuccess = 0b0011;
         int requestFailure = 0b0001;
-        return complete(success ? requestSuccess : requestFailure);
+        return complete(failure == null ? requestSuccess : requestFailure);
     }
 
-    public boolean responseComplete(boolean success)
+    public Result responseComplete(Throwable failure)
     {
+        this.responseFailure = failure;
         int responseSuccess = 0b1100;
         int responseFailure = 0b0100;
-        return complete(success ? responseSuccess : responseFailure);
+        return complete(failure == null ? responseSuccess : responseFailure);
     }
 
     /**
@@ -98,23 +103,23 @@ public class HttpExchange
      * whether the exchange is completed and whether is successful.
      *
      * @param code the bits representing the status code for either the request or the response
-     * @return whether the exchange completed (either successfully or not)
+     * @return the result if the exchange completed, or null if the exchange did not complete
      */
-    private boolean complete(int code)
+    private Result complete(int code)
     {
         int status = complete.addAndGet(code);
         int completed = 0b0101;
         if ((status & completed) == completed)
         {
-            LOG.debug("{} complete", this);
+            boolean success = status == 0b1111;
+            LOG.debug("{} complete success={}", this);
             // Request and response completed
             if (this == conversation.last())
                 conversation.complete();
-            int success = 0b1111;
-            connection.complete(this, status == success);
-            return true;
+            connection.complete(this, success);
+            return new Result(request, requestFailure, response, responseFailure);
         }
-        return false;
+        return null;
     }
 
     public void abort()

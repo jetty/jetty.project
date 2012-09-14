@@ -141,7 +141,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 });
-        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test(expected = CancellationException.class)

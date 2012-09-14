@@ -118,7 +118,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
-        final CountDownLatch headersLatch = new CountDownLatch(1);
+        final CountDownLatch beginLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port).scheme(scheme).listener(new Request.Listener.Empty()
         {
@@ -126,7 +126,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             public void onBegin(Request request)
             {
                 activeConnections.peek().close();
-                headersLatch.countDown();
+                beginLatch.countDown();
             }
 
             @Override
@@ -146,7 +146,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             }
         });
 
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(beginLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());

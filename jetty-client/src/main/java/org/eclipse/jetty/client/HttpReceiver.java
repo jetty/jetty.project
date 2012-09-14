@@ -44,6 +44,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final HttpParser parser = new HttpParser(this);
     private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
+    private volatile boolean success;
     private volatile boolean failed;
 
     public HttpReceiver(HttpConnection connection)
@@ -74,7 +75,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 }
                 else
                 {
+                    // Shutting down the parser may invoke messageComplete()
                     parser.shutdownInput();
+                    if (!success)
+                        fail(new EOFException());
                     break;
                 }
             }
@@ -193,47 +197,42 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     protected void success()
     {
         parser.reset();
+        success = true;
 
         HttpExchange exchange = connection.getExchange();
         HttpResponse response = exchange.response();
         LOG.debug("Received {}", response);
 
-        boolean exchangeComplete = exchange.responseComplete(true);
+        Result result = exchange.responseComplete(null);
 
         HttpConversation conversation = exchange.conversation();
         notifier.notifySuccess(conversation.listener(), response);
-        if (exchangeComplete)
-        {
-            Result result = new Result(exchange.request(), response);
+        if (result != null)
             notifier.notifyComplete(conversation.listener(), result);
-        }
     }
 
     protected void fail(Throwable failure)
     {
-        parser.close();
-        failed = true;
-
         HttpExchange exchange = connection.getExchange();
-
         // In case of a response error, the failure has already been notified
         // and it is possible that a further attempt to read in the receive
-        // loop throws an exception that reenters here but without exchange
+        // loop throws an exception that reenters here but without exchange;
+        // or, the server could just have timed out the connection.
         if (exchange == null)
             return;
+
+        parser.close();
+        failed = true;
 
         HttpResponse response = exchange.response();
         LOG.debug("Failed {} {}", response, failure);
 
-        boolean exchangeComplete = exchange.responseComplete(false);
+        Result result = exchange.responseComplete(failure);
 
         HttpConversation conversation = exchange.conversation();
         notifier.notifyFailure(conversation.listener(), response, failure);
-        if (exchangeComplete)
-        {
-            Result result = new Result(exchange.request(), response, failure);
+        if (result != null)
             notifier.notifyComplete(conversation.listener(), result);
-        }
     }
 
     @Override

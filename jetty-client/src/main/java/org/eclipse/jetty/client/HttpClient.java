@@ -517,6 +517,7 @@ public class HttpClient extends AggregateLifeCycle
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
                     HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
                     appEndPoint.setConnection(connection);
+                    connectionOpened(connection);
                     callback.callback.completed(connection);
 
                     return sslConnection;
@@ -530,7 +531,7 @@ public class HttpClient extends AggregateLifeCycle
             }
         }
 
-        
+
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
@@ -543,7 +544,7 @@ public class HttpClient extends AggregateLifeCycle
         {
             getExecutor().execute(task);
         }
-        
+
         @Override
         public void connectionOpened(org.eclipse.jetty.io.Connection connection)
         {

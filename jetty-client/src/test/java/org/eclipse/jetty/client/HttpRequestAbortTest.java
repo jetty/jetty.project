@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
@@ -161,9 +162,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        // Test can behave in 2 ways:
-        // A) if the request is failed before the request arrived, then we get an ExecutionException
-        // B) if the request is failed after the request arrived, then we get a 500
+        // Test can behave in 3 ways:
+        // A) non-SSL, if the request is failed before the response arrived, then we get an ExecutionException
+        // B) non-SSL, if the request is failed after the response arrived, then we get a 500
+        // C) SSL, the server tries to write the 500, but the connection is already closed, the client
+        //    reads -1 with a pending exchange and fails the response with an EOFException
         try
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
@@ -190,9 +193,22 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            HttpRequestException xx = (HttpRequestException)x.getCause();
-            Request request = xx.getRequest();
-            Assert.assertNotNull(request);
+            Throwable cause = x.getCause();
+            if (cause instanceof EOFException)
+            {
+                // Server closed abruptly, behavior C
+            }
+            else if (cause instanceof HttpRequestException)
+            {
+                // Request failed, behavior A
+                HttpRequestException xx = (HttpRequestException)cause;
+                Request request = xx.getRequest();
+                Assert.assertNotNull(request);
+            }
+            else
+            {
+                throw x;
+            }
         }
     }
 }
