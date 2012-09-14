@@ -20,7 +20,6 @@ package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -43,16 +42,16 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     private final List<String> protocols;
     private final String defaultProtocol;
     private boolean completed; // No need to be volatile: it is modified and read by the same thread
-    
-    
+
+
     public NextProtoNegoServerConnection(DecryptedEndPoint endPoint, Connector connector, List<String>protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
-        this.connector = connector;      
+        this.connector = connector;
         this.protocols = protocols;
         this.defaultProtocol=defaultProtocol;
         engine = endPoint.getSslConnection().getSSLEngine();
-        
+
         NextProtoNego.put(engine,this);
     }
 
@@ -62,12 +61,12 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         super.onOpen();
         fillInterested();
     }
-    
+
     @Override
-    public void onClose() 
+    public void onClose()
     {
         super.onClose();
-    };
+    }
 
     @Override
     public void onFillable()
