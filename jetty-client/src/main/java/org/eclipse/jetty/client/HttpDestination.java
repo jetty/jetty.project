@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -33,10 +36,12 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpDestination implements Destination, AutoCloseable
+public class HttpDestination implements Destination, AutoCloseable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
@@ -299,6 +304,24 @@ public class HttpDestination implements Destination, AutoCloseable
         connectionCount.set(0);
 
         LOG.debug("Closed {}", this);
+    }
+
+    @Override
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        AggregateLifeCycle.dumpObject(out, this + " - requests queued: " + requests.size());
+        List<String> connections = new ArrayList<>();
+        for (Connection connection : idleConnections)
+            connections.add(connection + " - IDLE");
+        for (Connection connection : activeConnections)
+            connections.add(connection + " - ACTIVE");
+        AggregateLifeCycle.dump(out, indent, connections);
     }
 
     @Override
