@@ -30,7 +30,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -281,9 +280,10 @@ public class SPDYClient
                         DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.executor, client);
                         sslEndPoint.setConnection(connection);
+                        connectionOpened(connection);
                         return sslConnection;
                     }
-                    
+
                     SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
                     return connectionFactory.newConnection(channel, endPoint, attachment);
                 }
@@ -293,7 +293,6 @@ public class SPDYClient
                     throw x;
                 }
             }
-
 
             @Override
             public void connectionOpened(Connection connection)
