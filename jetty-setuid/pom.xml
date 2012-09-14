@@ -12,7 +12,7 @@
 		<modules>
 			<module>jetty-setuid-java</module>
 			<module>jetty-setuid-native</module>
-			<module>jetty-setuid-test</module>
+			<!-- module>jetty-setuid-test</module -->
 		</modules>
     <profiles>
         <profile>

@@ -1,19 +1,23 @@
-// ========================================================================
-// Copyright 2002-2005 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
-// http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 #include <jni.h>
-#include "org_mortbay_setuid_SetUID.h"
+#include "org_eclipse_jetty_setuid_SetUID.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/resource.h>
@@ -40,19 +44,19 @@ int getJavaFieldInt(JNIEnv *env, jobject obj, const char *name);
 
   
 JNIEXPORT jint JNICALL 
-Java_org_mortbay_setuid_SetUID_setuid (JNIEnv * env, jclass j, jint uid)
+Java_org_eclipse_jetty_setuid_SetUID_setuid (JNIEnv * env, jclass j, jint uid)
 {
     return((jint)setuid((uid_t)uid));
 }
 
 JNIEXPORT jint JNICALL 
-Java_org_mortbay_setuid_SetUID_setumask (JNIEnv * env, jclass j, jint mask)
+Java_org_eclipse_jetty_setuid_SetUID_setumask (JNIEnv * env, jclass j, jint mask)
 {
     return((jint)umask((mode_t)mask));
 }
   
 JNIEXPORT jint JNICALL 
-Java_org_mortbay_setuid_SetUID_setgid (JNIEnv * env, jclass j, jint gid)
+Java_org_eclipse_jetty_setuid_SetUID_setgid (JNIEnv * env, jclass j, jint gid)
 {
     return((jint)setgid((gid_t)gid));
 }
@@ -62,7 +66,7 @@ Java_org_mortbay_setuid_SetUID_setgid (JNIEnv * env, jclass j, jint gid)
 /* User informaton implementatons */
 
 JNIEXPORT jobject JNICALL 
-Java_org_mortbay_setuid_SetUID_getpwnam(JNIEnv * env, jclass j, jstring name)
+Java_org_eclipse_jetty_setuid_SetUID_getpwnam(JNIEnv * env, jclass j, jstring name)
 {
     struct passwd* pw;
     jboolean iscopy;
@@ -82,28 +86,28 @@ Java_org_mortbay_setuid_SetUID_getpwnam(JNIEnv * env, jclass j, jstring name)
     (*env)->ReleaseStringUTFChars( env, name, pname ); 
     
 
-    // get The java class org.mortbay.setuid.Passwd
+    // get The java class org.eclipse.jetty.setuid.Passwd
     jclass cls;
-    cls = (*env)->FindClass(env,"org/mortbay/setuid/Passwd");
+    cls = (*env)->FindClass(env,"org/eclipse/jetty/setuid/Passwd");
     if(!cls)
     {
-        throwNewJavaSecurityException(env, "Class: org.mortbay.setuid.Passwd is not found!!!");
+        throwNewJavaSecurityException(env, "Class: org.eclipse.jetty.setuid.Passwd is not found!!!");
         return NULL;
     }
     
-    // get the default constructor  of org.mortbay.setuid.Passwd
+    // get the default constructor  of org.eclipse.jetty.setuid.Passwd
     jmethodID constructorMethod = getJavaMethodId(env, cls, "<init>", "()V");
     
-    // construct org.mortbay.setuid.Passwd java object
+    // construct org.eclipse.jetty.setuid.Passwd java object
     jobject retVal = (*env)->NewObject(env, cls,constructorMethod);
     if(!retVal)
     {
-        throwNewJavaSecurityException(env, "Object Construction error of Class: org.mortbay.setuid.Passwd!!!");
+        throwNewJavaSecurityException(env, "Object Construction error of Class: org.eclipse.jetty.setuid.Passwd!!!");
         return NULL;
     }
     
     
-    // copy the struct passwd values to java object org.mortbay.setuid.Passwd
+    // copy the struct passwd values to java object org.eclipse.jetty.setuid.Passwd
     //char *pw_name;
     setJavaFieldString(env, retVal, "_pwName", pw->pw_name);
 	//char *pw_passwd;
@@ -127,7 +131,7 @@ Java_org_mortbay_setuid_SetUID_getpwnam(JNIEnv * env, jclass j, jstring name)
 
 
 JNIEXPORT jobject JNICALL 
-Java_org_mortbay_setuid_SetUID_getpwuid(JNIEnv * env, jclass j, jint uid)
+Java_org_eclipse_jetty_setuid_SetUID_getpwuid(JNIEnv * env, jclass j, jint uid)
 {
     struct passwd* pw;
     pw=getpwuid((uid_t) uid);
@@ -140,29 +144,29 @@ Java_org_mortbay_setuid_SetUID_getpwuid(JNIEnv * env, jclass j, jint uid)
     }
     
 
-    // get The java class org.mortbay.setuid.Passwd
+    // get The java class org.eclipse.jetty.setuid.Passwd
     
     jclass cls;
-    cls = (*env)->FindClass(env,"org/mortbay/setuid/Passwd");
+    cls = (*env)->FindClass(env,"org/eclipse/jetty/setuid/Passwd");
     if(!cls)
     {
-        throwNewJavaSecurityException(env, "Class: org.mortbay.setuid.Passwd is not found!!!");
+        throwNewJavaSecurityException(env, "Class: org.eclipse.jetty.setuid.Passwd is not found!!!");
         return NULL;
     }
     
-    // get the default constructor  of org.mortbay.setuid.Passwd
+    // get the default constructor  of org.eclipse.jetty.setuid.Passwd
     jmethodID constructorMethod = getJavaMethodId(env, cls, "<init>", "()V");
     
-    // construct org.mortbay.setuid.Passwd java object
+    // construct org.eclipse.jetty.setuid.Passwd java object
     jobject retVal = (*env)->NewObject(env, cls,constructorMethod);
     if(!retVal)
     {
-        throwNewJavaSecurityException(env, "Object Construction error of Class: org.mortbay.setuid.Passwd!!!");
+        throwNewJavaSecurityException(env, "Object Construction error of Class: org.eclipse.jetty.setuid.Passwd!!!");
         return NULL;
     }
     
     
-    // copy the struct passwd values to java object org.mortbay.setuid.Passwd
+    // copy the struct passwd values to java object org.eclipse.jetty.setuid.Passwd
     //char *pw_name;
     setJavaFieldString(env, retVal, "_pwName", pw->pw_name);
 	//char *pw_passwd;
@@ -188,7 +192,7 @@ Java_org_mortbay_setuid_SetUID_getpwuid(JNIEnv * env, jclass j, jint uid)
 /*  Group information implimentations */
 
 JNIEXPORT jobject JNICALL 
-Java_org_mortbay_setuid_SetUID_getgrnam(JNIEnv * env, jclass j, jstring name)
+Java_org_eclipse_jetty_setuid_SetUID_getgrnam(JNIEnv * env, jclass j, jstring name)
 {
     struct group* gr;
     jboolean iscopy;
@@ -209,27 +213,27 @@ Java_org_mortbay_setuid_SetUID_getgrnam(JNIEnv * env, jclass j, jstring name)
     (*env)->ReleaseStringUTFChars( env, name, pname ); 
     
 
-    // get The java class org.mortbay.setuid.Passwd
+    // get The java class org.eclipse.jetty.setuid.Passwd
     jclass cls;
-    cls = (*env)->FindClass(env,"org/mortbay/setuid/Group");
+    cls = (*env)->FindClass(env,"org/eclipse/jetty/setuid/Group");
     if(!cls)
     {
-        throwNewJavaSecurityException(env, "Class: org.mortbay.setuid.Group is not found!!!");
+        throwNewJavaSecurityException(env, "Class: org.eclipse.jetty.setuid.Group is not found!!!");
         return NULL;
     }
     
-    // get the default constructor  of org.mortbay.setuid.Group
+    // get the default constructor  of org.eclipse.jetty.setuid.Group
     jmethodID constructorMethod = getJavaMethodId(env, cls, "<init>", "()V");
     
-    // construct org.mortbay.setuid.Group java object
+    // construct org.eclipse.jetty.setuid.Group java object
     jobject retVal = (*env)->NewObject(env, cls,constructorMethod);
     if(!retVal)
     {
-        throwNewJavaSecurityException(env, "Object Construction error of Class: org.mortbay.setuid.Group!!!");
+        throwNewJavaSecurityException(env, "Object Construction error of Class: org.eclipse.jetty.setuid.Group!!!");
         return NULL;
     }
     
-    // copy the struct grpup values to java object org.mortbay.setuid.Group
+    // copy the struct grpup values to java object org.eclipse.jetty.setuid.Group
     //char *gr_name;
     setJavaFieldString(env, retVal, "_grName", gr->gr_name);
 	//char *gr_passwd;
@@ -274,7 +278,7 @@ Java_org_mortbay_setuid_SetUID_getgrnam(JNIEnv * env, jclass j, jstring name)
 }
 
 JNIEXPORT jobject JNICALL 
-Java_org_mortbay_setuid_SetUID_getgrgid(JNIEnv * env, jclass j, jint gid)
+Java_org_eclipse_jetty_setuid_SetUID_getgrgid(JNIEnv * env, jclass j, jint gid)
 {
     struct group* gr;
     
@@ -288,29 +292,29 @@ Java_org_mortbay_setuid_SetUID_getgrgid(JNIEnv * env, jclass j, jint gid)
     }
     
 
-    // get The java class org.mortbay.setuid.Passwd
+    // get The java class org.eclipse.jetty.setuid.Passwd
     jclass cls;
-    cls = (*env)->FindClass(env,"org/mortbay/setuid/Group");
+    cls = (*env)->FindClass(env,"org/eclipse/jetty/setuid/Group");
     if(!cls)
     {
-        throwNewJavaSecurityException(env, "Class: org.mortbay.setuid.Group is not found!!!");
+        throwNewJavaSecurityException(env, "Class: org.eclipse.jetty.setuid.Group is not found!!!");
         return NULL;
     }
     
-    // get the default constructor  of org.mortbay.setuid.Group
+    // get the default constructor  of org.eclipse.jetty.setuid.Group
     jmethodID constructorMethod = getJavaMethodId(env, cls, "<init>", "()V");
     
-    // construct org.mortbay.setuid.Group java object
+    // construct org.eclipse.jetty.setuid.Group java object
     jobject retVal = (*env)->NewObject(env, cls,constructorMethod);
     if(!retVal)
     {
-        throwNewJavaSecurityException(env, "Object Construction Error of Class: org.mortbay.setuid.Group!!!");
+        throwNewJavaSecurityException(env, "Object Construction Error of Class: org.eclipse.jetty.setuid.Group!!!");
         return NULL;
     }
     
     
     
-    // copy the struct grpup values to java object org.mortbay.setuid.Group
+    // copy the struct grpup values to java object org.eclipse.jetty.setuid.Group
     //char *gr_name;
     setJavaFieldString(env, retVal, "_grName", gr->gr_name);
 	//char *gr_passwd;
@@ -358,11 +362,11 @@ Java_org_mortbay_setuid_SetUID_getgrgid(JNIEnv * env, jclass j, jint gid)
 
 
 /*
- * Class:     org_mortbay_setuid_SetUID
+ * Class:     org_eclipse_jetty_setuid_SetUID
  * Method:    getrlimitnofiles
- * Signature: ()Lorg/mortbay/setuid/RLimit;
+ * Signature: ()Lorg/eclipse/jetty/setuid/RLimit;
  */
-JNIEXPORT jobject JNICALL Java_org_mortbay_setuid_SetUID_getrlimitnofiles
+JNIEXPORT jobject JNICALL Java_org_eclipse_jetty_setuid_SetUID_getrlimitnofiles
   (JNIEnv *env, jclass j)
 {
     struct rlimit rlim;
@@ -373,22 +377,22 @@ JNIEXPORT jobject JNICALL Java_org_mortbay_setuid_SetUID_getrlimitnofiles
         return NULL;
     }
 
-    // get The java class org.mortbay.setuid.RLimit
-    jclass cls = (*env)->FindClass(env, "org/mortbay/setuid/RLimit");
+    // get The java class org.eclipse.jetty.setuid.RLimit
+    jclass cls = (*env)->FindClass(env, "org/eclipse/jetty/setuid/RLimit");
     if(!cls)
     {
-        throwNewJavaSecurityException(env, "Class: org.mortbay.setuid.RLimit is not found!!!");
+        throwNewJavaSecurityException(env, "Class: org.eclipse.jetty.setuid.RLimit is not found!!!");
         return NULL;
     }
     
-    // get the default constructor  of org.mortbay.setuid.RLimit
+    // get the default constructor  of org.eclipse.jetty.setuid.RLimit
     jmethodID constructorMethod = getJavaMethodId(env, cls, "<init>", "()V");
     
-    // construct org.mortbay.setuid.RLimit java object
+    // construct org.eclipse.jetty.setuid.RLimit java object
     jobject retVal = (*env)->NewObject(env, cls,constructorMethod);
     if(!retVal)
     {
-        throwNewJavaSecurityException(env, "Object Construction Error of Class: org.mortbay.setuid.RLimit!!!");
+        throwNewJavaSecurityException(env, "Object Construction Error of Class: org.eclipse.jetty.setuid.RLimit!!!");
         return NULL;
     }
     setJavaFieldInt(env, retVal, "_soft", rlim.rlim_cur);
@@ -399,16 +403,16 @@ JNIEXPORT jobject JNICALL Java_org_mortbay_setuid_SetUID_getrlimitnofiles
 }
 
 /*
- * Class:     org_mortbay_setuid_SetUID
+ * Class:     org_eclipse_jetty_setuid_SetUID
  * Method:    setrlimitnofiles
- * Signature: (Lorg/mortbay/setuid/RLimit;)I
+ * Signature: (Lorg/eclipse/jetty/setuid/RLimit;)I
  */
-JNIEXPORT jint JNICALL Java_org_mortbay_setuid_SetUID_setrlimitnofiles
+JNIEXPORT jint JNICALL Java_org_eclipse_jetty_setuid_SetUID_setrlimitnofiles
   (JNIEnv *env, jclass j, jobject jo)
 {
     struct rlimit rlim;
 
-    jclass cls = (*env)->FindClass(env, "org/mortbay/setuid/RLimit");
+    jclass cls = (*env)->FindClass(env, "org/eclipse/jetty/setuid/RLimit");
     rlim.rlim_cur=getJavaFieldInt(env,jo, "_soft");
     rlim.rlim_max=getJavaFieldInt(env,jo, "_hard");
     int success = setrlimit(RLIMIT_NOFILE, &rlim);
