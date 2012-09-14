@@ -1,16 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-      <groupId>org.eclipse.jetty.setuid</groupId>
-      <artifactId>jetty-setuid-parent</artifactId>
-      <version>9.0.0-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>jetty-setuid-test</artifactId>
-    <name>Jetty :: SetUID Test</name>
-    <packaging>jar</packaging>
-    <build>
-     <defaultGoal>test</defaultGoal>
-     <plugins>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.setuid</groupId>
+    <artifactId>jetty-setuid-parent</artifactId>
+    <version>9.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-setuid-test</artifactId>
+  <name>Jetty :: SetUID Test</name>
+  <packaging>jar</packaging>
+  <build>
+    <defaultGoal>test</defaultGoal>
+    <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
@@ -18,24 +19,52 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-     </plugins>
-    </build>
-    <dependencies>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.setuid</groupId>
+      <artifactId>jetty-setuid-java</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>env-linux</id>
+      <activation>
+        <os>
+          <name>Linux</name>
+        </os>
+      </activation>
+      <dependencies>
         <dependency>
-            <groupId>org.eclipse.jetty.setuid</groupId>
-            <artifactId>jetty-setuid-java</artifactId>
-            <version>${project.version}</version>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-setuid-linux</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
         </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>env-mac</id>
+      <activation>
+        <os>
+          <name>mac</name>
+        </os>
+      </activation>
+      <dependencies>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-setuid-native</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-setuid-linux</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
         </dependency>
-        <dependency>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-          <scope>test</scope>
-        </dependency>
-    </dependencies>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>
