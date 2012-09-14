@@ -14,9 +14,6 @@
 			<module>jetty-setuid-native</module>
 			<module>jetty-setuid-test</module>
 		</modules>
-    <build>
-			
-    </build>
     <profiles>
         <profile>
             <id>env-linux</id>
@@ -26,17 +23,22 @@
                 </os>
             </activation>
             <modules>
-                <module>modules/java</module>
-                <module>modules/native</module>
-                <module>modules/test</module>
+                <module>jetty-setuid-linux</module>
             </modules>
-            <properties>
-                <jetty-setuid-linkerStartOption>-shared -lc -ldl</jetty-setuid-linkerStartOption>
-                <jetty-setuid-linkerEndOption>target/libsetuid.so</jetty-setuid-linkerEndOption>
-            </properties>
+        </profile>
+        <profile>
+            <id>env-mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <modules>         
+                <module>jetty-setuid-osx</module>
+            </modules>          
         </profile>
 
-
+<!-- 
         <profile>
             <id>env-SunOs</id>
             <activation>
@@ -53,37 +55,7 @@
                 <jetty-setuid-linkerEndOption>target/libsetuid.so</jetty-setuid-linkerEndOption>
             </properties>
         </profile>
-				<!--
-         <profile>
-            <id>env-unix</id>
-            <activation>
-                <os>
-                    <family>unix</family>
-                    <name>!Linux</name>
-                </os>
-            </activation>
-            <modules>
-                <module>modules/java</module>
-                <module>modules/native</module>
-            </modules>
-            <properties>
-                <jetty-setuid-linkerStartOption>-lc -ldl</jetty-setuid-linkerStartOption>
-                <jetty-setuid-linkerEndOption>target/libsetuid.so</jetty-setuid-linkerEndOption>
-            </properties>
-        </profile>
-			-->
-        <profile>
-            <id>env-mac</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
-            </activation>
-            <modules>         
-                <module>jetty-setuid-osx</module>
-            </modules>
-            
-        </profile>
+
 
         <profile>
             <id>env-dos</id>
@@ -120,6 +92,6 @@
                 <module>modules/java</module>
             </modules>
          </profile>
-
+-->
     </profiles>
 </project>
