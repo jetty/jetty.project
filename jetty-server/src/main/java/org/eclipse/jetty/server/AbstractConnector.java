@@ -391,21 +391,21 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected void connectionOpened(Connection connection)
     {
         _stats.connectionOpened();
-    }
-
-    protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
-    {
-        long duration = System.currentTimeMillis() - oldConnection.getEndPoint().getCreatedTimeStamp();
-        int requests = (oldConnection instanceof HttpConnection) ? ((HttpConnection)oldConnection).getHttpChannel().getRequests() : 0;
-        _stats.connectionUpgraded(duration, requests, requests);
+        connection.onOpen();
     }
 
     protected void connectionClosed(Connection connection)
     {
+        connection.onClose();
         long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
-        // TODO: remove casts to HttpConnection
-        int requests = (connection instanceof HttpConnection) ? ((HttpConnection)connection).getHttpChannel().getRequests() : 0;
-        _stats.connectionClosed(duration, requests, requests);
+        _stats.connectionClosed(duration, connection.getMessagesIn(), connection.getMessagesOut());
+    }
+
+    public void connectionUpgraded(Connection oldConnection, Connection newConnection)
+    {
+        oldConnection.onClose();
+        _stats.connectionUpgraded(oldConnection.getMessagesIn(), oldConnection.getMessagesOut());
+        newConnection.onOpen();
     }
 
     @Override

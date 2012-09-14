@@ -85,8 +85,8 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
         Connection connection = next.newConnection(connector, decrypted_endp);
-        
         decrypted_endp.setConnection(connection);
+        ((AbstractConnector)connector).connectionOpened(connection);
         return sslConnection;
     }
 

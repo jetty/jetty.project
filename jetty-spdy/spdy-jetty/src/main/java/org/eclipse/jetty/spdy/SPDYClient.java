@@ -40,7 +40,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -154,9 +154,9 @@ public class SPDYClient
 
     public void replaceConnection(EndPoint endPoint, Connection connection)
     {
-        Connection oldConnection = endPoint.getConnection();
+        endPoint.getConnection().onClose();
         endPoint.setConnection(connection);
-        factory.selector.connectionUpgraded(endPoint, oldConnection);
+        connection.onOpen();
     }
 
     public static class Factory extends AggregateLifeCycle
@@ -277,36 +277,34 @@ public class SPDYClient
                     if (sslContextFactory != null)
                     {
                         final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine)
-                        {
-                            @Override
-                            public void onClose()
-                            {
-                                NextProtoNego.remove(engine);
-                                super.onClose();
-                            }
-                        };
-
-                        EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+                        SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine);
+                        DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.executor, client);
                         sslEndPoint.setConnection(connection);
-                        connectionOpened(connection);
-
-                        NextProtoNego.put(engine, connection);
-
                         return sslConnection;
                     }
-                    else
-                    {
-                        SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-                        return connectionFactory.newConnection(channel, endPoint, attachment);
-                    }
+                    
+                    SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
+                    return connectionFactory.newConnection(channel, endPoint, attachment);
                 }
                 catch (RuntimeException x)
                 {
                     sessionPromise.failed(null,x);
                     throw x;
                 }
+            }
+
+
+            @Override
+            public void connectionOpened(Connection connection)
+            {
+                connection.onOpen();
+            }
+
+            @Override
+            public void connectionClosed(Connection connection)
+            {
+                connection.onClose();
             }
         }
     }

@@ -38,6 +38,7 @@ public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
+    private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback<Void> _readCallback;
@@ -206,10 +207,17 @@ public abstract class AbstractConnection implements Connection
         return true;
     }
 
+    // TODO remove this when open/close refactored
+    final AtomicReference<Throwable> _opened = new AtomicReference<>(null);
     @Override
     public void onOpen()
     {
         LOG.debug("{} opened",this);
+        if (!_opened.compareAndSet(null,new Throwable()))
+        {
+            LOG.warn("ALREADY OPENED ",_opened.get());
+            LOG.warn("EXTRA OPEN AT ",new Throwable());
+        }
     }
 
     @Override
@@ -228,6 +236,24 @@ public abstract class AbstractConnection implements Connection
     public void close()
     {
         getEndPoint().close();
+    }
+
+    @Override
+    public int getMessagesIn()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getMessagesOut()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getCreatedTimeStamp()
+    {
+        return _created;
     }
 
     @Override

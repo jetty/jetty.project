@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 abstract public class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
+    private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
     private static final State __WRITING = new WritingState();
@@ -111,7 +112,8 @@ abstract public class WriteFlusher
             throw new IllegalStateException();
 
         boolean updated = _state.compareAndSet(previous, next);
-        LOG.debug("update {}:{}{}{}", this, previous, updated?"-->":"!->",next);
+        if (DEBUG)
+            LOG.debug("update {}:{}{}{}", this, previous, updated?"-->":"!->",next);
         return updated;
     }
 
@@ -289,7 +291,7 @@ abstract public class WriteFlusher
      */
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
     {
-        if (LOG.isDebugEnabled())
+        if (DEBUG)
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
         if (!updateState(__IDLE,__WRITING))
@@ -298,6 +300,8 @@ abstract public class WriteFlusher
         try
         {
             boolean flushed=_endPoint.flush(buffers);
+            if (DEBUG)
+                LOG.debug("flushed {}", flushed);
 
             // Are we complete?
             for (ByteBuffer b : buffers)
@@ -321,6 +325,8 @@ abstract public class WriteFlusher
         }
         catch (IOException e)
         {
+            if (DEBUG)
+                LOG.debug("write exception", e);
             if (updateState(__WRITING,__IDLE))
             {
                 if (callback!=null)
@@ -342,7 +348,8 @@ abstract public class WriteFlusher
      */
     public void completeWrite()
     {
-        LOG.debug("completeWrite: {}", this);
+        if (DEBUG)
+            LOG.debug("completeWrite: {}", this);
 
         State previous = _state.get();
 
@@ -358,6 +365,8 @@ abstract public class WriteFlusher
             ByteBuffer[] buffers = pending.getBuffers();
 
             boolean flushed=_endPoint.flush(buffers);
+            if (DEBUG)
+                LOG.debug("flushed {}", flushed);
 
             // Are we complete?
             for (ByteBuffer b : buffers)
@@ -371,7 +380,7 @@ abstract public class WriteFlusher
                     return;
                 }
             }
-            
+
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__COMPLETING,__IDLE))
                 ignoreFail();
@@ -379,6 +388,8 @@ abstract public class WriteFlusher
         }
         catch (IOException e)
         {
+            if (DEBUG)
+                LOG.debug("completeWrite exception", e);
             if(updateState(__COMPLETING,__IDLE))
                 pending.fail(e);
             else
@@ -388,7 +399,8 @@ abstract public class WriteFlusher
 
     public void onFail(Throwable cause)
     {
-        LOG.debug("failed: {} {}", this, cause);
+        if (DEBUG)
+            LOG.debug("failed: {} {}", this, cause);
 
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
@@ -397,6 +409,7 @@ abstract public class WriteFlusher
             switch(current.getType())
             {
                 case IDLE:
+                case FAILED:
                     return;
 
                 case PENDING:

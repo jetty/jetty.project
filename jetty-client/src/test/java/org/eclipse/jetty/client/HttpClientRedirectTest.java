@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +43,13 @@ import static org.junit.Assert.fail;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
+    public HttpClientRedirectTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Before
-    public void init() throws Exception
+    public void prepare() throws Exception
     {
         start(new RedirectHandler());
     }
@@ -52,6 +58,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_303() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .path("/303/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -63,6 +70,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_303_302() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .path("/303/localhost/302/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -74,6 +82,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_303_302_OnDifferentDestinations() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .path("/303/127.0.0.1/302/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -85,6 +94,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_301() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .method(HttpMethod.HEAD)
                 .path("/301/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
@@ -99,6 +109,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .method(HttpMethod.POST)
                     .path("/301/localhost/done")
                     .send().get(5, TimeUnit.SECONDS);
@@ -119,6 +130,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     {
         byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .method(HttpMethod.POST)
                 .path("/307/localhost/done")
                 .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
@@ -137,6 +149,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .path("/303/localhost/302/localhost/done")
                     .send().get(5, TimeUnit.SECONDS);
             fail();
@@ -155,6 +168,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_303_WithConnectionClose_WithBigRequest() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .path("/303/localhost/done?close=true")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);

@@ -168,7 +168,6 @@ public class LocalConnector extends AbstractConnector
         Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
         connectionOpened(connection);
-        connection.onOpen();
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint
@@ -197,7 +196,6 @@ public class LocalConnector extends AbstractConnector
             if (was_open)
             {
                 connectionClosed(getConnection());
-                getConnection().onClose();
                 onClose();
             }
         }
@@ -261,6 +259,5 @@ public class LocalConnector extends AbstractConnector
                 }
             }
         }
-
     }
 }

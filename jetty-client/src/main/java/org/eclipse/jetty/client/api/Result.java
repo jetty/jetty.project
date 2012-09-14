@@ -44,7 +44,7 @@ public class Result
         this(request, requestFailure, response, null);
     }
 
-    private Result(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+    public Result(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
         this.request = request;
         this.requestFailure = requestFailure;

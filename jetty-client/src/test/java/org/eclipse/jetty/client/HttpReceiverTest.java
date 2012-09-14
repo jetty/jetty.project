@@ -66,7 +66,7 @@ public class HttpReceiverTest
         HttpExchange exchange = new HttpExchange(conversation, connection, null, listener);
         conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
-        exchange.requestComplete(true);
+        exchange.requestComplete(null);
         return exchange;
     }
 

@@ -143,4 +143,16 @@ public class WebSocketClientSelectorManager extends SelectorManager
     {
         this.sslContextFactory = sslContextFactory;
     }
+
+    @Override
+    public void connectionOpened(Connection connection)
+    {
+        connection.onOpen();
+    }
+
+    @Override
+    public void connectionClosed(Connection connection)
+    {
+        connection.onClose();
+    }
 }

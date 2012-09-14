@@ -162,7 +162,7 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
     }
 
     @Override
-    public void connectionUpgraded(long duration, int messagesIn, int messagesOut)
+    public void connectionUpgraded(int messagesIn, int messagesOut)
     {
         if (isStarted())
         {

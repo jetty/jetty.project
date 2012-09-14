@@ -177,32 +177,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(Connection connection)
-    {
-        connection.onOpen();
-    }
+    abstract protected void connectionOpened(Connection connection);
 
     /**
      * <p>Callback method invoked when a connection is closed.</p>
      *
      * @param connection the connection just closed
      */
-    public void connectionClosed(Connection connection)
-    {
-        connection.onClose();
-    }
-
-    /**
-     * <p>Callback method invoked when a connection is upgraded.</p>
-     *
-     * @param endpoint      the endpoint holding the new connection
-     * @param oldConnection the previous connection
-     */
-    public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
-    {
-        connectionClosed(oldConnection);
-        connectionOpened(endpoint.getConnection());
-    }
+    abstract protected void connectionClosed(Connection connection);
 
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>

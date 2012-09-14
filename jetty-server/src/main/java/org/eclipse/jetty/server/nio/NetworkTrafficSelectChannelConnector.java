@@ -98,10 +98,4 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
         return endPoint;
     }
 
-    @Override
-    protected void endPointClosed(EndPoint endpoint)
-    {
-        super.endPointClosed(endpoint);
-        ((NetworkTrafficSelectChannelEndPoint)endpoint).notifyClosed();
-    }
 }

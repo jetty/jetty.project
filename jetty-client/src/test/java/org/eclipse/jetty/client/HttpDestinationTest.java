@@ -23,12 +23,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class HttpDestinationTest extends AbstractHttpClientServerTest
 {
+    public HttpDestinationTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Before
     public void init() throws Exception
     {

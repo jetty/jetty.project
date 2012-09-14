@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,6 +36,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {
+    public HttpClientStreamTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void testFileUpload() throws Exception
     {
@@ -53,6 +59,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         final AtomicLong requestTime = new AtomicLong();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .file(upload)
                 .listener(new Request.Listener.Empty()
                 {
@@ -63,7 +70,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                     }
                 })
                 .send()
-                .get(5, TimeUnit.SECONDS);
+                .get(10, TimeUnit.SECONDS);
         long responseTime = System.nanoTime();
 
         Assert.assertEquals(200, response.status());

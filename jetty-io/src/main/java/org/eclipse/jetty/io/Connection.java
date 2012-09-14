@@ -53,5 +53,12 @@ public interface Connection extends AutoCloseable
      * {@link EndPoint} but, for example, SSL connections should write the SSL close message
      * before closing the associated {@link EndPoint}.</p>
      */
+    @Override
     public void close();
+
+    public int getMessagesIn();
+
+    public int getMessagesOut();
+
+    public long getCreatedTimeStamp();
 }

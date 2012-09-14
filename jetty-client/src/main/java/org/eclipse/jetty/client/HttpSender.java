@@ -223,15 +223,14 @@ public class HttpSender
         Request request = exchange.request();
         LOG.debug("Sent {}", request);
 
-        boolean exchangeCompleted = exchange.requestComplete(true);
+        Result result = exchange.requestComplete(null);
 
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
         requestNotifier.notifySuccess(request);
-        if (exchangeCompleted)
+        if (result != null)
         {
             HttpConversation conversation = exchange.conversation();
-            Result result = new Result(request, exchange.response());
             responseNotifier.notifyComplete(conversation.listener(), result);
         }
     }
@@ -242,7 +241,6 @@ public class HttpSender
         BufferUtil.clear(header);
         BufferUtil.clear(chunk);
         releaseBuffers();
-        connection.getEndPoint().shutdownOutput();
         generator.abort();
         failed = true;
 
@@ -251,15 +249,20 @@ public class HttpSender
         Request request = exchange.request();
         LOG.debug("Failed {} {}", request, failure);
 
-        boolean exchangeCompleted = exchange.requestComplete(false);
-        if (!exchangeCompleted && !committed)
-            exchangeCompleted = exchange.responseComplete(false);
+        Result result = exchange.requestComplete(failure);
+        if (result == null && !committed)
+            result = exchange.responseComplete(null);
+
+        // If the exchange is not completed, we need to shutdown the output
+        // to signal to the server that we're done (otherwise it may be
+        // waiting for more data that will not arrive)
+        if (result == null)
+            connection.getEndPoint().shutdownOutput();
 
         requestNotifier.notifyFailure(request, failure);
-        if (exchangeCompleted)
+        if (result != null)
         {
             HttpConversation conversation = exchange.conversation();
-            Result result = new Result(request, failure, exchange.response());
             responseNotifier.notifyComplete(conversation.listener(), result);
         }
     }

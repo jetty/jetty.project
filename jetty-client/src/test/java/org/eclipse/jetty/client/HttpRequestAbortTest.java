@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,6 +43,11 @@ import static org.junit.Assert.fail;
 
 public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 {
+    public HttpRequestAbortTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void testAbortOnQueued() throws Exception
     {
@@ -50,6 +57,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override
@@ -85,6 +93,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override
@@ -117,6 +126,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -152,12 +162,15 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        // Test can behave in 2 ways:
-        // A) if the request is failed before the request arrived, then we get an ExecutionException
-        // B) if the request is failed after the request arrived, then we get a 500
+        // Test can behave in 3 ways:
+        // A) non-SSL, if the request is failed before the response arrived, then we get an ExecutionException
+        // B) non-SSL, if the request is failed after the response arrived, then we get a 500
+        // C) SSL, the server tries to write the 500, but the connection is already closed, the client
+        //    reads -1 with a pending exchange and fails the response with an EOFException
         try
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
                         @Override
@@ -180,9 +193,22 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            HttpRequestException xx = (HttpRequestException)x.getCause();
-            Request request = xx.getRequest();
-            Assert.assertNotNull(request);
+            Throwable cause = x.getCause();
+            if (cause instanceof EOFException)
+            {
+                // Server closed abruptly, behavior C
+            }
+            else if (cause instanceof HttpRequestException)
+            {
+                // Request failed, behavior A
+                HttpRequestException xx = (HttpRequestException)cause;
+                Request request = xx.getRequest();
+                Assert.assertNotNull(request);
+            }
+            else
+            {
+                throw x;
+            }
         }
     }
 }

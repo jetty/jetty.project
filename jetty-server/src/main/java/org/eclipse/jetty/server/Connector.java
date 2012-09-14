@@ -197,11 +197,10 @@ public interface Connector extends LifeCycle, Graceful
         /**
          * <p>Callback method invoked when a connection is upgraded.</p>
          *
-         * @param duration the time the previous connection was opened
          * @param messagesIn the number of messages received by the previous connection
          * @param messagesOut the number of messages send by the previous connection
          */
-        public void connectionUpgraded(long duration, int messagesIn, int messagesOut);
+        public void connectionUpgraded(int messagesIn, int messagesOut);
 
         /**
          * <p>Callback method invoked when a connection is closed.</p>

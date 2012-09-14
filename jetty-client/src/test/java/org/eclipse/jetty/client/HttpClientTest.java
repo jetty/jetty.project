@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,14 +39,15 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -54,12 +55,16 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    public HttpClientTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void testStoppingClosesConnections() throws Exception
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/";
@@ -93,7 +98,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
         client.GET(scheme + "://" + host + ":" + port).get(5, TimeUnit.SECONDS);
@@ -113,7 +117,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        Response response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
+        Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -126,14 +130,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.getOutputStream().write(data);
                 baseRequest.setHandled(true);
             }
         });
 
-        ContentResponse response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -149,7 +153,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -165,7 +169,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String value1 = "\u20AC";
         String paramValue1 = URLEncoder.encode(value1, "UTF-8");
         String query = paramName1 + "=" + paramValue1 + "&" + paramName2;
-        ContentResponse response = client.GET("http://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -181,7 +185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -201,7 +205,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String paramValue12 = URLEncoder.encode(value12, "UTF-8");
         String paramValue2 = URLEncoder.encode(value2, "UTF-8");
         String query = paramName1 + "=" + paramValue11 + "&" + paramName1 + "=" + paramValue12 + "&" + paramName2 + "=" + paramValue2;
-        ContentResponse response = client.GET("http://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -218,11 +222,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
-        client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
-                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    public void onBegin(Request request)
                     {
                         try
                         {
@@ -244,11 +249,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
-                    public void onQueued(org.eclipse.jetty.client.api.Request request)
+                    public void onQueued(Request request)
                     {
                         latch.countDown();
                     }
@@ -277,11 +283,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(3);
-        client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
-                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    public void onBegin(Request request)
                     {
                         try
                         {
@@ -294,7 +301,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
 
                     @Override
-                    public void onFailure(org.eclipse.jetty.client.api.Request request, Throwable failure)
+                    public void onFailure(Request request, Throwable failure)
                     {
                         latch.countDown();
                     }
@@ -308,7 +315,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        client.newRequest("http://localhost:" + connector.getLocalPort())
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .send(new Response.Listener.Empty()
                 {
                     @Override
@@ -344,11 +352,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final AtomicLong requestTime = new AtomicLong();
         final AtomicLong responseTime = new AtomicLong();
         client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .file(file)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
-                    public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                    public void onSuccess(Request request)
                     {
                         requestTime.set(System.nanoTime());
                         latch.countDown();
@@ -386,11 +395,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse() throws Exception
     {
-        final int chunkSize = 16;
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 // Echo back
                 IO.copy(request.getInputStream(), response.getOutputStream());
@@ -399,6 +407,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 // The second ByteBuffer set to null will throw an exception
                 .content(new ContentProvider()
                 {
@@ -411,7 +420,26 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public Iterator<ByteBuffer> iterator()
                     {
-                        return Arrays.asList(ByteBuffer.allocate(chunkSize), null).iterator();
+                        return new Iterator<ByteBuffer>()
+                        {
+                            @Override
+                            public boolean hasNext()
+                            {
+                                return true;
+                            }
+
+                            @Override
+                            public ByteBuffer next()
+                            {
+                                throw new NoSuchElementException("explicitly_thrown_by_test");
+                            }
+
+                            @Override
+                            public void remove()
+                            {
+                                throw new UnsupportedOperationException();
+                            }
+                        };
                     }
                 })
                 .send(new Response.Listener.Empty()
@@ -435,12 +463,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final String host = "localhost";
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+                .scheme(scheme)
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
-                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    public void onBegin(Request request)
                     {
-                        HttpDestination destination = (HttpDestination)client.getDestination("http", host, port);
+                        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
                         destination.getActiveConnections().peek().close();
                     }
                 })

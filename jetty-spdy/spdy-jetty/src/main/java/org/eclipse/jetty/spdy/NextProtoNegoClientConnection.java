@@ -23,9 +23,13 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import javax.net.ssl.SSLEngine;
+
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -37,20 +41,31 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     private final SocketChannel channel;
     private final Object attachment;
     private final SPDYClient client;
+    private final SSLEngine engine;
     private volatile boolean completed;
 
-    public NextProtoNegoClientConnection(SocketChannel channel, EndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
+    public NextProtoNegoClientConnection(SocketChannel channel, DecryptedEndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
     {
         super(endPoint, executor);
         this.channel = channel;
         this.attachment = attachment;
         this.client = client;
+        this.engine=endPoint.getSslConnection().getSSLEngine();
+        NextProtoNego.put(engine, this);
     }
 
     @Override
     public void onOpen()
     {
         super.onOpen();
+        try
+        {
+            getEndPoint().flush(BufferUtil.EMPTY_BUFFER);
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
         fillInterested();
     }
 
@@ -90,6 +105,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     @Override
     public void unsupported()
     {
+        NextProtoNego.remove(engine);
         // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
         EndPoint endPoint = getEndPoint();
         Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
@@ -100,6 +116,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     @Override
     public String selectProtocol(List<String> protocols)
     {
+        NextProtoNego.remove(engine);
         String protocol = client.selectProtocol(protocols);
         if (protocol == null)
             return null;
