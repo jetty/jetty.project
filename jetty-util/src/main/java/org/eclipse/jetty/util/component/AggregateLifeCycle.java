@@ -49,7 +49,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     private boolean _started = false;
 
     enum Managed { MANAGED, UNMANAGED, AUTO };
-    
+
     private class Bean
     {
         private final Object _bean;
@@ -75,7 +75,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     {
         // indicate that we are started, so that addBean will start other beans added.
         _started = true;
-        
+
         // start our managed and auto beans
         for (Bean b : _beans)
         {
@@ -100,7 +100,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                 }
             }
         }
- 
+
         super.doStart();
     }
 
@@ -245,8 +245,8 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         return true;
     }
-    
-    
+
+
     /**
      * Manages a bean already contained by this aggregate, so that it is started/stopped/destroyed with this
      * aggregate.
@@ -446,12 +446,12 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                     else
                         dumpObject(out, b._bean);
                     break;
-                    
+
                 case UNMANAGED:
                     out.append(indent).append(" +~ ");
                     dumpObject(out, b._bean);
                     break;
-                    
+
                 case AUTO:
                     out.append(indent).append(" += ");
                     if (b._bean instanceof Dumpable)
@@ -459,7 +459,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                     else
                         dumpObject(out, b._bean);
                     break;
-                    
+
             }
         }
 
@@ -490,9 +490,6 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                 else
                     dumpObject(out, o);
             }
-
-            if (i != size)
-                out.append(indent).append(" |\n");
         }
     }
 }
