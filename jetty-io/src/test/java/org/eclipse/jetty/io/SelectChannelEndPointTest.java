@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -48,6 +45,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -78,18 +81,6 @@ public class SelectChannelEndPointTest
             _lastEndPoint = endp;
             _lastEndPointLatch.countDown();
             return endp;
-        }
-
-        @Override
-        public void connectionOpened(Connection connection)
-        {
-            connection.onOpen();
-        }
-
-        @Override
-        public void connectionClosed(Connection connection)
-        {
-            connection.onClose();
         }
     };
 
@@ -613,7 +604,7 @@ public class SelectChannelEndPointTest
         String data = "Now is the time for all good men to come to the aid of the party";
         client.getOutputStream().write(data.getBytes("UTF-8"));
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
-        
+
         int byteNum = 0;
         try
         {

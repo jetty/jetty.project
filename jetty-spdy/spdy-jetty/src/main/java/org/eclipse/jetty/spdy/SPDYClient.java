@@ -293,18 +293,6 @@ public class SPDYClient
                     throw x;
                 }
             }
-
-            @Override
-            public void connectionOpened(Connection connection)
-            {
-                connection.onOpen();
-            }
-
-            @Override
-            public void connectionClosed(Connection connection)
-            {
-                connection.onClose();
-            }
         }
     }
 

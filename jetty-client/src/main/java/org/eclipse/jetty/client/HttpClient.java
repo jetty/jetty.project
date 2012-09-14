@@ -544,18 +544,6 @@ public class HttpClient extends AggregateLifeCycle
         {
             getExecutor().execute(task);
         }
-
-        @Override
-        public void connectionOpened(org.eclipse.jetty.io.Connection connection)
-        {
-            connection.onOpen();
-        }
-
-        @Override
-        public void connectionClosed(org.eclipse.jetty.io.Connection connection)
-        {
-            connection.onClose();
-        }
     }
 
     private class ConnectionCallback extends FutureCallback<Connection>
