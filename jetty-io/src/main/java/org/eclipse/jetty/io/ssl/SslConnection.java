@@ -146,14 +146,13 @@ public class SslConnection extends AbstractConnection
         {
             // Begin the handshake
             _sslEngine.beginHandshake();
+            super.onOpen();
         }
         catch (SSLException x)
         {
             getEndPoint().close();
             throw new RuntimeIOException(x);
         }
-
-        super.onOpen();
     }
 
     @Override

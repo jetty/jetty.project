@@ -125,7 +125,6 @@ public class HttpClient extends AggregateLifeCycle
     public HttpClient(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
-        addBean(sslContextFactory);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -136,6 +135,9 @@ public class HttpClient extends AggregateLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        if (sslContextFactory != null)
+            addBean(sslContextFactory);
+
         if (executor == null)
             executor = new QueuedThreadPool();
         addBean(executor);
@@ -171,13 +173,17 @@ public class HttpClient extends AggregateLifeCycle
 
         for (HttpDestination destination : destinations.values())
             destination.close();
+
         destinations.clear();
-
         conversations.clear();
-
+        handlers.clear();
+        requestListeners.clear();
         cookieStore.clear();
+        authenticationStore.clearAuthentications();
+        authenticationStore.clearAuthenticationResults();
 
         super.doStop();
+
         LOG.info("Stopped {}", this);
     }
 
@@ -424,6 +430,11 @@ public class HttpClient extends AggregateLifeCycle
         this.scheduler = scheduler;
     }
 
+    public SelectorManager getSelectorManager()
+    {
+        return selectorManager;
+    }
+
     public int getMaxConnectionsPerAddress()
     {
         return maxConnectionsPerAddress;
@@ -472,6 +483,13 @@ public class HttpClient extends AggregateLifeCycle
     public void setMaxRedirects(int maxRedirects)
     {
         this.maxRedirects = maxRedirects;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpThis(out);
+        dump(out, indent, getBeans(), destinations.values());
     }
 
     protected class ClientSelectorManager extends SelectorManager
@@ -543,18 +561,6 @@ public class HttpClient extends AggregateLifeCycle
         protected void execute(Runnable task)
         {
             getExecutor().execute(task);
-        }
-
-        @Override
-        public void connectionOpened(org.eclipse.jetty.io.Connection connection)
-        {
-            connection.onOpen();
-        }
-
-        @Override
-        public void connectionClosed(org.eclipse.jetty.io.Connection connection)
-        {
-            connection.onClose();
         }
     }
 

@@ -44,6 +44,12 @@ public class HttpAuthenticationStore implements AuthenticationStore
     }
 
     @Override
+    public void clearAuthentications()
+    {
+        authentications.clear();
+    }
+
+    @Override
     public Authentication findAuthentication(String type, String uri, String realm)
     {
         for (Authentication authentication : authentications)

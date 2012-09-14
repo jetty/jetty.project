@@ -88,18 +88,6 @@ public class SslConnectionTest
             _lastEndp=endp;
             return endp;
         }
-
-        @Override
-        public void connectionOpened(Connection connection)
-        {
-            connection.onOpen();
-        }
-
-        @Override
-        public void connectionClosed(Connection connection)
-        {
-            connection.onClose();
-        }
     };
 
     // Must be volatile or the test may fail spuriously

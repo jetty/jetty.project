@@ -34,6 +34,11 @@ public interface AuthenticationStore
     public void removeAuthentication(Authentication authentication);
 
     /**
+     * Removes all {@link Authentication}s stored
+     */
+    public void clearAuthentications();
+
+    /**
      * Returns the authentication that matches the given type (for example, "Basic" or "Digest"),
      * the given request URI and the given realm.
      * If no such authentication can be found, returns null.
