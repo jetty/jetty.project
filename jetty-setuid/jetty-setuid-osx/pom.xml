@@ -10,13 +10,13 @@
   <name>Jetty :: SetUID OSX Native</name>
   <packaging>so</packaging>
   <properties>
-    <native-source-dir>target/native</native-source-dir>
+    <native-source-dir>target/generated</native-source-dir>
     <jetty-setuid-linkerStartOption>-lc -ldl -dynamiclib -undefined
       dynamic_lookup -single_module</jetty-setuid-linkerStartOption>
-    <jetty-setuid-linkerEndOption>target/libsetuid.so</jetty-setuid-linkerEndOption>
+    <jetty-setuid-linkerEndOption>target/libsetuid_osx.so</jetty-setuid-linkerEndOption>
   </properties>
   <build>
-    <finalName>libsetuid</finalName>
+    <finalName>libsetuid_osx</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -41,7 +41,6 @@
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -56,7 +55,6 @@
                 <copy failonerror="false"
                   file="${native-source-dir}/org_eclipse_jetty_setuid_SetUID.c"
                   todir="target/generated" />
-
               </tasks>
             </configuration>
           </execution>
@@ -85,7 +83,7 @@
           </linkerStartOptions>
           <linkerEndOptions>
             <linkerEndOptions>-o
-              ${project.build.directory}/libsetuid.so</linkerEndOptions>
+              ${project.build.directory}/libsetuid_osx.so</linkerEndOptions>
           </linkerEndOptions>
         </configuration>
         <executions>
