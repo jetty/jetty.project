@@ -67,16 +67,8 @@ public class SelectChannelStatisticsTest
         _connector = new SelectChannelConnector(_server)
         {
             @Override
-            protected void endPointClosed(EndPoint endpoint)
-            {
-                //System.err.println("Endpoint closed "+endpoint);
-                super.endPointClosed(endpoint);
-            }
-
-            @Override
             public void connectionClosed(Connection connection)
             {
-                //System.err.println("Connection closed "+connection);
                 super.connectionClosed(connection);
                 _closed.countDown();
             }

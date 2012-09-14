@@ -261,16 +261,6 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout());
     }
 
-    protected void endPointClosed(EndPoint endpoint)
-    {
-        connectionClosed(endpoint.getConnection());
-    }
-
-    protected Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
-    {
-        return getDefaultConnectionFactory().newConnection(this, endPoint);
-    }
-
     /**
      * @return the linger time
      * @see Socket#getSoLinger()
@@ -340,21 +330,12 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         public void connectionOpened(Connection connection)
         {
             SelectChannelConnector.this.connectionOpened(connection);
-            super.connectionOpened(connection);
         }
 
         @Override
         public void connectionClosed(Connection connection)
         {
-            super.connectionClosed(connection);
             SelectChannelConnector.this.connectionClosed(connection);
-        }
-
-        @Override
-        public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
-        {
-            SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getConnection());
-            super.connectionUpgraded(endpoint, oldConnection);
         }
 
         @Override
@@ -366,7 +347,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return SelectChannelConnector.this.newConnection(channel, endpoint, attachment);
+            return getDefaultConnectionFactory().newConnection(SelectChannelConnector.this, endpoint);
         }
     }
 

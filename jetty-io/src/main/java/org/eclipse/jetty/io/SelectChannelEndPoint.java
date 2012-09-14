@@ -103,19 +103,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    public void setConnection(Connection connection)
-    {
-        // TODO should this be on AbstractEndPoint?
-        Connection old = getConnection();
-        super.setConnection(connection);
-        if (old != null && old != connection)
-        { 
-            LOG.debug("Upgrading connection {} -> {} on endPoint {}", old, connection, this);
-            _selector.getSelectorManager().connectionUpgraded(this, old);
-        }
-    }
-
-    @Override
     public void onSelected()
     {
         int oldInterestOps = _key.interestOps();

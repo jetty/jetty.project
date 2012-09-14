@@ -88,6 +88,18 @@ public class SslConnectionTest
             _lastEndp=endp;
             return endp;
         }
+
+        @Override
+        public void connectionOpened(Connection connection)
+        {
+            connection.onOpen();
+        }
+
+        @Override
+        public void connectionClosed(Connection connection)
+        {
+            connection.onClose();
+        }
     };
 
     // Must be volatile or the test may fail spuriously
@@ -244,29 +256,26 @@ public class SslConnectionTest
     {
         _testFill=false;
 
-        for (int i=0;i<1;i++)
-        {
-            _writeCallback = new FutureCallback<>();
-            Socket client = newClient();
-            client.setSoTimeout(600000); // TODO reduce after debugging
+        _writeCallback = new FutureCallback<>();
+        Socket client = newClient();
+        client.setSoTimeout(10000);
 
-            SocketChannel server = _connector.accept();
-            server.configureBlocking(false);
-            _manager.accept(server);
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+        _manager.accept(server);
 
-            byte[] buffer = new byte[1024];
-            int len=client.getInputStream().read(buffer);
-            Assert.assertEquals("Hello Client",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
-            Assert.assertEquals(null,_writeCallback.get(100,TimeUnit.MILLISECONDS));
-            client.close();
-        }
+        byte[] buffer = new byte[1024];
+        int len=client.getInputStream().read(buffer);
+        Assert.assertEquals("Hello Client",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        Assert.assertEquals(null,_writeCallback.get(100,TimeUnit.MILLISECONDS));
+        client.close();
     }
 
     @Test
     public void testManyLines() throws Exception
     {
         final Socket client = newClient();
-        client.setSoTimeout(60000);
+        client.setSoTimeout(10000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);

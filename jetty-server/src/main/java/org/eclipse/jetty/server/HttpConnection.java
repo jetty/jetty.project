@@ -136,6 +136,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _chunk=null;
         }
     }
+    
+   
+    @Override
+    public int getMessagesIn()
+    {
+        return getHttpChannel().getRequests();
+    }
+
+    @Override
+    public int getMessagesOut()
+    {
+        return getHttpChannel().getRequests();
+    }
 
     @Override
     public String toString()
@@ -433,6 +446,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 LOG.debug("Upgrade from {} to {}", this, connection);
                 getEndPoint().setConnection(connection);
+                ((AbstractConnector)getConnector()).connectionUpgraded(this,connection);
             }
         }
 

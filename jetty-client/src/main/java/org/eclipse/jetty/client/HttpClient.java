@@ -518,7 +518,6 @@ public class HttpClient extends AggregateLifeCycle
                     HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
                     appEndPoint.setConnection(connection);
                     callback.callback.completed(connection);
-                    connection.onOpen();
 
                     return sslConnection;
                 }
@@ -531,6 +530,7 @@ public class HttpClient extends AggregateLifeCycle
             }
         }
 
+        
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
@@ -542,6 +542,18 @@ public class HttpClient extends AggregateLifeCycle
         protected void execute(Runnable task)
         {
             getExecutor().execute(task);
+        }
+        
+        @Override
+        public void connectionOpened(org.eclipse.jetty.io.Connection connection)
+        {
+            connection.onOpen();
+        }
+
+        @Override
+        public void connectionClosed(org.eclipse.jetty.io.Connection connection)
+        {
+            connection.onClose();
         }
     }
 

@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
@@ -65,7 +66,6 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void onClose() 
     {
-        NextProtoNego.remove(engine);
         super.onClose();
     };
 
@@ -111,11 +111,12 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void protocolSelected(String protocol)
     {
+        NextProtoNego.remove(engine);
         ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
         Connection connection = connectionFactory.newConnection(connector, endPoint);
         endPoint.setConnection(connection);
-        NextProtoNego.remove(engine);
+        ((AbstractConnector)connector).connectionUpgraded(this,connection);
         completed = true;
     }
 }

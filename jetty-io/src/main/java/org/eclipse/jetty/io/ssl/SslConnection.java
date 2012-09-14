@@ -132,7 +132,7 @@ public class SslConnection extends AbstractConnection
         return _sslEngine;
     }
 
-    public EndPoint getDecryptedEndPoint()
+    public DecryptedEndPoint getDecryptedEndPoint()
     {
         return _decryptedEndPoint;
     }
@@ -142,20 +142,35 @@ public class SslConnection extends AbstractConnection
     {
         try
         {
-            super.onOpen();
-
             // Begin the handshake
             _sslEngine.beginHandshake();
-
-            // TODO: check that it is ok to remove this code
-//            if (_sslEngine.getUseClientMode())
-//                getExecutor().execute(_runWriteEmpty);
         }
         catch (SSLException x)
         {
             getEndPoint().close();
             throw new RuntimeIOException(x);
         }
+        
+        super.onOpen();
+    }
+
+    @Override
+    public void onClose()
+    {
+        _decryptedEndPoint.getConnection().onClose();
+        super.onClose();
+    }
+
+    @Override
+    public int getMessagesIn()
+    {
+        return _decryptedEndPoint.getConnection().getMessagesIn();
+    }
+
+    @Override
+    public int getMessagesOut()
+    {
+        return _decryptedEndPoint.getConnection().getMessagesOut();
     }
 
     @Override
@@ -421,8 +436,6 @@ public class SslConnection extends AbstractConnection
                     a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
             }
 
-            connection.onOpen();
-
             super.setConnection(connection);
         }
 
@@ -434,10 +447,6 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int fill(ByteBuffer buffer) throws IOException
         {
-            // TODO remove this when we are certain it is OK
-            if (Thread.currentThread().getName().contains("selector"))
-                new Throwable().printStackTrace();
-
             LOG.debug("{} fill enter", SslConnection.this);
             try
             {
@@ -639,10 +648,6 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized boolean flush(ByteBuffer... appOuts) throws IOException
         {
-            // TODO remove this when we are certain it is OK
-            if (Thread.currentThread().getName().contains("selector"))
-                new Throwable().printStackTrace();
-
             // The contract for flush does not require that all appOuts bytes are written
             // or even that any appOut bytes are written!  If the connection is write block
             // or busy handshaking, then zero bytes may be taken from appOuts and this method

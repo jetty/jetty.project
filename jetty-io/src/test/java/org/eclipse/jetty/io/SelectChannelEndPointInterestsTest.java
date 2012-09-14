@@ -101,6 +101,19 @@ public class SelectChannelEndPointInterestsTest
                     }
                 };
             }
+
+            @Override
+            public void connectionOpened(Connection connection)
+            {
+                connection.onOpen();
+            }
+
+            @Override
+            public void connectionClosed(Connection connection)
+            {
+                connection.onClose();
+            }
+
         };
         selectorManager.start();
     }
