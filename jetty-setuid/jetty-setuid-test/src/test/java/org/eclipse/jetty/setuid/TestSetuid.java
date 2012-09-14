@@ -23,6 +23,7 @@ import org.eclipse.jetty.setuid.SetUID;
 import java.io.File;
 import org.eclipse.jetty.setuid.Passwd;
 import org.eclipse.jetty.setuid.Group;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 public class TestSetuid extends TestCase
 {
@@ -34,7 +35,7 @@ public class TestSetuid extends TestCase
         try
         {      
 					// TODO use the dependency plugin to grab the proper lib and put it into place, no relative goop           
-            File lib = new File("../../modules/native/target/libsetuid.so");
+            File lib = MavenTestingUtils.getTargetFile("native/libsetuid.so");
             String libPath = lib.getCanonicalPath();
             System.setProperty("jetty.libsetuid.path", libPath);   
             

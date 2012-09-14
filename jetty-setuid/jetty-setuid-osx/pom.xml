@@ -6,7 +6,7 @@
     <version>9.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-setuid-osx</artifactId>
+  <artifactId>libsetuid_osx</artifactId>
   <name>Jetty :: SetUID OSX Native</name>
   <packaging>so</packaging>
   <properties>

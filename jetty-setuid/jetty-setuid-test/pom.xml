@@ -10,7 +10,6 @@
   <name>Jetty :: SetUID Test</name>
   <packaging>jar</packaging>
   <build>
-    <defaultGoal>test</defaultGoal>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -19,6 +18,7 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+      
     </plugins>
   </build>
   <dependencies>
@@ -32,6 +32,10 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
@@ -44,9 +48,9 @@
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-setuid-linux</artifactId>
+          <artifactId>libsetuid_linux</artifactId>
           <version>${project.version}</version>
-          <type>pom</type>
+          <type>so</type>
         </dependency>
       </dependencies>
     </profile>
@@ -54,15 +58,44 @@
       <id>env-mac</id>
       <activation>
         <os>
-          <name>mac</name>
+          <family>mac</family>
         </os>
       </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.setuid</groupId>
+                      <artifactId>libsetuid_osx</artifactId>
+                      <version>${project.version}</version>
+                      <type>so</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>target/native</outputDirectory>
+                      <destFileName>libsetuid.so</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
       <dependencies>
         <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-setuid-osx</artifactId>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>libsetuid_osx</artifactId>
           <version>${project.version}</version>
-          <type>pom</type>
+          <type>so</type>
         </dependency>
       </dependencies>
     </profile>
