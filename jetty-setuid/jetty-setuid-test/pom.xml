@@ -60,7 +60,7 @@
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-setuid-linux</artifactId>
+          <artifactId>jetty-setuid-osx</artifactId>
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>
