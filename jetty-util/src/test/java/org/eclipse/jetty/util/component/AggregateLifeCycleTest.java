@@ -321,7 +321,6 @@ public class AggregateLifeCycleTest
         dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
-        dump=check(dump,"     |");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"");
@@ -338,7 +337,6 @@ public class AggregateLifeCycleTest
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     |   +- org.eclipse.jetty.util.component.Aggre");
         dump=check(dump,"     |       +- org.eclipse.jetty.util.component.A");
-        dump=check(dump,"     |");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"");
@@ -354,7 +352,6 @@ public class AggregateLifeCycleTest
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     |   +~ org.eclipse.jetty.util.component.Aggre");
-        dump=check(dump,"     |");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
         dump=check(dump,"");
