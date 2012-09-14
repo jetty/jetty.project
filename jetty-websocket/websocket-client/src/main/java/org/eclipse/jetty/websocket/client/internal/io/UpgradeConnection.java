@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -82,7 +81,6 @@ public class UpgradeConnection extends AbstractConnection
 
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
-    private final Scheduler scheduler;
     private final IWebSocketClient client;
     private final HttpResponseHeaderParser parser;
     private ClientUpgradeRequest request;
@@ -92,7 +90,6 @@ public class UpgradeConnection extends AbstractConnection
         super(endp,executor);
         this.client = client;
         this.bufferPool = client.getFactory().getBufferPool();
-        this.scheduler = client.getFactory().getScheduler();
         this.parser = new HttpResponseHeaderParser();
 
         try
@@ -278,6 +275,7 @@ public class UpgradeConnection extends AbstractConnection
 
         // Now swap out the connection
         endp.setConnection(connection);
+        connection.onOpen();
     }
 
     private void validateResponse(UpgradeResponse response)
