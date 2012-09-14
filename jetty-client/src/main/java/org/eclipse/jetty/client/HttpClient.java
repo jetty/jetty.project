@@ -171,13 +171,17 @@ public class HttpClient extends AggregateLifeCycle
 
         for (HttpDestination destination : destinations.values())
             destination.close();
+
         destinations.clear();
-
         conversations.clear();
-
+        handlers.clear();
+        requestListeners.clear();
         cookieStore.clear();
+        authenticationStore.clearAuthentications();
+        authenticationStore.clearAuthenticationResults();
 
         super.doStop();
+
         LOG.info("Stopped {}", this);
     }
 
@@ -422,6 +426,11 @@ public class HttpClient extends AggregateLifeCycle
     public void setScheduler(Scheduler scheduler)
     {
         this.scheduler = scheduler;
+    }
+
+    public SelectorManager getSelectorManager()
+    {
+        return selectorManager;
     }
 
     public int getMaxConnectionsPerAddress()

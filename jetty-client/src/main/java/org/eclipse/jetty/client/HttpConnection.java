@@ -261,6 +261,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         LOG.debug("{} oshut", this);
         getEndPoint().close();
         LOG.debug("{} closed", this);
+        client.getSelectorManager().connectionClosed(this);
     }
 
     @Override

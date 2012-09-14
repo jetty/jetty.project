@@ -177,7 +177,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    protected void connectionOpened(Connection connection)
+    public void connectionOpened(Connection connection)
     {
         try
         {
@@ -194,7 +194,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just closed
      */
-    protected void connectionClosed(Connection connection)
+    public void connectionClosed(Connection connection)
     {
         try
         {
