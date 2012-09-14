@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,8 +36,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-
 public class GeneratorParserRoundtripTest
 {
     @Test
@@ -50,7 +50,7 @@ public class GeneratorParserRoundtripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(policy.getBufferSize(),false);
+        ByteBuffer out = bufferPool.acquire(8192,false);
         try
         {
             // Generate Buffer
@@ -88,7 +88,7 @@ public class GeneratorParserRoundtripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(policy.getBufferSize(),false);
+        ByteBuffer out = bufferPool.acquire(8192,false);
         try
         {
             // Setup Frame
@@ -100,7 +100,7 @@ public class GeneratorParserRoundtripTest
             frame.setMask(mask);
 
             // Generate Buffer
-            out = gen.generate(policy.getBufferSize(),frame);
+            out = gen.generate(8192,frame);
 
             // Parse Buffer
             parser.parse(out);

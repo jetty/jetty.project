@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 /**
@@ -59,7 +60,7 @@ public class Generator
      */
     public static final int OVERHEAD = 28;
 
-    private final WebSocketPolicy policy;
+    private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
     private boolean validating;
 
@@ -95,7 +96,7 @@ public class Generator
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
-        this.policy = policy;
+        this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
         this.validating = validating;
     }
@@ -177,7 +178,7 @@ public class Generator
         if (LOG.isDebugEnabled())
         {
             StringBuilder dbg = new StringBuilder();
-            dbg.append(policy.getBehavior());
+            dbg.append(behavior);
             dbg.append(" Generate.Frame[");
             dbg.append("opcode=").append(frame.getOpCode());
             dbg.append(",fin=").append(frame.isFin());
@@ -387,7 +388,7 @@ public class Generator
     {
         StringBuilder builder = new StringBuilder();
         builder.append("Generator[");
-        builder.append(policy.getBehavior());
+        builder.append(behavior);
         if (validating)
         {
             builder.append(",validating");

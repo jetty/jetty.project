@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -29,17 +31,15 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
-import static org.hamcrest.Matchers.is;
-
 public class ServerReadThread extends Thread
 {
+    private static final int BUFFER_SIZE = 8192;
     private static final Logger LOG = Log.getLogger(ServerReadThread.class);
     private final ServerConnection conn;
     private boolean active = true;
@@ -72,8 +72,7 @@ public class ServerReadThread extends Thread
     public void run()
     {
         ByteBufferPool bufferPool = conn.getBufferPool();
-        WebSocketPolicy policy = conn.getPolicy();
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
 
         int len = 0;

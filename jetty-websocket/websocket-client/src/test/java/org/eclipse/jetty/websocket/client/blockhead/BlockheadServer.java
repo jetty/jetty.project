@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.blockhead;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,9 +64,6 @@ import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 /**
  * A overly simplistic websocket server used during testing.
  * <p>
@@ -74,6 +73,7 @@ public class BlockheadServer
 {
     public static class ServerConnection implements IncomingFrames, OutgoingFrames
     {
+        private final int BUFFER_SIZE = 8192;
         private final Socket socket;
         private final ByteBufferPool bufferPool;
         private final WebSocketPolicy policy;
@@ -96,7 +96,7 @@ public class BlockheadServer
             this.socket = socket;
             this.incomingFrames = new IncomingFramesCapture();
             this.policy = WebSocketPolicy.newServerPolicy();
-            this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
+            this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
             this.parser = new Parser(policy);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
@@ -242,7 +242,7 @@ public class BlockheadServer
             LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
             int startCount = incomingFrames.size();
 
-            ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
             BufferUtil.clearToFill(buf);
             try
             {

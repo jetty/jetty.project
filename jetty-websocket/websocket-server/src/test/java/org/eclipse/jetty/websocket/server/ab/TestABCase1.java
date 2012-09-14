@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
@@ -273,7 +274,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
-            fuzzer.expect(expect);
+            fuzzer.expect(expect,TimeUnit.SECONDS,2);
         }
         finally
         {

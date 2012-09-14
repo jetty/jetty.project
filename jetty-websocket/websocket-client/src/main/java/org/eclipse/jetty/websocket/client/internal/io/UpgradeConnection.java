@@ -127,8 +127,7 @@ public class UpgradeConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        int bufSize = client.getPolicy().getBufferSize();
-        ByteBuffer buffer = bufferPool.acquire(bufSize,false);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
         try
@@ -156,7 +155,7 @@ public class UpgradeConnection extends AbstractConnection
 
     /**
      * Read / Parse the waiting read/fill buffer
-     *
+     * 
      * @param buffer
      *            the buffer to fill into from the endpoint
      * @return true if there is more to read, false if reading should stop

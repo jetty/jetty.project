@@ -222,7 +222,7 @@ public class WebSocketEventDriver implements IncomingFrames
                         }
                         else
                         {
-                            activeMessage = new SimpleBinaryMessage(websocket,events.onBinary,session,bufferPool,policy);
+                            activeMessage = new SimpleBinaryMessage(websocket,events.onBinary,session,policy);
                         }
                     }
 

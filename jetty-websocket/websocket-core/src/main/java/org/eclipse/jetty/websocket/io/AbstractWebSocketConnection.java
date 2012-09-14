@@ -153,6 +153,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         ByteBuffer buffer = null;
         synchronized (queue)
         {
+
+            LOG.debug(".flush() - flushing={} - queue.size = {}",flushing,queue.size());
             if (flushing || queue.isEmpty())
             {
                 return;
@@ -167,6 +169,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 return;
             }
 
+            LOG.debug("Next FrameBytes: {}",frameBytes);
+
             buffer = frameBytes.getByteBuffer();
 
             if (buffer == null)
@@ -175,15 +179,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
 
             flushing = true;
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
-        }
 
-        if (connectionState != BaseConnection.State.CLOSED)
-        {
-            write(buffer,frameBytes);
+            if (connectionState != BaseConnection.State.CLOSED)
+            {
+                write(buffer,frameBytes);
+            }
         }
     }
 
@@ -241,7 +246,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public State getState()
+    public BaseConnection.State getState()
     {
         return connectionState;
     }
@@ -275,7 +280,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onFillable()
     {
         LOG.debug("{} onFillable()",policy.getBehavior());
-        ByteBuffer buffer = bufferPool.acquire(policy.getBufferSize(),false);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
         try

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -37,8 +39,6 @@ import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -73,7 +73,6 @@ public class Fuzzer
 
         int bigMessageSize = 20 * MBYTE;
 
-        policy.setBufferSize(bigMessageSize);
         policy.setMaxPayloadSize(bigMessageSize);
         policy.setMaxTextMessageSize(bigMessageSize);
         policy.setMaxBinaryMessageSize(bigMessageSize);
@@ -141,6 +140,8 @@ public class Fuzzer
             WebSocketFrame actual = capture.getFrames().pop();
 
             prefix = "Frame[" + i + "]";
+
+            LOG.debug("{} {}",prefix,actual);
 
             Assert.assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();

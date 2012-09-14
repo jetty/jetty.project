@@ -47,13 +47,16 @@ public class DataFrameBytes<C> extends FrameBytes<C>
 
         if (frame.remaining() > 0)
         {
+            LOG.debug("More to send");
             // We have written a partial frame per windowing size.
             // We need to keep the correct ordering of frames, to avoid that another
             // Data frame for the same stream is written before this one is finished.
             connection.getQueue().prepend(this);
+            connection.complete(this);
         }
         else
         {
+            LOG.debug("Send complete");
             super.completed(context);
         }
         connection.flush();
@@ -64,9 +67,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
     {
         try
         {
-            int windowSize = connection.getPolicy().getBufferSize();
-
-            // TODO: windowSize should adjust according to some sort of flow control rules.
+            int windowSize = connection.getInputBufferSize();
             buffer = connection.getGenerator().generate(windowSize,frame);
             return buffer;
         }

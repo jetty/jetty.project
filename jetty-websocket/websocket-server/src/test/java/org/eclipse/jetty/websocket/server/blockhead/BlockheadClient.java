@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -39,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -65,12 +69,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-
 /**
  * A simple websocket client for performing unit tests with.
  * <p>
@@ -85,13 +83,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class BlockheadClient implements IncomingFrames, OutgoingFrames
 {
+    private static final int BUFFER_SIZE = 8192;
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
     /** Set to true to disable timeouts (for debugging reasons) */
     private boolean debug = false;
     private final URI destHttpURI;
     private final URI destWebsocketURI;
     private final ByteBufferPool bufferPool;
-    private final WebSocketPolicy policy;
     private final Generator generator;
     private final Parser parser;
     private final IncomingFramesCapture incomingFrames;
@@ -126,8 +124,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
         this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
 
-        this.policy = policy;
-        this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
+        this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy);
         this.parseCount = new AtomicInteger(0);
@@ -398,7 +395,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
         int startCount = incomingFrames.size();
 
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
         try
         {

@@ -33,6 +33,7 @@ import org.eclipse.jetty.websocket.io.WebSocketSession;
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
+    private static final int BUFFER_SIZE = 65535;
     /**
      * Threshold (of bytes) to perform compaction at
      */
@@ -55,7 +56,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
         this.session = session;
         this.bufferPool = bufferPool;
         this.policy = policy;
-        this.buf = bufferPool.acquire(policy.getBufferSize(),false);
+        this.buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(this.buf);
         size = 0;
         readPosition = this.buf.position();

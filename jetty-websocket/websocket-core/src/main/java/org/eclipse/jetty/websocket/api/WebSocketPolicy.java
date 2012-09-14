@@ -73,6 +73,8 @@ public class WebSocketPolicy
      */
     private int bufferSize = 65536;
 
+    // TODO: change bufferSize to windowSize for FrameBytes logic?
+
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
      * <p>
