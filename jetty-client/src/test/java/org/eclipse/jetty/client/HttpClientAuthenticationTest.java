@@ -19,8 +19,12 @@
 package org.eclipse.jetty.client;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -38,6 +42,7 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -76,7 +81,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         constraint.setAuthenticate(true);
         constraint.setRoles(new String[]{"*"});
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/*");
+        mapping.setPathSpec("/secure");
         mapping.setConstraint(constraint);
 
         securityHandler.addConstraintMapping(mapping);
@@ -118,7 +123,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request without Authentication causes a 401
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/test");
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.status());
@@ -165,5 +170,83 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(1, requests.get());
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
+    }
+
+    @Test
+    public void test_BasicAuthentication_ThenRedirect() throws Exception
+    {
+        startBasic(new AbstractHandler()
+        {
+            private final AtomicInteger requests = new AtomicInteger();
+
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                if (requests.incrementAndGet() == 1)
+                    response.sendRedirect(scheme + "://" + request.getServerName() + ":" + request.getServerPort() + request.getRequestURI());
+            }
+        });
+
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+
+        final AtomicInteger requests = new AtomicInteger();
+        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        };
+        client.getRequestListeners().add(requestListener);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .send()
+                .get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(3, requests.get());
+        client.getRequestListeners().remove(requestListener);
+    }
+
+    @Test
+    public void test_Redirect_ThenBasicAuthentication() throws Exception
+    {
+        startBasic(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                if (request.getRequestURI().endsWith("/redirect"))
+                    response.sendRedirect(scheme + "://" + request.getServerName() + ":" + request.getServerPort() + "/secure");
+            }
+        });
+
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+
+        final AtomicInteger requests = new AtomicInteger();
+        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        };
+        client.getRequestListeners().add(requestListener);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/redirect")
+                .send()
+                .get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(3, requests.get());
+        client.getRequestListeners().remove(requestListener);
     }
 }
