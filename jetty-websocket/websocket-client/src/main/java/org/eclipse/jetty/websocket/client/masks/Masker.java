@@ -16,13 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.masks;
+package org.eclipse.jetty.websocket.client.masks;
 
-public class ZeroMasker implements Masker
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+
+public interface Masker
 {
-    @Override
-    public void genMask(byte[] mask)
-    {
-        mask[0]=mask[1]=mask[2]=mask[3]=0;
-    }
+    void setMask(WebSocketFrame frame);
 }

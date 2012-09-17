@@ -31,6 +31,8 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 
 /**
@@ -53,6 +55,7 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
     private WebSocketConnection connection;
     private ClientUpgradeRequest upgradeRequest;
     private ClientUpgradeResponse upgradeResponse;
+    private Masker masker;
 
     public IWebSocketClient(WebSocketClientFactory factory, WebSocketEventDriver websocket)
     {
@@ -62,6 +65,7 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
         this.policy = factory.getPolicy();
         this.websocket = websocket;
         this.upgradeRequest = new ClientUpgradeRequest();
+        this.masker = new RandomMasker();
     }
 
     @Override
@@ -157,6 +161,12 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
         return factory;
     }
 
+    @Override
+    public Masker getMasker()
+    {
+        return masker;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -210,6 +220,12 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
     public URI getWebSocketUri()
     {
         return websocketUri;
+    }
+
+    @Override
+    public void setMasker(Masker masker)
+    {
+        this.masker = masker;
     }
 
     public void setUpgradeResponse(ClientUpgradeResponse response)

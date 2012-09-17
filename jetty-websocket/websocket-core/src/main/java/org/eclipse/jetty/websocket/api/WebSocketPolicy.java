@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.masks.Masker;
 
 /**
  * Settings for WebSocket operations.
@@ -83,11 +82,6 @@ public class WebSocketPolicy
     private int idleTimeout = 300000;
 
     /**
-     * The implementation for masking
-     */
-    private Masker masker = null;
-
-    /**
      * Behavior of the websockets
      */
     private final WebSocketBehavior behavior;
@@ -134,7 +128,6 @@ public class WebSocketPolicy
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.autoFragment = this.autoFragment;
-        clone.masker = this.masker;
         clone.idleTimeout = this.idleTimeout;
         clone.bufferSize = this.bufferSize;
         clone.maxPayloadSize = this.maxPayloadSize;
@@ -156,11 +149,6 @@ public class WebSocketPolicy
     public int getIdleTimeout()
     {
         return idleTimeout;
-    }
-
-    public Masker getMasker()
-    {
-        return masker;
     }
 
     public int getMaxBinaryMessageSize()
@@ -196,11 +184,6 @@ public class WebSocketPolicy
     public void setIdleTimeout(int idleTimeout)
     {
         this.idleTimeout = idleTimeout;
-    }
-
-    public void setMasker(Masker masker)
-    {
-        this.masker = masker;
     }
 
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)

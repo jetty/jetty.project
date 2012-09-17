@@ -26,6 +26,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 
 public interface WebSocketClient
@@ -36,6 +37,8 @@ public interface WebSocketClient
 
     public WebSocketClientFactory getFactory();
 
+    public Masker getMasker();
+
     public WebSocketPolicy getPolicy();
 
     public UpgradeRequest getUpgradeRequest();
@@ -45,4 +48,6 @@ public interface WebSocketClient
     public WebSocketEventDriver getWebSocket();
 
     public URI getWebSocketUri();
+
+    public void setMasker(Masker masker);
 }

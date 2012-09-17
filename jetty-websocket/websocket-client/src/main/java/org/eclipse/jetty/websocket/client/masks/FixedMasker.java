@@ -16,28 +16,31 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.masks;
+package org.eclipse.jetty.websocket.client.masks;
+
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public class FixedMasker implements Masker
 {
-    private final byte[] _mask;
+    private final byte[] mask;
 
     public FixedMasker()
     {
-        this(new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});
+        this(new byte[]
+        { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff });
     }
 
     public FixedMasker(byte[] mask)
     {
-        _mask=new byte[4];
+        this.mask = new byte[4];
         // Copy to avoid that external code keeps a reference
         // to the array parameter to modify masking on-the-fly
-        System.arraycopy(mask, 0, _mask, 0, 4);
+        System.arraycopy(mask,0,mask,0,4);
     }
 
     @Override
-    public void genMask(byte[] mask)
+    public void setMask(WebSocketFrame frame)
     {
-        System.arraycopy(_mask, 0, mask, 0, 4);
+        frame.setMask(mask);
     }
 }

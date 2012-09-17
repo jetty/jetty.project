@@ -16,9 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.masks;
+package org.eclipse.jetty.websocket.client.masks;
 
-public interface Masker
+import java.util.Arrays;
+
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+
+public class ZeroMasker implements Masker
 {
-    void genMask(byte[] mask);
+    private final byte mask[];
+
+    public ZeroMasker()
+    {
+        this.mask = new byte[4];
+        Arrays.fill(mask,(byte)0);
+    }
+
+    @Override
+    public void setMask(WebSocketFrame frame)
+    {
+        frame.setMask(mask);
+    }
 }

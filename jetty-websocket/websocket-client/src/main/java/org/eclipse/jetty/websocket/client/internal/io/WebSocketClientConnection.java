@@ -21,9 +21,12 @@ package org.eclipse.jetty.websocket.client.internal.io;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Client side WebSocket physical connection.
@@ -32,6 +35,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
     private final WebSocketClientFactory factory;
     private final IWebSocketClient client;
+    private final Masker masker;
     private boolean connected;
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, IWebSocketClient client)
@@ -40,6 +44,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.client = client;
         this.factory = client.getFactory();
         this.connected = false;
+        this.masker = client.getMasker();
     }
 
     public IWebSocketClient getClient()
@@ -52,7 +57,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         super.onClose();
         factory.sessionClosed(getSession());
-    }
+    };
 
     @Override
     public void onOpen()
@@ -63,5 +68,12 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
+    }
+
+    @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    {
+        masker.setMask(frame);
+        super.output(context,callback,frame);
     }
 }

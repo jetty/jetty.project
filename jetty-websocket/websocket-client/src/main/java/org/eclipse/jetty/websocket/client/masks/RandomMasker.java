@@ -16,13 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.masks;
+package org.eclipse.jetty.websocket.client.masks;
 
 import java.util.Random;
 
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+
 public class RandomMasker implements Masker
 {
-    private final Random _random;
+    private final Random random;
 
     public RandomMasker()
     {
@@ -31,15 +33,14 @@ public class RandomMasker implements Masker
 
     public RandomMasker(Random random)
     {
-        _random=random;
+        this.random = random;
     }
 
     @Override
-    public void genMask(byte[] mask)
+    public void setMask(WebSocketFrame frame)
     {
-        // The assumption is that this code is always called
-        // with an external lock held to prevent concurrent access
-        // Otherwise we need to synchronize on the _random.
-        _random.nextBytes(mask);
+        byte mask[] = new byte[4];
+        random.nextBytes(mask);
+        frame.setMask(mask);
     }
 }
