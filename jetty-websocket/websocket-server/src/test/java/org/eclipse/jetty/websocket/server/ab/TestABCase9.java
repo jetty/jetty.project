@@ -167,7 +167,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,2);
+            fuzzer.expect(expect);
         }
         finally
         {
@@ -357,7 +357,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,2);
+            fuzzer.expect(expect);
         }
         finally
         {
