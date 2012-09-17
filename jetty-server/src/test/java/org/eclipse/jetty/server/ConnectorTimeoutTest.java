@@ -249,16 +249,19 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 os.write("THIS DATA SHOULD NOT BE PARSED!\n\n".getBytes("utf-8"));
                 os.flush();
-                Thread.sleep(500);
+                Thread.sleep(100);
             }
             Assert.fail("half close should have timed out");
         }
         catch(SocketException e)
         {
             // expected
+            
+            // Give the SSL onClose time to act
+            Thread.sleep(100);
         }
 
-        // check the server side is closed
+        // check the server side is closed 
         Assert.assertFalse(endPoint.isOpen());
     }
 
