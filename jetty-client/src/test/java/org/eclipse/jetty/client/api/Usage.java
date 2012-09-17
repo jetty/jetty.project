@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
@@ -28,8 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
-import org.eclipse.jetty.client.util.StreamingResponseListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -161,10 +160,10 @@ public class Usage
     }
 
     @Test
-    public void testResponseStream() throws Exception
+    public void testResponseInputStream() throws Exception
     {
         HttpClient client = new HttpClient();
-        StreamingResponseListener listener = new StreamingResponseListener();
+        InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", 8080).send(listener);
         // Call to get() blocks until the headers arrived
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -182,16 +181,34 @@ public class Usage
                     // No need for output stream; for example, parse bytes
                 }
             }
-
-            // Solution 2: write to output stream
-            try (FileOutputStream output = new FileOutputStream(""))
-            {
-                listener.writeTo(output);
-            }
         }
         else
         {
             response.abort();
         }
     }
+
+//    @Test
+//    public void testResponseOutputStream() throws Exception
+//    {
+//        HttpClient client = new HttpClient();
+//
+//        try (FileOutputStream output = new FileOutputStream(""))
+//        {
+//            OutputStreamResponseListener listener = new OutputStreamResponseListener(output);
+//        client.newRequest("localhost", 8080).send(listener);
+//        // Call to get() blocks until the headers arrived
+//        Response response = listener.get(5, TimeUnit.SECONDS);
+//        if (response.status() == 200)
+//        {
+//            // Solution 2: write to output stream
+//            {
+//                listener.writeTo(output);
+//            }
+//        }
+//        else
+//        {
+//            response.abort();
+//        }
+//    }
 }
