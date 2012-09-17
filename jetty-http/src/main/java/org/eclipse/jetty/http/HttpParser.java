@@ -1147,9 +1147,20 @@ public class HttpParser
         _handler.badMessage(status, reason);
     }
 
-    /* ------------------------------------------------------------------------------- */
-    public void shutdownInput()
+    /**
+     * Notifies this parser that I/O code read a -1 and therefore no more data will arrive to be parsed.
+     * Calling this method may result in an invocation to {@link HttpHandler#messageComplete(long)}, for
+     * example when the content is delimited by the close of the connection.
+     * If the parser is already in a state that does not need data (for example, it is idle waiting for
+     * a request/response to be parsed), then calling this method is a no-operation.
+     *
+     * @return the result of the invocation to {@link HttpHandler#messageComplete(long)} if there has been
+     * one, or false otherwise.
+     */
+    public boolean shutdownInput()
     {
+        LOG.debug("shutdownInput {}", this);
+
         // was this unexpected?
         switch(_state)
         {
@@ -1159,8 +1170,7 @@ public class HttpParser
 
             case EOF_CONTENT:
                 setState(State.END);
-                _handler.messageComplete(_contentPosition);
-                break;
+                return _handler.messageComplete(_contentPosition);
 
             case CLOSED:
                 break;
@@ -1169,10 +1179,10 @@ public class HttpParser
                 setState(State.END);
                 if (!_headResponse)
                     _handler.earlyEOF();
-                _handler.messageComplete(_contentPosition);
+                return _handler.messageComplete(_contentPosition);
         }
 
-        LOG.debug("shutdownInput {}",this);
+        return false;
     }
 
     /* ------------------------------------------------------------------------------- */
