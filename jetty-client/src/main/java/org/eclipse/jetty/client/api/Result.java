@@ -99,4 +99,14 @@ public class Result
     {
         return responseFailure != null ? responseFailure : requestFailure;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s > %s] %s",
+                Result.class.getSimpleName(),
+                request,
+                response,
+                getFailure());
+    }
 }
