@@ -112,7 +112,7 @@ public class HttpExchange
         if ((status & completed) == completed)
         {
             boolean success = status == 0b1111;
-            LOG.debug("{} complete success={}", this);
+            LOG.debug("{} complete success={}", this, success);
             // Request and response completed
             if (this == conversation.last())
                 conversation.complete();
@@ -131,6 +131,9 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        return String.format("%s@%x", HttpExchange.class.getSimpleName(), hashCode());
+        return String.format("%s@%x status=%s",
+                HttpExchange.class.getSimpleName(),
+                hashCode(),
+                Integer.toBinaryString(complete.get()));
     }
 }
