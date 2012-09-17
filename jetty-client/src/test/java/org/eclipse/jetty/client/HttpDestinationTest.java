@@ -114,7 +114,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_Acquire_Release_Acquire_ReturnsSameConnection() throws Exception
+    public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection() throws Exception
     {
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
         Connection connection1 = destination.acquire();
@@ -122,6 +122,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
             connection1 = destination.getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection1);
 
+        destination.process(connection1, false);
         destination.release(connection1);
 
         Connection connection2 = destination.acquire();

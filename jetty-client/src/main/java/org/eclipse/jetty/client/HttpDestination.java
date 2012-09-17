@@ -253,8 +253,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         LOG.debug("{} released", connection);
         if (client.isRunning())
         {
-            activeConnections.remove(connection);
-            process(connection, false);
+            boolean removed = activeConnections.remove(connection);
+            if (removed)
+                process(connection, false);
+            else
+                LOG.debug("{} explicit", connection);
         }
         else
         {
