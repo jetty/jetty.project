@@ -77,9 +77,9 @@ public class QueuedThreadPoolTest
         tp.setMaxThreads(10);
         tp.setMaxIdleTimeMs(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
-
+        
         tp.start();
-
+       
         waitForThreads(tp,5);
         waitForIdle(tp,5);
 
@@ -106,15 +106,20 @@ public class QueuedThreadPoolTest
             jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
-        waitForIdle(tp,0);
-        waitForThreads(tp,5);
+        
+        waitForIdle(tp,1);
+        waitForThreads(tp,6);
 
         job=new RunningJob();
         tp.dispatch(job);
-        waitForThreads(tp,6);
+        waitForIdle(tp,1);
+        waitForThreads(tp,7);
 
         job.stop();
-        waitForThreads(tp,5);
+        waitForIdle(tp,2);
+        waitForThreads(tp,7);
+        waitForThreads(tp,6);
+        waitForIdle(tp,1);
 
         jobs[0].stop();
         waitForIdle(tp,1);
@@ -132,6 +137,7 @@ public class QueuedThreadPoolTest
             jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
+
         waitForIdle(tp,0);
         waitForThreads(tp,10);
         for (int i=0;i<9;i++)
