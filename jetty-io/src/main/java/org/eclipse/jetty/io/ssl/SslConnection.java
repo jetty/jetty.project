@@ -110,8 +110,7 @@ public class SslConnection extends AbstractConnection
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        // TODO: here we are not dispatching completion callbacks (last parameter)... is that right ?
-        super(endPoint, executor, false);
+        super(endPoint, executor);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = new DecryptedEndPoint();
