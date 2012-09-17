@@ -129,16 +129,19 @@ public class AnnotationConfiguration extends AbstractConfiguration
         MultiMap map = (MultiMap)context.getAttribute(CLASS_INHERITANCE_MAP);
         if (map != null)
             map.clear();
+        
+        context.removeAttribute(CLASS_INHERITANCE_MAP);
+        
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         if (initializers != null)
             initializers.clear();
         if (_discoverableAnnotationHandlers != null)
             _discoverableAnnotationHandlers.clear();
-        _discoverableAnnotationHandlers = null;
+      
         _classInheritanceHandler = null;
         if (_containerInitializerAnnotationHandlers != null)
             _containerInitializerAnnotationHandlers.clear();
-        _containerInitializerAnnotationHandlers = null;
+  
         super.postConfigure(context);
     }
 
