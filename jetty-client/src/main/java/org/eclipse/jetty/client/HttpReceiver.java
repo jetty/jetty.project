@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -44,7 +43,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final HttpParser parser = new HttpParser(this);
     private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
-    private volatile boolean success;
     private volatile boolean failed;
 
     public HttpReceiver(HttpConnection connection)
@@ -66,7 +64,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 LOG.debug("Read {} bytes", read);
                 if (read > 0)
                 {
-                    parser.parseNext(buffer);
+                    while (buffer.hasRemaining())
+                        parser.parseNext(buffer);
                 }
                 else if (read == 0)
                 {
@@ -76,8 +75,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 else
                 {
                     // Shutting down the parser may invoke messageComplete()
-                    parser.shutdownInput();
-                    if (!success)
+                    if (!parser.shutdownInput())
                         fail(new EOFException());
                     break;
                 }
@@ -88,7 +86,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             LOG.ignore(x);
             fail(x);
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             LOG.debug(x);
             fail(x);
@@ -197,7 +195,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     protected void success()
     {
         parser.reset();
-        success = true;
 
         HttpExchange exchange = connection.getExchange();
         HttpResponse response = exchange.response();
