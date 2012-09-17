@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,7 +25,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +36,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -169,7 +169,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // wait for idle timeout
         TimeUnit.MILLISECONDS.sleep(3 * MAX_IDLE_TIME);
 
-
         // further writes will get broken pipe or similar
         try
         {
@@ -240,6 +239,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // check client reads EOF
         assertEquals(-1, is.read());
+        assertTrue(endPoint.isOutputShutdown());
+
+        Thread.sleep(2 * MAX_IDLE_TIME);
 
         // further writes will get broken pipe or similar
         try
@@ -256,12 +258,12 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         catch(SocketException e)
         {
             // expected
-            
+
             // Give the SSL onClose time to act
             Thread.sleep(100);
         }
 
-        // check the server side is closed 
+        // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
     }
 
@@ -341,7 +343,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
     }
-
 
     @Test
     public void testMaxIdleNoRequest() throws Exception
