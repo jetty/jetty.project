@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -42,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -68,6 +64,12 @@ import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 
 /**
  * A simple websocket client for performing unit tests with.
@@ -415,14 +417,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
                     BufferUtil.flipToFlush(buf,0);
                     parser.parse(buf);
                 }
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(20);
-                }
-                catch (InterruptedException gnore)
-                {
-                    /* ignore */
-                }
+
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
                     incomingFrames.dump();
