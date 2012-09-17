@@ -53,6 +53,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
+    private static final ThreadLocal<Integer> _submissions = new ThreadLocal<Integer>()
+    {
+        @Override
+        protected Integer initialValue()
+        {
+            return 0;
+        }
+    };
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
 
     private final ManagedSelector[] _selectors;
@@ -306,7 +314,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public boolean submit(Runnable change)
         {
-            if (Thread.currentThread() != _thread)
+            int submissions = _submissions.get();
+            if (Thread.currentThread() != _thread || submissions >= 4)
             {
                 _changes.offer(change);
                 LOG.debug("Queued change {}", change);
@@ -317,10 +326,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             else
             {
-                LOG.debug("Submitted change {}", change);
-                runChanges();
-                runChange(change);
-                return true;
+                _submissions.set(submissions + 1);
+                try
+                {
+                    LOG.debug("Submitted change {}", change);
+                    runChanges();
+                    runChange(change);
+                    return true;
+                }
+                finally
+                {
+                    _submissions.set(submissions);
+                }
             }
         }
 
