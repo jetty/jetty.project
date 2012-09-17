@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -119,7 +119,7 @@ public class Fuzzer
 
     public void expect(List<WebSocketFrame> expect) throws IOException, TimeoutException
     {
-        expect(expect,TimeUnit.MILLISECONDS,500);
+        expect(expect,TimeUnit.SECONDS,5);
     }
 
     public void expect(List<WebSocketFrame> expect, TimeUnit unit, int duration) throws IOException, TimeoutException
