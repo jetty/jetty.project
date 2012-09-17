@@ -70,6 +70,7 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -79,15 +80,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class StandardSession implements ISession, Parser.Listener, Callback<StandardSession.FrameBytes>, Dumpable
 {
     private static final Logger logger = Log.getLogger(Session.class);
-    private static final ThreadLocal<Integer> handlerInvocations = new ThreadLocal<Integer>()
-    {
-        @Override
-        protected Integer initialValue()
-        {
-            return 0;
-        }
-    };
 
+    private final ForkInvoker<Runnable> invoker = new SessionInvoker();
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
@@ -688,7 +682,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
 
     private void onCredential(CredentialFrame frame)
     {
-        logger.warn("{} frame not yet supported", ControlFrameType.CREDENTIAL);
+        logger.warn("{} frame not yet supported", frame.getType());
         flush();
     }
 
@@ -1034,34 +1028,16 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         // if we call Callback.completed() only synchronously we risk
         // starvation (for the last frames sent) and stack overflow.
         // Therefore every some invocation, we dispatch to a new thread
-        Integer invocations = handlerInvocations.get();
-        if (invocations >= 4)
+        invoker.invoke(new Runnable()
         {
-            execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    if (callback != null)
-                        notifyCallbackCompleted(callback, context);
-                    flush();
-                }
-            });
-        }
-        else
-        {
-            handlerInvocations.set(invocations + 1);
-            try
+            @Override
+            public void run()
             {
                 if (callback != null)
                     notifyCallbackCompleted(callback, context);
                 flush();
             }
-            finally
-            {
-                handlerInvocations.set(invocations);
-            }
-        }
+        });
     }
 
     private <C> void notifyCallbackCompleted(Callback<C> callback, C context)
@@ -1114,7 +1090,6 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
     }
 
-
     @Override
     public String dump()
     {
@@ -1128,7 +1103,25 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         AggregateLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
     }
 
+    private class SessionInvoker extends ForkInvoker<Runnable>
+    {
+        private SessionInvoker()
+        {
+            super(4);
+        }
 
+        @Override
+        public void fork(Runnable task)
+        {
+            execute(task);
+        }
+
+        @Override
+        public void call(Runnable task)
+        {
+            task.run();
+        }
+    }
 
     public interface FrameBytes extends Comparable<FrameBytes>
     {

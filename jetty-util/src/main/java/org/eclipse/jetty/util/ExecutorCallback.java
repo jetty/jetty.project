@@ -20,83 +20,34 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.component.Dumpable;
-
 public abstract class ExecutorCallback<C> implements Callback<C>
 {
-    private final static ThreadLocal<Integer> __calls = new ThreadLocal<Integer>()
-    {
-        @Override
-        protected Integer initialValue()
-        {
-            return 0;
-        }
-    };
-
-    private final int _maxRecursion;
+    private final ForkInvoker<C> _invoker;
     private final Executor _executor;
-    private final Runnable _onNullContextCompleted = new Runnable()
-    {
-        @Override
-        public void run() { onCompleted(null); }
-    };
 
     public ExecutorCallback(Executor executor)
     {
-        this(executor,4);
+        this(executor, 4);
     }
 
-    public ExecutorCallback(Executor executor,int maxRecursion)
+    public ExecutorCallback(Executor executor, int maxRecursion)
     {
-        _executor=executor;
-        _maxRecursion=maxRecursion;
+        _executor = executor;
+        _invoker = new ExecutorCallbackInvoker(maxRecursion);
     }
 
     @Override
     public final void completed(final C context)
     {
         // Should we execute?
-        if (!alwaysDispatchCompletion())
+        if (alwaysDispatchCompletion())
         {
-            // Do we have a recursion limit?
-            if (_maxRecursion<=0)
-            {
-                // No, so just call it directly
-                onCompleted(context);
-                return;
-            }
-            else
-            {
-                // Has this thread exceeded the recursion limit
-                Integer calls=__calls.get();
-                if (calls<_maxRecursion)
-                {
-                    // No, so increment recursion count, call, then decrement
-                    try
-                    {
-                        __calls.set(calls+1);
-                        onCompleted(context);
-                        return;
-                    }
-                    finally
-                    {
-                        __calls.set(calls);
-                    }
-                }
-            }
+            _invoker.fork(context);
         }
-
-        // fallen through to here so execute
-        _executor.execute(context==null?_onNullContextCompleted:new Runnable()
+        else
         {
-            @Override
-            public void run() { onCompleted(context);}
-            @Override
-            public String toString()
-            {
-                return String.format("ExectorCB$Completed@%x{%s}",hashCode(),context);
-            }
-        });
+            _invoker.invoke(context);
+        }
     }
 
     protected abstract void onCompleted(C context);
@@ -105,22 +56,22 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     public final void failed(final C context, final Throwable x)
     {
         // Always execute failure
-        Runnable runnable=new Runnable()
+        Runnable runnable = new Runnable()
         {
             @Override
             public void run()
             {
-                onFailed(context,x);
+                onFailed(context, x);
             }
 
             @Override
             public String toString()
             {
-                return String.format("ExectorCB$Failed@%x{%s,%s}",hashCode(),context,x);
+                return String.format("ExecutorCallback@%x{%s,%s}", hashCode(), context, x);
             }
         };
 
-        if (_executor==null)
+        if (_executor == null)
             new Thread(runnable).start();
         else
             _executor.execute(runnable);
@@ -132,12 +83,51 @@ public abstract class ExecutorCallback<C> implements Callback<C>
 
     protected boolean alwaysDispatchCompletion()
     {
-        return _executor!=null;
+        return _executor != null;
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x", getClass(), hashCode());
+    }
+
+    private class ExecutorCallbackInvoker extends ForkInvoker<C> implements Runnable
+    {
+        private ExecutorCallbackInvoker(int maxInvocations)
+        {
+            super(maxInvocations);
+        }
+
+        @Override
+        public void fork(final C context)
+        {
+            _executor.execute(context == null ? this : new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    call(context);
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format("ExecutorCallback@%x{%s}", hashCode(), context);
+                }
+            });
+        }
+
+        @Override
+        public void call(C context)
+        {
+            onCompleted(context);
+        }
+
+        @Override
+        public void run()
+        {
+            call(null);
+        }
     }
 }

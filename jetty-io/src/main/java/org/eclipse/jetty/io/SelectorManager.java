@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -53,14 +54,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    private static final ThreadLocal<Integer> _submissions = new ThreadLocal<Integer>()
-    {
-        @Override
-        protected Integer initialValue()
-        {
-            return 0;
-        }
-    };
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
 
     private final ManagedSelector[] _selectors;
@@ -274,6 +267,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
+        private final ForkInvoker<Runnable> invoker = new ManagedSelectorInvoker();
         private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private final int _id;
         private Selector _selector;
@@ -314,31 +308,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public boolean submit(Runnable change)
         {
-            int submissions = _submissions.get();
-            if (Thread.currentThread() != _thread || submissions >= 4)
-            {
-                _changes.offer(change);
-                LOG.debug("Queued change {}", change);
-                boolean wakeup = _needsWakeup;
-                if (wakeup)
-                    wakeup();
-                return false;
-            }
-            else
-            {
-                _submissions.set(submissions + 1);
-                try
-                {
-                    LOG.debug("Submitted change {}", change);
-                    runChanges();
-                    runChange(change);
-                    return true;
-                }
-                finally
-                {
-                    _submissions.set(submissions);
-                }
-            }
+            return !invoker.invoke(change);
         }
 
         private void runChanges()
@@ -590,6 +560,38 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     super.toString(),
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
+        }
+
+        private class ManagedSelectorInvoker extends ForkInvoker<Runnable>
+        {
+            private ManagedSelectorInvoker()
+            {
+                super(4);
+            }
+
+            @Override
+            protected boolean condition()
+            {
+                return Thread.currentThread() != _thread;
+            }
+
+            @Override
+            public void fork(Runnable change)
+            {
+                _changes.offer(change);
+                LOG.debug("Queued change {}", change);
+                boolean wakeup = _needsWakeup;
+                if (wakeup)
+                    wakeup();
+            }
+
+            @Override
+            public void call(Runnable change)
+            {
+                LOG.debug("Submitted change {}", change);
+                runChanges();
+                runChange(change);
+            }
         }
 
         private class DumpKeys implements Runnable
