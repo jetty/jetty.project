@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
+import org.eclipse.jetty.websocket.extensions.permessage.CompressExtension;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -72,7 +72,7 @@ public class DeflateFrameExtensionTest
         policy.setBufferSize(100000);
         policy.setMaxPayloadSize(150000);
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
@@ -110,7 +110,7 @@ public class DeflateFrameExtensionTest
         // ensure that test remains sane
         Assert.assertThat("Medium Payload Length",msg.length(),allOf(greaterThanOrEqualTo(0x7E),lessThanOrEqualTo(0xFF_FF)));
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=8");
@@ -133,7 +133,7 @@ public class DeflateFrameExtensionTest
     @Test
     public void testFlateSmall()
     {
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=8");
@@ -168,7 +168,7 @@ public class DeflateFrameExtensionTest
     @Test
     public void testFlateSmall_Many()
     {
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=8");
@@ -203,7 +203,7 @@ public class DeflateFrameExtensionTest
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
@@ -257,7 +257,7 @@ public class DeflateFrameExtensionTest
     public void testIncomingPing() {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
@@ -292,7 +292,7 @@ public class DeflateFrameExtensionTest
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
@@ -346,7 +346,7 @@ public class DeflateFrameExtensionTest
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
@@ -412,7 +412,7 @@ public class DeflateFrameExtensionTest
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
-        DeflateFrameExtension ext = new DeflateFrameExtension();
+        CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");

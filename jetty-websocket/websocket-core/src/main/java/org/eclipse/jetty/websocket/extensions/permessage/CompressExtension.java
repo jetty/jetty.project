@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.extensions.deflate;
+package org.eclipse.jetty.websocket.extensions.permessage;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,13 +35,14 @@ import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
- * @TODO Implement proposed deflate frame draft
+ * Per Message Compression extension for WebSocket.
+ * <p>
+ * Attempts to follow <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-00">draft-ietf-hybi-permessage-compression-00</a>
  */
-public class DeflateFrameExtension extends Extension
+public class CompressExtension extends Extension
 {
-    private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);
+    private static final Logger LOG = Log.getLogger(CompressExtension.class);
 
-    private int minLength = 8;
     private Deflater deflater;
     private Inflater inflater;
 
@@ -193,13 +194,6 @@ public class DeflateFrameExtension extends Extension
             return;
         }
 
-        if (frame.getPayloadLength() < minLength)
-        {
-            // skip, frame too small to care compressing it.
-            nextOutput(context,callback,frame);
-            return;
-        }
-
         ByteBuffer data = frame.getPayload();
         try
         {
@@ -258,8 +252,6 @@ public class DeflateFrameExtension extends Extension
     {
         super.setConfig(config);
 
-        minLength = config.getParameter("minLength",minLength);
-
         deflater = new Deflater(Deflater.BEST_COMPRESSION);
         deflater.setStrategy(Deflater.DEFAULT_STRATEGY);
         inflater = new Inflater();
@@ -268,7 +260,7 @@ public class DeflateFrameExtension extends Extension
     @Override
     public String toString()
     {
-        return String.format("DeflateFrameExtension[minLength=%d]",minLength);
+        return String.format("CompressExtension[]");
     }
 
     /**

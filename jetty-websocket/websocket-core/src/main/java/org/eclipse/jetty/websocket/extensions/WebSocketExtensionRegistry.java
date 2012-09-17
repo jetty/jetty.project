@@ -30,9 +30,9 @@ import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
 import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
+import org.eclipse.jetty.websocket.extensions.permessage.CompressExtension;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public class WebSocketExtensionRegistry implements ExtensionRegistry
@@ -50,7 +50,7 @@ public class WebSocketExtensionRegistry implements ExtensionRegistry
 
         this.registry.put("identity",IdentityExtension.class);
         this.registry.put("fragment",FragmentExtension.class);
-        this.registry.put("x-deflate-frame",DeflateFrameExtension.class);
+        this.registry.put("permessage-compress",CompressExtension.class);
     }
 
     @Override
