@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -37,8 +40,6 @@ import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -252,6 +253,28 @@ public class Fuzzer
     public void send(WebSocketFrame send) throws IOException
     {
         send(Collections.singletonList(send));
+    }
+
+    public void sendAndIgnoreBrokenPipe(List<WebSocketFrame> send) throws IOException
+    {
+        try
+        {
+            send(send);
+        }
+        catch (SocketException ignore)
+        {
+            // Potential for SocketException (Broken Pipe) here.
+            // But not in 100% of testing scenarios. It is a safe
+            // exception to ignore in this testing scenario, as the
+            // slow writing of the frames can result in the server
+            // throwing a PROTOCOL ERROR termination/close when it
+            // encounters the bad continuation frame above (this
+            // termination is the expected behavior), and this
+            // early socket close can propagate back to the client
+            // before it has a chance to finish writing out the
+            // remaining frame octets
+            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(),containsString("broken pipe"));
+        }
     }
 
     public void setSendMode(SendMode sendMode)

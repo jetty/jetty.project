@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +84,7 @@ public class TestABCase5 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
-            fuzzer.send(send);
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
@@ -114,23 +113,7 @@ public class TestABCase5 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(1);
-            try
-            {
-                fuzzer.send(send);
-            }
-            catch (SocketException ignore)
-            {
-                // Potential for SocketException (Broken Pipe) here.
-                // But not in 100% of testing scenarios. It is a safe
-                // exception to ignore in this testing scenario, as the
-                // slow writing of the frames can result in the server
-                // throwing a PROTOCOL ERROR termination/close when it
-                // encounters the bad continuation frame above (this
-                // termination is the expected behavior), and this
-                // early socket close can propagate back to the client
-                // before it has a chance to finish writing out the
-                // remaining frame octets
-            }
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
@@ -158,7 +141,7 @@ public class TestABCase5 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
@@ -186,7 +169,7 @@ public class TestABCase5 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
-            fuzzer.send(send);
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
@@ -215,23 +198,7 @@ public class TestABCase5 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(1);
-            try
-            {
-                fuzzer.send(send);
-            }
-            catch (SocketException ignore)
-            {
-                // Potential for SocketException (Broken Pipe) here.
-                // But not in 100% of testing scenarios. It is a safe
-                // exception to ignore in this testing scenario, as the
-                // slow writing of the frames can result in the server
-                // throwing a PROTOCOL ERROR termination/close when it
-                // encounters the bad continuation frame above (this
-                // termination is the expected behavior), and this
-                // early socket close can propagate back to the client
-                // before it has a chance to finish writing out the
-                // remaining frame octets
-            }
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
@@ -294,7 +261,7 @@ public class TestABCase5 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
+            fuzzer.sendAndIgnoreBrokenPipe(send);
             fuzzer.expect(expect);
         }
         finally
