@@ -131,9 +131,12 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        return String.format("%s@%x status=%s",
+        String padding = "0000";
+        String status = Integer.toBinaryString(complete.get());
+        return String.format("%s@%x status=%s%s",
                 HttpExchange.class.getSimpleName(),
                 hashCode(),
-                Integer.toBinaryString(complete.get()));
+                padding.substring(status.length()),
+                status);
     }
 }
