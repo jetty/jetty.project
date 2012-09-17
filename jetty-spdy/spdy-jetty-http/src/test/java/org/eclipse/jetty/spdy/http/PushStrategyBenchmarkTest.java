@@ -20,6 +20,7 @@
 package org.eclipse.jetty.spdy.http;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -44,8 +52,9 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Ignore;
+import org.junit.Test;
 
-@Ignore // TODO: update when jetty client is available
+@Ignore("make this test pass") // TODO
 public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 {
     // Sample resources size from webtide.com home page
@@ -67,122 +76,107 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         super(version);
     }
 
-    //TODO:
+    @Test
+    public void benchmarkPushStrategy() throws Exception
+    {
+        InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler());
 
-//    @Test
-//    public void benchmarkPushStrategy() throws Exception
-//    {
-//        InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler());
-//
-//        // Plain HTTP
-//        ConnectionFactory dacf = new ServerHTTPAsyncConnectionFactory(connector);
-//        connector.setDefaultAsyncConnectionFactory(dacf);
-//        HttpClient httpClient = new HttpClient();
-//        // Simulate browsers, that open 6 connection per origin
-//        httpClient.setMaxConnectionsPerAddress(6);
-//        httpClient.start();
-//        benchmarkHTTP(httpClient);
-//        httpClient.stop();
-//
-//        // First push strategy
-//        PushStrategy pushStrategy = new PushStrategy.None();
-//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-//        connector.setDefaultAsyncConnectionFactory(dacf);
-//        Session session = startClient(version, address, new ClientSessionFrameListener());
-//        benchmarkSPDY(pushStrategy, session);
-//        session.goAway().get(5, TimeUnit.SECONDS);
-//
-//        // Second push strategy
-//        pushStrategy = new ReferrerPushStrategy();
-//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-//        connector.setDefaultAsyncConnectionFactory(dacf);
-//        session = startClient(version, address, new ClientSessionFrameListener());
-//        benchmarkSPDY(pushStrategy, session);
-//        session.goAway().get(5, TimeUnit.SECONDS);
-//    }
-//
-//    private void benchmarkHTTP(HttpClient httpClient) throws Exception
-//    {
-//        // Warm up
-//        performHTTPRequests(httpClient);
-//        performHTTPRequests(httpClient);
-//
-//        long total = 0;
-//        for (int i = 0; i < runs; ++i)
-//        {
-//            long begin = System.nanoTime();
-//            int requests = performHTTPRequests(httpClient);
-//            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
-//            total += elapsed;
-//            System.err.printf("HTTP: run %d, %d request(s), roundtrip delay %d ms, elapsed = %d%n",
-//                    i, requests, roundtrip, elapsed);
-//        }
-//        System.err.printf("HTTP: roundtrip delay %d ms, average = %d%n%n",
-//                roundtrip, total / runs);
-//    }
-//
-//    private int performHTTPRequests(HttpClient httpClient) throws Exception
-//    {
-//        int result = 0;
-//
-//        for (int j = 0; j < htmlResources.length; ++j)
-//        {
-//            latch.set(new CountDownLatch(cssResources.length + jsResources.length + pngResources.length));
-//
-//            String primaryPath = "/" + j + ".html";
-//            String referrer = new StringBuilder("http://localhost:").append(connector.getLocalPort()).append(primaryPath).toString();
-//            ContentExchange exchange = new ContentExchange(true);
-//            exchange.setMethod("GET");
-//            exchange.setRequestURI(primaryPath);
-//            exchange.setVersion("HTTP/1.1");
-//            exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-//            exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-//            ++result;
-//            httpClient.send(exchange);
-//            Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
-//            Assert.assertEquals(200, exchange.getResponseStatus());
-//
-//            for (int i = 0; i < cssResources.length; ++i)
-//            {
-//                String path = "/" + i + ".css";
-//                exchange = createExchangeWithReferrer(referrer, path);
-//                ++result;
-//                httpClient.send(exchange);
-//            }
-//            for (int i = 0; i < jsResources.length; ++i)
-//            {
-//                String path = "/" + i + ".js";
-//                exchange = createExchangeWithReferrer(referrer, path);
-//                ++result;
-//                httpClient.send(exchange);
-//            }
-//            for (int i = 0; i < pngResources.length; ++i)
-//            {
-//                String path = "/" + i + ".png";
-//                exchange = createExchangeWithReferrer(referrer, path);
-//                ++result;
-//                httpClient.send(exchange);
-//            }
-//
-//            Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
-//        }
-//
-//        return result;
-//    }
-//
-//    private ContentExchange createExchangeWithReferrer(String referrer, String path)
-//    {
-//        ContentExchange exchange;
-//        exchange = new TestExchange();
-//        exchange.setMethod("GET");
-//        exchange.setRequestURI(path);
-//        exchange.setVersion("HTTP/1.1");
-//        exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-//        exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-//        exchange.setRequestHeader("referer", referrer);
-//        return exchange;
-//    }
+        // Plain HTTP
+        ConnectionFactory factory = new HttpConnectionFactory(new HttpChannelConfig());
+        connector.setDefaultProtocol(factory.getProtocol());
+        HttpClient httpClient = new HttpClient();
+        // Simulate browsers, that open 6 connection per origin
+        httpClient.setMaxConnectionsPerAddress(6);
+        httpClient.start();
+        benchmarkHTTP(httpClient);
+        httpClient.stop();
 
+        // First push strategy
+        PushStrategy pushStrategy = new PushStrategy.None();
+        factory = new HTTPSPDYServerConnectionFactory(version, new HttpChannelConfig(), pushStrategy);
+        connector.setDefaultProtocol(factory.getProtocol());
+        Session session = startClient(version, address, new ClientSessionFrameListener());
+        benchmarkSPDY(pushStrategy, session);
+        session.goAway().get(5, TimeUnit.SECONDS);
+
+        // Second push strategy
+        pushStrategy = new ReferrerPushStrategy();
+        factory = new HTTPSPDYServerConnectionFactory(version, new HttpChannelConfig(), pushStrategy);
+        connector.setDefaultProtocol(factory.getProtocol());
+        session = startClient(version, address, new ClientSessionFrameListener());
+        benchmarkSPDY(pushStrategy, session);
+        session.goAway().get(5, TimeUnit.SECONDS);
+    }
+
+    private void benchmarkHTTP(HttpClient httpClient) throws Exception
+    {
+        // Warm up
+        performHTTPRequests(httpClient);
+        performHTTPRequests(httpClient);
+
+        long total = 0;
+        for (int i = 0; i < runs; ++i)
+        {
+            long begin = System.nanoTime();
+            int requests = performHTTPRequests(httpClient);
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+            total += elapsed;
+            System.err.printf("HTTP: run %d, %d request(s), roundtrip delay %d ms, elapsed = %d%n",
+                    i, requests, roundtrip, elapsed);
+        }
+        System.err.printf("HTTP: roundtrip delay %d ms, average = %d%n%n",
+                roundtrip, total / runs);
+    }
+
+    private int performHTTPRequests(HttpClient httpClient) throws Exception
+    {
+        int result = 0;
+
+        for (int j = 0; j < htmlResources.length; ++j)
+        {
+            latch.set(new CountDownLatch(cssResources.length + jsResources.length + pngResources.length));
+
+            String primaryPath = "/" + j + ".html";
+            String referrer = "http://localhost:" + connector.getLocalPort() + primaryPath;
+            ++result;
+            ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+                    .path(primaryPath)
+                    .send().get(5, TimeUnit.SECONDS);
+            Assert.assertEquals(200, response.status());
+
+            for (int i = 0; i < cssResources.length; ++i)
+            {
+                String path = "/" + i + ".css";
+                ++result;
+                httpClient.newRequest("localhost", connector.getLocalPort())
+                        .path(path)
+                        .header("Referer", referrer)
+                        .send(new TestListener());
+            }
+            for (int i = 0; i < jsResources.length; ++i)
+            {
+                String path = "/" + i + ".js";
+                ++result;
+                httpClient.newRequest("localhost", connector.getLocalPort())
+                        .path(path)
+                        .header("Referer", referrer)
+                        .send(new TestListener());
+            }
+            for (int i = 0; i < pngResources.length; ++i)
+            {
+                String path = "/" + i + ".png";
+                ++result;
+                httpClient.newRequest("localhost", connector.getLocalPort())
+                        .path(path)
+                        .header("Referer", referrer)
+                        .send(new TestListener());
+            }
+
+            Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        }
+
+        return result;
+    }
 
     private void benchmarkSPDY(PushStrategy pushStrategy, Session session) throws Exception
     {
@@ -214,7 +208,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             pushedResources.clear();
 
             String primaryPath = "/" + j + ".html";
-            String referrer = new StringBuilder("http://localhost:").append(connector.getLocalPort()).append(primaryPath).toString();
+            String referrer = "http://localhost:" + connector.getLocalPort() + primaryPath;
             Fields headers = new Fields();
             headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
             headers.put(HTTPSPDYHeader.URI.name(version), primaryPath);
@@ -386,18 +380,13 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
     }
 
-    //TODO:
-//    private class TestExchange extends ContentExchange
-//    {
-//        private TestExchange()
-//        {
-//            super(true);
-//        }
-//
-//        @Override
-//        protected void onResponseComplete() throws IOException
-//        {
-//            latch.get().countDown();
-//        }
-//    }
+    private class TestListener extends Response.Listener.Empty
+    {
+        @Override
+        public void onComplete(Result result)
+        {
+            if (!result.isFailed())
+                latch.get().countDown();
+        }
+    }
 }
