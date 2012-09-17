@@ -67,7 +67,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         __currentConnection.set(connection);
     }
-    
+
     public HttpChannelConfig getHttpChannelConfig()
     {
         return _config;
@@ -128,7 +128,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         _generator.reset();
         _channel.reset();
-        
+
         releaseRequestBuffer();
         if (_chunk!=null)
         {
@@ -136,8 +136,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _chunk=null;
         }
     }
-    
-   
+
+
     @Override
     public int getMessagesIn()
     {
@@ -187,9 +187,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
-                // Can the parser progress (even with an empty buffer)     
+                // Can the parser progress (even with an empty buffer)
                 boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-                
+
                 // If there is a request buffer, we are re-entering here
                 if (!event && BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -500,11 +500,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             fillInterested();
         }
-
-        // return if the connection has been changed
-        if (getEndPoint().getConnection() != this)
-            return;
-
     }
 
 
