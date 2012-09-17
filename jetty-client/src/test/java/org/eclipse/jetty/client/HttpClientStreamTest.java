@@ -18,15 +18,24 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -79,5 +88,41 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         // Give some time to the server to consume the request content
         // This is just to avoid exception traces in the test output
         Thread.sleep(1000);
+    }
+
+    @Test
+    public void testDownload() throws Exception
+    {
+        final byte[] data = new byte[128 * 1024];
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().write(data);
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(listener);
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+
+        InputStream input = listener.getInputStream();
+        Assert.assertNotNull(input);
+
+        int length = 0;
+        while (input.read() >= 0)
+            ++length;
+
+        Assert.assertEquals(data.length, length);
+
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(result);
+        Assert.assertSame(response, result.getResponse());
     }
 }

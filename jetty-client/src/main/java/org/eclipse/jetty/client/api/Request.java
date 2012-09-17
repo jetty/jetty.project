@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.util.StreamingResponseListener;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -213,7 +213,7 @@ public interface Request
      * that the response content can be buffered without exceeding memory constraints.
      * For example, this method is not appropriate to download big files from a server; consider using
      * {@link #send(Response.Listener)} instead, passing your own {@link Response.Listener} or a utility
-     * listener such as {@link StreamingResponseListener}.
+     * listener such as {@link InputStreamResponseListener}.
      * <p />
      * The future will return when {@link Response.Listener#onComplete(Result)} is invoked.
      *
