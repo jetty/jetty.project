@@ -64,7 +64,7 @@ public class SelectChannelStatisticsTest
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
-        _connector = new SelectChannelConnector(_server)
+        _connector = new ServerConnector(_server)
         {
             @Override
             public void connectionClosed(Connection connection)

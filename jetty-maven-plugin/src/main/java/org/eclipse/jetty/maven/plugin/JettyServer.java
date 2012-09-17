@@ -22,7 +22,7 @@ package org.eclipse.jetty.maven.plugin;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -116,7 +116,7 @@ public class JettyServer extends org.eclipse.jetty.server.Server
 
     public Connector createDefaultConnector(Server server, String portnum) throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector(server);
+        ServerConnector connector = new ServerConnector(server);
         int port = ((portnum==null||portnum.equals(""))?DEFAULT_PORT:Integer.parseInt(portnum.trim()));
         connector.setPort(port);
         connector.setIdleTimeout(DEFAULT_MAX_IDLE_TIME);

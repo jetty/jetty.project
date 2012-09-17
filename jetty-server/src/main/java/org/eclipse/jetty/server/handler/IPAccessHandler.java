@@ -325,24 +325,6 @@ public class IPAccessHandler extends HandlerWrapper
 
     /* ------------------------------------------------------------ */
     /**
-     * Dump the white- and black-list configurations when started
-     *
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
-     */
-    @Override
-    protected void doStart()
-        throws Exception
-    {
-        super.doStart();
-
-        if (LOG.isDebugEnabled())
-        {
-            System.err.println(dump());
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Dump the handler configuration
      */
     public String dump()

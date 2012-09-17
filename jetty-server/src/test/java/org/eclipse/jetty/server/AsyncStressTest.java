@@ -54,7 +54,7 @@ public class AsyncStressTest
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected Server _server = new Server(_threads);
     protected SuspendHandler _handler = new SuspendHandler();
-    protected SelectChannelConnector _connector;
+    protected ServerConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
@@ -73,7 +73,7 @@ public class AsyncStressTest
     {
         _server.manage(_threads);
         _threads.setMaxThreads(50);
-        _connector = new HttpServerConnector(_server);
+        _connector = new ServerConnector(_server);
         _connector.setIdleTimeout(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);

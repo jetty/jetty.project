@@ -30,17 +30,20 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An AggregateLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
- * <p/>
+ * <p>
  * Beans can be added the AggregateLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
  * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
- * <p/>
- * When a bean is added, if it is a {@link LifeCycle} and it is already started, then it is assumed to be an unmanaged bean.
- * Otherwise the methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to
+ * <p>
+ * When a {@link LifeCycle} bean is added with out a managed state being specified, if it is already started, then it is assumed to be an unmanaged bean.
+ * If it is not started then it is added in and auto managed state, which means that when this bean is itself started, it if must also start the added bean, then it 
+ * is switched from Auto to be a managed bean.  Otherwise it becomes an unmanaged bean.    Simply put an Auto bean will be stopped by this aggregate only if it 
+ * is started by this aggregate.
+ * <p>
+ * The methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to
  * explicitly control the life cycle relationship.
- * <p/>
+ * <p>
  * If adding a bean that is shared between multiple {@link AggregateLifeCycle} instances, then it should be started before being added, so it is unmanaged, or
  * the API must be used to explicitly set it as unmanaged.
- * <p/>
  */
 public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable, Dumpable
 {

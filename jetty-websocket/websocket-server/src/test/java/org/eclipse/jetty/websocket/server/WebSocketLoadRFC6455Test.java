@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -155,7 +155,7 @@ public class WebSocketLoadRFC6455Test
 
     private static Server _server;
 
-    private static SelectChannelConnector _connector;
+    private static ServerConnector _connector;
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -165,7 +165,7 @@ public class WebSocketLoadRFC6455Test
         _server = new Server(threadPool);
         _server.manage(threadPool);
 
-        _connector = new SelectChannelConnector(_server);
+        _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
         WebSocketHandler wsHandler = new WebSocketHandler.Simple(MyEchoSocket.class);

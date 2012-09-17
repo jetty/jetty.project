@@ -5,7 +5,7 @@
  
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.nio.ServerConnector">
             <Set name="port">8080</Set>
           </New>
       </Arg>

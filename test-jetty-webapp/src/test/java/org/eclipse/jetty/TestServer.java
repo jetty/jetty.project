@@ -31,7 +31,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -77,21 +77,21 @@ public class TestServer
         mbContainer.addBean(Log.getLog());
 
         // Setup Connectors
-        SelectChannelConnector connector0 = new SelectChannelConnector(server);
+        ServerConnector connector0 = new ServerConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
         connector0.getConnectionFactory(HttpConnectionFactory.class).getHttpChannelConfig().setSecurePort(8443);
         server.addConnector(connector0);
 
         // Setup Connectors
-        SelectChannelConnector connector1 = new SelectChannelConnector(server);
+        ServerConnector connector1 = new ServerConnector(server);
         connector1.setPort(8081);
         connector1.setIdleTimeout(30000);
         connector1.getConnectionFactory(HttpConnectionFactory.class).getHttpChannelConfig().setSecurePort(8443);
         server.addConnector(connector1);
 
      
-        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,new SslContextFactory());
+        ServerConnector ssl_connector = new ServerConnector(server,new SslContextFactory());
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
         cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");

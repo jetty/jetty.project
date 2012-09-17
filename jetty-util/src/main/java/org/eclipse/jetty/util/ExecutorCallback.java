@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.component.Dumpable;
 
 public abstract class ExecutorCallback<C> implements Callback<C>
 {
@@ -55,7 +56,7 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     public final void completed(final C context)
     {
         // Should we execute?
-        if (!shouldDispatchCompletion())
+        if (!alwaysDispatchCompletion())
         {
             // Do we have a recursion limit?
             if (_maxRecursion<=0)
@@ -129,8 +130,14 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     {
     }
 
-    protected boolean shouldDispatchCompletion()
+    protected boolean alwaysDispatchCompletion()
     {
         return _executor!=null;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass(), hashCode());
     }
 }

@@ -187,9 +187,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
-                // Can the parser progress (even with an empty buffer)
+                // Can the parser progress (even with an empty buffer)     
                 boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-
+                
                 // If there is a request buffer, we are re-entering here
                 if (!event && BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -199,7 +199,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     int filled = getEndPoint().fill(_requestBuffer);
                     if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
                         filled = getEndPoint().fill(_requestBuffer);
-                        
 
                     LOG.debug("{} filled {}", this, filled);
 

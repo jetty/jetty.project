@@ -221,12 +221,7 @@ public class LocalConnector extends AbstractConnector
                 try
                 {
                     if (!_closed.await(10,TimeUnit.SECONDS))
-                    {
-                        System.err.println("wait timeout:\n--");
-                        System.err.println(takeOutputString());
-                        System.err.println("==");
                         break;
-                    }
                 }
                 catch(Exception e)
                 {

@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.spdy.NPNServerConnectionFactory;
@@ -51,7 +51,7 @@ public class ManyConnectors
         Server server = new Server();
 
         // HTTP connector
-        SelectChannelConnector connector0 = new SelectChannelConnector(server);
+        ServerConnector connector0 = new ServerConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
 
@@ -61,7 +61,7 @@ public class ManyConnectors
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         
-        SelectChannelConnector connector1 = new SelectChannelConnector(server,sslContextFactory);
+        ServerConnector connector1 = new ServerConnector(server,sslContextFactory);
         connector1.setPort(8443);
         
         
@@ -98,7 +98,7 @@ public class ManyConnectors
         TimerScheduler scheduler = new TimerScheduler();
         ByteBufferPool bufferPool= new ArrayByteBufferPool(32,4096,32768);
         
-        SelectChannelConnector connector2 = new SelectChannelConnector(server,threadPool,scheduler,bufferPool,2,2,ssl,npn,spdy3,spdy2,http);            
+        ServerConnector connector2 = new ServerConnector(server,threadPool,scheduler,bufferPool,2,2,ssl,npn,spdy3,spdy2,http);            
         connector2.setDefaultProtocol("ssl-npn");
         connector2.setPort(8444);
         connector2.setIdleTimeout(30000);

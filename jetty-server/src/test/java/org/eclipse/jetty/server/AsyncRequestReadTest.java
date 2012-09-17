@@ -46,14 +46,14 @@ import org.junit.Test;
 public class AsyncRequestReadTest
 {
     private static Server server;
-    private static SelectChannelConnector connector;
+    private static ServerConnector connector;
     private final static Exchanger<Long> __total=new Exchanger<Long>();
 
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new Server();
-        connector = new HttpServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());

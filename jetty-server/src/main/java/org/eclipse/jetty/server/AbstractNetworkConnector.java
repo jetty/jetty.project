@@ -26,7 +26,9 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * <p>Partial implementation of {@link NetworkConnector}.</p>
+ * An abstract Network Connector.
+ * <p>
+ * Extends the {@link AbstractConnector} support for the {@link NetworkConnector} interface.
  */
 public abstract class AbstractNetworkConnector extends AbstractConnector implements NetworkConnector
 {

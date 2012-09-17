@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -66,7 +66,7 @@ public class LikeJettyXml
         // Setup Connectors
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpChannelConfig().setSecurePort(8443);        
-        SelectChannelConnector connector = new SelectChannelConnector(server,http);
+        ServerConnector connector = new ServerConnector(server,http);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
 
@@ -89,7 +89,7 @@ public class LikeJettyXml
                         "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                         "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        SelectChannelConnector sslConnector = new SelectChannelConnector(server,sslContextFactory);
+        ServerConnector sslConnector = new ServerConnector(server,sslContextFactory);
         sslConnector.setPort(8443);
         server.addConnector(sslConnector);
         sslConnector.open();

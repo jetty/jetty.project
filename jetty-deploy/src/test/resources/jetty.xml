@@ -27,7 +27,7 @@
 
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.ServerConnector">
             <Arg><Ref id="Server" /></Arg>
             <Set name="host"></Set>
             <Set name="port">0</Set>

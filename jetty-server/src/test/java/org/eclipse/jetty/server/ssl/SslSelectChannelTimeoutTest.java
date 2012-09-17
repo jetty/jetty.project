@@ -26,7 +26,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
 
@@ -50,7 +50,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
-        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
+        ServerConnector connector = new ServerConnector(_server, sslContextFactory);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         startServer(connector);
 

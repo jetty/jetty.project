@@ -23,7 +23,7 @@ import java.util.Collection;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -80,7 +80,7 @@ public abstract class AbstractHttpClientServerTest
 
         if (server == null)
             server = new Server();
-        connector = new SelectChannelConnector(server, sslContextFactory);
+        connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();

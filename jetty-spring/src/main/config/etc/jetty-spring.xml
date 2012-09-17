@@ -30,7 +30,7 @@
     
     <property name="connectors">
       <list>
-        <bean id="Connector" class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+        <bean id="Connector" class="org.eclipse.jetty.server.ServerConnector">
           <property name="port" value="8080"/>
         </bean>
       </list>

@@ -58,7 +58,7 @@ import org.junit.Test;
 public class ResponseTest
 {
     private Server _server;
-    private HttpChannel _channel;
+    private HttpChannel<?> _channel;
     private Scheduler _scheduler;
 
     @Before
@@ -500,7 +500,7 @@ public class ResponseTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String string, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     response.setStatus(200);
                     response.setContentType("text/plain");
@@ -516,10 +516,11 @@ public class ResponseTest
             server.start();
 
             Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort());
+            socket.setSoTimeout(500000);
             socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
             socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
             socket.getOutputStream().flush();
-
+                        
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
             String line = reader.readLine();
             Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));

@@ -42,7 +42,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,7 +69,7 @@ public class IPAccessHandlerTest
         throws Exception
     {
         _server = new Server();
-        _connector = new SelectChannelConnector(_server);
+        _connector = new ServerConnector(_server);
         _server.setConnectors(new Connector[] { _connector });
 
         _handler = new IPAccessHandler();

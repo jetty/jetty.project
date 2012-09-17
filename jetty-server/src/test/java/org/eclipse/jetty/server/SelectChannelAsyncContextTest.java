@@ -27,13 +27,13 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected Connector initConnector()
     {
-        return new SelectChannelConnector(_server);
+        return new ServerConnector(_server);
     }
 
     @Override
     protected String getResponse(String request) throws Exception
     {
-        SelectChannelConnector connector = (SelectChannelConnector)_connector;
+        ServerConnector connector = (ServerConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         return IO.toString(socket.getInputStream());

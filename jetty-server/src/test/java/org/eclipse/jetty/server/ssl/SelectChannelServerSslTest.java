@@ -33,7 +33,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.HttpServerTestBase;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
@@ -105,7 +105,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
-        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
+        ServerConnector connector = new ServerConnector(_server, sslContextFactory);
 
         startServer(connector);
 

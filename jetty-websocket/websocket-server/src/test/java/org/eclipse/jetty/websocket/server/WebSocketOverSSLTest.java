@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
@@ -102,7 +102,7 @@ public class WebSocketOverSSLTest
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
         _server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
+        ServerConnector connector = new ServerConnector(_server, sslContextFactory);
         _server.addConnector(connector);
         _server.setHandler(new WebSocketHandler.Simple(websocket.getClass()));
         _server.start();

@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -52,7 +52,7 @@ import org.junit.Test;
 public class SslUploadTest
 {
     private static Server server;
-    private static SelectChannelConnector connector;
+    private static ServerConnector connector;
     private static int total;
 
     @BeforeClass
@@ -67,7 +67,7 @@ public class SslUploadTest
         sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();
-        connector = new SelectChannelConnector(server, sslContextFactory);
+        connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
 
         server.setHandler(new EmptyHandler());

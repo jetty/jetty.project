@@ -53,7 +53,7 @@ public class StressTest
 
     private static QueuedThreadPool _threads;
     private static Server _server;
-    private static SelectChannelConnector _connector;
+    private static ServerConnector _connector;
     private static final AtomicInteger _handled=new AtomicInteger(0);
     private static final ConcurrentLinkedQueue[] _latencies= {
             new ConcurrentLinkedQueue<Long>(),
@@ -94,7 +94,7 @@ public class StressTest
 
         _server = new Server(_threads);
         _server.manage(_threads);
-        _connector = new SelectChannelConnector(_server,null,null,null,1, 1,new HttpConnectionFactory());
+        _connector = new ServerConnector(_server,null,null,null,1, 1,new HttpConnectionFactory());
         _connector.setAcceptQueueSize(5000);
         _connector.setIdleTimeout(30000);
         _server.addConnector(_connector);
@@ -237,7 +237,7 @@ public class StressTest
                     {
                         System.err.println("STALLED!!!");
                         System.err.println(_server.getThreadPool().toString());
-                        ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
+                        ((ServerConnector)(_server.getConnectors()[0])).dump();
                         Thread.sleep(5000);
                         System.exit(1);
                     }

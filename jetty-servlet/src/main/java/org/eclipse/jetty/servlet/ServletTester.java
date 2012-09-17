@@ -29,7 +29,7 @@ import javax.servlet.Servlet;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -193,7 +193,7 @@ public class ServletTester extends AggregateLifeCycle
      */
     public String createConnector(boolean localhost) throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector(_server);
+        ServerConnector connector = new ServerConnector(_server);
         if (localhost)
             connector.setHost("127.0.0.1");
         _server.addConnector(connector);

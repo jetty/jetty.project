@@ -39,7 +39,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -85,7 +85,7 @@ public class SSLCloseTest extends TestCase
         sslContextFactory.setKeyManagerPassword("keypwd");
 
         Server server=new Server();
-        SelectChannelConnector connector=new SelectChannelConnector(server, sslContextFactory);
+        ServerConnector connector=new ServerConnector(server, sslContextFactory);
         connector.setPort(0);
 
         server.setConnectors(new Connector[]

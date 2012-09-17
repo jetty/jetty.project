@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
@@ -61,7 +61,7 @@ public class ResponseHeadersTest
     }
 
     private static Server server;
-    private static SelectChannelConnector connector;
+    private static ServerConnector connector;
     private static URI serverUri;
 
     @BeforeClass
@@ -69,7 +69,7 @@ public class ResponseHeadersTest
     {
         // Configure Server
         server = new Server();
-        connector = new SelectChannelConnector(server);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

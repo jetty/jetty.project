@@ -21,7 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 
 /**
- * <p>A {@link Connector} that handles network communication.</p>
+ * <p>A {@link Connector} for TCP/IP network connectors</p>
  */
 public interface NetworkConnector extends Connector, AutoCloseable
 {

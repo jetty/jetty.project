@@ -23,7 +23,7 @@ import java.io.InputStream;
 
 import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -36,12 +36,12 @@ public class FauxContinuationTest extends ContinuationBase
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
-    protected SelectChannelConnector _connector;
+    protected ServerConnector _connector;
     FilterHolder _filter;
 
     protected void setUp() throws Exception
     {
-        _connector = new SelectChannelConnector(_server);
+        _connector = new ServerConnector(_server);
         _server.setConnectors(new Connector[]{ _connector });
         ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
         _server.setHandler(servletContext);

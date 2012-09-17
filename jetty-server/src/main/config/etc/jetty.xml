@@ -49,7 +49,7 @@
     <!-- =========================================================== -->
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.ServerConnector">
             <Arg name="server"><Ref id="Server" /></Arg>
             <Arg name="factories">
               <Array type="org.eclipse.jetty.server.ConnectionFactory">

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -84,7 +84,7 @@ public class ExampleEchoServer
 
     private Server server;
 
-    private SelectChannelConnector connector;
+    private ServerConnector connector;
     private boolean _verbose;
     private WebSocketHandler wsHandler;
     private ResourceHandler rHandler;
@@ -92,7 +92,7 @@ public class ExampleEchoServer
     public ExampleEchoServer(int port)
     {
         server = new Server();
-        connector = new SelectChannelConnector(server);
+        connector = new ServerConnector(server);
         connector.setPort(port);
 
         server.addConnector(connector);

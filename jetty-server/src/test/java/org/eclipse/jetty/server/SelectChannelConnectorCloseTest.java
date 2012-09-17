@@ -30,7 +30,7 @@ public class SelectChannelConnectorCloseTest extends ConnectorCloseTestBase
     @Before
     public void init() throws Exception
     {
-        startServer(new SelectChannelConnector(_server));
+        startServer(new ServerConnector(_server));
     }
     
     @After

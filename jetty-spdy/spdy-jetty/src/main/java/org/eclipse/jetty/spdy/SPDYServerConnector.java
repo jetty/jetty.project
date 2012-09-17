@@ -20,13 +20,13 @@ package org.eclipse.jetty.spdy;
 
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SPDYServerConnector extends SelectChannelConnector
+public class SPDYServerConnector extends ServerConnector
 {
     public SPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {

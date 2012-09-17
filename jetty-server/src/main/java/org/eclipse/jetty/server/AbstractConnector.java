@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -40,24 +42,94 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
- * <p>Partial implementation of {@link Connector}</p>
+ * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism 
+ * for creating {@link Connection} instances for various protocols (HTTP, SSL, SPDY, etc).</p>
  * 
- * <p>
+ * <h2>Connector Services</h2>
+ * The abstract connector manages the dependent services needed by all specific connector instances:
+ * <ul>
+ * <li>The {@link Executor} service is used to run all active tasks needed by this connector such as accepting connections
+ * or handle HTTP requests. The default is to use the {@link Server#getThreadPool()} as an executor.
+ * </li>
+ * <li>The {@link Scheduler} service is used to monitor the idle timeouts of all connections and is also made available 
+ * to the connections to time such things as asynchronous request timeouts.  The default is to use a new
+ * {@link TimerScheduler} instance.
+ * </li>
+ * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release 
+ * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
+ * </li>
+ * </ul>
+ * These services are managed as aggregate beans by the {@link AggregateLifeCycle} super class and 
+ * may either be managed or unmanaged beans.
+ * 
+ * <h2>Connection Factories</h2>
  * The connector keeps a collection of {@link ConnectionFactory} instances, each of which are known by their
  * protocol name.  The protocol name may be a real protocol (eg http/1.1 or spdy/3) or it may be a private name
  * that represents a special connection factory. For example, the name "SSL-http/1.1" is used for 
  * an {@link SslConnectionFactory} that has been instantiated with the {@link HttpConnectionFactory} as it's
  * next protocol.    
- * <p>
- * If NPN is used to select the real protocol used by an SSL connection, then the name "SSL-NPN" is used,
- * which represents a {@link SslConnectionFactory} with a NPNConnectionFactory as the next protocol.  Once
- * the NPN connection is established, it will get the next protocol from the NPN extension and then call
- * {@link #getConnectionFactory(String)} to get the next connection factory.
  * 
+ * <h4>Configuring Connection Factories</h4>
+ * The collection of available {@link ConnectionFactory} may be constructor injected or modified with the 
+ * methods {@link #addConnectionFactory(ConnectionFactory)}, {@link #removeConnectionFactory(String)} and 
+ * {@link #setConnectionFactories(Collection)}.  Only a single {@link ConnectionFactory} instance may be configured
+ * per protocol name, so if two factories with the same {@link ConnectionFactory#getProtocol()} are set, then 
+ * the second will replace the first.
+ * <p>
+ * The protocol factory used for newly accepted connections is specified by 
+ * the method {@link #setDefaultProtocol(String)} or defaults to the protocol of the first configured factory.
+ * <p>
+ * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to 
+ * configure the HTTP protocol, you pass a {@link HttpChannelConfig} instance to the {@link HttpConnectionFactory} 
+ * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is 
+ * configured by passing it a {@link SslContextFactory} and a next protocol name.
+ * 
+ * <h4>Connection Factory Operation</h4>
+ * {@link ConnectionFactory}s may simply create a {@link Connection} instance to support a specific
+ * protocol.  For example, the {@link HttpConnectionFactory} will create a {@link HttpConnection} instance
+ * that can handle http/1.1, http/1.0 and http/0.9.
+ * <p>
+ * {@link ConnectionFactory}s may also create a chain of {@link Connection} instances, using other {@link ConnectionFactory} instances.
+ * For example, the {@link SslConnectionFactory} is configured with a next protocol name, so that once it has accepted
+ * a connection and created an {@link SslConnection}, it then used the next {@link ConnectionFactory} from the 
+ * connector using the {@link #getConnectionFactory(String)} method, to create a {@link Connection} instance that
+ * will handle the unecrypted bytes from the {@link SslConnection}.   If the next protocol is "http/1.1", then the
+ * {@link SslConnectionFactory} will have a protocol name of "SSL-http/1.1" and lookup "http/1.1" for the protocol
+ * to run over the SSL connection.
+ * <p>
+ * {@link ConnectionFactory}s may also create temporary {@link Connection} instances that will exchange bytes
+ * over the connection to determine what is the next protocol to use.  For example the NPN protocol is an extension
+ * of SSL to allow a protocol to be specified during the SSL handshake. NPN is used by the SPDY protocol to 
+ * negotiate the version of SPDY or HTTP that the client and server will speak.  Thus to accept a SPDY connection, the
+ * connector will be configured with {@link ConnectionFactory}s for "SSL-NPN", "NPN", "spdy/3", "spdy/2", "http/1.1"
+ * with the default protocol being "SSL-NPN".  Thus a newly accepted connection uses "SSL-NPN", which specifies a
+ * SSLConnectionFactory with "NPN" as the next protocol.  Thus an SslConnection instance is created chained to an NPNConnection
+ * instance.  The NPN connection then negotiates with the client to determined the next protocol, which could be 
+ * "spdy/3", "spdy/2" or the default of "http/1.1".  Once the next protocol is determined, the NPN connection
+ * calls {@link #getConnectionFactory(String)} to create a connection instance that will replace the NPN connection as
+ * the connection chained to the SSLConnection. 
+ * <p>
+ * <h2>Acceptors</h2>
+ * The connector will execute a number of acceptor tasks to the {@link Exception} service passed to the constructor.
+ * The acceptor tasks run in a loop while the connector is running and repeatedly call the abstract {@link #accept(int)} method.
+ * The implementation of the accept method must:
+ * <nl>
+ * <li>block waiting for new connections
+ * <li>accept the connection (eg socket accept)
+ * <li>perform any configuration of the connection (eg. socket linger times)
+ * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
+ * method to create a new Connection instance.
+ * <li>call the {@link #connectionOpened(Connection)} method to signal a new connection has been created.
+ * <li>arrange for the {@link #connectionClosed(Connection)} method to be called once the connection is closed.
+ * </nl>
+ * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce 
+ * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is 
+ * sufficient for modern persistent protocols (HTTP/1.1, SPDY etc.)
  */
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
@@ -78,12 +150,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     /**
      * @param server The server this connector will be added to. Must not be null.
-     * @param factory TODO
-     * @param sslContextFactory the SSL context factory to make this connector SSL enabled, or null
      * @param executor An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to use the servers scheduler
+     * @param scheduler A scheduler for this connector or null to a new {@link TimerScheduler} instance.
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     * @param factories The Connection Factories to use.
      */
     public AbstractConnector(
             Server server,
@@ -110,7 +181,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             addConnectionFactory(factory);
         
         if (acceptors<=0)
-            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
+            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 2);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
             LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
@@ -299,6 +370,20 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             return _factories.values();
         }
     }
+
+    public void setConnectionFactories(Collection<ConnectionFactory> factories)
+    {
+        synchronized (_factories)
+        {
+            List<ConnectionFactory> existing = new ArrayList<>(_factories.values());
+            for (ConnectionFactory factory: existing)
+                removeConnectionFactory(factory.getProtocol());
+            for (ConnectionFactory factory: factories)
+                if (factory!=null)
+                    addConnectionFactory(factory);
+        }
+    }
+    
     
     @Override
     public List<String> getProtocols()

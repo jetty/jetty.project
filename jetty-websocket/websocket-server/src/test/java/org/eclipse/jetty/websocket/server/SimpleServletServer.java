@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.server;
 import java.net.URI;
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 public class SimpleServletServer
 {
     private Server server;
-    private SelectChannelConnector connector;
+    private ServerConnector connector;
     private URI serverUri;
     private HttpServlet servlet;
 
@@ -47,7 +47,7 @@ public class SimpleServletServer
     {
         // Configure Server
         server = new Server();
-        connector = new SelectChannelConnector(server);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

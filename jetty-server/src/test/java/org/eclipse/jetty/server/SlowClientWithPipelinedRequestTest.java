@@ -44,12 +44,12 @@ public class SlowClientWithPipelinedRequestTest
 {
     private final AtomicInteger handles = new AtomicInteger();
     private Server server;
-    private SelectChannelConnector connector;
+    private ServerConnector connector;
 
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector(server,new HttpConnectionFactory()
+        connector = new ServerConnector(server,new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)

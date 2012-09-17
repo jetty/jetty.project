@@ -44,7 +44,7 @@ import org.junit.Before;
 public abstract class AbstractHttpTest
 {
     protected static Server server;
-    protected static SelectChannelConnector connector;
+    protected static ServerConnector connector;
     protected String httpVersion;
     protected SimpleHttpParser httpParser;
 
@@ -57,7 +57,7 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new HttpServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
         httpParser = new SimpleHttpParser();

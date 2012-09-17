@@ -31,7 +31,7 @@
 
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.ServerConnector">
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8888"/></Set>
             <Set name="idleTimeout">300000</Set>

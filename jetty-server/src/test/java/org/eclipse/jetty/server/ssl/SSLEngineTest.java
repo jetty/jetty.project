@@ -51,7 +51,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -91,7 +91,7 @@ public class SSLEngineTest
     private static final int BODY_SIZE=300;
 
     private Server server;
-    private SelectChannelConnector connector;
+    private ServerConnector connector;
 
 
     @Before
@@ -107,7 +107,7 @@ public class SSLEngineTest
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(512);
         http.getHttpChannelConfig().setRequestHeaderSize(512);
-        connector=new SelectChannelConnector(server, sslContextFactory, http);
+        connector=new ServerConnector(server, sslContextFactory, http);
         connector.setPort(0);
 
         server.addConnector(connector);

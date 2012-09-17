@@ -34,7 +34,7 @@ import org.eclipse.jetty.ant.utils.WebApplicationProxy;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -123,7 +123,7 @@ public class ServerProxyImpl implements ServerProxy
         while (connectorIterator.hasNext())
         {
             Connector jettyConnector = (Connector) connectorIterator.next();
-            SelectChannelConnector jc = new SelectChannelConnector(server);
+            ServerConnector jc = new ServerConnector(server);
             
             jc.setPort(jettyConnector.getPort());
             jc.setIdleTimeout(jettyConnector.getMaxIdleTime());

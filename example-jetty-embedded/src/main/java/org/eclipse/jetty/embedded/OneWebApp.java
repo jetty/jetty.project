@@ -19,7 +19,7 @@
 package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -29,7 +29,7 @@ public class OneWebApp
     {
         Server server = new Server();
 
-        SelectChannelConnector connector = new SelectChannelConnector(server);
+        ServerConnector connector = new ServerConnector(server);
         connector.setPort(Integer.getInteger("jetty.port",8080).intValue());
         server.setConnectors(new Connector[]
         { connector });

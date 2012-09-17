@@ -108,7 +108,7 @@ public abstract class AbstractConnection implements Connection
             }
 
             @Override
-            protected boolean shouldDispatchCompletion()
+            protected boolean alwaysDispatchCompletion()
             {
                 return dispatchCompletion;
             }
@@ -116,7 +116,7 @@ public abstract class AbstractConnection implements Connection
             @Override
             public String toString()
             {
-                return String.format("%s@%x", getClass().getSimpleName(), AbstractConnection.this.hashCode());
+                return String.format("AC.ReadCB@%x", AbstractConnection.this.hashCode());
             }
         };
     }
