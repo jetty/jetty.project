@@ -78,6 +78,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             @Override
             public void run()
             {
+                logger.warn("Interrupting test, it is taking too long");
                 for (String host : Arrays.asList("localhost", "127.0.0.1"))
                 {
                     HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, connector.getLocalPort());
