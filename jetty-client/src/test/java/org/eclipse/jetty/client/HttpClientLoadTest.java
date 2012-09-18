@@ -61,7 +61,6 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
     @Test
     public void testIterative() throws Exception
     {
-
         start(new LoadHandler());
 
         client.setMaxConnectionsPerAddress(32768);
@@ -90,7 +89,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 }
                 testThread.interrupt();
             }
-        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 200), TimeUnit.MILLISECONDS);
+        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 500), TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
