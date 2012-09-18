@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.server;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.protocol.Generator;
 
 /**
  * Convenience Generator.

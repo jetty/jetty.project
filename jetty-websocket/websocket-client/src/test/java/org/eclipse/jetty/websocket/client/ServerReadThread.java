@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 public class ServerReadThread extends Thread

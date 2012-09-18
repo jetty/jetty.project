@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.server.examples.echo;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 
 /**
  * Example Socket for echoing back Big data using the Annotation techniques along with stateless techniques.

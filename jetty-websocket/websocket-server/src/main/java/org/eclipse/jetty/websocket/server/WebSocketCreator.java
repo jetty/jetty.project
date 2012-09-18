@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.websocket.api.Extension;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.api.Extension;
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 
 /**
  * Abstract WebSocket creator interface.

@@ -26,8 +26,8 @@ import java.util.Random;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 /**
  * Allowing a generate from a UpgradeRequest

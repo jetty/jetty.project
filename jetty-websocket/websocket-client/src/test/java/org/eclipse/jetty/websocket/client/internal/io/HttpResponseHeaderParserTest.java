@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
 

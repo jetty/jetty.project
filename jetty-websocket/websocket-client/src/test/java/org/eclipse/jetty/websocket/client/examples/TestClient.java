@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
 
 /**
  * This is not a general purpose websocket client. It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.

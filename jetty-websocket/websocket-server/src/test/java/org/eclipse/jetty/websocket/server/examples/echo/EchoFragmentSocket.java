@@ -24,11 +24,11 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.protocol.Frame;
-import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.protocol.Frame;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
 
 /**
  * Echo back the incoming text or binary as 2 frames of (roughly) equal size.

@@ -25,10 +25,10 @@ import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.api.StatusCode;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Ignore;
 import org.junit.Test;

@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.server.handshake;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.protocol.AcceptHash;
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;

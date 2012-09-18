@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.api.UpgradeException;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 public class ClientUpgradeResponse implements UpgradeResponse
 {

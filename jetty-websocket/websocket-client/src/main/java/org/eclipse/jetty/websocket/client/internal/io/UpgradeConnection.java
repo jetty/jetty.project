@@ -36,19 +36,19 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.Extension;
-import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
-import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.io.IncomingFrames;
-import org.eclipse.jetty.websocket.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.io.WebSocketSession;
-import org.eclipse.jetty.websocket.protocol.AcceptHash;
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.api.Extension;
+import org.eclipse.jetty.websocket.core.api.UpgradeException;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.core.io.IncomingFrames;
+import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 /**
  * This is the initial connection handling that exists immediately after physical connection is established to destination server.

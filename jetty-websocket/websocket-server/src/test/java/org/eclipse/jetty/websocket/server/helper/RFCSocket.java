@@ -23,10 +23,10 @@ import java.io.IOException;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 
 @WebSocket
 public class RFCSocket

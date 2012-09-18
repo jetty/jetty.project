@@ -34,16 +34,16 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.eclipse.jetty.websocket.api.Extension;
-import org.eclipse.jetty.websocket.api.ExtensionRegistry;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
-import org.eclipse.jetty.websocket.driver.EventMethodsCache;
-import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.io.WebSocketSession;
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.api.Extension;
+import org.eclipse.jetty.websocket.core.api.ExtensionRegistry;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.driver.EventMethodsCache;
+import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 public class WebSocketClientFactory extends AggregateLifeCycle
 {

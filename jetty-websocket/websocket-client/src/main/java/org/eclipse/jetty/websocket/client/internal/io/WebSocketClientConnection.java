@@ -25,8 +25,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
-import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 /**
  * Client side WebSocket physical connection.

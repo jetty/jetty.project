@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.client.masks;
 
 import java.util.Arrays;
 
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 public class ZeroMasker implements Masker
 {
