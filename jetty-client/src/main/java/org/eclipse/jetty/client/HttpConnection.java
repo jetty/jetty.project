@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Authentication;
@@ -118,8 +120,6 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (request.idleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout());
 
-        // TODO: follow redirects
-
         HttpVersion version = request.version();
         HttpFields headers = request.headers();
         ContentProvider content = request.content();
@@ -165,7 +165,22 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (authnResult != null)
             authnResult.apply(request);
 
-        // TODO: decoder headers
+        if (!headers.containsKey(HttpHeader.ACCEPT_ENCODING.asString()))
+        {
+            Set<ContentDecoder.Factory> decoderFactories = client.getContentDecoderFactories();
+            if (!decoderFactories.isEmpty())
+            {
+                StringBuilder value = new StringBuilder();
+                for (Iterator<ContentDecoder.Factory> iterator = decoderFactories.iterator(); iterator.hasNext();)
+                {
+                    ContentDecoder.Factory decoderFactory = iterator.next();
+                    value.append(decoderFactory.getEncoding());
+                    if (iterator.hasNext())
+                        value.append(",");
+                }
+                headers.put(HttpHeader.ACCEPT_ENCODING, value.toString());
+            }
+        }
 
         // If we are HTTP 1.1, add the Host header
         if (version.getVersion() > 10)
@@ -217,16 +232,20 @@ public class HttpConnection extends AbstractConnection implements Connection
             if (success)
             {
                 HttpFields responseHeaders = exchange.response().headers();
-                Collection<String> values = responseHeaders.getValuesCollection(HttpHeader.CONNECTION.asString());
-                if (values != null && values.contains("close"))
+                Enumeration<String> values = responseHeaders.getValues(HttpHeader.CONNECTION.asString(), ",");
+                if (values != null)
                 {
-                    destination.remove(this);
-                    close();
+                    while (values.hasMoreElements())
+                    {
+                        if ("close".equalsIgnoreCase(values.nextElement()))
+                        {
+                            destination.remove(this);
+                            close();
+                            return;
+                        }
+                    }
                 }
-                else
-                {
-                    destination.release(this);
-                }
+                destination.release(this);
             }
             else
             {

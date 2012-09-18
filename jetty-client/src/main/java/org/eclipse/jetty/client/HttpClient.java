@@ -27,7 +27,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -102,6 +104,7 @@ public class HttpClient extends AggregateLifeCycle
     private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
     private final CookieStore cookieStore = new HttpCookieStore();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
+    private final Set<ContentDecoder.Factory> decoderFactories = Collections.newSetFromMap(new ConcurrentHashMap<ContentDecoder.Factory, Boolean>());
     private final SslContextFactory sslContextFactory;
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
@@ -156,6 +159,8 @@ public class HttpClient extends AggregateLifeCycle
         handlers.add(new RedirectProtocolHandler(this));
         handlers.add(new AuthenticationProtocolHandler(this));
 
+        decoderFactories.add(new GZIPContentDecoder.Factory());
+
         super.doStart();
 
         LOG.info("Started {}", this);
@@ -181,6 +186,7 @@ public class HttpClient extends AggregateLifeCycle
         cookieStore.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
+        decoderFactories.clear();
 
         super.doStop();
 
@@ -200,6 +206,11 @@ public class HttpClient extends AggregateLifeCycle
     public AuthenticationStore getAuthenticationStore()
     {
         return authenticationStore;
+    }
+
+    public Set<ContentDecoder.Factory> getContentDecoderFactories()
+    {
+        return decoderFactories;
     }
 
     public Future<ContentResponse> GET(String uri)

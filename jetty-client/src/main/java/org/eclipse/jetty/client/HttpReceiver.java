@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -44,6 +45,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
     private volatile boolean failed;
+    private volatile ContentDecoder decoder;
 
     public HttpReceiver(HttpConnection connection)
     {
@@ -117,14 +119,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             if (currentListener == initialListener)
                 conversation.listener(initialListener);
             else
-                conversation.listener(new MultipleResponseListener(currentListener, initialListener));
+                conversation.listener(new DoubleResponseListener(currentListener, initialListener));
         }
         else
         {
             if (currentListener == initialListener)
                 conversation.listener(handlerListener);
             else
-                conversation.listener(new MultipleResponseListener(currentListener, handlerListener));
+                conversation.listener(new DoubleResponseListener(currentListener, handlerListener));
         }
 
         LOG.debug("Receiving {}", response);
@@ -137,7 +139,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public boolean parsedHeader(HttpHeader header, String name, String value)
     {
         HttpExchange exchange = connection.getExchange();
-        exchange.response().headers().put(name, value);
+        exchange.response().headers().add(name, value);
 
         switch (name.toLowerCase())
         {
@@ -168,6 +170,23 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpResponse response = exchange.response();
         LOG.debug("Headers {}", response);
         notifier.notifyHeaders(conversation.listener(), response);
+
+        Enumeration<String> contentEncodings = response.headers().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
+        if (contentEncodings != null)
+        {
+            for (ContentDecoder.Factory factory : connection.getHttpClient().getContentDecoderFactories())
+            {
+                while (contentEncodings.hasMoreElements())
+                {
+                    if (factory.getEncoding().equalsIgnoreCase(contentEncodings.nextElement()))
+                    {
+                        this.decoder = factory.newContentDecoder();
+                        break;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 
@@ -178,6 +197,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Content {}: {} bytes", response, buffer.remaining());
+
+        ContentDecoder decoder = this.decoder;
+        if (decoder != null)
+        {
+            buffer = decoder.decode(buffer);
+            LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
+        }
+
         notifier.notifyContent(conversation.listener(), response, buffer);
         return false;
     }
@@ -195,6 +222,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     protected void success()
     {
         parser.reset();
+        decoder = null;
 
         HttpExchange exchange = connection.getExchange();
         HttpResponse response = exchange.response();
@@ -253,68 +281,58 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new TimeoutException());
     }
 
-    private class MultipleResponseListener implements Response.Listener
+    private class DoubleResponseListener implements Response.Listener
     {
         private final ResponseNotifier notifier = new ResponseNotifier();
-        private final Response.Listener[] listeners;
+        private final Response.Listener listener1;
+        private final Response.Listener listener2;
 
-        private MultipleResponseListener(Response.Listener... listeners)
+        private DoubleResponseListener(Response.Listener listener1, Response.Listener listener2)
         {
-            this.listeners = listeners;
+            this.listener1 = listener1;
+            this.listener2 = listener2;
         }
 
         @Override
         public void onBegin(Response response)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifyBegin(listener, response);
-            }
+            notifier.notifyBegin(listener1, response);
+            notifier.notifyBegin(listener2, response);
         }
 
         @Override
         public void onHeaders(Response response)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifyHeaders(listener, response);
-            }
+            notifier.notifyHeaders(listener1, response);
+            notifier.notifyHeaders(listener2, response);
         }
 
         @Override
         public void onContent(Response response, ByteBuffer content)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifyContent(listener, response, content);
-            }
+            notifier.notifyContent(listener1, response, content);
+            notifier.notifyContent(listener2, response, content);
         }
 
         @Override
         public void onSuccess(Response response)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifySuccess(listener, response);
-            }
+            notifier.notifySuccess(listener1, response);
+            notifier.notifySuccess(listener2, response);
         }
 
         @Override
         public void onFailure(Response response, Throwable failure)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifyFailure(listener, response, failure);
-            }
+            notifier.notifyFailure(listener1, response, failure);
+            notifier.notifyFailure(listener2, response, failure);
         }
 
         @Override
         public void onComplete(Result result)
         {
-            for (Response.Listener listener : listeners)
-            {
-                notifier.notifyComplete(listener, result);
-            }
+            notifier.notifyComplete(listener1, result);
+            notifier.notifyComplete(listener2, result);
         }
     }
 }

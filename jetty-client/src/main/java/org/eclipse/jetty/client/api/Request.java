@@ -159,8 +159,6 @@ public interface Request
      */
     Request file(Path file, String contentType) throws IOException;
 
-//    Request decoder(ContentDecoder decoder);
-
     /**
      * @return the user agent for this request
      */

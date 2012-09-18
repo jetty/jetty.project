@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPOutputStream;
 
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -199,5 +203,44 @@ public class HttpReceiverTest
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
         }
+    }
+
+    @Test
+    public void test_Receive_GZIPResponseContent_Fragmented() throws Exception
+    {
+        byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzipOutput = new GZIPOutputStream(baos))
+        {
+            gzipOutput.write(data);
+        }
+        byte[] gzip = baos.toByteArray();
+
+        endPoint.setInput("" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: " + gzip.length + "\r\n" +
+                "Content-Encoding: gzip\r\n" +
+                "\r\n");
+        BlockingResponseListener listener = new BlockingResponseListener();
+        HttpExchange exchange = newExchange(listener);
+        exchange.receive();
+        endPoint.reset();
+
+        ByteBuffer buffer = ByteBuffer.wrap(gzip);
+        int fragment = buffer.limit() - 1;
+        buffer.limit(fragment);
+        endPoint.setInput(buffer);
+        exchange.receive();
+        endPoint.reset();
+
+        buffer.limit(gzip.length);
+        buffer.position(fragment);
+        endPoint.setInput(buffer);
+        exchange.receive();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertArrayEquals(data, response.content());
     }
 }
