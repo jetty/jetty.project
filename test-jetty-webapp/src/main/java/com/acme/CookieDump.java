@@ -27,11 +27,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 
-/* ------------------------------------------------------------ */
-/** Test Servlet Cookies.
- *
- *
+/** 
+ * Test Servlet Cookies.
  */
+@SuppressWarnings("serial")
 public class CookieDump extends HttpServlet
 {
     int redirectCount=0;

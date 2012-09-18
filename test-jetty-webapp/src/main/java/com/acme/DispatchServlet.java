@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
+@SuppressWarnings("serial")
 public class DispatchServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(DispatchServlet.class);

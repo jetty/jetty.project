@@ -29,12 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-
-/* ------------------------------------------------------------ */
-/** Test Servlet Sessions.
- *
- *
+/** 
+ * Test Servlet Sessions.
  */
+@SuppressWarnings("serial")
 public class SessionDump extends HttpServlet
 {
 
@@ -132,7 +130,7 @@ public class SessionDump extends HttpServlet
                 out.println("<b>Context:</b> "+session.getServletContext()+"<br/>");
 
 
-                Enumeration keys=session.getAttributeNames();
+                Enumeration<String> keys=session.getAttributeNames();
                 while(keys.hasMoreElements())
                 {
                     String name=(String)keys.nextElement();

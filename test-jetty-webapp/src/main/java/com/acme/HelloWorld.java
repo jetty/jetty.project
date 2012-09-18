@@ -26,11 +26,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
-/* ------------------------------------------------------------ */
-/** Dump Servlet Request.
- *
+/** 
+ * Dump Servlet Request.
  */
+@SuppressWarnings("serial")
 public class HelloWorld extends HttpServlet
 {
     /* ------------------------------------------------------------ */

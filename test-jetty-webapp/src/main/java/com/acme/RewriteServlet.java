@@ -26,12 +26,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
-/* ------------------------------------------------------------ */
-/** Test Servlet Rewrite
- *
- *
+/** 
+ * Test Servlet Rewrite
  */
+@SuppressWarnings("serial")
 public class RewriteServlet extends HttpServlet
 {
     /* ------------------------------------------------------------ */

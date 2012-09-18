@@ -28,6 +28,7 @@ import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
 import javax.servlet.jsp.tagext.Tag;
 
+@SuppressWarnings("serial")
 public class DateTag extends BodyTagSupport
 {
     Tag parent;
@@ -41,7 +42,7 @@ public class DateTag extends BodyTagSupport
 
     public void setTz(String value) {tz=value;}
 
-    public int doStartTag() throws JspException {return EVAL_BODY_TAG;}
+    public int doStartTag() throws JspException {return EVAL_BODY_BUFFERED;}
 
     public int doEndTag() throws JspException {return EVAL_PAGE;}
 

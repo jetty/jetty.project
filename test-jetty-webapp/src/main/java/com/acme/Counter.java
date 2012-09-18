@@ -18,6 +18,7 @@
 
 package com.acme;
 
+@SuppressWarnings("serial")
 public class Counter implements java.io.Serializable
 {
     int counter=0;
@@ -36,6 +37,5 @@ public class Counter implements java.io.Serializable
     public String getLast() {
         return last;
     }
-
 }
 

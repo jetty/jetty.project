@@ -58,12 +58,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
-/* ------------------------------------------------------------ */
-/** Dump Servlet Request.
- *
+/** 
+ * Dump Servlet Request.
  */
+@SuppressWarnings("serial")
 public class Dump extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(Dump.class);
@@ -510,7 +508,7 @@ public class Dump extends HttpServlet
             pout.write("<th align=\"right\">getLocale:&nbsp;</th>");
             pout.write("<td>"+request.getLocale()+"</td>");
 
-            Enumeration locales= request.getLocales();
+            Enumeration<Locale> locales= request.getLocales();
             while (locales.hasMoreElements())
             {
                 pout.write("</tr><tr>\n");
@@ -520,13 +518,13 @@ public class Dump extends HttpServlet
             pout.write("</tr><tr>\n");
 
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Other HTTP Headers:</big></th>");
-            Enumeration h= request.getHeaderNames();
+            Enumeration<String> h= request.getHeaderNames();
             String name;
             while (h.hasMoreElements())
             {
                 name= (String)h.nextElement();
 
-                Enumeration h2= request.getHeaders(name);
+                Enumeration<String> h2= request.getHeaders(name);
                 while (h2.hasMoreElements())
                 {
                     String hv= (String)h2.nextElement();
@@ -602,7 +600,7 @@ public class Dump extends HttpServlet
 
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Request Attributes:</big></th>");
-            Enumeration a= request.getAttributeNames();
+            Enumeration<String> a= request.getAttributeNames();
             while (a.hasMoreElements())
             {
                 name= (String)a.nextElement();
