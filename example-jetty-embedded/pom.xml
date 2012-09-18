@@ -41,7 +41,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-jetty-http</artifactId>
+      <artifactId>spdy-http-server</artifactId>
       <version>${project.version}</version>
     </dependency>
      <dependency>

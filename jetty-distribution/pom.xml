@@ -309,7 +309,7 @@
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
     </dependency>
-    
+
     <!--  jetty deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -342,7 +342,7 @@
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp</artifactId>
@@ -354,14 +354,14 @@
       <artifactId>jetty-plus</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
 
-    <!-- 
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
@@ -440,7 +440,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.spdy</groupId>
-                  <artifactId>spdy-jetty-http-webapp</artifactId>
+                  <artifactId>spdy-example-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
@@ -470,27 +470,32 @@
       </plugins>
       </build>
       <dependencies>
-          <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-jetty</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-jetty-http</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-jetty-http-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-      </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.spdy</groupId>
+          <artifactId>spdy-core</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.spdy</groupId>
+          <artifactId>spdy-client</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.spdy</groupId>
+          <artifactId>spdy-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.spdy</groupId>
+          <artifactId>spdy-http-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.spdy</groupId>
+          <artifactId>spdy-example-webapp</artifactId>
+          <version>${project.version}</version>
+          <type>war</type>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
