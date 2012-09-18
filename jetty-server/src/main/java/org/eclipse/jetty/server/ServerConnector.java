@@ -134,7 +134,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,pool,acceptors,factories);
-        _manager = new ConnectorSelectorManager(selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
+        _manager = new ServerConnectorManager(selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
     }
 
@@ -345,9 +345,9 @@ public class ServerConnector extends AbstractNetworkConnector
         _reuseAddress = reuseAddress;
     }
 
-    private final class ConnectorSelectorManager extends SelectorManager
+    private final class ServerConnectorManager extends SelectorManager
     {
-        private ConnectorSelectorManager(int selectors)
+        private ServerConnectorManager(int selectors)
         {
             super(selectors);
         }
