@@ -39,8 +39,8 @@ public abstract class LifeCycleCallback
     private Class<?> _targetClass;
     private String _className;
     private String _methodName;
-    
-    
+
+
     public LifeCycleCallback()
     {
     }
@@ -53,17 +53,17 @@ public abstract class LifeCycleCallback
     {
         return _targetClass;
     }
-    
+
     public String getTargetClassName()
     {
         return _className;
     }
-    
+
     public String getMethodName()
     {
         return _methodName;
     }
-    
+
     /**
      * @return the target
      */
@@ -71,8 +71,8 @@ public abstract class LifeCycleCallback
     {
         return _target;
     }
-    
-    
+
+
     public void setTarget (String className, String methodName)
     {
         _className = className;
@@ -97,9 +97,9 @@ public abstract class LifeCycleCallback
     }
 
 
-    
-    
-    public void callback (Object instance) 
+
+
+    public void callback (Object instance)
     throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
     {
         if (_target == null)
@@ -108,7 +108,7 @@ public abstract class LifeCycleCallback
                 _targetClass = Loader.loadClass(null, _className);
             _target = _targetClass.getDeclaredMethod(_methodName, new Class[]{}); //TODO
         }
-        
+
         if (_target != null)
         {
             boolean accessibility = getTarget().isAccessible();
@@ -118,15 +118,15 @@ public abstract class LifeCycleCallback
         }
     }
 
-    
+
 
     /**
      * Find a method of the given name either directly in the given
      * class, or inherited.
-     * 
+     *
      * @param pack the package of the class under inspection
      * @param clazz the class under inspection
-     * @param methodName the method to find 
+     * @param methodName the method to find
      * @param checkInheritance false on first entry, true if a superclass is being introspected
      * @return the method
      */
@@ -137,7 +137,7 @@ public abstract class LifeCycleCallback
 
         try
         {
-            Method method = clazz.getDeclaredMethod(methodName, null);
+            Method method = clazz.getDeclaredMethod(methodName);
             if (checkInheritance)
             {
                 int modifiers = method.getModifiers();
@@ -161,7 +161,7 @@ public abstract class LifeCycleCallback
         if (!(o instanceof LifeCycleCallback))
             return false;
         LifeCycleCallback callback = (LifeCycleCallback)o;
-        
+
         if (callback.getTargetClass()==null)
         {
             if (getTargetClass() != null)
@@ -176,9 +176,9 @@ public abstract class LifeCycleCallback
         }
         else if (!callback.getTarget().equals(getTarget()))
             return false;
-        
+
         return true;
     }
-    
+
     public abstract void validate (Class<?> clazz, Method m);
 }
