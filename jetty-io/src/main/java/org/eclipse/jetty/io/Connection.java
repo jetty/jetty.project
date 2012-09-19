@@ -69,5 +69,20 @@ public interface Connection extends AutoCloseable
         public void onOpened(Connection connection);
 
         public void onClosed(Connection connection);
+
+        // TODO: add onMessageIn/Out + onBytesIn/Out
+
+        public static class Empty implements Listener
+        {
+            @Override
+            public void onOpened(Connection connection)
+            {
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+            }
+        }
     }
 }

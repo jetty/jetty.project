@@ -542,11 +542,13 @@ public class HttpClient extends AggregateLifeCycle
                     engine.setUseClientMode(true);
 
                     SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
+                    // TODO: configureConnection => implies we should use SslConnectionFactory to do it
 
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
                     HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
+                    // TODO: configureConnection, see above
+
                     appEndPoint.setConnection(connection);
-                    connectionOpened(connection);
                     callback.callback.completed(connection);
 
                     return sslConnection;
@@ -555,6 +557,7 @@ public class HttpClient extends AggregateLifeCycle
             else
             {
                 HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
+                // TODO: configureConnection, see above
                 callback.callback.completed(connection);
                 return connection;
             }

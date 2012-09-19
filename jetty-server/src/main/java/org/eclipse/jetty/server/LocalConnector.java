@@ -172,8 +172,6 @@ public class LocalConnector extends AbstractConnector
         endPoint.setConnection(connection);
 
 //        connectionOpened(connection);
-        for (Connection.Listener listener : getBeans(Connection.Listener.class))
-            connection.addListener(listener);
         connection.onOpen();
     }
 

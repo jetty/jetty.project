@@ -112,10 +112,10 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         NextProtoNego.remove(engine);
         ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
+        endPoint.getConnection().onClose();
         Connection connection = connectionFactory.newConnection(connector, endPoint);
         endPoint.setConnection(connection);
-        // TODO
-//        ((AbstractConnector)connector).connectionUpgraded(this,connection);
+        connection.onOpen();
         completed = true;
     }
 }

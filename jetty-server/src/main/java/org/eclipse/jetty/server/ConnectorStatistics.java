@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Connector.Statistics;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -30,13 +31,26 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpable
+class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpable, Connection.Listener
 {
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
     private final SampleStatistic _messagesIn = new SampleStatistic();
     private final SampleStatistic _messagesOut = new SampleStatistic();
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
+
+    @Override
+    public void onOpened(Connection connection)
+    {
+        connectionOpened();
+    }
+
+    @Override
+    public void onClosed(Connection connection)
+    {
+        // TODO
+        connectionClosed(0, 0, 0);
+    }
 
     @Override
     public int getBytesIn()

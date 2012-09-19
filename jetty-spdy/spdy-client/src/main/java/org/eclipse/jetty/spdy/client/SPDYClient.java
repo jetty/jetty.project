@@ -282,7 +282,6 @@ public class SPDYClient
                         DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.executor, client);
                         sslEndPoint.setConnection(connection);
-                        connectionOpened(connection);
                         return sslConnection;
                     }
 

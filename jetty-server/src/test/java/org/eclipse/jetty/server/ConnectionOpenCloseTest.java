@@ -66,7 +66,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener()
+        connector.addBean(new Connection.Listener.Empty()
         {
             @Override
             public void onOpened(Connection connection)
@@ -137,7 +137,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener()
+        connector.addBean(new Connection.Listener.Empty()
         {
             @Override
             public void onOpened(Connection connection)

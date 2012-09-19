@@ -218,7 +218,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onOpen()
     {
-        LOG.debug("{} opened", this);
+        LOG.info("{} opened", this);
 
         for (Listener listener : listeners)
             listener.onOpened(this);
@@ -233,7 +233,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onClose()
     {
-        LOG.debug("{} closed",this);
+        LOG.info("{} closed",this);
 
         for (Listener listener : listeners)
             listener.onClosed(this);
