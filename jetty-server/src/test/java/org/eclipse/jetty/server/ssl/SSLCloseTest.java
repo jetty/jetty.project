@@ -26,7 +26,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -34,22 +33,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Test;
 
 /**
  * HttpServer Tester.
  */
-public class SSLCloseTest extends TestCase
+public class SSLCloseTest
 {
-    private static EndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
@@ -68,14 +63,7 @@ public class SSLCloseTest extends TestCase
 
     private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
 
-    // ~ Methods
-    // ----------------------------------------------------------------
-
-    /**
-     * Feed the server the entire request at once.
-     *
-     * @throws Exception
-     */
+    @Test
     public void testClose() throws Exception
     {
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
@@ -88,12 +76,9 @@ public class SSLCloseTest extends TestCase
         ServerConnector connector=new ServerConnector(server, sslContextFactory);
         connector.setPort(0);
 
-        server.setConnectors(new Connector[]
-        { connector });
+        server.addConnector(connector);
         server.setHandler(new WriteHandler());
-
         server.start();
-
 
         SSLContext ctx=SSLContext.getInstance("SSLv3");
         ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
@@ -120,7 +105,7 @@ public class SSLCloseTest extends TestCase
 
         Thread.sleep(2000);
 
-        while ((line=in.readLine())!=null)
+        while (in.readLine()!=null)
             Thread.yield();
     }
 
@@ -134,7 +119,6 @@ public class SSLCloseTest extends TestCase
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test","value");
-                __endp=baseRequest.getHttpChannel().getEndPoint();
 
                 OutputStream out=response.getOutputStream();
 
@@ -152,28 +136,11 @@ public class SSLCloseTest extends TestCase
                     out.write(bytes);
                 }
             }
-            catch(RuntimeException e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
-            catch(Error e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
             catch(Throwable e)
             {
                 e.printStackTrace();
                 throw new ServletException(e);
             }
         }
-
     }
-
 }
