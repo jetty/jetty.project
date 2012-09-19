@@ -18,20 +18,23 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class AbstractConnectionFactory extends AggregateLifeCycle implements ConnectionFactory
 {
-    final String _protocol;
-    int _inputbufferSize=8192;
-    
+    private final String _protocol;
+    private int _inputbufferSize = 8192;
+
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol=protocol;
     }
-    
+
     @Override
     public String getProtocol()
     {
@@ -48,19 +51,32 @@ public abstract class AbstractConnectionFactory extends AggregateLifeCycle imple
         _inputbufferSize=size;
     }
 
+    protected void configureConnection(Connection connection, Connector connector, EndPoint endPoint)
+    {
+        if (connection instanceof AbstractConnection)
+            ((AbstractConnection)connection).setInputBufferSize(getInputBufferSize());
+
+        if (connector instanceof AggregateLifeCycle)
+        {
+            AggregateLifeCycle aggregate = (AggregateLifeCycle)connector;
+            for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
+                connection.addListener(listener);
+        }
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%x{%s}",this.getClass().getSimpleName(),hashCode(),getProtocol());
     }
-    
+
     public static ConnectionFactory[] getFactories(SslContextFactory sslContextFactory, ConnectionFactory... factories)
     {
         factories=ArrayUtil.removeNulls(factories);
-        
+
         if (sslContextFactory==null)
             return factories;
-        
+
         for (ConnectionFactory factory : factories)
         {
             if (factory instanceof HttpChannelConfig.ConnectionFactory)
@@ -71,8 +87,6 @@ public abstract class AbstractConnectionFactory extends AggregateLifeCycle imple
             }
         }
         return ArrayUtil.prependToArray(new SslConnectionFactory(sslContextFactory,factories[0].getProtocol()),factories,ConnectionFactory.class);
-        
+
     }
-    
-    
 }

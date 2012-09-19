@@ -37,7 +37,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     public SslConnectionFactory()
     {
-        this(null,HttpVersion.HTTP_1_1.asString());
+        this(HttpVersion.HTTP_1_1.asString());
     }
 
     public SslConnectionFactory(@Name("next") String nextProtocol)
@@ -57,8 +57,6 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     {
         return _sslContextFactory;
     }
-
-
 
     @Override
     protected void doStart() throws Exception
@@ -80,15 +78,13 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         engine.setUseClientMode(false);
 
         SslConnection sslConnection = new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
-        sslConnection.setInputBufferSize(getInputBufferSize());
-        EndPoint decrypted_endp = sslConnection.getDecryptedEndPoint();
+        configureConnection(sslConnection, connector, endPoint);
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
-        Connection connection = next.newConnection(connector, decrypted_endp);
-        decrypted_endp.setConnection(connection);
+        EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
+        Connection connection = next.newConnection(connector, decryptedEndPoint);
+        decryptedEndPoint.setConnection(connection);
 
-        // TODO
-//        ((AbstractConnector)connector).connectionOpened(connection);
         return sslConnection;
     }
 

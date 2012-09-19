@@ -34,14 +34,14 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         this(new HttpChannelConfig());
         setInputBufferSize(16384);
     }
-    
+
     public HttpConnectionFactory(@Name("config") HttpChannelConfig config)
     {
         super(HttpVersion.HTTP_1_1.toString());
         _config=config;
         addBean(_config);
     }
-    
+
     @Override
     public HttpChannelConfig getHttpChannelConfig()
     {
@@ -52,8 +52,8 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         HttpConnection connection = new HttpConnection(_config, connector, endPoint);
-        connection.setInputBufferSize(getInputBufferSize()); // TODO constructor injection
+        configureConnection(connection, connector, endPoint);
         return connection;
     }
-    
+
 }

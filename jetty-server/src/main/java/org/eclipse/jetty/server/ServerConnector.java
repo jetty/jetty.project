@@ -357,19 +357,19 @@ public class ServerConnector extends AbstractNetworkConnector
             getExecutor().execute(task);
         }
 
-        @Override
-        public void connectionOpened(Connection connection)
-        {
-            // TODO
+        // TODO
+//        @Override
+//        public void connectionOpened(Connection connection)
+//        {
 //            ServerConnector.this.connectionOpened(connection);
-        }
+//        }
 
-        @Override
-        public void connectionClosed(Connection connection)
-        {
-            // TODO
+        // TODO
+//        @Override
+//        public void connectionClosed(Connection connection)
+//        {
 //            ServerConnector.this.connectionClosed(connection);
-        }
+//        }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
@@ -383,5 +383,4 @@ public class ServerConnector extends AbstractNetworkConnector
             return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint);
         }
     }
-
 }

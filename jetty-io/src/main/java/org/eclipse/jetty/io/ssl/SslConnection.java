@@ -146,6 +146,7 @@ public class SslConnection extends AbstractConnection
             // Begin the handshake
             _sslEngine.beginHandshake();
             super.onOpen();
+            getDecryptedEndPoint().getConnection().onOpen();
         }
         catch (SSLException x)
         {
@@ -440,7 +441,6 @@ public class SslConnection extends AbstractConnection
                 if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize())
                     a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
             }
-
             super.setConnection(connection);
         }
 
