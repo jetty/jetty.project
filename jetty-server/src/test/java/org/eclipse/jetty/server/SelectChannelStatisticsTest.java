@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,13 +25,10 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
@@ -44,6 +38,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SelectChannelStatisticsTest
 {
@@ -66,12 +63,13 @@ public class SelectChannelStatisticsTest
         _server = new Server();
         _connector = new ServerConnector(_server)
         {
-            @Override
-            public void connectionClosed(Connection connection)
-            {
-                super.connectionClosed(connection);
-                _closed.countDown();
-            }
+            // TODO
+//            @Override
+//            public void connectionClosed(Connection connection)
+//            {
+//                super.connectionClosed(connection);
+//                _closed.countDown();
+//            }
 
         };
         _server.addConnector(_connector);

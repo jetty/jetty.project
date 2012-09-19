@@ -47,48 +47,48 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
- * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism 
+ * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
  * for creating {@link Connection} instances for various protocols (HTTP, SSL, SPDY, etc).</p>
- * 
+ *
  * <h2>Connector Services</h2>
  * The abstract connector manages the dependent services needed by all specific connector instances:
  * <ul>
  * <li>The {@link Executor} service is used to run all active tasks needed by this connector such as accepting connections
  * or handle HTTP requests. The default is to use the {@link Server#getThreadPool()} as an executor.
  * </li>
- * <li>The {@link Scheduler} service is used to monitor the idle timeouts of all connections and is also made available 
+ * <li>The {@link Scheduler} service is used to monitor the idle timeouts of all connections and is also made available
  * to the connections to time such things as asynchronous request timeouts.  The default is to use a new
  * {@link TimerScheduler} instance.
  * </li>
- * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release 
+ * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
  * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
  * </li>
  * </ul>
- * These services are managed as aggregate beans by the {@link AggregateLifeCycle} super class and 
+ * These services are managed as aggregate beans by the {@link AggregateLifeCycle} super class and
  * may either be managed or unmanaged beans.
- * 
+ *
  * <h2>Connection Factories</h2>
  * The connector keeps a collection of {@link ConnectionFactory} instances, each of which are known by their
  * protocol name.  The protocol name may be a real protocol (eg http/1.1 or spdy/3) or it may be a private name
- * that represents a special connection factory. For example, the name "SSL-http/1.1" is used for 
+ * that represents a special connection factory. For example, the name "SSL-http/1.1" is used for
  * an {@link SslConnectionFactory} that has been instantiated with the {@link HttpConnectionFactory} as it's
- * next protocol.    
- * 
+ * next protocol.
+ *
  * <h4>Configuring Connection Factories</h4>
- * The collection of available {@link ConnectionFactory} may be constructor injected or modified with the 
- * methods {@link #addConnectionFactory(ConnectionFactory)}, {@link #removeConnectionFactory(String)} and 
+ * The collection of available {@link ConnectionFactory} may be constructor injected or modified with the
+ * methods {@link #addConnectionFactory(ConnectionFactory)}, {@link #removeConnectionFactory(String)} and
  * {@link #setConnectionFactories(Collection)}.  Only a single {@link ConnectionFactory} instance may be configured
- * per protocol name, so if two factories with the same {@link ConnectionFactory#getProtocol()} are set, then 
+ * per protocol name, so if two factories with the same {@link ConnectionFactory#getProtocol()} are set, then
  * the second will replace the first.
  * <p>
- * The protocol factory used for newly accepted connections is specified by 
+ * The protocol factory used for newly accepted connections is specified by
  * the method {@link #setDefaultProtocol(String)} or defaults to the protocol of the first configured factory.
  * <p>
- * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to 
- * configure the HTTP protocol, you pass a {@link HttpChannelConfig} instance to the {@link HttpConnectionFactory} 
- * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is 
+ * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to
+ * configure the HTTP protocol, you pass a {@link HttpChannelConfig} instance to the {@link HttpConnectionFactory}
+ * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is
  * configured by passing it a {@link SslContextFactory} and a next protocol name.
- * 
+ *
  * <h4>Connection Factory Operation</h4>
  * {@link ConnectionFactory}s may simply create a {@link Connection} instance to support a specific
  * protocol.  For example, the {@link HttpConnectionFactory} will create a {@link HttpConnection} instance
@@ -96,7 +96,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>
  * {@link ConnectionFactory}s may also create a chain of {@link Connection} instances, using other {@link ConnectionFactory} instances.
  * For example, the {@link SslConnectionFactory} is configured with a next protocol name, so that once it has accepted
- * a connection and created an {@link SslConnection}, it then used the next {@link ConnectionFactory} from the 
+ * a connection and created an {@link SslConnection}, it then used the next {@link ConnectionFactory} from the
  * connector using the {@link #getConnectionFactory(String)} method, to create a {@link Connection} instance that
  * will handle the unecrypted bytes from the {@link SslConnection}.   If the next protocol is "http/1.1", then the
  * {@link SslConnectionFactory} will have a protocol name of "SSL-http/1.1" and lookup "http/1.1" for the protocol
@@ -104,15 +104,15 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>
  * {@link ConnectionFactory}s may also create temporary {@link Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the NPN protocol is an extension
- * of SSL to allow a protocol to be specified during the SSL handshake. NPN is used by the SPDY protocol to 
+ * of SSL to allow a protocol to be specified during the SSL handshake. NPN is used by the SPDY protocol to
  * negotiate the version of SPDY or HTTP that the client and server will speak.  Thus to accept a SPDY connection, the
  * connector will be configured with {@link ConnectionFactory}s for "SSL-NPN", "NPN", "spdy/3", "spdy/2", "http/1.1"
  * with the default protocol being "SSL-NPN".  Thus a newly accepted connection uses "SSL-NPN", which specifies a
  * SSLConnectionFactory with "NPN" as the next protocol.  Thus an SslConnection instance is created chained to an NPNConnection
- * instance.  The NPN connection then negotiates with the client to determined the next protocol, which could be 
+ * instance.  The NPN connection then negotiates with the client to determined the next protocol, which could be
  * "spdy/3", "spdy/2" or the default of "http/1.1".  Once the next protocol is determined, the NPN connection
  * calls {@link #getConnectionFactory(String)} to create a connection instance that will replace the NPN connection as
- * the connection chained to the SSLConnection. 
+ * the connection chained to the SSLConnection.
  * <p>
  * <h2>Acceptors</h2>
  * The connector will execute a number of acceptor tasks to the {@link Exception} service passed to the constructor.
@@ -127,8 +127,8 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <li>call the {@link #connectionOpened(Connection)} method to signal a new connection has been created.
  * <li>arrange for the {@link #connectionClosed(Connection)} method to be called once the connection is closed.
  * </nl>
- * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce 
- * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is 
+ * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
+ * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
  * sufficient for modern persistent protocols (HTTP/1.1, SPDY etc.)
  */
 @ManagedObject("Abstract implementation of the Connector Interface")
@@ -160,7 +160,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             Server server,
             Executor executor,
             Scheduler scheduler,
-            ByteBufferPool pool, 
+            ByteBufferPool pool,
             int acceptors,
             ConnectionFactory... factories)
     {
@@ -179,7 +179,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
         for (ConnectionFactory factory:factories)
             addConnectionFactory(factory);
-        
+
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 2);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
@@ -383,8 +383,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                     addConnectionFactory(factory);
         }
     }
-    
-    
+
+
     @Override
     public List<String> getProtocols()
     {
@@ -421,7 +421,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             return _defaultConnectionFactory;
         return getConnectionFactory(_defaultProtocol);
     }
-    
+
     private class Acceptor implements Runnable
     {
         private final int _acceptor;
@@ -473,25 +473,25 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         }
     }
 
-    protected void connectionOpened(Connection connection)
-    {
-        _stats.connectionOpened();
-        connection.onOpen();
-    }
-
-    protected void connectionClosed(Connection connection)
-    {
-        connection.onClose();
-        long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
-        _stats.connectionClosed(duration, connection.getMessagesIn(), connection.getMessagesOut());
-    }
-
-    public void connectionUpgraded(Connection oldConnection, Connection newConnection)
-    {
-        oldConnection.onClose();
-        _stats.connectionUpgraded(oldConnection.getMessagesIn(), oldConnection.getMessagesOut());
-        newConnection.onOpen();
-    }
+//    protected void connectionOpened(Connection connection)
+//    {
+//        _stats.connectionOpened();
+//        connection.onOpen();
+//    }
+//
+//    protected void connectionClosed(Connection connection)
+//    {
+//        connection.onClose();
+//        long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
+//        _stats.connectionClosed(duration, connection.getMessagesIn(), connection.getMessagesOut());
+//    }
+//
+//    public void connectionUpgraded(Connection oldConnection, Connection newConnection)
+//    {
+//        oldConnection.onClose();
+//        _stats.connectionUpgraded(oldConnection.getMessagesIn(), oldConnection.getMessagesOut());
+//        newConnection.onOpen();
+//    }
 
     @Override
     public Scheduler getScheduler()

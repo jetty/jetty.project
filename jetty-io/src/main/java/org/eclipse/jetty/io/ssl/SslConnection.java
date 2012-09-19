@@ -161,17 +161,17 @@ public class SslConnection extends AbstractConnection
         super.onClose();
     }
 
-    @Override
-    public int getMessagesIn()
-    {
-        return _decryptedEndPoint.getConnection().getMessagesIn();
-    }
-
-    @Override
-    public int getMessagesOut()
-    {
-        return _decryptedEndPoint.getConnection().getMessagesOut();
-    }
+//    @Override
+//    public int getMessagesIn()
+//    {
+//        return _decryptedEndPoint.getConnection().getMessagesIn();
+//    }
+//
+//    @Override
+//    public int getMessagesOut()
+//    {
+//        return _decryptedEndPoint.getConnection().getMessagesOut();
+//    }
 
     @Override
     public void close()

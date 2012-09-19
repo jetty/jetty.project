@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.Connection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class LocalConnectorTest
 {
@@ -31,7 +36,7 @@ public class LocalConnectorTest
     private LocalConnector _connector;
 
     @Before
-    public void init() throws Exception
+    public void prepare() throws Exception
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
@@ -39,15 +44,43 @@ public class LocalConnectorTest
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
-        //_server.dumpStdErr();
     }
 
     @After
-    public void tini() throws Exception
+    public void dispose() throws Exception
     {
         _server.stop();
         _server=null;
         _connector=null;
+    }
+
+    @Test
+    public void testOpenClose() throws Exception
+    {
+        final CountDownLatch openLatch = new CountDownLatch(1);
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        _connector.addBean(new Connection.Listener()
+        {
+            @Override
+            public void onOpened(Connection connection)
+            {
+                openLatch.countDown();
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+                closeLatch.countDown();
+            }
+        });
+
+        _connector.getResponses("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n");
+
+        assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

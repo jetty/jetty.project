@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,21 +40,19 @@ public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
-    private final long _created=System.currentTimeMillis();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
+//    private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback<Void> _readCallback;
-    
-    private enum State {IDLE,INTERESTED,FILLING,FILLING_INTERESTED};
-    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-
     private int _inputBufferSize=8192;
-    
+
     public AbstractConnection(EndPoint endp, Executor executor)
     {
         this(endp, executor, true);
     }
-    
+
     public AbstractConnection(EndPoint endp, Executor executor, final boolean dispatchCompletion)
     {
         if (executor == null)
@@ -94,7 +94,7 @@ public abstract class AbstractConnection implements Connection
                                     break;
                             }
                         }
-                        
+
                     }
                 }
                 else
@@ -120,7 +120,13 @@ public abstract class AbstractConnection implements Connection
             }
         };
     }
-    
+
+    @Override
+    public void addListener(Listener listener)
+    {
+        listeners.add(listener);
+    }
+
     public int getInputBufferSize()
     {
         return _inputBufferSize;
@@ -145,7 +151,7 @@ public abstract class AbstractConnection implements Connection
     public void fillInterested()
     {
         LOG.debug("fillInterested {}",this);
-        
+
         loop:while(true)
         {
             switch(_state.get())
@@ -157,12 +163,12 @@ public abstract class AbstractConnection implements Connection
                         break loop;
                     }
                     break;
-                    
+
                 case FILLING:
                     if (_state.compareAndSet(State.FILLING,State.FILLING_INTERESTED))
                         break loop;
                     break;
-                    
+
                 case FILLING_INTERESTED:
                 case INTERESTED:
                     break loop;
@@ -212,10 +218,14 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onOpen()
     {
-        LOG.debug("{} opened",this);
+        LOG.debug("{} opened", this);
+
+        for (Listener listener : listeners)
+            listener.onOpened(this);
+
         if (!_opened.compareAndSet(null,new Throwable()))
         {
-            LOG.warn("ALREADY OPENED ",_opened.get());
+            LOG.warn("ALREADY OPENED ", _opened.get());
             LOG.warn("EXTRA OPEN AT ",new Throwable());
         }
     }
@@ -224,6 +234,9 @@ public abstract class AbstractConnection implements Connection
     public void onClose()
     {
         LOG.debug("{} closed",this);
+
+        for (Listener listener : listeners)
+            listener.onClosed(this);
     }
 
     @Override
@@ -238,27 +251,32 @@ public abstract class AbstractConnection implements Connection
         getEndPoint().close();
     }
 
-    @Override
-    public int getMessagesIn()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getMessagesOut()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getCreatedTimeStamp()
-    {
-        return _created;
-    }
+//    @Override
+//    public int getMessagesIn()
+//    {
+//        return 0;
+//    }
+//
+//    @Override
+//    public int getMessagesOut()
+//    {
+//        return 0;
+//    }
+//
+//    @Override
+//    public long getCreatedTimeStamp()
+//    {
+//        return _created;
+//    }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _state.get());
+    }
+
+    private enum State
+    {
+        IDLE, INTERESTED, FILLING, FILLING_INTERESTED
     }
 }

@@ -492,6 +492,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         public void destroyEndPoint(EndPoint endPoint)
         {
+            // TODO
+
             LOG.debug("Destroyed {}", endPoint);
             Connection connection = endPoint.getConnection();
             if (connection != null)

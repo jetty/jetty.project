@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
@@ -115,7 +114,8 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         EndPoint endPoint = getEndPoint();
         Connection connection = connectionFactory.newConnection(connector, endPoint);
         endPoint.setConnection(connection);
-        ((AbstractConnector)connector).connectionUpgraded(this,connection);
+        // TODO
+//        ((AbstractConnector)connector).connectionUpgraded(this,connection);
         completed = true;
     }
 }

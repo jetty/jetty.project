@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -45,36 +44,36 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * This {@link Connector} implementation is the primary connector for the 
+ * This {@link Connector} implementation is the primary connector for the
  * Jetty server over TCP/IP.  By the use of various {@link ConnectionFactory} instances it is able
  * to accept connections for HTTP, SPDY and WebSocket, either directly or over SSL.
  * <p>
- * The connector is a fully asynchronous NIO based implementation that by default will 
- * use all the commons services (eg {@link Executor}, {@link Scheduler})  of the 
+ * The connector is a fully asynchronous NIO based implementation that by default will
+ * use all the commons services (eg {@link Executor}, {@link Scheduler})  of the
  * passed {@link Server} instance, but all services may also be constructor injected
  * into the connector so that it may operate with dedicated or otherwise shared services.
  * <p>
  * <h2>Connection Factories</h2>
- * Various convenience constructors are provided to assist with common configurations of 
- * ConnectionFactories, whose generic use is described in {@link AbstractConnector}.  
- * If no connection factories are passed, then the connector will 
- * default to use a {@link HttpConnectionFactory}.  If an non null {@link SslContextFactory} 
- * instance is passed, then this used to instantiate a {@link SslConnectionFactory} which is 
+ * Various convenience constructors are provided to assist with common configurations of
+ * ConnectionFactories, whose generic use is described in {@link AbstractConnector}.
+ * If no connection factories are passed, then the connector will
+ * default to use a {@link HttpConnectionFactory}.  If an non null {@link SslContextFactory}
+ * instance is passed, then this used to instantiate a {@link SslConnectionFactory} which is
  * prepended to the other passed or default factories.
  * <p>
  * <h2>Selectors</h2>
  * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
- * schedule a set of accepted connections.  It is the selector thread that will call the 
+ * schedule a set of accepted connections.  It is the selector thread that will call the
  * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Object, Callback)} or
  * {@link EndPoint#write(Object, Callback, java.nio.ByteBuffer...)} methods.  It is expected
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
- * {@link Executor} service any blocking, long running or application tasks. 
+ * {@link Executor} service any blocking, long running or application tasks.
  * <p>
  * The default number of selectors is equal to the number of processors available to the JVM,
- * which should allow optimal performance even if all the connections used are performing 
+ * which should allow optimal performance even if all the connections used are performing
  * significant non-blocking work in the callback tasks.
- * 
+ *
  */
 @ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
 public class ServerConnector extends AbstractNetworkConnector
@@ -87,27 +86,27 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
-    
+
     public ServerConnector(
         @Name("server") Server server)
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
-    
+
     public ServerConnector(
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
     {
         this(server,null,null,null,0,0,factories);
     }
-    
+
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
-    
+
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory,
@@ -125,10 +124,10 @@ public class ServerConnector extends AbstractNetworkConnector
      * @param factories Zero or more {@link ConnectionFactory} instances.
      */
     public ServerConnector(
-        @Name("server") Server server, 
-        @Name("executor") Executor executor, 
-        @Name("scheduler") Scheduler scheduler, 
-        @Name("bufferPool") ByteBufferPool pool, 
+        @Name("server") Server server,
+        @Name("executor") Executor executor,
+        @Name("scheduler") Scheduler scheduler,
+        @Name("bufferPool") ByteBufferPool pool,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
@@ -361,13 +360,15 @@ public class ServerConnector extends AbstractNetworkConnector
         @Override
         public void connectionOpened(Connection connection)
         {
-            ServerConnector.this.connectionOpened(connection);
+            // TODO
+//            ServerConnector.this.connectionOpened(connection);
         }
 
         @Override
         public void connectionClosed(Connection connection)
         {
-            ServerConnector.this.connectionClosed(connection);
+            // TODO
+//            ServerConnector.this.connectionClosed(connection);
         }
 
         @Override

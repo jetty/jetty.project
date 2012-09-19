@@ -39,12 +39,12 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     {
         this(null,HttpVersion.HTTP_1_1.asString());
     }
-    
+
     public SslConnectionFactory(@Name("next") String nextProtocol)
     {
         this(null,nextProtocol);
     }
-    
+
     public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
     {
         super("SSL-"+nextProtocol);
@@ -52,14 +52,14 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         _nextProtocol=nextProtocol;
         addBean(_sslContextFactory);
     }
-    
+
     public SslContextFactory getSslContextFactory()
     {
         return _sslContextFactory;
     }
-    
-    
-    
+
+
+
     @Override
     protected void doStart() throws Exception
     {
@@ -68,7 +68,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         SSLEngine engine = _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
         SSLSession session=engine.getSession();
-        
+
         if (session.getPacketBufferSize()>getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
     }
@@ -82,11 +82,13 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         SslConnection sslConnection = new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
         sslConnection.setInputBufferSize(getInputBufferSize());
         EndPoint decrypted_endp = sslConnection.getDecryptedEndPoint();
-        
+
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
         Connection connection = next.newConnection(connector, decrypted_endp);
         decrypted_endp.setConnection(connection);
-        ((AbstractConnector)connector).connectionOpened(connection);
+
+        // TODO
+//        ((AbstractConnector)connector).connectionOpened(connection);
         return sslConnection;
     }
 

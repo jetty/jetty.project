@@ -38,7 +38,7 @@ public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
-    
+
     public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
     {
         super(server,executor,scheduler,pool,acceptors,factories);
@@ -59,7 +59,7 @@ public class LocalConnector extends AbstractConnector
     {
         this(server, null, null, null, 0, connectionFactory);
     }
-    
+
     public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
     {
         this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
@@ -83,8 +83,7 @@ public class LocalConnector extends AbstractConnector
      */
     public String getResponses(String requests) throws Exception
     {
-        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET));
-        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+        return getResponses(requests, 5, TimeUnit.SECONDS);
     }
 
     /** Sends requests and get responses based on thread activity.
@@ -117,7 +116,7 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
-        return getResponses(requestsBuffer,1000,TimeUnit.MILLISECONDS);
+        return getResponses(requestsBuffer, 5, TimeUnit.SECONDS);
     }
 
     /** Sends requests and get's responses based on thread activity.
@@ -135,11 +134,10 @@ public class LocalConnector extends AbstractConnector
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
         LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
-        LocalEndPoint endp = new LocalEndPoint();
-        endp.setInput(requestsBuffer);
-        _connects.add(endp);
+        LocalEndPoint endp = executeRequest(requestsBuffer);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
         ByteBuffer responses = endp.takeOutput();
+        endp.getConnection().close();
         LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
         return responses;
     }
@@ -152,8 +150,13 @@ public class LocalConnector extends AbstractConnector
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
+        return executeRequest(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
+    }
+
+    private LocalEndPoint executeRequest(ByteBuffer rawRequest)
+    {
         LocalEndPoint endp = new LocalEndPoint();
-        endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
+        endp.setInput(rawRequest);
         _connects.add(endp);
         return endp;
     }
@@ -167,7 +170,11 @@ public class LocalConnector extends AbstractConnector
 
         Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
-        connectionOpened(connection);
+
+//        connectionOpened(connection);
+        for (Connection.Listener listener : getBeans(Connection.Listener.class))
+            connection.addListener(listener);
+        connection.onOpen();
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint
@@ -191,11 +198,12 @@ public class LocalConnector extends AbstractConnector
         @Override
         public void close()
         {
-            boolean was_open=isOpen();
+            boolean wasOpen=isOpen();
             super.close();
-            if (was_open)
+            if (wasOpen)
             {
-                connectionClosed(getConnection());
+//                connectionClosed(getConnection());
+                getConnection().onClose();
                 onClose();
             }
         }

@@ -30,6 +30,8 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface Connection extends AutoCloseable
 {
+    public void addListener(Listener listener);
+
     /**
      * <p>Callback method invoked when this {@link Connection} is opened.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
@@ -56,9 +58,16 @@ public interface Connection extends AutoCloseable
     @Override
     public void close();
 
-    public int getMessagesIn();
+//    public int getMessagesIn();
+//
+//    public int getMessagesOut();
+//
+//    public long getCreatedTimeStamp();
 
-    public int getMessagesOut();
+    public interface Listener
+    {
+        public void onOpened(Connection connection);
 
-    public long getCreatedTimeStamp();
+        public void onClosed(Connection connection);
+    }
 }
