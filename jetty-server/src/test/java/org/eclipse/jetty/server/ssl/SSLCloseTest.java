@@ -24,11 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,38 +33,19 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
-/**
- * HttpServer Tester.
- */
 public class SSLCloseTest
 {
-    private static class CredulousTM implements TrustManager, X509TrustManager
-    {
-        public X509Certificate[] getAcceptedIssuers()
-        {
-            return new X509Certificate[]{};
-        }
-
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
-        {
-        }
-
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
-        {
-        }
-    }
-
-    private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
-
     @Test
     public void testClose() throws Exception
     {
-        String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
 
@@ -81,7 +58,7 @@ public class SSLCloseTest
         server.start();
 
         SSLContext ctx=SSLContext.getInstance("SSLv3");
-        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
 
@@ -108,7 +85,6 @@ public class SSLCloseTest
         while (in.readLine()!=null)
             Thread.yield();
     }
-
 
     private static class WriteHandler extends AbstractHandler
     {

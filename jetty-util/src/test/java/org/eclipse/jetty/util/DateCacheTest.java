@@ -23,9 +23,9 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,7 +69,6 @@ public class DateCacheTest
             TimeUnit.MILLISECONDS.sleep(50);
             now=System.currentTimeMillis();
         }
-        Assert.assertTrue(hits/10 > misses);
+        Assert.assertTrue(hits / 10 > misses);
     }
-
 }

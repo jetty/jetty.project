@@ -15,14 +15,20 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
-package org.eclipse.jetty.ant;
 
-import junit.framework.TestCase;
+package org.eclipse.jetty.client.util;
 
-public class JettyRunTaskTest extends TestCase
+import java.nio.charset.Charset;
+
+public class StringContentProvider extends BytesContentProvider
 {
-    public void testInit()
+    public StringContentProvider(String content)
     {
+        this(content, "UTF-8");
+    }
 
+    public StringContentProvider(String content, String encoding)
+    {
+        super(content.getBytes(Charset.forName(encoding)));
     }
 }

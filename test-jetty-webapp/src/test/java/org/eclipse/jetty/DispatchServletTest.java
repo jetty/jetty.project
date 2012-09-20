@@ -19,15 +19,18 @@
 package org.eclipse.jetty;
 
 import com.acme.DispatchServlet;
-import junit.framework.TestCase;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Simple tests against DispatchServlet.
  */
-public class DispatchServletTest extends TestCase
+public class DispatchServletTest
 {
     /**
      * As filed in JETTY-978.
@@ -65,6 +68,7 @@ public class DispatchServletTest extends TestCase
      *
      * @throws Exception
      */
+    @Test
     public void testSelfRefForwardDenialOfService() throws Exception
     {
         ServletTester tester = new ServletTester();
@@ -74,8 +78,8 @@ public class DispatchServletTest extends TestCase
         tester.addServlet(DefaultServlet.class,"/");
         tester.start();
 
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /tests/dispatch/includeN/"+dispatch.getName()+" HTTP/1.1\n");
+        StringBuilder req1 = new StringBuilder();
+        req1.append("GET /tests/dispatch/includeN/").append(dispatch.getName()).append(" HTTP/1.1\n");
         req1.append("Host: tester\n");
         req1.append("Connection: close\n");
         req1.append("\n");
@@ -88,6 +92,7 @@ public class DispatchServletTest extends TestCase
         assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
     }
 
+    @Test
     public void testSelfRefDeep() throws Exception
     {
         ServletTester tester = new ServletTester();
@@ -106,11 +111,9 @@ public class DispatchServletTest extends TestCase
          */
         int nestedDepth = 220;
 
-        for (int sri = 0; sri < selfRefs.length; sri++)
+        for (String selfRef : selfRefs)
         {
-            String selfRef = selfRefs[sri];
-
-            StringBuffer req1 = new StringBuffer();
+            StringBuilder req1 = new StringBuilder();
             req1.append("GET /tests");
             for (int i = 0; i < nestedDepth; i++)
             {
@@ -124,7 +127,7 @@ public class DispatchServletTest extends TestCase
 
             String response = tester.getResponses(req1.toString());
 
-            StringBuffer msg = new StringBuffer();
+            StringBuilder msg = new StringBuilder();
             msg.append("Response code on nested \"").append(selfRef).append("\"");
             msg.append(" (depth:").append(nestedDepth).append(")");
 
@@ -132,7 +135,7 @@ public class DispatchServletTest extends TestCase
                     "the nestedDepth in the TestCase is too large (reduce it)",
                     response.startsWith("HTTP/1.1 413 "));
 
-            assertFalse(msg + " should not be code 500.",response.startsWith("HTTP/1.1 500 "));
+            assertFalse(msg + " should not be code 500.", response.startsWith("HTTP/1.1 500 "));
 
             assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
         }

@@ -55,10 +55,6 @@ public class JSONTest
     "\"undefined\": undefined," +
     "}";
 
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see junit.framework.TestCase#setUp()
-     */
     @BeforeClass
     public static void setUp() throws Exception
     {

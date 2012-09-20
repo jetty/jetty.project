@@ -97,6 +97,13 @@ public class Usage
     }
 
     @Test
+    public void testPOSTWithParams() throws Exception
+    {
+        HttpClient client = new HttpClient();
+        client.POST("http://localhost:8080").param("a", "\u20AC").send();
+    }
+
+    @Test
     public void testRequestListener() throws Exception
     {
         HttpClient client = new HttpClient();

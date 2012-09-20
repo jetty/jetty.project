@@ -22,9 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -77,9 +77,9 @@ public class QueuedThreadPoolTest
         tp.setMaxThreads(10);
         tp.setMaxIdleTimeMs(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
-        
+
         tp.start();
-       
+
         waitForThreads(tp,5);
         waitForIdle(tp,5);
 
@@ -106,7 +106,7 @@ public class QueuedThreadPoolTest
             jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
-        
+
         waitForIdle(tp,1);
         waitForThreads(tp,6);
 
@@ -238,7 +238,7 @@ public class QueuedThreadPoolTest
             {}
             now=System.currentTimeMillis();
         }
-        Assert.assertEquals(idle,tp.getIdleThreads());
+        Assert.assertEquals(idle, tp.getIdleThreads());
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)

@@ -45,12 +45,12 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -351,7 +351,7 @@ public class WriteFlusherTest
     public void testConcurrentAccessToWriteAndOnFail() throws Exception
     {
         // TODO review this test - It was changed for the boolean flush return, but not really well inspected
-        
+
         final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         final CountDownLatch writeCalledLatch = new CountDownLatch(1);
         final CountDownLatch writeCompleteLatch = new CountDownLatch(1);
@@ -377,13 +377,13 @@ public class WriteFlusherTest
         executor.submit(new Writer(writeFlusher, callback));
         assertThat("Write has been called.", writeCalledLatch.await(5, TimeUnit.SECONDS), is(true));
         executor.submit(new FailedCaller(writeFlusher, failedCalledLatch)).get();
-        
-        
+
+
         // callback failed is NOT called because in WRITING state failed() doesn't know about the callback. However
         // either the write succeeds or we get an IOException which will call callback.failed()
         assertThat("write complete", writeCompleteLatch.await(5, TimeUnit.SECONDS), is(true));
-        
-        
+
+
         // in this testcase we more or less emulate that the write has successfully finished and we return from
         // EndPoint.flush() back to WriteFlusher.write(). Then someone calls failed. So the callback should have been
         // completed.
@@ -570,7 +570,7 @@ public class WriteFlusherTest
             {
                 byteBuffer.position(byteBuffer.limit());
             }
-            
+
             for (ByteBuffer b: buffers)
                 if (BufferUtil.hasContent(b))
                     return false;

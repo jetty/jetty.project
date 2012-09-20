@@ -20,8 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.util.List;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.http.HttpCookie;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpCookieParserTest

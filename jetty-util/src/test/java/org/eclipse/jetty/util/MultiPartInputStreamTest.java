@@ -28,28 +28,34 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.util.MultiPartInputStream.MultiPart;
+import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * MultiPartInputStreamTest
  *
  *
  */
-public class MultiPartInputStreamTest extends TestCase
+public class MultiPartInputStreamTest
 {
     private static final String FILENAME = "stuff.txt";
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
     protected String _multi = createMultipartRequestString(FILENAME);
     protected String _dirname = System.getProperty("java.io.tmpdir")+File.separator+"myfiles-"+System.currentTimeMillis();
 
-
+    @Test
     public void testNonMultiPartRequest()
     throws Exception
     {
@@ -61,6 +67,7 @@ public class MultiPartInputStreamTest extends TestCase
         assertTrue(mpis.getParts().isEmpty());
     }
 
+    @Test
     public void testNoLimits()
     throws Exception
     {
@@ -73,6 +80,7 @@ public class MultiPartInputStreamTest extends TestCase
         assertFalse(parts.isEmpty());
     }
 
+    @Test
     public void testRequestTooBig ()
     throws Exception
     {
@@ -93,6 +101,7 @@ public class MultiPartInputStreamTest extends TestCase
         }
     }
 
+    @Test
     public void testFileTooBig()
     throws Exception
     {
@@ -113,13 +122,14 @@ public class MultiPartInputStreamTest extends TestCase
         }
     }
 
-
+    @Test
     public void testMulti ()
     throws Exception
     {
         testMulti(FILENAME);
     }
 
+    @Test
     public void testMultiWithSpaceInFilename() throws Exception
     {
         testMulti("stuff with spaces.txt");
@@ -164,9 +174,9 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(stuff.getHeader("content-disposition"),is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(),is(2));
         assertThat(stuff.getSize(),is(51L));
-        f = ((MultiPartInputStream.MultiPart)stuff).getFile();
+        f = stuff.getFile();
         assertThat(f,notNullValue()); // longer than 100 bytes, should already be a file
-        assertThat(((MultiPartInputStream.MultiPart)stuff).getBytes(),nullValue()); //not in internal buffer any more
+        assertThat(stuff.getBytes(),nullValue()); //not in internal buffer any more
         assertThat(f.exists(),is(true));
         assertThat(f.getName(),is(not("stuff with space.txt")));
         stuff.write(filename);
@@ -174,6 +184,7 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(f.exists(),is(true));
     }
 
+    @Test
     public void testMultiSameNames ()
     throws Exception
     {

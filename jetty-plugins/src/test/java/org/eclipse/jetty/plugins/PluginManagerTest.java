@@ -27,8 +27,8 @@ import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.plugins.model.Plugin;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

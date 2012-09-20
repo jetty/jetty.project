@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -29,13 +32,16 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -120,6 +126,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (request.idleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout());
 
+        HttpMethod method = request.method();
         HttpVersion version = request.version();
         HttpFields headers = request.headers();
         ContentProvider content = request.content();
@@ -127,7 +134,64 @@ public class HttpConnection extends AbstractConnection implements Connection
         // Make sure the path is there
         String path = request.path();
         if (path.matches("\\s*"))
-            request.path("/");
+        {
+            path = "/";
+            request.path(path);
+        }
+
+        Fields fields = request.params();
+        if (!fields.isEmpty())
+        {
+            StringBuilder params = new StringBuilder();
+            for (Iterator<Fields.Field> fieldIterator = fields.iterator(); fieldIterator.hasNext();)
+            {
+                Fields.Field field = fieldIterator.next();
+                String[] values = field.values();
+                for (int i = 0; i < values.length; ++i)
+                {
+                    if (i > 0)
+                        params.append("&");
+                    params.append(field.name()).append("=");
+                    params.append(urlEncode(values[i]));
+                }
+                if (fieldIterator.hasNext())
+                    params.append("&");
+            }
+
+            // Behave as a GET, adding the params to the path, if it's a POST with some content
+            if (method == HttpMethod.POST && request.content() != null)
+                method = HttpMethod.GET;
+
+            switch (method)
+            {
+                case GET:
+                {
+                    path += "?";
+                    path += params.toString();
+                    request.path(path);
+                    break;
+                }
+                case POST:
+                {
+                    request.header(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Type.FORM_ENCODED.asString());
+                    request.content(new StringContentProvider(params.toString()));
+                    break;
+                }
+            }
+        }
+
+        // If we are HTTP 1.1, add the Host header
+        if (version.getVersion() > 10)
+        {
+            if (!headers.containsKey(HttpHeader.HOST.asString()))
+            {
+                String value = request.host();
+                int port = request.port();
+                if (port > 0)
+                    value += ":" + port;
+                headers.put(HttpHeader.HOST, value);
+            }
+        }
 
         // Add content headers
         if (content != null)
@@ -181,18 +245,18 @@ public class HttpConnection extends AbstractConnection implements Connection
                 headers.put(HttpHeader.ACCEPT_ENCODING, value.toString());
             }
         }
+    }
 
-        // If we are HTTP 1.1, add the Host header
-        if (version.getVersion() > 10)
+    private String urlEncode(String value)
+    {
+        String encoding = "UTF-8";
+        try
         {
-            if (!headers.containsKey(HttpHeader.HOST.asString()))
-            {
-                String value = request.host();
-                int port = request.port();
-                if (port > 0)
-                    value += ":" + port;
-                headers.put(HttpHeader.HOST, value);
-            }
+            return URLEncoder.encode(value, encoding);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new UnsupportedCharsetException(encoding);
         }
     }
 

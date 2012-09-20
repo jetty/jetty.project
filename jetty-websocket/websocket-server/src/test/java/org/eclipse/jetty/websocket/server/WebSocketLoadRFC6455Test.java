@@ -31,10 +31,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.websocket.core.protocol.Parser;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -142,7 +142,7 @@ public class WebSocketLoadRFC6455Test
                     // TODO: Send it
                     // TODO: Receive response
 
-                    Assert.assertEquals(message,_response.toString());
+                    Assert.assertEquals(message, _response.toString());
                     latch.countDown();
                 }
             }

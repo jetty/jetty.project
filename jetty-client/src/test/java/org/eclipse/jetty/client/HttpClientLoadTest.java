@@ -67,7 +67,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         client.setMaxQueueSizePerAddress(1024 * 1024);
 
         Random random = new Random();
-        int iterations = 1000;
+        int iterations = 200;
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
 
@@ -90,7 +90,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 }
                 testThread.interrupt();
             }
-        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 500), TimeUnit.MILLISECONDS);
+        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 1000), TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)

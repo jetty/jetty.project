@@ -29,16 +29,12 @@ import static org.junit.Assert.assertEquals;
 
 public class TimeoutTest
 {
-	private boolean _stress=Boolean.getBoolean("STRESS");
+    private boolean _stress=Boolean.getBoolean("STRESS");
 
     Object lock = new Object();
     Timeout timeout = new Timeout(null);
     Timeout.Task[] tasks;
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see junit.framework.TestCase#setUp()
-     */
     @Before
     public void setUp() throws Exception
     {
