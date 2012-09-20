@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>20-SNAPSHOT</version>
+    <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
   <version>9.0.0-SNAPSHOT</version>
@@ -374,7 +374,7 @@
     </repository>
   </repositories>
   <modules>
-    <module>jetty-ant</module>
+    <!--module>jetty-ant</module-->
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
@@ -392,8 +392,8 @@
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
-    <module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module>
+    <!--module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module-->
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
@@ -403,7 +403,7 @@
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
 
-    <module>jetty-spring</module>
+    <!--module>jetty-spring</module-->
     <module>jetty-client</module>
 
 
