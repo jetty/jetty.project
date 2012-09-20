@@ -29,7 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -54,12 +53,9 @@ public class SSLCloseTest
         ServerConnector connector=new ServerConnector(server, sslContextFactory);
         connector.setPort(0);
 
-        server.setConnectors(new Connector[]
-                {connector});
+        server.addConnector(connector);
         server.setHandler(new WriteHandler());
-
         server.start();
-
 
         SSLContext ctx=SSLContext.getInstance("SSLv3");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
