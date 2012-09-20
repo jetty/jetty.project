@@ -58,19 +58,18 @@ public interface Connection extends AutoCloseable
     @Override
     public void close();
 
-//    public int getMessagesIn();
-//
-//    public int getMessagesOut();
-//
-//    public long getCreatedTimeStamp();
-
+    public int getMessagesIn();
+    public int getMessagesOut();
+    public long getBytesIn();
+    public long getBytesOut();
+    public long getCreatedTimeStamp();
+    
+    
     public interface Listener
     {
         public void onOpened(Connection connection);
 
         public void onClosed(Connection connection);
-
-        // TODO: add onMessageIn/Out + onBytesIn/Out
 
         public static class Empty implements Listener
         {

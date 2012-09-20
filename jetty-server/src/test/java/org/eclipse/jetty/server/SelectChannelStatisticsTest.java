@@ -49,6 +49,7 @@ public class SelectChannelStatisticsTest
     private static final Logger LOG = Log.getLogger(SelectChannelStatisticsTest.class);
 
     private static Server _server;
+    private static ConnectorStatistics _statistics;
     private static AbstractNetworkConnector _connector;
     private static CyclicBarrier _connect;
     private static CountDownLatch _closed;
@@ -63,17 +64,9 @@ public class SelectChannelStatisticsTest
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
-        _connector = new ServerConnector(_server)
-        {
-            // TODO
-//            @Override
-//            public void connectionClosed(Connection connection)
-//            {
-//                super.connectionClosed(connection);
-//                _closed.countDown();
-//            }
-
-        };
+        _connector = new ServerConnector(_server);
+        _statistics = new ConnectorStatistics();
+        _connector.addBean(_statistics);
         _server.addConnector(_connector);
 
         HandlerWrapper wrapper = new HandlerWrapper()
@@ -127,13 +120,12 @@ public class SelectChannelStatisticsTest
     @Before
     public void init() throws Exception
     {
-        _connector.getStatistics().start();
+        _statistics.reset();
     }
 
     @After
     public void tini() throws Exception
     {
-        _connector.getStatistics().stop();
     }
 
     @Test
@@ -145,19 +137,19 @@ public class SelectChannelStatisticsTest
 
         doClose(1);
 
-        assertEquals(1, _connector.getStatistics().getConnections());
-        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
-        assertEquals(1, _connector.getStatistics().getConnectionsOpenMax());
-        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(0, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpenMax());
+        assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionsDurationMean() > 0);
+        assertTrue(_statistics.getConnectionsDurationMax() > 0);
+        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
 
-        assertEquals(1, _connector.getStatistics().getMessagesIn());
-        assertEquals(1.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
-        assertEquals(1, _connector.getStatistics().getConnectionsMessagesInMax());
-        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
+        assertEquals(1, _statistics.getMessagesIn());
+        assertEquals(1.0, _statistics.getConnectionsMessagesInMean(), 0.01);
+        assertEquals(1, _statistics.getConnectionsMessagesInMax());
+        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
     }
 
     @Test
@@ -171,19 +163,19 @@ public class SelectChannelStatisticsTest
 
         doClose(1);
 
-        assertEquals(1, _connector.getStatistics().getConnections());
-        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
-        assertEquals(1, _connector.getStatistics().getConnectionsOpenMax());
-        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(0, _statistics.getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpenMax());
+        assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionsDurationMean() > 0);
+        assertTrue(_statistics.getConnectionsDurationMax() > 0);
+        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
 
-        assertEquals(2, _connector.getStatistics().getMessagesIn());
-        assertEquals(2.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
-        assertEquals(2, _connector.getStatistics().getConnectionsMessagesInMax());
-        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
+        assertEquals(2, _statistics.getMessagesIn());
+        assertEquals(2.0, _statistics.getConnectionsMessagesInMean(), 0.01);
+        assertEquals(2, _statistics.getConnectionsMessagesInMax());
+        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
     }
 
     @Test
@@ -205,19 +197,19 @@ public class SelectChannelStatisticsTest
 
         doClose(3);
 
-        assertEquals(3, _connector.getStatistics().getConnections());
-        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
-        assertEquals(3, _connector.getStatistics().getConnectionsOpenMax());
-        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
+        assertEquals(3, _statistics.getConnections());
+        assertEquals(0, _statistics.getConnectionsOpen());
+        assertEquals(3, _statistics.getConnectionsOpenMax());
+        assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionsDurationMean() > 0);
+        assertTrue(_statistics.getConnectionsDurationMax() > 0);
+        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
 
-        assertEquals(6, _connector.getStatistics().getMessagesIn());
-        assertEquals(2.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
-        assertEquals(3, _connector.getStatistics().getConnectionsMessagesInMax());
-        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
+        assertEquals(6, _statistics.getMessagesIn());
+        assertEquals(2.0, _statistics.getConnectionsMessagesInMean(), 0.01);
+        assertEquals(3, _statistics.getConnectionsMessagesInMax());
+        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
     }
 
     protected void doInit(int count)
@@ -260,7 +252,7 @@ public class SelectChannelStatisticsTest
 
         _connect.await();
 
-        assertEquals(count, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(count, _statistics.getConnectionsOpen());
 
         String line=_in[idx].readLine();
         while(line!=null)

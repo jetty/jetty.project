@@ -51,10 +51,9 @@ public abstract class AbstractConnectionFactory extends AggregateLifeCycle imple
         _inputbufferSize=size;
     }
 
-    protected void configureConnection(Connection connection, Connector connector, EndPoint endPoint)
+    protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
     {
-        if (connection instanceof AbstractConnection)
-            ((AbstractConnection)connection).setInputBufferSize(getInputBufferSize());
+        connection.setInputBufferSize(getInputBufferSize());
 
         if (connector instanceof AggregateLifeCycle)
         {
@@ -62,6 +61,7 @@ public abstract class AbstractConnectionFactory extends AggregateLifeCycle imple
             for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
                 connection.addListener(listener);
         }
+        return connection;
     }
 
     @Override

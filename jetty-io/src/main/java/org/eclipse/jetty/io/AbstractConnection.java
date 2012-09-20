@@ -42,7 +42,7 @@ public abstract class AbstractConnection implements Connection
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-//    private final long _created=System.currentTimeMillis();
+    private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback<Void> _readCallback;
@@ -218,7 +218,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onOpen()
     {
-        LOG.info("{} opened", this);
+        LOG.debug("onOpen {}", this);
 
         for (Listener listener : listeners)
             listener.onOpened(this);
@@ -233,7 +233,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onClose()
     {
-        LOG.info("{} closed",this);
+        LOG.debug("onClose {}",this);
 
         for (Listener listener : listeners)
             listener.onClosed(this);
@@ -251,23 +251,37 @@ public abstract class AbstractConnection implements Connection
         getEndPoint().close();
     }
 
-//    @Override
-//    public int getMessagesIn()
-//    {
-//        return 0;
-//    }
-//
-//    @Override
-//    public int getMessagesOut()
-//    {
-//        return 0;
-//    }
-//
-//    @Override
-//    public long getCreatedTimeStamp()
-//    {
-//        return _created;
-//    }
+    @Override
+    public int getMessagesIn()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getMessagesOut()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public long getCreatedTimeStamp()
+    {
+        return _created;
+    }
 
     @Override
     public String toString()

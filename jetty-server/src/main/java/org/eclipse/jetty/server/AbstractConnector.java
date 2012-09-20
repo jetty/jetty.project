@@ -137,7 +137,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected final Logger LOG = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>();
-    private final Statistics _stats = new ConnectorStatistics();
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
@@ -175,7 +174,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             unmanage(_executor); // inherited from server
         addBean(_scheduler);
         addBean(_byteBufferPool);
-        addBean(_stats,true);
 
         for (ConnectionFactory factory:factories)
             addConnectionFactory(factory);
@@ -187,11 +185,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _acceptors = new Thread[acceptors];
     }
 
-    @Override
-    public Statistics getStatistics()
-    {
-        return _stats;
-    }
 
     @Override
     public Server getServer()

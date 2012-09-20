@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -46,6 +47,7 @@ import org.junit.Test;
 public class StatisticsHandlerTest
 {
     private Server _server;
+    private ConnectorStatistics _statistics;
     private LocalConnector _connector;
     private LatchHandler _latchHandler;
     private StatisticsHandler _statsHandler;
@@ -56,6 +58,8 @@ public class StatisticsHandlerTest
         _server = new Server();
 
         _connector = new LocalConnector(_server);
+        _statistics=new ConnectorStatistics();
+        _connector.addBean(_statistics);
         _server.addConnector(_connector);
 
         _latchHandler = new LatchHandler();
@@ -79,6 +83,7 @@ public class StatisticsHandlerTest
 
         _statsHandler.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -104,7 +109,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -140,7 +145,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(2, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(2, _statistics.getConnectionsOpen());
 
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -177,7 +182,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(4, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(4, _statistics.getConnectionsOpen());
 
         assertEquals(4, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
@@ -215,6 +220,7 @@ public class StatisticsHandlerTest
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -262,7 +268,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -286,10 +292,12 @@ public class StatisticsHandlerTest
 
         continuationHandle.get().addContinuationListener(new ContinuationListener()
         {
+            @Override
             public void onTimeout(Continuation continuation)
             {
             }
 
+            @Override
             public void onComplete(Continuation continuation)
             {
                 try { barrier[2].await(); } catch(Exception e) {}
@@ -301,7 +309,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -341,6 +349,7 @@ public class StatisticsHandlerTest
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -389,7 +398,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -403,10 +412,12 @@ public class StatisticsHandlerTest
 
         continuationHandle.get().addContinuationListener(new ContinuationListener()
         {
+            @Override
             public void onTimeout(Continuation continuation)
             {
             }
 
+            @Override
             public void onComplete(Continuation continuation)
             {
                 try { barrier[2].await(); } catch(Exception e) {}
@@ -461,6 +472,7 @@ public class StatisticsHandlerTest
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 request.setHandled(true);
@@ -509,7 +521,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _statistics.getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -523,10 +535,12 @@ public class StatisticsHandlerTest
         assertTrue(continuationHandle.get().isSuspended());
         continuationHandle.get().addContinuationListener(new ContinuationListener()
         {
+            @Override
             public void onTimeout(Continuation continuation)
             {
             }
 
+            @Override
             public void onComplete(Continuation continuation)
             {
                 try { barrier[2].await(); } catch(Exception e) {}

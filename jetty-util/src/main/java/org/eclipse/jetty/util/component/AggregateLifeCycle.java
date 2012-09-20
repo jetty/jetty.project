@@ -51,23 +51,8 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private boolean _started = false;
 
-    enum Managed { MANAGED, UNMANAGED, AUTO };
-
-    private class Bean
+    public AggregateLifeCycle()
     {
-        private final Object _bean;
-        private volatile Managed _managed = Managed.AUTO;
-
-        private Bean(Object b)
-        {
-            _bean = b;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("{%s,%b}", _bean, _managed);
-        }
     }
 
     /**
@@ -493,6 +478,26 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                 else
                     dumpObject(out, o);
             }
+        }
+    }
+    
+
+    enum Managed { MANAGED, UNMANAGED, AUTO };
+
+    private class Bean
+    {
+        private final Object _bean;
+        private volatile Managed _managed = Managed.AUTO;
+
+        private Bean(Object b)
+        {
+            _bean = b;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("{%s,%b}", _bean, _managed);
         }
     }
 }

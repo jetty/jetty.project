@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Connector.Statistics;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -31,7 +31,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpable, Connection.Listener
+@ManagedObject("Connector Statistics")
+public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
@@ -48,97 +49,81 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
     @Override
     public void onClosed(Connection connection)
     {
-        // TODO
-        connectionClosed(0, 0, 0);
+        connectionClosed(System.currentTimeMillis()-connection.getCreatedTimeStamp(),connection.getMessagesIn(),connection.getMessagesOut());
     }
 
-    @Override
     public int getBytesIn()
     {
         // TODO
         return -1;
     }
 
-    @Override
     public int getBytesOut()
     {
         // TODO
         return -1;
     }
 
-    @Override
     public int getConnections()
     {
         return (int)_connectionStats.getTotal();
     }
 
-    @Override
     public long getConnectionsDurationMax()
     {
         return _connectionDurationStats.getMax();
     }
 
-    @Override
     public double getConnectionsDurationMean()
     {
         return _connectionDurationStats.getMean();
     }
 
-    @Override
     public double getConnectionsDurationStdDev()
     {
         return _connectionDurationStats.getStdDev();
     }
 
-    @Override
     public long getConnectionsDurationTotal()
     {
         return _connectionDurationStats.getTotal();
     }
 
-    @Override
     public int getConnectionsMessagesInMax()
     {
         return (int)_messagesIn.getMax();
     }
 
-    @Override
     public double getConnectionsMessagesInMean()
     {
         return _messagesIn.getMean();
     }
 
-    @Override
     public double getConnectionsMessagesInStdDev()
     {
         return _messagesIn.getStdDev();
     }
 
-    @Override
     public int getConnectionsOpen()
     {
         return (int)_connectionStats.getCurrent();
     }
 
-    @Override
     public int getConnectionsOpenMax()
     {
         return (int)_connectionStats.getMax();
     }
 
-    @Override
     public int getMessagesIn()
     {
         return (int)_messagesIn.getTotal();
     }
 
-    @Override
     public int getMessagesOut()
     {
         return (int)_messagesIn.getTotal();
     }
 
-    @Override
     public long getStartedMillis()
     {
         long start = _startMillis.get();
@@ -156,7 +141,6 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
     {
     }
 
-    @Override
     public void reset()
     {
         _startMillis.set(System.currentTimeMillis());
@@ -166,7 +150,6 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
         _connectionDurationStats.reset();
     }
 
-    @Override
     public void connectionOpened()
     {
         if (isStarted())
@@ -175,7 +158,6 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
         }
     }
 
-    @Override
     public void connectionUpgraded(int messagesIn, int messagesOut)
     {
         if (isStarted())
@@ -185,7 +167,6 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
         }
     }
 
-    @Override
     public void connectionClosed(long duration, int messagesIn, int messagesOut)
     {
         if (isStarted())

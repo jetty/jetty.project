@@ -45,7 +45,7 @@ public class ProxyHTTPConnectionFactory extends AbstractConnectionFactory implem
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return new ProxyHTTPSPDYConnection(connector, httpChannelConfig, endPoint, version, proxyEngineSelector);
+        return configure(new ProxyHTTPSPDYConnection(connector, httpChannelConfig, endPoint, version, proxyEngineSelector),connector,endPoint);
     }
 
     @Override

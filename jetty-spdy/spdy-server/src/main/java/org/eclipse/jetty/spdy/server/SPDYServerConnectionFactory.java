@@ -78,7 +78,6 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(connector,endPoint);
         SPDYConnection connection = new ServerSPDYConnection(connector,endPoint, parser, listener, getInputBufferSize());
-        configureConnection(connection, connector, endPoint);
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
@@ -90,7 +89,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 
         sessionOpened(session);
 
-        return connection;
+        return configure(connection,connector,endPoint);
     }
 
     protected FlowControlStrategy newFlowControlStrategy(short version)

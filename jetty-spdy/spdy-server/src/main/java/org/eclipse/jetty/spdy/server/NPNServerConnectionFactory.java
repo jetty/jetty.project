@@ -97,7 +97,7 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
         if (dft==null)
             dft=_protocols.get(0);
 
-        return new NextProtoNegoServerConnection((DecryptedEndPoint)endPoint, connector,protocols,_defaultProtocol);
+        return configure(new NextProtoNegoServerConnection((DecryptedEndPoint)endPoint, connector,protocols,_defaultProtocol),connector,endPoint);
     }
 
     @Override

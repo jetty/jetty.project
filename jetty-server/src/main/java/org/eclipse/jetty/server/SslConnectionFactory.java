@@ -78,7 +78,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         engine.setUseClientMode(false);
 
         SslConnection sslConnection = new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
-        configureConnection(sslConnection, connector, endPoint);
+        configure(sslConnection, connector, endPoint);
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
         EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
