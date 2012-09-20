@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>20-SNAPSHOT</version>
+    <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
   <version>9.0.0-SNAPSHOT</version>
@@ -146,17 +146,40 @@
               <rules>
                 <!-- Banned Dependencies (should use Orbit based versions now) -->
                 <bannedDependencies>
+                  <excludes>
+                    <exclude>javax.servlet</exclude>
+                    <exclude>javax.servlet.jsp</exclude>
+                    <exclude>org.apache.geronimo.specs</exclude>
+                    <exclude>javax.mail</exclude>
+                    <exclude>javax.activation</exclude>
+                  </excludes>
+                  <!-- allowed combinations -->
                   <includes>
-                    <include>javax.servlet</include>
-                    <include>org.apache.geronimo.specs</include>
-                    <include>javax.mail</include>
-                    <include>javax.activation</include>
+                    <include>javax.servlet:*:*:*:provided</include>
+                    <include>javax.servlet.jsp:*:*:*:provided</include>
                   </includes>
                   <searchTransitive>true</searchTransitive>
                   <message>This dependency is banned, use the ORBIT provided dependency instead.</message>
                 </bannedDependencies>
               </rules>
               <fail>true</fail>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ban-junit.jar</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>junit:junit:*:jar</exclude>
+                  </excludes>
+                  <searchTransitive>true</searchTransitive>
+                  <message>We use junit-dep.jar, not junit.jar (as the standard junit.jar aggregates too many 3rd party libs inside of it)</message>
+                </bannedDependencies>
+              </rules>
             </configuration>
           </execution>
         </executions>
@@ -351,7 +374,7 @@
     </repository>
   </repositories>
   <modules>
-    <module>jetty-ant</module>
+    <!--module>jetty-ant</module-->
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
@@ -369,8 +392,8 @@
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
-    <module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module>
+    <!--module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module-->
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
@@ -380,7 +403,7 @@
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
 
-    <module>jetty-spring</module>
+    <!--module>jetty-spring</module-->
     <module>jetty-client</module>
 
 
@@ -489,7 +512,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.8</version>
+        <version>1.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -506,20 +529,39 @@
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
+      <!-- NOTICE: we no longer use junit.jar as it bundles/aggregates too many
+           3rd party libraries in itself 
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.8.1</version>
       </dependency>
+        -->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit-dep</artifactId>
+        <version>4.10</version>
+      </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-all</artifactId>
-        <version>1.1</version>
+        <artifactId>hamcrest-core</artifactId>
+        <version>1.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>1.2.1</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>1.8.5</version>
+        <exclusions>
+          <exclusion>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
