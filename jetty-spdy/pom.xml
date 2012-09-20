@@ -24,6 +24,14 @@
         <module>spdy-example-webapp</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-test-helper</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>

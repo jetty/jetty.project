@@ -51,10 +51,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.jetty.npn</groupId>
             <artifactId>npn-api</artifactId>
             <version>${npn.version}</version>
