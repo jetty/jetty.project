@@ -24,63 +24,28 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-/**
- * HttpServer Tester.
- */
 public class SSLCloseTest extends TestCase
 {
-    private static EndPoint __endp;
-    private static class CredulousTM implements TrustManager, X509TrustManager
-    {
-        public X509Certificate[] getAcceptedIssuers()
-        {
-            return new X509Certificate[]{};
-        }
-
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
-        {
-        }
-
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
-        {
-        }
-    }
-
-    private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
-
-    // ~ Methods
-    // ----------------------------------------------------------------
-
-    /**
-     * Feed the server the entire request at once.
-     *
-     * @throws Exception
-     */
     public void testClose() throws Exception
     {
-        String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
 
@@ -96,7 +61,7 @@ public class SSLCloseTest extends TestCase
 
 
         SSLContext ctx=SSLContext.getInstance("SSLv3");
-        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
 
@@ -124,7 +89,6 @@ public class SSLCloseTest extends TestCase
             Thread.yield();
     }
 
-
     private static class WriteHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -134,7 +98,6 @@ public class SSLCloseTest extends TestCase
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test","value");
-                __endp=baseRequest.getHttpChannel().getEndPoint();
 
                 OutputStream out=response.getOutputStream();
 
@@ -152,28 +115,11 @@ public class SSLCloseTest extends TestCase
                     out.write(bytes);
                 }
             }
-            catch(RuntimeException e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
-            catch(Error e)
-            {
-                e.printStackTrace();
-                throw e;
-            }
             catch(Throwable e)
             {
                 e.printStackTrace();
                 throw new ServletException(e);
             }
         }
-
     }
-
 }
