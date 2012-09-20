@@ -90,7 +90,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 }
                 testThread.interrupt();
             }
-        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 500), TimeUnit.MILLISECONDS);
+        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 1000), TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
