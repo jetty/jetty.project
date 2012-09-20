@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -69,7 +69,7 @@ public class AggregateLifeCycleTest
         a0.addBean(a1);
 
         a0.start();
-        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(1, started.get());
         Assert.assertEquals(0,stopped.get());
         Assert.assertEquals(0,destroyed.get());
 
@@ -250,7 +250,7 @@ public class AggregateLifeCycleTest
         dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump,"");
-        
+
         AggregateLifeCycle aa2 = new AggregateLifeCycle();
         a0.addBean(aa2,false);
         dump=trim(a0.dump());
@@ -259,7 +259,7 @@ public class AggregateLifeCycleTest
         dump=check(dump," += org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump,"");
-        
+
         aa1.start();
         a0.start();
         dump=trim(a0.dump());
@@ -268,14 +268,14 @@ public class AggregateLifeCycleTest
         dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump,"");
-        
+
         a0.manage(aa1);
         a0.removeBean(aa2);
         dump=trim(a0.dump());
         dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
         dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
         dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
-        dump=check(dump,"");        
+        dump=check(dump,"");
 
         AggregateLifeCycle aaa0 = new AggregateLifeCycle();
         aa0.addBean(aaa0);

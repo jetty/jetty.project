@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -99,7 +99,7 @@ public class AsyncContextTest
 
         BufferedReader br = parseHeader(responseString);
 
-        Assert.assertEquals("servlet gets right path","doGet:getServletPath:/servletPath",br.readLine());
+        Assert.assertEquals("servlet gets right path", "doGet:getServletPath:/servletPath", br.readLine());
         Assert.assertEquals("async context gets right path in get","doGet:async:getServletPath:/servletPath",br.readLine());
         Assert.assertEquals("async context gets right path in async","async:run:attr:servletPath:/servletPath",br.readLine());
     }
@@ -221,7 +221,7 @@ public class AsyncContextTest
         @Override
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
-            if (((Request)request).getDispatcherType() == DispatcherType.ASYNC)
+            if (request.getDispatcherType() == DispatcherType.ASYNC)
             {
                 response.getOutputStream().print("Dispatched back to ForwardingServlet");
             }
@@ -310,8 +310,6 @@ public class AsyncContextTest
                 asyncContext.start(new AsyncRunnable(asyncContext));
 
             }
-            return;
-
         }
     }
 
@@ -326,7 +324,6 @@ public class AsyncContextTest
             AsyncContext asyncContext = request.startAsync(request, response);
             response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
-            return;
         }
     }
 

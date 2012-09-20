@@ -29,7 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -38,9 +37,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Test;
 
-public class SSLCloseTest extends TestCase
+public class SSLCloseTest
 {
+    @Test
     public void testClose() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
@@ -54,7 +55,7 @@ public class SSLCloseTest extends TestCase
         connector.setPort(0);
 
         server.setConnectors(new Connector[]
-        { connector });
+                {connector});
         server.setHandler(new WriteHandler());
 
         server.start();
@@ -85,7 +86,7 @@ public class SSLCloseTest extends TestCase
 
         Thread.sleep(2000);
 
-        while ((line=in.readLine())!=null)
+        while (in.readLine()!=null)
             Thread.yield();
     }
 

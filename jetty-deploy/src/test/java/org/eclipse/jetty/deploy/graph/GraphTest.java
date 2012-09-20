@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.deploy.graph;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
-
 
 public class GraphTest
 {
@@ -37,7 +36,7 @@ public class GraphTest
 
         Path path = new Path();
 
-        Assert.assertEquals(0,path.nodes());
+        Assert.assertEquals(0, path.nodes());
         Assert.assertEquals(null,path.firstNode());
         Assert.assertEquals(null,path.lastNode());
 

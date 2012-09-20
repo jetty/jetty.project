@@ -23,20 +23,22 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * TestAnnotationConfiguration
  *
  *
  */
-public class TestAnnotationConfiguration extends TestCase
+public class TestAnnotationConfiguration
 {
-    public void testGetFragmentFromJar ()
-    throws Exception
+    @Test
+    public void testGetFragmentFromJar() throws Exception
     {
         String dir = System.getProperty("basedir", ".");
         File file = new File(dir);

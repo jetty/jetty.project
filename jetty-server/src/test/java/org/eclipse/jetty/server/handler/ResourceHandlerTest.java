@@ -20,15 +20,13 @@ package org.eclipse.jetty.server.handler;
 
 import java.net.URI;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,13 +35,12 @@ import org.junit.Test;
  *
  * TODO: increase the testing going on here
  */
-public class ResourceHandlerTest extends TestCase
+public class ResourceHandlerTest
 {
     private static Server _server;
     private static ServerConnector _connector;
     private static ContextHandler _contextHandler;
     private static ResourceHandler _resourceHandler;
-
 
     @BeforeClass
     public void setUp() throws Exception
@@ -60,7 +57,6 @@ public class ResourceHandlerTest extends TestCase
         _server.start();
     }
 
-    /* ------------------------------------------------------------ */
     @AfterClass
     public void tearDown() throws Exception
     {
@@ -78,5 +74,4 @@ public class ResourceHandlerTest extends TestCase
 
         Assert.assertNotNull("missing jetty.css" , sr.getString("/resource/jetty-dir.css"));
     }
-
 }

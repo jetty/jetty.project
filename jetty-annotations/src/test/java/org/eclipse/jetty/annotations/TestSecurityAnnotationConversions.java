@@ -27,7 +27,6 @@ import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import javax.servlet.http.HttpServlet;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -35,8 +34,15 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Test;
 
-public class TestSecurityAnnotationConversions extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class TestSecurityAnnotationConversions
 {
     @ServletSecurity(value=@HttpConstraint(value=EmptyRoleSemantic.DENY))
     public static class DenyServlet extends HttpServlet
@@ -65,8 +71,8 @@ public class TestSecurityAnnotationConversions extends TestCase
     {
     }
 
-    public void testDenyAllOnClass ()
-    throws Exception
+    @Test
+    public void testDenyAllOnClass() throws Exception
     {
 
         WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{"/foo/*", "*.foo"});
@@ -97,9 +103,8 @@ public class TestSecurityAnnotationConversions extends TestCase
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-
-    public void testPermitAll()
-    throws Exception
+    @Test
+    public void testPermitAll() throws Exception
     {
         //Assume we found 1 servlet with a @ServletSecurity security annotation
         WebAppContext wac = makeWebAppContext(PermitServlet.class.getCanonicalName(), "permitServlet", new String[]{"/foo/*", "*.foo"});
@@ -129,8 +134,8 @@ public class TestSecurityAnnotationConversions extends TestCase
         compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-    public void testRolesAllowedWithTransportGuarantee ()
-    throws Exception
+    @Test
+    public void testRolesAllowedWithTransportGuarantee() throws Exception
     {
         //Assume we found 1 servlet with annotation with roles defined and
         //and a TransportGuarantee
@@ -161,9 +166,8 @@ public class TestSecurityAnnotationConversions extends TestCase
         compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-
-    public void testMethodAnnotation ()
-    throws Exception
+    @Test
+    public void testMethodAnnotation() throws Exception
     {
         //ServletSecurity annotation with HttpConstraint of TransportGuarantee.CONFIDENTIAL, and a list of rolesAllowed, and
         //a HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
@@ -209,8 +213,8 @@ public class TestSecurityAnnotationConversions extends TestCase
         compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-    public void testMethodAnnotation2 ()
-    throws Exception
+    @Test
+    public void testMethodAnnotation2() throws Exception
     {
         //A ServletSecurity annotation that has HttpConstraint of CONFIDENTIAL with defined roles, but a
         //HttpMethodConstraint for GET that permits all, but also requires CONFIDENTIAL

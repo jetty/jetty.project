@@ -18,18 +18,21 @@
 
 package org.eclipse.jetty.http;
 
-import junit.framework.TestCase;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class PathMapTest extends TestCase
+public class PathMapTest
 {
     @Test
     public void testPathMap() throws Exception
     {
-        PathMap p = new PathMap();
+        PathMap<String> p = new PathMap<>();
 
         p.put("/abs/path", "1");
         p.put("/abs/path/longer", "2");

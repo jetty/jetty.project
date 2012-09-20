@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -232,7 +232,7 @@ public class SslConnectionTest
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
         byte[] buffer = new byte[1024];
         int len=client.getInputStream().read(buffer);
-        Assert.assertEquals(10,len);
+        Assert.assertEquals(10, len);
         Assert.assertEquals("HelloWorld",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
 
         client.close();
