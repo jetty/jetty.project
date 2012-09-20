@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -95,27 +93,7 @@ public class HttpSender
                 {
                     case NEED_INFO:
                     {
-                        String path = request.path();
-                        Fields fields = request.params();
-                        if (!fields.isEmpty())
-                        {
-                            path += "?";
-                            for (Iterator<Fields.Field> fieldIterator = fields.iterator(); fieldIterator.hasNext();)
-                            {
-                                Fields.Field field = fieldIterator.next();
-                                String[] values = field.values();
-                                for (int i = 0; i < values.length; ++i)
-                                {
-                                    if (i > 0)
-                                        path += "&";
-                                    path += field.name() + "=";
-                                    path += URLEncoder.encode(values[i], "UTF-8");
-                                }
-                                if (fieldIterator.hasNext())
-                                    path += "&";
-                            }
-                        }
-                        info = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), path);
+                        info = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), request.path());
                         break;
                     }
                     case NEED_HEADER:

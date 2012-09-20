@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -212,6 +213,67 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.status());
         String content = new String(response.content(), "UTF-8");
         Assert.assertEquals(value11 + value12 + value2, content);
+    }
+
+    @Test
+    public void test_POST_WithParameters() throws Exception
+    {
+        final String paramName = "a";
+        final String paramValue = "\u20AC";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                String value = request.getParameter(paramName);
+                if (paramValue.equals(value))
+                {
+                    response.setCharacterEncoding("UTF-8");
+                    response.setContentType("text/plain");
+                    response.getOutputStream().print(value);
+                }
+            }
+        });
+
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
+                .param(paramName, paramValue).send().get(5, TimeUnit.SECONDS);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(paramValue, new String(response.content(), "UTF-8"));
+    }
+
+    @Test
+    public void test_POST_WithParameters_WithContent() throws Exception
+    {
+        final byte[] content = {0, 1, 2, 3};
+        final String paramName = "a";
+        final String paramValue = "\u20AC";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                String value = request.getParameter(paramName);
+                if (paramValue.equals(value))
+                {
+                    response.setCharacterEncoding("UTF-8");
+                    response.setContentType("text/plain");
+                    response.getOutputStream().write(content);
+                }
+            }
+        });
+
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
+                .param(paramName, paramValue)
+                .content(new BytesContentProvider(content))
+                .send().get(5, TimeUnit.SECONDS);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertArrayEquals(content, response.content());
     }
 
     @Test

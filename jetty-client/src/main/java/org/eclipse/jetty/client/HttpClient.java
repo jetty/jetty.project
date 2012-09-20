@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -223,6 +224,16 @@ public class HttpClient extends AggregateLifeCycle
         return newRequest(uri).send();
     }
 
+    public Request POST(String uri)
+    {
+        return POST(URI.create(uri));
+    }
+
+    public Request POST(URI uri)
+    {
+        return newRequest(uri).method(HttpMethod.POST);
+    }
+
     public Request newRequest(String host, int port)
     {
         return newRequest(URI.create(address("http", host, port)));
@@ -280,7 +291,7 @@ public class HttpClient extends AggregateLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    public void send(Request request, Response.Listener listener)
+    protected void send(Request request, Response.Listener listener)
     {
         String scheme = request.scheme().toLowerCase();
         if (!Arrays.asList("http", "https").contains(scheme))
