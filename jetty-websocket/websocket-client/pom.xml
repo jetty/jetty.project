@@ -71,6 +71,8 @@
                             <include>org.mortbay.jetty:servlet-api</include>
                             <include>jetty:servlet-api</include>
                           </includes>
+                          <searchTransitive>true</searchTransitive>
+                          <message>The servlet-api dependency is banned in websocket-client as it causes problems in apps that use client only.</message>
                         </bannedDependencies>
                       </rules>
                     </configuration>
