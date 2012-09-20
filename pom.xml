@@ -512,7 +512,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.9-SNAPSHOT</version>
+        <version>1.9</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
