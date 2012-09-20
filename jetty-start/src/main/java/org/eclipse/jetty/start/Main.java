@@ -288,7 +288,7 @@ public class Main
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
-                                _config.addActiveOption(opt);
+                                _config.addActiveOption(opt.trim());
                         }
                         else
                         {
