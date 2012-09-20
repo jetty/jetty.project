@@ -146,11 +146,17 @@
               <rules>
                 <!-- Banned Dependencies (should use Orbit based versions now) -->
                 <bannedDependencies>
+                  <excludes>
+                    <exclude>javax.servlet</exclude>
+                    <exclude>javax.servlet.jsp</exclude>
+                    <exclude>org.apache.geronimo.specs</exclude>
+                    <exclude>javax.mail</exclude>
+                    <exclude>javax.activation</exclude>
+                  </excludes>
+                  <!-- allowed combinations -->
                   <includes>
-                    <include>javax.servlet</include>
-                    <include>org.apache.geronimo.specs</include>
-                    <include>javax.mail</include>
-                    <include>javax.activation</include>
+                    <include>javax.servlet:*:*:*:provided</include>
+                    <include>javax.servlet.jsp:*:*:*:provided</include>
                   </includes>
                   <searchTransitive>true</searchTransitive>
                   <message>This dependency is banned, use the ORBIT provided dependency instead.</message>
