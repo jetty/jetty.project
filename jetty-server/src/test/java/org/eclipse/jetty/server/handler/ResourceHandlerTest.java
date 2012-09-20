@@ -43,7 +43,7 @@ public class ResourceHandlerTest
     private static ResourceHandler _resourceHandler;
 
     @BeforeClass
-    public void setUp() throws Exception
+    public static void setUp() throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -58,7 +58,7 @@ public class ResourceHandlerTest
     }
 
     @AfterClass
-    public void tearDown() throws Exception
+    public static void tearDown() throws Exception
     {
         _server.stop();
     }
