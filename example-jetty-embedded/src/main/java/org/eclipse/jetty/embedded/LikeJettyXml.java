@@ -25,18 +25,16 @@ import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -62,13 +60,12 @@ public class LikeJettyXml
 
         // Setup Connectors
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpChannelConfig().setSecurePort(8443);        
+        http.getHttpChannelConfig().setSecurePort(8443);
         ServerConnector connector = new ServerConnector(server,http);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
 
-        server.setConnectors(new Connector[]
-        { connector });
+        server.addConnector(connector);
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
@@ -77,15 +74,13 @@ public class LikeJettyXml
         sslContextFactory.setTrustStorePath(jetty_home + "/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
-                new String[]{
-                        "SSL_RSA_WITH_DES_CBC_SHA",
-                        "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                        "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                        "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                        "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                        "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                        "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
-                });
+                "SSL_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
         ServerConnector sslConnector = new ServerConnector(server,sslContextFactory);
         sslConnector.setPort(8443);
         server.addConnector(sslConnector);
