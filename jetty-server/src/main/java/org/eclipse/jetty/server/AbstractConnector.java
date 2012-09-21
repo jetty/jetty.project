@@ -38,7 +38,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
  * </li>
  * </ul>
- * These services are managed as aggregate beans by the {@link AggregateLifeCycle} super class and
+ * These services are managed as aggregate beans by the {@link ContainerLifeCycle} super class and
  * may either be managed or unmanaged beans.
  *
  * <h2>Connection Factories</h2>
@@ -132,7 +132,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * sufficient for modern persistent protocols (HTTP/1.1, SPDY etc.)
  */
 @ManagedObject("Abstract implementation of the Connector Interface")
-public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
+public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
     protected final Logger LOG = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap

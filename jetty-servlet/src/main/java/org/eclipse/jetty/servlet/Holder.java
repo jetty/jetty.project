@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -260,6 +260,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _name;
@@ -277,17 +278,19 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(_name).append("==").append(_className)
         .append(" - ").append(AbstractLifeCycle.getState(this)).append("\n");
-        AggregateLifeCycle.dump(out,indent,_initParams.entrySet());
+        ContainerLifeCycle.dump(out,indent,_initParams.entrySet());
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     /* ------------------------------------------------------------ */

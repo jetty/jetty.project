@@ -98,8 +98,7 @@ public class DeploymentManagerLifeCyclePathTest
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.start();
-        mbContainer.addBean(depman);
+        depman.addBean(mbContainer);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.addAppProvider(mockProvider);

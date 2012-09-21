@@ -54,7 +54,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -95,7 +95,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * });
  * </pre>
  */
-public class HttpClient extends AggregateLifeCycle
+public class HttpClient extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 

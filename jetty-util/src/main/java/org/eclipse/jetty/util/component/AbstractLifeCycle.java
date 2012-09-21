@@ -55,7 +55,8 @@ public abstract class AbstractLifeCycle implements LifeCycle
     protected void doStop() throws Exception
     {
     }
-
+    
+    @Override
     public final void start() throws Exception
     {
         synchronized (_lock)
@@ -76,6 +77,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
+    @Override
     public final void stop() throws Exception
     {
         synchronized (_lock)
@@ -96,6 +98,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
+    @Override
     public boolean isRunning()
     {
         final int state = _state;
@@ -103,36 +106,43 @@ public abstract class AbstractLifeCycle implements LifeCycle
         return state == __STARTED || state == __STARTING;
     }
 
+    @Override
     public boolean isStarted()
     {
         return _state == __STARTED;
     }
 
+    @Override
     public boolean isStarting()
     {
         return _state == __STARTING;
     }
 
+    @Override
     public boolean isStopping()
     {
         return _state == __STOPPING;
     }
 
+    @Override
     public boolean isStopped()
     {
         return _state == __STOPPED;
     }
 
+    @Override
     public boolean isFailed()
     {
         return _state == __FAILED;
     }
 
+    @Override
     public void addLifeCycleListener(LifeCycle.Listener listener)
     {
         _listeners.add(listener);
     }
 
+    @Override
     public void removeLifeCycleListener(LifeCycle.Listener listener)
     {
         _listeners.remove(listener);

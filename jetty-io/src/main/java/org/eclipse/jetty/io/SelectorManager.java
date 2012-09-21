@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -249,14 +249,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     @Override
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out, this);
-        AggregateLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
+        ContainerLifeCycle.dumpObject(out, this);
+        ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
     /**
@@ -504,7 +504,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         @Override
         public String dump()
         {
-            return AggregateLifeCycle.dump(this);
+            return ContainerLifeCycle.dump(this);
         }
 
         @Override
@@ -536,7 +536,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 submit(dumpKeys);
                 dumpKeys.await(5, TimeUnit.SECONDS);
 
-                AggregateLifeCycle.dump(out, indent, dump);
+                ContainerLifeCycle.dump(out, indent, dump);
             }
         }
 

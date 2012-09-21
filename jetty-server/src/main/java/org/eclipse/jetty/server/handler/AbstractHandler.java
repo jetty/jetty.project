@@ -24,18 +24,16 @@ import java.io.IOException;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
 /** AbstractHandler.
- * 
- *
  */
 @ManagedObject("Jetty Handler")
-public abstract class AbstractHandler extends AggregateLifeCycle implements Handler
+public abstract class AbstractHandler extends ContainerLifeCycle implements Handler
 {
     private static final Logger LOG = Log.getLogger(AbstractHandler.class);
 
@@ -72,33 +70,32 @@ public abstract class AbstractHandler extends AggregateLifeCycle implements Hand
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
-        Server old_server=_server;
-        if (old_server!=null && old_server!=server)
-            old_server.getContainer().removeBean(this);
+        if (isStarted())
+            throw new IllegalStateException(STARTED);
         _server=server;
-        if (_server!=null && _server!=old_server)
-            _server.getContainer().addBean(this);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Server getServer()
     {
         return _server;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void destroy()
     {
         if (!isStopped())
             throw new IllegalStateException("!STOPPED");
         super.destroy();
-        if (_server!=null)
-            _server.getContainer().removeBean(this);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dumpThis(Appendable out) throws IOException
     {
         out.append(toString()).append(" - ").append(getState()).append('\n');

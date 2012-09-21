@@ -71,7 +71,7 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ForkInvoker;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -1093,14 +1093,14 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     @Override
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
     }
 
     private class SessionInvoker extends ForkInvoker<Runnable>

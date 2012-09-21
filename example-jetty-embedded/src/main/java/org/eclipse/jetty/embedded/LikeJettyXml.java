@@ -58,10 +58,7 @@ public class LikeJettyXml
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.start();
-        server.getContainer().addEventListener(mbContainer);
-        server.addBean(mbContainer,true);
-        mbContainer.addBean(new Log());
+        server.addBean(mbContainer);
 
         // Setup Connectors
         HttpConnectionFactory http = new HttpConnectionFactory();

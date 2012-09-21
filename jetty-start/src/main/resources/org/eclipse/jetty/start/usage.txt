@@ -41,9 +41,6 @@ Command Line Options:
                    and additional .ini files in jetty.home/start.d/
                    will NOT be read. A --ini option with no file indicates that
                    start.ini should not be read.
-                   
-  --pre=<file>     Specify a configuration file that is to be processed
-                   before any configuration files listed in start.ini
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are
@@ -118,14 +115,12 @@ Available Configurations:
 Defaults:
   A start.ini file may be used to specify default arguments to start.jar,
   which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If the directory jetty.home/start.d
-  exists, then multiple *.ini files will be read from that directory in 
-  alphabetical order. The contents of start.ini are processed after any
-  start.d files starting with a character <= "0".
+  the defaults in the start.config file. If a line of start.ini contains
+  a directory (eg start.d/) then that directory is scanned for *.ini files 
+  will be processed in name sorted order.
   
-  If --ini options are provided on  the command line, then start.ini and 
-  start.d will NOT be read. 
+  If --ini options are provided on  the command line, then start.ini will NOT be read. 
   
-  The current start.ini/start.d arguments are:
+  The current start.ini arguments are:
 
     @STARTINI@

@@ -42,16 +42,15 @@ public class ObjectMBeanTest
     private static MBeanContainer container;
 
     @Before
-    public void beforeClass() throws Exception
+    public void before() throws Exception
     {
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        container.start();
     }
 
     @After
-    public void afterClass() throws Exception
+    public void after() throws Exception
     {
-        container.stop();
+        container.destroy();
         container = null;
     }
 
@@ -61,7 +60,6 @@ public class ObjectMBeanTest
     @Test
     public void testDerivedAttributes() throws Exception
     {
-
         Derived derived = new Derived();
         ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
 
@@ -69,8 +67,8 @@ public class ObjectMBeanTest
         mbean.setMBeanContainer(container);
         managed.setMBeanContainer(container);
 
-        container.addBean(derived);
-        container.addBean(derived.getManagedInstance());
+        container.beanAdded(null,derived);
+        container.beanAdded(null,derived.getManagedInstance());
 
         MBeanInfo toss = managed.getMBeanInfo();
 
@@ -110,7 +108,7 @@ public class ObjectMBeanTest
 
         mbean.setMBeanContainer(container);
 
-        container.addBean(derived);
+        container.beanAdded(null,derived);
 
         MBeanInfo info = mbean.getMBeanInfo();
 
@@ -169,10 +167,10 @@ public class ObjectMBeanTest
 
         Assert.assertNotNull(mbean.getMBeanInfo());
 
-        container.addBean(derived);
-        container.addBean(derived.getManagedInstance());
-        container.addBean(mbean);
-        container.addBean(managed);
+        container.beanAdded(null,derived);
+        container.beanAdded(null,derived.getManagedInstance());
+        container.beanAdded(null,mbean);
+        container.beanAdded(null,managed);
 
         //Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
         //Assert.assertNotNull(managedInstance);
@@ -200,11 +198,11 @@ public class ObjectMBeanTest
 
         bqtp.getMBeanInfo();
 
-        container.addBean(derived);
-        container.addBean(derived.getManagedInstance());
-        container.addBean(mbean);
-        container.addBean(managed);
-        container.addBean(qtp);
+        container.beanAdded(null,derived);
+        container.beanAdded(null,derived.getManagedInstance());
+        container.beanAdded(null,mbean);
+        container.beanAdded(null,managed);
+        container.beanAdded(null,qtp);
 
 
         Thread.sleep(10000000);

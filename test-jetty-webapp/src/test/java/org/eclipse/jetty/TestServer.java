@@ -72,9 +72,8 @@ public class TestServer
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
-        mbContainer.addBean(Log.getLog());
+        server.addBean(Log.getLog());
 
         // Setup Connectors
         ServerConnector connector0 = new ServerConnector(server);

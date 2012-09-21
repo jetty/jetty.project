@@ -27,8 +27,6 @@
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
-    <Arg name="container"><Ref id="Container"/></Arg>
-
 
     <!-- =========================================================== -->
     <!-- HttpChannel Configuration                                   -->

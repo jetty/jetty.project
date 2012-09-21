@@ -72,88 +72,20 @@ public class RequestLogHandler extends HandlerWrapper
             {
                 _requestLog.log(baseRequest, (Response)response);
             }
-
         }
     }
 
     /* ------------------------------------------------------------ */
     public void setRequestLog(RequestLog requestLog)
     {
-        //are we changing the request log impl?
-        try
-        {
-            if (_requestLog != null)
-                _requestLog.stop();
-        }
-        catch (Exception e)
-        {
-            LOG.warn (e);
-        }
-
-        if (getServer()!=null)
-            getServer().getContainer().update(this, _requestLog, requestLog, "logimpl",true);
-
-        _requestLog = requestLog;
-
-        //if we're already started, then start our request log
-        try
-        {
-            if (isStarted() && (_requestLog != null))
-                _requestLog.start();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException (e);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#setServer(org.eclipse.jetty.server.server.Server)
-     */
-    @Override
-    public void setServer(Server server)
-    {
-        if (_requestLog!=null)
-        {
-            if (getServer()!=null && getServer()!=server)
-                getServer().getContainer().update(this, _requestLog, null, "logimpl",true);
-            super.setServer(server);
-            if (server!=null && server!=getServer())
-                server.getContainer().update(this, null,_requestLog, "logimpl",true);
-        }
-        else
-            super.setServer(server);
+        updateBean(_requestLog,requestLog);
+        _requestLog=requestLog;
     }
 
     /* ------------------------------------------------------------ */
     public RequestLog getRequestLog()
     {
         return _requestLog;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        if (_requestLog!=null)
-            _requestLog.start();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        if (_requestLog!=null)
-            _requestLog.stop();
     }
 
 }

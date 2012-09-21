@@ -497,16 +497,19 @@ public class DefaultServletTest
 
     public static class OutputFilter implements Filter
     {
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getOutputStream().println("Extra Info");
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy()
         {
         }
@@ -514,16 +517,19 @@ public class DefaultServletTest
 
     public static class WriterFilter implements Filter
     {
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getWriter().println("Extra Info");
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy()
         {
         }

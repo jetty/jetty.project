@@ -91,7 +91,7 @@ public class ServletContextHandlerTest
         _server.start();
 
         StringBuffer request = new StringBuffer();
-        request.append("GET /test HTTP/1.1\n");
+        request.append("GET /test HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 
@@ -101,7 +101,7 @@ public class ServletContextHandlerTest
         context.addServlet(HelloServlet.class, "/hello");
 
         request = new StringBuffer();
-        request.append("GET /hello HTTP/1.1\n");
+        request.append("GET /hello HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 
@@ -119,7 +119,7 @@ public class ServletContextHandlerTest
         _server.start();
 
         StringBuffer request = new StringBuffer();
-        request.append("GET /test HTTP/1.1\n");
+        request.append("GET /test HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 
@@ -133,7 +133,7 @@ public class ServletContextHandlerTest
         context.start();
 
         request = new StringBuffer();
-        request.append("GET /hello HTTP/1.1\n");
+        request.append("GET /hello HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 
@@ -151,7 +151,7 @@ public class ServletContextHandlerTest
         _server.start();
 
         StringBuffer request = new StringBuffer();
-        request.append("GET /test HTTP/1.1\n");
+        request.append("GET /test HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 
@@ -166,7 +166,7 @@ public class ServletContextHandlerTest
         context.addServlet(HelloServlet.class,"/hello");
 
         request = new StringBuffer();
-        request.append("GET /hello HTTP/1.1\n");
+        request.append("GET /hello HTTP/1.0\n");
         request.append("Host: localhost\n");
         request.append("\n");
 

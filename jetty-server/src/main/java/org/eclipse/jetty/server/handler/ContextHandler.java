@@ -61,6 +61,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -73,12 +74,9 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -224,9 +222,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpThis(out);
-        dump(out,indent,Collections.singletonList(new CLDump(getClassLoader())),TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(),
-                _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
+        dumpBeans(out,indent,
+            Collections.singletonList(new ClassLoaderDump(getClassLoader())),
+            _initParams.entrySet(),
+            _attributes.getAttributeEntrySet(),
+            _contextAttributes.getAttributeEntrySet());
     }
 
     /* ------------------------------------------------------------ */
@@ -259,18 +259,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void setServer(Server server)
     {
+        super.setServer(server);
         if (_errorHandler != null)
-        {
-            Server old_server = getServer();
-            if (old_server != null && old_server != server)
-                old_server.getContainer().update(this,_errorHandler,null,"error",true);
-            super.setServer(server);
-            if (server != null && server != old_server)
-                server.getContainer().update(this,null,_errorHandler,"error",true);
             _errorHandler.setServer(server);
-        }
-        else
-            super.setServer(server);
     }
 
     /* ------------------------------------------------------------ */
@@ -395,6 +386,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
      */
+    @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
@@ -405,6 +397,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * @see javax.servlet.ServletContext#getAttributeNames()
      */
     @SuppressWarnings("unchecked")
+    @Override
     public Enumeration getAttributeNames()
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
@@ -1162,6 +1155,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
      */
+    @Override
     public void removeAttribute(String name)
     {
         checkManagedAttribute(name,null);
@@ -1175,6 +1169,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
+    @Override
     public void setAttribute( String name, Object value)
     {
         checkManagedAttribute(name,value);
@@ -1199,6 +1194,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void clearAttributes()
     {
         Enumeration e = _attributes.getAttributeNames();
@@ -1223,7 +1219,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void setManagedAttribute(String name, Object value)
     {
         Object old = _managedAttributes.put(name,value);
-        getServer().getContainer().update(this,old,value,name,true);
+        updateBean(old,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -1395,11 +1391,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setErrorHandler(ErrorHandler errorHandler)
     {
+        updateBean(_errorHandler,errorHandler);
+        _errorHandler = errorHandler;
         if (errorHandler != null)
             errorHandler.setServer(getServer());
-        if (getServer() != null)
-            getServer().getContainer().update(this,_errorHandler,errorHandler,"errorHandler",true);
-        _errorHandler = errorHandler;
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -2373,41 +2369,5 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             return _enabled;
         }
-    }
-
-    private static class CLDump implements Dumpable
-    {
-        final ClassLoader _loader;
-
-        CLDump(ClassLoader loader)
-        {
-            _loader = loader;
-        }
-
-        public String dump()
-        {
-            return AggregateLifeCycle.dump(this);
-        }
-
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            out.append(String.valueOf(_loader)).append("\n");
-
-            if (_loader != null)
-            {
-                Object parent = _loader.getParent();
-                if (parent != null)
-                {
-                    if (!(parent instanceof Dumpable))
-                        parent = new CLDump((ClassLoader)parent);
-
-                    if (_loader instanceof URLClassLoader)
-                        AggregateLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent));
-                    else
-                        AggregateLifeCycle.dump(out,indent,Collections.singleton(parent));
-                }
-            }
-        }
-
     }
 }

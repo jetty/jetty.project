@@ -88,33 +88,11 @@ public class SessionHandler extends ScopedHandler
     {
         if (isStarted())
             throw new IllegalStateException();
-        SessionManager old_session_manager = _sessionManager;
-
-        if (getServer()!=null)
-            getServer().getContainer().update(this, old_session_manager, sessionManager, "sessionManager",true);
-
+        updateBean(_sessionManager,sessionManager);
+        _sessionManager=sessionManager;
         if (sessionManager!=null)
             sessionManager.setSessionHandler(this);
-
-        _sessionManager = sessionManager;
-
-        if (old_session_manager!=null)
-            old_session_manager.setSessionHandler(null);
     }
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setServer(Server server)
-    {
-        Server old_server=getServer();
-        if (old_server!=null && old_server!=server)
-            old_server.getContainer().update(this, _sessionManager, null, "sessionManager",true);
-        super.setServer(server);
-        if (server!=null && server!=old_server)
-            server.getContainer().update(this, null,_sessionManager, "sessionManager",true);
-    }
-
 
     /* ------------------------------------------------------------ */
     /*

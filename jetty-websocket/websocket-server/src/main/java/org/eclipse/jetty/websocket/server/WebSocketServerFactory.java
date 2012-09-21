@@ -36,7 +36,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends AggregateLifeCycle implements WebSocketCreator
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 

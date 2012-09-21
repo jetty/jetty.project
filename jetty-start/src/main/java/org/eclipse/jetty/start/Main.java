@@ -142,35 +142,9 @@ public class Main
     {
         List<String> ini_args=new ArrayList<String>();
         File start_ini = new File(_jettyHome,"start.ini");
-        
-        boolean start_ini_processed=!start_ini.exists();
-        
-        File start_d = new File(_jettyHome,"start.d");
-        if (start_d.isDirectory())
-        {
-            File[] inis = start_d.listFiles(new FilenameFilter()
-            {
-                public boolean accept(File dir, String name)
-                {
-                    return name.toLowerCase().endsWith(".ini");
-                }
-            });
-            Arrays.sort(inis);
-            
-            for (File i : inis)
-            {
-                if (!start_ini_processed && i.getName().charAt(0)>'0')
-                {
-                    start_ini_processed=true;
-                    ini_args.addAll(loadStartIni(start_ini));
-                }
-                ini_args.addAll(loadStartIni(i));
-            }
-        }
-
-        if (!start_ini_processed )
+        if (start_ini.exists())
             ini_args.addAll(loadStartIni(start_ini));
-
+           
         return ini_args;
     }
 
@@ -255,12 +229,6 @@ public class Main
                 System.setOut(logger);
                 System.setErr(logger);
                 System.out.println("Establishing "+ START_LOG_FILENAME + " on " + new Date());
-                continue;
-            }
-
-            if (arg.startsWith("--pre="))
-            {
-                xmls.add(startup++,arg.substring(6));
                 continue;
             }
 
@@ -1073,7 +1041,7 @@ public class Main
     /**
      * Convert a start.ini format file into an argument list.
      */
-    static List<String> loadStartIni(File ini)
+    List<String> loadStartIni(File ini)
     {
         if (!ini.exists())
         {
@@ -1099,6 +1067,39 @@ public class Main
                 {
                     continue;
                 }
+                
+                if (arg.endsWith("/"))
+                {
+                    try
+                    {
+                        File start_d = new File(arg);
+                        if (!start_d.exists() || !start_d.isDirectory())
+                            start_d = new File(_jettyHome,arg);
+                        
+                        if (start_d.isDirectory())
+                        {
+                            File[] inis = start_d.listFiles(new FilenameFilter()
+                            {
+                                @Override
+                                public boolean accept(File dir, String name)
+                                {
+                                    return name.toLowerCase().endsWith(".ini");
+                                }
+                            });
+                            Arrays.sort(inis);
+                            
+                            for (File i : inis)
+                                args.addAll(loadStartIni(i));
+     
+                            continue;
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+                
                 args.add(arg);
             }
         }

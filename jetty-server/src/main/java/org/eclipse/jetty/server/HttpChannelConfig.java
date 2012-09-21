@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject("HTTP Channel Configuration")
 public class HttpChannelConfig
 {
     private List<Customizer> _customizers=new CopyOnWriteArrayList<>();
@@ -60,26 +63,31 @@ public class HttpChannelConfig
         return null;
     }
 
+    @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
     public int getOutputBufferSize()
     {
         return _outputBufferSize;
     }
-
+    
+    @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
-
+    
+    @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
     
+    @ManagedAttribute("The port to which Integral or Confidential security constraints are redirected")
     public int getSecurePort()
     {
         return _securePort;
     }
     
+    @ManagedAttribute("The scheme with which Integral or Confidential security constraints are redirected")
     public String getSecureScheme()
     {
         return _secureScheme;

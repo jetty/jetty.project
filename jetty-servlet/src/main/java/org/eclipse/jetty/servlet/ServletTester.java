@@ -32,10 +32,10 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
-public class ServletTester extends AggregateLifeCycle
+public class ServletTester extends ContainerLifeCycle
 {
     private final Server _server=new Server();
     private final LocalConnector _connector=new LocalConnector(_server);

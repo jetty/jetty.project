@@ -22,7 +22,6 @@ package org.eclipse.jetty.spring;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 
@@ -47,11 +46,6 @@ public class Server extends org.eclipse.jetty.server.Server
     public Server(int port)
     {
         super(port);
-    }
-
-    public Server(ThreadPool pool, Container container)
-    {
-        super(pool,container);
     }
 
     public Server(ThreadPool pool)

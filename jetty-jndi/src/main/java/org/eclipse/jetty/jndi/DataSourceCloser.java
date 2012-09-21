@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 import java.sql.Statement;
 import javax.sql.DataSource;
 
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Close a DataSource.
  * Some {@link DataSource}'s need to be close (eg. Atomikos).  This bean is a {@link Destroyable} and
- * may be added to any {@link AggregateLifeCycle} so that {@link #destroy()}
+ * may be added to any {@link ContainerLifeCycle} so that {@link #destroy()}
  * will be called.   The {@link #destroy()} method calls any no-arg method called "close" on the passed DataSource.
  *
  */

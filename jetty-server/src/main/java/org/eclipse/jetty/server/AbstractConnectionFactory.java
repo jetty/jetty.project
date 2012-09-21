@@ -22,10 +22,10 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public abstract class AbstractConnectionFactory extends AggregateLifeCycle implements ConnectionFactory
+public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
 {
     private final String _protocol;
     private int _inputbufferSize = 8192;
@@ -55,9 +55,9 @@ public abstract class AbstractConnectionFactory extends AggregateLifeCycle imple
     {
         connection.setInputBufferSize(getInputBufferSize());
 
-        if (connector instanceof AggregateLifeCycle)
+        if (connector instanceof ContainerLifeCycle)
         {
-            AggregateLifeCycle aggregate = (AggregateLifeCycle)connector;
+            ContainerLifeCycle aggregate = (ContainerLifeCycle)connector;
             for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
                 connection.addListener(listener);
         }

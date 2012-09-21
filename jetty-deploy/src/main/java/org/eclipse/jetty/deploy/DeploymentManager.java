@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <img src="doc-files/DeploymentManager.png">
  */
 @ManagedObject("Deployment Manager")
-public class DeploymentManager extends AggregateLifeCycle
+public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
 
@@ -150,7 +150,7 @@ public class DeploymentManager extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /** Set the AppProviders.
      * The providers passed are added via {@link #addBean(Object)} so that 
-     * their lifecycles may be managed as a {@link AggregateLifeCycle}.
+     * their lifecycles may be managed as a {@link ContainerLifeCycle}.
      * @param providers
      */
     public void setAppProviders(Collection<AppProvider> providers)
@@ -175,11 +175,7 @@ public class DeploymentManager extends AggregateLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException();
-        
-        List<AppProvider> old = new ArrayList<AppProvider>(_providers);
-        if (_providers.add(provider) && getServer()!=null)
-            getServer().getContainer().update(this, null, provider, "provider");
-            
+        _providers.add(provider);
         addBean(provider);        
     }
 
@@ -417,11 +413,8 @@ public class DeploymentManager extends AggregateLifeCycle
     public void removeAppProvider(AppProvider provider)
     {
         if(_providers.remove(provider))
-        {
             removeBean(provider);
-            if (getServer()!=null)
-                getServer().getContainer().update(this, provider,null, "provider");
-        }
+        
         try
         {
             provider.stop();

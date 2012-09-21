@@ -31,7 +31,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
  * Internal Connection/Client Manager used to track active clients, their physical vs virtual connection information, and provide some means to create new
  * physical or virtual connections.
  */
-public class ConnectionManager extends AggregateLifeCycle
+public class ConnectionManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(ConnectionManager.class);
 

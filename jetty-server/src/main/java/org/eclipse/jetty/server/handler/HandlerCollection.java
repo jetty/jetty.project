@@ -49,7 +49,6 @@ public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
     private volatile Handler[] _handlers;
-    private boolean _parallelStart=false;
 
     /* ------------------------------------------------------------ */
     public HandlerCollection()
@@ -84,67 +83,24 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
 
-        Handler [] old_handlers = _handlers==null?null:_handlers.clone();
+        updateBeans(_handlers, handlers);
         _handlers = handlers;
 
         Server server = getServer();
-        MultiException mex = new MultiException();
         for (int i=0;handlers!=null && i<handlers.length;i++)
         {
             if (handlers[i].getServer()!=server)
                 handlers[i].setServer(server);
         }
-
-        if (getServer()!=null)
-            getServer().getContainer().update(this, old_handlers, handlers, "handler");
-
-        // stop old handlers
-        for (int i=0;old_handlers!=null && i<old_handlers.length;i++)
-        {
-            if (old_handlers[i]!=null)
-            {
-                try
-                {
-                    if (old_handlers[i].isStarted())
-                        old_handlers[i].stop();
-                }
-                catch (Throwable e)
-                {
-                    mex.add(e);
-                }
-            }
-        }
-
-        mex.ifExceptionThrowRuntime();
     }
 
-
-
-    /* ------------------------------------------------------------ */
-    /** Get the parrallelStart.
-     * @return true if the contained handlers are started in parallel.
-     */
-    public boolean isParallelStart()
-    {
-        return _parallelStart;
-    }
-
-
-
-    /* ------------------------------------------------------------ */
-    /** Set the parallelStart.
-     * @param parallelStart If true, contained handlers are started in parallel.
-     */
-    public void setParallelStart(boolean parallelStart)
-    {
-        this._parallelStart = parallelStart;
-    }
 
 
     /* ------------------------------------------------------------ */
     /**
      * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
@@ -185,96 +141,13 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        final MultiException mex=new MultiException();
-        if (_handlers!=null)
-        {
-            if (_parallelStart)
-            {
-                final CountDownLatch latch = new CountDownLatch(_handlers.length);
-                final ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                for (int i=0;i<_handlers.length;i++)
-                {
-                    final int h=i;
-                    getServer().getThreadPool().dispatch(
-                            new Runnable()
-                            {
-                                public void run()
-                                {
-                                    ClassLoader orig = Thread.currentThread().getContextClassLoader();
-                                    try
-                                    {
-                                        Thread.currentThread().setContextClassLoader(loader);
-                                        _handlers[h].start();
-                                    }
-                                    catch(Throwable e)
-                                    {
-                                        mex.add(e);
-                                    }
-                                    finally
-                                    {
-                                        Thread.currentThread().setContextClassLoader(orig);
-                                        latch.countDown();
-                                    }
-                                }
-                            }
-                    );
-                }
-                latch.await();
-            }
-            else
-            {
-                for (int i=0;i<_handlers.length;i++)
-                {
-                    try{_handlers[i].start();}
-                    catch(Throwable e){mex.add(e);}
-                }
-            }
-        }
-        super.doStart();
-        mex.ifExceptionThrow();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        MultiException mex=new MultiException();
-        try { super.doStop(); } catch(Throwable e){mex.add(e);}
-        if (_handlers!=null)
-        {
-            for (int i=_handlers.length;i-->0;)
-                try{_handlers[i].stop();}catch(Throwable e){mex.add(e);}
-        }
-        mex.ifExceptionThrow();
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     public void setServer(Server server)
     {
-        if (isStarted())
-            throw new IllegalStateException(STARTED);
-
-        Server old_server=getServer();
-
         super.setServer(server);
-
         Handler[] h=getHandlers();
         for (int i=0;h!=null && i<h.length;i++)
             h[i].setServer(server);
-
-        if (server!=null && server!=old_server)
-            server.getContainer().update(this, null,_handlers, "handler");
-
     }
 
     /* ------------------------------------------------------------ */

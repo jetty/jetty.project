@@ -1,13 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
-<!-- ============================================================================ -->
-<!-- To correctly start Jetty with JMX module enabled, this configuration         -->
-<!-- file must appear first in the list of the configuration files.               -->
-<!-- The simplest way to achieve this is to add etc/jetty-jmx.xml as the          -->
-<!-- first file in configuration file list at the end of start.ini file.          -->
-<!-- ============================================================================ -->
-<Configure id="Container" class="org.eclipse.jetty.util.component.Container">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
   <!-- Set the java.rmi.server.hostname property in case you've    -->
@@ -27,26 +21,24 @@
     name="getPlatformMBeanServer" />
 
   <!-- =========================================================== -->
-  <!-- Initialize the Jetty MBean container                        -->
+  <!-- Initialize the Jetty MBean container -->
   <!-- =========================================================== -->
-  <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
-    <Arg><Ref id="MBeanServer" /></Arg>
-    <Call name="start"/>
-  </New>
-
-  <!-- Add to the Server to listen for object events -->
-  <Call name="addEventListener">
-    <Arg><Ref id="MBeanContainer" /></Arg>
+  <Call name="addBean">
+    <Arg>
+      <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
+        <Arg>
+          <Ref id="MBeanServer" />
+        </Arg>
+      </New>
+    </Arg>
   </Call>
 
   <!-- Add the static log -->
-  <Ref id="MBeanContainer">
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.util.log.Log"/>
-      </Arg>
-    </Call>
-  </Ref>
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.util.log.Log" />
+    </Arg>
+  </Call>
   
   <!-- In order to connect to the JMX server remotely from a different
        process, possibly running on a different host, Jetty JMX module

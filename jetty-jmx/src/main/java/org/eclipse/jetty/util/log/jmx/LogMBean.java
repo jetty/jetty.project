@@ -34,7 +34,6 @@ import org.eclipse.jetty.util.log.Log;
 @ManagedObject("Jetty Logging")
 public class LogMBean extends ObjectMBean
 {
-
     public LogMBean(Object managedObject)
     {
         super(managedObject);

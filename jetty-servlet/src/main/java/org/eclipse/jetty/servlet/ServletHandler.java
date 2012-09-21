@@ -122,32 +122,6 @@ public class ServletHandler extends ScopedHandler
     {
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.handler.AbstractHandler#setServer(org.eclipse.jetty.server.Server)
-     */
-    public void setServer(Server server)
-    {
-        Server old=getServer();
-        if (old!=null && old!=server)
-        {
-            getServer().getContainer().update(this, _filters, null, "filter",true);
-            getServer().getContainer().update(this, _filterMappings, null, "filterMapping",true);
-            getServer().getContainer().update(this, _servlets, null, "servlet",true);
-            getServer().getContainer().update(this, _servletMappings, null, "servletMapping",true);
-        }
-
-        super.setServer(server);
-
-        if (server!=null && old!=server)
-        {
-            server.getContainer().update(this, null, _filters, "filter",true);
-            server.getContainer().update(this, null, _filterMappings, "filterMapping",true);
-            server.getContainer().update(this, null, _servlets, "servlet",true);
-            server.getContainer().update(this, null, _servletMappings, "servletMapping",true);
-        }
-    }
-
     /* ----------------------------------------------------------------- */
     @Override
     protected synchronized void doStart()
@@ -1222,8 +1196,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setFilterMappings(FilterMapping[] filterMappings)
     {
-        if (getServer()!=null)
-            getServer().getContainer().update(this,_filterMappings,filterMappings,"filterMapping",true);
+        updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
         updateMappings();
         invalidateChainsCache();
@@ -1232,8 +1205,11 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     public synchronized void setFilters(FilterHolder[] holders)
     {
-        if (getServer()!=null)
-            getServer().getContainer().update(this,_filters,holders,"filter",true);
+        if (holders!=null)
+            for (FilterHolder holder:holders)
+                holder.setServletHandler(this);
+        
+        updateBeans(_filters,holders);
         _filters=holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1245,8 +1221,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
-        if (getServer()!=null)
-            getServer().getContainer().update(this,_servletMappings,servletMappings,"servletMapping",true);
+        updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
         updateMappings();
         invalidateChainsCache();
@@ -1254,12 +1229,14 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Set Servlets.
-     * @param holders Array of servletsto define
+     * @param holders Array of servlets to define
      */
     public synchronized void setServlets(ServletHolder[] holders)
     {
-        if (getServer()!=null)
-            getServer().getContainer().update(this,_servlets,holders,"servlet",true);
+        if (holders!=null)
+            for (ServletHolder holder:holders)
+                holder.setServletHandler(this);
+        updateBeans(_servlets,holders);
         _servlets=holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1469,19 +1446,5 @@ public class ServletHandler extends ScopedHandler
     {
         if (_contextHandler!=null)
             _contextHandler.destroyFilter(filter);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void dump(Appendable out,String indent) throws IOException
-    {
-        super.dumpThis(out);
-        dump(out,indent,
-                TypeUtil.asList(getHandlers()),
-                getBeans(),
-                TypeUtil.asList(getFilterMappings()),
-                TypeUtil.asList(getFilters()),
-                TypeUtil.asList(getServletMappings()),
-                TypeUtil.asList(getServlets()));
     }
 }

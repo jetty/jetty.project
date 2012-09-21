@@ -20,6 +20,7 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -255,7 +256,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /* ------------------------------------------------------------ */
     protected LoginService findLoginService()
     {
-        List<LoginService> list = getServer().getBeans(LoginService.class);
+        Collection<LoginService> list = getServer().getBeans(LoginService.class);
 
         String realm=getRealmName();
         if (realm!=null)
@@ -265,7 +266,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     return service;
         }
         else if (list.size()==1)
-            return list.get(0);
+            return list.iterator().next();
         return null;
     }
 

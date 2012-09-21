@@ -81,37 +81,11 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (isStarted())
             throw new IllegalStateException(STARTED);
 
-        Handler old_handler = _handler;
-        _handler = handler;
         if (handler!=null)
             handler.setServer(getServer());
-
-        if (getServer()!=null)
-            getServer().getContainer().update(this, old_handler, handler, "handler");
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (_handler!=null)
-            _handler.start();
-        super.doStart();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        if (_handler!=null)
-            _handler.stop();
-        super.doStop();
+        
+        updateBean(_handler,handler);
+        _handler=handler;
     }
 
     /* ------------------------------------------------------------ */
@@ -141,9 +115,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
         Handler h=getHandler();
         if (h!=null)
             h.setServer(server);
-
-        if (server!=null && server!=old_server)
-            server.getContainer().update(this, null,_handler, "handler");
     }
 
 

@@ -77,20 +77,10 @@ public class HotSwapHandler extends AbstractHandlerContainer
             throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
-            Handler old_handler = _handler;
-            _handler = handler;
+            updateBean(_handler,handler);
+            _handler=handler;
             Server server = getServer();
             handler.setServer(server);
-            addBean(handler);
-
-            if (server != null)
-                server.getContainer().update(this,old_handler,handler,"handler");
-
-            // if there is an old handler and it was started, stop it
-            if (old_handler != null)
-            {
-                removeBean(old_handler);
-            }
 
         }
         catch (Exception e)
@@ -148,9 +138,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
         Handler h = getHandler();
         if (h != null)
             h.setServer(server);
-
-        if (server != null && server != old_server)
-            server.getContainer().update(this,null,_handler,"handler");
     }
 
     /* ------------------------------------------------------------ */

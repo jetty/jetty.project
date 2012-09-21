@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -442,7 +442,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @ManagedOperation("dump thread state")
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     @Override
@@ -472,7 +472,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     {
                         out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(thread.getState().toString()).append(idle?" IDLE":"").append('\n');
                         if (!idle)
-                            AggregateLifeCycle.dump(out,indent,Arrays.asList(trace));
+                            ContainerLifeCycle.dump(out,indent,Arrays.asList(trace));
                     }
 
                     @Override
@@ -488,8 +488,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
         }
 
-        AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out,indent,dump);
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent,dump);
     }
 
     @Override

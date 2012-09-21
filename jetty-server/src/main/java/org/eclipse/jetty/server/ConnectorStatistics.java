@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -183,13 +183,13 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     @ManagedOperation("dump thread state")
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
     }
 }

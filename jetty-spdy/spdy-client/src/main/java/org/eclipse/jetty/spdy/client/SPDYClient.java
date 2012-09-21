@@ -44,7 +44,7 @@ import org.eclipse.jetty.spdy.FlowControlStrategy;
 import org.eclipse.jetty.spdy.Promise;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -160,7 +160,7 @@ public class SPDYClient
         connection.onOpen();
     }
 
-    public static class Factory extends AggregateLifeCycle
+    public static class Factory extends ContainerLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         final ByteBufferPool bufferPool = new MappedByteBufferPool();

@@ -117,12 +117,4 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         }
         return null;
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void dump(Appendable out,String indent) throws IOException
-    {
-        dumpThis(out);
-        dump(out,indent,getBeans(),TypeUtil.asList(getHandlers()));
-    }
 }

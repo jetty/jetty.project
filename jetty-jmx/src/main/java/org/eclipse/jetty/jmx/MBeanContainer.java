@@ -19,38 +19,33 @@
 package org.eclipse.jetty.jmx;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
+
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.component.Container.Relationship;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
  * Container class for the MBean instances
  */
-public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
+public class MBeanContainer implements Container.InheritedListener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
 
-    private final MBeanServer _server;
+    private final MBeanServer _mbeanServer;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
     private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
-    private final WeakHashMap<ObjectName,List<Container.Relationship>> _relations = new WeakHashMap<ObjectName,List<Container.Relationship>>();
     private String _domain = null;
 
     /**
@@ -61,11 +56,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized ObjectName findMBean(Object object)
     {
-
         ObjectName bean = _beans.get(object);
-
-        LOG.debug("findMBean {} {}", object, bean );
-
         return bean == null ? null : bean;
     }
 
@@ -77,8 +68,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized Object findBean(ObjectName oname)
     {
-        LOG.debug("findBean {}", oname );
-
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
             ObjectName bean = entry.getValue();
@@ -95,7 +84,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public MBeanContainer(MBeanServer server)
     {
-        _server = server;
+        _mbeanServer = server;
     }
 
     /**
@@ -105,7 +94,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public MBeanServer getMBeanServer()
     {
-        return _server;
+        return _mbeanServer;
     }
 
     /**
@@ -128,125 +117,37 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         return _domain;
     }
 
-    /**
-     * Implementation of Container.Listener interface
-     *
-     * @see org.eclipse.jetty.util.component.Container.Listener#add(org.eclipse.jetty.util.component.Container.Relationship)
-     */
-    public synchronized void add(Relationship relationship)
+
+    @Override
+    public void beanAdded(Container parent, Object obj)
     {
-        LOG.debug("add {}",relationship);
-        ObjectName parent = _beans.get(relationship.getParent());
-        if (parent == null)
+        LOG.debug("beanAdded {}->{}",parent,obj);
+        
+        // Is their an object name for the parent
+        ObjectName pname=null;
+        if (parent!=null)
         {
-            addBean(relationship.getParent());
-            parent = _beans.get(relationship.getParent());
-        }
-
-        ObjectName child = _beans.get(relationship.getChild());
-        if (child == null)
-        {
-            addBean(relationship.getChild());
-            child = _beans.get(relationship.getChild());
-        }
-
-        if (parent != null && child != null)
-        {
-            List<Container.Relationship> rels = _relations.get(parent);
-            if (rels==null)
+            pname=_beans.get(parent);
+            if (pname==null)
             {
-                rels=new ArrayList<Container.Relationship>();
-                _relations.put(parent,rels);
-            }
-            rels.add(relationship);
-        }
-    }
-
-    /**
-     * Implementation of Container.Listener interface
-     *
-     * @see org.eclipse.jetty.util.component.Container.Listener#remove(org.eclipse.jetty.util.component.Container.Relationship)
-     */
-    public synchronized void remove(Relationship relationship)
-    {
-        LOG.debug("remove {}",relationship);
-        ObjectName parent = _beans.get(relationship.getParent());
-        ObjectName child = _beans.get(relationship.getChild());
-
-        if (parent != null && child != null)
-        {
-            List<Container.Relationship> rels = _relations.get(parent);
-            if (rels!=null)
-            {
-                for (Iterator<Container.Relationship> i=rels.iterator();i.hasNext();)
-                {
-                    Container.Relationship r = i.next();
-                    if (relationship.equals(r) || r.getChild()==null)
-                        i.remove();
-                }
+                // create the parent bean
+                beanAdded(null,parent);
+                pname=_beans.get(parent);
             }
         }
-    }
-
-    /**
-     * Implementation of Container.Listener interface
-     *
-     * @see org.eclipse.jetty.util.component.Container.Listener#removeBean(java.lang.Object)
-     */
-    public synchronized void removeBean(Object obj)
-    {
-        LOG.debug("removeBean {}",obj);
-        ObjectName bean = _beans.remove(obj);
-
-        if (bean != null)
-        {
-            List<Container.Relationship> beanRelations= _relations.remove(bean);
-            if (beanRelations != null)
-            {
-                LOG.debug("Unregister {}", beanRelations);
-                List<?> removeList = new ArrayList<Object>(beanRelations);
-                for (Object r : removeList)
-                {
-                    Container.Relationship relation = (Relationship)r;
-                    relation.getContainer().update(relation.getParent(), relation.getChild(), null, relation.getRelationship(), true);
-                }
-            }
-
-            try
-            {
-                _server.unregisterMBean(bean);
-                LOG.debug("Unregistered {}", bean);
-            }
-            catch (javax.management.InstanceNotFoundException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-        }
-    }
-
-    /**
-     * Implementation of Container.Listener interface
-     *
-     * @see org.eclipse.jetty.util.component.Container.Listener#addBean(java.lang.Object)
-     *
-     * TODO improve the id property to include better information
-     */
-    public synchronized void addBean(Object obj)
-    {
-        LOG.debug("addBean {}",obj);
+        
+        // Does an mbean already exist?
+        if (obj == null || _beans.containsKey(obj))
+            return;
+        
         try
         {
-            if (obj == null || _beans.containsKey(obj))
-                return;
-
+            // Create an MBean for the object
             Object mbean = ObjectMBean.mbeanFor(obj);
             if (mbean == null)
                 return;
 
+            
             ObjectName oname = null;
             if (mbean instanceof ObjectMBean)
             {
@@ -256,25 +157,34 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
 
             //no override mbean object name, so make a generic one
             if (oname == null)
-            {
+            {      
+                //if no explicit domain, create one
+                String domain = _domain;
+                if (domain == null)
+                    domain = obj.getClass().getPackage().getName();
+
+
                 String type = obj.getClass().getName().toLowerCase();
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);
 
-                String context = null;
-                if (mbean instanceof ObjectMBean)
-                {
-                    context = makeName(((ObjectMBean)mbean).getObjectContextBasis());
-                }
-
-                String name = null;
-                if (mbean instanceof ObjectMBean)
-                {
-                    name = makeName(((ObjectMBean)mbean).getObjectNameBasis());
-                }
+                String context = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectContextBasis()):null;
+                String name = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectNameBasis()):null;
 
                 StringBuffer buf = new StringBuffer();
+                if (pname!=null)
+                {
+                    buf.append("parent=")
+                    .append(pname.getKeyProperty("type"))
+                    .append("-");
+                    
+                    if (pname.getKeyProperty("context")!=null)
+                        buf.append(pname.getKeyProperty("context")).append("-");
+                    
+                    buf.append(pname.getKeyProperty("id"))
+                    .append(",");
+                }
                 buf.append("type=").append(type);
                 if (context != null && context.length()>1)
                 {
@@ -292,15 +202,10 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
                 count = count == null ? 0 : 1 + count;
                 _unique.put(basis, count);
 
-                //if no explicit domain, create one
-                String domain = _domain;
-                if (domain == null)
-                    domain = obj.getClass().getPackage().getName();
-
                 oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count);
             }
 
-            ObjectInstance oinstance = _server.registerMBean(mbean, oname);
+            ObjectInstance oinstance = _mbeanServer.registerMBean(mbean, oname);
             LOG.debug("Registered {}", oinstance.getObjectName());
             _beans.put(obj, oinstance.getObjectName());
 
@@ -308,6 +213,30 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         catch (Exception e)
         {
             LOG.warn("bean: " + obj, e);
+        }
+    }
+
+    @Override
+    public void beanRemoved(Container parent, Object obj)
+    {
+        LOG.debug("beanRemoved {}",obj);
+        ObjectName bean = _beans.remove(obj);
+
+        if (bean != null)
+        {
+            try
+            {
+                _mbeanServer.unregisterMBean(bean);
+                LOG.debug("Unregistered {}", bean);
+            }
+            catch (javax.management.InstanceNotFoundException e)
+            {
+                LOG.ignore(e);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
         }
     }
 
@@ -322,38 +251,32 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         return basis.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
     }
 
-    /**
-     * Perform actions needed to start lifecycle
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
-    public void doStart()
-    {
-        ShutdownThread.register(this);
-    }
-
-    /**
-     * Perform actions needed to stop lifecycle
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
-    public void doStop()
-    {
-        Set<Object> removeSet = new HashSet<Object>(_beans.keySet());
-        for (Object removeObj : removeSet)
-        {
-            removeBean(removeObj);
-        }
-    }
-
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out, indent, _beans.entrySet());
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out, indent, _beans.entrySet());
     }
 
+    @Override
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
+    }
+
+    public void destroy()
+    {
+        for (ObjectName oname : _beans.values())
+            if (oname!=null)
+            {
+                try
+                {
+                    _mbeanServer.unregisterMBean(oname);
+                }
+                catch (MBeanRegistrationException | InstanceNotFoundException e)
+                {
+                    LOG.warn(e);
+                }
+            }
     }
 }

@@ -36,7 +36,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -312,19 +312,19 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out, this + " - requests queued: " + requests.size());
+        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + requests.size());
         List<String> connections = new ArrayList<>();
         for (Connection connection : idleConnections)
             connections.add(connection + " - IDLE");
         for (Connection connection : activeConnections)
             connections.add(connection + " - ACTIVE");
-        AggregateLifeCycle.dump(out, indent, connections);
+        ContainerLifeCycle.dump(out, indent, connections);
     }
 
     @Override

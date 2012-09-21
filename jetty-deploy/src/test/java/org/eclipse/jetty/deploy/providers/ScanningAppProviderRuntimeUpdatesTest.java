@@ -63,7 +63,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.start();
 
         // monitor tick
-        DeploymentManager dm = jetty.getServer().getBeans(DeploymentManager.class).get(0);
+        DeploymentManager dm = jetty.getServer().getBean(DeploymentManager.class);
         for (AppProvider provider : dm.getAppProviders())
         {
             if (provider instanceof ScanningAppProvider)

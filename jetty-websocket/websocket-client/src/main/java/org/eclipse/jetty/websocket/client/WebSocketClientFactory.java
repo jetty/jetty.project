@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
-public class WebSocketClientFactory extends AggregateLifeCycle
+public class WebSocketClientFactory extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientFactory.class);
 

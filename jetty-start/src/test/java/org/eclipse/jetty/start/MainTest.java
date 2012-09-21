@@ -55,9 +55,10 @@ public class MainTest
     {
         Main main = new Main();
         List<String> args = main.parseStartIniFiles();
+        
         assertEquals("Expected 5 uncommented lines in start.ini",9,args.size());
         assertEquals("First uncommented line in start.ini doesn't match expected result","OPTIONS=Server,jsp,resources,websocket,ext",args.get(0));
-        assertEquals("Last uncommented line in start.ini doesn't match expected result","etc/jetty-testrealm.xml",args.get(8));
+        assertEquals("Last uncommented line in start.ini doesn't match expected result","etc/jetty-contexts.xml",args.get(8));
     }
 
     @Test
@@ -65,10 +66,11 @@ public class MainTest
     {
         Main main = new Main();
         List<String> args = main.expandCommandLine(new String[] {});
+
         assertEquals("start.ini OPTIONS","OPTIONS=Server,jsp,resources,websocket,ext",args.get(0));
-        assertEquals("start.d/jmx OPTIONS","OPTIONS=jmx",args.get(5));
-        assertEquals("start.d/jmx XML","--pre=etc/jetty-jmx.xml",args.get(6));
-        assertEquals("start.d/websocket OPTIONS","OPTIONS=websocket",args.get(7));
+        assertEquals("start.d/jmx OPTIONS","OPTIONS=jmx",args.get(2));
+        assertEquals("start.d/jmx XML","etc/jetty-jmx.xml",args.get(3));
+        assertEquals("start.d/websocket OPTIONS","OPTIONS=websocket",args.get(4));
     }
 
     @Test
@@ -78,9 +80,12 @@ public class MainTest
         List<String> args = main.expandCommandLine(new String[] {});
         List<String> xmls = main.processCommandLine(args);
 
-        assertEquals("jmx --pre","etc/jetty-jmx.xml",xmls.get(0));
-        assertEquals("start.ini","etc/jetty.xml",xmls.get(1));
-        assertEquals("start.d","etc/jetty-testrealm.xml",xmls.get(5));
+        System.err.println(args);
+        System.err.println(xmls);
+        assertEquals("etc/jetty.xml",xmls.get(0));
+        assertEquals("etc/jetty-jmx.xml",xmls.get(1));
+        assertEquals("start.d","etc/jetty-testrealm.xml",xmls.get(2));
+        assertEquals("start.d","etc/jetty-contexts.xml",xmls.get(5));
     }
 
     @Test

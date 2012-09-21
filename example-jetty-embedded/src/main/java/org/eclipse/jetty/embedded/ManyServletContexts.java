@@ -36,8 +36,6 @@ public class ManyServletContexts
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.start();
-        server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer,true);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -51,9 +49,9 @@ public class ManyServletContexts
         ServletContextHandler other = new ServletContextHandler(contexts,"/other",ServletContextHandler.SESSIONS);
         other.addServlet(DefaultServlet.class.getCanonicalName(),"/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")),"*.yo");
-
+        
         server.start();
-        System.err.println(server.dump());
+        server.dumpStdErr();
         server.join();
     }
 }

@@ -427,14 +427,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpThis(out);
-        dump(out,indent,
+        // TODO these should all be beans
+        dumpBeans(out,indent,
                 Collections.singleton(getLoginService()),
                 Collections.singleton(getIdentityService()),
                 Collections.singleton(getAuthenticator()),
                 Collections.singleton(_roles),
-                _constraintMap.entrySet(),
-                getBeans(),
-                TypeUtil.asList(getHandlers()));
+                _constraintMap.entrySet());
     }
 }

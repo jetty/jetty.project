@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
 @ManagedObject("Filter Mappings")
@@ -276,6 +276,6 @@ public class FilterMapping implements Dumpable
     /* ------------------------------------------------------------ */
     public String dump()
     {
-        return AggregateLifeCycle.dump(this);
+        return ContainerLifeCycle.dump(this);
     }
 }

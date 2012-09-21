@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -70,7 +70,6 @@ public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
 
-    private final Container _container;
     private final AttributesMap _attributes = new AttributesMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
@@ -85,7 +84,7 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public Server()
     {
-        this((ThreadPool)null,null);
+        this((ThreadPool)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -94,7 +93,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public Server(@Name("port")int port)
     {
-        this((ThreadPool)null,null);
+        this((ThreadPool)null);
         ServerConnector connector=new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
@@ -106,7 +105,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public Server(@Name("address")InetSocketAddress addr)
     {
-        this((ThreadPool)null,null);
+        this((ThreadPool)null);
         ServerConnector connector=new ServerConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
@@ -114,17 +113,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
 
+
     /* ------------------------------------------------------------ */
     public Server(@Name("threadpool") ThreadPool pool)
     {
-        this(pool, null);
-    }
-
-    /* ------------------------------------------------------------ */
-    public Server(@Name("threadpool") ThreadPool pool,@Name("container") Container container)
-    {
         _threadPool=pool!=null?pool:new QueuedThreadPool();
-        _container=container!=null?container:new Container();
         addBean(_threadPool);
         setServer(this);
     }
@@ -135,15 +128,6 @@ public class Server extends HandlerWrapper implements Attributes
     public static String getVersion()
     {
         return Jetty.VERSION;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the container.
-     */
-    public Container getContainer()
-    {
-        return _container;
     }
 
     /* ------------------------------------------------------------ */
@@ -186,8 +170,11 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public void addConnector(Connector connector)
     {
+        if (connector.getServer() != this)
+            throw new IllegalArgumentException("Connector " + connector +
+                    " cannot be shared among server " + connector.getServer() + " and server " + this);
         if (_connectors.add(connector))
-            _container.update(this, null, connector, "connector");
+            addBean(connector);
     }
 
     /* ------------------------------------------------------------ */
@@ -199,7 +186,7 @@ public class Server extends HandlerWrapper implements Attributes
     public void removeConnector(Connector connector)
     {
         if (_connectors.remove(connector))
-            _container.update(this, connector, null, "connector");
+            removeBean(connector);
     }
 
     /* ------------------------------------------------------------ */
@@ -220,7 +207,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         Connector[] oldConnectors = getConnectors();
-        _container.update(this, oldConnectors, connectors, "connector");
+        updateBeans(oldConnectors, connectors);
         _connectors.removeAll(Arrays.asList(oldConnectors));
         if (connectors != null)
             _connectors.addAll(Arrays.asList(connectors));
@@ -397,7 +384,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handle(HttpChannel connection) throws IOException, ServletException
+    public void handle(HttpChannel<?> connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
@@ -439,7 +426,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handleAsync(HttpChannel connection) throws IOException, ServletException
+    public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
     {
         final HttpChannelState async = connection.getRequest().getAsyncContinuation();
         final HttpChannelState.AsyncEventState state = async.getAsyncEventState();
@@ -482,7 +469,6 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the sessionIdManager.
      */
@@ -492,18 +478,13 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * @param sessionIdManager The sessionIdManager to set.
      */
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
-        if (_sessionIdManager!=null)
-            removeBean(_sessionIdManager);
-        _container.update(this, _sessionIdManager, sessionIdManager, "sessionIdManager",false);
-        _sessionIdManager = sessionIdManager;
-        if (_sessionIdManager!=null)
-            addBean(_sessionIdManager);
+        updateBean(_sessionIdManager,sessionIdManager);
+        _sessionIdManager=sessionIdManager;
     }
 
     /* ------------------------------------------------------------ */
@@ -530,41 +511,6 @@ public class Server extends HandlerWrapper implements Attributes
     public boolean getSendDateHeader()
     {
         return _sendDateHeader;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add an associated bean.
-     * The bean will be added to the servers {@link Container}
-     * and if it is a {@link LifeCycle} instance, it will be
-     * started/stopped along with the Server. Any beans that are also
-     * {@link Destroyable}, will be destroyed with the server.
-     * @param o the bean object to add
-     */
-    @Override
-    public boolean addBean(Object o)
-    {
-        if (super.addBean(o))
-        {
-            _container.addBean(o);
-            return true;
-        }
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Remove an associated bean.
-     */
-    @Override
-    public boolean removeBean (Object o)
-    {
-        if (super.removeBean(o))
-        {
-            _container.removeBean(o);
-            return true;
-        }
-        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -646,14 +592,12 @@ public class Server extends HandlerWrapper implements Attributes
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
+        dumpBeans(out,indent,Collections.singleton(new ClassLoaderDump(this.getClass().getClassLoader())));
     }
-
+    
     /* ------------------------------------------------------------ */
     public static void main(String...args) throws Exception
     {
