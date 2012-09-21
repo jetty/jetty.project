@@ -34,7 +34,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -304,7 +303,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
     {
-        StdErrLog logger = (StdErrLog)Log.getLogger(org.eclipse.jetty.server.HttpConnection.class);
+        StdErrLog logger = StdErrLog.getLogger(org.eclipse.jetty.server.HttpConnection.class);
         logger.setHideStacks(true);
         try
         {
