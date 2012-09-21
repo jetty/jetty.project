@@ -277,12 +277,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 LOG.debug(e);
             else
                 LOG.warn(this.toString(), e);
-            getEndPoint().close();
+            close();
         }
         catch (Exception e)
         {
             LOG.warn(this.toString(), e);
-            getEndPoint().close();
+            close();
         }
         finally
         {
