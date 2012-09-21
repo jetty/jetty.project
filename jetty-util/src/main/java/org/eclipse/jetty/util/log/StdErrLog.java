@@ -31,12 +31,11 @@ import org.eclipse.jetty.util.DateCache;
  * the eclipse jetty root level logger level to that specified level. (Default level is INFO)
  * <p>
  * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the source method/file of a log is logged.
- * For named debuggers, the system property name+".SOURCE" is checked. If it is not not set, then
- * "org.eclipse.jetty.util.log.SOURCE" is used as the default.
+ * For named debuggers, the system property name+".SOURCE" is checked, eg "org.eclipse.jetty.util.log.stderr.SOURCE". 
+ * If it is not not set, then "org.eclipse.jetty.util.log.SOURCE" is used as the default.
  * <p>
- * If the system property "org.eclipse.jetty.util.log.LONG" is set, then the full, unabbreviated name of the logger is
- * used for logging. For named debuggers, the system property name+".LONG" is checked. If it is not not set, then
- * "org.eclipse.jetty.util.log.LONG" is used as the default.
+ * If the system property "org.eclipse.jetty.util.log.stderr.LONG" is set, then the full, unabbreviated name of the logger is
+ * used for logging.
  */
 public class StdErrLog extends AbstractLogger
 {
