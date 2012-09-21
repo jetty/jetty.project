@@ -403,7 +403,7 @@
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
 
-    <!--module>jetty-spring</module-->
+    <module>jetty-spring</module>
     <module>jetty-client</module>
 
 
