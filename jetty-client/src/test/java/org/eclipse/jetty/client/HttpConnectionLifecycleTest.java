@@ -305,7 +305,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
     {
         StdErrLog logger = (StdErrLog)Log.getLogger(org.eclipse.jetty.server.HttpConnection.class);
-//        logger.setHideStacks(true);
+        logger.setHideStacks(true);
         try
         {
             start(new AbstractHandler()
@@ -351,7 +351,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         }
         finally
         {
-//            logger.setHideStacks(false);
+            logger.setHideStacks(false);
         }
     }
 }
