@@ -169,33 +169,21 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                 if (dot >= 0)
                     type = type.substring(dot + 1);
 
-                String context = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectContextBasis()):null;
-                String name = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectNameBasis()):null;
 
                 StringBuffer buf = new StringBuffer();
-                if (pname!=null)
-                {
-                    buf.append("parent=")
-                    .append(pname.getKeyProperty("type"))
-                    .append("-");
-                    
-                    if (pname.getKeyProperty("context")!=null)
-                        buf.append(pname.getKeyProperty("context")).append("-");
-                    
-                    buf.append(pname.getKeyProperty("id"))
-                    .append(",");
-                }
-                buf.append("type=").append(type);
+
+                String context = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectContextBasis()):null;
+                if (context==null && pname!=null)
+                    context=pname.getKeyProperty("context");
+                                
                 if (context != null && context.length()>1)
-                {
-                    buf.append(buf.length()>0 ? ",":"");
-                    buf.append("context=").append(context);
-                }
+                    buf.append("context=").append(context).append(",");
+                
+                buf.append("type=").append(type);
+
+                String name = (mbean instanceof ObjectMBean)?makeName(((ObjectMBean)mbean).getObjectNameBasis()):context;
                 if (name != null && name.length()>1)
-                {
-                    buf.append(buf.length()>0 ? ",":"");
-                    buf.append("name=").append(name);
-                }
+                    buf.append(",").append("name=").append(name);
 
                 String basis = buf.toString();
                 Integer count = _unique.get(basis);
