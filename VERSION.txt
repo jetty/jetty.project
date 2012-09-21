@@ -1,4 +1,10 @@
-jetty-9.0.0-SNAPSHOT
+jetty-9.0.0.M0 - 21 September 2012
+ + 380924 xmlconfiguration <Configure and <New supports named constructors,
+   including dynamic ordering of parameters
+ + 380928 Implement new websocket close code
+ + 385448 migrate jetty jmx usage to be annotation based
+ + 387928 retire jetty-ajp
+ + 389639 set plugin version for jetty-jspc-maven-plugin
 
 jetty-8.1.7.v20120910 - 10 September 2012
  + 388895 Update dependencies for jetty-jndi
