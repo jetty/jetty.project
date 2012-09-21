@@ -245,6 +245,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <argLine>-showversion -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <!--systemProperties>
               <property>
@@ -530,7 +531,7 @@
         <version>${slf4j-version}</version>
       </dependency>
       <!-- NOTICE: we no longer use junit.jar as it bundles/aggregates too many
-           3rd party libraries in itself 
+           3rd party libraries in itself
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
