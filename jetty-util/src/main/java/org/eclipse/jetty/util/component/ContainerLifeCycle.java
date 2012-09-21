@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -45,6 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  * If adding a bean that is shared between multiple {@link ContainerLifeCycle} instances, then it should be started before being added, so it is unmanaged, or
  * the API must be used to explicitly set it as unmanaged.
  */
+@ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
@@ -470,6 +473,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * Dumps to {@link System#err}.
      * @see #dump()
      */
+    @ManagedOperation("Dump the object to stderr")
     public void dumpStdErr()
     {
         try
@@ -483,6 +487,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     @Override
+    @ManagedOperation("Dump the object to a string")
     public String dump()
     {
         return dump(this);

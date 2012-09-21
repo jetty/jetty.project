@@ -84,7 +84,8 @@ public class HandlerCollection extends AbstractHandlerContainer
 
         if (handlers!=null)
             for (Handler handler:handlers)
-                handler.setServer(getServer());
+                if (handler.getServer()!=getServer())
+                    handler.setServer(getServer());
         
         updateBeans(_handlers, handlers);
         _handlers = handlers;

@@ -54,16 +54,19 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
+        @Override
         public void fileAdded(String filename) throws Exception
         {
             ScanningAppProvider.this.fileAdded(filename);
         }
 
+        @Override
         public void fileChanged(String filename) throws Exception
         {
             ScanningAppProvider.this.fileChanged(filename);
         }
 
+        @Override
         public void fileRemoved(String filename) throws Exception
         {
             ScanningAppProvider.this.fileRemoved(filename);

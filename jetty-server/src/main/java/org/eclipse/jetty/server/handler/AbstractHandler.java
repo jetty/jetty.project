@@ -73,6 +73,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     @Override
     public void setServer(Server server)
     {
+        if (_server==server)
+            return;
         if (isStarted())
             throw new IllegalStateException(STARTED);
         _server=server;

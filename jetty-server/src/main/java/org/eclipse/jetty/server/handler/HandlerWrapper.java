@@ -103,6 +103,9 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     public void setServer(Server server)
     {
+        if (server==getServer())
+            return;
+        
         if (isStarted())
             throw new IllegalStateException(STARTED);
 

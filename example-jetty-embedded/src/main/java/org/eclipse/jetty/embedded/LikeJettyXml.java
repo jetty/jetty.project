@@ -53,8 +53,8 @@ public class LikeJettyXml
 
         Server server = new Server(threadPool);
         server.manage(threadPool);
-        server.setDumpAfterStart(true);
-        server.setDumpBeforeStop(true);
+        server.setDumpAfterStart(false);
+        server.setDumpBeforeStop(false);
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
