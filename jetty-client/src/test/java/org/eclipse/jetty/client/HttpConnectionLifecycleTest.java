@@ -34,6 +34,8 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -302,44 +304,54 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
     {
-        start(new AbstractHandler()
+        StdErrLog logger = (StdErrLog)Log.getLogger(org.eclipse.jetty.server.HttpConnection.class);
+//        logger.setHideStacks(true);
+        try
         {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            start(new AbstractHandler()
             {
-                response.setHeader("Connection", "close");
-                baseRequest.setHandled(true);
-            }
-        });
-
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
-
-        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
-        Assert.assertEquals(0, idleConnections.size());
-
-        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
-        Assert.assertEquals(0, activeConnections.size());
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(host, port)
-                .scheme(scheme)
-                .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
-                .send(new Response.Listener.Empty()
+                @Override
+                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
-                    @Override
-                    public void onComplete(Result result)
+                    response.setHeader("Connection", "close");
+                    baseRequest.setHandled(true);
+                    // Don't read request content; this causes the server parser to be closed
+                }
+            });
+
+            String host = "localhost";
+            int port = connector.getLocalPort();
+            HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+            final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+            Assert.assertEquals(0, idleConnections.size());
+
+            final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+            Assert.assertEquals(0, activeConnections.size());
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest(host, port)
+                    .scheme(scheme)
+                    .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
+                    .send(new Response.Listener.Empty()
                     {
-                        Assert.assertEquals(0, idleConnections.size());
-                        Assert.assertEquals(0, activeConnections.size());
-                        latch.countDown();
-                    }
-                });
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            Assert.assertEquals(0, idleConnections.size());
+                            Assert.assertEquals(0, activeConnections.size());
+                            latch.countDown();
+                        }
+                    });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(0, idleConnections.size());
-        Assert.assertEquals(0, activeConnections.size());
+            Assert.assertEquals(0, idleConnections.size());
+            Assert.assertEquals(0, activeConnections.size());
+        }
+        finally
+        {
+//            logger.setHideStacks(false);
+        }
     }
 }

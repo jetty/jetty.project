@@ -117,10 +117,12 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
         request.method(method);
 
+        boolean ssl = "https".equalsIgnoreCase(scheme);
+
         // Choose randomly whether to close the connection on the client or on the server
-        if (random.nextBoolean())
+        if (!ssl && random.nextBoolean())
             request.header("Connection", "close");
-        else if (random.nextBoolean())
+        else if (!ssl && random.nextBoolean())
             request.header("X-Close", "true");
 
         switch (method)

@@ -249,4 +249,52 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(3, requests.get());
         client.getRequestListeners().remove(requestListener);
     }
+
+    @Test
+    public void test_BasicAuthentication_WithAuthenticationRemoved() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        final AtomicInteger requests = new AtomicInteger();
+        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                requests.incrementAndGet();
+            }
+        };
+        client.getRequestListeners().add(requestListener);
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        BasicAuthentication authentication = new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic");
+        authenticationStore.addAuthentication(authentication);
+
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
+        ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(2, requests.get());
+        requests.set(0);
+
+        authenticationStore.removeAuthentication(authentication);
+
+        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
+        response = request.send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(1, requests.get());
+        requests.set(0);
+
+        Authentication.Result result = authenticationStore.findAuthenticationResult(request.uri());
+        Assert.assertNotNull(result);
+        authenticationStore.removeAuthenticationResult(result);
+
+        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
+        response = request.send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(401, response.status());
+        Assert.assertEquals(1, requests.get());
+        requests.set(0);
+    }
 }

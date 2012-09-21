@@ -176,6 +176,19 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
     }
 
+    @Test
+    public void testDontFollowRedirects() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .followRedirects(false)
+                .path("/303/localhost/done?close=true")
+                .send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(303, response.status());
+        Assert.assertTrue(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
     private class RedirectHandler extends AbstractHandler
     {
         @Override
