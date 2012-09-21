@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -209,7 +210,7 @@ public abstract class AbstractDoSFilterTest
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
-        System.out.println("responses are " + responses);
+        // System.out.println("responses are " + responses);
         assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
         assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
         assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
@@ -246,7 +247,7 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
 
-        System.err.println("RESPONSES: \n"+responses);
+        // System.err.println("RESPONSES: \n"+responses);
 
         assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(1,count(responses,"HTTP/1.1 503"));
@@ -304,8 +305,7 @@ public abstract class AbstractDoSFilterTest
         // alternate between sessions
         responses = doRequests(request1+request2+request1+request2+request1,2,250,250,last);
 
-        System.err.println(responses);
-        
+        // System.err.println(responses);
         assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
         int delayedRequests = count(responses,"DoSFilter: delayed");
         assertTrue("delayedRequests: " + delayedRequests + " is not between 2 and 5",delayedRequests >= 2 && delayedRequests <= 5);

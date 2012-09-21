@@ -84,6 +84,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
 
     /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
+    @Override
     public void doStart()
         throws Exception
     {

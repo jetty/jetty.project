@@ -48,7 +48,6 @@ public class SessionHandler extends ScopedHandler
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
 
 
-
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
 
@@ -88,10 +87,10 @@ public class SessionHandler extends ScopedHandler
     {
         if (isStarted())
             throw new IllegalStateException();
-        updateBean(_sessionManager,sessionManager);
-        _sessionManager=sessionManager;
         if (sessionManager!=null)
             sessionManager.setSessionHandler(this);
+        updateBean(_sessionManager,sessionManager);
+        _sessionManager=sessionManager;
     }
 
     /* ------------------------------------------------------------ */
@@ -101,7 +100,8 @@ public class SessionHandler extends ScopedHandler
     @Override
     protected void doStart() throws Exception
     {
-        _sessionManager.start();
+        if (_sessionManager==null)
+            setSessionManager(new HashSessionManager());
         super.doStart();
     }
     /* ------------------------------------------------------------ */
@@ -112,7 +112,6 @@ public class SessionHandler extends ScopedHandler
     protected void doStop() throws Exception
     {
         // Destroy sessions before destroying servlets/filters see JETTY-1266
-        _sessionManager.stop();
         super.doStop();
     }
 

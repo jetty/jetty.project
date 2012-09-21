@@ -166,7 +166,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
         waitForDirectoryScan();
-        System.err.println("Updating war files");
+        //System.err.println("Updating war files");
         jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 

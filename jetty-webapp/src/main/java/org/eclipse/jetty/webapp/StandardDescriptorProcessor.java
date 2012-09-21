@@ -246,7 +246,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String servlet_class = node.getString("servlet-class", false, true);
 
         // Handle JSP
-        String jspServletClass=null;;
+        String jspServletClass=null;
 
         //Handle the default jsp servlet instance
         if (id != null && id.equals("jsp"))
@@ -315,7 +315,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (jsp_file != null)
         {
             holder.setForcedPath(jsp_file);
-            holder.setClassName(jspServletClass); //only use our default instance
+            ServletHolder jsp=context.getServletHandler().getServlet("jsp");
+            if (jsp!=null)
+                holder.setClassName(jsp.getClassName());
         }
 
         // handle load-on-startup

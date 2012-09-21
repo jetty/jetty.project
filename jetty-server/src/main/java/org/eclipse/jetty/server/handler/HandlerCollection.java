@@ -75,7 +75,6 @@ public class HandlerCollection extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     /**
-     *
      * @param handlers The handlers to set.
      */
     public void setHandlers(Handler[] handlers)
@@ -83,18 +82,13 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
 
+        if (handlers!=null)
+            for (Handler handler:handlers)
+                handler.setServer(getServer());
+        
         updateBeans(_handlers, handlers);
         _handlers = handlers;
-
-        Server server = getServer();
-        for (int i=0;handlers!=null && i<handlers.length;i++)
-        {
-            if (handlers[i].getServer()!=server)
-                handlers[i].setServer(server);
-        }
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -145,9 +139,10 @@ public class HandlerCollection extends AbstractHandlerContainer
     public void setServer(Server server)
     {
         super.setServer(server);
-        Handler[] h=getHandlers();
-        for (int i=0;h!=null && i<h.length;i++)
-            h[i].setServer(server);
+        Handler[] handlers=getHandlers();
+        if (handlers!=null)
+            for (Handler h : handlers)
+                h.setServer(server);
     }
 
     /* ------------------------------------------------------------ */

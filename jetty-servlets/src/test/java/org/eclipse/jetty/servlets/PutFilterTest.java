@@ -223,7 +223,6 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data1="How Now BROWN COW!!!!";
         request.setContent(data1);
-        System.err.println(request);
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
 
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());

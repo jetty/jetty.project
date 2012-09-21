@@ -126,10 +126,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     public void setServer(Server server)
     {
-        Server old_server = getServer();
-        if (server == old_server)
-            return;
-
         if (isRunning())
             throw new IllegalStateException(RUNNING);
 

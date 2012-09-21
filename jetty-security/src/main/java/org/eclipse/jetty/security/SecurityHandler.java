@@ -73,19 +73,20 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private String _authMethod;
     private final Map<String,String> _initParameters=new HashMap<>();
     private LoginService _loginService;
-    private boolean _loginServiceShared;
     private IdentityService _identityService;
     private boolean _renewSession=true;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
     {
+        addBean(_authenticatorFactory);
     }
 
     /* ------------------------------------------------------------ */
     /** Get the identityService.
      * @return the identityService
      */
+    @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
@@ -99,6 +100,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         if (isStarted())
             throw new IllegalStateException("Started");
+        updateBean(_identityService,identityService);
         _identityService = identityService;
     }
 
@@ -106,6 +108,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Get the loginService.
      * @return the loginService
      */
+    @Override
     public LoginService getLoginService()
     {
         return _loginService;
@@ -119,8 +122,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         if (isStarted())
             throw new IllegalStateException("Started");
+        updateBean(_loginService,loginService);
         _loginService = loginService;
-        _loginServiceShared=false;
     }
 
 
@@ -139,7 +142,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         if (isStarted())
             throw new IllegalStateException("Started");
+        updateBean(_authenticator,authenticator);
         _authenticator = authenticator;
+        if (_authenticator!=null)
+            _authMethod=_authenticator.getAuthMethod();
     }
 
     /* ------------------------------------------------------------ */
@@ -160,6 +166,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         if (isRunning())
             throw new IllegalStateException("running");
+        updateBean(_authenticatorFactory,authenticatorFactory);
         _authenticatorFactory = authenticatorFactory;
     }
 
@@ -167,6 +174,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /**
      * @return the realmName
      */
+    @Override
     public String getRealmName()
     {
         return _realmName;
@@ -188,6 +196,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /**
      * @return the authMethod
      */
+    @Override
     public String getAuthMethod()
     {
         return _authMethod;
@@ -228,12 +237,14 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getInitParameter(String key)
     {
         return _initParameters.get(key);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set<String> getInitParameterNames()
     {
         return _initParameters.keySet();
@@ -299,16 +310,16 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             //register a session listener to handle securing sessions when authentication is performed
             context.getContextHandler().addEventListener(new HttpSessionListener()
             {
-                
+                @Override
                 public void sessionDestroyed(HttpSessionEvent se)
                 {
-                   
                 }
-                
+
+                @Override
                 public void sessionCreated(HttpSessionEvent se)
                 {                    
                     //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
+                    HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();              
                     
                     if (channel == null)
                         return;
@@ -328,22 +339,18 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         // many different ways these can be constructed and injected.
 
         if (_loginService==null)
-        {
-            _loginService=findLoginService();
-            if (_loginService!=null)
-                _loginServiceShared=true;
-        }
+            setLoginService(findLoginService());
 
         if (_identityService==null)
         {
             if (_loginService!=null)
-                _identityService=_loginService.getIdentityService();
+                setIdentityService(_loginService.getIdentityService());
 
             if (_identityService==null)
-                _identityService=findIdentityService();
+                setIdentityService(findIdentityService());
 
             if (_identityService==null && _realmName!=null)
-                _identityService=new DefaultIdentityService();
+                setIdentityService(new DefaultIdentityService());
         }
 
         if (_loginService!=null)
@@ -354,47 +361,19 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 throw new IllegalStateException("LoginService has different IdentityService to "+this);
         }
 
-        if (!_loginServiceShared && _loginService instanceof LifeCycle)
-            ((LifeCycle)_loginService).start();
-
         Authenticator.Factory authenticatorFactory = getAuthenticatorFactory();
         if (_authenticator==null && authenticatorFactory!=null && _identityService!=null)
-        {
-            _authenticator=authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
-            if (_authenticator!=null)
-                _authMethod=_authenticator.getAuthMethod();
-        }
+            setAuthenticator(authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService));
 
-        if (_authenticator==null)
-        {
-            if (_realmName!=null)
-            {
-                LOG.warn("No ServerAuthentication for "+this);
-                throw new IllegalStateException("No ServerAuthentication");
-            }
-        }
-        else
-        {
+        if (_authenticator!=null)
             _authenticator.setConfiguration(this);
-            if (_authenticator instanceof LifeCycle)
-                ((LifeCycle)_authenticator).start();
+        else if (_realmName!=null)
+        {
+            LOG.warn("No Authenticator for "+this);
+            throw new IllegalStateException("No Authenticator");
         }
 
         super.doStart();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-
-        if (!_loginServiceShared && _loginService instanceof LifeCycle)
-            ((LifeCycle)_loginService).stop();
-
     }
 
     /* ------------------------------------------------------------ */

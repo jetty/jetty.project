@@ -170,8 +170,8 @@ public class HttpTester
             {
                 HttpGenerator generator = new HttpGenerator();
                 HttpGenerator.Info info = getInfo();
-                System.err.println(info.getClass());
-                System.err.println(info);
+                // System.err.println(info.getClass());
+                // System.err.println(info);
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ByteBuffer header=null;

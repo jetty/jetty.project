@@ -161,7 +161,7 @@ public class GzipWithPipeliningTest
             client.issueGET("/lots-of-fantasy-names.txt",true, false);
 
             respHeader = client.readResponseHeader();
-            System.out.println("Response Header #1 --\n" + respHeader);
+            //System.out.println("Response Header #1 --\n" + respHeader);
             String expectedEncodingHeader = encodingHeader.equals(GzipFilter.DEFLATE) ? GzipFilter.DEFLATE : GzipFilter.GZIP;
             assertThat("Content-Encoding should be gzipped",respHeader,containsString("Content-Encoding: " + expectedEncodingHeader + "\r\n"));
             assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
@@ -171,28 +171,28 @@ public class GzipWithPipeliningTest
             FileOutputStream rawOutputStream = new FileOutputStream(rawOutputFile);
 
             long chunkSize = client.readChunkSize();
-            System.out.println("Chunk Size: " + chunkSize);
+            //System.out.println("Chunk Size: " + chunkSize);
 
             // Read only 20% - intentionally a partial read.
-            System.out.println("Attempting to read partial content ...");
+            //System.out.println("Attempting to read partial content ...");
             int readBytes = client.readBody(rawOutputStream,(int)(chunkSize * 0.20f));
-            System.out.printf("Read %,d bytes%n",readBytes);
+            //System.out.printf("Read %,d bytes%n",readBytes);
 
             // Issue another request
             client.issueGET("/jetty_logo.png",true, false);
 
             // Finish reading chunks
-            System.out.println("Finish reading remaining chunks ...");
+            //System.out.println("Finish reading remaining chunks ...");
             String line;
             chunkSize = chunkSize - readBytes;
             while (chunkSize > 0)
             {
                 readBytes = client.readBody(rawOutputStream,(int)chunkSize);
-                System.out.printf("Read %,d bytes%n",readBytes);
+                //System.out.printf("Read %,d bytes%n",readBytes);
                 line = client.readLine();
                 assertThat("Chunk delim should be an empty line with CR+LF",line,is(""));
                 chunkSize = client.readChunkSize();
-                System.out.printf("Next Chunk: (0x%X) %,d bytes%n",chunkSize,chunkSize);
+                //System.out.printf("Next Chunk: (0x%X) %,d bytes%n",chunkSize,chunkSize);
             }
 
             // Inter-pipeline delim
@@ -220,7 +220,7 @@ public class GzipWithPipeliningTest
 
             // Read 2nd request http response header
             respHeader = client.readResponseHeader();
-            System.out.println("Response Header #2 --\n" + respHeader);
+            //System.out.println("Response Header #2 --\n" + respHeader);
             assertThat("Content-Encoding should NOT be gzipped",respHeader,not(containsString("Content-Encoding: gzip\r\n")));
             assertThat("Transfer-Encoding should NOT be chunked",respHeader,not(containsString("Transfer-Encoding: chunked\r\n")));
 

@@ -155,10 +155,10 @@ public class ServletHandler extends ScopedHandler
             _chainLRU[FilterMapping.ASYNC]=new ConcurrentLinkedQueue<String>();
         }
 
-        super.doStart();
-
         if (_contextHandler==null)
             initialize();
+        
+        super.doStart();
     }
 
     /* ----------------------------------------------------------------- */
@@ -691,13 +691,6 @@ public class ServletHandler extends ScopedHandler
     {
         MultiException mx = new MultiException();
 
-        // Start filters
-        if (_filters!=null)
-        {
-            for (FilterHolder filter : _filters)
-                filter.start();
-        }
-
         if (_servlets!=null)
         {
             // Sort and Initialize servlets
@@ -717,8 +710,6 @@ public class ServletHandler extends ScopedHandler
                         }
                         servlet.setClassName(forced_holder.getClassName());
                     }
-
-                    servlet.start();
                 }
                 catch (Throwable e)
                 {

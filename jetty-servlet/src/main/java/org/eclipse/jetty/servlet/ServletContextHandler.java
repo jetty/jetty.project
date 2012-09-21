@@ -85,7 +85,6 @@ public class ServletContextHandler extends ContextHandler
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
-    protected HandlerWrapper _wrapper;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
     protected List<ServletContextListener> _restrictedContextListeners = new ArrayList<>();
@@ -112,8 +111,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, int options)
     {
-        this(parent,contextPath,null,null,null,null);
-        _options=options;
+        this(parent,contextPath,null,null,null,null,options);
     }
 
     /* ------------------------------------------------------------ */
@@ -131,24 +129,70 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
+        this(parent,contextPath,sessionHandler,securityHandler,servletHandler,errorHandler,0);
+    }
+    
+    public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
+    {
         super((ContextHandler.Context)null);
+        _options=options;
         _scontext = new Context();
         _sessionHandler = sessionHandler;
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
 
-        if (errorHandler!=null)
-            setErrorHandler(errorHandler);
-
         if (contextPath!=null)
             setContextPath(contextPath);
-
+        
         if (parent instanceof HandlerWrapper)
             ((HandlerWrapper)parent).setHandler(this);
         else if (parent instanceof HandlerCollection)
             ((HandlerCollection)parent).addHandler(this);
-    }
+        
+        
+        // Link the handlers
+        relinkHandlers();
+        
+        if (errorHandler!=null)
+            setErrorHandler(errorHandler);
 
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void relinkHandlers()
+    {
+        HandlerWrapper handler=this;
+        
+        // Skip any injected handlers
+        while (handler.getHandler() instanceof HandlerWrapper)
+        {
+            HandlerWrapper wrapper = (HandlerWrapper)handler.getHandler();
+            if (wrapper instanceof SessionHandler ||
+                wrapper instanceof SecurityHandler ||
+                wrapper instanceof ServletHandler)
+                break;
+            handler=wrapper;
+        }
+        
+        if (getSessionHandler()!=null)
+        {
+            handler.setHandler(_sessionHandler);
+            handler=_sessionHandler;
+        }
+        
+        if (getSecurityHandler()!=null)
+        {
+            handler.setHandler(_securityHandler);
+            handler=_securityHandler;
+        }
+        
+        if (getServletHandler()!=null)
+        {
+            handler.setHandler(_servletHandler);
+            handler=_servletHandler;
+        } 
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()
@@ -159,8 +203,6 @@ public class ServletContextHandler extends ContextHandler
         super.doStop();
         if (_decorators != null)
             _decorators.clear();
-        if (_wrapper != null)
-            _wrapper.setHandler(null);
     }
 
     /* ------------------------------------------------------------ */
@@ -212,43 +254,11 @@ public class ServletContextHandler extends ContextHandler
      *
      * @see org.eclipse.jetty.server.handler.ContextHandler#startContext()
      */
+    @Override
     protected void startContext() throws Exception
     {
-        // force creation of missing handlers.
-        getSessionHandler();
-        getSecurityHandler();
-        getServletHandler();
-
-        Handler handler = _servletHandler;
-        if (_securityHandler!=null)
-        {
-            _securityHandler.setHandler(handler);
-            handler=_securityHandler;
-        }
-
-        if (_sessionHandler!=null)
-        {
-            _sessionHandler.setHandler(handler);
-            handler=_sessionHandler;
-        }
-
-        // skip any wrapped handlers
-        _wrapper=this;
-        while (_wrapper!=handler && _wrapper.getHandler() instanceof HandlerWrapper)
-            _wrapper=(HandlerWrapper)_wrapper.getHandler();
-
-        // if we are not already linked
-        if (_wrapper!=handler)
-        {
-            if (_wrapper.getHandler()!=null )
-                throw new IllegalStateException("!ScopedHandler");
-            _wrapper.setHandler(handler);
-        }
-
-    	super.startContext();
-
     	// OK to Initialize servlet handler now
-    	if (_servletHandler != null && _servletHandler.isStarted())
+    	if (_servletHandler != null)
     	{
     	    for (int i=_decorators.size()-1;i>=0; i--)
     	    {
@@ -263,6 +273,8 @@ public class ServletContextHandler extends ContextHandler
 
     	    _servletHandler.initialize();
     	}
+    	
+        super.startContext();
     }
 
     /* ------------------------------------------------------------ */
@@ -388,8 +400,7 @@ public class ServletContextHandler extends ContextHandler
         return Collections.emptySet();
     }
 
-
-
+    @Override
     public void restrictEventListener (EventListener e)
     {
         if (_restrictListeners && e instanceof ServletContextListener)
@@ -406,6 +417,7 @@ public class ServletContextHandler extends ContextHandler
         this._restrictListeners = restrictListeners;
     }
 
+    @Override
     public void callContextInitialized(ServletContextListener l, ServletContextEvent e)
     {
         try
@@ -424,12 +436,11 @@ public class ServletContextHandler extends ContextHandler
     }
 
 
+    @Override
     public void callContextDestroyed(ServletContextListener l, ServletContextEvent e)
     {
         super.callContextDestroyed(l, e);
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -440,7 +451,11 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
 
+        if (_sessionHandler!=null)
+            _sessionHandler.setHandler(null);
+
         _sessionHandler = sessionHandler;
+        relinkHandlers();
     }
 
     /* ------------------------------------------------------------ */
@@ -452,7 +467,10 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
 
+        if (_securityHandler!=null)
+            _securityHandler.setHandler(null);
         _securityHandler = securityHandler;
+        relinkHandlers();
     }
 
     /* ------------------------------------------------------------ */
@@ -464,7 +482,15 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
 
+        Handler next=null;
+        if (_servletHandler!=null)
+        {
+            next=_servletHandler.getHandler();
+            _servletHandler.setHandler(null);
+        }
         _servletHandler = servletHandler;
+        relinkHandlers();
+        _servletHandler.setHandler(next);
     }
 
     /* ------------------------------------------------------------ */

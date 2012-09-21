@@ -80,7 +80,7 @@ public class GzipTester
 
     public void assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
     {
-        System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+        // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -150,7 +150,7 @@ public class GzipTester
      */
     public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
-        System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+        //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -197,14 +197,14 @@ public class GzipTester
 
     private void dumpHeaders(String prefix, HttpTester.Message message)
     {
-        System.out.println(prefix);
+        //System.out.println(prefix);
         @SuppressWarnings("unchecked")
         Enumeration<String> names = message.getFieldNames();
         while (names.hasMoreElements())
         {
             String name = names.nextElement();
             String value = message.get(name);
-            System.out.printf("  [%s] = %s%n",name,value);
+            //System.out.printf("  [%s] = %s%n",name,value);
         }
     }
 
@@ -303,7 +303,7 @@ public class GzipTester
 
     private HttpTester.Response executeRequest(String uri) throws IOException, Exception
     {
-        System.err.printf("[GzipTester] requesting %s%n",uri);
+        //System.err.printf("[GzipTester] requesting %s%n",uri);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 

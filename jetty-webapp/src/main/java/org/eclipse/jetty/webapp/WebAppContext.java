@@ -1301,7 +1301,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return servletContext;
             }
         }
-
     }
 
     /* ------------------------------------------------------------ */

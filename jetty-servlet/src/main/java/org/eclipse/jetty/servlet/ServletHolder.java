@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  */
 @ManagedObject("Servlet Holder")
-public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable
+public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
 
@@ -190,32 +190,28 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     /** Comparitor by init order.
      */
-    public int compareTo(Object o)
+    @Override
+    public int compareTo(ServletHolder sh)
     {
-        if (o instanceof ServletHolder)
-        {
-            ServletHolder sh= (ServletHolder)o;
-            if (sh==this)
-                return 0;
-            if (sh._initOrder<_initOrder)
-                return 1;
-            if (sh._initOrder>_initOrder)
-                return -1;
+        if (sh==this)
+            return 0;
+        if (sh._initOrder<_initOrder)
+            return 1;
+        if (sh._initOrder>_initOrder)
+            return -1;
 
-            int c=(_className!=null && sh._className!=null)?_className.compareTo(sh._className):0;
-            if (c==0)
-                c=_name.compareTo(sh._name);
-            if (c==0)
-                c=this.hashCode()>o.hashCode()?1:-1;
+        int c=(_className!=null && sh._className!=null)?_className.compareTo(sh._className):0;
+        if (c==0)
+            c=_name.compareTo(sh._name);
+        if (c==0)
+            c=this.hashCode()>sh.hashCode()?1:-1;
             return c;
-        }
-        return 1;
     }
 
     /* ------------------------------------------------------------ */
     public boolean equals(Object o)
     {
-        return compareTo(o)==0;
+        return o instanceof ServletHolder && compareTo((ServletHolder)o)==0;
     }
 
     /* ------------------------------------------------------------ */

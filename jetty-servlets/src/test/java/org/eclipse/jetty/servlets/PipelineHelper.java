@@ -245,7 +245,7 @@ public class PipelineHelper
         {
             int len = inputStream.read(partial,readBytes,bytesLeft);
             Assert.assertThat("Read should not have hit EOL yet",len,not(-1));
-            System.out.printf("Read %,d bytes%n",len);
+            //System.out.printf("Read %,d bytes%n",len);
             if (len > 0)
             {
                 readBytes += len;

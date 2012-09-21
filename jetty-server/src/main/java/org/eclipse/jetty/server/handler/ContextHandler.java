@@ -732,9 +732,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         super.doStart();
 
-        if (_errorHandler != null)
-            _errorHandler.start();
-
         // Context listeners
         if (_contextListeners != null)
         {
@@ -1391,11 +1388,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setErrorHandler(ErrorHandler errorHandler)
     {
-        updateBean(_errorHandler,errorHandler);
-        _errorHandler = errorHandler;
         if (errorHandler != null)
             errorHandler.setServer(getServer());
-        
+        updateBean(_errorHandler,errorHandler);
+        _errorHandler = errorHandler;
     }
 
     /* ------------------------------------------------------------ */
