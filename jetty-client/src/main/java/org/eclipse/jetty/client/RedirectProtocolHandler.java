@@ -114,12 +114,12 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
 
-            // TODO: no, reuse the same request object, just have a setter for the URI
-
             Request redirect = client.newRequest(request.id(), location);
 
             // Use given method
             redirect.method(method);
+
+            redirect.version(request.version());
 
             // Copy headers
             for (HttpFields.Field header : request.headers())

@@ -218,7 +218,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         if (requestPair == null)
         {
             LOG.debug("{} idle", connection);
-            idleConnections.offer(connection); // TODO: check return value ?
+            if (!idleConnections.offer(connection))
+            {
+                LOG.debug("{} idle overflow");
+                connection.close();
+            }
             if (!client.isRunning())
             {
                 LOG.debug("{} is stopping", client);
@@ -229,7 +233,10 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         else
         {
             LOG.debug("{} active", connection);
-            activeConnections.offer(connection); // TODO: check return value ?
+            if (!activeConnections.offer(connection))
+            {
+                LOG.warn("{} active overflow");
+            }
             if (dispatch)
             {
                 client.getExecutor().execute(new Runnable()
