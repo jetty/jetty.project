@@ -76,7 +76,6 @@ public class SslConnectionTest
 
             Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
-            connectionOpened(appConnection);
 
             return sslConnection;
         }

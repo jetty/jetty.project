@@ -79,7 +79,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         Connection appConnection = super.newConnection(channel,sslConnection.getDecryptedEndPoint());
         sslConnection.getDecryptedEndPoint().setConnection(appConnection);
-        _manager.connectionOpened(appConnection);
 
         return sslConnection;
     }
