@@ -113,7 +113,7 @@ public class SslConnection extends AbstractConnection
         super(endPoint, executor);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
-        this._decryptedEndPoint = new DecryptedEndPoint();
+        this._decryptedEndPoint = newDecryptedEndPoint();
 
         if (endPoint instanceof SocketBased)
         {
@@ -126,6 +126,11 @@ public class SslConnection extends AbstractConnection
                 throw new RuntimeIOException(e);
             }
         }
+    }
+
+    protected DecryptedEndPoint newDecryptedEndPoint()
+    {
+        return new DecryptedEndPoint();
     }
 
     public SSLEngine getSSLEngine()

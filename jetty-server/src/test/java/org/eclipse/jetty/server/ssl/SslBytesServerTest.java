@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -38,8 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -47,12 +48,20 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
@@ -68,10 +77,10 @@ import org.junit.Test;
 
 public class SslBytesServerTest extends SslBytesTest
 {
-    private final AtomicInteger sslHandles = new AtomicInteger();
+    private final AtomicInteger sslFills = new AtomicInteger();
     private final AtomicInteger sslFlushes = new AtomicInteger();
     private final AtomicInteger httpParses = new AtomicInteger();
-    private final AtomicReference<EndPoint> serverEndPoint = new AtomicReference<EndPoint>();
+    private final AtomicReference<EndPoint> serverEndPoint = new AtomicReference<>();
     private final int idleTimeout = 2000;
     private ExecutorService threadPool;
     private Server server;
@@ -90,7 +99,63 @@ public class SslBytesServerTest extends SslBytesTest
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        ServerConnector connector = new ServerConnector(server, sslContextFactory)
+
+        HttpConnectionFactory httpFactory = new HttpConnectionFactory()
+        {
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                return configure(new HttpConnection(getHttpChannelConfig(), connector, endPoint)
+                {
+                    @Override
+                    protected HttpParser newHttpParser()
+                    {
+                        return new HttpParser(newRequestHandler(), getHttpChannelConfig().getRequestHeaderSize())
+                        {
+                            @Override
+                            public boolean parseNext(ByteBuffer buffer)
+                            {
+                                httpParses.incrementAndGet();
+                                return super.parseNext(buffer);
+                            }
+                        };
+                    }
+                }, connector, endPoint);
+            }
+        };
+        httpFactory.getHttpChannelConfig().addCustomizer(new SecureRequestCustomizer());
+        SslConnectionFactory sslFactory = new SslConnectionFactory(sslContextFactory, httpFactory.getProtocol())
+        {
+            @Override
+            protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine)
+                {
+                    @Override
+                    protected DecryptedEndPoint newDecryptedEndPoint()
+                    {
+                        return new DecryptedEndPoint()
+                        {
+                            @Override
+                            public int fill(ByteBuffer buffer) throws IOException
+                            {
+                                sslFills.incrementAndGet();
+                                return super.fill(buffer);
+                            }
+
+                            @Override
+                            public boolean flush(ByteBuffer... appOuts) throws IOException
+                            {
+                                sslFlushes.incrementAndGet();
+                                return super.flush(appOuts);
+                            }
+                        };
+                    }
+                };
+            }
+        };
+
+        ServerConnector connector = new ServerConnector(server, sslFactory, httpFactory)
         {
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
@@ -99,7 +164,6 @@ public class SslBytesServerTest extends SslBytesTest
                 serverEndPoint.set(endp);
                 return endp;
             }
-
         };
         connector.setIdleTimeout(idleTimeout);
 //        connector.setPort(5870);
@@ -214,9 +278,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         closeClient(client);
     }
@@ -294,9 +358,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(40));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
 
@@ -349,9 +413,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -380,9 +444,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -400,9 +464,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -442,9 +506,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -495,9 +559,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         closeClient(client);
     }
@@ -589,11 +653,11 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(1000);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(750));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(750));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(1000));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         // An average of 958 httpParses is seen in standard Oracle JDK's
         // An average of 1183 httpParses is seen in OpenJDK JVMs.
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(1500));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(500));
 
         client.close();
 
@@ -673,9 +737,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         // Socket close
         record = proxy.readFromServer();
@@ -748,9 +812,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         // Socket close
         record = proxy.readFromClient();
@@ -799,7 +863,7 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToClient(record);
 
         // Close the raw socket, this generates a truncation attack
-        proxy.flushToServer((TLSRecord)null);
+        proxy.flushToServer(null);
 
         // Expect raw close from server
         record = proxy.readFromServer();
@@ -808,9 +872,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -866,8 +930,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(40));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(40));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
         client.close();
@@ -919,8 +983,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Wait a while to detect spinning
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(40));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(40));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
         client.close();
@@ -1003,9 +1067,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         // Socket close
         record = proxy.readFromClient();
@@ -1074,9 +1138,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         closeClient(client);
     }
@@ -1129,9 +1193,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(150));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -1151,9 +1215,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(150));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         closeClient(client);
     }
@@ -1285,7 +1349,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
@@ -1447,7 +1511,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
@@ -1496,9 +1560,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         // The server has shutdown the output since the client sent a Connection: close
         // but the client does not close, so the server must idle timeout the endPoint.
@@ -1532,9 +1596,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         client.close();
     }
@@ -1565,7 +1629,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslHandles.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
@@ -1643,7 +1707,7 @@ public class SslBytesServerTest extends SslBytesTest
 
             // Check that we did not spin
             TimeUnit.MILLISECONDS.sleep(500);
-            Assert.assertThat(sslHandles.get(), lessThan(20));
+            Assert.assertThat(sslFills.get(), lessThan(20));
             Assert.assertThat(sslFlushes.get(), lessThan(20));
             Assert.assertThat(httpParses.get(), lessThan(50));
 
