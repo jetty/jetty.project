@@ -577,6 +577,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 if (info.getStatus() < 200)
                     _committed.set(false);
             }
+            catch (EofException e)
+            {
+                LOG.debug(e);
+                // TODO is it worthwhile sending if we are at EoF?
+                // "application" info failed to commit, commit with a failsafe 500 info
+                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
+                throw e;
+            }
             catch (Exception e)
             {
                 LOG.warn(e);

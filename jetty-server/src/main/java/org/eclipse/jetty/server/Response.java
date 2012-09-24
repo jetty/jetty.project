@@ -702,27 +702,29 @@ public class Response implements HttpServletResponse
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
 
         if (_contentLength > 0)
-            checkAllContentWritten(written);
-    }
-
-    public boolean checkAllContentWritten(long written)
-    {
-        if (_contentLength >= 0 && written >= _contentLength)
         {
             try
             {
-                switch (_outputType)
-                {
-                    case WRITER:
-                        _writer.close();
-                        break;
-                    case STREAM:
-                        getOutputStream().close();
-                }
+                checkAllContentWritten(written);
             }
-            catch (IOException e)
+            catch(IOException e)
             {
                 throw new RuntimeIOException(e);
+            }
+        }
+    }
+
+    public boolean checkAllContentWritten(long written) throws IOException
+    {
+        if (_contentLength >= 0 && written >= _contentLength)
+        {
+            switch (_outputType)
+            {
+                case WRITER:
+                    _writer.close();
+                    break;
+                case STREAM:
+                    getOutputStream().close();
             }
             return true;
         }

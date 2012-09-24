@@ -114,7 +114,7 @@ public class HttpOutput extends ServletOutputStream
             _channel.write(BufferUtil.EMPTY_BUFFER, false);
     }
 
-    public boolean checkAllWritten()
+    public boolean checkAllWritten() throws IOException
     {
         return _channel.getResponse().checkAllContentWritten(_written);
     }
