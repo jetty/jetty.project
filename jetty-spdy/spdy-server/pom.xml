@@ -10,6 +10,10 @@
     <artifactId>spdy-server</artifactId>
     <name>Jetty :: SPDY :: Jetty Server Binding</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -42,6 +46,33 @@
                     <argLine>-Xbootclasspath/p:${project.build.directory}/npn/npn-boot-${npn.version}.jar</argLine>
                 </configuration>
             </plugin>
+<!--            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                 <Import-Package>javax.net.ssl.*,*</Import-Package>
+                                 <Export-Package>*</Export-Package>
+                            </instructions>
+                          </configuration>
+                       </execution>
+                  </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <configuration>
+                  <archive>
+                      <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                  </archive>
+              </configuration>
+            </plugin> -->
         </plugins>
     </build>
 

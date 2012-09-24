@@ -11,7 +11,7 @@
     <name>Jetty :: Websocket :: Client</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.websocket.client</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     </properties>
 
     <dependencies>
@@ -39,18 +39,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>

@@ -77,7 +77,7 @@
             <configuration>
               <instructions>
                 <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
-                <Import-Package>javax.servlet,org.eclipse.jetty.servlets,*</Import-Package>
+                <Import-Package>javax.servlet.jsp.*;version="2.2.0",javax.servlet.*;version="[2.6,3.0)",org.eclipse.jetty.*;version="9.0",*</Import-Package>
                 <Export-Package>!com.acme*</Export-Package>
                 <!-- the test webapp is configured via a jetty xml file
                 in order to add the security handler. -->

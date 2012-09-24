@@ -11,7 +11,7 @@
     <name>Jetty :: Websocket :: Core</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.websocket.core</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
     </properties>
 
     <dependencies>
@@ -58,18 +58,6 @@
                       </rules>
                     </configuration>
                   </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>

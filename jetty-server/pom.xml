@@ -25,7 +25,8 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet.*;version="2.6.0",org.eclipse.jetty.jmx.*;version="8.0";resolution:=optional,*</Import-Package>
+                <Import-Package>javax.servlet.*;version="2.6.0",org.eclipse.jetty.jmx.*;version="9.0";resolution:=optional,*</Import-Package>
+                <_nouses>true</_nouses>
               </instructions>
             </configuration>
           </execution>

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;

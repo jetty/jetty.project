@@ -29,55 +29,55 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-nested</artifactId>
-    </dependency>
+    </dependency-->
     <dependency>
     	<groupId>org.eclipse.osgi</groupId>
     	<artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
   </dependencies>
 
-      <build> 
-        <plugins> 
-            <plugin> 
-                <artifactId>maven-antrun-plugin</artifactId> 
-                <executions> 
-                    <execution> 
-                        <phase>process-resources</phase> 
-                        <configuration> 
+      <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <configuration>
                             <tasks>
                                 <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
-                                <copy todir="target/classes/jettyhome"> 
-                                    <fileset dir="jettyhome"> 
-                                        <exclude name="**/*.log" /> 
-                                    </fileset> 
-                                </copy> 
-                            </tasks> 
-                        </configuration> 
-                        <goals> 
-                            <goal>run</goal> 
+                                <copy todir="target/classes/jettyhome">
+                                    <fileset dir="jettyhome">
+                                        <exclude name="**/*.log" />
+                                    </fileset>
+                                </copy>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId> 
-                <artifactId>maven-jar-plugin</artifactId> 
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>artifact-jar</id> 
+                        <id>artifact-jar</id>
                         <goals>
-                            <goal>jar</goal> 
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>test-jar</id> 
+                        <id>test-jar</id>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
@@ -85,7 +85,7 @@
                 </executions>
                 <configuration>
                     <archive>
-                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile> 
+                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
             </plugin>
@@ -98,7 +98,7 @@
                         <id>bundle-manifest</id>
                         <phase>process-classes</phase>
                         <goals>
-                            <goal>manifest</goal> 
+                            <goal>manifest</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -107,11 +107,11 @@
                         <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
                         <Bundle-Name>Jetty OSGi Boot</Bundle-Name>
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
+                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
+                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
-                        compilation time. --> 
+                        compilation time. -->
                         <_nouses>true</_nouses>
                         <Import-Package>javax.mail;version="1.4.0";resolution:=optional,
  javax.mail.event;version="1.4.0";resolution:=optional,
@@ -122,24 +122,23 @@
  javax.servlet.http;version="2.6.0",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
- org.eclipse.jetty.nested;version="[8.1,9)";resolution:=optional,
- org.eclipse.jetty.annotations;version="[8.1,9)";resolution:=optional,
+ org.eclipse.jetty.annotations;version="9.0.0";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
- org.osgi.service.startlevel;version="1.0.o",
+ org.osgi.service.startlevel;version="1.0.0",
  org.osgi.service.url;version="1.0.0",
  org.osgi.util.tracker;version="1.3.0",
  org.slf4j;resolution:=optional,
- org.slf4j.spi;resolution:=optional, 
+ org.slf4j.spi;resolution:=optional,
  org.slf4j.helpers;resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[8.1,9)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="9.0.0"</DynamicImport-Package>
                         <!--Require-Bundle/-->
-                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment> 
+                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
             </plugin>
@@ -149,8 +148,8 @@
                 <configuration>
                     <onlyAnalyze>org.eclipse.jetty.osgi.boot.*</onlyAnalyze>
                 </configuration>
-            </plugin> 
+            </plugin>
         </plugins>
     </build>
-  
+
 </project>

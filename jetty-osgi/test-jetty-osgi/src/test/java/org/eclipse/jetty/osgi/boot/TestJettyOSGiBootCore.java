@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.osgi.boot;
 
-import static org.ops4j.pax.exam.CoreOptions.*;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,14 +36,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.HttpContentResponse;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
@@ -51,7 +54,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.http.HttpService;
-
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
@@ -69,31 +71,39 @@ public class TestJettyOSGiBootCore
      */
     public static List<Option> provisionCoreJetty()
     {
-        return Arrays.asList(options(
-                // get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
-                
-                // CoreOptions.equinox(),
-                
-                mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi.services" ).versionAsInProject().noStart(),
-
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart(),   
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart(),   
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlet" ).versionAsInProject().noStart(),  
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-util" ).versionAsInProject().noStart(), 
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-http" ).versionAsInProject().noStart(), 
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-xml" ).versionAsInProject().noStart(),  
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-webapp" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-io" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-continuation" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-security" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-websocket" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject().noStart(),
-                
-                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().noStart()
-        ));
+    	List<Option> res = new ArrayList<Option>();
+    	// get the jetty home config from the osgi boot bundle.
+    	res.add(PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"));
+    	res.addAll(coreJettyDependencies());
+    	return res;
+    }
+    
+    public static List<Option> coreJettyDependencies() {
+    	List<Option> res = new ArrayList<Option>();
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi.services" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart());  
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlet" ).versionAsInProject().noStart());  
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-util" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-http" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-xml" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-webapp" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-io" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-continuation" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-security" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-core" ).versionAsInProject().noStart());
+    	res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().noStart());
+        //optional:
+    	//res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().noStart());
+    	return res;
+    }
+    
+    public static List<Option> websocketDependencies() {
+    	List<Option> res = new ArrayList<Option>();
+        return res;
     }
     
     @Inject
@@ -109,7 +119,7 @@ public class TestJettyOSGiBootCore
             // install log service using pax runners profile abstraction (there are more profiles, like DS)
             //logProfile(),
             // this is how you set the default log level when using pax logging (logProfile)
-            //systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" ),
+            CoreOptions.systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" ),
             
         //	CoreOptions.equinox(), CoreOptions.felix(),//.version("3.0.0"),
         		
@@ -136,7 +146,7 @@ public class TestJettyOSGiBootCore
         for( Bundle b : bundleContext.getBundles() )
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-          System.err.println("got " + b.getSymbolicName());
+            //System.err.println("got " + b.getSymbolicName());
         }
         Bundle osgiBoot = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot");
         Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot bundle", osgiBoot);
@@ -163,31 +173,19 @@ public class TestJettyOSGiBootCore
             protected void doGet(HttpServletRequest req,
                     HttpServletResponse resp) throws ServletException,
                     IOException {
-                resp.getWriter().append("Hello");
+                resp.getWriter().write("Hello");
             }
         }, null, null);
         
         //now test the servlet
         HttpClient client = new HttpClient();
-        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         try
         {
             client.start();
-            
-            ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://127.0.0.1:9876/greetings");
-            getExchange.setMethod(HttpMethods.GET);
+            Response response = client.GET("http://127.0.0.1:9876/greetings").get(5, TimeUnit.SECONDS);;
+            Assert.assertEquals(HttpStatus.OK_200, response.status());
      
-            client.send(getExchange);
-            int state = getExchange.waitForDone();
-            Assert.assertEquals("state should be done", HttpExchange.STATUS_COMPLETED, state);
-     
-            String content = null;
-            int responseStatus = getExchange.getResponseStatus();
-            Assert.assertEquals(HttpStatus.OK_200, responseStatus);
-            if (responseStatus == HttpStatus.OK_200) {
-                content = getExchange.getResponseContent();
-            }
+            String content = new String(((HttpContentResponse)response).content());
             Assert.assertEquals("Hello", content);
         }
         finally

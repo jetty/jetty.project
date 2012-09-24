@@ -17,15 +17,15 @@
 <!-- by the jetty.xml file.                                                -->
 <!--                                                                       -->
 <!-- ===================================================================== -->
-<web-app 
-   xmlns="http://java.sun.com/xml/ns/javaee" 
+<web-app
+   xmlns="http://java.sun.com/xml/ns/javaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" 
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
    metadata-complete="true"
-   version="2.5"> 
+   version="2.5">
 
   <description>
-    Default web.xml file.  
+    Default web.xml file.
     This file is applied to a Web application before it's own WEB_INF/web.xml file
   </description>
 
@@ -70,7 +70,7 @@
   <!--   redirectWelcome  If true, redirect welcome file requests           -->
   <!--                    else use request dispatcher forwards              -->
   <!--                                                                      -->
-  <!--   gzip             If set to true, then static content will be served--> 
+  <!--   gzip             If set to true, then static content will be served-->
   <!--                    as gzip content encoded if a matching resource is -->
   <!--                    found ending with ".gz"                           -->
   <!--                                                                      -->
@@ -117,8 +117,8 @@
     </init-param>
     <init-param>
       <param-name>welcomeServlets</param-name>
-        <param-value>false</param-value>
-      </init-param>
+      <param-value>false</param-value>
+    </init-param>
     <init-param>
       <param-name>redirectWelcome</param-name>
       <param-value>false</param-value>
@@ -146,7 +146,7 @@
     <init-param>
       <param-name>useFileMappedBuffer</param-name>
       <param-value>true</param-value>
-    </init-param>  
+    </init-param>
     <!--
     <init-param>
       <param-name>cacheControl</param-name>
@@ -154,10 +154,10 @@
     </init-param>
     -->
     <load-on-startup>0</load-on-startup>
-  </servlet> 
+  </servlet>
 
   <servlet-mapping> <servlet-name>default</servlet-name> <url-pattern>/</url-pattern> </servlet-mapping>
-  
+
 
   <!-- ==================================================================== -->
   <!-- JSP Servlet                                                          -->
@@ -259,7 +259,7 @@
         <param-name>xpoweredBy</param-name>
         <param-value>false</param-value>
     </init-param>
-    <!--  
+    <!--
     <init-param>
         <param-name>classpath</param-name>
         <param-value>?</param-value>
@@ -268,18 +268,18 @@
     <load-on-startup>0</load-on-startup>
   </servlet>
 
-  <servlet-mapping> 
-    <servlet-name>jsp</servlet-name> 
-    <url-pattern>*.jsp</url-pattern> 
+  <servlet-mapping>
+    <servlet-name>jsp</servlet-name>
+    <url-pattern>*.jsp</url-pattern>
     <url-pattern>*.jspf</url-pattern>
     <url-pattern>*.jspx</url-pattern>
     <url-pattern>*.xsp</url-pattern>
-    <url-pattern>*.JSP</url-pattern> 
+    <url-pattern>*.JSP</url-pattern>
     <url-pattern>*.JSPF</url-pattern>
     <url-pattern>*.JSPX</url-pattern>
     <url-pattern>*.XSP</url-pattern>
   </servlet-mapping>
-  
+
   <!-- ==================================================================== -->
   <!-- Dynamic Servlet Invoker.                                             -->
   <!-- This servlet invokes anonymous servlets that have not been defined   -->
@@ -369,7 +369,7 @@
     <locale-encoding-mapping><locale>it</locale><encoding>ISO-8859-1</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>iw</locale><encoding>ISO-8859-8</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>ja</locale><encoding>Shift_JIS</encoding></locale-encoding-mapping>
-    <locale-encoding-mapping><locale>ko</locale><encoding>EUC-KR</encoding></locale-encoding-mapping>     
+    <locale-encoding-mapping><locale>ko</locale><encoding>EUC-KR</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>lt</locale><encoding>ISO-8859-2</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>lv</locale><encoding>ISO-8859-2</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>mk</locale><encoding>ISO-8859-5</encoding></locale-encoding-mapping>
@@ -388,9 +388,9 @@
     <locale-encoding-mapping><locale>tr</locale><encoding>ISO-8859-9</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>uk</locale><encoding>ISO-8859-5</encoding></locale-encoding-mapping>
     <locale-encoding-mapping><locale>zh</locale><encoding>GB2312</encoding></locale-encoding-mapping>
-    <locale-encoding-mapping><locale>zh_TW</locale><encoding>Big5</encoding></locale-encoding-mapping>   
+    <locale-encoding-mapping><locale>zh_TW</locale><encoding>Big5</encoding></locale-encoding-mapping>
   </locale-encoding-mapping-list>
-  
+
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>Disable TRACE</web-resource-name>
@@ -399,6 +399,6 @@
     </web-resource-collection>
     <auth-constraint/>
   </security-constraint>
-  
+
 </web-app>
 

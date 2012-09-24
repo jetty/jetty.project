@@ -87,7 +87,7 @@
                   <id>bundle-manifest</id>
                   <phase>process-classes</phase>
                   <goals>
-                      <goal>manifest</goal> 
+                      <goal>manifest</goal>
                   </goals>
               </execution>
           </executions>
@@ -96,8 +96,9 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.osgi.httpservice</Bundle-SymbolicName>
                 <Bundle-Name>OSGi HttpService</Bundle-Name>
                 <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
-                <Import-Package>org.eclipse.jetty.server.handler;version="[8.1,9)",
-org.eclipse.jetty.util.component;version="[8.1,9)",
+                <Import-Package>org.eclipse.jetty.server.handler;version="9.0.0",
+org.eclipse.jetty.util.component;version="9.0.0",
+org.eclipse.jetty.server.session;version="9.0.0",
 org.eclipse.equinox.http.servlet,
 *
                  </Import-Package>

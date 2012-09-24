@@ -406,7 +406,7 @@
 
     <module>jetty-spring</module>
     <module>jetty-client</module>
-
+    <module>jetty-osgi</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
 
@@ -580,12 +580,6 @@
         <!--
         <module>jetty-aggregate</module>
          -->
-      </modules>
-    </profile>
-    <profile>
-      <id>osgi</id>
-      <modules>
-        <module>jetty-osgi</module>
       </modules>
     </profile>
     <profile>

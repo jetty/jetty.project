@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-parent</artifactId>
-        <version>19</version>
+        <artifactId>jetty-project</artifactId>
+        <version>9.0.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -11,6 +11,10 @@
     <artifactId>npn-api</artifactId>
     <version>1.1.1-SNAPSHOT</version>
     <name>Jetty :: Next Protocol Negotiation :: API</name>
+
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.npn.api</bundle-symbolic-name>
+    </properties>
 
     <scm>
       <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
@@ -21,6 +25,36 @@
     <build>
       <plugins>
         <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+            <execution>
+              <goals>
+                <goal>manifest</goal>
+              </goals>
+              <configuration>
+                <instructions>
+                  <Export-Package>org.eclipse.jetty.npn.*;version="9.0"</Export-Package>
+                  <Import-Package>*</Import-Package>
+                </instructions>
+              </configuration>
+             </execution>
+          </executions>
+        </plugin>
+      <plugin>
+        <!--
+        Required for OSGI
+        -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
           <version>2.2.1</version>
