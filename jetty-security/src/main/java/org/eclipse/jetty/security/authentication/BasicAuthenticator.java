@@ -48,6 +48,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     /**
      * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
      */
+    @Override
     public String getAuthMethod()
     {
         return Constraint.__BASIC_AUTH;
@@ -57,6 +58,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     /**
      * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
      */
+    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         HttpServletRequest request = (HttpServletRequest)req;
@@ -66,7 +68,7 @@ public class BasicAuthenticator extends LoginAuthenticator
         try
         {
             if (!mandatory)
-                return _deferred;
+                return new DeferredAuthentication(this);
 
             if (credentials != null)
             {
@@ -95,7 +97,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                 }
             }
 
-            if (_deferred.isDeferred(response))
+            if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
 
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _loginService.getName() + '"');
@@ -108,6 +110,7 @@ public class BasicAuthenticator extends LoginAuthenticator
         }
     }
 
+    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;

@@ -33,7 +33,6 @@ public abstract class LoginAuthenticator implements Authenticator
 {
     private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
 
-    protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;
@@ -42,6 +41,7 @@ public abstract class LoginAuthenticator implements Authenticator
     {
     }
 
+    @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
         _loginService=configuration.getLoginService();

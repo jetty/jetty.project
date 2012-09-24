@@ -44,21 +44,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class DeferredAuthentication implements Authentication.Deferred
 {
     private static final Logger LOG = Log.getLogger(DeferredAuthentication.class);
-
-    protected final Authenticator _authenticator;
-
-    private LoginService _loginService;
-    private IdentityService _identityService;
+    protected final LoginAuthenticator _authenticator;
     private Object _previousAssociation;
-
-
-    /* ------------------------------------------------------------ */
-    public DeferredAuthentication(Authenticator authenticator)
-    {
-        if (authenticator == null)
-            throw new NullPointerException("No Authenticator");
-        this._authenticator = authenticator;
-    }
 
     /* ------------------------------------------------------------ */
     public DeferredAuthentication(LoginAuthenticator authenticator)
@@ -69,39 +56,10 @@ public class DeferredAuthentication implements Authentication.Deferred
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the identityService.
-     * @return the identityService
-     */
-    public IdentityService getIdentityService()
-    {
-        return _identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the identityService.
-     * @param identityService the identityService to set
-     */
-    public void setIdentityService(IdentityService identityService)
-    {
-        _identityService = identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public LoginService getLoginService()
-    {
-        return _loginService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setLoginService(LoginService loginService)
-    {
-        _loginService = loginService;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(ServletRequest)
      */
+    @Override
     public Authentication authenticate(ServletRequest request)
     {
         try
@@ -110,8 +68,11 @@ public class DeferredAuthentication implements Authentication.Deferred
 
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                LoginService login_service= _authenticator.getLoginService();
+                IdentityService identity_service=login_service.getIdentityService();
+                
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
                 return authentication;
             }
         }
@@ -126,13 +87,17 @@ public class DeferredAuthentication implements Authentication.Deferred
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
+    @Override
     public Authentication authenticate(ServletRequest request, ServletResponse response)
     {
         try
         {
+            LoginService login_service= _authenticator.getLoginService();
+            IdentityService identity_service=login_service.getIdentityService();
+            
             Authentication authentication = _authenticator.validateRequest(request,response,true);
-            if (authentication instanceof Authentication.User && _identityService!=null)
-                _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            if (authentication instanceof Authentication.User && identity_service!=null)
+                _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
         }
         catch (ServerAuthException e)
@@ -146,16 +111,20 @@ public class DeferredAuthentication implements Authentication.Deferred
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
      */
+    @Override
     public Authentication login(String username, String password)
     {
-        if (_loginService!=null)
+        LoginService login_service= _authenticator.getLoginService();
+        IdentityService identity_service=login_service.getIdentityService();
+        
+        if (login_service!=null)
         {
-            UserIdentity user = _loginService.login(username,password);
+            UserIdentity user = login_service.login(username,password);
             if (user!=null)
             {
                 UserAuthentication authentication = new UserAuthentication("API",user);
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(user);
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(user);
                 return authentication;
             }
         }
@@ -183,146 +152,179 @@ public class DeferredAuthentication implements Authentication.Deferred
     /* ------------------------------------------------------------ */
     final static HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
+        @Override
         public void addCookie(Cookie cookie)
         {
         }
 
+        @Override
         public void addDateHeader(String name, long date)
         {
         }
 
+        @Override
         public void addHeader(String name, String value)
         {
         }
 
+        @Override
         public void addIntHeader(String name, int value)
         {
         }
 
+        @Override
         public boolean containsHeader(String name)
         {
             return false;
         }
 
+        @Override
         public String encodeRedirectURL(String url)
         {
             return null;
         }
 
+        @Override
         public String encodeRedirectUrl(String url)
         {
             return null;
         }
 
+        @Override
         public String encodeURL(String url)
         {
             return null;
         }
 
+        @Override
         public String encodeUrl(String url)
         {
             return null;
         }
 
+        @Override
         public void sendError(int sc) throws IOException
         {
         }
 
+        @Override
         public void sendError(int sc, String msg) throws IOException
         {
         }
 
+        @Override
         public void sendRedirect(String location) throws IOException
         {
         }
 
+        @Override
         public void setDateHeader(String name, long date)
         {
         }
 
+        @Override
         public void setHeader(String name, String value)
         {
         }
 
+        @Override
         public void setIntHeader(String name, int value)
         {
         }
 
+        @Override
         public void setStatus(int sc)
         {
         }
 
+        @Override
         public void setStatus(int sc, String sm)
         {
         }
 
+        @Override
         public void flushBuffer() throws IOException
         {
         }
 
+        @Override
         public int getBufferSize()
         {
             return 1024;
         }
 
+        @Override
         public String getCharacterEncoding()
         {
             return null;
         }
 
+        @Override
         public String getContentType()
         {
             return null;
         }
 
+        @Override
         public Locale getLocale()
         {
             return null;
         }
 
+        @Override
         public ServletOutputStream getOutputStream() throws IOException
         {
             return __nullOut;
         }
 
+        @Override
         public PrintWriter getWriter() throws IOException
         {
             return IO.getNullPrintWriter();
         }
 
+        @Override
         public boolean isCommitted()
         {
             return true;
         }
 
+        @Override
         public void reset()
         {
         }
 
+        @Override
         public void resetBuffer()
         {
         }
 
+        @Override
         public void setBufferSize(int size)
         {
         }
 
+        @Override
         public void setCharacterEncoding(String charset)
         {
         }
 
+        @Override
         public void setContentLength(int len)
         {
         }
 
+        @Override
         public void setContentType(String type)
         {
         }
 
+        @Override
         public void setLocale(Locale loc)
         {
         }
 
+        @Override
 	public Collection<String> getHeaderNames()
 	{
 	    return Collections.emptyList();
