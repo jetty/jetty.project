@@ -33,15 +33,14 @@ import javax.servlet.ServletResponse;
 /**
  * <p>ContinuationFilter must be applied to servlet paths that make use of
  * the asynchronous features provided by {@link Continuation} APIs, but that
- * are deployed in servlet containers that are neither Jetty (>= 7) nor a
+ * are deployed in servlet containers that are a
  * compliant Servlet 3.0 container.</p>
  * <p>The following init parameters may be used to configure the filter (these are mostly for testing):</p>
  * <dl>
  * <dt>debug</dt><dd>Boolean controlling debug output</dd>
- * <dt>jetty6</dt><dd>Boolean to force use of Jetty 6 continuations</dd>
  * <dt>faux</dt><dd>Boolean to force use of faux continuations</dd>
  * </dl>
- * <p>If the servlet container is not Jetty (either 6 or 7) nor a Servlet 3
+ * <p>If the servlet container is not Jetty 7+ nor a Servlet 3
  * container, then "faux" continuations will be used.</p>
  * <p>Faux continuations will just put the thread that called {@link Continuation#suspend()}
  * in wait, and will notify that thread when {@link Continuation#resume()} or
@@ -54,7 +53,6 @@ public class ContinuationFilter implements Filter
     static boolean _initialized;
     static boolean __debug; // shared debug status
     private boolean _faux;
-    private boolean _jetty6;
     private boolean _filtered;
     ServletContext _context;
     private boolean _debug;
@@ -69,25 +67,17 @@ public class ContinuationFilter implements Filter
         if (_debug)
             __debug=true;
 
-        param=filterConfig.getInitParameter("jetty6");
-        if (param==null)
-            param=filterConfig.getInitParameter("partial");
-        if (param!=null)
-            _jetty6=Boolean.parseBoolean(param);
-        else
-            _jetty6=ContinuationSupport.__jetty6 && !jetty_7_or_greater;
-
+        param=filterConfig.getInitParameter("partial");
         param=filterConfig.getInitParameter("faux");
         if (param!=null)
             _faux=Boolean.parseBoolean(param);
         else
-            _faux=!(jetty_7_or_greater || _jetty6 || _context.getMajorVersion()>=3);
+            _faux=!(jetty_7_or_greater || _context.getMajorVersion()>=3);
 
-        _filtered=_faux||_jetty6;
+        _filtered=_faux;
         if (_debug)
             _context.log("ContinuationFilter "+
                     " jetty="+jetty_7_or_greater+
-                    " jetty6="+_jetty6+
                     " faux="+_faux+
                     " filtered="+_filtered+
                     " servlet3="+ContinuationSupport.__servlet3);
