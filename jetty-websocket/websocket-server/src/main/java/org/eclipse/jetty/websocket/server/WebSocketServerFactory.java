@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -200,7 +201,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Get the base policy in use for WebSockets.
      * <p>
      * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
-     *
+     * 
      * @return the base policy
      */
     public WebSocketPolicy getPolicy()
@@ -311,7 +312,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     *
+     * 
      * @param request
      *            The request to upgrade
      * @param response
@@ -366,6 +367,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         WebSocketSession session = new WebSocketSession(websocket,connection,getPolicy(),response.getAcceptedSubProtocol());
         connection.setSession(session);
         List<Extension> extensions = initExtensions(request.getExtensions());
+        request.setValidExtensions(extensions);
 
         // Start with default routing.
         IncomingFrames incoming = session;

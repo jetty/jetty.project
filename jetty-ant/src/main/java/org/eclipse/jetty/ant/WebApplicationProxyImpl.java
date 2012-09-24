@@ -83,7 +83,7 @@ public class WebApplicationProxyImpl implements WebApplicationProxy
     /** List of classpath files. */
     private List classPathFiles;
 
-    /** Jetty6 Web Application Context. */
+    /** Jetty Web Application Context. */
     private WebAppContext webAppContext;
 
     /** Extra scan targets. */
