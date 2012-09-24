@@ -284,7 +284,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
             ExtensionConfig config = ExtensionConfig.parse(econf);
             Extension ext = extensionRegistry.newInstance(config);
-            extensions.add(ext);
+            if (ext != null)
+            {
+                extensions.add(ext);
+            }
 
             offset = mat.end(1);
         }
