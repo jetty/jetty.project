@@ -84,7 +84,6 @@
           </executions>
           <configuration>
               <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot.jsp</Bundle-SymbolicName>
                 <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
                 <Bundle-Classpath />
                 <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
