@@ -16,7 +16,7 @@ Require-Bundle: org.eclipse.jetty.client,
  org.eclipse.jetty.util,
  org.eclipse.jetty.websocket
 Bundle-ClassPath: WEB-INF/classes
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Web-ContextPath: /
 Class-Path: 
