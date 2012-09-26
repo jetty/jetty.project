@@ -128,7 +128,7 @@ public class HttpReceiverTest
         Assert.assertNotNull(headers);
         Assert.assertEquals(1, headers.size());
         Assert.assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
-        String received = listener.getContent("UTF-8");
+        String received = listener.getContentAsString("UTF-8");
         Assert.assertEquals(content, received);
     }
 
