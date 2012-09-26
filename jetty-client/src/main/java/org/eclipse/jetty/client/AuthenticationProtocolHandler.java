@@ -78,7 +78,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent());
+            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())
             {
                 Throwable failure = result.getFailure();
