@@ -22,11 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.EventMethod;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.AnnotatedEventDriver;
 
 /**
  * Support class for reading binary message data as an InputStream.
@@ -38,25 +35,17 @@ public class MessageInputStream extends InputStream implements MessageAppender
      * Threshold (of bytes) to perform compaction at
      */
     private static final int COMPACT_THRESHOLD = 5;
-    private final Object websocket;
-    private final EventMethod onEvent;
-    private final WebSocketSession session;
-    private final ByteBufferPool bufferPool;
-    private final WebSocketPolicy policy;
+    private final AnnotatedEventDriver driver;
     private final ByteBuffer buf;
     private int size;
     private boolean finished;
     private boolean needsNotification;
     private int readPosition;
 
-    public MessageInputStream(Object websocket, EventMethod onEvent, WebSocketSession session, ByteBufferPool bufferPool, WebSocketPolicy policy)
+    public MessageInputStream(AnnotatedEventDriver driver)
     {
-        this.websocket = websocket;
-        this.onEvent = onEvent;
-        this.session = session;
-        this.bufferPool = bufferPool;
-        this.policy = policy;
-        this.buf = bufferPool.acquire(BUFFER_SIZE,false);
+        this.driver = driver;
+        this.buf = ByteBuffer.allocate(BUFFER_SIZE);
         BufferUtil.clearToFill(this.buf);
         size = 0;
         readPosition = this.buf.position();
@@ -78,7 +67,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
             return;
         }
 
-        policy.assertValidBinaryMessageSize(size + payload.remaining());
+        driver.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         synchronized (buf)
@@ -92,7 +81,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
         if (needsNotification)
         {
             needsNotification = true;
-            this.onEvent.call(websocket,session,this);
+            this.driver.onInputStream(this);
         }
     }
 
@@ -101,7 +90,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         finished = true;
         super.close();
-        this.bufferPool.release(this.buf);
     }
 
     @Override

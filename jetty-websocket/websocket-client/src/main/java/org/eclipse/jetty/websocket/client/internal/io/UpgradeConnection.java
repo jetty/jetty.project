@@ -43,10 +43,10 @@ import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.UpgradeException;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
@@ -216,7 +216,7 @@ public class UpgradeConnection extends AbstractConnection
         WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,client);
 
         // Initialize / Negotiate Extensions
-        WebSocketEventDriver websocket = client.getWebSocket();
+        EventDriver websocket = client.getWebSocket();
         WebSocketPolicy policy = client.getPolicy();
         String acceptedSubProtocol = response.getAcceptedSubProtocol();
         WebSocketSession session = new WebSocketSession(websocket,connection,policy,acceptedSubProtocol);

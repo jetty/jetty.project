@@ -16,7 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
+
+import static org.hamcrest.Matchers.*;
 
 import org.eclipse.jetty.websocket.core.annotations.BadBinarySignatureSocket;
 import org.eclipse.jetty.websocket.core.annotations.BadDuplicateBinarySocket;
@@ -31,9 +33,7 @@ import org.eclipse.jetty.websocket.core.annotations.NotASocket;
 import org.eclipse.jetty.websocket.core.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.driver.EventMethod;
-import org.eclipse.jetty.websocket.core.driver.EventMethods;
-import org.eclipse.jetty.websocket.core.driver.EventMethodsCache;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.examples.AdapterConnectCloseSocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryStreamSocket;
@@ -43,12 +43,7 @@ import org.eclipse.jetty.websocket.core.examples.ListenerBasicSocket;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-
-public class EventMethodsCacheTest
+public class EventDriverFactoryTest
 {
     private void assertHasEventMethod(String message, EventMethod actual)
     {
@@ -69,24 +64,12 @@ public class EventMethodsCacheTest
     @Test
     public void testAdapterConnectCloseSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(AdapterConnectCloseSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
+        EventDriver driver = factory.wrap(socket);
 
         String classId = AdapterConnectCloseSocket.class.getSimpleName();
-
-        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
-
-        // Directly Declared
-        assertHasEventMethod(classId + ".onClose",methods.onClose);
-        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-
-        // From WebSocketAdapter
-        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
-        assertHasEventMethod(classId + ".onException",methods.onException);
-        assertHasEventMethod(classId + ".onText",methods.onText);
-
-        // Advanced, only available from @OnWebSocketFrame annotation
-        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
+        Assert.assertThat("EventDriver for " + classId,driver,instanceOf(ListenerEventDriver.class));
     }
 
     /**
@@ -95,11 +78,11 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBadDuplicateBinarySocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
         try
         {
             // Should toss exception
-            cache.getMethods(BadDuplicateBinarySocket.class);
+            factory.getMethods(BadDuplicateBinarySocket.class);
             Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
@@ -115,11 +98,11 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBadDuplicateFrameSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
         try
         {
             // Should toss exception
-            cache.getMethods(BadDuplicateFrameSocket.class);
+            factory.getMethods(BadDuplicateFrameSocket.class);
             Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
@@ -135,11 +118,11 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBadSignature_NonVoidReturn()
     {
-        EventMethodsCache cache = new EventMethodsCache();
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
         try
         {
             // Should toss exception
-            cache.getMethods(BadBinarySignatureSocket.class);
+            factory.getMethods(BadBinarySignatureSocket.class);
             Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
@@ -155,11 +138,11 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBadSignature_Static()
     {
-        EventMethodsCache cache = new EventMethodsCache();
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
         try
         {
             // Should toss exception
-            cache.getMethods(BadTextSignatureSocket.class);
+            factory.getMethods(BadTextSignatureSocket.class);
             Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
@@ -175,8 +158,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBinaryArraySocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(AnnotatedBinaryArraySocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(AnnotatedBinaryArraySocket.class);
 
         String classId = AnnotatedBinaryArraySocket.class.getSimpleName();
 
@@ -199,8 +182,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedBinaryStreamSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(AnnotatedBinaryStreamSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(AnnotatedBinaryStreamSocket.class);
 
         String classId = AnnotatedBinaryStreamSocket.class.getSimpleName();
 
@@ -223,8 +206,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedMyEchoBinarySocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(MyEchoBinarySocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(MyEchoBinarySocket.class);
 
         String classId = MyEchoBinarySocket.class.getSimpleName();
 
@@ -244,8 +227,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedMyEchoSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(MyEchoSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(MyEchoSocket.class);
 
         String classId = MyEchoSocket.class.getSimpleName();
 
@@ -265,8 +248,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedMyStatelessEchoSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(MyStatelessEchoSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(MyStatelessEchoSocket.class);
 
         String classId = MyStatelessEchoSocket.class.getSimpleName();
 
@@ -289,8 +272,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedNoop()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(NoopSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(NoopSocket.class);
 
         String classId = NoopSocket.class.getSimpleName();
 
@@ -310,8 +293,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedOnFrame()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(FrameSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(FrameSocket.class);
 
         String classId = FrameSocket.class.getSimpleName();
 
@@ -331,8 +314,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedTextSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(AnnotatedTextSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(AnnotatedTextSocket.class);
 
         String classId = AnnotatedTextSocket.class.getSimpleName();
 
@@ -355,8 +338,8 @@ public class EventMethodsCacheTest
     @Test
     public void testAnnotatedTextStreamSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(AnnotatedTextStreamSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventMethods methods = factory.getMethods(AnnotatedTextStreamSocket.class);
 
         String classId = AnnotatedTextStreamSocket.class.getSimpleName();
 
@@ -379,11 +362,12 @@ public class EventMethodsCacheTest
     @Test
     public void testBadNotASocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
         try
         {
+            NotASocket bad = new NotASocket();
             // Should toss exception
-            cache.getMethods(NotASocket.class);
+            factory.wrap(bad);
         }
         catch (InvalidWebSocketException e)
         {
@@ -398,18 +382,11 @@ public class EventMethodsCacheTest
     @Test
     public void testListenerBasicSocket()
     {
-        EventMethodsCache cache = new EventMethodsCache();
-        EventMethods methods = cache.getMethods(ListenerBasicSocket.class);
+        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        ListenerBasicSocket socket = new ListenerBasicSocket();
+        EventDriver driver = factory.wrap(socket);
 
-        String classId = AdapterConnectCloseSocket.class.getSimpleName();
-
-        Assert.assertThat("ListenerBasicSocket for " + classId,methods,notNullValue());
-
-        assertHasEventMethod(classId + ".onClose",methods.onClose);
-        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
-        assertHasEventMethod(classId + ".onException",methods.onException);
-        assertHasEventMethod(classId + ".onText",methods.onText);
-        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
+        String classId = ListenerBasicSocket.class.getSimpleName();
+        Assert.assertThat("EventDriver for " + classId,driver,instanceOf(ListenerEventDriver.class));
     }
 }

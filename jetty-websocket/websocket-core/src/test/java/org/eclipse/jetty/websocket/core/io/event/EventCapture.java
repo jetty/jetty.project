@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;

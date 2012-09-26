@@ -16,19 +16,18 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.io.event;
 
-import org.eclipse.jetty.websocket.core.io.event.EventDriverFactoryTest;
-import org.eclipse.jetty.websocket.core.io.event.EventDriverTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.ArrayList;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses(
-{ org.eclipse.jetty.websocket.core.ab.AllTests.class, EventDriverFactoryTest.class, EventDriverTest.class,
-        org.eclipse.jetty.websocket.core.extensions.AllTests.class, org.eclipse.jetty.websocket.core.protocol.AllTests.class,
-        GeneratorParserRoundtripTest.class })
-public class AllTests
+/**
+ * Simple class for representing a list of class arrays.
+ */
+@SuppressWarnings("serial")
+public class ParamList extends ArrayList<Class<?>[]>
 {
-    /* nothing to do here */
+    public void addParams(Class<?>... paramTypes)
+    {
+        this.add(paramTypes);
+    }
 }

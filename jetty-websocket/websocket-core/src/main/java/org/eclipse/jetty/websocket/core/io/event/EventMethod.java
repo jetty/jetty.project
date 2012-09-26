@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -96,6 +96,7 @@ public class EventMethod
             throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
                     + paramTypes.length + "]");
         }
+
         try
         {
             this.method.invoke(obj,args);
@@ -126,13 +127,15 @@ public class EventMethod
         {
             return;
         }
-        for(Class<?> paramType: paramTypes)
+
+        for (Class<?> paramType : paramTypes)
         {
-            if(WebSocketConnection.class.isAssignableFrom(paramType)) {
+            if (WebSocketConnection.class.isAssignableFrom(paramType))
+            {
                 this.hasConnection = true;
             }
-            if(Reader.class.isAssignableFrom(paramType)||
-                    InputStream.class.isAssignableFrom(paramType)) {
+            if (Reader.class.isAssignableFrom(paramType) || InputStream.class.isAssignableFrom(paramType))
+            {
                 this.isStreaming = true;
             }
         }

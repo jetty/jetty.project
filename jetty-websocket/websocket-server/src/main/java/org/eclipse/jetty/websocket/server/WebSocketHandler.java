@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,7 +45,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
         }
 
         @Override
-        public void registerWebSockets(WebSocketServerFactory factory)
+        public void configure(WebSocketServerFactory factory)
         {
             factory.register(websocketPojo);
         }
@@ -59,6 +60,8 @@ public abstract class WebSocketHandler extends HandlerWrapper
         webSocketFactory = new WebSocketServerFactory(policy);
     }
 
+    public abstract void configure(WebSocketServerFactory factory);
+
     public void configurePolicy(WebSocketPolicy policy)
     {
         /* leave at default */
@@ -68,7 +71,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     protected void doStart() throws Exception
     {
         super.doStart();
-        registerWebSockets(webSocketFactory);
+        configure(webSocketFactory);
     }
 
     public WebSocketServerFactory getWebSocketFactory()
@@ -98,6 +101,4 @@ public abstract class WebSocketHandler extends HandlerWrapper
         }
         super.handle(target,baseRequest,request,response);
     }
-
-    public abstract void registerWebSockets(WebSocketServerFactory factory);
 }

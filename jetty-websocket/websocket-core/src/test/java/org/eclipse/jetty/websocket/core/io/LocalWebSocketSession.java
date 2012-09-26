@@ -19,8 +19,7 @@
 package org.eclipse.jetty.websocket.core.io;
 
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture;
 import org.junit.rules.TestName;
 
@@ -36,7 +35,7 @@ public class LocalWebSocketSession extends WebSocketSession
         setOutgoing(outgoingCapture);
     }
 
-    public LocalWebSocketSession(TestName testname, WebSocketEventDriver driver)
+    public LocalWebSocketSession(TestName testname, EventDriver driver)
     {
         super(driver,new LocalWebSocketConnection(testname),WebSocketPolicy.newServerPolicy(),"testing");
         this.id = testname.getMethodName();

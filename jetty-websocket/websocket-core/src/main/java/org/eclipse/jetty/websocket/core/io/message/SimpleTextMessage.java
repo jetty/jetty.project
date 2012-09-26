@@ -22,26 +22,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.EventMethod;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 
 public class SimpleTextMessage implements MessageAppender
 {
-    private final Object websocket;
-    private final EventMethod onEvent;
-    private final WebSocketSession session;
-    private final WebSocketPolicy policy;
+    private final EventDriver onEvent;
     private final Utf8StringBuilder utf;
     private int size = 0;
     private boolean finished;
 
-    public SimpleTextMessage(Object websocket, EventMethod onEvent, WebSocketSession session, WebSocketPolicy policy)
+    public SimpleTextMessage(EventDriver onEvent)
     {
-        this.websocket = websocket;
         this.onEvent = onEvent;
-        this.session = session;
-        this.policy = policy;
         this.utf = new Utf8StringBuilder();
         size = 0;
         finished = false;
@@ -61,7 +53,7 @@ public class SimpleTextMessage implements MessageAppender
             return;
         }
 
-        policy.assertValidTextMessageSize(size + payload.remaining());
+        onEvent.getPolicy().assertValidTextMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
@@ -74,6 +66,6 @@ public class SimpleTextMessage implements MessageAppender
         finished = true;
 
         // notify event
-        this.onEvent.call(websocket,session,utf.toString());
+        onEvent.onTextMessage(utf.toString());
     }
 }

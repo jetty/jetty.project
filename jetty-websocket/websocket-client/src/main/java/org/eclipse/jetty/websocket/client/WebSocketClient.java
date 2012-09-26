@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 
 public interface WebSocketClient
 {
@@ -45,7 +45,7 @@ public interface WebSocketClient
 
     public UpgradeResponse getUpgradeResponse();
 
-    public WebSocketEventDriver getWebSocket();
+    public EventDriver getWebSocket();
 
     public URI getWebSocketUri();
 

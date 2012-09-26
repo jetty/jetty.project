@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
 
 /**
  * A representation of the methods available to call for a particular class.
@@ -26,20 +26,16 @@ package org.eclipse.jetty.websocket.core.driver;
 public class EventMethods
 {
     private Class<?> pojoClass;
-    private boolean isAnnotated = false;
     public EventMethod onConnect = null;
     public EventMethod onClose = null;
     public EventMethod onBinary = null;
-    public EventMethod onBinaryStream = null;
     public EventMethod onText = null;
-    public EventMethod onTextStream = null;
     public EventMethod onException = null;
     public EventMethod onFrame = null;
 
-    public EventMethods(Class<?> pojoClass, boolean annotated)
+    public EventMethods(Class<?> pojoClass)
     {
         this.pojoClass = pojoClass;
-        this.isAnnotated = annotated;
     }
 
     @Override
@@ -86,19 +82,12 @@ public class EventMethods
         return result;
     }
 
-    public boolean isAnnotated()
-    {
-        return isAnnotated;
-    }
-
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
         builder.append("EventMethods [pojoClass=");
         builder.append(pojoClass);
-        builder.append(", isAnnotated=");
-        builder.append(isAnnotated);
         builder.append(", onConnect=");
         builder.append(onConnect);
         builder.append(", onClose=");
