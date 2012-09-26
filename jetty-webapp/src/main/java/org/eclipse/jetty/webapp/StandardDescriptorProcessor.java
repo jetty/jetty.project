@@ -1308,7 +1308,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             jpg.setIsXml(group.getString("is-xml", false, true));
             jpg.setDeferredSyntaxAllowedAsLiteral(group.getString("deferred-syntax-allowed-as-literal", false, true));
             jpg.setTrimDirectiveWhitespaces(group.getString("trim-directive-whitespaces", false, true));
-            jpg.setDefaultContentType(group.getString("defaultContentType", false, true));
+            jpg.setDefaultContentType(group.getString("default-content-type", false, true));
             jpg.setBuffer(group.getString("buffer", false, true));
             jpg.setErrorOnUndeclaredNamespace(group.getString("error-on-undeclared-namespace", false, true));
             
