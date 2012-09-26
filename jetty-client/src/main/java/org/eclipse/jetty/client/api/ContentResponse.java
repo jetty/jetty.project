@@ -27,4 +27,10 @@ public interface ContentResponse extends Response
      * @return the response content
      */
     byte[] content();
+
+    /**
+     * @return the response content as a string, decoding the bytes using the charset
+     * provided by the {@code Content-Type} header, if any, or UTF-8.
+     */
+    String contentAsString();
 }

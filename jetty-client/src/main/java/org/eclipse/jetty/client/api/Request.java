@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -127,6 +128,18 @@ public interface Request
      * @return this request object
      */
     Request header(String name, String value);
+
+    /**
+     * @param name the name of the attribute
+     * @param value the value of the attribute
+     * @return this request object
+     */
+    Request attribute(String name, Object value);
+
+    /**
+     * @return the attributes of this request
+     */
+    Map<String, Object> attributes();
 
     /**
      * @return the content provider of this request

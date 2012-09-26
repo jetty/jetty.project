@@ -63,10 +63,8 @@
           </executions>
           <configuration>
               <instructions>
-                  <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot.warurl;singleton:=true</Bundle-SymbolicName>
                   <Bundle-Name>RFC66 War URL</Bundle-Name>
                   <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
-                  <_nouses>true</_nouses>
               </instructions>
           </configuration>
       </plugin>

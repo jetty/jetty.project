@@ -88,7 +88,6 @@
                 https://issues.apache.org/jira/browse/FELIX-1571
                 -->
                 <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
               </instructions>
             </configuration>
            </execution>

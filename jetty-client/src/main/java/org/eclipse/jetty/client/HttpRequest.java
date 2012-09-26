@@ -24,6 +24,8 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,6 +47,7 @@ public class HttpRequest implements Request
 
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields();
+    private final Map<String, Object> attributes = new HashMap<>();
     private final HttpClient client;
     private final long id;
     private final String host;
@@ -213,6 +216,19 @@ public class HttpRequest implements Request
         else
             headers.add(name, value);
         return this;
+    }
+
+    @Override
+    public Request attribute(String name, Object value)
+    {
+        attributes.put(name, value);
+        return this;
+    }
+
+    @Override
+    public Map<String, Object> attributes()
+    {
+        return attributes;
     }
 
     @Override

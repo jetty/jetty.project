@@ -11,7 +11,7 @@
     <name>Jetty :: SPDY :: Core</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.spdy.core</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
     </properties>
 
     <build>
