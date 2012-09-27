@@ -136,7 +136,7 @@ public abstract class WebSocketServlet extends HttpServlet
 
             webSocketFactory = new WebSocketServerFactory(policy);
 
-            registerWebSockets(webSocketFactory);
+            configure(webSocketFactory);
 
             webSocketFactory.start();
         }
@@ -146,7 +146,7 @@ public abstract class WebSocketServlet extends HttpServlet
         }
     }
 
-    public abstract void registerWebSockets(WebSocketServerFactory factory);
+    public abstract void configure(WebSocketServerFactory factory);
 
     /**
      * @see javax.servlet.http.HttpServlet#service(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
