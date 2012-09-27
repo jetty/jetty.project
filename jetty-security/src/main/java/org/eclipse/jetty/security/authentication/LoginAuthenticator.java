@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.session.AbstractSessionManager;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
-    protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;

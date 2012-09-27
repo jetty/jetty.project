@@ -43,58 +43,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class DeferredAuthentication implements Authentication.Deferred
 {
     private static final Logger LOG = Log.getLogger(DeferredAuthentication.class);
-
-    protected final Authenticator _authenticator;
-
-    private LoginService _loginService;
-    private IdentityService _identityService;
+    protected final LoginAuthenticator _authenticator;
     private Object _previousAssociation;
 
-
-    /* ------------------------------------------------------------ */
-    public DeferredAuthentication(Authenticator authenticator)
-    {
-        if (authenticator == null)
-            throw new NullPointerException("No Authenticator");
-        this._authenticator = authenticator;
-    }
-    
     /* ------------------------------------------------------------ */
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
             throw new NullPointerException("No Authenticator");
         this._authenticator = authenticator;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Get the identityService.
-     * @return the identityService
-     */
-    public IdentityService getIdentityService()
-    {
-        return _identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the identityService.
-     * @param identityService the identityService to set
-     */
-    public void setIdentityService(IdentityService identityService)
-    {
-        _identityService = identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public LoginService getLoginService()
-    {
-        return _loginService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setLoginService(LoginService loginService)
-    {
-        _loginService = loginService;
     }
 
     /* ------------------------------------------------------------ */
@@ -109,8 +66,11 @@ public class DeferredAuthentication implements Authentication.Deferred
             
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                LoginService login_service= _authenticator.getLoginService();
+                IdentityService identity_service=login_service.getIdentityService();
+                
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
                 return authentication;
             }
         }
@@ -129,9 +89,12 @@ public class DeferredAuthentication implements Authentication.Deferred
     {
         try
         {
+            LoginService login_service= _authenticator.getLoginService();
+            IdentityService identity_service=login_service.getIdentityService();
+            
             Authentication authentication = _authenticator.validateRequest(request,response,true);
-            if (authentication instanceof Authentication.User && _identityService!=null)
-                _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            if (authentication instanceof Authentication.User && identity_service!=null)
+                _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
         }
         catch (ServerAuthException e)
@@ -147,14 +110,17 @@ public class DeferredAuthentication implements Authentication.Deferred
      */
     public Authentication login(String username, String password)
     {
-        if (_loginService!=null)
+        LoginService login_service= _authenticator.getLoginService();
+        IdentityService identity_service=login_service.getIdentityService();
+        
+        if (login_service!=null)
         {
-            UserIdentity user = _loginService.login(username,password);
+            UserIdentity user = login_service.login(username,password);
             if (user!=null)
             {
                 UserAuthentication authentication = new UserAuthentication("API",user);
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(user);
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(user);
                 return authentication;
             }
         }

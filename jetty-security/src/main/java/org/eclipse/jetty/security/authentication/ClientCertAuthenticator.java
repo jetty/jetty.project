@@ -88,8 +88,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
-            return _deferred;
-        
+            return new DeferredAuthentication(this);
+
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
@@ -129,8 +129,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                     }
                 }
             }
-                
-            if (!_deferred.isDeferred(response))
+
+            if (!DeferredAuthentication.isDeferred(response))
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;

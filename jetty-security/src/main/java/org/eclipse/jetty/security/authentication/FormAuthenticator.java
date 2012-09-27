@@ -191,11 +191,11 @@ public class FormAuthenticator extends LoginAuthenticator
 
         mandatory|=isJSecurityCheck(uri);
         if (!mandatory)
-            return _deferred;
-        
+            return new DeferredAuthentication(this);
+
         if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
-            return _deferred;
-            
+            return new DeferredAuthentication(this);
+
         HttpSession session = request.getSession(true);
             
         try
@@ -300,9 +300,12 @@ public class FormAuthenticator extends LoginAuthenticator
             }
 
             // if we can't send challenge
-            if (_deferred.isDeferred(response))
-                return Authentication.UNAUTHENTICATED; 
-            
+            if (DeferredAuthentication.isDeferred(response))
+            {
+                LOG.debug("auth deferred {}",session.getId());
+                return Authentication.UNAUTHENTICATED;
+            }
+
             // remember the current URI
             synchronized (session)
             {

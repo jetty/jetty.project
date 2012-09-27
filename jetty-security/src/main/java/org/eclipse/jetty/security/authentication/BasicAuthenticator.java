@@ -67,8 +67,8 @@ public class BasicAuthenticator extends LoginAuthenticator
         try
         {
             if (!mandatory)
-                return _deferred;
-                
+                return new DeferredAuthentication(this);
+
             if (credentials != null)
             {                 
                 int space=credentials.indexOf(' ');
@@ -96,7 +96,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                 }
             }
 
-            if (_deferred.isDeferred(response))
+            if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
             
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
