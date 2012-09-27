@@ -426,7 +426,7 @@ public class AnnotationParser
         List<DiscoverableAnnotationHandler> handlers = _annotationHandlers.get(annotationName);
         if (handlers == null)
             return Collections.emptyList();
-        return new ArrayList<DiscoverableAnnotationHandler>();
+        return new ArrayList<DiscoverableAnnotationHandler>(handlers);
     }
 
     public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
