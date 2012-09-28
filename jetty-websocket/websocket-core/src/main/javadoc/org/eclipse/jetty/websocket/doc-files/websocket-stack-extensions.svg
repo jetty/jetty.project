@@ -13,7 +13,7 @@
    height="350"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.2 r9819"
+   inkscape:version="0.48.3.1 r9886"
    sodipodi:docname="websocket-stack-extensions.svg"
    inkscape:export-filename="/home/joakim/code/intalio/org.eclipse.jetty9.project/jetty-websocket/websocket-core/src/main/javadoc/org/eclipse/jetty/websocket/doc-files/websocket-stack-extensions.png"
    inkscape:export-xdpi="111.63"
@@ -31,12 +31,12 @@
      inkscape:cx="322.5"
      inkscape:cy="175"
      inkscape:document-units="px"
-     inkscape:current-layer="layer2"
+     inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1027"
+     inkscape:window-height="1024"
      inkscape:window-x="0"
-     inkscape:window-y="26"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      showguides="true"
      inkscape:guide-bbox="true"
@@ -264,7 +264,7 @@
              id="tspan3885"
              sodipodi:role="line"
              x="149.77441"
-             y="670.08142">WebSocketEventDriver</tspan></text>
+             y="670.08142">EventDriver</tspan></text>
       </g>
       <g
          id="g3903"
