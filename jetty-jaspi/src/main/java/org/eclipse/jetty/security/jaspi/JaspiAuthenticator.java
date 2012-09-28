@@ -37,6 +37,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
@@ -44,7 +45,7 @@ import org.eclipse.jetty.server.Authentication.User;
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
-public class JaspiAuthenticator implements Authenticator
+public class JaspiAuthenticator extends LoginAuthenticator
 {
     private final ServerAuthConfig _authConfig;
 
@@ -58,7 +59,7 @@ public class JaspiAuthenticator implements Authenticator
 
     private final IdentityService _identityService;
 
-    private final DeferredAuthentication _deferred;
+ 
 
     public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler, Subject serviceSubject,
                               boolean allowLazyAuthentication, IdentityService identityService)
@@ -72,11 +73,11 @@ public class JaspiAuthenticator implements Authenticator
         this._serviceSubject = serviceSubject;
         this._allowLazyAuthentication = allowLazyAuthentication;
         this._identityService = identityService;
-        this._deferred = new DeferredAuthentication(this);
     }
 
     public void setConfiguration(AuthConfiguration configuration)
     {
+        super.setConfiguration(configuration);
     }
 
     public String getAuthMethod()
@@ -93,7 +94,7 @@ public class JaspiAuthenticator implements Authenticator
         
         //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
         if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
-            a =_deferred;
+            a = new DeferredAuthentication(this);
         return a;
     }
 
