@@ -80,6 +80,8 @@ public class WebSocketServletRFCTest
             try
             {
                 conn.sendMessage(data);
+                
+                conn.close(1000, data);
             }
             catch (IOException e)
             {
@@ -234,6 +236,46 @@ public class WebSocketServletRFCTest
 
             Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
             Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1011));
+        }
+        finally
+        {
+            sender.close();
+        }
+    }
+    
+    /**
+     * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal
+     * server error) being produced by the extended WebSocketServlet.
+     */
+    @Test
+    public void testResponseOfHttpKeyword() throws Exception
+    {
+        WebSocketClientFactory clientFactory = new WebSocketClientFactory();
+        clientFactory.start();
+
+        WebSocketClient wsc = clientFactory.newWebSocketClient();
+        MessageSender sender = new MessageSender();
+        wsc.open(serverUri,sender);
+
+        String message = "GET";
+        
+        try
+        {
+            sender.awaitConnect();
+
+            // echo back a http keyword
+            sender.sendMessage(message);
+
+            // Give servlet 500 millisecond to process messages
+            TimeUnit.MILLISECONDS.sleep(500);
+
+            sender.awaitMessage();
+            
+            Assert.assertEquals("Message should match",message, sender.getMessage());               
+            Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
+            Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1000));
+            Assert.assertEquals("WebSocket close message",message, sender.getCloseMessage());
+
         }
         finally
         {

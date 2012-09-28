@@ -24,13 +24,17 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.WebSocket;
 
-public class MessageSender implements WebSocket
+public class MessageSender implements WebSocket, WebSocket.OnTextMessage
 {
     private Connection conn;
     private CountDownLatch connectLatch = new CountDownLatch(1);
+    private CountDownLatch messageLatch = new CountDownLatch(1);
+
     private int closeCode = -1;
     private String closeMessage = null;
-
+    private String message = null;
+    
+    
     public void onOpen(Connection connection)
     {
         this.conn = connection;
@@ -42,6 +46,12 @@ public class MessageSender implements WebSocket
         this.conn = null;
         this.closeCode = closeCode;
         this.closeMessage = message;
+    }
+    
+    
+    public void onMessage(String data)
+    {
+        message = data;
     }
 
     public boolean isConnected()
@@ -62,6 +72,11 @@ public class MessageSender implements WebSocket
     {
         return closeMessage;
     }
+    
+    public String getMessage()
+    {
+        return message;
+    }
 
     public void sendMessage(String format, Object... args) throws IOException
     {
@@ -71,6 +86,11 @@ public class MessageSender implements WebSocket
     public void awaitConnect() throws InterruptedException
     {
         connectLatch.await(1,TimeUnit.SECONDS);
+    }
+    
+    public void awaitMessage() throws InterruptedException
+    {
+        messageLatch.await(1,TimeUnit.SECONDS);
     }
 
     public void close()
