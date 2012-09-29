@@ -538,6 +538,15 @@ public class MetaData
         OriginInfo x = new OriginInfo (name, Origin.Annotation);
         _origins.put(name, x);
     }
+    
+    public void setOrigin(String name, Origin origin)
+    {
+        if (name == null)
+            return;
+       
+        OriginInfo x = new OriginInfo (name, origin);
+        _origins.put(name, x);
+    }
 
     public boolean isMetaDataComplete()
     {

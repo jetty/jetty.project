@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.util.security.Constraint;
 /* ------------------------------------------------------------ */
 /**
  * Handler to enforce SecurityConstraints. This implementation is servlet spec
- * 2.4 compliant and precomputes the constraint combinations for runtime
+ * 3.0 compliant and precomputes the constraint combinations for runtime
  * efficiency.
  *
  */
@@ -191,9 +190,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     
     
     /* ------------------------------------------------------------ */
-    /**
+    /** Take out of the constraint mappings those that match the 
+     * given path.
+     * 
      * @param pathSpec
-     * @param constraintMappings
+     * @param constraintMappings a new list minus the matching constraints
      * @return
      */
     public static List<ConstraintMapping> removeConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
@@ -351,8 +352,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
     {
-        if (isStarted())
-            throw new IllegalStateException("Started");
         _constraintMappings.clear();
         _constraintMappings.addAll(constraintMappings);
 
@@ -371,6 +370,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             }
         }
         setRoles(roles);
+        
+        if (isStarted())
+        {
+            for (ConstraintMapping mapping : _constraintMappings)
+            {
+                processConstraintMapping(mapping);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -383,9 +390,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public void setRoles(Set<String> roles)
     {
-        if (isStarted())
-            throw new IllegalStateException("Started");
-
         _roles.clear();
         _roles.addAll(roles);
     }

@@ -25,18 +25,29 @@ import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletRegistration.Dynamic;
+import javax.servlet.ServletSecurityElement;
+import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.security.ConstraintAware;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -56,6 +67,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */
 /** Web Application Context Handler.
@@ -1237,6 +1249,79 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         super.startContext();
     }
+       
+    /* ------------------------------------------------------------ */    
+    @Override
+    public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
+    {
+     
+        Set<String> unchangedURLMappings = new HashSet<String>();
+        //From javadoc for ServletSecurityElement:
+        /*
+        If a URL pattern of this ServletRegistration is an exact target of a security-constraint that 
+        was established via the portable deployment descriptor, then this method does not change the 
+        security-constraint for that pattern, and the pattern will be included in the return value.
+
+        If a URL pattern of this ServletRegistration is an exact target of a security constraint 
+        that was established via the ServletSecurity annotation or a previous call to this method, 
+        then this method replaces the security constraint for that pattern.
+
+        If a URL pattern of this ServletRegistration is neither the exact target of a security constraint 
+        that was established via the ServletSecurity annotation or a previous call to this method, 
+        nor the exact target of a security-constraint in the portable deployment descriptor, then 
+        this method establishes the security constraint for that pattern from the argument ServletSecurityElement. 
+         */
+
+        Collection<String> pathMappings = registration.getMappings();
+        if (pathMappings != null)
+        {
+            Constraint constraint = ConstraintSecurityHandler.createConstraint(registration.getName(), servletSecurityElement);
+
+            for (String pathSpec:pathMappings)
+            {
+                Origin origin = getMetaData().getOrigin("constraint.url."+pathSpec);
+               
+                switch (origin)
+                {
+                    case NotSet:
+                    {
+                        //No mapping for this url already established
+                        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
+                        for (ConstraintMapping m:mappings)
+                            ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                        getMetaData().setOrigin("constraint.url."+pathSpec, Origin.API);
+                        break;
+                    }
+                    case WebXml:
+                    case WebDefaults:
+                    case WebOverride:
+                    case WebFragment:
+                    {
+                        //a mapping for this url was created in a descriptor, which overrides everything
+                        unchangedURLMappings.add(pathSpec);
+                        break;
+                    }
+                    case Annotation:
+                    case API:
+                    {
+                        //mapping established via an annotation or by previous call to this method,
+                        //replace the security constraint for this pattern
+                        List<ConstraintMapping> constraintMappings = ConstraintSecurityHandler.removeConstraintMappingsForPath(pathSpec, ((ConstraintAware)getSecurityHandler()).getConstraintMappings());
+                       
+                        List<ConstraintMapping> freshMappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
+                        constraintMappings.addAll(freshMappings);
+                           
+                        ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return unchangedURLMappings;
+    }
+
+
 
     /* ------------------------------------------------------------ */
     public class Context extends ServletContextHandler.Context
@@ -1287,6 +1372,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
         }
 
+        
+        
     }
 
     /* ------------------------------------------------------------ */
