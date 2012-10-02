@@ -261,13 +261,6 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public String toString()
-    {
-        return _name;
-    }
-
-    /* ------------------------------------------------------------ */
     protected void illegalStateIfContextStarted()
     {
         if (_servletHandler!=null)
@@ -282,7 +275,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(_name).append("==").append(_className)
+        out.append(toString())
         .append(" - ").append(AbstractLifeCycle.getState(this)).append("\n");
         ContainerLifeCycle.dump(out,indent,_initParams.entrySet());
     }
@@ -294,6 +287,13 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         return ContainerLifeCycle.dump(this);
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x==%s",_name,hashCode(),_className);
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

@@ -178,13 +178,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public void setInitOrder(int order)
     {
-        _initOnStartup=true;
+        _initOnStartup=order>0;
         _initOrder = order;
-    }
-
-    public boolean isSetInitOrder()
-    {
-        return _initOnStartup;
     }
 
     /* ------------------------------------------------------------ */
@@ -930,5 +925,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw (IllegalAccessException)cause;
             throw se;
         }
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x==%s,%d,%b",_name,hashCode(),_className,_initOrder,_servlet!=null);
     }
 }

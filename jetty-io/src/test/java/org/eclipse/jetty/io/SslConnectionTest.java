@@ -29,6 +29,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -57,7 +59,18 @@ public class SslConnectionTest
     private volatile boolean _testFill=true;
     private volatile FutureCallback<Void> _writeCallback;
     protected ServerSocketChannel _connector;
-    protected QueuedThreadPool _threadPool = new QueuedThreadPool();
+    final AtomicInteger _dispatches = new AtomicInteger();
+    protected QueuedThreadPool _threadPool = new QueuedThreadPool()
+    {
+
+        @Override
+        public boolean dispatch(Runnable job)
+        {
+            _dispatches.incrementAndGet();
+            return super.dispatch(job);
+        }
+        
+    };
     protected Scheduler _scheduler = new TimerScheduler();
     protected SelectorManager _manager = new SelectorManager()
     {
@@ -113,6 +126,7 @@ public class SslConnectionTest
         _threadPool.start();
         _scheduler.start();
         _manager.start();
+
     }
 
     @After
@@ -132,7 +146,7 @@ public class SslConnectionTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool);
+            super(endp, _threadPool,false);
         }
 
         @Override
@@ -228,12 +242,19 @@ public class SslConnectionTest
         server.configureBlocking(false);
         _manager.accept(server);
 
-        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        client.getOutputStream().write("Hello".getBytes("UTF-8"));
         byte[] buffer = new byte[1024];
         int len=client.getInputStream().read(buffer);
-        Assert.assertEquals(10, len);
-        Assert.assertEquals("HelloWorld",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        Assert.assertEquals(5, len);
+        Assert.assertEquals("Hello",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
 
+        _dispatches.set(0);
+        client.getOutputStream().write("World".getBytes("UTF-8"));
+        len=5;
+        while(len>0)
+            len-=client.getInputStream().read(buffer);
+        Assert.assertEquals(1, _dispatches.get());
+        
         client.close();
     }
 

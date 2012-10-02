@@ -119,8 +119,6 @@ public class ServletContextHandlerTest
         
         assertEquals(2,__testServlets.get());
         
-
-        
         assertThat(holder0.getServletInstance(),nullValue());
         response =_connector.getResponses("GET /test0 HTTP/1.0\r\n\r\n");
         assertThat(response,containsString("200 OK"));
@@ -129,6 +127,8 @@ public class ServletContextHandlerTest
 
         _server.stop();
         assertEquals(0,__testServlets.get());
+        
+        holder0.setInitOrder(0);
         _server.start();
         assertEquals(2,__testServlets.get());
         assertThat(holder0.getServletInstance(),nullValue());

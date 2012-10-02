@@ -24,6 +24,14 @@ public abstract class ExecutorCallback<C> implements Callback<C>
 {
     private final ForkInvoker<C> _invoker;
     private final Executor _executor;
+    private final Runnable _onComplete=new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            onCompleted(null);
+        }
+    };
 
     public ExecutorCallback(Executor executor)
     {
@@ -33,14 +41,32 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     public ExecutorCallback(Executor executor, int maxRecursion)
     {
         _executor = executor;
-        _invoker = new ExecutorCallbackInvoker(maxRecursion);
+        _invoker = maxRecursion>0?new ExecutorCallbackInvoker(maxRecursion):null;
+        if (_executor==null)
+            throw new IllegalArgumentException();
     }
 
     @Override
-    public final void completed(final C context)
+    public void completed(final C context)
     {
         // Should we execute?
-        if (alwaysDispatchCompletion())
+        if (_invoker==null)
+        {
+            if (context==null)
+                _executor.execute(_onComplete);
+            else
+            {
+                _executor.execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        onCompleted(context);
+                    }
+                });
+            }
+        } 
+        else if (alwaysDispatchCompletion())
         {
             _invoker.fork(context);
         }
@@ -53,7 +79,7 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     protected abstract void onCompleted(C context);
 
     @Override
-    public final void failed(final C context, final Throwable x)
+    public void failed(final C context, final Throwable x)
     {
         // Always execute failure
         Runnable runnable = new Runnable()
