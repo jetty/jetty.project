@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class NextProtoNegoServerConnection extends AbstractConnection implements NextProtoNego.ServerProvider
 {
-    private final Logger logger = Log.getLogger(getClass());
+    private final Logger LOG = Log.getLogger(getClass());
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
@@ -78,6 +78,9 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
             if (filled <= 0 || completed)
                 break;
         }
+        
+        if (completed)
+            getEndPoint().getConnection().onOpen();
     }
 
     private int fill()
@@ -88,7 +91,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         }
         catch (IOException x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             getEndPoint().close();
             return -1;
         }
@@ -109,13 +112,13 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void protocolSelected(String protocol)
     {
+        LOG.debug("{} protocolSelected {}",this,protocol);
         NextProtoNego.remove(engine);
         ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
         endPoint.getConnection().onClose();
         Connection connection = connectionFactory.newConnection(connector, endPoint);
         endPoint.setConnection(connection);
-        connection.onOpen();
         completed = true;
     }
 }
