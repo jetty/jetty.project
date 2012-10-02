@@ -153,13 +153,6 @@ public class SPDYClient
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
-    public void replaceConnection(EndPoint endPoint, Connection connection)
-    {
-        endPoint.getConnection().onClose();
-        endPoint.setConnection(connection);
-        connection.onOpen();
-    }
-
     public static class Factory extends ContainerLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
