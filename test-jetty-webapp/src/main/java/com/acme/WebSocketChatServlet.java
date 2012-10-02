@@ -81,7 +81,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void registerWebSockets(WebSocketServerFactory factory)
+    public void configure(WebSocketServerFactory factory)
     {
         factory.register(ChatWebSocket.class);
         factory.setCreator(this);

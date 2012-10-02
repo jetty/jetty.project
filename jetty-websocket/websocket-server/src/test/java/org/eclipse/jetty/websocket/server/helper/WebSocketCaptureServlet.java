@@ -36,7 +36,7 @@ public class WebSocketCaptureServlet extends WebSocketServlet
     }
 
     @Override
-    public void registerWebSockets(WebSocketServerFactory factory)
+    public void configure(WebSocketServerFactory factory)
     {
         factory.register(CaptureSocket.class);
     }

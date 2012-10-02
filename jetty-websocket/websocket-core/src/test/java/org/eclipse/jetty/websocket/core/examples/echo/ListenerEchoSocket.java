@@ -16,44 +16,67 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.examples;
+package org.eclipse.jetty.websocket.core.examples.echo;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.io.event.EventCapture;
 
-public class ListenerBasicSocket implements WebSocketListener
+/**
+ * Example EchoSocket using Listener.
+ */
+public class ListenerEchoSocket implements WebSocketListener
 {
-    public EventCapture capture = new EventCapture();
+    private static final Logger LOG = Logger.getLogger(ListenerEchoSocket.class.getName());
+    private WebSocketConnection outbound;
 
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        capture.add("onWebSocketBinary([%d], %d, %d)",payload.length,offset,len);
+        /* only interested in text messages */
     }
 
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.add("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        this.outbound = null;
     }
 
     @Override
     public void onWebSocketConnect(WebSocketConnection connection)
     {
-        capture.add("onWebSocketConnect(%s)",connection);
+        this.outbound = connection;
     }
 
     @Override
     public void onWebSocketException(WebSocketException error)
     {
-        capture.add("onWebSocketException((%s) %s)",error.getClass().getSimpleName(),error.getMessage());
+        LOG.log(Level.WARNING,"onWebSocketException",error);
     }
 
     @Override
     public void onWebSocketText(String message)
     {
-        capture.add("onWebSocketText(%s)",capture.q(message));
+        if (outbound == null)
+        {
+            return;
+        }
+
+        try
+        {
+            String context = null;
+            Callback<String> callback = new FutureCallback<>();
+            outbound.write(context,callback,message);
+        }
+        catch (IOException e)
+        {
+            LOG.log(Level.WARNING,"unable to echo message: " + message,e);
+        }
     }
 }

@@ -16,17 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.helper;
+package org.eclipse.jetty.websocket.core.examples.echo;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import java.io.IOException;
 
-@SuppressWarnings("serial")
-public class RFCServlet extends WebSocketServlet
+import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
+
+/**
+ * Example EchoSocket using Adapter.
+ */
+public class AdapterEchoSocket extends WebSocketAdapter
 {
     @Override
-    public void configure(WebSocketServerFactory factory)
+    public void onWebSocketText(String message)
     {
-        factory.register(RFCSocket.class);
+        if (isNotConnected())
+        {
+            return;
+        }
+
+        try
+        {
+            // echo the data back
+            getBlockingConnection().write(message);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 }

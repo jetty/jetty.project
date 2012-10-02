@@ -16,14 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -34,80 +33,30 @@ import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.core.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketListener;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.Frame;
 
-public class EventMethodsCache
+/**
+ * Create EventDriver implementations.
+ */
+public class EventDriverFactory
 {
-    @SuppressWarnings("serial")
-    public static class InvalidSignatureException extends InvalidWebSocketException
-    {
-        public static InvalidSignatureException build(Method method, Class<? extends Annotation> annoClass, ParamList... paramlists)
-        {
-            // Build big detailed exception to help the developer
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid declaration of ");
-            err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
-
-            err.append("Acceptable method declarations for @");
-            err.append(annoClass.getSimpleName());
-            err.append(" are:");
-            for (ParamList validParams : paramlists)
-            {
-                for (Class<?>[] params : validParams)
-                {
-                    err.append(StringUtil.__LINE_SEPARATOR);
-                    err.append("public void ").append(method.getName());
-                    err.append('(');
-                    boolean delim = false;
-                    for (Class<?> type : params)
-                    {
-                        if (delim)
-                        {
-                            err.append(',');
-                        }
-                        err.append(' ');
-                        err.append(type.getName());
-                        if (type.isArray())
-                        {
-                            err.append("[]");
-                        }
-                        delim = true;
-                    }
-                    err.append(')');
-                }
-            }
-            return new InvalidSignatureException(err.toString());
-        }
-
-        public InvalidSignatureException(String message)
-        {
-            super(message);
-        }
-    }
-
-    @SuppressWarnings("serial")
-    private static class ParamList extends ArrayList<Class<?>[]>
-    {
-        public void addParams(Class<?>... paramTypes)
-        {
-            this.add(paramTypes);
-        }
-    }
     /**
      * Parameter list for &#064;OnWebSocketMessage (Binary mode)
      */
     private static final ParamList validBinaryParams;
+
     /**
      * Parameter list for &#064;OnWebSocketConnect
      */
     private static final ParamList validConnectParams;
+
     /**
      * Parameter list for &#064;OnWebSocketClose
      */
     private static final ParamList validCloseParams;
+
     /**
      * Parameter list for &#064;OnWebSocketFrame
      */
@@ -145,10 +94,12 @@ public class EventMethodsCache
     }
 
     private ConcurrentHashMap<Class<?>, EventMethods> cache;
+    private final WebSocketPolicy policy;
 
-    public EventMethodsCache()
+    public EventDriverFactory(WebSocketPolicy policy)
     {
-        cache = new ConcurrentHashMap<>();
+        this.policy = policy;
+        this.cache = new ConcurrentHashMap<>();
     }
 
     private void assertIsPublicNonStatic(Method method)
@@ -235,11 +186,6 @@ public class EventMethodsCache
         }
     }
 
-    public int count()
-    {
-        return cache.size();
-    }
-
     /**
      * Perform the basic discovery mechanism for WebSocket events from the provided pojo.
      * 
@@ -250,16 +196,10 @@ public class EventMethodsCache
      */
     private EventMethods discoverMethods(Class<?> pojo) throws InvalidWebSocketException
     {
-        if (WebSocketListener.class.isAssignableFrom(pojo))
-        {
-            return scanListenerMethods(pojo);
-        }
-
         WebSocket anno = pojo.getAnnotation(WebSocket.class);
         if (anno == null)
         {
-            throw new InvalidWebSocketException(pojo.getName() + " does not implement " + WebSocketListener.class.getName() + " or use the @"
-                    + WebSocket.class.getName() + " annotation");
+            return null;
         }
 
         return scanAnnotatedMethods(pojo);
@@ -276,20 +216,27 @@ public class EventMethodsCache
             return cache.get(pojo);
         }
         EventMethods methods = discoverMethods(pojo);
+        if (methods == null)
+        {
+            return null;
+        }
         cache.put(pojo,methods);
         return methods;
     }
 
     private boolean isSameParameters(Class<?>[] actual, Class<?>[] params)
     {
-        if(actual.length != params.length) {
+        if (actual.length != params.length)
+        {
             // skip
             return false;
         }
 
         int len = params.length;
-        for(int i=0; i<len; i++) {
-            if(!actual[i].equals(params[i])) {
+        for (int i = 0; i < len; i++)
+        {
+            if (!actual[i].equals(params[i]))
+            {
                 return false; // not valid
             }
         }
@@ -315,23 +262,10 @@ public class EventMethodsCache
         return false;
     }
 
-    /**
-     * Register a pojo with the cache.
-     * 
-     * @param pojo
-     *            the pojo to register with the cache.
-     * @throws InvalidWebSocketException
-     *             if the pojo does not conform to a WebSocket implementation.
-     */
-    public void register(Class<?> pojo) throws InvalidWebSocketException
-    {
-        getMethods(pojo);
-    }
-
     private EventMethods scanAnnotatedMethods(Class<?> pojo)
     {
         Class<?> clazz = pojo;
-        EventMethods events = new EventMethods(pojo,true);
+        EventMethods events = new EventMethods(pojo);
 
         clazz = pojo;
         while (clazz.getAnnotation(WebSocket.class) != null)
@@ -396,23 +330,41 @@ public class EventMethodsCache
         return events;
     }
 
-    private EventMethods scanListenerMethods(Class<?> pojo)
-    {
-        EventMethods events = new EventMethods(pojo,false);
-
-        // This is a WebSocketListener object
-        events.onConnect = new EventMethod(pojo,"onWebSocketConnect",WebSocketConnection.class);
-        events.onClose = new EventMethod(pojo,"onWebSocketClose",int.class,String.class);
-        events.onBinary = new EventMethod(pojo,"onWebSocketBinary",byte[].class,int.class,int.class);
-        events.onText = new EventMethod(pojo,"onWebSocketText",String.class);
-        events.onException = new EventMethod(pojo,"onWebSocketException",WebSocketException.class);
-
-        return events;
-    }
-
     @Override
     public String toString()
     {
         return String.format("EventMethodsCache [cache.count=%d]",cache.size());
+    }
+
+    /**
+     * Wrap the given WebSocket object instance in a suitable EventDriver
+     * 
+     * @param websocket
+     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064WebSocket}
+     * @return appropriate EventDriver for this websocket instance.
+     */
+    public EventDriver wrap(Object websocket)
+    {
+        if (websocket == null)
+        {
+            throw new InvalidWebSocketException("null websocket object");
+        }
+
+        if (websocket instanceof WebSocketListener)
+        {
+            WebSocketPolicy pojoPolicy = policy.clonePolicy();
+            WebSocketListener listener = (WebSocketListener)websocket;
+            return new ListenerEventDriver(pojoPolicy,listener);
+        }
+
+        EventMethods methods = getMethods(websocket.getClass());
+        if (methods != null)
+        {
+            WebSocketPolicy pojoPolicy = policy.clonePolicy();
+            return new AnnotatedEventDriver(pojoPolicy,websocket,methods);
+        }
+
+        throw new InvalidWebSocketException(websocket.getClass().getName() + " does not implement " + WebSocketListener.class.getName()
+                + " or declare @WebSocket");
     }
 }

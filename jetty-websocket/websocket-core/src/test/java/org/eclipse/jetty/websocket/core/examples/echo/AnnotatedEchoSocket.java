@@ -16,17 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.helper;
+package org.eclipse.jetty.websocket.core.examples.echo;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import java.io.IOException;
 
-@SuppressWarnings("serial")
-public class RFCServlet extends WebSocketServlet
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+
+/**
+ * Example EchoSocket using Annotations.
+ */
+@WebSocket(maxTextSize = 64 * 1024)
+public class AnnotatedEchoSocket
 {
-    @Override
-    public void configure(WebSocketServerFactory factory)
+    @OnWebSocketMessage
+    public void onText(WebSocketConnection conn, String message)
     {
-        factory.register(RFCSocket.class);
+        if (conn.isOpen())
+        {
+            return;
+        }
+        try
+        {
+            conn.write(null,new FutureCallback<Void>(),message);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 }

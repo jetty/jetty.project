@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.core.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.core.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.driver.EventCapture;
+import org.eclipse.jetty.websocket.core.io.event.EventCapture;
 import org.eclipse.jetty.websocket.core.protocol.Frame;
 
 @WebSocket

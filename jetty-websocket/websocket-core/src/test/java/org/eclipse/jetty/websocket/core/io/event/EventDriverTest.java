@@ -16,14 +16,10 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.driver;
+package org.eclipse.jetty.websocket.core.io.event;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.EventMethodsCache;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.core.examples.AdapterConnectCloseSocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryStreamSocket;
@@ -37,7 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-public class WebSocketEventDriverTest
+public class EventDriverTest
 {
     @Rule
     public TestName testname = new TestName();
@@ -47,20 +43,11 @@ public class WebSocketEventDriverTest
         return WebSocketFrame.binary().setFin(fin).setPayload(content);
     }
 
-    private WebSocketEventDriver newDriver(Object websocket)
-    {
-        EventMethodsCache methodsCache = new EventMethodsCache();
-        methodsCache.register(websocket.getClass());
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        return new WebSocketEventDriver(websocket,methodsCache,policy,bufferPool);
-    }
-
     @Test
     public void testAdapter_ConnectClose()
     {
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
-        WebSocketEventDriver driver = newDriver(socket);
+        EventDriver driver = wrap(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setSession(conn);
@@ -76,7 +63,7 @@ public class WebSocketEventDriverTest
     public void testAnnotated_ByteArray()
     {
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
-        WebSocketEventDriver driver = newDriver(socket);
+        EventDriver driver = wrap(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setSession(conn);
@@ -94,7 +81,7 @@ public class WebSocketEventDriverTest
     public void testAnnotated_Frames()
     {
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
-        WebSocketEventDriver driver = newDriver(socket);
+        EventDriver driver = wrap(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setSession(conn);
@@ -117,7 +104,7 @@ public class WebSocketEventDriverTest
     public void testAnnotated_InputStream()
     {
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
-        WebSocketEventDriver driver = newDriver(socket);
+        EventDriver driver = wrap(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setSession(conn);
@@ -135,7 +122,7 @@ public class WebSocketEventDriverTest
     public void testListener_Text()
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
-        WebSocketEventDriver driver = newDriver(socket);
+        EventDriver driver = wrap(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setSession(conn);
@@ -147,5 +134,12 @@ public class WebSocketEventDriverTest
         socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
         socket.capture.assertEventStartsWith(1,"onWebSocketText(\"Hello World\")");
         socket.capture.assertEventStartsWith(2,"onWebSocketClose(1000,");
+    }
+
+    private EventDriver wrap(Object websocket)
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        EventDriverFactory factory = new EventDriverFactory(policy);
+        return factory.wrap(websocket);
     }
 }

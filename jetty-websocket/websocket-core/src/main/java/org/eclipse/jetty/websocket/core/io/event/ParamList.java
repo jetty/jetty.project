@@ -16,17 +16,18 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.helper;
+package org.eclipse.jetty.websocket.core.io.event;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import java.util.ArrayList;
 
+/**
+ * Simple class for representing a list of class arrays.
+ */
 @SuppressWarnings("serial")
-public class RFCServlet extends WebSocketServlet
+public class ParamList extends ArrayList<Class<?>[]>
 {
-    @Override
-    public void configure(WebSocketServerFactory factory)
+    public void addParams(Class<?>... paramTypes)
     {
-        factory.register(RFCSocket.class);
+        this.add(paramTypes);
     }
 }

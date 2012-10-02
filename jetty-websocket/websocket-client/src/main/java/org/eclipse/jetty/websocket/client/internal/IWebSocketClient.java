@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 
 /**
  * WebSocketClient for working with Upgrade (request and response), and establishing connections to the websocket URI of your choice.
@@ -44,7 +44,7 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
 
     private final WebSocketClientFactory factory;
     private final WebSocketPolicy policy;
-    private final WebSocketEventDriver websocket;
+    private final EventDriver websocket;
     private URI websocketUri;
     /**
      * The abstract WebSocketConnection in use and established for this client.
@@ -57,7 +57,7 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
     private ClientUpgradeResponse upgradeResponse;
     private Masker masker;
 
-    public IWebSocketClient(WebSocketClientFactory factory, WebSocketEventDriver websocket)
+    public IWebSocketClient(WebSocketClientFactory factory, EventDriver websocket)
     {
         this.factory = factory;
         LOG.debug("factory.isRunning(): {}",factory.isRunning());
@@ -206,7 +206,7 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
      * @see org.eclipse.jetty.websocket.client.internal.WebSocketClient#getWebSocket()
      */
     @Override
-    public WebSocketEventDriver getWebSocket()
+    public EventDriver getWebSocket()
     {
         return websocket;
     }
