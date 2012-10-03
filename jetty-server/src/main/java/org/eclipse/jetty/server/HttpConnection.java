@@ -457,6 +457,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 onClose();
                 getEndPoint().setConnection(connection);
                 connection.onOpen();
+                reset();
+                return;
             }
         }
 
