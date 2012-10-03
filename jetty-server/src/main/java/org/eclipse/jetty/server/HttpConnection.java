@@ -57,6 +57,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
+    
+    // TODO get rid of this
+    private final Runnable _channelRunner = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                setCurrentConnection(HttpConnection.this);
+                _channel.run();
+            }
+            finally
+            {
+                setCurrentConnection(null);
+            }
+            
+        }
+    };
 
     public static HttpConnection getCurrentConnection()
     {
@@ -253,7 +272,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    getExecutor().execute(_channel);
+                    getExecutor().execute(_channelRunner);
                     return;
                 }
             }
