@@ -56,7 +56,6 @@ import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
-import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 
 /**
@@ -69,7 +68,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
         handshakes.put(HandshakeRFC6455.VERSION,new HandshakeRFC6455());
-        handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
+        // OLD!! handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
@@ -364,8 +363,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketServerConnection connection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool,this);
-        // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);
@@ -383,6 +380,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Connect extensions
         if (extensions != null)
         {
+            connection.getParser().configureFromExtensions(extensions);
+            connection.getGenerator().configureFromExtensions(extensions);
+
             Iterator<Extension> extIter;
             // Connect outgoings
             extIter = extensions.iterator();
@@ -391,23 +391,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
-
-                // Handle RSV reservations
-                if (ext.useRsv1())
-                {
-                    connection.getGenerator().setRsv1InUse(true);
-                    connection.getParser().setRsv1InUse(true);
-                }
-                if (ext.useRsv2())
-                {
-                    connection.getGenerator().setRsv2InUse(true);
-                    connection.getParser().setRsv2InUse(true);
-                }
-                if (ext.useRsv3())
-                {
-                    connection.getGenerator().setRsv3InUse(true);
-                    connection.getParser().setRsv3InUse(true);
-                }
             }
 
             // Connect incomings
@@ -425,6 +408,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         session.setOutgoing(outgoing);
         // configure connection for incoming flows
         connection.getParser().setIncomingFramesHandler(incoming);
+
+        // Tell jetty about the new connection
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);

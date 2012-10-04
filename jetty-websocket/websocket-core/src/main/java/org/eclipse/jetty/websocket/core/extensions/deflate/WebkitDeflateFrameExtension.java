@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions.permessage;
+package org.eclipse.jetty.websocket.core.extensions.deflate;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,36 +26,25 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.api.BadPayloadException;
 import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 /**
- * Per Message Compression extension for WebSocket.
- * <p>
- * Attempts to follow <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-00">draft-ietf-hybi-permessage-compression-00</a>
+ * Implementation of the <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-05.txt">x-webkit-deflate-frame</a> extension seen out
+ * in the wild.
  */
-public class CompressExtension extends Extension
+public class WebkitDeflateFrameExtension extends Extension
 {
-    private static final Logger LOG = Log.getLogger(CompressExtension.class);
+    private static final Logger LOG = Log.getLogger(WebkitDeflateFrameExtension.class);
+    private static final int BUFFER_SIZE = 64 * 1024;
 
     private Deflater deflater;
     private Inflater inflater;
-
-    private void assertSanePayloadLength(int len)
-    {
-        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
-        if (len > Integer.MAX_VALUE)
-        {
-            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
-            throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
-        }
-        getPolicy().assertValidPayloadLength(len);
-    }
 
     public ByteBuffer deflate(ByteBuffer data)
     {
@@ -67,32 +56,9 @@ public class CompressExtension extends Extension
         deflater.finish();
 
         // prepare the output buffer
-        ByteBuffer buf = getBufferPool().acquire(length,false);
+        int bufsize = Math.max(BUFFER_SIZE,length * 2);
+        ByteBuffer buf = getBufferPool().acquire(bufsize,false);
         BufferUtil.clearToFill(buf);
-
-        // write the uncompressed length
-        if (length > 0xFF_FF)
-        {
-            buf.put((byte)0x7F);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)((length >> 24) & 0xFF));
-            buf.put((byte)((length >> 16) & 0xFF));
-            buf.put((byte)((length >> 8) & 0xFF));
-            buf.put((byte)(length & 0xFF));
-        }
-        else if (length >= 0x7E)
-        {
-            buf.put((byte)0x7E);
-            buf.put((byte)(length >> 8));
-            buf.put((byte)(length & 0xFF));
-        }
-        else
-        {
-            buf.put((byte)(length & 0x7F));
-        }
 
         if (LOG.isDebugEnabled())
         {
@@ -101,8 +67,8 @@ public class CompressExtension extends Extension
 
         while (!deflater.finished())
         {
-            byte out[] = new byte[length];
-            int len = deflater.deflate(out,0,length,Deflater.FULL_FLUSH);
+            byte out[] = new byte[BUFFER_SIZE];
+            int len = deflater.deflate(out,0,out.length,Deflater.SYNC_FLUSH);
 
             if (LOG.isDebugEnabled())
             {
@@ -112,6 +78,19 @@ public class CompressExtension extends Extension
             buf.put(out,0,len);
         }
         BufferUtil.flipToFlush(buf,0);
+
+        /* Per the spec, it says that BFINAL 1 or 0 are allowed.
+         * However, Java always uses BFINAL 1, where the browsers
+         * Chrome and Safari fail to decompress when it encounters
+         * BFINAL 1.
+         * 
+         * This hack will always set BFINAL 0
+         */
+        byte b0 = buf.get(0);
+        if ((b0 & 1) != 0) // if BFINAL 1
+        {
+            buf.put(0,(b0 ^= 1)); // flip bit to BFINAL 0
+        }
         return buf;
     }
 
@@ -124,6 +103,8 @@ public class CompressExtension extends Extension
             super.incoming(frame);
             return;
         }
+
+        LOG.debug("Decompressing Frame: {}",frame);
 
         ByteBuffer data = frame.getPayload();
         try
@@ -144,13 +125,7 @@ public class CompressExtension extends Extension
         if (LOG.isDebugEnabled())
         {
             LOG.debug("inflate: {}",BufferUtil.toDetailString(data));
-        }
-        // first 1 to 8 bytes contains post-inflated payload size.
-        int uncompressedLength = readUncompresseLength(data);
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("uncompressedLength={}, data={}",uncompressedLength,BufferUtil.toDetailString(data));
+            LOG.debug("raw data: {}",TypeUtil.toHexString(BufferUtil.toArray(data)));
         }
 
         // Set the data that is compressed to the inflater
@@ -159,7 +134,7 @@ public class CompressExtension extends Extension
         inflater.setInput(compressed,0,compressed.length);
 
         // Establish place for inflated data
-        byte buf[] = new byte[uncompressedLength];
+        byte buf[] = new byte[BUFFER_SIZE];
         try
         {
             int inflated = inflater.inflate(buf);
@@ -168,7 +143,7 @@ public class CompressExtension extends Extension
                 throw new DataFormatException("Insufficient compressed data");
             }
 
-            ByteBuffer ret = ByteBuffer.wrap(buf);
+            ByteBuffer ret = ByteBuffer.wrap(buf,0,inflated);
 
             if (LOG.isDebugEnabled())
             {
@@ -182,6 +157,26 @@ public class CompressExtension extends Extension
             LOG.warn(e);
             throw new BadPayloadException(e);
         }
+    }
+
+    /**
+     * Indicates use of RSV1 flag for indicating deflation is in use.
+     * <p>
+     * Also known as the "COMP" framing header bit
+     */
+    @Override
+    public boolean isRsv1User()
+    {
+        return true;
+    }
+
+    /**
+     * Indicate that this extensions is now responsible for TEXT Data Frame compliance to the WebSocket spec.
+     */
+    @Override
+    public boolean isTextDataDecoder()
+    {
+        return true;
     }
 
     @Override
@@ -200,7 +195,7 @@ public class CompressExtension extends Extension
             // deflate data
             ByteBuffer buf = deflate(data);
             frame.setPayload(buf);
-            frame.setRsv1(deflater.finished());
+            frame.setRsv1(true);
             nextOutput(context,callback,frame);
         }
         finally
@@ -210,65 +205,21 @@ public class CompressExtension extends Extension
         }
     }
 
-    /**
-     * Read the uncompressed length indicator in the frame.
-     * <p>
-     * Will modify the position of the buffer.
-     * 
-     * @param data
-     * @return
-     */
-    public int readUncompresseLength(ByteBuffer data)
-    {
-        int length = data.get();
-        int bytes = 0;
-        if (length == 127) // 0x7F
-        {
-            // length 8 bytes (extended payload length)
-            length = 0;
-            bytes = 8;
-        }
-        else if (length == 126) // 0x7E
-        {
-            // length 2 bytes (extended payload length)
-            length = 0;
-            bytes = 2;
-        }
-
-        while (bytes > 0)
-        {
-            --bytes;
-            byte b = data.get();
-            length |= (b & 0xFF) << (8 * bytes);
-        }
-
-        assertSanePayloadLength(length);
-
-        return length;
-    }
-
     @Override
     public void setConfig(ExtensionConfig config)
     {
         super.setConfig(config);
 
-        deflater = new Deflater(Deflater.BEST_COMPRESSION);
+        boolean nowrap = true;
+
+        deflater = new Deflater(Deflater.BEST_COMPRESSION,nowrap);
         deflater.setStrategy(Deflater.DEFAULT_STRATEGY);
-        inflater = new Inflater();
+        inflater = new Inflater(nowrap);
     }
 
     @Override
     public String toString()
     {
-        return String.format("CompressExtension[]");
-    }
-
-    /**
-     * Indicates use of RSV1 flag for indicating deflation is in use.
-     */
-    @Override
-    public boolean isRsv1User()
-    {
-        return true;
+        return String.format("DeflateFrameExtension[]");
     }
 }

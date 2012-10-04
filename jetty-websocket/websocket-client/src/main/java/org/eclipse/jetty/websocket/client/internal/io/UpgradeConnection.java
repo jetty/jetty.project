@@ -230,6 +230,9 @@ public class UpgradeConnection extends AbstractConnection
         // Connect extensions
         if (extensions != null)
         {
+            connection.getParser().configureFromExtensions(extensions);
+            connection.getGenerator().configureFromExtensions(extensions);
+
             Iterator<Extension> extIter;
             // Connect outgoings
             extIter = extensions.iterator();
@@ -238,23 +241,6 @@ public class UpgradeConnection extends AbstractConnection
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
-
-                // Handle RSV reservations
-                if (ext.useRsv1())
-                {
-                    connection.getGenerator().setRsv1InUse(true);
-                    connection.getParser().setRsv1InUse(true);
-                }
-                if (ext.useRsv2())
-                {
-                    connection.getGenerator().setRsv2InUse(true);
-                    connection.getParser().setRsv2InUse(true);
-                }
-                if (ext.useRsv3())
-                {
-                    connection.getGenerator().setRsv3InUse(true);
-                    connection.getParser().setRsv3InUse(true);
-                }
             }
 
             // Connect incomings

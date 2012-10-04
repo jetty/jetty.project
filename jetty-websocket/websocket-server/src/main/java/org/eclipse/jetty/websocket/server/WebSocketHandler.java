@@ -58,6 +58,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         configurePolicy(policy);
         webSocketFactory = new WebSocketServerFactory(policy);
+        addBean(webSocketFactory);
     }
 
     public abstract void configure(WebSocketServerFactory factory);
@@ -88,6 +89,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
             if (webSocketFactory.acceptWebSocket(request,response))
             {
                 // We have a socket instance created
+                baseRequest.setHandled(true);
                 return;
             }
             // If we reach this point, it means we had an incoming request to upgrade
