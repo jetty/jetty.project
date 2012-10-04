@@ -50,6 +50,8 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -80,6 +82,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -123,12 +126,44 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
+    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.multiPartInputStream";
+    
     private static final Logger LOG = Log.getLogger(Request.class);
 
     private static final String __ASYNC_FWD = "org.eclipse.asyncfwd";
     private static final Collection __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
+    public static class MultiPartCleanerListener implements ServletRequestListener
+    {
+
+        @Override
+        public void requestDestroyed(ServletRequestEvent sre)
+        {
+            //Clean up any tmp files created by MultiPartInputStream
+            MultiPartInputStream mpis = (MultiPartInputStream)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
+            if (mpis != null)
+            {
+              try
+              {
+                  mpis.deleteParts();
+              }
+              catch (MultiException e)
+              {
+                  sre.getServletContext().log("Errors deleting multipart tmp files", e);
+              }
+            }
+        }
+
+        @Override
+        public void requestInitialized(ServletRequestEvent sre)
+        {
+            //nothing to do, multipart config set up by ServletHolder.handle()
+        }
+        
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public static Request getRequest(HttpServletRequest request)
     {
@@ -1975,6 +2010,7 @@ public class Request implements HttpServletRequest
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
             for (Part p:parts)
             {
@@ -2006,6 +2042,7 @@ public class Request implements HttpServletRequest
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
             for (Part p:parts)
             {

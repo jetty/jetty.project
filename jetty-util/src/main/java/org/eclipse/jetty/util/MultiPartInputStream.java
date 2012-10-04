@@ -236,7 +236,7 @@ public class MultiPartInputStream
          */
         public long getSize()
         {
-            return _size;
+            return _size;         
         }
 
         /** 
@@ -322,6 +322,7 @@ public class MultiPartInputStream
        _contextTmpDir = contextTmpDir;
        if (_contextTmpDir == null)
            _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
+       
        if (_config == null)
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
@@ -339,6 +340,25 @@ public class MultiPartInputStream
             parts.addAll(asList);
         }
         return parts;
+    }
+    
+    public void deleteParts ()
+    throws MultiException
+    {
+        Collection<Part> parts = getParsedParts();
+        MultiException err = new MultiException();
+        for (Part p:parts)
+        {
+            try
+            {
+                p.delete();
+            } 
+            catch(Exception e)
+            {     
+                err.add(e); 
+            }
+        }
+        err.ifExceptionThrowMulti();
     }
 
    

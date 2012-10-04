@@ -84,7 +84,7 @@ import org.eclipse.jetty.util.TypeUtil;
 public class MultiPartFilter implements Filter
 {
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
-    private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartInputStream";
+    private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private File tempdir;
     private boolean _deleteFiles;
     private ServletContext _context;
@@ -191,23 +191,24 @@ public class MultiPartFilter implements Filter
             deleteFiles(request);
         }
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     private void deleteFiles(ServletRequest request)
     {
+        if (!_deleteFiles)
+            return;
+        
         MultiPartInputStream mpis = (MultiPartInputStream)request.getAttribute(MULTIPART);
         if (mpis != null)
         {
-            Collection<Part> parts = mpis.getParsedParts();
-            for (Part p:parts)
+            try
             {
-                try
-                {
-                    p.delete();
-                } 
-                catch(Exception e)
-                {
-                    _context.log("Failed to delete "+p.getName(),e);
-                }
+                mpis.deleteParts();
+            }
+            catch (Exception e)
+            {
+                _context.log("Error deleting multipart tmp files", e);
             }
         }
         request.removeAttribute(MULTIPART);
