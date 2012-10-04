@@ -50,8 +50,42 @@ public class MultiPartInputStreamTest extends TestCase
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
     protected String _multi = createMultipartRequestString(FILENAME);
     protected String _dirname = System.getProperty("java.io.tmpdir")+File.separator+"myfiles-"+System.currentTimeMillis();
+    protected File _tmpDir = new File(_dirname);
     
+    public MultiPartInputStreamTest ()
+    {
+        _tmpDir.deleteOnExit();
+    }
     
+    public void testBadMultiPartRequest()
+    throws Exception
+    {
+        String boundary = "X0Y0";
+        String str = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "-\r\n\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()), 
+                                                             "multipart/form-data, boundary="+boundary,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart incomplete");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Incomplete"));
+        }
+    }
+
+
+
     public void testNonMultiPartRequest()
     throws Exception
     {
@@ -59,7 +93,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              "Content-type: text/plain",
                                                              config,
-                                                             new File(_dirname));
+                                                            _tmpDir);
+        mpis.setDeleteOnExit(true);
         assertTrue(mpis.getParts().isEmpty());   
     }
     
@@ -70,7 +105,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              _contentType,
                                                              config,
-                                                             new File(_dirname));
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertFalse(parts.isEmpty());
     }
@@ -82,11 +118,12 @@ public class MultiPartInputStreamTest extends TestCase
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                             _contentType,
                                                              config,
-                                                             new File(_dirname));
-        
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = null;
         try
         {
-            mpis.getParts();
+            parts = mpis.getParts();
             fail("Request should have exceeded maxRequestSize");
         }
         catch (IllegalStateException e)
@@ -102,11 +139,12 @@ public class MultiPartInputStreamTest extends TestCase
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                             _contentType,
                                                              config,
-                                                             new File(_dirname));
-        
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = null;
         try
         {
-            mpis.getParts();
+            parts = mpis.getParts();
             fail("stuff.txt should have been larger than maxFileSize");
         }
         catch (IllegalStateException e)
@@ -133,8 +171,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
                 _contentType,
                 config,
-                new File(_dirname));
-        
+                _tmpDir);
+        mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
         Part field1 = mpis.getPart("field1");
@@ -188,15 +226,15 @@ public class MultiPartInputStreamTest extends TestCase
         "content-disposition: form-data; name=\"stuff\"; filename=\"stuff2.txt\"\r\n"+
         "Content-Type: text/plain\r\n"+
         "\r\n"+
-        "000000000000000000000000000000000000000000000000000\r\n"+
+        "110000000000000000000000000000000000000000000000000\r\n"+
         "--AaB03x--\r\n";
         
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);          
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(sameNames.getBytes()),
                                                              _contentType,
                                                              config,
-                                                             new File(_dirname));
-        
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertEquals(2, parts.size());
         for (Part p:parts)
@@ -210,6 +248,18 @@ public class MultiPartInputStreamTest extends TestCase
     
     private String createMultipartRequestString(String filename)
     {
+        int length = filename.length();
+        String name = filename;
+        if (length > 10)
+            name = filename.substring(0,10);
+        StringBuffer filler = new StringBuffer();
+        int i = name.length();
+        while (i < 51)
+        {
+            filler.append("0");
+            i++;
+        }
+        
         return "--AaB03x\r\n"+
         "content-disposition: form-data; name=\"field1\"\r\n"+
         "\r\n"+
@@ -217,8 +267,8 @@ public class MultiPartInputStreamTest extends TestCase
         "--AaB03x\r\n"+
         "content-disposition: form-data; name=\"stuff\"; filename=\"" + filename + "\"\r\n"+
         "Content-Type: text/plain\r\n"+
-        "\r\n"+
-        "000000000000000000000000000000000000000000000000000\r\n"+
+        "\r\n"+name+
+        filler.toString()+"\r\n" +
         "--AaB03x--\r\n";
     }
 }

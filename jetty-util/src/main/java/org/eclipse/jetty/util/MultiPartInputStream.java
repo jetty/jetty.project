@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class MultiPartInputStream
     protected MultiMap<String> _parts;
     protected File _tmpDir;
     protected File _contextTmpDir;
- 
+    protected boolean _deleteOnExit;
     
     
     
@@ -141,6 +142,9 @@ public class MultiPartInputStream
         throws IOException
         {
             _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
+            if (_deleteOnExit)
+                _file.deleteOnExit();
+            
             FileOutputStream fos = new FileOutputStream(_file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             
@@ -244,6 +248,8 @@ public class MultiPartInputStream
             {
                 //part data is only in the ByteArrayOutputStream and never been written to disk
                 _file = new File (_tmpDir, fileName);
+                if (_deleteOnExit)
+                    _file.deleteOnExit();
                 BufferedOutputStream bos = null;
                 try
                 {
@@ -262,6 +268,8 @@ public class MultiPartInputStream
             {
                 //the part data is already written to a temporary file, just rename it
                 File f = new File(_tmpDir, fileName);
+                if (_deleteOnExit)
+                    f.deleteOnExit();
                 if (_file.renameTo(f))
                     _file = f;
             }
@@ -318,7 +326,21 @@ public class MultiPartInputStream
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
 
-    
+    public Collection<Part> getParsedParts()
+    {
+        if (_parts == null)
+            return Collections.emptyList();
+
+        Collection<Object> values = _parts.values();
+        List<Part> parts = new ArrayList<Part>();
+        for (Object o: values)
+        {
+            List<Part> asList = LazyList.getList(o, false);
+            parts.addAll(asList);
+        }
+        return parts;
+    }
+
    
     public Collection<Part> getParts()
     throws IOException, ServletException
@@ -593,7 +615,18 @@ public class MultiPartInputStream
             throw new IOException("Incomplete parts");
     }
     
-    
+    public void setDeleteOnExit(boolean deleteOnExit)
+    {
+        _deleteOnExit = deleteOnExit;
+    }
+
+
+    public boolean isDeleteOnExit()
+    {
+        return _deleteOnExit;
+    }
+
+
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue, boolean splitAfterSpace)
     {

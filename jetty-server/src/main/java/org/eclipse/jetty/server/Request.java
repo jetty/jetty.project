@@ -1433,6 +1433,24 @@ public class Request implements HttpServletRequest
         if (_savedNewSessions != null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
+        if (_multiPartInputStream != null)
+        {
+            Collection<Part> parts = _multiPartInputStream.getParsedParts();
+            if (parts != null)
+            {
+                for (Part p:parts)
+                {
+                    try
+                    {
+                        p.delete();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Error deleting multipart file", e);
+                    }
+                }
+            }
+        }
         _multiPartInputStream = null;
     }
 

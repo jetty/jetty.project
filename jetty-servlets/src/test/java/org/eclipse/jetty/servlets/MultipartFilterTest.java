@@ -121,7 +121,7 @@ public class MultipartFilterTest
         
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
     }
     
 
