@@ -589,6 +589,8 @@ public class MultiPartInputStream
                 part.close();
             }
         }
+        if (!lastPart)
+            throw new IOException("Incomplete parts");
     }
     
     
