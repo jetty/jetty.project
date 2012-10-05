@@ -156,9 +156,9 @@ public class SPDYClient
     public static class Factory extends ContainerLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        final Scheduler scheduler = new TimerScheduler();
-        final Executor executor;
+        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+        private final Scheduler scheduler = new TimerScheduler();
+        private final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
@@ -198,9 +198,9 @@ public class SPDYClient
             if (sslContextFactory != null)
                 addBean(sslContextFactory);
 
-            selector = new ClientSelectorManager();
+            // TODO: configure connect timeout
+            selector = new ClientSelectorManager(executor, scheduler);
             addBean(selector);
-
         }
 
         public SPDYClient newSPDYClient(short version)
@@ -242,6 +242,11 @@ public class SPDYClient
 
         private class ClientSelectorManager extends SelectorManager
         {
+            private ClientSelectorManager(Executor executor, Scheduler scheduler)
+            {
+                super(executor, scheduler);
+            }
+
             @Override
             protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
@@ -251,13 +256,7 @@ public class SPDYClient
                 if (clientIdleTimeout < 0)
                     clientIdleTimeout = idleTimeout;
 
-                return new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
-            }
-
-            @Override
-            protected void execute(Runnable task)
-            {
-                executor.execute(task);
+                return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), clientIdleTimeout);
             }
 
             @Override
@@ -271,9 +270,9 @@ public class SPDYClient
                     if (sslContextFactory != null)
                     {
                         final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine);
+                        SslConnection sslConnection = new SslConnection(bufferPool, getExecutor(), endPoint, engine);
                         DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
-                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.executor, client);
+                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, getExecutor(), client);
                         sslEndPoint.setConnection(connection);
                         return sslConnection;
                     }

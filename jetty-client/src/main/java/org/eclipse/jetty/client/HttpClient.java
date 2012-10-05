@@ -169,7 +169,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected SelectorManager newSelectorManager()
     {
-        return new ClientSelectorManager();
+        return new ClientSelectorManager(getExecutor(), getScheduler());
     }
 
     @Override
@@ -516,20 +516,20 @@ public class HttpClient extends ContainerLifeCycle
 
     protected class ClientSelectorManager extends SelectorManager
     {
-        public ClientSelectorManager()
+        public ClientSelectorManager(Executor executor, Scheduler scheduler)
         {
-            this(1);
+            this(executor, scheduler, 1);
         }
 
-        public ClientSelectorManager(int selectors)
+        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
-            super(selectors);
+            super(executor, scheduler, selectors);
         }
 
         @Override
         protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            return new SelectChannelEndPoint(channel, selector, key, scheduler, getIdleTimeout());
+            return new SelectChannelEndPoint(channel, selector, key, getScheduler(), getIdleTimeout());
         }
 
         @Override
@@ -574,18 +574,11 @@ public class HttpClient extends ContainerLifeCycle
             }
         }
 
-
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
             callback.callback.failed(null, ex);
-        }
-
-        @Override
-        protected void execute(Runnable task)
-        {
-            getExecutor().execute(task);
         }
     }
 

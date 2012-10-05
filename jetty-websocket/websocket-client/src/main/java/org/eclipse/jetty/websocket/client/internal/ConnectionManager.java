@@ -85,6 +85,7 @@ public class ConnectionManager extends ContainerLifeCycle
     public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory,
             WebSocketPolicy policy)
     {
+        // TODO: configure connect timeout
         selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
         selector.setSslContextFactory(sslContextFactory);
         addBean(selector);

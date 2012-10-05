@@ -60,14 +60,8 @@ public class SelectChannelEndPointTest
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected Scheduler _scheduler = new TimerScheduler();
-    protected SelectorManager _manager = new SelectorManager()
+    protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
-        @Override
-        protected void execute(Runnable task)
-        {
-            _threadPool.execute(task);
-        }
-
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
@@ -77,7 +71,7 @@ public class SelectChannelEndPointTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, _scheduler, 60000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, getScheduler(), 60000);
             _lastEndPoint = endp;
             _lastEndPointLatch.countDown();
             return endp;

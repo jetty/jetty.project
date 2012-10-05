@@ -30,7 +30,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -69,23 +68,17 @@ public class SslConnectionTest
             _dispatches.incrementAndGet();
             return super.dispatch(job);
         }
-        
+
     };
     protected Scheduler _scheduler = new TimerScheduler();
-    protected SelectorManager _manager = new SelectorManager()
+    protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
-        @Override
-        protected void execute(Runnable task)
-        {
-            _threadPool.execute(task);
-        }
-
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
+            SslConnection sslConnection = new SslConnection(__byteBufferPool, getExecutor(), endpoint, engine);
 
             Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
@@ -96,7 +89,7 @@ public class SslConnectionTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, _scheduler, 60000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getScheduler(), 60000);
             _lastEndp=endp;
             return endp;
         }
@@ -254,7 +247,7 @@ public class SslConnectionTest
         while(len>0)
             len-=client.getInputStream().read(buffer);
         Assert.assertEquals(1, _dispatches.get());
-        
+
         client.close();
     }
 

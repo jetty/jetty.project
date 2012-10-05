@@ -133,7 +133,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,pool,acceptors,factories);
-        _manager = new ServerConnectorManager(selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
+        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
     }
 
@@ -346,30 +346,10 @@ public class ServerConnector extends AbstractNetworkConnector
 
     private final class ServerConnectorManager extends SelectorManager
     {
-        private ServerConnectorManager(int selectors)
+        private ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
-            super(selectors);
+            super(executor, scheduler, selectors);
         }
-
-        @Override
-        protected void execute(Runnable task)
-        {
-            getExecutor().execute(task);
-        }
-
-        // TODO
-//        @Override
-//        public void connectionOpened(Connection connection)
-//        {
-//            ServerConnector.this.connectionOpened(connection);
-//        }
-
-        // TODO
-//        @Override
-//        public void connectionClosed(Connection connection)
-//        {
-//            ServerConnector.this.connectionClosed(connection);
-//        }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
