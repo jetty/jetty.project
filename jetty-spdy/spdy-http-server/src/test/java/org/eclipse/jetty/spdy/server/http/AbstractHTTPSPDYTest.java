@@ -114,7 +114,7 @@ public abstract class AbstractHTTPSPDYTest
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
-        return new SPDYClient.Factory(threadPool, null, connector.getIdleTimeout());
+        return new SPDYClient.Factory(threadPool, null, null, connector.getIdleTimeout());
     }
 
     @After

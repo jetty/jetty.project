@@ -157,11 +157,12 @@ public class SPDYClient
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        private final Scheduler scheduler = new TimerScheduler();
+        private final Scheduler scheduler;
         private final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
+        private long connectTimeout = 15000;
 
         public Factory()
         {
@@ -170,7 +171,7 @@ public class SPDYClient
 
         public Factory(SslContextFactory sslContextFactory)
         {
-            this(null, sslContextFactory);
+            this(null, null, sslContextFactory);
         }
 
         public Factory(Executor executor)
@@ -178,29 +179,62 @@ public class SPDYClient
             this(executor, null);
         }
 
-        public Factory(Executor executor, SslContextFactory sslContextFactory)
+        public Factory(Executor executor, Scheduler scheduler)
         {
-            this(executor, sslContextFactory, 30000);
+            this(executor, scheduler, null);
         }
 
-        public Factory(Executor executor, SslContextFactory sslContextFactory, long idleTimeout)
+        public Factory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory)
         {
-            // TODO make this injectable
-            addBean(scheduler);
+            this(executor, scheduler, sslContextFactory, 30000);
+        }
 
+        public Factory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, long idleTimeout)
+        {
             this.idleTimeout = idleTimeout;
+
             if (executor == null)
                 executor = new QueuedThreadPool();
             this.executor = executor;
             addBean(executor);
 
+            if (scheduler == null)
+                scheduler = new TimerScheduler();
+            this.scheduler = scheduler;
+            addBean(scheduler);
+
             this.sslContextFactory = sslContextFactory;
             if (sslContextFactory != null)
                 addBean(sslContextFactory);
 
-            // TODO: configure connect timeout
             selector = new ClientSelectorManager(executor, scheduler);
+            selector.setConnectTimeout(getConnectTimeout());
             addBean(selector);
+        }
+
+        public ByteBufferPool getByteBufferPool()
+        {
+            return bufferPool;
+        }
+
+        public Scheduler getScheduler()
+        {
+            return scheduler;
+        }
+
+        public Executor getExecutor()
+        {
+            return executor;
+        }
+
+        public long getConnectTimeout()
+        {
+            return connectTimeout;
+        }
+
+        public void setConnectTimeout(long connectTimeout)
+        {
+            this.connectTimeout = connectTimeout;
         }
 
         public SPDYClient newSPDYClient(short version)
