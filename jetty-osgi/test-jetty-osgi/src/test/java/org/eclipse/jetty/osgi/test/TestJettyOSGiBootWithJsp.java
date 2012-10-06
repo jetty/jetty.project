@@ -51,7 +51,6 @@ import org.osgi.framework.BundleContext;
  * Then make sure we can deploy an OSGi service on the top of this.
  */
 @RunWith( JUnit4TestRunner.class )
-//@ExamReactorStrategy( AllConfinedStagedReactorFactory.class )
 public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
 {
     private static final boolean LOGGING_ENABLED = true;

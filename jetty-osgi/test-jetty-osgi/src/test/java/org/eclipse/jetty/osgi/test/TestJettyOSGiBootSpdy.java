@@ -15,18 +15,18 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
+
 package org.eclipse.jetty.osgi.test;
  
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
- 
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
- 
+
 import javax.inject.Inject;
- 
+
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
@@ -34,9 +34,11 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.BundleContext;
- 
+
+/**
+ * SPDY setup.
+ */
 @RunWith( JUnit4TestRunner.class )
-//@ExamReactorStrategy( AllConfinedStagedReactorFactory.class )
 public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
  
     private static final String JETTY_SPDY_PORT = "jetty.spdy.port";
@@ -86,7 +88,6 @@ public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
         }
              
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:"+npnBoot));
-//      res.add(CoreOptions.vmOptions("-Xbootclasspath/p:"+"target/npn/npn-boot-"+npnBootVersion+".jar"));
         res.add(CoreOptions.bootDelegationPackages("org.eclipse.jetty.npn"));
  
         res.add(mavenBundle().groupId( "org.eclipse.jetty.spdy" ).artifactId( "spdy-core" ).versionAsInProject().noStart());
@@ -111,10 +112,6 @@ public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
         assertAllBundlesActiveOrResolved(bundleContext);
     }
  
-    /**
-     * This does not work yet.
-     */
-    //@Ignore
     @Test
     public void testSpdyOnHttpService() throws Exception
     {

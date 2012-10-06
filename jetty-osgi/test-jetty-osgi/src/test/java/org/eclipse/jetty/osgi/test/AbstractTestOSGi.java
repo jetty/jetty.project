@@ -15,6 +15,7 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
+
 package org.eclipse.jetty.osgi.test;
 
 import java.io.IOException;
@@ -41,6 +42,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.http.HttpService;
 
+/**
+ * Helper methods for pax-exam tests
+ */
 public class AbstractTestOSGi
 {
 

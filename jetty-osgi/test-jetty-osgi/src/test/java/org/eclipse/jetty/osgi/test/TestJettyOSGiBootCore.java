@@ -15,16 +15,16 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
+
 package org.eclipse.jetty.osgi.test;
  
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
- 
+
 import java.util.ArrayList;
 import java.util.List;
- 
+
 import javax.inject.Inject;
- 
-import org.junit.Ignore;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
@@ -32,9 +32,12 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.BundleContext;
-//import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+
+
+/**
+ * Default OSGi setup integration test
+ */
 @RunWith( JUnit4TestRunner.class )
-//@ExamReactorStrategy( AllConfinedStagedReactorFactory.class )
 public class TestJettyOSGiBootCore extends AbstractTestOSGi {
  
     public static int DEFAULT_JETTY_HTTP_PORT = 9876;
