@@ -155,6 +155,7 @@
                   </excludes>
                   <!-- allowed combinations -->
                   <includes>
+                    <include>org.apache.geronimo.specs:geronimo-atinject_1.0_spec:jar:*</include>
                     <include>javax.servlet:*:*:*:provided</include>
                     <include>javax.servlet.jsp:*:*:*:provided</include>
                   </includes>

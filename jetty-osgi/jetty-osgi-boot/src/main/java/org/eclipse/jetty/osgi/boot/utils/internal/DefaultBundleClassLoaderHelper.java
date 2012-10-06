@@ -33,6 +33,10 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
 
     private static boolean identifiedOsgiImpl = false;
+    
+    private static Class BundleWiringClass = null;
+    private static Method BundleWiringClass_getClassLoader_method = null;
+    private static Method BundleClass_adapt_method = null;
 
     private static boolean isEquinox = false;
 
@@ -41,13 +45,34 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static void init(Bundle bundle)
     {
         identifiedOsgiImpl = true;
+        
         try
         {
-            isEquinox = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost") != null;
+        	BundleWiringClass = bundle.getClass().getClassLoader().loadClass("org.osgi.framework.wiring.BundleWiring");
+        	if (BundleWiringClass != null)
+        	{
+        		BundleWiringClass_getClassLoader_method = BundleWiringClass.getDeclaredMethod("getClassLoader", new Class[] {});
+        		BundleClass_adapt_method = bundle.getClass().getDeclaredMethod("adapt", new Class[] { Class.class });
+        		BundleClass_adapt_method.setAccessible(true);
+        		return;
+        	}
         }
         catch (Throwable t)
         {
-            isEquinox = false;
+        	//nevermind: an older version of OSGi where BundleWiring is not availble
+        	//t.printStackTrace();
+        }
+        
+        if (!bundle.getClass().getName().startsWith("org.apache.felix"))
+        {
+	        try
+	        {
+	            isEquinox = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost") != null;
+	        }
+	        catch (Throwable t)
+	        {
+	            isEquinox = false;
+	        }
         }
         if (!isEquinox)
         {
@@ -70,6 +95,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      */
     public ClassLoader getBundleClassLoader(Bundle bundle)
     {
+    	//Older OSGi implementations:
         String bundleActivator = (String) bundle.getHeaders().get("Bundle-Activator");
         if (bundleActivator == null)
         {
@@ -93,6 +119,22 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             init(bundle);
         }
+    	//This works for OSGi 4.2 and more recent. Aka version 1.6
+    	//It is using ava reflection to execute:
+    	//(BundleClassLoader) bundle.adapt(BundleWiring.class).getClassLoader()
+    	if (BundleClass_adapt_method != null && BundleWiringClass_getClassLoader_method != null)
+    	{
+    		try
+    		{
+    			Object bundleWiring = BundleClass_adapt_method.invoke(bundle, BundleWiringClass);
+    			return (ClassLoader)BundleWiringClass_getClassLoader_method.invoke(bundleWiring, new Object[] {});
+    		}
+    		catch (Throwable t)
+    		{
+    			t.printStackTrace();
+    			return null;
+    		}
+    	}
         if (isEquinox)
         {
             return internalGetEquinoxBundleClassLoader(bundle);
@@ -135,13 +177,16 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static Field Felix_BundleImpl_m_modules_field;
 
     private static Field Felix_ModuleImpl_m_classLoader_field;
+    
+    private static Field Felix_BundleImpl_m_revisions_field;
+    
 
     private static ClassLoader internalGetFelixBundleClassLoader(Bundle bundle)
     {
         // assume felix:
         try
         {
-            // now get the current module from the bundle.
+        	// now get the current module from the bundle.
             // and return the private field m_classLoader of ModuleImpl
             if (Felix_BundleImpl_m_modules_field == null)
             {
