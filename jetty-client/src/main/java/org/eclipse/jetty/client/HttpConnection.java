@@ -54,6 +54,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     private final HttpDestination destination;
     private final HttpSender sender;
     private final HttpReceiver receiver;
+    private long idleTimeout;
 
     public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
@@ -104,11 +105,18 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void send(Request request, Response.Listener listener)
     {
         normalizeRequest(request);
+
+        // Save the old idle timeout to restore it
+        EndPoint endPoint = getEndPoint();
+        idleTimeout = endPoint.getIdleTimeout();
+        endPoint.setIdleTimeout(request.idleTimeout());
+
         HttpConversation conversation = client.getConversation(request);
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.exchanges().offer(exchange);
         conversation.listener(listener);
+
         sender.send(exchange);
     }
 
@@ -292,6 +300,9 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange existing = this.exchange.getAndSet(null);
         if (existing == exchange)
         {
+            // Restore idle timeout
+            getEndPoint().setIdleTimeout(idleTimeout);
+
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
