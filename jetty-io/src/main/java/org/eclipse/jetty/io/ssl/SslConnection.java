@@ -334,6 +334,12 @@ public class SslConnection extends AbstractConnection
             return super.getFillInterest();
         }
 
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            super.setIdleTimeout(idleTimeout);
+            getEndPoint().setIdleTimeout(idleTimeout);
+        }
 
         @Override
         protected WriteFlusher getWriteFlusher()
