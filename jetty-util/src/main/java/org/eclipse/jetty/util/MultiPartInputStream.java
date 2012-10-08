@@ -74,6 +74,7 @@ public class MultiPartInputStream
         protected String _contentType;
         protected MultiMap<String> _headers;
         protected long _size = 0;
+        protected boolean _temporary = true;
 
         public MultiPart (String name, String filename) 
         throws IOException
@@ -144,7 +145,6 @@ public class MultiPartInputStream
             _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
             if (_deleteOnExit)
                 _file.deleteOnExit();
-            
             FileOutputStream fos = new FileOutputStream(_file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             
@@ -207,11 +207,12 @@ public class MultiPartInputStream
         {
            if (_file != null)
            {
+               //written to a file, whether temporary or not
                return new BufferedInputStream (new FileInputStream(_file));
            }
            else
            {
-               //part content is in a ByteArrayOutputStream
+               //part content is in memory
                return new ByteArrayInputStream(_bout.getBuf(),0,_bout.size());
            }
         }
@@ -246,10 +247,11 @@ public class MultiPartInputStream
         {
             if (_file == null)
             {
+                _temporary = false;
+                
                 //part data is only in the ByteArrayOutputStream and never been written to disk
                 _file = new File (_tmpDir, fileName);
-                if (_deleteOnExit)
-                    _file.deleteOnExit();
+
                 BufferedOutputStream bos = null;
                 try
                 {
@@ -267,21 +269,34 @@ public class MultiPartInputStream
             else
             {
                 //the part data is already written to a temporary file, just rename it
+                _temporary = false;
+                
                 File f = new File(_tmpDir, fileName);
-                if (_deleteOnExit)
-                    f.deleteOnExit();
                 if (_file.renameTo(f))
                     _file = f;
             }
         }
         
         /** 
+         * Remove the file, whether or not Part.write() was called on it
+         * (ie no longer temporary)
          * @see javax.servlet.http.Part#delete()
          */
         public void delete() throws IOException
         {
-            if (_file != null)
+            if (_file != null && _file.exists())
                 _file.delete();     
+        }
+        
+        /**
+         * Only remove tmp files.
+         * 
+         * @throws IOException
+         */
+        public void cleanUp() throws IOException
+        {
+            if (_temporary && _file != null && _file.exists())
+                _file.delete();
         }
         
         
@@ -327,6 +342,11 @@ public class MultiPartInputStream
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
 
+    /**
+     * Get the already parsed parts.
+     * 
+     * @return
+     */
     public Collection<Part> getParsedParts()
     {
         if (_parts == null)
@@ -342,6 +362,11 @@ public class MultiPartInputStream
         return parts;
     }
     
+    /**
+     * Delete any tmp storage for parts, and clear out the parts list.
+     * 
+     * @throws MultiException
+     */
     public void deleteParts ()
     throws MultiException
     {
@@ -351,17 +376,26 @@ public class MultiPartInputStream
         {
             try
             {
-                p.delete();
+                ((MultiPartInputStream.MultiPart)p).cleanUp();
             } 
             catch(Exception e)
             {     
                 err.add(e); 
             }
         }
+        _parts.clear();
+        
         err.ifExceptionThrowMulti();
     }
 
    
+    /**
+     * Parse, if necessary, the multipart data and return the list of Parts.
+     * 
+     * @return
+     * @throws IOException
+     * @throws ServletException
+     */
     public Collection<Part> getParts()
     throws IOException, ServletException
     {
@@ -377,6 +411,14 @@ public class MultiPartInputStream
     }
     
     
+    /**
+     * Get the named Part.
+     * 
+     * @param name
+     * @return
+     * @throws IOException
+     * @throws ServletException
+     */
     public Part getPart(String name)
     throws IOException, ServletException
     {
@@ -385,6 +427,12 @@ public class MultiPartInputStream
     }
     
     
+    /**
+     * Parse, if necessary, the multipart stream.
+     * 
+     * @throws IOException
+     * @throws ServletException
+     */
     protected void parse ()
     throws IOException, ServletException
     {

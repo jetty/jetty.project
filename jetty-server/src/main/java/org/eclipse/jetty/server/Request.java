@@ -127,7 +127,7 @@ public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
     public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.multiPartInputStream";
-    
+    public static final String __MULTIPART_CONTEXT = "org.eclipse.multiPartContext";
     private static final Logger LOG = Log.getLogger(Request.class);
 
     private static final String __ASYNC_FWD = "org.eclipse.asyncfwd";
@@ -144,14 +144,20 @@ public class Request implements HttpServletRequest
             MultiPartInputStream mpis = (MultiPartInputStream)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
             if (mpis != null)
             {
-              try
-              {
-                  mpis.deleteParts();
-              }
-              catch (MultiException e)
-              {
-                  sre.getServletContext().log("Errors deleting multipart tmp files", e);
-              }
+                ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(__MULTIPART_CONTEXT);
+
+                //Only do the cleanup if we are exiting from the context in which a servlet parsed the multipart files
+                if (context == sre.getServletContext())
+                {
+                    try
+                    {
+                        mpis.deleteParts();
+                    }
+                    catch (MultiException e)
+                    {
+                        sre.getServletContext().log("Errors deleting multipart tmp files", e);
+                    }
+                }
             }
         }
 
@@ -1468,24 +1474,6 @@ public class Request implements HttpServletRequest
         if (_savedNewSessions != null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
-        if (_multiPartInputStream != null)
-        {
-            Collection<Part> parts = _multiPartInputStream.getParsedParts();
-            if (parts != null)
-            {
-                for (Part p:parts)
-                {
-                    try
-                    {
-                        p.delete();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn("Error deleting multipart file", e);
-                    }
-                }
-            }
-        }
         _multiPartInputStream = null;
     }
 
@@ -2007,10 +1995,16 @@ public class Request implements HttpServletRequest
 
         if (_multiPartInputStream == null)
         { 
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+
+            if (config == null)
+                throw new IllegalStateException("No multipart config for servlet");
+
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
-                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             getContentType(),config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
+            setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
             for (Part p:parts)
             {
@@ -2039,10 +2033,17 @@ public class Request implements HttpServletRequest
         
         if (_multiPartInputStream == null)
         {
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+            
+            if (config == null)
+                throw new IllegalStateException("No multipart config for servlet");
+            
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
-                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             getContentType(), config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
+            setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
             for (Part p:parts)
             {
