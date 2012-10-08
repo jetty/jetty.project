@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -120,6 +121,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
+    private volatile boolean tcpNoDelay = true;
 
     public HttpClient()
     {
@@ -314,7 +316,7 @@ public class HttpClient extends ContainerLifeCycle
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
                 channel.bind(bindAddress);
-            channel.socket().setTcpNoDelay(true);
+            configure(channel);
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(destination.host(), destination.port()));
 
@@ -327,6 +329,11 @@ public class HttpClient extends ContainerLifeCycle
                 close(channel);
             callback.failed(null, x);
         }
+    }
+
+    protected void configure(SocketChannel channel) throws SocketException
+    {
+        channel.socket().setTcpNoDelay(isTCPNoDelay());
     }
 
     private void close(SocketChannel channel)
@@ -505,6 +512,16 @@ public class HttpClient extends ContainerLifeCycle
     public void setMaxRedirects(int maxRedirects)
     {
         this.maxRedirects = maxRedirects;
+    }
+
+    public boolean isTCPNoDelay()
+    {
+        return tcpNoDelay;
+    }
+
+    public void setTCPNoDelay(boolean tcpNoDelay)
+    {
+        this.tcpNoDelay = tcpNoDelay;
     }
 
     @Override
