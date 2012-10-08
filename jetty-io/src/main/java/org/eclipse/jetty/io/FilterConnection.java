@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,7 +47,7 @@ public class FilterConnection extends AbstractConnection
     private static final Logger LOG = Log.getLogger(FilterConnection.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     
-    public interface Listener
+    public interface Filter
     {
         /**
          * <p>Callback method invoked when a connection from a remote client has been accepted.</p>
@@ -87,12 +88,11 @@ public class FilterConnection extends AbstractConnection
         public void closed(EndPoint endpoint);
     }
     
-    public static class DebugListener implements Listener
+    public static class DebugFilter implements Filter
     {
-        public DebugListener()
+        public DebugFilter()
         {
         }
-        
         
         @Override
         public void opened(EndPoint endpoint)
@@ -123,13 +123,43 @@ public class FilterConnection extends AbstractConnection
         }   
     }
 
-    public static class FileDumpListener implements Listener
+    public static class DumpToFileFilter implements Filter
     {
         final ConcurrentHashMap<EndPoint,OutputStream> _in = new ConcurrentHashMap<>();
         final ConcurrentHashMap<EndPoint,OutputStream> _out = new ConcurrentHashMap<>();
+        final File _directory;
+        final String _prefix;
+        final boolean _deleteOnExit;
         
-        public FileDumpListener()
+        public DumpToFileFilter()
         {
+            this(new File(System.getProperty("java.io.tmpdir")+File.separator+"FilterConnection"),true);
+        }
+
+        public DumpToFileFilter(File directory, boolean deleteOnExit)
+        {
+            this(directory,"dump-",deleteOnExit);
+        }
+
+        public DumpToFileFilter(String prefix)
+        {
+            this(new File(System.getProperty("java.io.tmpdir")+File.separator+"FilterConnection"),prefix,true);
+        }
+        
+        public DumpToFileFilter(
+            @Name("directory") File directory, 
+            @Name("prefix") String prefix, 
+            @Name("deleteOnExit") boolean deleteOnExit)
+        {
+            _directory=directory;
+            _prefix=prefix;
+            _deleteOnExit=deleteOnExit;
+            if (!_directory.exists() && !_directory.mkdirs())
+                throw new IllegalArgumentException("cannot create "+directory);
+            if (!_directory.isDirectory())
+                throw new IllegalArgumentException("not directory "+directory);
+            if (!_directory.canWrite())
+                throw new IllegalArgumentException("cannot write "+directory);
         }
         
         @Override
@@ -137,9 +167,14 @@ public class FilterConnection extends AbstractConnection
         {          
             try
             {
-                File in = new File("/tmp/dump-"+Integer.toHexString(endpoint.hashCode())+".in");
+                File in = new File(_directory,_prefix+Integer.toHexString(endpoint.hashCode())+".in");
+                File out = new File(_directory,_prefix+Integer.toHexString(endpoint.hashCode())+".out");
+                if (_deleteOnExit)
+                {
+                    in.deleteOnExit();
+                    out.deleteOnExit();
+                }
                 _in.put(endpoint,new FileOutputStream(in));
-                File out = new File("/tmp/dump-"+Integer.toHexString(endpoint.hashCode())+".out");
                 _out.put(endpoint,new FileOutputStream(out));
             }
             catch (FileNotFoundException e)
@@ -206,7 +241,7 @@ public class FilterConnection extends AbstractConnection
     private final ByteBufferPool _bufferPool;
     private final FilteredEndPoint _filterEndPoint;
     private final int _outputBufferSize;
-    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
+    private final List<Filter> _filters = new CopyOnWriteArrayList<>();
 
     public FilterConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, int outputBufferSize)
     {
@@ -226,30 +261,30 @@ public class FilterConnection extends AbstractConnection
         return _filterEndPoint;
     }
     
-    public void addListener(Listener listener)
+    public void addFilter(Filter filter)
     {
-        _listeners.add(listener);
+        _filters.add(filter);
     }
     
-    public boolean removeListener(Listener listener)
+    public boolean removeFilter(Filter listener)
     {
-        return _listeners.remove(listener);
+        return _filters.remove(listener);
     }
 
     @Override
     public void onOpen()
     {
         super.onOpen();
-        for (Listener listener: _listeners)
-            listener.opened(getEndPoint());
+        for (Filter filter: _filters)
+            filter.opened(getEndPoint());
         getFilterEndPoint().getConnection().onOpen();
     }
 
     @Override
     public void onClose()
     {
-        for (Listener listener: _listeners)
-            listener.closed(getEndPoint());
+        for (Filter filter: _filters)
+            filter.closed(getEndPoint());
         _filterEndPoint.getConnection().onClose();
         super.onClose();
     }
@@ -372,8 +407,8 @@ public class FilterConnection extends AbstractConnection
             
             if (orig>0)
                 buffer.position(buffer.position()+orig);
-            for (Listener listener: _listeners)
-                listener.incoming(getEndPoint() ,buffer);
+            for (Filter filter: _filters)
+                filter.incoming(getEndPoint() ,buffer);
             if (orig>0)
                 buffer.position(buffer.position()-orig);
             
@@ -410,8 +445,8 @@ public class FilterConnection extends AbstractConnection
                 }
             }
             
-            for (Listener listener: _listeners)
-                listener.outgoing(getEndPoint() ,_outBuffer);
+            for (Filter filter: _filters)
+                filter.outgoing(getEndPoint() ,_outBuffer);
             
             boolean flushed = getEndPoint().flush(_outBuffer);
             if (BufferUtil.isEmpty(_outBuffer))
@@ -460,6 +495,11 @@ public class FilterConnection extends AbstractConnection
         public boolean isInputShutdown()
         {
             return getEndPoint().isInputShutdown();
+        }
+        
+        public EndPoint getWrappedEndPoint()
+        {
+            return getEndPoint();
         }
 
         @Override

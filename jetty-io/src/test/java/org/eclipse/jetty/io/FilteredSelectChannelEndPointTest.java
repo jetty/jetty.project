@@ -34,7 +34,7 @@ public class FilteredSelectChannelEndPointTest extends SelectChannelEndPointTest
     protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         FilterConnection filter = new FilterConnection(new MappedByteBufferPool(),_threadPool,endpoint,8192);
-        filter.addListener(new FilterConnection.FileDumpListener());
+        filter.addFilter(new FilterConnection.DumpToFileFilter());
         Connection connection= super.newConnection(null,filter.getFilterEndPoint());
         filter.getFilterEndPoint().setConnection(connection);
         return filter;

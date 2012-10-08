@@ -42,13 +42,13 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     private final String defaultProtocol;
     private String nextProtocol; // No need to be volatile: it is modified and read by the same thread
 
-    public NextProtoNegoServerConnection(DecryptedEndPoint endPoint, Connector connector, List<String>protocols, String defaultProtocol)
+    public NextProtoNegoServerConnection(EndPoint endPoint, SSLEngine engine, Connector connector, List<String>protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.protocols = protocols;
         this.defaultProtocol = defaultProtocol;
-        engine = endPoint.getSslConnection().getSSLEngine();
+        this.engine = engine;
         NextProtoNego.put(engine, this);
     }
 

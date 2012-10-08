@@ -202,11 +202,12 @@ public abstract class AbstractEndPoint implements EndPoint
                     {
                         LOG.debug("{} idle timeout expired", this);
 
+                        boolean output_shutdown=isOutputShutdown();
                         TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                         _fillInterest.onFail(timeout);
                         _writeFlusher.onFail(timeout);
 
-                        if (isOutputShutdown())
+                        if (output_shutdown)
                             close();
                         notIdle();
                     }
