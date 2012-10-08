@@ -44,7 +44,7 @@ public class Utf8HttpWriter extends HttpWriter
     {
         HttpOutput out = _out;
         if (length==0)
-            out.checkAllWritten();
+            out.closeIfAllContentWritten();
 
         while (length > 0)
         {

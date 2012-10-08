@@ -705,7 +705,7 @@ public class Response implements HttpServletResponse
         {
             try
             {
-                checkAllContentWritten(written);
+                closeIfAllContentWritten(written);
             }
             catch(IOException e)
             {
@@ -714,7 +714,7 @@ public class Response implements HttpServletResponse
         }
     }
 
-    public boolean checkAllContentWritten(long written) throws IOException
+    public boolean closeIfAllContentWritten(long written) throws IOException
     {
         if (_contentLength >= 0 && written >= _contentLength)
         {
