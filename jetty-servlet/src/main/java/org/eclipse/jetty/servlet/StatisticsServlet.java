@@ -138,7 +138,7 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <dispatchedActive>").append(_statsHandler.getDispatchedActive()).append("</dispatchedActive>\n");
         sb.append("    <dispatchedActiveMax>").append(_statsHandler.getDispatchedActiveMax()).append("</dispatchedActiveMax>\n");
         sb.append("    <dispatchedTimeTotal>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotal>\n");
-        sb.append("    <dispatchedTimeMean").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
+        sb.append("    <dispatchedTimeMean>").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
         sb.append("    <dispatchedTimeMax>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMax>\n");
         sb.append("    <dispatchedTimeStdDev").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDev>\n");
         
