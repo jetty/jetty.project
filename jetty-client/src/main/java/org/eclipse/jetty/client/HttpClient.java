@@ -122,6 +122,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
+    private volatile boolean dispatchIO = true;
 
     public HttpClient()
     {
@@ -142,7 +143,11 @@ public class HttpClient extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         if (sslContextFactory != null)
+        {
             addBean(sslContextFactory);
+            // Avoid to double dispatch when using SSL
+            setDispatchIO(false);
+        }
 
         if (executor == null)
             executor = new QueuedThreadPool();
@@ -522,6 +527,32 @@ public class HttpClient extends ContainerLifeCycle
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;
+    }
+
+    /**
+     * @return true to dispatch I/O operations in a different thread, false to execute them in the selector thread
+     * @see #setDispatchIO(boolean)
+     */
+    public boolean isDispatchIO()
+    {
+        return dispatchIO;
+    }
+
+    /**
+     * Whether to dispatch I/O operations from the selector thread to a different thread.
+     * <p />
+     * This implementation never blocks on I/O operation, but invokes application callbacks that may
+     * take time to execute or block on other I/O.
+     * If application callbacks are known to take time or block on I/O, then parameter {@code dispatchIO}
+     * must be set to true.
+     * If application callbacks are known to be quick and never block on I/O, then parameter {@code dispatchIO}
+     * may be set to false.
+     *
+     * @param dispatchIO true to dispatch I/O operations in a different thread, false to execute them in the selector thread
+     */
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        this.dispatchIO = dispatchIO;
     }
 
     @Override

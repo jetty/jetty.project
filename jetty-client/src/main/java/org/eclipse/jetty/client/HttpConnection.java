@@ -58,7 +58,7 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
-        super(endPoint, client.getExecutor());
+        super(endPoint, client.getExecutor(), client.isDispatchIO());
         this.client = client;
         this.destination = destination;
         this.sender = new HttpSender(this);
