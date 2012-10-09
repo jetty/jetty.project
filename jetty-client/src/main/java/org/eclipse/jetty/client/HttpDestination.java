@@ -174,7 +174,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     public void completed(Connection connection)
                     {
                         LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
-                        process(connection, client.isDispatchIO());
+                        process(connection, true);
                     }
 
                     @Override
