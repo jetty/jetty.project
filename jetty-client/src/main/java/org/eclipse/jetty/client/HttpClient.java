@@ -158,7 +158,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = new TimerScheduler();
+            scheduler = new TimerScheduler(HttpClient.class.getSimpleName() + "@" + hashCode() + "-Scheduler");
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
