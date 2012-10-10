@@ -107,7 +107,7 @@ public class ConnectionManager extends ContainerLifeCycle
         }
     }
 
-    public FutureCallback<UpgradeResponse> connectPhysical(IWebSocketClient client) throws IOException
+    public FutureCallback<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         SocketAddress bindAddress = client.getFactory().getBindAddress();

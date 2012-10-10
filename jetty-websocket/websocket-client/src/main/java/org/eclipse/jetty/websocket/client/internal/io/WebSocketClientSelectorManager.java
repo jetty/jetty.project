@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 
 public class WebSocketClientSelectorManager extends SelectorManager
@@ -61,7 +61,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
         LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
-        IWebSocketClient client = (IWebSocketClient)attachment;
+        DefaultWebSocketClient client = (DefaultWebSocketClient)attachment;
 
         try
         {
@@ -118,7 +118,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return engine;
     }
 
-    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, IWebSocketClient client)
+    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, DefaultWebSocketClient client)
     {
         WebSocketClientFactory factory = client.getFactory();
         Executor executor = factory.getExecutor();

@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
@@ -127,7 +127,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
 
     /**
      * The address to bind local physical (outgoing) TCP Sockets to.
-     *
+     * 
      * @return the address to bind the socket channel to
      * @see #setBindAddress(SocketAddress)
      */
@@ -190,7 +190,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     {
         LOG.debug("Creating new WebSocket for {}",websocketPojo);
         EventDriver websocket = eventDriverFactory.wrap(websocketPojo);
-        return new IWebSocketClient(this,websocket);
+        return new DefaultWebSocketClient(this,websocket);
     }
 
     public boolean sessionClosed(WebSocketSession session)
@@ -204,17 +204,6 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         {
             LOG.debug("Session Opened: {}",session);
         }
-        // FIXME: what is going on?
-        // if (!isRunning())
-        // {
-        // LOG.debug("Factory.isRunning: {}",this.isRunning());
-        // LOG.debug("Factory.isStarted: {}",this.isStarted());
-        // LOG.debug("Factory.isStarting: {}",this.isStarting());
-        // LOG.debug("Factory.isStopped: {}",this.isStopped());
-        // LOG.debug("Factory.isStopping: {}",this.isStopping());
-        // LOG.warn("Factory is not running");
-        // return false;
-        // }
         boolean ret = sessions.offer(session);
         session.onConnect();
         return ret;
