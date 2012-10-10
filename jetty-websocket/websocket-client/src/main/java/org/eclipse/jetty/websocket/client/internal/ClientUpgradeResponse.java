@@ -77,7 +77,7 @@ public class ClientUpgradeResponse implements UpgradeResponse
     @Override
     public Iterator<String> getHeaderValues(String name)
     {
-        List<String> values = headers.getValues(name);
+        List<String> values = headers.getValues(name.toLowerCase());
         if (values == null)
         {
             return Collections.emptyIterator();

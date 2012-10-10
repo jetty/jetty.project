@@ -68,7 +68,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
         handshakes.put(HandshakeRFC6455.VERSION,new HandshakeRFC6455());
-        // OLD!! handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();

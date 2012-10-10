@@ -70,11 +70,11 @@ public class SimpleEchoClient
             try
             {
                 FutureCallback<Void> callback = new FutureCallback<>();
-                conn.write(null,callback,"Echo Me!");
+                conn.write(null,callback,"Hello");
                 callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
                 callback = new FutureCallback<>();
-                conn.write(null,callback,"Echo Another One, please.");
+                conn.write(null,callback,"Thanks for the conversation.");
                 callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
                 conn.close(StatusCode.NORMAL,"I'm done");
@@ -94,6 +94,11 @@ public class SimpleEchoClient
 
     public static void main(String[] args)
     {
+        String destUri = "ws://echo.websocket.org";
+        if (args.length > 0)
+        {
+            destUri = args[0];
+        }
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         SimpleEchoSocket socket = new SimpleEchoSocket();
@@ -101,8 +106,9 @@ public class SimpleEchoClient
         {
             factory.start();
             WebSocketClient client = factory.newWebSocketClient(socket);
-            URI echoUri = new URI("ws://echo.websocket.org");
+            URI echoUri = new URI(destUri);
             System.out.printf("Connecting to : %s%n",echoUri);
+            client.getUpgradeRequest().addExtensions("x-webkit-deflate-frame");
             client.connect(echoUri);
 
             // wait for closed socket connection.

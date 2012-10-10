@@ -60,8 +60,17 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
             QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
             while (tok.hasMoreTokens())
             {
-                extensions.add(ExtensionConfig.parse(tok.nextToken()));
+                addExtensions(tok.nextToken());
             }
+        }
+    }
+
+    @Override
+    public void addExtensions(String... extConfigs)
+    {
+        for (String extConfig : extConfigs)
+        {
+            extensions.add(ExtensionConfig.parse(extConfig));
         }
     }
 
@@ -102,13 +111,7 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
     @Override
     public String getOrigin()
     {
-        String origin = getHeader("Origin");
-        if (origin == null)
-        {
-            // Fall back to older version
-            origin = getHeader("Sec-WebSocket-Origin");
-        }
-        return origin;
+        return getHeader("Origin");
     }
 
     @Override

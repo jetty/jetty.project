@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.UpgradeException;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
@@ -81,11 +81,11 @@ public class UpgradeConnection extends AbstractConnection
 
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
-    private final IWebSocketClient client;
+    private final DefaultWebSocketClient client;
     private final HttpResponseHeaderParser parser;
     private ClientUpgradeRequest request;
 
-    public UpgradeConnection(EndPoint endp, Executor executor, IWebSocketClient client)
+    public UpgradeConnection(EndPoint endp, Executor executor, DefaultWebSocketClient client)
     {
         super(endp,executor);
         this.client = client;

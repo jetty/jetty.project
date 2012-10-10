@@ -25,6 +25,8 @@ import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 public interface UpgradeRequest
 {
+    public void addExtensions(String... extConfigs);
+
     public Map<String, String> getCookieMap();
 
     public List<ExtensionConfig> getExtensions();
@@ -43,5 +45,5 @@ public interface UpgradeRequest
 
     public boolean isOrigin(String test);
 
-    public void setSubProtocols(String string);
+    public void setSubProtocols(String protocols);
 }
