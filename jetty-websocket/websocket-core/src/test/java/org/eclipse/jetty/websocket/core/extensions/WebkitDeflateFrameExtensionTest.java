@@ -112,54 +112,6 @@ public class WebkitDeflateFrameExtensionTest
         capture.assertBytes(0,expectedHex);
     }
 
-    private String deflate(byte data[], int level, boolean nowrap, int strategy, int flush)
-    {
-        Deflater compressor = new Deflater(level,nowrap);
-        compressor.setStrategy(strategy);
-
-        // Prime the compressor
-        compressor.reset();
-        compressor.setInput(data,0,data.length);
-        compressor.finish();
-
-        byte out[] = new byte[64];
-        int len = compressor.deflate(out,0,out.length,flush);
-        compressor.end();
-
-        String ret = TypeUtil.toHexString(out,0,len);
-        System.out.printf("deflate(l=%d,s=%d,f=%d,w=%-5b) => %s%n",level,strategy,flush,nowrap,ret);
-        return ret;
-    }
-
-    @Test
-    public void testAllDeflate() throws Exception
-    {
-        int strategies[] = new int[] {
-                Deflater.DEFAULT_STRATEGY,
-                Deflater.FILTERED,
-                Deflater.HUFFMAN_ONLY
-        };
-        int flushes[] = new int[] {
-                Deflater.FULL_FLUSH,
-                Deflater.NO_FLUSH,
-                Deflater.SYNC_FLUSH
-        };
-
-        byte uncompressed[] = StringUtil.getUtf8Bytes("info:");
-
-        for(int level = 0; level <= 9; level++)
-        {
-            for (int strategy : strategies)
-            {
-                for (int flush : flushes)
-                {
-                    deflate(uncompressed,level,true,strategy,flush);
-                    deflate(uncompressed,level,false,strategy,flush);
-                }
-            }
-        }
-    }
-
     @Test
     public void testChrome20_Hello()
     {
