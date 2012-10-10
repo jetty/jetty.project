@@ -42,6 +42,7 @@ public class WebkitDeflateFrameExtension extends Extension
 {
     private static final Logger LOG = Log.getLogger(WebkitDeflateFrameExtension.class);
     private static final int BUFFER_SIZE = 64 * 1024;
+    private static final boolean BFINAL_HACK = Boolean.parseBoolean(System.getProperty("jetty.websocket.bfinal.hack","true"));
 
     private Deflater deflater;
     private Inflater inflater;
@@ -79,17 +80,20 @@ public class WebkitDeflateFrameExtension extends Extension
         }
         BufferUtil.flipToFlush(buf,0);
 
-        /* Per the spec, it says that BFINAL 1 or 0 are allowed.
-         * However, Java always uses BFINAL 1, where the browsers
-         * Chrome and Safari fail to decompress when it encounters
-         * BFINAL 1.
-         * 
-         * This hack will always set BFINAL 0
-         */
-        byte b0 = buf.get(0);
-        if ((b0 & 1) != 0) // if BFINAL 1
+        if (BFINAL_HACK)
         {
-            buf.put(0,(b0 ^= 1)); // flip bit to BFINAL 0
+            /* Per the spec, it says that BFINAL 1 or 0 are allowed.
+             * However, Java always uses BFINAL 1, where the browsers
+             * Chrome and Safari fail to decompress when it encounters
+             * BFINAL 1.
+             * 
+             * This hack will always set BFINAL 0
+             */
+            byte b0 = buf.get(0);
+            if ((b0 & 1) != 0) // if BFINAL 1
+            {
+                buf.put(0,(b0 ^= 1)); // flip bit to BFINAL 0
+            }
         }
         return buf;
     }
