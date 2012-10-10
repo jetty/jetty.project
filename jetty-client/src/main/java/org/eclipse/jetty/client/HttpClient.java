@@ -164,6 +164,7 @@ public class HttpClient extends ContainerLifeCycle
         selectorManager = newSelectorManager();
         addBean(selectorManager);
 
+        handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
         handlers.add(new AuthenticationProtocolHandler(this));
 
@@ -353,9 +354,8 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
-    protected HttpConversation getConversation(Request request)
+    protected HttpConversation getConversation(long id)
     {
-        long id = request.id();
         HttpConversation conversation = conversations.get(id);
         if (conversation == null)
         {
@@ -375,13 +375,17 @@ public class HttpClient extends ContainerLifeCycle
         LOG.debug("{} removed", conversation);
     }
 
-    // TODO: find a better method name
-    protected Response.Listener lookup(Request request, Response response)
+    protected List<ProtocolHandler> getProtocolHandlers()
     {
-        for (ProtocolHandler handler : handlers)
+        return handlers;
+    }
+
+    protected ProtocolHandler findProtocolHandler(Request request, Response response)
+    {
+        for (ProtocolHandler handler : getProtocolHandlers())
         {
             if (handler.accept(request,  response))
-                return handler.getResponseListener();
+                return handler;
         }
         return null;
     }

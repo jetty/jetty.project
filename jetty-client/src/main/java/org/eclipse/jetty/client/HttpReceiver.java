@@ -42,14 +42,15 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final HttpParser parser = new HttpParser(this);
-    private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
+    private final ResponseNotifier notifier;
     private ContentDecoder decoder;
     private State state = State.IDLE;
 
     public HttpReceiver(HttpConnection connection)
     {
         this.connection = connection;
+        this.notifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     public void receive()
@@ -115,7 +116,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         Response.Listener currentListener = exchange.listener();
         Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
         HttpClient client = connection.getHttpClient();
-        Response.Listener handlerListener = client.lookup(exchange.request(), response);
+        ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.request(), response);
+        Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
         if (handlerListener == null)
         {
             conversation.last(exchange);
@@ -126,6 +128,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
         else
         {
+            LOG.debug("Found protocol handler {}", protocolHandler);
             if (currentListener == initialListener)
                 conversation.listener(handlerListener);
             else
@@ -298,7 +301,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
     private class DoubleResponseListener implements Response.Listener
     {
-        private final ResponseNotifier notifier = new ResponseNotifier();
         private final Response.Listener listener1;
         private final Response.Listener listener2;
 

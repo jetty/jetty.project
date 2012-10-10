@@ -58,6 +58,11 @@ public class HttpExchange
         return request;
     }
 
+    public Throwable requestFailure()
+    {
+        return requestFailure;
+    }
+
     public Response.Listener listener()
     {
         return listener;
@@ -66,6 +71,11 @@ public class HttpExchange
     public HttpResponse response()
     {
         return response;
+    }
+
+    public Throwable responseFailure()
+    {
+        return responseFailure;
     }
 
     public void receive()
@@ -84,9 +94,17 @@ public class HttpExchange
     public Result responseComplete(Throwable failure)
     {
         this.responseFailure = failure;
-        int responseSuccess = 0b1100;
-        int responseFailure = 0b0100;
-        return complete(failure == null ? responseSuccess : responseFailure);
+        if (failure == null)
+        {
+            int responseSuccess = 0b1100;
+            return complete(responseSuccess);
+        }
+        else
+        {
+            proceed(false);
+            int responseFailure = 0b0100;
+            return complete(responseFailure);
+        }
     }
 
     /**
@@ -117,7 +135,7 @@ public class HttpExchange
             if (this == conversation.last())
                 conversation.complete();
             connection.complete(this, success);
-            return new Result(request, requestFailure, response, responseFailure);
+            return new Result(request(), requestFailure(), response(), responseFailure());
         }
         return null;
     }
@@ -126,6 +144,19 @@ public class HttpExchange
     {
         LOG.debug("Aborting {}", response);
         connection.abort(response);
+    }
+
+    public void resetResponse(boolean success)
+    {
+        int responseSuccess = 0b1100;
+        int responseFailure = 0b0100;
+        int code = success ? responseSuccess : responseFailure;
+        complete.addAndGet(-code);
+    }
+
+    public void proceed(boolean proceed)
+    {
+        connection.proceed(proceed);
     }
 
     @Override

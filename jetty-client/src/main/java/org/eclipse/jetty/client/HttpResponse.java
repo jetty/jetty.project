@@ -78,6 +78,12 @@ public class HttpResponse implements Response
     }
 
     @Override
+    public long conversation()
+    {
+        return exchange.request().conversation();
+    }
+
+    @Override
     public Listener listener()
     {
         return listener;

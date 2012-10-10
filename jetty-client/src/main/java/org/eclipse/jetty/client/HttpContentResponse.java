@@ -40,6 +40,12 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
+    public long conversation()
+    {
+        return response.conversation();
+    }
+
+    @Override
     public Listener listener()
     {
         return response.listener();
@@ -93,5 +99,16 @@ public class HttpContentResponse implements ContentResponse
         {
             throw new UnsupportedCharsetException(encoding);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s %d %s - %d bytes]",
+                HttpContentResponse.class.getSimpleName(),
+                version(),
+                status(),
+                reason(),
+                content().length);
     }
 }
