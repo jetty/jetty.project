@@ -46,7 +46,6 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
-    private final ResponseNotifier responseNotifier = new ResponseNotifier();
     private final HttpClient client;
     private final String scheme;
     private final String host;
@@ -55,6 +54,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
     private final RequestNotifier requestNotifier;
+    private final ResponseNotifier responseNotifier;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
     {
@@ -66,6 +66,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.requestNotifier = new RequestNotifier(client);
+        this.responseNotifier = new ResponseNotifier(client);
     }
 
     protected BlockingQueue<Connection> getIdleConnections()

@@ -42,14 +42,15 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final HttpParser parser = new HttpParser(this);
-    private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
-    private volatile boolean failed;
-    private volatile ContentDecoder decoder;
+    private final ResponseNotifier notifier;
+    private ContentDecoder decoder;
+    private State state = State.IDLE;
 
     public HttpReceiver(HttpConnection connection)
     {
         this.connection = connection;
+        this.notifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     public void receive()
@@ -76,8 +77,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 }
                 else
                 {
-                    // Shutting down the parser may invoke messageComplete()
-                    if (!parser.shutdownInput())
+                    // Shutting down the parser may invoke messageComplete() or fail()
+                    parser.shutdownInput();
+                    if (state == State.IDLE || state == State.RECEIVE)
                         fail(new EOFException());
                     break;
                 }
@@ -102,6 +104,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
+        state = State.RECEIVE;
+
         HttpExchange exchange = connection.getExchange();
         HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
@@ -112,7 +116,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         Response.Listener currentListener = exchange.listener();
         Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
         HttpClient client = connection.getHttpClient();
-        Response.Listener handlerListener = client.lookup(exchange.request(), response);
+        ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.request(), response);
+        Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
         if (handlerListener == null)
         {
             conversation.last(exchange);
@@ -123,6 +128,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
         else
         {
+            LOG.debug("Found protocol handler {}", protocolHandler);
             if (currentListener == initialListener)
                 conversation.listener(handlerListener);
             else
@@ -214,7 +220,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     {
         HttpExchange exchange = connection.getExchange();
         // The exchange may be null if it was failed before
-        if (exchange != null && !failed)
+        if (exchange != null && state == State.RECEIVE)
             success();
         return true;
     }
@@ -222,7 +228,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     protected void success()
     {
         parser.reset();
-        decoder = null;
+        state = State.SUCCESS;
 
         HttpExchange exchange = connection.getExchange();
         HttpResponse response = exchange.response();
@@ -233,7 +239,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         notifier.notifySuccess(conversation.listener(), response);
         if (result != null)
+        {
             notifier.notifyComplete(conversation.listener(), result);
+            reset();
+        }
     }
 
     protected void fail(Throwable failure)
@@ -247,7 +256,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             return;
 
         parser.close();
-        failed = true;
+        state = State.FAILURE;
 
         HttpResponse response = exchange.response();
         LOG.debug("Failed {} {}", response, failure);
@@ -257,7 +266,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         notifier.notifyFailure(conversation.listener(), response, failure);
         if (result != null)
+        {
             notifier.notifyComplete(conversation.listener(), result);
+            reset();
+        }
     }
 
     @Override
@@ -281,9 +293,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new TimeoutException());
     }
 
+    private void reset()
+    {
+        decoder = null;
+        state = State.IDLE;
+    }
+
     private class DoubleResponseListener implements Response.Listener
     {
-        private final ResponseNotifier notifier = new ResponseNotifier();
         private final Response.Listener listener1;
         private final Response.Listener listener2;
 
@@ -334,5 +351,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             notifier.notifyComplete(listener1, result);
             notifier.notifyComplete(listener2, result);
         }
+    }
+
+    private enum State
+    {
+        IDLE, RECEIVE, SUCCESS, FAILURE
     }
 }

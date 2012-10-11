@@ -35,31 +35,21 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientSelectorManager.class);
-    private final Executor executor;
-    private final Scheduler scheduler;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private SslContextFactory sslContextFactory;
 
     public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, WebSocketPolicy policy)
     {
-        super();
+        super(executor, scheduler);
         this.bufferPool = bufferPool;
-        this.executor = executor;
-        this.scheduler = scheduler;
         this.policy = policy;
-    }
-
-    @Override
-    protected void execute(Runnable task)
-    {
-        this.executor.execute(task);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -71,7 +61,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
         LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
-        IWebSocketClient client = (IWebSocketClient)attachment;
+        DefaultWebSocketClient client = (DefaultWebSocketClient)attachment;
 
         try
         {
@@ -83,7 +73,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                 if (sslContextFactory != null)
                 {
                     SSLEngine engine = newSSLEngine(sslContextFactory,channel);
-                    SslConnection sslConnection = new SslConnection(bufferPool,executor,endPoint,engine);
+                    SslConnection sslConnection = new SslConnection(bufferPool,getExecutor(),endPoint,engine);
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
 
                     Connection connection = newUpgradeConnection(channel,sslEndPoint,client);
@@ -116,7 +106,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
         LOG.debug("newEndPoint({}, {}, {})",channel,selectSet,selectionKey);
-        return new SelectChannelEndPoint(channel,selectSet,selectionKey,scheduler,policy.getIdleTimeout());
+        return new SelectChannelEndPoint(channel,selectSet,selectionKey,getScheduler(),policy.getIdleTimeout());
     }
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -128,7 +118,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return engine;
     }
 
-    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, IWebSocketClient client)
+    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, DefaultWebSocketClient client)
     {
         WebSocketClientFactory factory = client.getFactory();
         Executor executor = factory.getExecutor();

@@ -142,9 +142,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         CloseInfo close = new CloseInfo(statusCode,reason);
         FutureCallback<Void> nop = new FutureCallback<>();
-        ControlFrameBytes<Void> frameBytes = new ControlFrameBytes<Void>(this,nop,null,close.asFrame());
-        queue.append(frameBytes);
-        flush();
+        output(null,nop,close.asFrame());
     }
 
     public void flush()

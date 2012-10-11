@@ -23,8 +23,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.net.ssl.SSLEngine;
+
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.FilterConnection;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -96,8 +100,20 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
         String dft=_defaultProtocol;
         if (dft==null)
             dft=_protocols.get(0);
+        
+        SSLEngine engine=null;
+        EndPoint ep=endPoint;
+        while(engine==null && ep!=null)
+        {
+            if (ep instanceof SslConnection.DecryptedEndPoint)
+                engine=((SslConnection.DecryptedEndPoint)ep).getSslConnection().getSSLEngine();
+            if (ep instanceof FilterConnection.FilteredEndPoint) // TODO make more generic
+                ep=((FilterConnection.FilteredEndPoint)ep).getWrappedEndPoint();
+            else
+                ep=null;
+        }
 
-        return configure(new NextProtoNegoServerConnection((DecryptedEndPoint)endPoint, connector,protocols,_defaultProtocol),connector,endPoint);
+        return configure(new NextProtoNegoServerConnection(endPoint, engine, connector,protocols,_defaultProtocol),connector,endPoint);
     }
 
     @Override

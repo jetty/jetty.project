@@ -46,13 +46,13 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class HttpOutput extends ServletOutputStream
 {
-    private final HttpChannel _channel;
+    private final HttpChannel<?> _channel;
     private boolean _closed;
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
 
-    public HttpOutput(HttpChannel channel)
+    public HttpOutput(HttpChannel<?> channel)
     {
         _channel = channel;
         _bufferSize = _channel.getHttpChannelConfig().getOutputBufferSize();
@@ -114,9 +114,9 @@ public class HttpOutput extends ServletOutputStream
             _channel.write(BufferUtil.EMPTY_BUFFER, false);
     }
 
-    public boolean checkAllWritten() throws IOException
+    public boolean closeIfAllContentWritten() throws IOException
     {
-        return _channel.getResponse().checkAllContentWritten(_written);
+        return _channel.getResponse().closeIfAllContentWritten(_written);
     }
 
     @Override
@@ -169,10 +169,8 @@ public class HttpOutput extends ServletOutputStream
         _written += len;
 
         // Check if all written or full
-        if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
-        {
+        if (!closeIfAllContentWritten() && BufferUtil.isFull(_aggregate))
             _channel.write(_aggregate, false);
-        }
     }
 
     @Override
@@ -188,7 +186,7 @@ public class HttpOutput extends ServletOutputStream
         _written++;
 
         // Check if all written or full
-        if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
+        if (!closeIfAllContentWritten() && BufferUtil.isFull(_aggregate))
             _channel.write(_aggregate, false);
     }
 

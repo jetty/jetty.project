@@ -198,15 +198,26 @@ public class HttpGenerator
                     else
                         generateHeaders(info,header,content,last);
 
-                    // handle the content.
-                    int len = BufferUtil.length(content);
-                    if (len>0)
+                    boolean expect100 = info.getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+
+                    if (expect100)
                     {
-                        _contentPrepared+=len;
-                        if (isChunking())
-                            prepareChunk(header,len);
+                        _state = State.COMMITTED;
                     }
-                    _state = last?State.COMPLETING:State.COMMITTED;
+                    else
+                    {
+                        // handle the content.
+                        int len = BufferUtil.length(content);
+                        if (len>0)
+                        {
+                            _contentPrepared+=len;
+                            if (isChunking())
+                                prepareChunk(header,len);
+                        }
+                        _state = last?State.COMPLETING:State.COMMITTED;
+                    }
+
+                    return Result.FLUSH;
                 }
                 catch(Exception e)
                 {
@@ -217,8 +228,6 @@ public class HttpGenerator
                 {
                     BufferUtil.flipToFlush(header,pos);
                 }
-
-                return Result.FLUSH;
             }
 
             case COMMITTED:

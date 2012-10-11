@@ -19,11 +19,13 @@
 package org.eclipse.jetty.websocket.core.protocol;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.ProtocolException;
 import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
@@ -162,6 +164,31 @@ public class Generator
             }
         }
 
+    }
+
+    public void configureFromExtensions(List<? extends Extension> exts)
+    {
+        // default
+        this.rsv1InUse = false;
+        this.rsv2InUse = false;
+        this.rsv3InUse = false;
+
+        // configure from list of extensions in use
+        for(Extension ext: exts)
+        {
+            if (ext.isRsv1User())
+            {
+                this.rsv1InUse = true;
+            }
+            if (ext.isRsv2User())
+            {
+                this.rsv2InUse = true;
+            }
+            if (ext.isRsv3User())
+            {
+                this.rsv3InUse = true;
+            }
+        }
     }
 
     /**
@@ -366,21 +393,6 @@ public class Generator
     public boolean isRsv3InUse()
     {
         return rsv3InUse;
-    }
-
-    public void setRsv1InUse(boolean rsv1InUse)
-    {
-        this.rsv1InUse = rsv1InUse;
-    }
-
-    public void setRsv2InUse(boolean rsv2InUse)
-    {
-        this.rsv2InUse = rsv2InUse;
-    }
-
-    public void setRsv3InUse(boolean rsv3InUse)
-    {
-        this.rsv3InUse = rsv3InUse;
     }
 
     @Override

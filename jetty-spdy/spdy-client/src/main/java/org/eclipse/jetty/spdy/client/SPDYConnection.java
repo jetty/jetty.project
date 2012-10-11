@@ -52,7 +52,8 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
 
     public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,int bufferSize)
     {
-        super(endPoint, executor);
+        // TODO explain why we are passing false here
+        super(endPoint, executor, false);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);

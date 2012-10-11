@@ -46,21 +46,30 @@ public abstract class AbstractConnection implements Connection
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback<Void> _readCallback;
-    private int _inputBufferSize=8192;
+    private int _inputBufferSize=2048;
 
     public AbstractConnection(EndPoint endp, Executor executor)
     {
-        this(endp, executor, true);
+        this(endp,executor,true);
     }
-
-    public AbstractConnection(EndPoint endp, Executor executor, final boolean dispatchCompletion)
+    
+    public AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnfillable)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endp;
         _executor = executor;
-        _readCallback = new ExecutorCallback<Void>(executor)
+        _readCallback = new ExecutorCallback<Void>(executor,0)
         {
+            @Override
+            public void completed(Void context)
+            {
+                if (executeOnfillable)
+                    super.completed(context);
+                else
+                    onCompleted(context);
+            }
+            
             @Override
             protected void onCompleted(Void context)
             {
@@ -108,15 +117,9 @@ public abstract class AbstractConnection implements Connection
             }
 
             @Override
-            protected boolean alwaysDispatchCompletion()
-            {
-                return dispatchCompletion;
-            }
-
-            @Override
             public String toString()
             {
-                return String.format("AC.ReadCB@%x", AbstractConnection.this.hashCode());
+                return String.format("AC.ExReadCB@%x", AbstractConnection.this.hashCode());
             }
         };
     }
@@ -137,11 +140,11 @@ public abstract class AbstractConnection implements Connection
         _inputBufferSize = inputBufferSize;
     }
 
-    public Executor getExecutor()
+    protected Executor getExecutor()
     {
         return _executor;
     }
-
+    
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
@@ -186,7 +189,7 @@ public abstract class AbstractConnection implements Connection
      * <p>Callback method invoked when the endpoint failed to be ready to be read.</p>
      * @param cause the exception that caused the failure
      */
-    public void onFillInterestedFailed(Throwable cause)
+    protected void onFillInterestedFailed(Throwable cause)
     {
         LOG.debug("{} onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())

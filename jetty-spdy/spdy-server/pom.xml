@@ -46,7 +46,7 @@
                     <argLine>-Xbootclasspath/p:${project.build.directory}/npn/npn-boot-${npn.version}.jar</argLine>
                 </configuration>
             </plugin>
-<!--            <plugin>
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -57,22 +57,14 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                 <Import-Package>javax.net.ssl.*,*</Import-Package>
-                                 <Export-Package>*</Export-Package>
+                                <Export-Package>org.eclipse.jetty.spdy.server;version="9.0"</Export-Package>
+                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <_nouses>true</_nouses>
                             </instructions>
                           </configuration>
                        </execution>
                   </executions>
             </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jar-plugin</artifactId>
-              <configuration>
-                  <archive>
-                      <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                  </archive>
-              </configuration>
-            </plugin> -->
         </plugins>
     </build>
 

@@ -47,7 +47,7 @@ public class ChromeTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testUpgradeWithWebkitDeflateExtension() throws Exception
     {
@@ -59,7 +59,7 @@ public class ChromeTest
             client.connect();
             client.sendStandardRequest();
             String response = client.expectUpgradeResponse();
-            Assert.assertThat("Response", response, not(containsString("x-webkit-deflate-frame")));
+            Assert.assertThat("Response",response,containsString("x-webkit-deflate-frame"));
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

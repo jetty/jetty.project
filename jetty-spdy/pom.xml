@@ -79,6 +79,7 @@
                             <instructions>
                                 <Export-Package>org.eclipse.jetty.spdy.*;version="9.0"</Export-Package>
                                 <Import-Package>org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <_nouses>true</_nouses>
                             </instructions>
                           </configuration>
                        </execution>

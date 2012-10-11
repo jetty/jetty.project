@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -39,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -64,12 +68,6 @@ import org.eclipse.jetty.websocket.core.protocol.Parser;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
 
 /**
  * A simple websocket client for performing unit tests with.
@@ -219,6 +217,9 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         // Connect extensions
         if (extensions != null)
         {
+            generator.configureFromExtensions(extensions);
+            parser.configureFromExtensions(extensions);
+
             Iterator<Extension> extIter;
             // Connect outgoings
             extIter = extensions.iterator();
@@ -227,20 +228,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
-
-                // Handle RSV reservations
-                if (ext.useRsv1())
-                {
-                    generator.setRsv1InUse(true);
-                }
-                if (ext.useRsv2())
-                {
-                    generator.setRsv2InUse(true);
-                }
-                if (ext.useRsv3())
-                {
-                    generator.setRsv3InUse(true);
-                }
             }
 
             // Connect incomings

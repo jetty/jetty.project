@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,19 +38,12 @@ import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture.Write;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-
-public class DeflateFrameExtensionTest
+public class CompressMessageExtensionTest
 {
     /**
      * Test a large payload (a payload length over 65535 bytes)
@@ -206,7 +201,7 @@ public class DeflateFrameExtensionTest
         CompressExtension ext = new CompressExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         ext.setNextIncomingFrames(capture);

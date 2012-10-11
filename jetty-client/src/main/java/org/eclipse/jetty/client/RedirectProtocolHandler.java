@@ -28,12 +28,13 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
 {
     private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirect";
 
-    private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpClient client;
+    private final ResponseNotifier notifier;
 
     public RedirectProtocolHandler(HttpClient client)
     {
         this.client = client;
+        this.notifier = new ResponseNotifier(client);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     private void redirect(Result result, HttpMethod method, String location)
     {
         Request request = result.getRequest();
-        HttpConversation conversation = client.getConversation(request);
+        HttpConversation conversation = client.getConversation(request.conversation());
         Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
             redirects = 0;
@@ -114,7 +115,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
 
-            Request redirect = client.newRequest(request.id(), location);
+            Request redirect = client.newRequest(request.conversation(), location);
 
             // Use given method
             redirect.method(method);
@@ -140,7 +141,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     {
         Request request = result.getRequest();
         Response response = result.getResponse();
-        HttpConversation conversation = client.getConversation(request);
+        HttpConversation conversation = client.getConversation(request.conversation());
         Response.Listener listener = conversation.exchanges().peekFirst().listener();
         // TODO: should we reply all event, or just the failure ?
         notifier.notifyFailure(listener, response, failure);

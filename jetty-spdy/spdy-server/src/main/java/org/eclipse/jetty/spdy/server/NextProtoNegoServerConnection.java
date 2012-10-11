@@ -35,23 +35,21 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class NextProtoNegoServerConnection extends AbstractConnection implements NextProtoNego.ServerProvider
 {
-    private final Logger logger = Log.getLogger(getClass());
+    private final Logger LOG = Log.getLogger(getClass());
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
     private final String defaultProtocol;
-    private boolean completed; // No need to be volatile: it is modified and read by the same thread
+    private String nextProtocol; // No need to be volatile: it is modified and read by the same thread
 
-
-    public NextProtoNegoServerConnection(DecryptedEndPoint endPoint, Connector connector, List<String>protocols, String defaultProtocol)
+    public NextProtoNegoServerConnection(EndPoint endPoint, SSLEngine engine, Connector connector, List<String>protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.protocols = protocols;
-        this.defaultProtocol=defaultProtocol;
-        engine = endPoint.getSslConnection().getSSLEngine();
-
-        NextProtoNego.put(engine,this);
+        this.defaultProtocol = defaultProtocol;
+        this.engine = engine;
+        NextProtoNego.put(engine, this);
     }
 
     @Override
@@ -62,21 +60,27 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     }
 
     @Override
-    public void onClose()
-    {
-        super.onClose();
-    }
-
-    @Override
     public void onFillable()
     {
         while (true)
         {
             int filled = fill();
-            if (filled == 0 && !completed)
+            if (filled == 0 && nextProtocol == null)
                 fillInterested();
-            if (filled <= 0 || completed)
+            if (filled <= 0 || nextProtocol != null)
                 break;
+        }
+        
+        if (nextProtocol != null)
+        {
+            ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocol);
+            EndPoint endPoint = getEndPoint();
+            Connection oldConnection = endPoint.getConnection();
+            oldConnection.onClose();
+            Connection connection = connectionFactory.newConnection(connector, endPoint);
+            LOG.debug("{} switching from {} to {}", this, oldConnection, connection);
+            endPoint.setConnection(connection);
+            getEndPoint().getConnection().onOpen();
         }
     }
 
@@ -88,7 +92,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         }
         catch (IOException x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             getEndPoint().close();
             return -1;
         }
@@ -109,13 +113,8 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void protocolSelected(String protocol)
     {
+        LOG.debug("{} protocol selected {}", this, protocol);
+        nextProtocol = protocol;
         NextProtoNego.remove(engine);
-        ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
-        EndPoint endPoint = getEndPoint();
-        endPoint.getConnection().onClose();
-        Connection connection = connectionFactory.newConnection(connector, endPoint);
-        endPoint.setConnection(connection);
-        connection.onOpen();
-        completed = true;
     }
 }

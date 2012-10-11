@@ -60,18 +60,12 @@ public class SelectChannelEndPointInterestsTest
         connector = ServerSocketChannel.open();
         connector.bind(new InetSocketAddress("localhost", 0));
 
-        selectorManager = new SelectorManager()
+        selectorManager = new SelectorManager(threadPool, scheduler)
         {
-            @Override
-            protected void execute(Runnable task)
-            {
-                threadPool.execute(task);
-            }
-
             @Override
             protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
             {
-                return new SelectChannelEndPoint(channel, selector, selectionKey, scheduler, 60000)
+                return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), 60000)
                 {
                     @Override
                     protected void onIncompleteFlush()
@@ -85,7 +79,7 @@ public class SelectChannelEndPointInterestsTest
             @Override
             public Connection newConnection(SocketChannel channel, final EndPoint endPoint, Object attachment)
             {
-                return new AbstractConnection(endPoint, threadPool)
+                return new AbstractConnection(endPoint, getExecutor())
                 {
                     @Override
                     public void onOpen()

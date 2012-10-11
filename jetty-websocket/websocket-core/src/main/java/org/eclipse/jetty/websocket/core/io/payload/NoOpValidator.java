@@ -23,11 +23,11 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 /**
- * Binary payload validator does nothing, essentially.
+ * payload validator does no validation.
  */
-public class BinaryValidator implements PayloadProcessor
+public class NoOpValidator implements PayloadProcessor
 {
-    public static final BinaryValidator INSTANCE = new BinaryValidator();
+    public static final NoOpValidator INSTANCE = new NoOpValidator();
 
     @Override
     public void process(ByteBuffer payload)

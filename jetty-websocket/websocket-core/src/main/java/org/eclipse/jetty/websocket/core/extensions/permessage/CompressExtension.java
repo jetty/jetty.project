@@ -267,7 +267,7 @@ public class CompressExtension extends Extension
      * Indicates use of RSV1 flag for indicating deflation is in use.
      */
     @Override
-    public boolean useRsv1()
+    public boolean isRsv1User()
     {
         return true;
     }

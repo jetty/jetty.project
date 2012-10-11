@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.core.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
@@ -34,11 +34,11 @@ import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
     private final WebSocketClientFactory factory;
-    private final IWebSocketClient client;
+    private final DefaultWebSocketClient client;
     private final Masker masker;
     private boolean connected;
 
-    public WebSocketClientConnection(EndPoint endp, Executor executor, IWebSocketClient client)
+    public WebSocketClientConnection(EndPoint endp, Executor executor, DefaultWebSocketClient client)
     {
         super(endp,executor,client.getFactory().getScheduler(),client.getPolicy(),client.getFactory().getBufferPool());
         this.client = client;
@@ -47,7 +47,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.masker = client.getMasker();
     }
 
-    public IWebSocketClient getClient()
+    public DefaultWebSocketClient getClient()
     {
         return client;
     }

@@ -52,7 +52,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
         SslContextFactory sslContextFactory = new SslContextFactory();
         // Force TLSv1
         sslContextFactory.setIncludeProtocols("TLSv1");
-        return new SPDYClient.Factory(threadPool, sslContextFactory, 30000);
+        return new SPDYClient.Factory(threadPool, null, sslContextFactory, 30000);
     }
 
     @Test

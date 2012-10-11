@@ -327,18 +327,19 @@ public class SslConnection extends AbstractConnection
             // TODO does this need idle timeouts
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
-
-        public EndPoint getEncryptedEndPoint()
-        {
-            return getEndPoint();
-        }
-
+        
         @Override
         protected FillInterest getFillInterest()
         {
             return super.getFillInterest();
         }
 
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            super.setIdleTimeout(idleTimeout);
+            getEndPoint().setIdleTimeout(idleTimeout);
+        }
 
         @Override
         protected WriteFlusher getWriteFlusher()

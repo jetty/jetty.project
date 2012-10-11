@@ -41,7 +41,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
-        return new SPDYClient.Factory(threadPool, sslContextFactory);
+        return new SPDYClient.Factory(threadPool, null, sslContextFactory);
     }
 
     @Before

@@ -29,6 +29,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -57,22 +58,27 @@ public class SslConnectionTest
     private volatile boolean _testFill=true;
     private volatile FutureCallback<Void> _writeCallback;
     protected ServerSocketChannel _connector;
-    protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    protected Scheduler _scheduler = new TimerScheduler();
-    protected SelectorManager _manager = new SelectorManager()
+    final AtomicInteger _dispatches = new AtomicInteger();
+    protected QueuedThreadPool _threadPool = new QueuedThreadPool()
     {
+
         @Override
-        protected void execute(Runnable task)
+        public boolean dispatch(Runnable job)
         {
-            _threadPool.execute(task);
+            _dispatches.incrementAndGet();
+            return super.dispatch(job);
         }
 
+    };
+    protected Scheduler _scheduler = new TimerScheduler();
+    protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
+    {
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
+            SslConnection sslConnection = new SslConnection(__byteBufferPool, getExecutor(), endpoint, engine);
 
             Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
@@ -83,7 +89,7 @@ public class SslConnectionTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, _scheduler, 60000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getScheduler(), 60000);
             _lastEndp=endp;
             return endp;
         }
@@ -113,6 +119,7 @@ public class SslConnectionTest
         _threadPool.start();
         _scheduler.start();
         _manager.start();
+
     }
 
     @After
@@ -132,7 +139,7 @@ public class SslConnectionTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool);
+            super(endp, _threadPool,false);
         }
 
         @Override
@@ -228,11 +235,18 @@ public class SslConnectionTest
         server.configureBlocking(false);
         _manager.accept(server);
 
-        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        client.getOutputStream().write("Hello".getBytes("UTF-8"));
         byte[] buffer = new byte[1024];
         int len=client.getInputStream().read(buffer);
-        Assert.assertEquals(10, len);
-        Assert.assertEquals("HelloWorld",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        Assert.assertEquals(5, len);
+        Assert.assertEquals("Hello",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+
+        _dispatches.set(0);
+        client.getOutputStream().write("World".getBytes("UTF-8"));
+        len=5;
+        while(len>0)
+            len-=client.getInputStream().read(buffer);
+        Assert.assertEquals(1, _dispatches.get());
 
         client.close();
     }
