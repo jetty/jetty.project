@@ -20,6 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
@@ -28,6 +30,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class ResponseNotifier
 {
     private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
+    private final HttpClient client;
+
+    public ResponseNotifier(HttpClient client)
+    {
+        this.client = client;
+    }
 
     public void notifyBegin(Response.Listener listener, Response response)
     {
@@ -105,5 +113,39 @@ public class ResponseNotifier
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
+    }
+
+    public void forwardSuccess(Response.Listener listener, Response response)
+    {
+        notifyBegin(listener, response);
+        notifyHeaders(listener, response);
+        if (response instanceof ContentResponse)
+            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+        notifySuccess(listener, response);
+    }
+
+    public void forwardSuccessComplete(Response.Listener listener, Request request, Response response)
+    {
+        HttpConversation conversation = client.getConversation(request.conversation());
+        forwardSuccess(listener, response);
+        conversation.complete();
+        notifyComplete(listener, new Result(request, response));
+    }
+
+    public void forwardFailure(Response.Listener listener, Response response, Throwable failure)
+    {
+        notifyBegin(listener, response);
+        notifyHeaders(listener, response);
+        if (response instanceof ContentResponse)
+            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+        notifyFailure(listener, response, failure);
+    }
+
+    public void forwardFailureComplete(Response.Listener listener, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+    {
+        HttpConversation conversation = client.getConversation(request.conversation());
+        forwardFailure(listener, response, responseFailure);
+        conversation.complete();
+        notifyComplete(listener, new Result(request, requestFailure, response, responseFailure));
     }
 }
