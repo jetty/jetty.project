@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.PushStrategy;
 import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
@@ -110,6 +111,7 @@ public class SpdyServer
 
 
         // Spdy Connector
+        SPDYServerConnectionFactory.checkNPNAvailable();
 
         PushStrategy push = new ReferrerPushStrategy();
         HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);

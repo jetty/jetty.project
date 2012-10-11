@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -73,7 +74,7 @@ public class ReferrerPushStrategy implements PushStrategy
         this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpeg", ".*\\.jpg", ".*\\.gif", ".*\\.ico"));
     }
 
-    public ReferrerPushStrategy(List<String> pushRegexps)
+    public ReferrerPushStrategy(@Name("pushPatterns") List<String> pushRegexps)
     {
         this(pushRegexps, Arrays.asList(
                 "text/css",

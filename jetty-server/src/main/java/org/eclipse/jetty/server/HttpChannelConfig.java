@@ -45,6 +45,20 @@ public class HttpChannelConfig
         HttpChannelConfig getHttpChannelConfig();
     }
     
+    public HttpChannelConfig()
+    {
+    }
+    
+    public HttpChannelConfig(HttpChannelConfig config)
+    {
+        _customizers.addAll(config._customizers);
+        _outputBufferSize=config._outputBufferSize;
+        _requestHeaderSize=config._requestHeaderSize;
+        _responseHeaderSize=config._responseHeaderSize;
+        _securePort=config._securePort;
+        _secureScheme=config._secureScheme;
+    }
+    
     public void addCustomizer(Customizer customizer)
     {
         _customizers.add(customizer);
