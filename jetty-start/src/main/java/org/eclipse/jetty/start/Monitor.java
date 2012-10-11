@@ -17,6 +17,7 @@
 //
 
 package org.eclipse.jetty.start;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.InetAddress;
@@ -113,21 +114,23 @@ public class Monitor extends Thread
                 Config.debug("command=" + cmd);
                 if ("stop".equals(cmd))
                 {
-                    try {socket.close();}catch(Exception e){e.printStackTrace();}
-                    try {_socket.close();}catch(Exception e){e.printStackTrace();}
                     if (_process!=null)
                     {
                         //if we have a child process, wait for it to finish before we stop
                         try
                         {
-                        _process.destroy();
-                        _process.waitFor();
+                            _process.destroy();
+                            _process.waitFor();
+
                         }
                         catch (InterruptedException e)
                         {
                             System.err.println("Interrupted waiting for child to terminate");
                         }
                     }
+                    socket.getOutputStream().write("Stopped\r\n".getBytes());
+                    try {socket.close();}catch(Exception e){e.printStackTrace();}
+                    try {_socket.close();}catch(Exception e){e.printStackTrace();}
                     System.exit(0);
                 }
                 else if ("status".equals(cmd))
