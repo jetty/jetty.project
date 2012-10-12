@@ -124,8 +124,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <li>perform any configuration of the connection (eg. socket linger times)
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
  * method to create a new Connection instance.
- * <li>call the {@link #connectionOpened(Connection)} method to signal a new connection has been created.
- * <li>arrange for the {@link #connectionClosed(Connection)} method to be called once the connection is closed.
  * </nl>
  * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
  * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
@@ -205,6 +203,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
+    @ManagedAttribute("Idle timeout")
     public long getIdleTimeout()
     {
         return _idleTimeout;
@@ -379,6 +378,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
 
     @Override
+    @ManagedAttribute("Protocols supported by this connector")
     public List<String> getProtocols()
     {
         synchronized (_factories)
@@ -395,6 +395,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
     }
 
+    @ManagedAttribute("This connector's default protocol")
     public String getDefaultProtocol()
     {
         return _defaultProtocol;

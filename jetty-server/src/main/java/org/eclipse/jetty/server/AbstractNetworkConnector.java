@@ -23,6 +23,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -30,8 +32,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>
  * Extends the {@link AbstractConnector} support for the {@link NetworkConnector} interface.
  */
+@ManagedObject("AbstractNetworkConnector")
 public abstract class AbstractNetworkConnector extends AbstractConnector implements NetworkConnector
 {
+
     private volatile String _host;
     private volatile int _port = 0;
 
@@ -46,6 +50,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
+    @ManagedAttribute("Host this connector binds to")
     public String getHost()
     {
         return _host;
@@ -57,6 +62,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
+    @ManagedAttribute("Port this connector listens on")
     public int getPort()
     {
         return _port;
