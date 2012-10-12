@@ -98,8 +98,8 @@ public class SessionAuthentication implements Authentication.User, Serializable,
     {
         if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
             _session.removeAttribute(__J_AUTHENTICATED);
-        else 
-            doLogout();
+
+        doLogout();
     }
     
     private void doLogout()

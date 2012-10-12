@@ -31,6 +31,8 @@ import javax.security.auth.message.config.ServerAuthConfig;
 import javax.security.auth.message.config.ServerAuthContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
@@ -38,15 +40,21 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class JaspiAuthenticator extends LoginAuthenticator
 {
+    private static final Logger LOG = Log.getLogger(JaspiAuthenticator.class.getName());
+    
     private final ServerAuthConfig _authConfig;
 
     private final Map _authProperties;
@@ -107,6 +115,28 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
 
+    /** 
+     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
+     */
+    @Override
+    public UserIdentity login(String username, Object password, ServletRequest request)
+    { 
+        UserIdentity user = _loginService.login(username, password);
+        if (user != null)
+        {
+            renewSession((HttpServletRequest)request, null);
+            HttpSession session = ((HttpServletRequest)request).getSession(true);
+            if (session != null)
+            {
+                SessionAuthentication sessionAuth = new SessionAuthentication(getAuthMethod(), user, password);
+                session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, sessionAuth);
+            }
+        }
+        return user;
+    }
+
+    
+
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
     {
         try
@@ -151,6 +181,12 @@ public class JaspiAuthenticator extends LoginAuthenticator
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
                     userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
                 }
+                
+                HttpSession session = ((HttpServletRequest)messageInfo.getRequestMessage()).getSession(false);
+                Authentication cached = (session == null?null:(SessionAuthentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED));
+                if (cached != null)
+                    return cached;
+                
                 return new UserAuthentication(getAuthMethod(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)

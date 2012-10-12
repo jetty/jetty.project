@@ -81,6 +81,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return Constraint.__CERT_AUTH;
     }
     
+    
+
     /**
      * @return Authentication for request
      * @throws ServerAuthException
@@ -121,10 +123,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
                     final char[] credential = B64Code.encode(cert.getSignature());
 
-                    UserIdentity user = _loginService.login(username,credential);
+                    UserIdentity user = login(username, credential, req);
                     if (user!=null)
                     {
-                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }

@@ -54,6 +54,8 @@ public class BasicAuthenticator extends LoginAuthenticator
         return Constraint.__BASIC_AUTH;
     }
 
+ 
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
@@ -85,10 +87,9 @@ public class BasicAuthenticator extends LoginAuthenticator
                             String username = credentials.substring(0,i);
                             String password = credentials.substring(i+1);
 
-                            UserIdentity user = _loginService.login(username,password);
+                            UserIdentity user = login (username, password, request);
                             if (user!=null)
                             {
-                                renewSession(request,response);
                                 return new UserAuthentication(getAuthMethod(),user);
                             }
                         }

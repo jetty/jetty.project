@@ -60,6 +60,8 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         return _authMethod;
     }
 
+
+
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {        
         HttpServletRequest req = (HttpServletRequest)request;
@@ -96,7 +98,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             String spnegoToken = header.substring(10);
             
-            UserIdentity user = _loginService.login(null,spnegoToken);
+            UserIdentity user = login(null,spnegoToken, request);
             
             if ( user != null )
             {

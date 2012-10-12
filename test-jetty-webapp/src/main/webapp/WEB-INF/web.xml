@@ -105,6 +105,17 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
   -->
+  <servlet>
+    <servlet-name>Login</servlet-name>
+    <servlet-class>com.acme.LoginServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Login</servlet-name>
+    <url-pattern>/login/*</url-pattern>
+  </servlet-mapping>
+
 
   <servlet>
     <servlet-name>Hello</servlet-name>

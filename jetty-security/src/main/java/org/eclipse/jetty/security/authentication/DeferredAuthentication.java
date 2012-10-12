@@ -29,6 +29,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.Authenticator;
@@ -73,6 +74,7 @@ public class DeferredAuthentication implements Authentication.Deferred
                 
                 if (identity_service!=null)
                     _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
+                
                 return authentication;
             }
         }
@@ -80,6 +82,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
+
         return this;
     }
     
@@ -110,21 +113,16 @@ public class DeferredAuthentication implements Authentication.Deferred
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
      */
-    public Authentication login(String username, String password)
+    public Authentication login(String username, Object password, ServletRequest request)
     {
-        LoginService login_service= _authenticator.getLoginService();
-        IdentityService identity_service=login_service.getIdentityService();
-        
-        if (login_service!=null)
+        UserIdentity identity = _authenticator.login(username, password, request);
+        if (identity != null)
         {
-            UserIdentity user = login_service.login(username,password);
-            if (user!=null)
-            {
-                UserAuthentication authentication = new UserAuthentication("API",user);
-                if (identity_service!=null)
-                    _previousAssociation=identity_service.associate(user);
-                return authentication;
-            }
+            IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
+            UserAuthentication authentication = new UserAuthentication("API",identity);
+            if (identity_service != null)
+                _previousAssociation=identity_service.associate(identity);
+            return authentication;
         }
         return null;
     }

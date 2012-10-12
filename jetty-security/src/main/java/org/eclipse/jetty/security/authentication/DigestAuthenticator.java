@@ -116,6 +116,8 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         return true;
     }
+    
+
 
     /* ------------------------------------------------------------ */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
@@ -185,10 +187,10 @@ public class DigestAuthenticator extends LoginAuthenticator
 
                 if (n > 0)
                 {
-                    UserIdentity user = _loginService.login(digest.username,digest);
+                    //UserIdentity user = _loginService.login(digest.username,digest);
+                    UserIdentity user = login(digest.username, digest, req);
                     if (user!=null)
                     {
-                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
