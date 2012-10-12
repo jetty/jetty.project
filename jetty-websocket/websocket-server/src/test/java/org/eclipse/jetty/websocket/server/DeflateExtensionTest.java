@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
@@ -27,11 +29,7 @@ import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class DeflateExtensionTest
 {
@@ -51,12 +49,11 @@ public class DeflateExtensionTest
     }
 
     @Test
-    @Ignore("Not yet working")
     public void testDeflateFrameExtension() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
-        client.addExtensions("x-deflate-frame;minLength=8");
+        client.addExtensions("x-webkit-deflate-frame");
         client.setProtocols("echo");
 
         try
@@ -67,17 +64,12 @@ public class DeflateExtensionTest
             client.sendStandardRequest();
             String resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp,containsString("x-deflate"));
+            Assert.assertThat("Response",resp,containsString("x-webkit-deflate-frame"));
 
-            // Server sends a big message
-            StringBuilder msg = new StringBuilder();
-            for (int i = 0; i < 400; i++)
-            {
-                msg.append("0123456789ABCDEF ");
-            }
-            msg.append('X'); // so we can see the end in our debugging
+            String msg = "Hello";
 
-            client.write(WebSocketFrame.text(msg.toString()));
+            // Client sends message.
+            client.write(WebSocketFrame.text(msg));
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = capture.getFrames().get(0);

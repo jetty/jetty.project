@@ -16,19 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions;
+package org.eclipse.jetty.websocket.core.extensions.compress;
 
-import org.eclipse.jetty.websocket.core.extensions.compress.DeflateCompressionMethodTest;
-import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageCompressionExtensionTest;
-import org.eclipse.jetty.websocket.core.extensions.compress.WebkitDeflateFrameExtensionTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.nio.ByteBuffer;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses(
-        { DeflateCompressionMethodTest.class, PerMessageCompressionExtensionTest.class, FragmentExtensionTest.class, IdentityExtensionTest.class,
-        WebkitDeflateFrameExtensionTest.class })
-public class AllTests
+/**
+ * Compression Method
+ */
+public interface CompressionMethod
 {
-    /* nothing to do here, its all done in the annotations */
+    public interface Process
+    {
+        public void begin();
+
+        public void end();
+
+        public void input(ByteBuffer input);
+
+        public boolean isDone();
+
+        public ByteBuffer process();
+    }
+
+    public Process compress();
+
+    public Process decompress();
 }

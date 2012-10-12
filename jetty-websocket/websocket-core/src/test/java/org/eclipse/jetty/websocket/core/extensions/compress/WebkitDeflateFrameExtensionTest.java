@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions;
+package org.eclipse.jetty.websocket.core.extensions.compress;
 
 import static org.hamcrest.Matchers.*;
 
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.ByteBufferAssert;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.deflate.WebkitDeflateFrameExtension;
+import org.eclipse.jetty.websocket.core.extensions.compress.WebkitDeflateFrameExtension;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.protocol.Generator;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;

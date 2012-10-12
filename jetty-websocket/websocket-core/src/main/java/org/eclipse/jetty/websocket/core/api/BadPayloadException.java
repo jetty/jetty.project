@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.api;
 
-import org.eclipse.jetty.websocket.core.extensions.permessage.CompressExtension;
+import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageCompressionExtension;
 
 /**
  * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
- * payload. (eg: not UTF-8 in a text frame, or a bad data seen in the {@link CompressExtension})
+ * payload. (eg: not UTF-8 in a text frame, or a bad data seen in the {@link PerMessageCompressionExtension})
  * 
  * @see StatusCode#BAD_PAYLOAD
  */
