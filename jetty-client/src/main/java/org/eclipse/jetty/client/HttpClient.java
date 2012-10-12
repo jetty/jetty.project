@@ -149,8 +149,14 @@ public class HttpClient extends ContainerLifeCycle
             setDispatchIO(false);
         }
 
+        String name = HttpClient.class.getSimpleName() + "@" + hashCode();
+
         if (executor == null)
-            executor = new QueuedThreadPool();
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setName(name);
+            executor = threadPool;
+        }
         addBean(executor);
 
         if (byteBufferPool == null)
@@ -158,7 +164,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = new TimerScheduler(HttpClient.class.getSimpleName() + "@" + hashCode() + "-Scheduler");
+            scheduler = new TimerScheduler(name + "-scheduler");
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
