@@ -311,12 +311,11 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        String host = request.host().toLowerCase();
         int port = request.port();
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        provideDestination(scheme, host, port).send(request, listener);
+        provideDestination(scheme, request.host(), port).send(request, listener);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
