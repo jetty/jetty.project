@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -426,5 +427,37 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         {
             logger.setHideStacks(false);
         }
+    }
+
+    @Slow
+    @Test
+    public void test_IdleConnection_IsClosed_OnRemoteClose() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(scheme)
+                .send()
+                .get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.status());
+
+        connector.stop();
+
+        // Give the connection some time to process the remote close
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
     }
 }

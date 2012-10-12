@@ -286,8 +286,15 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         HttpExchange exchange = getExchange();
         if (exchange != null)
+        {
             exchange.receive();
-        // If there is no exchange, we just ignore because the selector may be woken up by a remote close
+        }
+        else
+        {
+            // If there is no exchange, then could be either a remote close,
+            // or garbage bytes; in both cases we close the connection
+            close();
+        }
     }
 
     protected void receive()
@@ -314,7 +321,6 @@ public class HttpConnection extends AbstractConnection implements Connection
                     {
                         if ("close".equalsIgnoreCase(values.nextElement()))
                         {
-                            destination.remove(this);
                             close();
                             return;
                         }
@@ -324,7 +330,6 @@ public class HttpConnection extends AbstractConnection implements Connection
             }
             else
             {
-                destination.remove(this);
                 close();
             }
         }
@@ -356,6 +361,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     public void close()
     {
+        destination.remove(this);
         getEndPoint().shutdownOutput();
         LOG.debug("{} oshut", this);
         getEndPoint().close();
