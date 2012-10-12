@@ -64,7 +64,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             while (true)
             {
                 int read = endPoint.fill(buffer);
-                LOG.debug("Read {} bytes", read);
+                LOG.debug("Read {} bytes from {}", read, connection);
                 if (read > 0)
                 {
                     while (buffer.hasRemaining())
