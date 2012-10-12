@@ -132,8 +132,9 @@ public class PatternRuleTest
     {
         _rule.setPattern(matchCase[0]);
         final String uri=matchCase[1];
+        
         String result = _rule.matchAndApply(uri,
-        new Request()
+        new Request(null,null)
         {
             {
                 setRequestURI(uri);

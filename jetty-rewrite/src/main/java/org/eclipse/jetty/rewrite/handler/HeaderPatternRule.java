@@ -80,6 +80,7 @@ public class HeaderPatternRule extends PatternRule
      * 
      *@see org.eclipse.jetty.rewrite.handler.Rule#matchAndApply(String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
+    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         // process header
@@ -125,6 +126,7 @@ public class HeaderPatternRule extends PatternRule
     /**
      * Returns the header contents.
      */
+    @Override
     public String toString()
     {
         return super.toString()+"["+_name+","+_value+"]";

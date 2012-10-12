@@ -405,20 +405,20 @@
     <module>jetty-jndi</module>
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
-
     <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-osgi</module>
-
     <module>example-async-rest</module>
+    <module>jetty-rewrite</module>
+
     <!-- modules that need fixed and added back, or simply dropped and not maintained
+    <module>tests</module>
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
     <module>jetty-proxy</module>
-    <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
@@ -426,8 +426,6 @@
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
     <module>test-jetty-nested</module>
-    <module>test-jetty-servlet</module>
-    <module>tests</module>
     -->
   </modules>
   <dependencyManagement>

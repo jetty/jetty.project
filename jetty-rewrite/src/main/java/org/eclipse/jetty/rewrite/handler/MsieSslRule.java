@@ -23,8 +23,8 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.StringMap;
 
 /**
@@ -55,11 +55,12 @@ public class MsieSslRule extends Rule
         _terminating = false;
     }
     
+    @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         if (request.isSecure())
         {
-            String user_agent = request.getHeader(HttpHeaders.USER_AGENT);
+            String user_agent = request.getHeader(HttpHeader.USER_AGENT.asString());
             
             if (user_agent!=null)
             {
@@ -71,7 +72,7 @@ public class MsieSslRule extends Rule
                     
                     if ( ieVersion<=IEv5)
                     {
-                        response.setHeader(HttpHeaders.CONNECTION, HttpHeaderValues.CLOSE);
+                        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                         return target;
                     }
 
@@ -81,9 +82,9 @@ public class MsieSslRule extends Rule
                         if (windows>0)
                         {
                             int end=user_agent.indexOf(')',windows+8);
-                            if(end<0 || __IE6_BadOS.getEntry(user_agent,windows+8,end-windows-8)!=null)
+                            if(end<0 || __IE6_BadOS.get(user_agent,windows+8,end-windows-8)!=null)
                             {
-                                response.setHeader(HttpHeaders.CONNECTION, HttpHeaderValues.CLOSE);
+                                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                                 return target;
                             }
                         }

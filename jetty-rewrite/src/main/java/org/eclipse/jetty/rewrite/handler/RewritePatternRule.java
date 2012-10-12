@@ -57,6 +57,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
+    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,target));   
@@ -64,6 +65,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException 
     {
         String uri = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,request.getRequestURI()));
@@ -74,6 +76,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     /**
      * Returns the replacement string.
      */
+    @Override
     public String toString()
     {
         return super.toString()+"["+_replacement+"]";
