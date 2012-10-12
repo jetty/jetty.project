@@ -516,6 +516,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selector.wakeup();
         }
 
+        public boolean isSelectorThread()
+        {
+            return Thread.currentThread() == _thread;
+        }
+
         private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
         {
             EndPoint endPoint = newEndPoint(channel, this, selectionKey);
