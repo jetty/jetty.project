@@ -173,6 +173,7 @@ public class HttpOutput extends ServletOutputStream
             _channel.write(_aggregate, false);
     }
 
+    
     @Override
     public void write(int b) throws IOException
     {
@@ -181,7 +182,7 @@ public class HttpOutput extends ServletOutputStream
 
         if (_aggregate == null)
             _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
-
+        
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
 

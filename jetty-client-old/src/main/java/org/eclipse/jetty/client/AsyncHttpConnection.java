@@ -114,6 +114,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                 ByteBuffer chunk=_requestContentChunk;
                                 _requestContentChunk=exchange.getRequestContentChunk(null);
                                 _generator.addContent(chunk,_requestContentChunk==null);
+                                if (_requestContentChunk==null)
+                                    exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
                             }
                         }
                     }
@@ -208,12 +210,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             {
                                 Connection switched=exchange.onSwitchProtocol(_endp);
                                 if (switched!=null)
-                                    connection=switched;
                                 {
                                     // switched protocol!
-                                    _pipeline = null;
                                     if (_pipeline!=null)
+                                    {
                                         _destination.send(_pipeline);
+                                    }
                                     _pipeline = null;
 
                                     connection=switched;

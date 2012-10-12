@@ -35,10 +35,16 @@ public class ClassInheritanceHandler implements ClassHandler
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
 
     
-    MultiMap _inheritanceMap = new MultiMap();
+    MultiMap _inheritanceMap;
     
     public ClassInheritanceHandler()
     {
+       _inheritanceMap = new MultiMap();
+    }
+    
+    public ClassInheritanceHandler(MultiMap map)
+    {
+        _inheritanceMap = map;
     }
 
     public void handle(String className, int version, int access, String signature, String superName, String[] interfaces)

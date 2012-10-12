@@ -509,6 +509,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 initJspServlet();
             }
 
+            initMultiPart();
+            
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -565,6 +567,25 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Register a ServletRequestListener that will ensure tmp multipart
+     * files are deleted when the request goes out of scope.
+     * 
+     * @throws Exception
+     */
+    protected void initMultiPart () throws Exception
+    {
+        //if this servlet can handle multipart requests, ensure tmp files will be
+        //cleaned up correctly
+        if (((Registration)getRegistration()).getMultipartConfig() != null)
+        {
+            //Register a listener to delete tmp files that are created as a result of this
+            //servlet calling Request.getPart() or Request.getParts()
+            ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
+            ch.addEventListener(new Request.MultiPartCleanerListener());
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /**

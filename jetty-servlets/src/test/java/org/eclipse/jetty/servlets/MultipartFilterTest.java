@@ -113,7 +113,7 @@ public class MultipartFilterTest
 
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
     }
 
 

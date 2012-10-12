@@ -23,6 +23,7 @@ import java.util.List;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -38,24 +39,38 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     {
         super(context);
     }
-
+    
+    public WebFilterAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
+    {
+        super(context, list);
+    }
+    
+    @Override
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
-        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className);
+        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className, _resource);
         addAnnotation(wfAnnotation);
     }
 
+    @Override
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<Value> values)
     {
         LOG.warn ("@WebFilter not applicable for fields: "+className+"."+fieldName);
     }
 
+    @Override
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<Value> values)
     {
         LOG.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
+    }
+
+    @Override
+    public String getAnnotationName()
+    {
+        return "javax.servlet.annotation.WebFilter";
     }
 
 }

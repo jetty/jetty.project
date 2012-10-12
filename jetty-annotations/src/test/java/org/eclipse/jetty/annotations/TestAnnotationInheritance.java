@@ -66,6 +66,12 @@ public class TestAnnotationInheritance
         {
             annotatedMethods.add(className+"."+methodName);
         }
+        
+        @Override
+        public String getAnnotationName()
+        {
+            return "org.eclipse.jetty.annotations.Sample";
+        }
     }
 
     @After
@@ -85,7 +91,7 @@ public class TestAnnotationInheritance
 
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
+        parser.registerHandler(handler);
         parser.parse(classNames, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)

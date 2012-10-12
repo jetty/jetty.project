@@ -30,6 +30,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -167,8 +168,16 @@ public class Main
             {
                 int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
                 String key = Config.getProperty("STOP.KEY",null);
-                stop(port,key);
+                stop(port,key, false);
                 return null;
+            }
+            
+            if ("--stop-wait".equals(arg))
+            {
+                int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
+                String key = Config.getProperty("STOP.KEY",null);
+                stop(port,key, true);
+                return null;  
             }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
@@ -268,7 +277,7 @@ public class Main
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
-                                _config.addActiveOption(opt);
+                                _config.addActiveOption(opt.trim());
                         }
                         else
                         {
@@ -983,6 +992,12 @@ public class Main
      */
     public void stop(int port, String key)
     {
+        stop (port,key,false);
+    }
+    
+    
+    public void stop (int port, String key, boolean wait)
+    {
         int _port = port;
         String _key = key;
 
@@ -1005,6 +1020,14 @@ public class Main
                 OutputStream out = s.getOutputStream();
                 out.write((_key + "\r\nstop\r\n").getBytes());
                 out.flush();
+
+                if (wait)
+                {
+                    LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
+                    String response=lin.readLine();
+                    if ("Stopped".equals(response))
+                        System.err.println("Stopped");
+                }
             }
             finally
             {

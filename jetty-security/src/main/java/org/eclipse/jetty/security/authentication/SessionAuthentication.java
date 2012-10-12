@@ -119,18 +119,25 @@ public class SessionAuthentication implements Authentication.User, Serializable,
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
+       
     }
 
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
         if (_session==null)
+        {
             _session=se.getSession();
+        }
     }
 
     @Override
     public void valueBound(HttpSessionBindingEvent event)
     {
+        if (_session==null)
+        {
+            _session=event.getSession();
+        }
     }
 
     @Override

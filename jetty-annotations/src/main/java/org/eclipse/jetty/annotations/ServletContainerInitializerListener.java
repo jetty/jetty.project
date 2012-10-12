@@ -26,6 +26,8 @@ import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -35,7 +37,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServletContainerInitializerListener implements ServletContextListener
 {
-    WebAppContext _context = null;
+    private static final Logger LOG = Log.getLogger(ServletContainerInitializerListener.class);
+    protected WebAppContext _context = null;
 
 
     public void setWebAppContext (WebAppContext context)
@@ -103,14 +106,10 @@ public class ServletContainerInitializerListener implements ServletContextListen
                 }
                 catch (Exception e)
                 {
-                    //OK, how do I throw an exception such that it really stops the startup sequence?
-                    e.printStackTrace();
+                    LOG.warn(e);
+                    throw new RuntimeException(e);
                 }
             }
-
-            //Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
-            //called, need to check to see if there are any ServletRegistrations remaining
-            //that are "preliminary" and fail the deployment if so. Implemented in ServletHolder.doStart().
         }
 
     }
@@ -136,7 +135,6 @@ public class ServletContainerInitializerListener implements ServletContextListen
      */
     public void contextDestroyed(ServletContextEvent sce)
     {
-        // TODO Auto-generated method stub
 
     }
 

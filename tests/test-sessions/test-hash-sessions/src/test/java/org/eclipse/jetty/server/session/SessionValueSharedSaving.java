@@ -16,20 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-
-/**
- * Convenience Generator.
- */
-public class UnitGenerator extends Generator
+public class SessionValueSharedSaving extends AbstractSessionValueSavingTest
 {
-    public UnitGenerator()
+
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        super(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
+        return new HashTestServer(port,max,scavenge);
     }
-    
+
 }

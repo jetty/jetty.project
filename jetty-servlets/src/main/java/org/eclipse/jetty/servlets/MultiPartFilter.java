@@ -77,7 +77,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class MultiPartFilter implements Filter
 {
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
-    private final static String FILES ="org.eclipse.jetty.servlet.MultiPartFilter.files";
+    private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private File tempdir;
     private boolean _deleteFiles;
     private ServletContext _context;
@@ -141,7 +141,8 @@ public class MultiPartFilter implements Filter
 
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
         MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);
-
+        mpis.setDeleteOnExit(_deleteFiles);
+        request.setAttribute(MULTIPART, mpis);
         try
         {
             Collection<Part> parts = mpis.getParts();
@@ -160,18 +161,6 @@ public class MultiPartFilter implements Filter
                             params.add(mp.getName(), mp.getContentDispositionFilename());
                             if (mp.getContentType() != null)
                                 params.add(mp.getName()+CONTENT_TYPE_SUFFIX, mp.getContentType());
-                        }
-                        if (_deleteFiles)
-                        {
-                            mp.getFile().deleteOnExit();
-
-                            ArrayList<File> files = (ArrayList<File>)request.getAttribute(FILES);
-                            if (files==null)
-                            {
-                                files=new ArrayList<>();
-                                request.setAttribute(FILES,files);
-                            }
-                            files.add(mp.getFile());
                         }
                     }
                     else
@@ -193,24 +182,27 @@ public class MultiPartFilter implements Filter
             deleteFiles(request);
         }
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     private void deleteFiles(ServletRequest request)
     {
-        ArrayList<File> files = (ArrayList<File>)request.getAttribute(FILES);
-        if (files!=null)
+        if (!_deleteFiles)
+            return;
+        
+        MultiPartInputStream mpis = (MultiPartInputStream)request.getAttribute(MULTIPART);
+        if (mpis != null)
         {
-            for (File file : files)
+            try
             {
-                try
-                {
-                    file.delete();
-                }
-                catch (Exception e)
-                {
-                    _context.log("failed to delete " + file, e);
-                }
+                mpis.deleteParts();
+            }
+            catch (Exception e)
+            {
+                _context.log("Error deleting multipart tmp files", e);
             }
         }
+        request.removeAttribute(MULTIPART);
     }
 
     /* ------------------------------------------------------------------------------- */

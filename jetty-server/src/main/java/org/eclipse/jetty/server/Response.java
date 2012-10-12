@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.RequestDispatcher;
@@ -58,6 +60,15 @@ public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
 
+    /* ------------------------------------------------------------ */
+    public static Response getResponse(HttpServletResponse response)
+    {
+        if (response instanceof Response)
+            return (Response)response;
+        return HttpChannel.getCurrentHttpChannel().getResponse();
+    }
+    
+    
     public enum OutputType
     {
         NONE, STREAM, WRITER
@@ -76,7 +87,7 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
-    private final HttpChannel _channel;
+    private final HttpChannel<?> _channel;
     private final HttpOutput _out;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
@@ -902,6 +913,22 @@ public class Response implements HttpServletResponse
                     }
                 }
             }
+        }
+    }
+
+    public void reset(boolean preserveCookies)
+    { 
+        if (!preserveCookies)
+            reset();
+        else
+        {
+            ArrayList<String> cookieValues = new ArrayList<String>(5);
+            Enumeration<String> vals = _fields.getValues(HttpHeader.SET_COOKIE.asString());
+            while (vals.hasMoreElements())
+                cookieValues.add(vals.nextElement());
+            reset();
+            for (String v:cookieValues)
+                _fields.add(HttpHeader.SET_COOKIE, v);
         }
     }
 
