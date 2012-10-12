@@ -111,7 +111,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         idleTimeout = endPoint.getIdleTimeout();
         endPoint.setIdleTimeout(request.idleTimeout());
 
-        HttpConversation conversation = client.getConversation(request);
+        HttpConversation conversation = client.getConversation(request.conversation());
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.exchanges().offer(exchange);
@@ -346,6 +346,11 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void abort(HttpResponse response)
     {
         receiver.fail(new HttpResponseException("Response aborted", response));
+    }
+
+    public void proceed(boolean proceed)
+    {
+        sender.proceed(proceed);
     }
 
     @Override

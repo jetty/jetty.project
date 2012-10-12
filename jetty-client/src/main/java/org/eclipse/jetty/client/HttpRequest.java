@@ -101,7 +101,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long id()
+    public long conversation()
     {
         return id;
     }

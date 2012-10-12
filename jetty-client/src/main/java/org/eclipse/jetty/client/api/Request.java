@@ -44,7 +44,7 @@ public interface Request
     /**
      * @return the conversation id
      */
-    long id();
+    long conversation();
 
     /**
      * @return the scheme of this request, such as "http" or "https"
