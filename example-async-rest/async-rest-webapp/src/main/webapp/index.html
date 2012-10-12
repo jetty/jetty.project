@@ -10,7 +10,7 @@
 <p>
 This demo calls the EBay WS API both synchronously and asynchronously,
 to obtain items matching each of the keywords passed on the query
-string.  The time the request thread is head is displayed for both.
+string.  The time the request thread is held by the servlet is displayed in red for both.
 </p>
 
 <table width='100%'>
@@ -34,5 +34,11 @@ string.  The time the request thread is head is displayed for both.
 </tr>
 
 </table>
+By the use of Asynchronous Servlets and the Jetty Asychronous client, the server is able to release the thread (green) while
+waiting for the response from Ebay.  This thread goes back into the thread pool and can service many other requests during the wait.
+This greatly reduces the number of threads needed, which in turn greatly reduces the memory requirements of the server.
+<p>
+Press reload to see even better results after JIT and TCP/IP warmup!
+
 </body>
 </html>

@@ -20,6 +20,7 @@ package org.eclipse.jetty.example.asyncrest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,8 +32,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -53,12 +58,12 @@ public class AsyncRestServlet extends AbstractRestServlet
 
     HttpClient _client;
 
+    @Override
     public void init(ServletConfig servletConfig) throws ServletException
     {
         super.init(servletConfig);
         
         _client = new HttpClient();
-        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
 
         try
         {
@@ -70,6 +75,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         }
     }
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         Long start=System.nanoTime();
@@ -97,19 +103,21 @@ public class AsyncRestServlet extends AbstractRestServlet
             // Send request each keyword
             for (final String item:keywords)
             {
-                _client.send(
-                        new AsyncRestRequest(item)
+                _client.newRequest(restURL(item)).method(HttpMethod.GET).send(
+                    new AsyncRestRequest()
+                    {
+                        @Override
+                        void onAuctionFound(Map<String,String> auction)
                         {
-                            void onAuctionFound(Map<String,String> auction)
-                            {
-                                resultsQueue.add(auction);
-                            }
-                            void onComplete()
-                            {
-                                if (outstanding.decrementAndGet()<=0)
-                                    async.dispatch();
-                            }
-                        });
+                            resultsQueue.add(auction);
+                        }
+                        @Override
+                        void onComplete()
+                        {
+                            if (outstanding.decrementAndGet()<=0)
+                                async.dispatch();
+                        }
+                    });
             }
             
             // save timing info and return
@@ -155,54 +163,63 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.close();
     }
 
-    private abstract class AsyncRestRequest extends ContentExchange
+    private abstract class AsyncRestRequest implements Response.Listener
     {
-        AsyncRestRequest(final String item)
-        {
-            // send the exchange
-            setMethod("GET");
-            setURL(restURL(item));   
+        final Utf8StringBuilder _content = new Utf8StringBuilder();
+        
+        AsyncRestRequest()
+        {  
         }
-        
-        abstract void onAuctionFound(Map<String,String> details);
-        abstract void onComplete();
-        
-        protected void onResponseComplete() throws IOException
+
+        @Override
+        public void onBegin(Response response)
         {
+        }
+
+        @Override
+        public void onHeaders(Response response)
+        {
+        }
+
+        @Override
+        public void onContent(Response response, ByteBuffer content)
+        {
+            byte[] bytes = BufferUtil.toArray(content);
+            _content.append(bytes,0,bytes.length);
+        }
+
+        @Override
+        public void onSuccess(Response response)
+        {            
+        }
+
+        @Override
+        public void onFailure(Response response, Throwable failure)
+        {            
+        }
+
+        @Override
+        public void onComplete(Result result)
+        {         
             // extract auctions from the results
-            Map<String,?> query = (Map<String,?>) JSON.parse(this.getResponseContent());
+            Map<String,?> query = (Map<String,?>) JSON.parse(_content.toString());
             Object[] auctions = (Object[]) query.get("Item");
             if (auctions != null)
             {
                 for (Object o : auctions)
                     onAuctionFound((Map<String,String>)o);
             }
-
             onComplete();
+
         }
 
-        /* ------------------------------------------------------------ */
-        protected void onConnectionFailed(Throwable ex)
-        {
-            getServletContext().log("onConnectionFailed: ",ex);
-            onComplete();
-        }
+        abstract void onAuctionFound(Map<String,String> details);
+        abstract void onComplete();
+        
+    };
 
-        /* ------------------------------------------------------------ */
-        protected void onException(Throwable ex)
-        {
-            getServletContext().log("onConnectionFailed: ",ex);
-            onComplete();
-        }
 
-        /* ------------------------------------------------------------ */
-        protected void onExpire()
-        {
-            getServletContext().log("onConnectionFailed: expired");
-            onComplete();
-        }
-    }
-
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);

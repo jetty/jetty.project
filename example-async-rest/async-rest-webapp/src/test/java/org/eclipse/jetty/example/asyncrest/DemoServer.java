@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.example.asyncrest;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DemoServer
@@ -30,16 +28,13 @@ public class DemoServer
     {
         String jetty_home = System.getProperty("jetty.home",".");
 
-        Server server = new Server();
-        
-        Connector connector=new SelectChannelConnector();
-        connector.setPort(Integer.getInteger("jetty.port",8080).intValue());
-        server.setConnectors(new Connector[]{connector});
-        
+        Server server = new Server(Integer.getInteger("jetty.port",8080).intValue());
+                
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar(jetty_home+"/target/example-async-rest-webapp-8.0.0.M0-SNAPSHOT");
-        
+        webapp.setWar(jetty_home+"/target/async-rest/");
+        webapp.setParentLoaderPriority(true);
+        webapp.setServerClasses(new String[]{});
         server.setHandler(webapp);
         
         server.start();

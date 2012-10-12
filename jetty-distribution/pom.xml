@@ -103,6 +103,16 @@
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
+                  <groupId>org.eclipse.jetty.example-async-rest</groupId>
+                  <artifactId>example-async-rest-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <destFileName>async-rest.war</destFileName>
+                </artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
@@ -492,6 +502,12 @@
         <dependency>
           <groupId>org.eclipse.jetty.spdy</groupId>
           <artifactId>spdy-example-webapp</artifactId>
+          <version>${project.version}</version>
+          <type>war</type>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.example-async-rest</groupId>
+          <artifactId>example-async-rest-webapp</artifactId>
           <version>${project.version}</version>
           <type>war</type>
         </dependency>

@@ -58,6 +58,7 @@ public class AbstractRestServlet extends HttpServlet
 
     protected String _appid;
 
+    @Override
     public void init(ServletConfig servletConfig) throws ServletException
     {
         if (servletConfig.getInitParameter(APPID_PARAM) == null)

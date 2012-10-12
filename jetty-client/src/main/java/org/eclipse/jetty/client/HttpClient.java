@@ -77,15 +77,15 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>Typical usage:</p>
  * <pre>
  * // One liner:
- * new HTTPClient().GET("http://localhost:8080/").get().status();
+ * new HttpClient().GET("http://localhost:8080/").get().status();
  *
  * // Building a request with a timeout
- * HTTPClient client = new HTTPClient();
+ * HttpClient client = new HttpClient();
  * Response response = client.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
  * int status = response.status();
  *
  * // Asynchronously
- * HTTPClient client = new HTTPClient();
+ * HttpClient client = new HttpClient();
  * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
  * {
  *     &#64;Override

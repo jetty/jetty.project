@@ -103,7 +103,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             throw new IllegalArgumentException("Invalid request scheme " + request.scheme() + " for destination " + this);
         if (!host.equals(request.host()))
             throw new IllegalArgumentException("Invalid request host " + request.host() + " for destination " + this);
-        if (port != request.port())
+        if (request.port()>0 && port != request.port())
             throw new IllegalArgumentException("Invalid request port " + request.port() + " for destination " + this);
 
         RequestPair requestPair = new RequestPair(request, listener);
