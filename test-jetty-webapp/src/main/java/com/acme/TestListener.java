@@ -79,14 +79,14 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
                                                                             ServletSecurity.TransportGuarantee.NONE, new String[]{"admin"});
         ServletSecurityElement securityElement = new ServletSecurityElement(constraintElement, null);
         Set<String> unchanged = rego.setServletSecurity(securityElement);
-        System.err.println("Security constraints registered: "+unchanged.isEmpty());
+        //System.err.println("Security constraints registered: "+unchanged.isEmpty());
 
         //Test that a security constraint from web.xml can't be overridden programmatically
         ServletRegistration.Dynamic rego2 = sce.getServletContext().addServlet("RegoTest2", RegTest.class.getName());
         rego2.addMapping("/rego2/*");
         securityElement = new ServletSecurityElement(constraintElement, null);
         unchanged = rego2.setServletSecurity(securityElement);
-        System.err.println("Overridding web.xml constraints not possible:" +!unchanged.isEmpty());
+        //System.err.println("Overridding web.xml constraints not possible:" +!unchanged.isEmpty());
 
     	/* For servlet 3.0 */
     	FilterRegistration.Dynamic registration = sce.getServletContext().addFilter("TestFilter",TestFilter.class.getName());
