@@ -1,4 +1,56 @@
-jetty-9.0.0-SNAPSHOT
+jetty-9.0.0.M1 - 15 October 2012
+ + 385049 fix issue with pipelined connections when switching protocols
+ + 387896 populate session in SessionAuthentication as a valueBound in addition
+   to activation so it is populate when needed
+ + 387943 Catch CNFE when no jstl jars are installed
+ + 387953 jstl does not work with jetty-7 in osgi
+ + 388072 GZipFilter incorrectly gzips when Accept-Encoding: gzip; q=0
+ + 388073 null session id from cookie causes NPE fixed
+ + 388102 Jetty HttpClient memory leaks when sending larger files
+ + 388393 WebAppProvider doesn't work alongside OSGi deployer
+ + 388502 handle earlyEOF with 500
+ + 388652 Do not flush on handle return if request is suspended
+ + 388675 Non utf8 encoded query strings not decoded to parameter map using
+   queryEncoding
+ + 388706 Avoid unnecessary indirection through Charset.name
+ + 388895 Update dependencies for jetty-jndi
+ + 389390 AnnotationConfiguration is ignored if the metadata-complete attribute
+   is present in an override descriptor regardless of the value
+ + 389452 if web-fragment metadata-complete==true still scan its related jar if
+   there there is a ServletContainerInitializer, ensure webapp restarts work
+ + 389686 Fix reference to org.eclipse.jetty.util.log.stderr.LONG system
+   property in javadoc for StdErrLog
+ + 389956 Bad __context set in WebAppContext.start sequence with respect to ENC
+   setup
+ + 389965 OPTIONS should allow spaces in comma separated list
+ + 390108 Servlet 3.0 API for programmatic login doesn't appear to work
+ + 390161 Apply DeferredAuthentication fix to jaspi
+ + 390163 Implement ServletRegistration.Dynamic.setServletSecurity
+ + 390503 http-method-omission element not being processed
+ + 390560 The method AnnotationParser.getAnnotationHandlers(String) always
+   returns a empty collection.
+ + 391080 Multipart temp files can be left on disk from Request.getPart and
+   getParts
+ + 391082 No exception if multipart input stream incomplete
+ + 391188 Files written with Request.getPart().write(filename) should not be
+   auto-deleted
+ + 391483 fix bad javadoc example in shutdown handler
+ + 391622 Be lenient on RFC6265 restriction on duplicate cookie names in same
+   response
+ + 391623 Add option to --stop to wait for target jetty to stop
+ + JETTY-1515 Include cookies on 304 responses from DefaultServlet.
+ + JETTY-1532 HTTP headers decoded with platform's default encoding
+ + JETTY-1541 fixed different behaviour for single byte writes
+ + JETTY-1547 Jetty does not honor web.xml
+   web-app/jsp-config/jsp-property-group/default-content-type
+
+jetty-9.0.0.M0 - 21 September 2012
+ + 380924 xmlconfiguration <Configure and <New supports named constructors,
+   including dynamic ordering of parameters
+ + 380928 Implement new websocket close code
+ + 385448 migrate jetty jmx usage to be annotation based
+ + 387928 retire jetty-ajp
+ + 389639 set plugin version for jetty-jspc-maven-plugin
 
 jetty-8.1.7.v20120910 - 10 September 2012
  + 388895 Update dependencies for jetty-jndi

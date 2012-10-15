@@ -29,6 +29,7 @@
                     </execution>
                 </executions>
             </plugin>
+<!--
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -50,6 +51,7 @@
                     </dependency>
                 </dependencies>
             </plugin>
+-->
         </plugins>
     </build>
 
