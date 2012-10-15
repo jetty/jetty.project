@@ -57,6 +57,8 @@ public class ClientUpgradeRequest implements UpgradeRequest
         FORBIDDEN_HEADERS.add("sec-websocket-accept");
         FORBIDDEN_HEADERS.add("sec-websocket-protocol");
         FORBIDDEN_HEADERS.add("sec-websocket-version");
+        FORBIDDEN_HEADERS.add("pragma");
+        FORBIDDEN_HEADERS.add("cache-control");
     }
 
     private final String key;
@@ -120,6 +122,13 @@ public class ClientUpgradeRequest implements UpgradeRequest
         request.append("Connection: Upgrade\r\n");
         request.append("Sec-WebSocket-Key: ").append(key).append("\r\n");
         request.append("Sec-WebSocket-Version: 13\r\n"); // RFC-6455 specified version
+
+        // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
+        // There are some proxies that rewrite "Connection: upgrade"
+        // to "Connection: close" in the response if a request doesn't contain
+        // these headers.
+        request.append("Pragma: no-cache\r\n");
+        request.append("Cache-Control: no-cache\r\n");
 
         // Extensions
         if (!getExtensions().isEmpty())
