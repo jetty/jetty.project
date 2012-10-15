@@ -1,3 +1,5 @@
+jetty-9.0.0-SNAPSHOT
+
 jetty-9.0.0.M1 - 15 October 2012
  + 385049 fix issue with pipelined connections when switching protocols
  + 387896 populate session in SessionAuthentication as a valueBound in addition
