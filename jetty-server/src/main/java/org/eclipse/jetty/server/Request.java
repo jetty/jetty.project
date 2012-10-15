@@ -1331,6 +1331,7 @@ public class Request implements HttpServletRequest
             UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
             return user.getUserPrincipal();
         }
+        
         return null;
     }
 
@@ -1976,7 +1977,7 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred)
         {
-        	setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
             return !(_authentication instanceof Authentication.ResponseSent);
         }
         response.sendError(HttpStatus.UNAUTHORIZED_401);
@@ -2068,7 +2069,7 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred)
         {
-            _authentication=((Authentication.Deferred)_authentication).login(username,password);
+            _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
             if (_authentication == null)
                 throw new ServletException();
         }

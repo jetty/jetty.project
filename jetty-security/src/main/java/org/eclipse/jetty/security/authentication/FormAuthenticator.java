@@ -180,6 +180,22 @@ public class FormAuthenticator extends LoginAuthenticator
                 _formErrorPath = _formErrorPath.substring(0, _formErrorPath.indexOf('?'));
         }
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public UserIdentity login(String username, Object password, ServletRequest request)
+    {
+        
+        UserIdentity user = super.login(username,password,request);
+        if (user!=null)
+        {
+            HttpSession session = ((HttpServletRequest)request).getSession(true);
+            Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
+            session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
+        }
+        return user;
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -208,12 +224,11 @@ public class FormAuthenticator extends LoginAuthenticator
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
 
-                UserIdentity user = _loginService.login(username,password);
+                UserIdentity user = login(username, password, request);
                 LOG.debug("jsecuritycheck {} {}",username,user);
+                session = request.getSession(true);
                 if (user!=null)
-                {
-                    session=renewSession(request,response);
-
+                {                    
                     // Redirect to original request
                     String nuri;
                     FormAuthentication form_auth;
@@ -227,9 +242,6 @@ public class FormAuthenticator extends LoginAuthenticator
                             if (nuri.length() == 0)
                                 nuri = URIUtil.SLASH;
                         }
-
-                        Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
-                        session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
                         form_auth = new FormAuthentication(getAuthMethod(),user);
                     }
                     LOG.debug("authenticated {}->{}",form_auth,nuri);

@@ -95,7 +95,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             String spnegoToken = header.substring(10);
 
-            UserIdentity user = _loginService.login(null,spnegoToken);
+            UserIdentity user = login(null,spnegoToken, request);
 
             if ( user != null )
             {

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -25,6 +26,8 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,6 +43,20 @@ public abstract class LoginAuthenticator implements Authenticator
     protected LoginAuthenticator()
     {
     }
+
+
+    /* ------------------------------------------------------------ */
+    public UserIdentity login(String username, Object password, ServletRequest request)
+    {
+        UserIdentity user = _loginService.login(username,password);
+        if (user!=null)
+        {
+            renewSession((HttpServletRequest)request, null);
+            return user;
+        }
+        return null;
+    }
+
 
     @Override
     public void setConfiguration(AuthConfiguration configuration)
