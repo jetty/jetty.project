@@ -112,7 +112,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
     public void testAfterStartupContext() throws IOException
     {
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyContext("foo.xml","foo.xml");
+        jetty.copyWebapp("foo.xml","foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
@@ -127,14 +127,14 @@ public class ScanningAppProviderRuntimeUpdatesTest
     public void testAfterStartupThenRemoveContext() throws IOException
     {
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyContext("foo.xml","foo.xml");
+        jetty.copyWebapp("foo.xml","foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
 
-        jetty.removeContext("foo.xml");
+        jetty.removeWebapp("foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
@@ -155,7 +155,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
 
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyContext("foo.xml","foo.xml");
+        jetty.copyWebapp("foo.xml","foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
@@ -167,7 +167,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         waitForDirectoryScan();
         //System.err.println("Updating war files");
-        jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
+        jetty.copyWebapp("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 
         // This should result in the existing foo.war being replaced with the new foo.war

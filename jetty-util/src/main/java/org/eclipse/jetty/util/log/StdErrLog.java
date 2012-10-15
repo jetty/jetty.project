@@ -201,7 +201,8 @@ public class StdErrLog extends AbstractLogger
 
         try
         {
-            _source = Boolean.parseBoolean(props.getProperty(_name + ".SOURCE",Boolean.toString(_source)));
+            String source = getLoggingProperty(props,_name,"SOURCE");
+            _source = source==null?__source:Boolean.parseBoolean(source);
         }
         catch (AccessControlException ace)
         {
@@ -211,12 +212,13 @@ public class StdErrLog extends AbstractLogger
         try
         {
             // allow stacktrace display to be controlled by properties as well
-            _hideStacks = !Boolean.parseBoolean(props.getProperty(_name + ".STACKS","true"));
+            String stacks = getLoggingProperty(props,_name,"STACKS");
+            _hideStacks = stacks==null?false:!Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
             /* ignore */
-        }
+        }        
     }
 
     /**
@@ -259,6 +261,26 @@ public class StdErrLog extends AbstractLogger
 
         // Default Logging Level
         return getLevelId("log.LEVEL",props.getProperty("log.LEVEL","INFO"));
+    }
+    
+    public static String getLoggingProperty(Properties props, String name, String property)
+    {
+        // Calculate the level this named logger should operate under.
+        // Checking with FQCN first, then each package segment from longest to shortest.
+        String nameSegment = name;
+
+        while ((nameSegment != null) && (nameSegment.length() > 0))
+        {
+            String s = props.getProperty(nameSegment+"."+property);
+            if (s!=null)
+                return s;
+
+            // Trim and try again.
+            int idx = nameSegment.lastIndexOf('.');
+            nameSegment = (idx >= 0)?nameSegment.substring(0,idx):null;
+        }
+
+        return null;
     }
 
     protected static int getLevelId(String levelSegment, String levelName)
@@ -675,13 +697,12 @@ public class StdErrLog extends AbstractLogger
     /**
      * Create a Child Logger of this Logger.
      */
+    @Override
     protected Logger newLogger(String fullname)
     {
         StdErrLog logger = new StdErrLog(fullname);
         // Preserve configuration for new loggers configuration
         logger.setPrintLongNames(_printLongNames);
-        // Let Level come from configured Properties instead - sel.setLevel(_level);
-        logger.setSource(_source);
         logger._stderr = this._stderr;
 
         // Force the child to have any programmatic configuration

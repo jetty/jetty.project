@@ -164,29 +164,6 @@ public class Scanner extends AbstractLifeCycle
         schedule();
     }
 
-    /**
-     * Set the location of the directory to scan.
-     * @param dir
-     * @deprecated use setScanDirs(List dirs) instead
-     */
-    @Deprecated
-    public void setScanDir (File dir)
-    {
-        _scanDirs.clear(); 
-        _scanDirs.add(dir);
-    }
-
-    /**
-     * Get the location of the directory to scan
-     * @return the first directory (of {@link #getScanDirs()} being scanned)
-     * @deprecated use getScanDirs() instead
-     */
-    @Deprecated
-    public File getScanDir ()
-    {
-        return (_scanDirs==null?null:(File)_scanDirs.get(0));
-    }
-
     public void setScanDirs (List<File> dirs)
     {
         _scanDirs.clear(); 
@@ -305,8 +282,7 @@ public class Scanner extends AbstractLifeCycle
         _listeners.add(listener);   
     }
 
-
-
+    /* ------------------------------------------------------------ */
     /**
      * Remove a registered listener
      * @param listener the Listener to be removed
@@ -393,6 +369,18 @@ public class Scanner extends AbstractLifeCycle
         }
     }
 
+    /**
+     * @return true if the path exists in one of the scandirs
+     */
+    public boolean exists(String path)
+    {
+        for (File dir : _scanDirs)
+            if (new File(dir,path).exists())
+                return true;
+        return false;
+    }
+    
+    
     /**
      * Perform a pass of the scanner and report changes
      */
@@ -569,9 +557,12 @@ public class Scanner extends AbstractLifeCycle
             {
                 if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
                 {
+                    LOG.debug("scan accepted {}",f);
                     String name = f.getCanonicalPath();
                     scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.length()));
                 }
+                else
+                    LOG.debug("scan rejected {}",f);
             }
             
             // If it is a directory, scan if it is a known directory or the depth is OK.

@@ -43,7 +43,6 @@ public class WebAppProviderTest
         jetty.addConfiguration("jetty-deploy-wars.xml");
 
         // Setup initial context
-        jetty.copyContext("foo.xml","foo.xml");
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
 
         // Should not throw an Exception
