@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.server.WebSocketServlet;
 public class MyEchoServlet extends WebSocketServlet
 {
     @Override
-    public void registerWebSockets(WebSocketServerFactory factory)
+    public void configure(WebSocketServerFactory factory)
     {
         factory.register(MyEchoSocket.class);
     }

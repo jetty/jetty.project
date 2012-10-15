@@ -23,9 +23,9 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -110,7 +110,7 @@ public class RuleContainer extends Rule
      */
     public void addRule(Rule rule)
     {
-        _rules = (Rule[])LazyList.addToArray(_rules,rule,Rule.class);
+        _rules = ArrayUtil.addToArray(_rules,rule,Rule.class);
     }
    
 
@@ -225,7 +225,7 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    (request instanceof Request?(Request)request:AbstractHttpConnection.getCurrentConnection().getRequest()).setHandled(true);
+                    (request instanceof Request?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest()).setHandled(true);
                 }
 
                 if (rule.isTerminating())

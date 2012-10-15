@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
@@ -31,31 +32,45 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /* ------------------------------------------------------------ */
-/** Context directory App Provider.
- * <p>This specialization of {@link ScanningAppProvider} is the
- * replacement for old (and deprecated) <code>org.eclipse.jetty.deploy.WebAppDeployer</code> and it will scan a directory
- * only for war files or directories files.</p>
+/** The webapps directory scanning provider.
  * <p>
- * Webapps with names root or starting with root- are deployed at /.
- * If the name is in the format root-hostname, then the webapp is deployed
- * at / in the virtual host hostname.
+ * This provider scans one or more directories (typically "webapps") for contexts to 
+ * deploy, which may be:<ul>
+ * <li>A standard WAR file (must end in ".war")</li>
+ * <li>A directory containing an expanded WAR file</li>
+ * <li>A directory containing static content</li>
+ * <li>An XML descriptor in {@link XmlConfiguration} format that configures a {@link ContextHandler} instance</li>
+ * </ul>
+ * <p>
+ * To avoid double deployments and allow flexibility of the content of the scanned directories, the provider
+ * implements some heuristics to ignore some files found in the scans: <ul>
+ * <li>Hidden files (starting with ".") are ignored</li>
+ * <li>Directories with names ending in ".d" are ignored</li>
+ * <li>If a directory and a WAR file exist ( eg foo/ and foo.war) then the directory is assumed to be
+ * the unpacked WAR and only the WAR is deployed (which may reused the unpacked directory)</li>
+ * <li>If a directory and a matching XML file exist ( eg foo/ and foo.xml) then the directory is assumed to be
+ * an unpacked WAR and only the XML is deployed (which may used the directory in it's configuration)</li>
+ * <li>If a WAR file and a matching XML exist (eg foo.war and foo.xml) then the WAR is assumed to
+ * be configured by the XML and only the XML is deployed.
+ * </ul>
+ * 
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
+    private ConfigurationManager _configurationManager;
     private String _defaultsDescriptor;
-    private Filter _filter;
     private File _tempDirectory;
     private String[] _configurationClasses;
 
-    public static class Filter implements FilenameFilter
+    public class Filter implements FilenameFilter
     {
-        private File _contexts;
-        
+        @Override
         public boolean accept(File dir, String name)
         {
             if (!dir.exists())
@@ -65,53 +80,59 @@ public class WebAppProvider extends ScanningAppProvider
             String lowername = name.toLowerCase();
             
             File file = new File(dir,name);
-            // is it not a directory and not a war ?
-            if (!file.isDirectory() && !lowername.endsWith(".war"))
-            {
-                return false;
-            }
             
-            //ignore hidden files
+            // ignore hidden files
             if (lowername.startsWith("."))
                 return false;
-                   
+                        
+            // Ignore some directories
             if (file.isDirectory())
             {
-                // is it a directory for an existing war file?
-                if (new File(dir,name+".war").exists() ||
-                    new File(dir,name+".WAR").exists())
-
+                // is it a nominated config directory
+                if (lowername.endsWith(".d"))
+                    return false;
+                
+                // is it an unpacked directory for an existing war file?
+                if (exists(name+".war")||exists(name+".WAR"))
                     return false;
  
+                // is it a directory for an existing xml file?
+                if (exists(name+".xml")||exists(name+".XML"))
+                    return false;
+                
                 //is it a sccs dir?
                 if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
                     return false;
+                
+                // OK to deploy it then
+                return true;
             }
             
-            // is there a contexts config file
-            if (_contexts!=null)
+            // else is it a war file
+            if (lowername.endsWith(".war"))
             {
-                String context=name;
-                if (!file.isDirectory())
-                {
-                    context=context.substring(0,context.length()-4);
-                }
-                if (new File(_contexts,context+".xml").exists() ||
-                    new File(_contexts,context+".XML").exists() )
-                {
+                String base=name.substring(0,name.length()-4);
+                // ignore if it is a war for an existing xml file?
+                if (exists(base+".xml")||exists(base+".XML"))
                     return false;
-                }
+
+                // OK to deploy it then
+                return true;
             }
+            
+            // else is it a context XML file 
+            if (lowername.endsWith(".xml"))
+                return true;
                
-            return true;
+            return false;
         }
     }
     
     /* ------------------------------------------------------------ */
     public WebAppProvider()
     {
-        super(new Filter());
-        _filter=(Filter)_filenameFilter;
+        super();
+        setFilenameFilter(new Filter());
         setScanInterval(0);
     }
 
@@ -173,39 +194,19 @@ public class WebAppProvider extends ScanningAppProvider
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("directory to scan for context.xml files")
-    public String getContextXmlDir()
+    public ConfigurationManager getConfigurationManager()
     {
-        return _filter._contexts==null?null:_filter._contexts.toString();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the directory in which to look for context XML files.
-     * <p>
-     * If a webapp call "foo/" or "foo.war" is discovered in the monitored
-     * directory, then the ContextXmlDir is examined to see if a foo.xml
-     * file exists.  If it does, then this deployer will not deploy the webapp
-     * and the ContextProvider should be used to act on the foo.xml file.
-     * @see ContextProvider
-     * @param contextsDir
-     */
-    public void setContextXmlDir(String contextsDir)
-    {
-        try
-        {
-            _filter._contexts=Resource.newResource(contextsDir).getFile();
-        }
-        catch (MalformedURLException e)
-        {
-            throw new RuntimeException(e);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return _configurationManager;
     }
     
+    /* ------------------------------------------------------------ */
+    /** Set the configurationManager.
+     * @param configurationManager the configurationManager to set
+     */
+    public void setConfigurationManager(ConfigurationManager configurationManager)
+    {
+        _configurationManager = configurationManager;
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -250,6 +251,7 @@ public class WebAppProvider extends ScanningAppProvider
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
         Resource resource = Resource.newResource(app.getOriginId());
@@ -258,8 +260,17 @@ public class WebAppProvider extends ScanningAppProvider
             throw new IllegalStateException("App resouce does not exist "+resource);
 
         String context = file.getName();
-        
-        if (file.isDirectory())
+
+        if (resource.exists() && FileID.isXmlFile(file))
+        {
+            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
+            
+            xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
+            if (getConfigurationManager() != null)
+                xmlc.getProperties().putAll(getConfigurationManager().getProperties());
+            return (ContextHandler)xmlc.configure();
+        }
+        else if (file.isDirectory())
         {
             // must be a directory
         }

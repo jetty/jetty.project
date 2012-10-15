@@ -57,25 +57,26 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatchman;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.model.FrameworkMethod;
 
 @Ignore // TODO: make these tests pass
 @RunWith(value = Parameterized.class)
 public class ProxyHTTPSPDYTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
+
         @Override
-        public void starting(FrameworkMethod method)
+        public void starting(Description description)
         {
-            super.starting(method);
+            super.starting(description);
             System.err.printf("Running %s.%s()%n",
-                    method.getMethod().getDeclaringClass().getName(),
-                    method.getName());
+                    description.getClassName(),
+                    description.getMethodName());
         }
     };
     private final short version;

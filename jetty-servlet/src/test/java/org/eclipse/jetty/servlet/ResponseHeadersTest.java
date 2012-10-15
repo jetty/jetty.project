@@ -89,7 +89,6 @@ public class ResponseHeadersTest
         }
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("http://%s:%d/",host,port));
-        System.out.printf("Server URI: %s%n",serverUri);
     }
 
     @AfterClass
@@ -130,10 +129,8 @@ public class ResponseHeadersTest
 
             // Read response
             String respHeader = readResponseHeader(in);
-            System.out.println("RESPONSE: " + respHeader);
 
             // Now test for properly formatted HTTP Response Headers.
-
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
             Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
             Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));

@@ -23,11 +23,13 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
@@ -58,8 +60,17 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
             QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
             while (tok.hasMoreTokens())
             {
-                extensions.add(ExtensionConfig.parse(tok.nextToken()));
+                addExtensions(tok.nextToken());
             }
+        }
+    }
+
+    @Override
+    public void addExtensions(String... extConfigs)
+    {
+        for (String extConfig : extConfigs)
+        {
+            extensions.add(ExtensionConfig.parse(extConfig));
         }
     }
 
@@ -100,13 +111,7 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
     @Override
     public String getOrigin()
     {
-        String origin = getHeader("Origin");
-        if (origin == null)
-        {
-            // Fall back to older version
-            origin = getHeader("Sec-WebSocket-Origin");
-        }
-        return origin;
+        return getHeader("Origin");
     }
 
     @Override
@@ -148,12 +153,29 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
 
     /**
      * Not implemented (not relevant) on server side.
-     *
+     * 
      * @see org.eclipse.jetty.websocket.core.api.UpgradeRequest#setSubProtocols(java.lang.String)
      */
     @Override
     public void setSubProtocols(String protocol)
     {
         /* not relevant for server side/servlet work */
+    }
+
+    public void setValidExtensions(List<Extension> valid)
+    {
+        if (this.extensions != null)
+        {
+            this.extensions.clear();
+        }
+        else
+        {
+            this.extensions = new ArrayList<>();
+        }
+
+        for (Extension ext : valid)
+        {
+            extensions.add(ext.getConfig());
+        }
     }
 }

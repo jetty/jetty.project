@@ -105,22 +105,27 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getAuthMethod()
     {
         return Constraint.__DIGEST_AUTH;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
+    
+
 
     /* ------------------------------------------------------------ */
+    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
-            return _deferred;
+            return new DeferredAuthentication(this);
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
@@ -184,10 +189,10 @@ public class DigestAuthenticator extends LoginAuthenticator
 
                 if (n > 0)
                 {
-                    UserIdentity user = _loginService.login(digest.username,digest);
+                    //UserIdentity user = _loginService.login(digest.username,digest);
+                    UserIdentity user = login(digest.username, digest, req);
                     if (user!=null)
                     {
-                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
@@ -196,7 +201,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             }
 
-            if (!_deferred.isDeferred(response))
+            if (!DeferredAuthentication.isDeferred(response))
             {
                 String domain = request.getContextPath();
                 if (domain == null)

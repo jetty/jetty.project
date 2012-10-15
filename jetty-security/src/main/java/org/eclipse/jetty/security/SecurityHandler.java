@@ -506,8 +506,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 else if (authentication instanceof Authentication.Deferred)
                 {
                     DeferredAuthentication deferred= (DeferredAuthentication)authentication;
-                    deferred.setIdentityService(_identityService);
-                    deferred.setLoginService(_loginService);
                     baseRequest.setAuthentication(authentication);
 
                     try
@@ -517,7 +515,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     finally
                     {
                         previousIdentity = deferred.getPreviousAssociation();
-                        deferred.setIdentityService(null);
                     }
 
                     if (authenticator!=null)

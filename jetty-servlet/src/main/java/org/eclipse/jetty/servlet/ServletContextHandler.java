@@ -47,6 +47,7 @@ import javax.servlet.descriptor.JspPropertyGroupDescriptor;
 import javax.servlet.descriptor.TaglibDescriptor;
 
 import org.eclipse.jetty.security.ConstraintAware;
+import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.security.Constraint;
 
 
 /* ------------------------------------------------------------ */
@@ -393,10 +395,21 @@ public class ServletContextHandler extends ContextHandler
      * @param registration ServletRegistration.Dynamic instance that setServletSecurity was called on
      * @param servletSecurityElement new security info
      * @return the set of exact URL mappings currently associated with the registration that are also present in the web.xml
-     * security constratins and thus will be unaffected by this call.
+     * security constraints and thus will be unaffected by this call.
      */
     public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
+        //Default implementation is to just accept them all. If using a webapp, then this behaviour is overridden in WebAppContext.setServletSecurity       
+        Collection<String> pathSpecs = registration.getMappings();
+        if (pathSpecs != null)
+        {
+            for (String pathSpec:pathSpecs)
+            {
+                List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
+                for (ConstraintMapping m:mappings)
+                    ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+            }
+        }
         return Collections.emptySet();
     }
 

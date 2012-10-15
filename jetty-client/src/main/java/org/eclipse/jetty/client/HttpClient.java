@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -76,15 +77,15 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>Typical usage:</p>
  * <pre>
  * // One liner:
- * new HTTPClient().GET("http://localhost:8080/").get().status();
+ * new HttpClient().GET("http://localhost:8080/").get().status();
  *
  * // Building a request with a timeout
- * HTTPClient client = new HTTPClient();
+ * HttpClient client = new HttpClient();
  * Response response = client.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
  * int status = response.status();
  *
  * // Asynchronously
- * HTTPClient client = new HTTPClient();
+ * HttpClient client = new HttpClient();
  * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
  * {
  *     &#64;Override
@@ -120,6 +121,8 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
+    private volatile boolean tcpNoDelay = true;
+    private volatile boolean dispatchIO = true;
 
     public HttpClient()
     {
@@ -140,10 +143,20 @@ public class HttpClient extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         if (sslContextFactory != null)
+        {
             addBean(sslContextFactory);
+            // Avoid to double dispatch when using SSL
+            setDispatchIO(false);
+        }
+
+        String name = HttpClient.class.getSimpleName() + "@" + hashCode();
 
         if (executor == null)
-            executor = new QueuedThreadPool();
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setName(name);
+            executor = threadPool;
+        }
         addBean(executor);
 
         if (byteBufferPool == null)
@@ -151,12 +164,13 @@ public class HttpClient extends ContainerLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = new TimerScheduler();
+            scheduler = new TimerScheduler(name + "-scheduler");
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
         addBean(selectorManager);
 
+        handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
         handlers.add(new AuthenticationProtocolHandler(this));
 
@@ -169,7 +183,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected SelectorManager newSelectorManager()
     {
-        return new ClientSelectorManager();
+        return new ClientSelectorManager(getExecutor(), getScheduler());
     }
 
     @Override
@@ -297,12 +311,11 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        String host = request.host().toLowerCase();
         int port = request.port();
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        provideDestination(scheme, host, port).send(request, listener);
+        provideDestination(scheme, request.host(), port).send(request, listener);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
@@ -314,7 +327,7 @@ public class HttpClient extends ContainerLifeCycle
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
                 channel.bind(bindAddress);
-            channel.socket().setTcpNoDelay(true);
+            configure(channel);
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(destination.host(), destination.port()));
 
@@ -329,6 +342,11 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
+    protected void configure(SocketChannel channel) throws SocketException
+    {
+        channel.socket().setTcpNoDelay(isTCPNoDelay());
+    }
+
     private void close(SocketChannel channel)
     {
         try
@@ -341,9 +359,8 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
-    protected HttpConversation getConversation(Request request)
+    protected HttpConversation getConversation(long id)
     {
-        long id = request.id();
         HttpConversation conversation = conversations.get(id);
         if (conversation == null)
         {
@@ -363,13 +380,17 @@ public class HttpClient extends ContainerLifeCycle
         LOG.debug("{} removed", conversation);
     }
 
-    // TODO: find a better method name
-    protected Response.Listener lookup(Request request, Response response)
+    protected List<ProtocolHandler> getProtocolHandlers()
     {
-        for (ProtocolHandler handler : handlers)
+        return handlers;
+    }
+
+    protected ProtocolHandler findProtocolHandler(Request request, Response response)
+    {
+        for (ProtocolHandler handler : getProtocolHandlers())
         {
             if (handler.accept(request,  response))
-                return handler.getResponseListener();
+                return handler;
         }
         return null;
     }
@@ -507,6 +528,42 @@ public class HttpClient extends ContainerLifeCycle
         this.maxRedirects = maxRedirects;
     }
 
+    public boolean isTCPNoDelay()
+    {
+        return tcpNoDelay;
+    }
+
+    public void setTCPNoDelay(boolean tcpNoDelay)
+    {
+        this.tcpNoDelay = tcpNoDelay;
+    }
+
+    /**
+     * @return true to dispatch I/O operations in a different thread, false to execute them in the selector thread
+     * @see #setDispatchIO(boolean)
+     */
+    public boolean isDispatchIO()
+    {
+        return dispatchIO;
+    }
+
+    /**
+     * Whether to dispatch I/O operations from the selector thread to a different thread.
+     * <p />
+     * This implementation never blocks on I/O operation, but invokes application callbacks that may
+     * take time to execute or block on other I/O.
+     * If application callbacks are known to take time or block on I/O, then parameter {@code dispatchIO}
+     * must be set to true.
+     * If application callbacks are known to be quick and never block on I/O, then parameter {@code dispatchIO}
+     * may be set to false.
+     *
+     * @param dispatchIO true to dispatch I/O operations in a different thread, false to execute them in the selector thread
+     */
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        this.dispatchIO = dispatchIO;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -516,20 +573,20 @@ public class HttpClient extends ContainerLifeCycle
 
     protected class ClientSelectorManager extends SelectorManager
     {
-        public ClientSelectorManager()
+        public ClientSelectorManager(Executor executor, Scheduler scheduler)
         {
-            this(1);
+            this(executor, scheduler, 1);
         }
 
-        public ClientSelectorManager(int selectors)
+        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
-            super(selectors);
+            super(executor, scheduler, selectors);
         }
 
         @Override
         protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            return new SelectChannelEndPoint(channel, selector, key, scheduler, getIdleTimeout());
+            return new SelectChannelEndPoint(channel, selector, key, getScheduler(), getIdleTimeout());
         }
 
         @Override
@@ -574,18 +631,11 @@ public class HttpClient extends ContainerLifeCycle
             }
         }
 
-
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
             callback.callback.failed(null, ex);
-        }
-
-        @Override
-        protected void execute(Runnable task)
-        {
-            getExecutor().execute(task);
         }
     }
 

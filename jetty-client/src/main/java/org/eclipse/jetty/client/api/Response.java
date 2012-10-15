@@ -37,6 +37,11 @@ import org.eclipse.jetty.http.HttpVersion;
 public interface Response
 {
     /**
+     * @return the conversation id
+     */
+    long conversation();
+
+    /**
      * @return the response listener passed to {@link Request#send(Listener)}
      */
     Listener listener();

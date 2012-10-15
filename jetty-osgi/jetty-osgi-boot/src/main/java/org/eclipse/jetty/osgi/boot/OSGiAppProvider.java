@@ -16,6 +16,8 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.osgi.boot;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -27,7 +29,6 @@ import java.util.Set;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -90,6 +91,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         OSGiAppProvider _enclosedInstance;
 
+        @Override
         public boolean accept(File dir, String name)
         {
             File file = new File(dir, name);
@@ -178,6 +180,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
      * 
      * @see AppProvider
      */
+    @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         // return pre-created Context

@@ -636,9 +636,10 @@ public class StdErrLogTest
     @Test
     public void testPrintSource() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog("test",new Properties());
+        Properties props=new Properties();
+        props.put("test.SOURCE","true");
+        StdErrLog log = new StdErrLog("test",props);
         log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.setSource(true);
 
         ByteArrayOutputStream test = new ByteArrayOutputStream();
         PrintStream err = new PrintStream(test);
@@ -650,6 +651,10 @@ public class StdErrLogTest
         // System.err.print(output);
 
         Assert.assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
+        
+
+        props.put("test.SOURCE","false");
+        log=new StdErrLog("other",props);
     }
 
     @Test
@@ -677,6 +682,7 @@ public class StdErrLogTest
         assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
     }
 
+    
     private void assertLevel(StdErrLog log, int expectedLevel)
     {
         Assert.assertThat("Log[" + log.getName() + "].level",levelToString(log.getLevel()),is(levelToString(expectedLevel)));

@@ -48,10 +48,11 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         _fooContainerRule.setVirtualHosts(new String[] {"foo.com"});
         _fooContainerRule.setRules(new Rule[] { _fooRule });
 
-        _server.setHandler(_handler);
-
         start(false);
         _request.setRequestURI("/cheese/bar");
+        
+        _handler.setServer(_server);
+        _handler.start();
     }
 
     @Test
@@ -193,6 +194,6 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
 
     private void handleRequest() throws Exception
     {
-        _server.handle("/cheese/bar", _request, _request, _response);
+        _handler.handle("/cheese/bar", _request, _request, _response);
     }
 }

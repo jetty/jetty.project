@@ -27,6 +27,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.Origin;
@@ -48,6 +49,11 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
     public WebListenerAnnotation(WebAppContext context, String className)
     {
         super(context, className);
+    }
+    
+    public WebListenerAnnotation(WebAppContext context, String className, Resource resource)
+    {
+        super(context, className, resource);
     }
 
     /**

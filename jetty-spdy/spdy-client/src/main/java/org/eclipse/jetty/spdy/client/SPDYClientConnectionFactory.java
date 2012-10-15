@@ -39,16 +39,17 @@ public class SPDYClientConnectionFactory
         SessionPromise sessionPromise = (SessionPromise)attachment;
         SPDYClient client = sessionPromise.client;
         Factory factory = client.factory;
+        ByteBufferPool bufferPool = factory.getByteBufferPool();
 
         CompressionFactory compressionFactory = new StandardCompressionFactory();
         Parser parser = new Parser(compressionFactory.newDecompressor());
-        Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
+        Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
-        SPDYConnection connection = new ClientSPDYConnection(endPoint, factory.bufferPool, parser, factory);
+        SPDYConnection connection = new ClientSPDYConnection(endPoint, bufferPool, parser, factory);
 
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
-        StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.executor, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
+        StandardSession session = new StandardSession(client.version, bufferPool, factory.getExecutor(), factory.getScheduler(), connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
         session.setWindowSize(client.getInitialWindowSize());
         parser.addListener(session);
         sessionPromise.completed(session);
@@ -65,7 +66,7 @@ public class SPDYClientConnectionFactory
 
         public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
         {
-            super(endPoint, bufferPool, parser, factory.executor);
+            super(endPoint, bufferPool, parser, factory.getExecutor());
             this.factory = factory;
         }
 

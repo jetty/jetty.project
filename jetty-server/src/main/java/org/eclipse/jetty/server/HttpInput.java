@@ -73,9 +73,9 @@ public abstract class HttpInput<T> extends ServletInputStream
     @Override
     public int read() throws IOException
     {
-        byte[] oneByte = new byte[1];
-        int len = read(oneByte, 0, 1);
-        return len < 0 ? len : 0xFF & oneByte[0];
+        byte[] bytes = new byte[1];
+        int read = read(bytes, 0, 1);
+        return read < 0 ? -1 : 0xff & bytes[0];
     }
 
     @Override
@@ -127,7 +127,6 @@ public abstract class HttpInput<T> extends ServletInputStream
         }
         return get(item, b, off, len);
     }
-
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);

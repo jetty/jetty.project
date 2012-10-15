@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -67,7 +68,8 @@ public class HttpReceiverTest
 
     protected HttpExchange newExchange(Response.Listener listener)
     {
-        HttpExchange exchange = new HttpExchange(conversation, connection, null, listener);
+        HttpRequest request = new HttpRequest(client, URI.create("http://localhost"));
+        HttpExchange exchange = new HttpExchange(conversation, connection, request, listener);
         conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
         exchange.requestComplete(null);
@@ -128,7 +130,7 @@ public class HttpReceiverTest
         Assert.assertNotNull(headers);
         Assert.assertEquals(1, headers.size());
         Assert.assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
-        String received = listener.getContent("UTF-8");
+        String received = listener.getContentAsString("UTF-8");
         Assert.assertEquals(content, received);
     }
 

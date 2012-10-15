@@ -36,13 +36,15 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.Exchanger;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -53,6 +55,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 /**
  *
  */
@@ -174,9 +178,83 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testExceptionThrownInHandler() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new ServletException("handler exception");
+            }
+        });
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        request.append("Host: localhost\r\n\r\n");
+
+        Socket client = newSocket(HOST, _connector.getLocalPort());
+        OutputStream os = client.getOutputStream();
+
+        os.write(request.toString().getBytes());
+        os.flush();
+
+        String response = readResponse(client);
+        assertThat("response code is 500", response.contains("500"), is(true));
+    }
+
+    @Test
+    public void testInterruptedRequest() throws Exception
+    {
+        final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
+        final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
+        configureServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                int contentLength = request.getContentLength();
+                ServletInputStream inputStream = request.getInputStream();
+                for (int i = 0; i < contentLength; i++)
+                {
+                    try
+                    {
+                        inputStream.read();
+                    }
+                    catch (EofException e)
+                    {
+                        earlyEOFException.set(true);
+                        throw e;
+                    }
+                    if (i == 3)
+                        fourBytesRead.set(true);
+                }
+            }
+        });
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Content-length: 6\n\n");
+        request.append("foo");
+
+        Socket client = newSocket(HOST, _connector.getLocalPort());
+        OutputStream os = client.getOutputStream();
+
+        os.write(request.toString().getBytes());
+        os.flush();
+        client.shutdownOutput();
+        String response = readResponse(client);
+        client.close();
+
+        assertThat("response contains 500", response, Matchers.containsString(" 500 "));
+        assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
+        assertThat("EofException has been caught", earlyEOFException.get(), is(true));
+    }
+    
     /*
-    * Feed a full header method
-    */
+     * Feed a full header method
+     */
     @Test
     public void testFullHeader() throws Exception
     {
@@ -672,6 +750,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
     protected static class BigBlockHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             byte[] buf = new byte[128 * 1024];
@@ -1262,6 +1341,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -1295,6 +1375,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
     public class NoopHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest,
                            HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException

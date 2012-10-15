@@ -11,16 +11,49 @@
     <packaging>jar</packaging>
     <name>Jetty :: Reverse HTTP :: Gateway</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.rhttp.gateway</bundle-symbolic-name>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <configuration>          
+                <configuration>
                   <mainClass>org.mortbay.jetty.rhttp.gateway.Main</mainClass>
                   <arguments>
                   </arguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                 <Import-Package>*</Import-Package>
+                            </instructions>
+                          </configuration>
+                       </execution>
+                  </executions>
+            </plugin>
+            <plugin>
+              <!--
+              Required for OSGI
+              -->
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <configuration>
+                  <archive>
+                      <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                  </archive>
+              </configuration>
             </plugin>
         </plugins>
     </build>

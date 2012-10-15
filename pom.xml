@@ -155,6 +155,7 @@
                   </excludes>
                   <!-- allowed combinations -->
                   <includes>
+                    <include>org.apache.geronimo.specs:geronimo-atinject_1.0_spec:jar:*</include>
                     <include>javax.servlet:*:*:*:provided</include>
                     <include>javax.servlet.jsp:*:*:*:provided</include>
                   </includes>
@@ -261,7 +262,8 @@
           <extensions>true</extensions>
           <configuration>
             <instructions>
-              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+              <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+              <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
@@ -403,19 +405,20 @@
     <module>jetty-jndi</module>
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
-
     <module>jetty-spring</module>
     <module>jetty-client</module>
-
+    <module>jetty-osgi</module>
+    <module>example-async-rest</module>
+    <module>jetty-rewrite</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
+    <module>tests</module>
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
     <module>jetty-proxy</module>
-    <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
@@ -423,9 +426,6 @@
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
     <module>test-jetty-nested</module>
-    <module>test-jetty-servlet</module>
-    <module>example-async-rest</module>
-    <module>tests</module>
     -->
   </modules>
   <dependencyManagement>
@@ -513,7 +513,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.9</version>
+        <version>2.0</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -580,12 +580,6 @@
         <!--
         <module>jetty-aggregate</module>
          -->
-      </modules>
-    </profile>
-    <profile>
-      <id>osgi</id>
-      <modules>
-        <module>jetty-osgi</module>
       </modules>
     </profile>
     <profile>

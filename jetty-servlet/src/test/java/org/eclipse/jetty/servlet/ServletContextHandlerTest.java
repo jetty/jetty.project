@@ -20,6 +20,9 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,18 +36,25 @@ import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class ServletContextHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
 
+    private static final AtomicInteger __testServlets = new AtomicInteger();
+    
     @Before
     public void createServer()
     {
@@ -52,6 +62,7 @@ public class ServletContextHandlerTest
 
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
+        __testServlets.set(0);
     }
 
     @After
@@ -79,6 +90,51 @@ public class ServletContextHandlerTest
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, session));
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, security));
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, servlet));
+    }
+    
+    @Test
+    public void testInitOrder() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHolder holder0 = context.addServlet(TestServlet.class,"/test0");
+        ServletHolder holder1 = context.addServlet(TestServlet.class,"/test1");
+        ServletHolder holder2 = context.addServlet(TestServlet.class,"/test2");
+        
+        holder1.setInitOrder(1);
+        holder2.setInitOrder(2);
+        
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+        
+        assertEquals(2,__testServlets.get());
+        
+        String response =_connector.getResponses("GET /test1 HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response,Matchers.containsString("200 OK"));
+        
+        assertEquals(2,__testServlets.get());
+        
+        response =_connector.getResponses("GET /test2 HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response,containsString("200 OK"));
+        
+        assertEquals(2,__testServlets.get());
+        
+        assertThat(holder0.getServletInstance(),nullValue());
+        response =_connector.getResponses("GET /test0 HTTP/1.0\r\n\r\n");
+        assertThat(response,containsString("200 OK"));
+        assertEquals(3,__testServlets.get());
+        assertThat(holder0.getServletInstance(),notNullValue(Servlet.class));
+
+        _server.stop();
+        assertEquals(0,__testServlets.get());
+        
+        holder0.setInitOrder(0);
+        _server.start();
+        assertEquals(2,__testServlets.get());
+        assertThat(holder0.getServletInstance(),nullValue());
+        _server.stop();
+        assertEquals(0,__testServlets.get());
+        
     }
 
     @Test
@@ -207,6 +263,20 @@ public class ServletContextHandlerTest
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
+
+        @Override
+        public void destroy()
+        {
+            super.destroy();
+            __testServlets.decrementAndGet();
+        }
+
+        @Override
+        public void init() throws ServletException
+        {
+            __testServlets.incrementAndGet();
+            super.init();
+        }
 
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)

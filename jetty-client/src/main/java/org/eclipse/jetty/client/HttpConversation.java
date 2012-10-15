@@ -63,16 +63,25 @@ public class HttpConversation implements Attributes
         this.listener = listener;
     }
 
+    /**
+     * @return the exchange that has been identified as the last of this conversation
+     * @see #last(HttpExchange)
+     */
     public HttpExchange last()
     {
         return last;
     }
 
+    /**
+     * Remembers the given {@code exchange} as the last of this conversation.
+     *
+     * @param exchange the exchange that is the last of this conversation
+     * @see #last()
+     */
     public void last(HttpExchange exchange)
     {
         if (last == null)
-
-        last = exchange;
+            last = exchange;
     }
 
     public void complete()

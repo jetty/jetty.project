@@ -96,8 +96,9 @@ public class RegexRuleTest
         _rule.setRegex(matchCase[0]);
         final String uri=matchCase[1];
         String result = _rule.matchAndApply(uri,
-        new Request()
+        new Request(null,null)
         {
+            @Override
             public String getRequestURI()
             {
                 return uri;

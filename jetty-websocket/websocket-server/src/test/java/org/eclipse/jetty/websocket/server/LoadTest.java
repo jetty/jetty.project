@@ -44,7 +44,7 @@ public class LoadTest
     public static class LoadServlet extends WebSocketServlet
     {
         @Override
-        public void registerWebSockets(WebSocketServerFactory factory)
+        public void configure(WebSocketServerFactory factory)
         {
             factory.register(LoadSocket.class);
         }

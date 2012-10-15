@@ -178,13 +178,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public void setInitOrder(int order)
     {
-        _initOnStartup=true;
+        _initOnStartup=order>0;
         _initOrder = order;
-    }
-
-    public boolean isSetInitOrder()
-    {
-        return _initOnStartup;
     }
 
     /* ------------------------------------------------------------ */
@@ -514,6 +509,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 initJspServlet();
             }
 
+            initMultiPart();
+            
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -570,6 +567,25 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Register a ServletRequestListener that will ensure tmp multipart
+     * files are deleted when the request goes out of scope.
+     * 
+     * @throws Exception
+     */
+    protected void initMultiPart () throws Exception
+    {
+        //if this servlet can handle multipart requests, ensure tmp files will be
+        //cleaned up correctly
+        if (((Registration)getRegistration()).getMultipartConfig() != null)
+        {
+            //Register a listener to delete tmp files that are created as a result of this
+            //servlet calling Request.getPart() or Request.getParts()
+            ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
+            ch.addEventListener(new Request.MultiPartCleanerListener());
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -930,5 +946,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw (IllegalAccessException)cause;
             throw se;
         }
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x==%s,%d,%b",_name,hashCode(),_className,_initOrder,_servlet!=null);
     }
 }

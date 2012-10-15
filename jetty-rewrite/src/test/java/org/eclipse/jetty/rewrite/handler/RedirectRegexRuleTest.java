@@ -20,7 +20,7 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
 
         // Resource is dir
         _rule.matchAndApply("/my/dir/file/", _request, _response);
-        assertEquals("http://www.mortbay.org/", _response.getHeader(HttpHeaders.LOCATION));
+        assertEquals("http://www.mortbay.org/", _response.getHeader(HttpHeader.LOCATION.asString()));
     }
 
     @Test
@@ -63,7 +63,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
 
         // Resource is an image
         _rule.matchAndApply("/my/dir/file/image.png", _request, _response);
-        assertEquals("http://www.mortbay.org/image.png", _response.getHeader(HttpHeaders.LOCATION));
+        assertEquals("http://www.mortbay.org/image.png", _response.getHeader(HttpHeader.LOCATION.asString()));
     }
 
     @Test
@@ -74,6 +74,6 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
 
         // Resource is api with parameters
         _rule.matchAndApply("/my/dir/file/api/rest/foo?id=100&sort=date", _request, _response);
-        assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date", _response.getHeader(HttpHeaders.LOCATION));
+        assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date", _response.getHeader(HttpHeader.LOCATION.asString()));
     }
 }

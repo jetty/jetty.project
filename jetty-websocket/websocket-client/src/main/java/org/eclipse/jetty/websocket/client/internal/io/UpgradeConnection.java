@@ -38,15 +38,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.UpgradeException;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
@@ -81,11 +81,11 @@ public class UpgradeConnection extends AbstractConnection
 
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
-    private final IWebSocketClient client;
+    private final DefaultWebSocketClient client;
     private final HttpResponseHeaderParser parser;
     private ClientUpgradeRequest request;
 
-    public UpgradeConnection(EndPoint endp, Executor executor, IWebSocketClient client)
+    public UpgradeConnection(EndPoint endp, Executor executor, DefaultWebSocketClient client)
     {
         super(endp,executor);
         this.client = client;
@@ -216,7 +216,7 @@ public class UpgradeConnection extends AbstractConnection
         WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,client);
 
         // Initialize / Negotiate Extensions
-        WebSocketEventDriver websocket = client.getWebSocket();
+        EventDriver websocket = client.getWebSocket();
         WebSocketPolicy policy = client.getPolicy();
         String acceptedSubProtocol = response.getAcceptedSubProtocol();
         WebSocketSession session = new WebSocketSession(websocket,connection,policy,acceptedSubProtocol);
@@ -230,6 +230,9 @@ public class UpgradeConnection extends AbstractConnection
         // Connect extensions
         if (extensions != null)
         {
+            connection.getParser().configureFromExtensions(extensions);
+            connection.getGenerator().configureFromExtensions(extensions);
+
             Iterator<Extension> extIter;
             // Connect outgoings
             extIter = extensions.iterator();
@@ -238,23 +241,6 @@ public class UpgradeConnection extends AbstractConnection
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
-
-                // Handle RSV reservations
-                if (ext.useRsv1())
-                {
-                    connection.getGenerator().setRsv1InUse(true);
-                    connection.getParser().setRsv1InUse(true);
-                }
-                if (ext.useRsv2())
-                {
-                    connection.getGenerator().setRsv2InUse(true);
-                    connection.getParser().setRsv2InUse(true);
-                }
-                if (ext.useRsv3())
-                {
-                    connection.getGenerator().setRsv3InUse(true);
-                    connection.getParser().setRsv3InUse(true);
-                }
             }
 
             // Connect incomings

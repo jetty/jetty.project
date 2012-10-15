@@ -65,4 +65,15 @@ public class ContainerInitializerAnnotationHandler implements DiscoverableAnnota
        _initializer.addAnnotatedTypeName(className);
     }
 
+    @Override
+    public String getAnnotationName()
+    {
+       return _annotation.getName();
+    }
+    
+    public ContainerInitializer getContainerInitializer()
+    {
+        return _initializer;
+    }
+
 }

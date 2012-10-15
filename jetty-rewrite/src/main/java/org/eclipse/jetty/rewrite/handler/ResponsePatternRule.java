@@ -65,6 +65,7 @@ public class ResponsePatternRule extends PatternRule
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
+    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         int code = Integer.parseInt(_code);
@@ -85,6 +86,7 @@ public class ResponsePatternRule extends PatternRule
     /**
      * Returns the code and reason string.
      */
+    @Override
     public String toString()
     {
         return super.toString()+"["+_code+","+_reason+"]";

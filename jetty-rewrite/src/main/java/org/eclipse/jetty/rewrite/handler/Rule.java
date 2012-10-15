@@ -97,6 +97,7 @@ public abstract class Rule
     /**
      * Returns the handling and terminating flag values.
      */
+    @Override
     public String toString()
     {
         return this.getClass().getName()+(_handling?"[H":"[h")+(_terminating?"T]":"t]");

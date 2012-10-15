@@ -49,6 +49,8 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -71,6 +73,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -114,6 +117,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
+    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.multiPartInputStream";
+    public static final String __MULTIPART_CONTEXT = "org.eclipse.multiPartContext";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
@@ -123,6 +128,42 @@ public class Request implements HttpServletRequest
     private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput<?> _input;
+    
+    public static class MultiPartCleanerListener implements ServletRequestListener
+    {
+        @Override
+        public void requestDestroyed(ServletRequestEvent sre)
+        {
+            //Clean up any tmp files created by MultiPartInputStream
+            MultiPartInputStream mpis = (MultiPartInputStream)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
+            if (mpis != null)
+            {
+                ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(__MULTIPART_CONTEXT);
+
+                //Only do the cleanup if we are exiting from the context in which a servlet parsed the multipart files
+                if (context == sre.getServletContext())
+                {
+                    try
+                    {
+                        mpis.deleteParts();
+                    }
+                    catch (MultiException e)
+                    {
+                        sre.getServletContext().log("Errors deleting multipart tmp files", e);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void requestInitialized(ServletRequestEvent sre)
+        {
+            //nothing to do, multipart config set up by ServletHolder.handle()
+        }
+        
+    }
+    
+    
 
     private boolean _secure;
     private boolean _asyncSupported = true;
@@ -1290,6 +1331,7 @@ public class Request implements HttpServletRequest
             UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
             return user.getUserPrincipal();
         }
+        
         return null;
     }
 
@@ -1763,6 +1805,7 @@ public class Request implements HttpServletRequest
     public void setQueryString(String queryString)
     {
         _queryString = queryString;
+        _queryEncoding = null; //assume utf-8
     }
 
     /* ------------------------------------------------------------ */
@@ -1934,7 +1977,7 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred)
         {
-        	setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
             return !(_authentication instanceof Authentication.ResponseSent);
         }
         response.sendError(HttpStatus.UNAUTHORIZED_401);
@@ -1950,9 +1993,16 @@ public class Request implements HttpServletRequest
 
         if (_multiPartInputStream == null)
         {
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+
+            if (config == null)
+                throw new IllegalStateException("No multipart config for servlet");
+
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
-                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
+                                                             getContentType(),config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
+            setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
@@ -1982,9 +2032,17 @@ public class Request implements HttpServletRequest
 
         if (_multiPartInputStream == null)
         {
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+            
+            if (config == null)
+                throw new IllegalStateException("No multipart config for servlet");
+            
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
-                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
+                                                             getContentType(), config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            
+            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
+            setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
@@ -2011,7 +2069,7 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred)
         {
-            _authentication=((Authentication.Deferred)_authentication).login(username,password);
+            _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
             if (_authentication == null)
                 throw new ServletException();
         }
@@ -2042,7 +2100,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
+        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8); //have to assume UTF-8 because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2063,10 +2121,11 @@ public class Request implements HttpServletRequest
             {
                 StringBuilder overridden_query_string = new StringBuilder();
                 MultiMap<String> overridden_old_query = new MultiMap<>();
-                UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
-
+                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding());//decode using any queryencoding set for the request
+                
+                
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
+                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8); //have to assume utf8 as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {

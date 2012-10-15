@@ -35,6 +35,8 @@ import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.xml.sax.EntityResolver;
@@ -52,6 +54,7 @@ import org.xml.sax.SAXException;
  */
 public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
+    private static final Logger LOG = Log.getLogger(WebappRegistrationCustomizerImpl.class);
 
     /**
      * Default name of a class that belongs to the jstl bundle. From that class
@@ -112,8 +115,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         }
         catch (Exception e)
         {
-            System.err.println("Unable to set the JspFactory: jsp support incomplete.");
-            e.printStackTrace();
+            LOG.warn("Unable to set the JspFactory: jsp support incomplete.",e);
         }
     }
 
@@ -138,17 +140,23 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
     {
 
-    	HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
+        ArrayList<URL> urls = new ArrayList<URL>();
+        HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
 
         // Look for the jstl bundle
         // We assume the jstl's tlds are defined there.
         // We assume that the jstl bundle is imported by this bundle
         // So we can look for this class using this bundle's classloader:
-        Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+        try
+        {
+            Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
 
-        classesToAddToTheTldBundles.add(jstlClass);
-
-        ArrayList<URL> urls = new ArrayList<URL>();
+            classesToAddToTheTldBundles.add(jstlClass);
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.info("jstl not on classpath", e);
+        }
         for (Class<?> cl : classesToAddToTheTldBundles)
         {
             Bundle tldBundle = FrameworkUtil.getBundle(cl);
@@ -208,7 +216,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.warn(e);
         }
 
     }

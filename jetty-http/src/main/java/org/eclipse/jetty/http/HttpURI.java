@@ -100,7 +100,15 @@ public class HttpURI
     public HttpURI(String raw)
     {
         _rawString=raw;
-        byte[] b = raw.getBytes();
+        byte[] b;
+        try
+        {
+            b = raw.getBytes(StringUtil.__UTF8);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+           throw new RuntimeException(e.getMessage());
+        }
         parse(b,0,b.length);
         _charset = URIUtil.__CHARSET;
     }
@@ -693,20 +701,22 @@ public class HttpURI
     {
         if (_query==_fragment)
             return;
-        UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
+        if (_charset==StringUtil.__UTF8_CHARSET)
+            UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
+        else
+            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,_charset.toString()),parameters,_charset.toString());
     }
 
-    public void decodeQueryTo(MultiMap parameters, String encoding)
-            throws UnsupportedEncodingException
-            {
+    public void decodeQueryTo(MultiMap parameters, String encoding) throws UnsupportedEncodingException
+    {
         if (_query==_fragment)
             return;
 
         if (encoding==null || StringUtil.isUTF8(encoding))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(new String(_raw,_query+1,_fragment-_query-1,_charset),parameters,encoding);
-            }
+            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding);
+    }
 
     public void clear()
     {

@@ -75,11 +75,14 @@ public class ArrayByteBufferPool implements ByteBufferPool
     @Override
     public void release(ByteBuffer buffer)
     {
-        Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
-        if (bucket!=null)
-        {
-            BufferUtil.clear(buffer);
-            bucket._queue.offer(buffer);
+        if (buffer!=null)
+        {    
+            Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
+            if (bucket!=null)
+            {
+                BufferUtil.clear(buffer);
+                bucket._queue.offer(buffer);
+            }
         }
     }
 

@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.security.KeyStore;
 import java.util.Arrays;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -39,6 +36,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * HttpServer Tester.
@@ -188,6 +187,12 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             client.close();
         }
     }
+
+    @Override
+    @Test
+    @Ignore("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
+            "but shutdownOutput() is needed by the test.")
+    public void testInterruptedRequest(){}
 
     @Override
     @Ignore

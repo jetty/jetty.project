@@ -31,7 +31,7 @@ public class ABServlet extends WebSocketServlet
     private static final int MBYTE = KBYTE * KBYTE;
 
     @Override
-    public void registerWebSockets(WebSocketServerFactory factory)
+    public void configure(WebSocketServerFactory factory)
     {
         // Test cases 9.x uses BIG frame sizes, let policy handle them.
         int bigFrameSize = 20 * MBYTE;

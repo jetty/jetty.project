@@ -58,9 +58,8 @@ public class MappedByteBufferPool implements ByteBufferPool
             int capacity = bucket * factor;
             result = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
         }
-        else
-            BufferUtil.clear(result);
 
+        BufferUtil.clear(result);
         return result;
     }
 

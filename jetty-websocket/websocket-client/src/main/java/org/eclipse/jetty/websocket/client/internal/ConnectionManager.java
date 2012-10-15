@@ -85,6 +85,7 @@ public class ConnectionManager extends ContainerLifeCycle
     public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory,
             WebSocketPolicy policy)
     {
+        // TODO: configure connect timeout
         selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
         selector.setSslContextFactory(sslContextFactory);
         addBean(selector);
@@ -106,7 +107,7 @@ public class ConnectionManager extends ContainerLifeCycle
         }
     }
 
-    public FutureCallback<UpgradeResponse> connectPhysical(IWebSocketClient client) throws IOException
+    public FutureCallback<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         SocketAddress bindAddress = client.getFactory().getBindAddress();

@@ -35,14 +35,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
-import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.EventMethodsCache;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
+import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 
 public class WebSocketClientFactory extends ContainerLifeCycle
@@ -52,7 +52,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private final Executor executor;
     private final Scheduler scheduler;
-    private final EventMethodsCache methodsCache;
+    private final EventDriverFactory eventDriverFactory;
     private final WebSocketPolicy policy;
     private final WebSocketExtensionRegistry extensionRegistry;
     private SocketAddress bindAddress;
@@ -103,7 +103,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
         addBean(this.connectionManager);
 
-        this.methodsCache = new EventMethodsCache();
+        this.eventDriverFactory = new EventDriverFactory(policy);
     }
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
@@ -127,7 +127,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
 
     /**
      * The address to bind local physical (outgoing) TCP Sockets to.
-     *
+     * 
      * @return the address to bind the socket channel to
      * @see #setBindAddress(SocketAddress)
      */
@@ -189,8 +189,8 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     public WebSocketClient newWebSocketClient(Object websocketPojo)
     {
         LOG.debug("Creating new WebSocket for {}",websocketPojo);
-        WebSocketEventDriver websocket = new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
-        return new IWebSocketClient(this,websocket);
+        EventDriver websocket = eventDriverFactory.wrap(websocketPojo);
+        return new DefaultWebSocketClient(this,websocket);
     }
 
     public boolean sessionClosed(WebSocketSession session)
@@ -204,17 +204,6 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         {
             LOG.debug("Session Opened: {}",session);
         }
-        // FIXME: what is going on?
-        // if (!isRunning())
-        // {
-        // LOG.debug("Factory.isRunning: {}",this.isRunning());
-        // LOG.debug("Factory.isStarted: {}",this.isStarted());
-        // LOG.debug("Factory.isStarting: {}",this.isStarting());
-        // LOG.debug("Factory.isStopped: {}",this.isStopped());
-        // LOG.debug("Factory.isStopping: {}",this.isStopping());
-        // LOG.warn("Factory is not running");
-        // return false;
-        // }
         boolean ret = sessions.offer(session);
         session.onConnect();
         return ret;

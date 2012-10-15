@@ -5,7 +5,7 @@
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 8 webserver
+# description: Jetty 9 webserver
 # processname: jetty
 # ========================
 
@@ -136,7 +136,7 @@ shift
 ##################################################
 # Read any configuration files
 ##################################################
-for CONFIG in /etc/default/jetty{,8} $HOME/.jettyrc; do
+for CONFIG in /etc/default/jetty{,9} $HOME/.jettyrc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -192,13 +192,13 @@ if [ -z "$JETTY_HOME" ] ; then
         "/home"
         )
   JETTY_DIR_NAMES=(
-        "jetty-8"
-        "jetty8"
-        "jetty-8.*"
+        "jetty-9"
+        "jetty9"
+        "jetty-9.*"
         "jetty"
-        "Jetty-8"
-        "Jetty8"
-        "Jetty-8.*"
+        "Jetty-9"
+        "Jetty9"
+        "Jetty-9.*"
         "Jetty"
         )
         

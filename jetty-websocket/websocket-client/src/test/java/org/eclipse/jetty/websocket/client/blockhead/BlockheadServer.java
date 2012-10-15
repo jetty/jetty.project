@@ -368,6 +368,8 @@ public class BlockheadServer
             // Connect extensions
             if (!extensions.isEmpty())
             {
+                generator.configureFromExtensions(extensions);
+
                 Iterator<Extension> extIter;
                 // Connect outgoings
                 extIter = extensions.iterator();
@@ -376,20 +378,6 @@ public class BlockheadServer
                     Extension ext = extIter.next();
                     ext.setNextOutgoingFrames(outgoing);
                     outgoing = ext;
-
-                    // Handle RSV reservations
-                    if (ext.useRsv1())
-                    {
-                        generator.setRsv1InUse(true);
-                    }
-                    if (ext.useRsv2())
-                    {
-                        generator.setRsv2InUse(true);
-                    }
-                    if (ext.useRsv3())
-                    {
-                        generator.setRsv3InUse(true);
-                    }
                 }
 
                 // Connect incomings

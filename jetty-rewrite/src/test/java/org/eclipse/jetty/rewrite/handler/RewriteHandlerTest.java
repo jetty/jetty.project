@@ -43,9 +43,10 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
     public void init() throws Exception
     {
         _handler=new RewriteHandler();
-        _server.setHandler(_handler);
-        _handler.setHandler(new AbstractHandler(){
-
+        _handler.setServer(_server);
+        _handler.setHandler(new AbstractHandler()
+        {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setStatus(201);
@@ -55,6 +56,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
             }
 
         });
+        _handler.start();
 
         _rule1 = new RewritePatternRule();
         _rule1.setPattern("/aaa/*");
@@ -84,6 +86,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewritePathInfo(false);
         _request.setRequestURI("/foo/bar");
         _request.setPathInfo("/foo/bar");
+        
         _handler.handle("/foo/bar",_request,_request, _response);
         assertEquals(201,_response.getStatus());
         assertEquals("/foo/bar",_request.getAttribute("target"));

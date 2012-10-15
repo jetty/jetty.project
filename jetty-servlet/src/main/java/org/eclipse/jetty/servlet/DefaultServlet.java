@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -667,6 +668,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 String ifms=request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifms!=null)
                 {
+                    //Get jetty's Response impl
+                    Response r = Response.getResponse(response);
+                                       
                     if (content!=null)
                     {
                         String mdlm=content.getLastModified();
@@ -674,9 +678,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         {
                             if (ifms.equals(mdlm))
                             {
-                                response.reset();
-                                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                response.flushBuffer();
+                                r.reset(true);
+                                r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                                r.flushBuffer();
                                 return false;
                             }
                         }
@@ -686,10 +690,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (ifmsl!=-1)
                     {
                         if (resource.lastModified()/1000 <= ifmsl/1000)
-                        {
-                            response.reset();
-                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            response.flushBuffer();
+                        { 
+                            r.reset(true);
+                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            r.flushBuffer();
                             return false;
                         }
                     }
@@ -942,8 +946,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         pos=start;
                     }
                     
-                    System.err.println("PART "+ibr);
-                    
                     IO.copy(in,multi,size);
                     pos+=size;
                 }
@@ -1022,6 +1024,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (_cacheControl!=null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl);
     }
+    
+  
 
     /* ------------------------------------------------------------ */
     /*

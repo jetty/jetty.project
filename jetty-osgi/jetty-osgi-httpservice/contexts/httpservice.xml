@@ -23,7 +23,7 @@
   <Call name="addServlet">
     <Arg>org.eclipse.equinox.http.servlet.HttpServiceServlet</Arg>
     <Arg>/*</Arg>
-    <Set name="InitOrder">0</Set>
+    <Set name="InitOrder">1</Set>
   </Call>
 <!-- custom pluggable error handler -->
   <Set name="ErrorHandler">

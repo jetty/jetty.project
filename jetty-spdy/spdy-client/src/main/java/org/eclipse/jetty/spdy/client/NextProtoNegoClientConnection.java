@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class NextProtoNegoClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
 {
-    private final Logger logger = Log.getLogger(getClass());
+    private final Logger LOG = Log.getLogger(getClass());
     private final SocketChannel channel;
     private final Object attachment;
     private final SPDYClient client;
@@ -49,7 +49,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         this.channel = channel;
         this.attachment = attachment;
         this.client = client;
-        this.engine=endPoint.getSslConnection().getSSLEngine();
+        this.engine = endPoint.getSslConnection().getSSLEngine();
         NextProtoNego.put(engine, this);
     }
 
@@ -60,12 +60,12 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         try
         {
             getEndPoint().flush(BufferUtil.EMPTY_BUFFER);
+            fillInterested();
         }
         catch(IOException e)
         {
             throw new RuntimeIOException(e);
         }
-        fillInterested();
     }
 
     @Override
@@ -76,9 +76,11 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
             int filled = fill();
             if (filled == 0 && !completed)
                 fillInterested();
-            if (filled <= 0)
+            if (filled <= 0 || completed)
                 break;
         }
+        if (completed)
+            replaceConnection();
     }
 
     private int fill()
@@ -89,7 +91,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         }
         catch (IOException x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             getEndPoint().close();
             return -1;
         }
@@ -105,10 +107,6 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     public void unsupported()
     {
         NextProtoNego.remove(engine);
-        // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
-        EndPoint endPoint = getEndPoint();
-        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
-        client.replaceConnection(endPoint, connection);
         completed = true;
     }
 
@@ -116,14 +114,18 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     public String selectProtocol(List<String> protocols)
     {
         NextProtoNego.remove(engine);
-        String protocol = client.selectProtocol(protocols);
-        if (protocol == null)
-            return null;
-        EndPoint endPoint = getEndPoint();
-        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
-        client.replaceConnection(endPoint, connection);
         completed = true;
-        return protocol;
+        String protocol = client.selectProtocol(protocols);
+        return protocol == null ? null : protocol;
     }
 
+    private void replaceConnection()
+    {
+        EndPoint endPoint = getEndPoint();
+        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
+        endPoint.getConnection().onClose();
+        endPoint.setConnection(connection);
+        connection.onOpen();
+        completed = true;
+    }
 }

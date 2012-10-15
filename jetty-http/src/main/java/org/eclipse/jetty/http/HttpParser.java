@@ -938,7 +938,7 @@ public class HttpParser
                             Thread.sleep(100);
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IllegalStateException(String.format("%s %d/%d data when CLOSED:%s",this,len,_headerBytes,chars));
+                            throw new IllegalStateException(String.format("%s %d/%d>%d data when CLOSED:%s",this,len,_headerBytes,_maxHeaderBytes,chars));
                         }
                         BufferUtil.clear(buffer);
                     }

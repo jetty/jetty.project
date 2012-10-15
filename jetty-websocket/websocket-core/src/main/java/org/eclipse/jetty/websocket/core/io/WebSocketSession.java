@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.api.BaseConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
@@ -46,10 +46,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     private final BaseConnection baseConnection;
     private final WebSocketPolicy policy;
     private final String subprotocol;
-    private final WebSocketEventDriver websocket;
+    private final EventDriver websocket;
     private OutgoingFrames outgoing;
 
-    public WebSocketSession(WebSocketEventDriver websocket, BaseConnection connection, WebSocketPolicy policy, String subprotocol)
+    public WebSocketSession(EventDriver websocket, BaseConnection connection, WebSocketPolicy policy, String subprotocol)
     {
         super();
         this.websocket = websocket;

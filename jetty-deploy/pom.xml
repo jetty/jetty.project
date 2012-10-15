@@ -24,7 +24,8 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>org.eclipse.jetty.jmx.*;version="8.0";resolution:=optional,*</Import-Package>
+                <Import-Package>org.eclipse.jetty.jmx.*;version="9.0";resolution:=optional,*</Import-Package>
+                <_nouses>true</_nouses>
               </instructions>
             </configuration>
            </execution>
@@ -90,7 +91,7 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
-    <!-- 
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>

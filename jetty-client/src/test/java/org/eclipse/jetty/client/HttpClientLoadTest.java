@@ -65,11 +65,15 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         client.setMaxConnectionsPerAddress(32768);
         client.setMaxQueueSizePerAddress(1024 * 1024);
+        client.setDispatchIO(false);
 
         Random random = new Random();
         int iterations = 200;
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
+
+        int factor = logger.isDebugEnabled() ? 25 : 1;
+        factor *= "http".equalsIgnoreCase(scheme) ? 10 : 1000;
 
         // Dumps the state of the client if the test takes too long
         final Thread testThread = Thread.currentThread();
@@ -90,7 +94,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 }
                 testThread.interrupt();
             }
-        }, iterations * ("http".equalsIgnoreCase(scheme) ? 10 : 1000), TimeUnit.MILLISECONDS);
+        }, iterations * factor, TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)

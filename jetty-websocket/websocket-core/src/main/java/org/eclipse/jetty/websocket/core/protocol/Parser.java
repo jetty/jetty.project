@@ -19,18 +19,20 @@
 package org.eclipse.jetty.websocket.core.protocol;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.api.ProtocolException;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.payload.BinaryValidator;
 import org.eclipse.jetty.websocket.core.io.payload.CloseReasonValidator;
 import org.eclipse.jetty.websocket.core.io.payload.DeMaskProcessor;
+import org.eclipse.jetty.websocket.core.io.payload.NoOpValidator;
 import org.eclipse.jetty.websocket.core.io.payload.PayloadProcessor;
 import org.eclipse.jetty.websocket.core.io.payload.UTF8Validator;
 
@@ -71,6 +73,8 @@ public class Parser
     private boolean rsv2InUse = false;
     /** Is there an extension using RSV3 */
     private boolean rsv3InUse = false;
+    /** Is there an extension that processes invalid UTF8 text messages (such as compressed content) */
+    private boolean isTextFrameValidated = true;
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private IncomingFrames incomingFramesHandler;
@@ -108,6 +112,36 @@ public class Parser
                             + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
                 break;
+        }
+    }
+
+    public void configureFromExtensions(List<? extends Extension> exts)
+    {
+        // default
+        this.rsv1InUse = false;
+        this.rsv2InUse = false;
+        this.rsv3InUse = false;
+        this.isTextFrameValidated = true;
+
+        // configure from list of extensions in use
+        for(Extension ext: exts)
+        {
+            if (ext.isRsv1User())
+            {
+                this.rsv1InUse = true;
+            }
+            if (ext.isRsv2User())
+            {
+                this.rsv2InUse = true;
+            }
+            if (ext.isRsv3User())
+            {
+                this.rsv3InUse = true;
+            }
+            if (ext.isTextDataDecoder())
+            {
+                this.isTextFrameValidated = false;
+            }
         }
     }
 
@@ -262,7 +296,10 @@ public class Parser
                         throw new ProtocolException("Unknown opcode: " + opc);
                     }
 
-                    LOG.debug("OpCode {}, fin={}",OpCode.name(opcode),fin);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",OpCode.name(opcode),fin,(rsv1?'1':'.'),(rsv2?'1':'.'),(rsv3?'1':'.'));
+                    }
 
                     /*
                      * RFC 6455 Section 5.2
@@ -290,13 +327,20 @@ public class Parser
                     switch (opcode)
                     {
                         case OpCode.TEXT:
-                            strictnessProcessor = new UTF8Validator();
+                            if (isTextFrameValidated)
+                            {
+                                strictnessProcessor = new UTF8Validator();
+                            }
+                            else
+                            {
+                                strictnessProcessor = NoOpValidator.INSTANCE;
+                            }
                             break;
                         case OpCode.CLOSE:
                             strictnessProcessor = new CloseReasonValidator();
                             break;
                         default:
-                            strictnessProcessor = BinaryValidator.INSTANCE;
+                            strictnessProcessor = NoOpValidator.INSTANCE;
                             break;
                     }
 
@@ -537,21 +581,6 @@ public class Parser
     public void setIncomingFramesHandler(IncomingFrames incoming)
     {
         this.incomingFramesHandler = incoming;
-    }
-
-    public void setRsv1InUse(boolean rsv1InUse)
-    {
-        this.rsv1InUse = rsv1InUse;
-    }
-
-    public void setRsv2InUse(boolean rsv2InUse)
-    {
-        this.rsv2InUse = rsv2InUse;
-    }
-
-    public void setRsv3InUse(boolean rsv3InUse)
-    {
-        this.rsv3InUse = rsv3InUse;
     }
 
     @Override

@@ -23,16 +23,17 @@ import java.util.Collection;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.model.FrameworkMethod;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractHttpClientServerTest
@@ -44,17 +45,7 @@ public abstract class AbstractHttpClientServerTest
     }
 
     @Rule
-    public final TestWatchman testName = new TestWatchman()
-    {
-        @Override
-        public void starting(FrameworkMethod method)
-        {
-            super.starting(method);
-            System.err.printf("Running %s.%s()%n",
-                    method.getMethod().getDeclaringClass().getName(),
-                    method.getName());
-        }
-    };
+    public final TestTracker tracker = new TestTracker();
 
     protected SslContextFactory sslContextFactory;
     protected String scheme;

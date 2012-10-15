@@ -102,7 +102,7 @@ public class StringUtil
         ByteBuffer slice = b.slice();
         slice.position(position);
         slice.limit(position+length);
-        return BufferUtil.toString(slice);
+        return BufferUtil.toString(slice,__UTF8_CHARSET);
     }
     
     

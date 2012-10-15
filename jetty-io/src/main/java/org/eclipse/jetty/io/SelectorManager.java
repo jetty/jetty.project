@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -35,16 +36,18 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -56,17 +59,42 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
 
+    private final Executor executor;
+    private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
-    private volatile long _selectorIndex;
+    private long _connectTimeout = 15000;
+    private long _selectorIndex;
 
-    protected SelectorManager()
+    protected SelectorManager(Executor executor, Scheduler scheduler)
     {
-        this((Runtime.getRuntime().availableProcessors() + 1) / 2);
+        this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
     }
 
-    protected SelectorManager(@Name(value="selectors") int selectors)
+    protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
+        this.executor = executor;
+        this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
+    }
+
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public long getConnectTimeout()
+    {
+        return _connectTimeout;
+    }
+
+    public void setConnectTimeout(long connectTimeout)
+    {
+        _connectTimeout = connectTimeout;
     }
 
     /**
@@ -74,7 +102,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param task the task to execute
      */
-    protected abstract void execute(Runnable task);
+    protected void execute(Runnable task)
+    {
+        executor.execute(task);
+    }
 
     /**
      * @return the number of selectors in use
@@ -205,6 +236,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             LOG.info("Exception while notifying connection " + connection, x);
         }
+    }
+
+    protected boolean finishConnect(SocketChannel channel) throws IOException
+    {
+        return channel.finishConnect();
     }
 
     /**
@@ -416,27 +452,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 else if (key.isConnectable())
                 {
-                    // Complete a connection of a registered channel
-                    SocketChannel channel = (SocketChannel)key.channel();
-                    try
-                    {
-                        boolean connected = channel.finishConnect();
-                        if (connected)
-                        {
-                            key.interestOps(0);
-                            EndPoint endpoint = createEndPoint(channel, key);
-                            key.attach(endpoint);
-                        }
-                        else
-                        {
-                            throw new ConnectException();
-                        }
-                    }
-                    catch (Exception x)
-                    {
-                        connectionFailed(channel, x, attachment);
-                        closeNoExceptions(channel);
-                    }
+                    processConnect(key, (Connect)attachment);
                 }
                 else
                 {
@@ -457,6 +473,32 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
+        private void processConnect(SelectionKey key, Connect connect)
+        {
+            key.attach(connect.attachment);
+            SocketChannel channel = (SocketChannel)key.channel();
+            try
+            {
+                boolean connected = finishConnect(channel);
+                if (connected)
+                {
+                    connect.timeout.cancel();
+                    key.interestOps(0);
+                    EndPoint endpoint = createEndPoint(channel, key);
+                    key.attach(endpoint);
+                }
+                else
+                {
+                    throw new ConnectException();
+                }
+            }
+            catch (Exception x)
+            {
+                connect.failed(x);
+                closeNoExceptions(channel);
+            }
+        }
+
         private void closeNoExceptions(Closeable closeable)
         {
             try
@@ -469,14 +511,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
-        public SelectorManager getSelectorManager()
-        {
-            return SelectorManager.this;
-        }
-
         public void wakeup()
         {
             _selector.wakeup();
+        }
+
+        public boolean isSelectorThread()
+        {
+            return Thread.currentThread() == _thread;
         }
 
         private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
@@ -653,13 +695,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private class Connect implements Runnable
         {
+            private final AtomicBoolean failed = new AtomicBoolean();
             private final SocketChannel channel;
             private final Object attachment;
+            private final Scheduler.Task timeout;
 
             public Connect(SocketChannel channel, Object attachment)
             {
                 this.channel = channel;
                 this.attachment = attachment;
+                this.timeout = scheduler.schedule(new ConnectTimeout(this), getConnectTimeout(), TimeUnit.MILLISECONDS);
             }
 
             @Override
@@ -667,11 +712,50 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 try
                 {
-                    channel.register(_selector, SelectionKey.OP_CONNECT, attachment);
+                    channel.register(_selector, SelectionKey.OP_CONNECT, this);
                 }
                 catch (ClosedChannelException x)
                 {
                     LOG.debug(x);
+                }
+            }
+
+            protected void failed(Throwable failure)
+            {
+                if (failed.compareAndSet(false, true))
+                    connectionFailed(channel, failure, attachment);
+            }
+        }
+
+        private class ConnectTimeout implements Runnable
+        {
+            private final Connect connect;
+
+            private ConnectTimeout(Connect connect)
+            {
+                this.connect = connect;
+            }
+
+            @Override
+            public void run()
+            {
+                SocketChannel channel = connect.channel;
+                if (channel.isConnectionPending())
+                {
+                    LOG.debug("Channel {} timed out while connecting, closing it", channel);
+                    try
+                    {
+                        // This will unregister the channel from the selector
+                        channel.close();
+                    }
+                    catch (IOException x)
+                    {
+                        LOG.ignore(x);
+                    }
+                    finally
+                    {
+                        connect.failed(new SocketTimeoutException());
+                    }
                 }
             }
         }

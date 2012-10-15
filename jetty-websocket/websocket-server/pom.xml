@@ -11,7 +11,7 @@
     <name>Jetty :: Websocket :: Server</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.websocket.server</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
     </properties>
 
     <dependencies>
@@ -49,21 +49,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

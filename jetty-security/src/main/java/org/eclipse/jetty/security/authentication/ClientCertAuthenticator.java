@@ -75,19 +75,23 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         super();
     }
 
+    @Override
     public String getAuthMethod()
     {
         return Constraint.__CERT_AUTH;
     }
 
+    
+
     /**
      * @return Authentication for request
      * @throws ServerAuthException
      */
+    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
-            return _deferred;
+            return new DeferredAuthentication(this);
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
@@ -120,16 +124,15 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
                     final char[] credential = B64Code.encode(cert.getSignature());
 
-                    UserIdentity user = _loginService.login(username,credential);
+                    UserIdentity user = login(username, credential, req);
                     if (user!=null)
                     {
-                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
             }
 
-            if (!_deferred.isDeferred(response))
+            if (!DeferredAuthentication.isDeferred(response))
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
@@ -181,6 +184,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return CertificateUtils.loadCRL(crlPath);
     }
 
+    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;

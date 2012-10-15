@@ -10,6 +10,10 @@
     <artifactId>spdy-client</artifactId>
     <name>Jetty :: SPDY :: Jetty Client Binding</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -41,6 +45,24 @@
                 <configuration>
                     <argLine>-Xbootclasspath/p:${project.build.directory}/npn/npn-boot-${npn.version}.jar</argLine>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                <Export-Package>org.eclipse.jetty.spdy.client;version="9.0"</Export-Package>
+                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                            </instructions>
+                          </configuration>
+                       </execution>
+                  </executions>
             </plugin>
         </plugins>
     </build>

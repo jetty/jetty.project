@@ -50,6 +50,7 @@ public class ForwardedSchemeHeaderRule extends HeaderRule {
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) 
     {
         ((Request) request).setScheme(_scheme);

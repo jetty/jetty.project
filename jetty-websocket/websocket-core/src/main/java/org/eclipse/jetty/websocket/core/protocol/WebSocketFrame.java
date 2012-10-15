@@ -152,6 +152,35 @@ public class WebSocketFrame implements Frame
         continuation = copy.continuation;
     }
 
+    /**
+     * Copy constructor for the websocket frame, with an alternate payload.
+     * <p>
+     * This is especially useful for Extensions to utilize when mutating the payload.
+     * 
+     * @param copy
+     *            the websocket to copy.
+     * @param altPayload
+     *            the alternate payload to use for this frame.
+     */
+    public WebSocketFrame(WebSocketFrame copy, ByteBuffer altPayload)
+    {
+        fin = copy.fin;
+        rsv1 = copy.rsv2;
+        rsv2 = copy.rsv2;
+        rsv3 = copy.rsv3;
+        opcode = copy.opcode;
+        masked = copy.masked;
+        mask = null;
+        if (copy.mask != null)
+        {
+            mask = new byte[copy.mask.length];
+            System.arraycopy(copy.mask,0,mask,0,mask.length);
+        }
+        continuationIndex = copy.continuationIndex;
+        continuation = copy.continuation;
+        setPayload(altPayload);
+    }
+
     public void assertValid()
     {
         if (OpCode.isControlFrame(opcode))

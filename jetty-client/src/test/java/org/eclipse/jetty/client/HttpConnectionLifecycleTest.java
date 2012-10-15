@@ -28,13 +28,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -213,6 +214,79 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
     }
 
+    @Slow
+    @Test
+    public void test_BadRequest_WithSlowRequest_RemovesConnection() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        final long delay = 1000;
+        final CountDownLatch successLatch = new CountDownLatch(3);
+        client.newRequest(host, port)
+                .scheme(scheme)
+                .listener(new Request.Listener.Empty()
+                {
+                    @Override
+                    public void onBegin(Request request)
+                    {
+                        // Remove the host header, this will make the request invalid
+                        request.header(HttpHeader.HOST.asString(), null);
+                    }
+
+                    @Override
+                    public void onHeaders(Request request)
+                    {
+                        try
+                        {
+                            TimeUnit.MILLISECONDS.sleep(delay);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onSuccess(Request request)
+                    {
+                        successLatch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Empty()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        Assert.assertEquals(400, response.status());
+                        // 400 response also come with a Connection: close,
+                        // so the connection is closed and removed
+                        successLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertFalse(result.isFailed());
+                        successLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(successLatch.await(delay * 5, TimeUnit.MILLISECONDS));
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
+    }
+
     @Test
     public void test_ConnectionFailure_RemovesConnection() throws Exception
     {
@@ -304,7 +378,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
     {
-        StdErrLog logger = (StdErrLog)Log.getLogger(org.eclipse.jetty.server.HttpConnection.class);
+        StdErrLog logger = StdErrLog.getLogger(org.eclipse.jetty.server.HttpConnection.class);
         logger.setHideStacks(true);
         try
         {
@@ -353,5 +427,37 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         {
             logger.setHideStacks(false);
         }
+    }
+
+    @Slow
+    @Test
+    public void test_IdleConnection_IsClosed_OnRemoteClose() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(scheme)
+                .send()
+                .get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.status());
+
+        connector.stop();
+
+        // Give the connection some time to process the remote close
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
     }
 }

@@ -34,8 +34,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,10 +44,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-@Ignore
+@RunWith(AdvancedRunner.class)
 public class StressTest
 {
     private static final Logger LOG = Log.getLogger(StressTest.class);
@@ -122,45 +123,42 @@ public class StressTest
 
 
     @Test
+    @Stress("Hey, its called StressTest for a reason")
     public void testMinNonPersistent() throws Throwable
     {
         doThreads(2,2,false);
     }
 
     @Test
+    @Stress("Much threading")
     public void testNonPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        assumeTrue(!OS.IS_OSX);
 
         doThreads(10,10,false);
         Thread.sleep(1000);
         doThreads(20,20,false);
-        if (Stress.isEnabled())
-        {
-            Thread.sleep(1000);
-            doThreads(200,10,false);
-            Thread.sleep(1000);
-            doThreads(200,200,false);
-        }
+        Thread.sleep(1000);
+        doThreads(200,10,false);
+        Thread.sleep(1000);
+        doThreads(200,200,false);
     }
 
     @Test
+    @Stress("Much threading")
     public void testPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        assumeTrue(!OS.IS_OSX);
 
         doThreads(10,10,true);
         Thread.sleep(1000);
         doThreads(40,40,true);
-        if (Stress.isEnabled())
-        {
-            Thread.sleep(1000);
-            doThreads(200,10,true);
-            Thread.sleep(1000);
-            doThreads(200,200,true);
-        }
+        Thread.sleep(1000);
+        doThreads(200,10,true);
+        Thread.sleep(1000);
+        doThreads(200,200,true);
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
@@ -293,33 +291,30 @@ public class StressTest
                 }
             }
 
-            if(Stress.isEnabled())
+            System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
+            for (int q=0;q<quantums;q++)
             {
-                System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
-                for (int q=0;q<quantums;q++)
-                {
-                    System.out.printf("%02d00<=l<%02d00",q,(q+1));
-                    for (int i=0;i<_latencies.length;i++)
-                        System.out.print("\t"+count[i][q]);
-                    System.out.println();
-                }
-
-                System.out.print("other       ");
+                System.out.printf("%02d00<=l<%02d00",q,(q+1));
                 for (int i=0;i<_latencies.length;i++)
-                    System.out.print("\t"+other[i]);
+                    System.out.print("\t"+count[i][q]);
                 System.out.println();
-
-                System.out.print("HANDLED     ");
-                for (int i=0;i<_latencies.length;i++)
-                    System.out.print("\t"+_handled.get());
-                System.out.println();
-                System.out.print("TOTAL       ");
-                for (int i=0;i<_latencies.length;i++)
-                    System.out.print("\t"+length[i]);
-                System.out.println();
-                long ave=total/_latencies[4].size();
-                System.out.println("ave="+ave);
             }
+
+            System.out.print("other       ");
+            for (int i=0;i<_latencies.length;i++)
+                System.out.print("\t"+other[i]);
+            System.out.println();
+
+            System.out.print("HANDLED     ");
+            for (int i=0;i<_latencies.length;i++)
+                System.out.print("\t"+_handled.get());
+            System.out.println();
+            System.out.print("TOTAL       ");
+            for (int i=0;i<_latencies.length;i++)
+                System.out.print("\t"+length[i]);
+            System.out.println();
+            long ave=total/_latencies[4].size();
+            System.out.println("ave="+ave);
         }
     }
 

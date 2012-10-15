@@ -34,7 +34,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
     {
         start(false);
         _rule = new ForwardedSchemeHeaderRule();
-        _requestHeaderFields = _connection.getRequestFields();
+        _requestHeaderFields = _request.getHttpFields();
         _request.setScheme(null);
     }
 

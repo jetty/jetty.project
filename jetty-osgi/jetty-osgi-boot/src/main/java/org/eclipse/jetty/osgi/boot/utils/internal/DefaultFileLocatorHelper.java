@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.resource.FileResource;
 import org.osgi.framework.Bundle;
 
 /**
- * From a bundle to its location on the filesystem. Assumes the bundle is not a
- * jar.
+ * From a bundle to its location on the filesystem.
+ * Often assumes the bundle is not a jar.
  * 
  * @author hmalphettes
  */
@@ -150,7 +150,6 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         {
             // observed this on felix-2.0.0
             String location = bundle.getLocation();
-            // System.err.println("location  " + location);
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
@@ -183,10 +182,16 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 File file = new File(location.substring("file:".length()));
                 return file;
             }
+            else
+            {
+            	//Resort to introspection on felix:
+            	return getBundleInstallLocationInFelix(bundle);
+            }
         }
         return null;
     }
-
+    
+    
     /**
      * Locate a file inside a bundle.
      * 
@@ -356,5 +361,86 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         return url;
     }
+
+ // Felix introspection
+    private static Method Felix_BundleImpl_getArchive_method;
+    private static Method Felix_BundleArchive_getCurrentRevision_method;
+    private static Method Felix_BundleRevision_getRevisionRootDir_method;
+
+    private static boolean felixIntroSpectionDone = false;
+    
+    /**
+     * Introspection of the implementation classes of Felix-3.x and Felix-4.x.
+     * <p>
+     * See org.apache.felix.framework.cache
+     * In pseudo code:
+     * <code>
+     * File revRootDir = BundleImpl.getArchive().getCurrentRevision().getRevisionRootDir();
+     * return new File(revRootDir, bundle.jar) if it exists?
+     * else return revRootDir
+     * </p>
+     * @param bundle
+     * @return The File or null if we failed to find it.
+     */
+    private static File getBundleInstallLocationInFelix(Bundle bundle)
+    {
+    	if (Felix_BundleImpl_getArchive_method == null) {
+    		if (felixIntroSpectionDone)
+    		{
+    			return null;
+    		}
+    		felixIntroSpectionDone = true;
+    		try
+    		{
+    			Felix_BundleImpl_getArchive_method = bundle.getClass().getDeclaredMethod("getArchive", new Class[] {});
+    			Felix_BundleImpl_getArchive_method.setAccessible(true);
+    			Object archive = Felix_BundleImpl_getArchive_method.invoke(bundle);
+    			Class bundleArchiveClass = archive.getClass();
+    			Felix_BundleArchive_getCurrentRevision_method = bundleArchiveClass.getDeclaredMethod("getCurrentRevision", new Class[] {});
+    			Felix_BundleArchive_getCurrentRevision_method.setAccessible(true);
+    			Object revision = Felix_BundleArchive_getCurrentRevision_method.invoke(archive);
+    			Class bundleRevisionClass = revision.getClass();
+    			Felix_BundleRevision_getRevisionRootDir_method = bundleRevisionClass.getMethod("getRevisionRootDir", new Class[] {});
+    			Felix_BundleRevision_getRevisionRootDir_method.setAccessible(true);
+    		}
+    		catch (Throwable t)
+    		{
+    			//nevermind?
+    			//t.printStackTrace();
+    			Felix_BundleImpl_getArchive_method = null;
+    			return null;
+    		}
+    	}
+    	if (Felix_BundleImpl_getArchive_method != null)
+    	{
+    		try
+    		{
+    			Object archive = Felix_BundleImpl_getArchive_method.invoke(bundle);
+    			Object revision = Felix_BundleArchive_getCurrentRevision_method.invoke(archive);
+    			File revRootDir = (File)Felix_BundleRevision_getRevisionRootDir_method.invoke(revision);
+    			//System.err.println("Got the archive revision root dir " + revRootDir.getAbsolutePath());
+    			File bundleJar = new File(revRootDir, "bundle.jar");
+    			if (bundleJar.exists())
+    			{
+        			//bundle.jar is hardcoded in org.apache.felix.framework.cache.JarRevision
+        			//when it is not a bundle.jar, then the bundle location starts with 'file:' and we have already
+        			//taken care if that scheme earlier.
+    				return bundleJar;
+    			}
+    			else //sanity check?: if (new File(revRootDir, "META-INF/MANIFEST.MF").exists())
+    			{
+    				//this is a DirectoryRevision
+    				return revRootDir;
+    			}
+    		}
+    		catch (Throwable t)
+    		{
+    			//best effort: nevermind
+    			//t.printStackTrace();
+    		}
+    	}
+    	return null;
+    }
+// -- end Felix introspection    
 
 }

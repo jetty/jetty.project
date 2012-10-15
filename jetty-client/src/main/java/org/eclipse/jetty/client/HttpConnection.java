@@ -54,10 +54,11 @@ public class HttpConnection extends AbstractConnection implements Connection
     private final HttpDestination destination;
     private final HttpSender sender;
     private final HttpReceiver receiver;
+    private long idleTimeout;
 
     public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
-        super(endPoint, client.getExecutor());
+        super(endPoint, client.getExecutor(), client.isDispatchIO());
         this.client = client;
         this.destination = destination;
         this.sender = new HttpSender(this);
@@ -104,11 +105,18 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void send(Request request, Response.Listener listener)
     {
         normalizeRequest(request);
-        HttpConversation conversation = client.getConversation(request);
+
+        // Save the old idle timeout to restore it
+        EndPoint endPoint = getEndPoint();
+        idleTimeout = endPoint.getIdleTimeout();
+        endPoint.setIdleTimeout(request.idleTimeout());
+
+        HttpConversation conversation = client.getConversation(request.conversation());
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.exchanges().offer(exchange);
         conversation.listener(listener);
+
         sender.send(exchange);
     }
 
@@ -278,8 +286,15 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         HttpExchange exchange = getExchange();
         if (exchange != null)
+        {
             exchange.receive();
-        // If there is no exchange, we just ignore because the selector may be woken up by a remote close
+        }
+        else
+        {
+            // If there is no exchange, then could be either a remote close,
+            // or garbage bytes; in both cases we close the connection
+            close();
+        }
     }
 
     protected void receive()
@@ -292,6 +307,9 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange existing = this.exchange.getAndSet(null);
         if (existing == exchange)
         {
+            // Restore idle timeout
+            getEndPoint().setIdleTimeout(idleTimeout);
+
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
@@ -303,7 +321,6 @@ public class HttpConnection extends AbstractConnection implements Connection
                     {
                         if ("close".equalsIgnoreCase(values.nextElement()))
                         {
-                            destination.remove(this);
                             close();
                             return;
                         }
@@ -313,7 +330,6 @@ public class HttpConnection extends AbstractConnection implements Connection
             }
             else
             {
-                destination.remove(this);
                 close();
             }
         }
@@ -337,9 +353,15 @@ public class HttpConnection extends AbstractConnection implements Connection
         receiver.fail(new HttpResponseException("Response aborted", response));
     }
 
+    public void proceed(boolean proceed)
+    {
+        sender.proceed(proceed);
+    }
+
     @Override
     public void close()
     {
+        destination.remove(this);
         getEndPoint().shutdownOutput();
         LOG.debug("{} oshut", this);
         getEndPoint().close();

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -99,9 +99,8 @@ public class ExampleEchoServer
         wsHandler = new WebSocketHandler()
         {
             @Override
-            public void registerWebSockets(WebSocketServerFactory factory)
+            public void configure(WebSocketServerFactory factory)
             {
-                factory.register(BigEchoSocket.class);
                 factory.setCreator(new EchoCreator());
             }
         };

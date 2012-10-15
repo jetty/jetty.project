@@ -55,7 +55,7 @@ public class GlobalWebappConfigBindingTest
         jetty.addConfiguration("jetty.xml");
 
         // Setup initial context
-        jetty.copyContext("foo.xml","foo.xml");
+        jetty.copyWebapp("foo.xml","foo.xml");
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
 
     }

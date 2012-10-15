@@ -37,7 +37,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,7 +47,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class AsyncStressTest
 {
     private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
@@ -90,17 +93,10 @@ public class AsyncStressTest
     }
 
     @Test
-    @Ignore
+    @Stress("High connection count")
     public void testAsync() throws Throwable
     {
-        if (Stress.isEnabled())
-        {
-            doConnections(1600,240);
-        }
-        else
-        {
-            doConnections(80,80);
-        }
+        doConnections(1600,240);
     }
 
     private void doConnections(int connections,final int loops) throws Throwable

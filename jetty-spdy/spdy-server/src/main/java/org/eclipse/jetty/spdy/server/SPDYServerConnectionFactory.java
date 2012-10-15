@@ -41,6 +41,22 @@ import org.eclipse.jetty.spdy.parser.Parser;
 
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
+    // This method is placed here so as to provide a check for NPN before attempting to load any
+    // NPN classes.
+    public static void checkNPNAvailable()
+    {
+        try
+        {
+            Class<?> npn = ClassLoader.getSystemClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
+            if (npn.getClassLoader()!=null)
+                throw new IllegalStateException("NextProtoNego must be on JVM boot path");
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new IllegalStateException("No NextProtoNego on boot path",e);
+        }
+    }
+    
     private final short version;
     private final ServerSessionFrameListener listener;
     private int initialWindowSize;

@@ -23,7 +23,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 
 /**
  * Groups rules that apply only to a specific virtual host
@@ -72,7 +72,7 @@ public class VirtualHostRuleContainer extends RuleContainer
      */
     public void addVirtualHost(String virtualHost)
     {
-        _virtualHosts = (String[])LazyList.addToArray(_virtualHosts,virtualHost,String.class);
+        _virtualHosts = ArrayUtil.addToArray(_virtualHosts,virtualHost,String.class);
     }
 
     /**

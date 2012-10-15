@@ -48,4 +48,18 @@ public class TldLocatableURLClassloader extends URLClassLoader
     {
         return _jarsWithTldsInside;
     }
+
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+
+        if (_jarsWithTldsInside != null)
+        {
+            for (URL u:_jarsWithTldsInside)
+                builder.append(" "+u.toString());
+            return builder.toString();
+        }
+        else
+            return super.toString();
+    }
 }

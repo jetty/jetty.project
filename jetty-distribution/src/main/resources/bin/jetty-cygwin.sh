@@ -5,7 +5,7 @@
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 8 webserver
+# description: Jetty 9 webserver
 # processname: jetty
 # ========================
 
@@ -134,8 +134,8 @@ NO_START=0
 ##################################################
 # See if there's a default configuration file
 ##################################################
-if [ -f /etc/default/jetty8 ] ; then 
-  . /etc/default/jetty8
+if [ -f /etc/default/jetty9 ] ; then 
+  . /etc/default/jetty9
 elif [ -f /etc/default/jetty ] ; then 
   . /etc/default/jetty
 fi
@@ -196,13 +196,13 @@ if [ "$JETTY_HOME" = "" ] ; then
         /home                    \
         "
   JETTY_DIR_NAMES="              \
-        jetty-8                  \
-        jetty8                   \
-        jetty-8.*                \
+        jetty-9                  \
+        jetty9                   \
+        jetty-9.*                \
         jetty                    \
-        Jetty-8                  \
-        Jetty8                   \
-        Jetty-8.*                \
+        Jetty-9                  \
+        Jetty9                   \
+        Jetty-9.*                \
         Jetty                    \
         "
         
@@ -511,7 +511,7 @@ case "$ACTION" in
         echo -n "Starting Jetty: "
 
         if [ "$NO_START" = "1" ]; then 
-	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty8";
+	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty9";
           exit 0;
 	fi
 

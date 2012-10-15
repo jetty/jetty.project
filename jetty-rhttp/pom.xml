@@ -104,5 +104,4 @@
         </dependencies>
     </dependencyManagement>
 
-    <groupId>org.eclipse.jetty.rhttp</groupId>
 </project>

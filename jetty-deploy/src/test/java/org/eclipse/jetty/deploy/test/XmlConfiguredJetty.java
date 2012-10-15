@@ -87,13 +87,6 @@ public class XmlConfiguredJetty
         IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/realm.properties"),new File(etcDir,"realm.properties"));
         IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/webdefault.xml"),new File(etcDir,"webdefault.xml"));
 
-        File contextsDir = new File(_jettyHome,"contexts");
-        if (contextsDir.exists())
-        {
-            deleteContents(contextsDir);
-        }
-        contextsDir.mkdirs();
-
         File webappsDir = new File(_jettyHome,"webapps");
         if (webappsDir.exists())
         {
@@ -182,7 +175,7 @@ public class XmlConfiguredJetty
 
     public void assertResponseContains(String path, String needle) throws IOException
     {
-        System.err.println("Issuing request to " + path);
+        // System.err.println("Issuing request to " + path);
         String content = getResponse(path);
         Assert.assertTrue("Content should contain <" + needle + ">, instead got <" + content + ">",content.contains(needle));
     }
@@ -220,18 +213,6 @@ public class XmlConfiguredJetty
         }
     }
 
-    public void copyContext(String srcName, String destName) throws IOException
-    {
-        System.err.printf("Copying Context: %s -> %s%n",srcName,destName);
-        File srcDir = MavenTestingUtils.getTestResourceDir("contexts");
-        File destDir = new File(_jettyHome,"contexts");
-
-        File srcFile = new File(srcDir,srcName);
-        File destFile = new File(destDir,destName);
-
-        copyFile("Context",srcFile,destFile);
-    }
-
     private void copyFile(String type, File srcFile, File destFile) throws IOException
     {
         PathAssert.assertFileExists(type + " File",srcFile);
@@ -255,7 +236,7 @@ public class XmlConfiguredJetty
 
     private void deleteContents(File dir)
     {
-        System.err.printf("Delete  (dir) %s/%n",dir);
+        // System.err.printf("Delete  (dir) %s/%n",dir);
         if (!dir.exists())
         {
             return;
@@ -319,7 +300,6 @@ public class XmlConfiguredJetty
     {
         List<WebAppContext> contexts = new ArrayList<>();
         HandlerCollection handlers = (HandlerCollection)_server.getHandler();
-        System.err.println(_server.dump());
         Handler children[] = handlers.getChildHandlers();
 
         for (Handler handler : children)
@@ -379,13 +359,13 @@ public class XmlConfiguredJetty
         this._server.setStopTimeout(10);
     }
 
-    public void removeContext(String name)
+    public void removeWebapp(String name)
     {
-        File destDir = new File(_jettyHome,"contexts");
+        File destDir = new File(_jettyHome,"webapps");
         File contextFile = new File(destDir,name);
         if (contextFile.exists())
         {
-            Assert.assertTrue("Delete of Context file: " + contextFile.getAbsolutePath(),contextFile.delete());
+            Assert.assertTrue("Delete of Webapp file: " + contextFile.getAbsolutePath(),contextFile.delete());
         }
     }
 

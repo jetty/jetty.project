@@ -327,18 +327,19 @@ public class SslConnection extends AbstractConnection
             // TODO does this need idle timeouts
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
-
-        public EndPoint getEncryptedEndPoint()
-        {
-            return getEndPoint();
-        }
-
+        
         @Override
         protected FillInterest getFillInterest()
         {
             return super.getFillInterest();
         }
 
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            super.setIdleTimeout(idleTimeout);
+            getEndPoint().setIdleTimeout(idleTimeout);
+        }
 
         @Override
         protected WriteFlusher getWriteFlusher()
@@ -519,35 +520,9 @@ public class SslConnection extends AbstractConnection
 
                                 case NEED_WRAP:
                                     // we need to send some handshake data (probably to send a close handshake).
-
-                                    // If we were called from flush,
-                                    if (buffer==__FLUSH_CALLED_FILL)
-                                        return -1; // it can deal with the close handshake
-
-                                    // We need to call flush to cause the wrap to happen
-                                    _fillRequiresFlushToProgress = true;
-                                    try
-                                    {
-                                        // flushing an empty buffer will invoke the wrap mechanisms
-                                        flush(__FILL_CALLED_FLUSH);
-                                        // If encrypted output is all written, we can proceed with close
-                                        if (BufferUtil.isEmpty(_encryptedOutput))
-                                        {
-                                            _fillRequiresFlushToProgress = false;
-                                            return -1;
-                                        }
-
-                                        // Otherwise return as if a normal fill and let a subsequent call
-                                        // return -1 to the caller.
-                                        return unwrapResult.bytesProduced();
-                                    }
-                                    catch (IOException e)
-                                    {
-                                        LOG.debug(e);
-                                        // The flush failed, oh well nothing more to do than tell the app
-                                        // that the connection is closed.
-                                        return -1;
-                                    }
+                                    // but that will not enable any extra data to fill, so we just return -1
+                                    // The wrapping can be done by any output drivers doing flushing or shutdown output.
+                                    return -1;
                             }
                             throw new IllegalStateException();
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,6 +29,8 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,22 +41,22 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpSender
 {
     private static final Logger LOG = Log.getLogger(HttpSender.class);
+    private static final String EXPECT_100_ATTRIBUTE = HttpSender.class.getName() + ".expect100";
 
     private final HttpGenerator generator = new HttpGenerator();
-    private final ResponseNotifier responseNotifier = new ResponseNotifier();
     private final HttpConnection connection;
     private final RequestNotifier requestNotifier;
-    private long contentLength;
-    private Iterator<ByteBuffer> contentChunks;
-    private ByteBuffer header;
-    private ByteBuffer chunk;
-    private volatile boolean committed;
-    private volatile boolean failed;
+    private final ResponseNotifier responseNotifier;
+    private Iterator<ByteBuffer> contentIterator;
+    private ContentInfo expectedContent;
+    private boolean committed;
+    private boolean failed;
 
     public HttpSender(HttpConnection connection)
     {
         this.connection = connection;
         this.requestNotifier = new RequestNotifier(connection.getHttpClient());
+        this.responseNotifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     public void send(HttpExchange exchange)
@@ -68,42 +71,70 @@ public class HttpSender
             LOG.debug("Sending {}", request);
             requestNotifier.notifyBegin(request);
             ContentProvider content = request.content();
-            this.contentLength = content == null ? -1 : content.length();
-            this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
+            this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
             send();
+        }
+    }
+
+    public void proceed(boolean proceed)
+    {
+        ContentInfo contentInfo = expectedContent;
+        if (contentInfo != null)
+        {
+            contentInfo.await();
+            if (proceed)
+                send();
+            else
+                fail(new HttpRequestException("Expectation failed", connection.getExchange().request()));
         }
     }
 
     private void send()
     {
+        HttpClient client = connection.getHttpClient();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
+        ByteBuffer header = null;
+        ByteBuffer chunk = null;
         try
         {
-            HttpClient client = connection.getHttpClient();
             EndPoint endPoint = connection.getEndPoint();
             HttpExchange exchange = connection.getExchange();
-            ByteBufferPool byteBufferPool = client.getByteBufferPool();
             final Request request = exchange.request();
-            HttpGenerator.RequestInfo info = null;
-            ByteBuffer content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
-            boolean lastContent = !contentChunks.hasNext();
+            HttpConversation conversation = client.getConversation(request.conversation());
+            HttpGenerator.RequestInfo requestInfo = null;
+
+            boolean expect100 = request.headers().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+            expect100 &= conversation.getAttribute(EXPECT_100_ATTRIBUTE) == null;
+            if (expect100)
+                conversation.setAttribute(EXPECT_100_ATTRIBUTE, Boolean.TRUE);
+
+            ContentInfo contentInfo = this.expectedContent;
+            if (contentInfo == null)
+                contentInfo = new ContentInfo(contentIterator);
+            else
+                expect100 = false;
+            this.expectedContent = null;
+
             while (true)
             {
-                HttpGenerator.Result result = generator.generateRequest(info, header, chunk, content, lastContent);
+                HttpGenerator.Result result = generator.generateRequest(requestInfo, header, chunk, contentInfo.content, contentInfo.lastContent);
                 switch (result)
                 {
                     case NEED_INFO:
                     {
-                        info = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), request.path());
+                        ContentProvider content = request.content();
+                        long contentLength = content == null ? -1 : content.length();
+                        requestInfo = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), request.path());
                         break;
                     }
                     case NEED_HEADER:
                     {
-                        header = byteBufferPool.acquire(client.getRequestBufferSize(), false);
+                        header = bufferPool.acquire(client.getRequestBufferSize(), false);
                         break;
                     }
                     case NEED_CHUNK:
                     {
-                        chunk = byteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
                         break;
                     }
                     case FLUSH:
@@ -119,9 +150,20 @@ public class HttpSender
                                 @Override
                                 protected void pendingCompleted()
                                 {
+                                    LOG.debug("Write completed for {}", request);
+
                                     if (!committed)
                                         committed(request);
-                                    send();
+
+                                    if (expectedContent == null)
+                                    {
+                                        send();
+                                    }
+                                    else
+                                    {
+                                        LOG.debug("Expecting 100 Continue for {}", request);
+                                        expectedContent.ready();
+                                    }
                                 }
 
                                 @Override
@@ -130,22 +172,37 @@ public class HttpSender
                                     fail(x);
                                 }
                             };
-                            if (header == null)
-                                header = BufferUtil.EMPTY_BUFFER;
-                            if (chunk == null)
-                                chunk = BufferUtil.EMPTY_BUFFER;
-                            endPoint.write(null, callback, header, chunk, content);
+
+                            if (expect100)
+                            {
+                                // Save the expected content waiting for the 100 Continue response
+                                expectedContent = contentInfo;
+                            }
+
+                            write(callback, header, chunk, expect100 ? null : contentInfo.content);
+
                             if (callback.pending())
+                            {
+                                LOG.debug("Write pending for {}", request);
                                 return;
+                            }
 
                             if (callback.completed())
                             {
                                 if (!committed)
                                     committed(request);
 
-                                releaseBuffers();
-                                content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
-                                lastContent = !contentChunks.hasNext();
+                                if (expect100)
+                                {
+                                    LOG.debug("Expecting 100 Continue for {}", request);
+                                    expectedContent.ready();
+                                    return;
+                                }
+                                else
+                                {
+                                    // Send further content
+                                    contentInfo = new ContentInfo(contentIterator);
+                                }
                             }
                         }
                         break;
@@ -179,7 +236,49 @@ public class HttpSender
         }
         finally
         {
-            releaseBuffers();
+            releaseBuffers(bufferPool, header, chunk);
+        }
+    }
+
+    private void write(Callback<Void> callback, ByteBuffer header, ByteBuffer chunk, ByteBuffer content)
+    {
+        int mask = 0;
+        if (header != null)
+            mask += 1;
+        if (chunk != null)
+            mask += 2;
+        if (content != null)
+            mask += 4;
+
+        EndPoint endPoint = connection.getEndPoint();
+        switch (mask)
+        {
+            case 0:
+                endPoint.write(null, callback, BufferUtil.EMPTY_BUFFER);
+                break;
+            case 1:
+                endPoint.write(null, callback, header);
+                break;
+            case 2:
+                endPoint.write(null, callback, chunk);
+                break;
+            case 3:
+                endPoint.write(null, callback, header, chunk);
+                break;
+            case 4:
+                endPoint.write(null, callback, content);
+                break;
+            case 5:
+                endPoint.write(null, callback, header, content);
+                break;
+            case 6:
+                endPoint.write(null, callback, chunk, content);
+                break;
+            case 7:
+                endPoint.write(null, callback, header, chunk, content);
+                break;
+            default:
+                throw new IllegalStateException();
         }
     }
 
@@ -216,9 +315,6 @@ public class HttpSender
     protected void fail(Throwable failure)
     {
         // Cleanup first
-        BufferUtil.clear(header);
-        BufferUtil.clear(chunk);
-        releaseBuffers();
         generator.abort();
         failed = true;
 
@@ -245,19 +341,12 @@ public class HttpSender
         }
     }
 
-    private void releaseBuffers()
+    private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)
     {
-        ByteBufferPool bufferPool = connection.getHttpClient().getByteBufferPool();
         if (!BufferUtil.hasContent(header))
-        {
             bufferPool.release(header);
-            header = null;
-        }
         if (!BufferUtil.hasContent(chunk))
-        {
             bufferPool.release(chunk);
-            chunk = null;
-        }
     }
 
     private static abstract class StatefulExecutorCallback implements Callback<Void>, Runnable
@@ -339,6 +428,36 @@ public class HttpSender
         private enum State
         {
             INCOMPLETE, PENDING, COMPLETE, FAILED
+        }
+    }
+
+    private class ContentInfo
+    {
+        private final CountDownLatch latch = new CountDownLatch(1);
+        public final boolean lastContent;
+        public final ByteBuffer content;
+
+        public ContentInfo(Iterator<ByteBuffer> contentIterator)
+        {
+            lastContent = !contentIterator.hasNext();
+            content = lastContent ? BufferUtil.EMPTY_BUFFER : contentIterator.next();
+        }
+
+        public void ready()
+        {
+            latch.countDown();
+        }
+
+        public void await()
+        {
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException x)
+            {
+                throw new IllegalStateException(x);
+            }
         }
     }
 }

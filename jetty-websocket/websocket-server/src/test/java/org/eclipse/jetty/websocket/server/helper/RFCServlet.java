@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.server.WebSocketServlet;
 public class RFCServlet extends WebSocketServlet
 {
     @Override
-    public void registerWebSockets(WebSocketServerFactory factory)
+    public void configure(WebSocketServerFactory factory)
     {
         factory.register(RFCSocket.class);
     }

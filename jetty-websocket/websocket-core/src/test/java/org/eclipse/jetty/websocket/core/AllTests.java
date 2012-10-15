@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.websocket.core.driver.EventMethodsCacheTest;
-import org.eclipse.jetty.websocket.core.driver.WebSocketEventDriverTest;
+import org.eclipse.jetty.websocket.core.io.event.EventDriverFactoryTest;
+import org.eclipse.jetty.websocket.core.io.event.EventDriverTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(
-        { org.eclipse.jetty.websocket.core.ab.AllTests.class, EventMethodsCacheTest.class, WebSocketEventDriverTest.class,
-            org.eclipse.jetty.websocket.core.extensions.AllTests.class, org.eclipse.jetty.websocket.core.protocol.AllTests.class, GeneratorParserRoundtripTest.class })
+{ org.eclipse.jetty.websocket.core.ab.AllTests.class, EventDriverFactoryTest.class, EventDriverTest.class,
+        org.eclipse.jetty.websocket.core.extensions.AllTests.class, org.eclipse.jetty.websocket.core.protocol.AllTests.class,
+        GeneratorParserRoundtripTest.class })
 public class AllTests
 {
     /* nothing to do here */

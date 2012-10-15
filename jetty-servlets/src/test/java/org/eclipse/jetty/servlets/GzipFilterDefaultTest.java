@@ -123,6 +123,52 @@ public class GzipFilterDefaultTest
     }
 
     @Test
+    public void testIsGzipCompressedTinyWithQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+";q=0.5");
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseGzipCompressed("file.txt");
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testIsGzipCompressedTinyWithBadQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+";q=");
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseGzipCompressed("file.txt");
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
     public void testIsGzipCompressedLarge() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
@@ -145,6 +191,28 @@ public class GzipFilterDefaultTest
         }
     }
 
+    @Test
+    public void testIsNotGzipCompressedWithQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+"; q = 0");
+        
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
     @Test
     public void testIsNotGzipCompressed() throws Exception
     {
