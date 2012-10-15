@@ -27,6 +27,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
@@ -38,7 +39,7 @@ import org.osgi.framework.BundleContext;
 /**
  * SPDY setup.
  */
-@RunWith( JUnit4TestRunner.class )
+//RunWith( JUnit4TestRunner.class )
 public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
  
     private static final String JETTY_SPDY_PORT = "jetty.spdy.port";
@@ -98,6 +99,7 @@ public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
     }
      
     @Test
+    @Ignore
     public void checkNpnBootOnBootstrapClasspath() throws Exception
     {
         Class<?> npn = Thread.currentThread().getContextClassLoader()
@@ -107,12 +109,14 @@ public class TestJettyOSGiBootSpdy extends AbstractTestOSGi {
     }
      
     @Test
+    @Ignore
     public void assertAllBundlesActiveOrResolved()
     {
         assertAllBundlesActiveOrResolved(bundleContext);
     }
  
     @Test
+    @Ignore
     public void testSpdyOnHttpService() throws Exception
     {
         testHttpServiceGreetings(bundleContext, "https", DEFAULT_JETTY_SPDY_PORT);
