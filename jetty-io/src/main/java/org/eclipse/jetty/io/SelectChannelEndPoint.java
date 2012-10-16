@@ -144,7 +144,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 }
                 else
                 {
-                    LOG.debug("Local interests update conflict: now {}, was {}, attempted {}", _interestOps.get(), oldInterestOps, newInterestOps);
+                    LOG.debug("Local interests update conflict: now {}, was {}, attempted {} for {}", _interestOps.get(), oldInterestOps, newInterestOps, this);
                     continue;
                 }
             }
