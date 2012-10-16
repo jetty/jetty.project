@@ -40,7 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -303,7 +302,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final ForkInvoker<Runnable> invoker = new ManagedSelectorInvoker();
         private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private final int _id;
         private Selector _selector;
@@ -335,16 +333,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         /**
          * <p>Submits a change to be executed in the selector thread.</p>
-         * <p>Changes may be submitted from any thread, and if they are submitted from a thread different
-         * from the selector thread, they are queued for execution, and the selector thread woken up
+         * <p>Changes may be submitted from any thread, and the selector thread woken up
          * (if necessary) to execute the change.</p>
          *
          * @param change the change to submit
-         * @return true if the change has been executed, false if it has been queued for later execution
          */
-        public boolean submit(Runnable change)
+        public void submit(Runnable change)
         {
-            return !invoker.invoke(change);
+            _changes.offer(change);
+            LOG.debug("Queued change {}", change);
+            boolean wakeup = _needsWakeup;
+            if (wakeup)
+                wakeup();
         }
 
         private void runChanges()
@@ -534,8 +534,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         public void destroyEndPoint(EndPoint endPoint)
         {
-            // TODO
-
             LOG.debug("Destroyed {}", endPoint);
             Connection connection = endPoint.getConnection();
             if (connection != null)
@@ -604,38 +602,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     super.toString(),
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
-        }
-
-        private class ManagedSelectorInvoker extends ForkInvoker<Runnable>
-        {
-            private ManagedSelectorInvoker()
-            {
-                super(4);
-            }
-
-            @Override
-            protected boolean condition()
-            {
-                return Thread.currentThread() != _thread;
-            }
-
-            @Override
-            public void fork(Runnable change)
-            {
-                _changes.offer(change);
-                LOG.debug("Queued change {}", change);
-                boolean wakeup = _needsWakeup;
-                if (wakeup)
-                    wakeup();
-            }
-
-            @Override
-            public void call(Runnable change)
-            {
-                LOG.debug("Submitted change {}", change);
-                runChanges();
-                runChange(change);
-            }
         }
 
         private class DumpKeys implements Runnable
