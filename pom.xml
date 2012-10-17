@@ -419,7 +419,6 @@
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
     <module>jetty-proxy</module>
-    <module>jetty-policy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
