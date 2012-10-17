@@ -83,7 +83,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    private final HttpChannel _channel;
+    private final HttpChannel<?> _channel;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
@@ -99,7 +99,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     private volatile boolean _continuation;
 
     /* ------------------------------------------------------------ */
-    protected HttpChannelState(HttpChannel channel)
+    protected HttpChannelState(HttpChannel<?> channel)
     {
         _channel=channel;
         _state=State.IDLE;
