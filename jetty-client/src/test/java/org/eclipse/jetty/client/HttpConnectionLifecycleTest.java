@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -403,6 +404,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
             Assert.assertEquals(0, activeConnections.size());
 
+            Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
+            
             final CountDownLatch latch = new CountDownLatch(1);
             client.newRequest(host, port)
                     .scheme(scheme)

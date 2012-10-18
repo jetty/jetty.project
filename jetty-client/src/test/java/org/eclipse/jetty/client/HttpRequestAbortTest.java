@@ -32,8 +32,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -169,6 +172,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         //    reads -1 with a pending exchange and fails the response with an EOFException
         try
         {
+            Log.getLogger(HttpChannel.class).info("Excpecting java.nio.channels.ClosedChannelException...");
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .listener(new Request.Listener.Empty()
@@ -209,6 +214,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 throw x;
             }
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 }
