@@ -417,7 +417,6 @@
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
-    <module>jetty-client</module>
     <module>jetty-proxy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
