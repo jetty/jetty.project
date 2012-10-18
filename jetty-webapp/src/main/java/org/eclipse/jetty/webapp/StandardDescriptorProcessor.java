@@ -679,12 +679,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String error = node.getString("error-code", false, true);
         int code=0;
         if (error == null || error.length() == 0) 
+        {
             error = node.getString("exception-type", false, true);
+            if (error == null || error.length() == 0)
+                error = ErrorPageErrorHandler.GLOBAL_ERROR_PAGE;
+        }
         else
             code=Integer.valueOf(error);
-        
-        if (code == 0 && (error == null || error.length()==0))
-            throw new IllegalStateException("Missing error-code or exception-type for error-page");
         
         String location = node.getString("location", false, true);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
@@ -699,7 +700,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     handler.addErrorPage(code,location);
                 else
                     handler.addErrorPage(error,location);
-                context.getMetaData().setOrigin("error."+(code>0?code:error), descriptor);
+                context.getMetaData().setOrigin("error."+error, descriptor);
                 break;
             }
             case WebXml:
@@ -709,11 +710,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 //an error page setup was set in web.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    if (code>0)
-                        handler.addErrorPage(code,location);
+                    if (descriptor instanceof OverrideDescriptor || descriptor instanceof DefaultsDescriptor)
+                    {
+                        if (code>0)
+                            handler.addErrorPage(code,location);
+                        else
+                            handler.addErrorPage(error,location);
+                        context.getMetaData().setOrigin("error."+error, descriptor);
+                    }
                     else
-                        handler.addErrorPage(error,location);
-                    context.getMetaData().setOrigin("error."+(code>0?code:error), descriptor);
+                        throw new IllegalStateException("Duplicate global error-page "+location);
                 }
                 break;
             }
