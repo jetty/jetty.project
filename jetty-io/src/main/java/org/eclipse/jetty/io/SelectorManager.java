@@ -305,8 +305,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private final int _id;
         private Selector _selector;
-        private Thread _thread;
+        private volatile Thread _thread;
         private boolean _needsWakeup = true;
+        private boolean _runningChanges = false;
 
         public ManagedSelector(int id)
         {
@@ -340,18 +341,48 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void submit(Runnable change)
         {
-            _changes.offer(change);
-            LOG.debug("Queued change {}", change);
-            boolean wakeup = _needsWakeup;
-            if (wakeup)
-                wakeup();
+            // if we have been called by the selector thread we can directly run the change
+            if (_thread==Thread.currentThread())
+            {
+                // If we are already iterating over the changes, just add this change to the list.
+                // No race here because it is this thread that is iterating over the changes.
+                if (_runningChanges)
+                    _changes.offer(change);
+                else
+                {       
+                    // Otherwise we run the queued changes
+                    runChanges();
+                    // and then directly run the passed change
+                    runChange(change);
+                }
+            }
+            else
+            {
+                // otherwise we have to queue the change and wakeup the selector
+                _changes.offer(change);
+                LOG.debug("Queued change {}", change);
+                boolean wakeup = _needsWakeup;
+                if (wakeup)
+                    wakeup();
+            }
         }
 
         private void runChanges()
         {
-            Runnable change;
-            while ((change = _changes.poll()) != null)
-                runChange(change);
+            try
+            {
+                if (_runningChanges)
+                    throw new IllegalStateException();
+                _runningChanges=true;
+
+                Runnable change;
+                while ((change = _changes.poll()) != null)
+                    runChange(change);
+            }
+            finally
+            {
+                _runningChanges=false;
+            }
         }
 
         protected void runChange(Runnable change)
