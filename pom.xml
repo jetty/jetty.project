@@ -394,8 +394,8 @@
     <module>jetty-util-ajax</module>
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
-    <!--module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module-->
+    <module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
