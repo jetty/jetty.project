@@ -273,18 +273,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
     
     /* ------------------------------------------------------------ */
-    protected  Map<String,Object> getAttributeMap ()
-    {
-        return _attributes;
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected void addAttributes(Map<String,Object> map)
-    {
-        _attributes.putAll(map);
-    }
-
-    /* ------------------------------------------------------------ */
     protected boolean access(long time)
     {
         synchronized(this)
@@ -472,6 +460,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _manager.doSessionAttributeListeners(this,name,old,value);
 
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void addAttributes(Map<String,Object> map)
+    {
+        _attributes.putAll(map);
     }
 
     /* ------------------------------------------------------------- */

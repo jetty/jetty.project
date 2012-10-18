@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.channels.ReadableByteChannel;
 import java.security.Permission;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -224,6 +225,12 @@ public class URLResource extends Resource
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        return null;
+    }
 
     /* ------------------------------------------------------------ */
     /**

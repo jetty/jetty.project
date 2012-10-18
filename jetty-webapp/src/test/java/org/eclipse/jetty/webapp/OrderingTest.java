@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +93,12 @@ public class OrderingTest
          */
         @Override
         public InputStream getInputStream() throws IOException
+        {
+            return null;
+        }
+
+        @Override
+        public ReadableByteChannel getReadableByteChannel() throws IOException
         {
             return null;
         }

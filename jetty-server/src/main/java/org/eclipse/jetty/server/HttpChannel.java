@@ -330,20 +330,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
             }
+            else if (isCommitted())
+            {
+                if (!(x instanceof EofException))
+                    LOG.warn("Could not send response error 500: "+x);
+            }
             else
             {
-                // TODO: this error handling here must be atomic as above.
-                // TODO: response.sendError() should call back the HttpChannel in order to perform the atomic commit
-                if (!isCommitted())
-                {
-                    _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
-                    _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
-                    _response.sendError(500, x.getMessage());
-                }
-                else
-                {
-                    LOG.warn("Could not send response error 500: "+x);
-                }
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
+                _response.sendError(500, x.getMessage());
             }
         }
         catch (IOException e)

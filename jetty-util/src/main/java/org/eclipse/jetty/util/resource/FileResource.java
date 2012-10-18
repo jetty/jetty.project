@@ -29,6 +29,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
 import org.eclipse.jetty.util.IO;
@@ -281,7 +285,14 @@ public class FileResource extends URLResource
     {
         return new FileInputStream(_file);
     }
-        
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        return FileChannel.open(_file.toPath(),StandardOpenOption.READ);
+    }
+    
     /* --------------------------------------------------------- */
     /**
      * Returns an output stream to the resource
