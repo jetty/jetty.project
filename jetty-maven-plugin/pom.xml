@@ -10,7 +10,7 @@
   <name>Jetty :: Jetty Maven Plugin</name>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>2.9</pluginToolsVersion>
+    <pluginToolsVersion>3.1</pluginToolsVersion>
   </properties>
   <build>
     <plugins>
