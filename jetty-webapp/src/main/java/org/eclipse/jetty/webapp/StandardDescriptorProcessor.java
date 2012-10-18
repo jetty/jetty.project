@@ -682,13 +682,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             error = node.getString("exception-type", false, true);
         else
             code=Integer.valueOf(error);
+        
+        if (code == 0 && (error == null || error.length()==0))
+            throw new IllegalStateException("Missing error-code or exception-type for error-page");
+        
         String location = node.getString("location", false, true);
-
-        
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
-        
-        
         Origin o = context.getMetaData().getOrigin("error."+error);
+        
         switch (o)
         {
             case NotSet:
@@ -698,7 +699,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     handler.addErrorPage(code,location);
                 else
                     handler.addErrorPage(error,location);
-                context.getMetaData().setOrigin("error."+error, descriptor);
+                context.getMetaData().setOrigin("error."+(code>0?code:error), descriptor);
                 break;
             }
             case WebXml:
@@ -712,7 +713,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         handler.addErrorPage(code,location);
                     else
                         handler.addErrorPage(error,location);
-                    context.getMetaData().setOrigin("error."+error, descriptor);
+                    context.getMetaData().setOrigin("error."+(code>0?code:error), descriptor);
                 }
                 break;
             }
