@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -99,22 +100,14 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
     };
-    private final Runnable _runWriteEmpty = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            _decryptedEndPoint.write(null, new Callback.Empty<>(), BufferUtil.EMPTY_BUFFER);
-        }
-    };
-
+    
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
         super(endPoint, executor);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
-
+        
         if (endPoint instanceof SocketBased)
         {
             try
@@ -490,11 +483,13 @@ public class SslConnection extends AbstractConnection
                         LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
                     if (net_filled > 0)
                         _underFlown = false;
-
+                    
                     // Let's try the SSL thang even if we have no net data because in that
                     // case we want to fall through to the handshake handling
                     int pos = BufferUtil.flipToFill(app_in);
+                   
                     SSLEngineResult unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
+                    
                     BufferUtil.flipToFlush(app_in, pos);
                     if (DEBUG)
                         LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
@@ -601,6 +596,7 @@ public class SslConnection extends AbstractConnection
             }
             catch (SSLException e)
             {
+                LOG.warn(getEndPoint().toString(),e);
                 getEndPoint().close();
                 throw new EofException(e);
             }
@@ -657,7 +653,7 @@ public class SslConnection extends AbstractConnection
 
                 // We will need a network buffer
                 if (_encryptedOutput == null)
-                    _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize() * 2, _encryptedDirectBuffers);
+                    _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
 
                 while (true)
                 {
@@ -671,7 +667,7 @@ public class SslConnection extends AbstractConnection
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
                     if (wrapResult.bytesConsumed()>0)
                         consumed+=wrapResult.bytesConsumed();
-
+                    
                     boolean all_consumed=true;
                     // clear empty buffers to prevent position creeping up the buffer
                     for (ByteBuffer b : appOuts)
@@ -761,6 +757,8 @@ public class SslConnection extends AbstractConnection
 
         private void releaseEncryptedOutputBuffer()
         {
+            if (!Thread.holdsLock(DecryptedEndPoint.this))
+                throw new IllegalStateException();
             if (_encryptedOutput != null && !_encryptedOutput.hasRemaining())
             {
                 _bufferPool.release(_encryptedOutput);

@@ -154,8 +154,6 @@ public class BufferUtil
         if (limit==capacity)
         {
             buffer.compact();
-            buffer.position(buffer.limit());
-            buffer.limit(buffer.capacity());
             return 0;
         }
 
