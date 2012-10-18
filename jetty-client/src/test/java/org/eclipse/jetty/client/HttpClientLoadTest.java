@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -67,8 +69,8 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         client.setMaxQueueSizePerAddress(1024 * 1024);
         client.setDispatchIO(false);
 
-        Random random = new Random();
-        int iterations = 200;
+        Random random = new Random(1000L);
+        int iterations = 500;
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
 
@@ -106,6 +108,9 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
         logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
 
+        for (String failure : failures)
+            System.err.println("FAILED: "+failure);
+        
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
@@ -165,7 +170,10 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             public void onComplete(Result result)
             {
                 if (result.isFailed())
+                {
+                    result.getFailure().printStackTrace();
                     failures.add("Result failed " + result);
+                }
                 if (contentLength.get() != 0)
                     failures.add("Content length mismatch " + contentLength);
                 latch.countDown();
