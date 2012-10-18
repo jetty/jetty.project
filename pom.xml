@@ -407,8 +407,8 @@
     <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-osgi</module>
-    <module>example/embedded</module>
-    <module>example/async-rest</module>
+    <module>examples/embedded</module>
+    <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
