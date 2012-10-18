@@ -1,0 +1,15 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!--
+This is the jetty specific web application configuration file.  When starting
+a Web Application, the WEB-INF/jetty-web.xml file is looked for and if found, treated
+as a org.eclipse.jetty.server.server.xml.XmlConfiguration file and is applied to the
+org.eclipse.jetty.servlet.WebApplicationContext object
+-->
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
+    <Call name="warn"><Arg>async-rest webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
+  </Get>
+</Configure>
