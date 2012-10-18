@@ -394,7 +394,6 @@
     <module>jetty-util-ajax</module>
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
-    <module>example-jetty-embedded</module>
     <!--module>jetty-maven-plugin</module>
     <module>jetty-jspc-maven-plugin</module-->
     <module>jetty-deploy</module>
@@ -408,7 +407,8 @@
     <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-osgi</module>
-    <module>example-async-rest</module>
+    <module>example/embedded</module>
+    <module>example/async-rest</module>
     <module>jetty-rewrite</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
