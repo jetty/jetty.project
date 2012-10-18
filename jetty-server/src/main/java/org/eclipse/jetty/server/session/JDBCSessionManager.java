@@ -265,7 +265,8 @@ public class JDBCSessionManager extends AbstractSessionManager
         private static final long serialVersionUID = 5208464051134226143L;
         private final SessionData _data;
         private boolean _dirty=false;
-
+       
+        
         /**
          * Session from a request.
          *
@@ -274,7 +275,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         protected Session (HttpServletRequest request)
         {
             super(JDBCSessionManager.this,request);
-            _data = new SessionData(getClusterId(),_jdbcAttributes);
+            _data = new SessionData(getClusterId(),getAttributeMap());
             if (_dftMaxIdleSecs>0)
                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
@@ -284,18 +285,18 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
 
         /**
-          * Session restored in database.
-          * @param data
-          */
-         protected Session (long accessed, SessionData data)
-         {
-             super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
-             _data=data;
-             if (_dftMaxIdleSecs>0)
-                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
-             _jdbcAttributes.putAll(_data.getAttributeMap());
-             _data.setAttributeMap(_jdbcAttributes);
-         }
+         * Session restored in database.
+         * @param data
+         */
+        protected Session (long accessed, SessionData data)
+        {
+            super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
+            _data=data;
+            if (_dftMaxIdleSecs>0)
+                _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
+            addAttributes(_data.getAttributeMap());
+            _data.setAttributeMap(getAttributeMap());
+        }
 
          @Override
         public void setAttribute (String name, Object value)
