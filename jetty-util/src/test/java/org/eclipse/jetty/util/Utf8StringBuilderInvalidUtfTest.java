@@ -46,9 +46,10 @@ public class Utf8StringBuilderInvalidUtfTest
         data.add(new String[]{"fbbfbfbfbf"});
         data.add(new String[]{"10FFFF"});
         data.add(new String[]{"CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564"});
-        // use of UTF-16 High Surrogate (in codepoint form)
+        // use of UTF-16 High Surrogates (in codepoint form)
         data.add(new String[]{"da07"});
-        // decoded UTF-16 surrogate "\ud807" (in UTF-8 form)
+        data.add(new String[]{"d807"});
+        // decoded UTF-16 High Surrogate "\ud807" (in UTF-8 form)
         data.add(new String[]{"EDA087"});
         return data;
     }
