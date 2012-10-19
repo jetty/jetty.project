@@ -58,9 +58,7 @@ public class AbstractTestOSGi
 	protected static void addMoreOSGiContainers(List<Option> options)
 	{
         options.add(CoreOptions.equinox().version("3.6.1"));
-        // equinox-3.7.1 is somehow always downloaded from the internet
-        //by pax-exam. this makes the execution of the test too slow...
-       // options.add(CoreOptions.equinox().version("3.7.1")); //commented to keep the tests speedy
+        options.add(CoreOptions.equinox().version("3.7.0"));
         options.add(CoreOptions.felix().version("3.2.2"));
         options.add(CoreOptions.felix().version("4.0.2"));
 	}
