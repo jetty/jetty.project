@@ -318,7 +318,7 @@ public class SslConnection extends AbstractConnection
             // TODO does this need idle timeouts
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
-        
+
         @Override
         protected FillInterest getFillInterest()
         {
@@ -605,9 +605,9 @@ public class SslConnection extends AbstractConnection
             finally
             {
                 // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
-                if (_decryptedEndPoint._flushRequiresFillToProgress)
+                if (_flushRequiresFillToProgress)
                 {
-                    _decryptedEndPoint._flushRequiresFillToProgress = false;
+                    _flushRequiresFillToProgress = false;
                     getExecutor().execute(_runCompletWrite);
                 }
 
@@ -729,6 +729,9 @@ public class SslConnection extends AbstractConnection
                                         // Tell the onFillable method that there might be a write to complete
                                         _flushRequiresFillToProgress = true;
                                         fill(__FLUSH_CALLED_FILL);
+                                        // Check if after the fill() we need to wrap again
+                                        if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_WRAP)
+                                            continue;
                                     }
                                     return all_consumed&&BufferUtil.isEmpty(_encryptedOutput);
 
