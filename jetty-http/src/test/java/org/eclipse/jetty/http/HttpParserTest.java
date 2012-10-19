@@ -763,7 +763,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean messageComplete(long contentLength)
+        public boolean messageComplete()
         {
             //System.err.println("messageComplete");
             _messageCompleted = true;

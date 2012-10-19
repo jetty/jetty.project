@@ -354,12 +354,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -405,12 +400,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -461,12 +451,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -521,12 +506,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -579,12 +559,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -637,12 +612,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -700,12 +670,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -758,12 +723,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -800,12 +760,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -848,12 +803,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch latch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -905,12 +855,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -992,12 +937,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -1053,12 +993,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         final AtomicInteger contentLength = new AtomicInteger();
@@ -1109,11 +1044,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     {
                         try
                         {
-                            InputStream input = request.getInputStream();
-                            byte[] buffer = new byte[512];
-                            int read = 0;
-                            while (read < data.length)
-                                read += input.read(buffer);
+                            readRequestData(request, data.length);
                             continuation.complete();
                             latch.countDown();
                         }
@@ -1126,12 +1057,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1147,6 +1073,104 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenSuspendExpire() throws Exception
+    {
+        final CountDownLatch dispatchedAgainAfterExpire = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
+                if (continuation.isInitial())
+                {
+                    continuation.setTimeout(1000);
+                    continuation.suspend();
+                }
+                else
+                {
+                    dispatchedAgainAfterExpire.countDown();
+                }
+
+            }
+        }), null);
+
+        Fields headers = createHeaders("POST");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Fields replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                replyLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
+                TimeUnit.SECONDS));
+        Assert.assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenSuspendExpireWithRequestData() throws Exception
+    {
+        final byte[] data = new byte[2000];
+        final CountDownLatch dispatchedAgainAfterExpire = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
+                if (continuation.isInitial())
+                {
+                    readRequestData(request, data.length);
+                    continuation.setTimeout(1000);
+                    continuation.suspend();
+                }
+                else
+                {
+                    dispatchedAgainAfterExpire.countDown();
+                }
+
+            }
+        }), null);
+
+        Fields headers = createHeaders("POST");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Fields replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                replyLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(data, true));
+
+        Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
+                TimeUnit.SECONDS));
+        Assert.assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private void readRequestData(Request request, int expectedDataLength) throws IOException
+    {
+        InputStream input = request.getInputStream();
+        byte[] buffer = new byte[512];
+        int read = 0;
+        while (read < expectedDataLength)
+            read += input.read(buffer);
     }
 
     @Test
@@ -1189,12 +1213,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1262,12 +1281,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST");
         final CountDownLatch responseLatch = new CountDownLatch(2);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1308,12 +1322,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST");
         final CountDownLatch responseLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1330,5 +1339,16 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private Fields createHeaders(String httpMethod)
+    {
+        Fields headers = new Fields();
+        headers.put(HTTPSPDYHeader.METHOD.name(version), httpMethod);
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        return headers;
     }
 }

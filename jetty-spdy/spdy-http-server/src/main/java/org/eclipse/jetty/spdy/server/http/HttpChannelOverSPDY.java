@@ -115,7 +115,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         {
             if (headerComplete())
                 post(this);
-            if (messageComplete(-1))
+            if (messageComplete())
                 post(this);
         }
     }
@@ -150,7 +150,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         if (endRequest)
         {
-            if (messageComplete(-1))
+            if (messageComplete())
                 post(this);
         }
     }

@@ -216,7 +216,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     }
 
     @Override
-    public boolean messageComplete(long contentLength)
+    public boolean messageComplete()
     {
         HttpExchange exchange = connection.getExchange();
         // The exchange may be null if it was failed before

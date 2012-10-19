@@ -132,7 +132,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean messageComplete(long contentLength)
+    public boolean messageComplete()
     {
         if (stream == null)
         {

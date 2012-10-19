@@ -521,7 +521,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean messageComplete(long contentLength)
+    public boolean messageComplete()
     {
         _request.getHttpInput().shutdown();
         return true;

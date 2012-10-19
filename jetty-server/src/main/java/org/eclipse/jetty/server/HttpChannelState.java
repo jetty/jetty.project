@@ -302,12 +302,11 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            _continuation=false;
-            _responseWrapped=false;
-
             switch(_state)
             {
                 case IDLE:
+                    _continuation=false;
+                    _responseWrapped=false;
                     _initial=true;
                     _state=State.DISPATCHED;
                     if (_lastAsyncListeners!=null)
@@ -331,6 +330,8 @@ public class HttpChannelState implements AsyncContext, Continuation
                     return false;
 
                 case REDISPATCH:
+                    _continuation=false;
+                    _responseWrapped=false;
                     _state=State.REDISPATCHED;
                     return true;
 
