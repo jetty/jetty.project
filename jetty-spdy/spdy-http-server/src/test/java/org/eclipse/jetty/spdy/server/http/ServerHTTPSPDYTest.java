@@ -1076,7 +1076,6 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
     }
 
     @Test
-    @Ignore("Needs a fix")
     public void testPOSTThenSuspendExpire() throws Exception
     {
         final CountDownLatch dispatchedAgainAfterExpire = new CountDownLatch(1);
@@ -1103,7 +1102,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
