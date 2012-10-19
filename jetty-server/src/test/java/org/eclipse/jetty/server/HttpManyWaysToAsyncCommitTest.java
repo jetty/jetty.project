@@ -409,7 +409,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");  // TODO HTTP/1.0 does not do chunked
+            assertHeader(response, "transfer-encoding", "chunked"); 
     }
 
     private class WriteFlushWriteMoreHandler extends ThrowExceptionOnDemandHandler

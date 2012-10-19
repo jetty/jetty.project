@@ -257,27 +257,25 @@ public abstract class AbstractConnection implements Connection
     @Override
     public int getMessagesIn()
     {
-        return 0;
+        return -1;
     }
 
     @Override
     public int getMessagesOut()
     {
-        return 0;
+        return -1;
     }
 
     @Override
     public long getBytesIn()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return -1;
     }
 
     @Override
     public long getBytesOut()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return -1;
     }
 
     @Override

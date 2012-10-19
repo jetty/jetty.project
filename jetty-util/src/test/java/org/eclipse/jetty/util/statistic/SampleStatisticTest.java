@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.util.statistic;
 
+import static org.junit.Assert.assertEquals;
+
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 
 /* ------------------------------------------------------------ */

@@ -60,6 +60,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         setConfig(config);
     }
 
+    @Override
     public String getName()
     {
         return _name;
@@ -109,6 +110,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     /**
      * username will be null since the credentials will contain all the relevant info
      */
+    @Override
     public UserIdentity login(String username, Object credentials)
     {
         String encodedAuthToken = (String)credentials;
@@ -161,24 +163,28 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         return null;
     }
 
+    @Override
     public boolean validate(UserIdentity user)
     {
         return false;
     }
 
+    @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
     }
 
+    @Override
     public void setIdentityService(IdentityService service)
     {
         _identityService = service;
     }
 
-	public void logout(UserIdentity user) {
-		// TODO Auto-generated method stub
-
-	}
+    @Override
+    public void logout(UserIdentity user) 
+    {
+        // TODO Auto-generated method stub
+    }
 
 }

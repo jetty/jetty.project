@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 
 
 
@@ -106,7 +107,7 @@ public abstract class LifeCycleCallback
         {
             if (_targetClass == null)
                 _targetClass = Loader.loadClass(null, _className);
-            _target = _targetClass.getDeclaredMethod(_methodName, new Class[]{}); //TODO
+            _target = _targetClass.getDeclaredMethod(_methodName, TypeUtil.NO_ARGS);
         }
 
         if (_target != null)

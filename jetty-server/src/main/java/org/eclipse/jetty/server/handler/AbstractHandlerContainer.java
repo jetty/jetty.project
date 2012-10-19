@@ -19,14 +19,12 @@
 package org.eclipse.jetty.server.handler;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.util.TypeUtil;
 
 
 /* ------------------------------------------------------------ */

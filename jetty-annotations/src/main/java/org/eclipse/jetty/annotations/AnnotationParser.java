@@ -25,10 +25,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.jar.JarEntry;
 
 import org.eclipse.jetty.util.Loader;
@@ -105,11 +102,13 @@ public class AnnotationParser
         {
             _val=val;
         }
+        @Override
         public Object getValue()
         {
             return _val;
         }
 
+        @Override
         public String toString()
         {
             return "("+getName()+":"+_val+")";
@@ -126,6 +125,7 @@ public class AnnotationParser
             _val = new ArrayList<Value>();
         }
 
+        @Override
         public Object getValue()
         {
             return _val;
@@ -146,6 +146,7 @@ public class AnnotationParser
             return _val.size();
         }
 
+        @Override
         public String toString()
         {
             StringBuffer buff = new StringBuffer();
@@ -300,6 +301,7 @@ public class AnnotationParser
          * Visit a single-valued (name,value) pair for this annotation
          * @see org.objectweb.asm.AnnotationVisitor#visit(java.lang.String, java.lang.Object)
          */
+        @Override
         public void visit(String aname, Object avalue)
         {
            SimpleValue v = new SimpleValue(aname);
@@ -311,6 +313,7 @@ public class AnnotationParser
          * Visit a (name,value) pair whose value is another Annotation
          * @see org.objectweb.asm.AnnotationVisitor#visitAnnotation(java.lang.String, java.lang.String)
          */
+        @Override
         public AnnotationVisitor visitAnnotation(String name, String desc)
         {
             String s = normalize(desc);
@@ -324,6 +327,7 @@ public class AnnotationParser
          * Visit an array valued (name, value) pair for this annotation
          * @see org.objectweb.asm.AnnotationVisitor#visitArray(java.lang.String)
          */
+        @Override
         public AnnotationVisitor visitArray(String name)
         {
             ListValue v = new ListValue(name);
@@ -336,11 +340,13 @@ public class AnnotationParser
          * Visit a enum-valued (name,value) pair for this annotation
          * @see org.objectweb.asm.AnnotationVisitor#visitEnum(java.lang.String, java.lang.String, java.lang.String)
          */
+        @Override
         public void visitEnum(String name, String desc, String value)
         {
             //TODO
         }
 
+        @Override
         public void visitEnd()
         {
         }
@@ -364,6 +370,7 @@ public class AnnotationParser
         int _version;
 
 
+        @Override
         public void visit (int version,
                            final int access,
                            final String name,
@@ -398,10 +405,12 @@ public class AnnotationParser
             }
         }
 
+        @Override
         public AnnotationVisitor visitAnnotation (String desc, boolean visible)
         {
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
             {
+                @Override
                 public void visitEnd()
                 {
                     super.visitEnd();
@@ -422,6 +431,7 @@ public class AnnotationParser
             return visitor;
         }
 
+        @Override
         public MethodVisitor visitMethod (final int access,
                                           final String name,
                                           final String methodDesc,
@@ -431,10 +441,12 @@ public class AnnotationParser
 
             return new EmptyVisitor ()
             {
+                @Override
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible)
                 {
                     MyAnnotationVisitor visitor = new MyAnnotationVisitor (normalize(desc), new ArrayList<Value>())
                     {
+                        @Override
                         public void visitEnd()
                         {
                             super.visitEnd();
@@ -456,6 +468,7 @@ public class AnnotationParser
             };
         }
 
+        @Override
         public FieldVisitor visitField (final int access,
                                         final String fieldName,
                                         final String fieldType,
@@ -465,10 +478,12 @@ public class AnnotationParser
 
             return new EmptyVisitor ()
             {
+                @Override
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible)
                 {
                     MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
                     {
+                        @Override
                         public void visitEnd()
                         {
                             super.visitEnd();
@@ -498,6 +513,7 @@ public class AnnotationParser
      * @param annotationName
      * @param handler
      */
+    @Deprecated
     public void registerAnnotationHandler (String annotationName, DiscoverableAnnotationHandler handler)
     {
         _handlers.add(handler);
@@ -509,6 +525,7 @@ public class AnnotationParser
      * @param annotationName
      * @return
      */
+    @Deprecated
     public List<DiscoverableAnnotationHandler> getAnnotationHandlers(String annotationName)
     {
         List<DiscoverableAnnotationHandler> handlers = new ArrayList<DiscoverableAnnotationHandler>();
@@ -529,6 +546,7 @@ public class AnnotationParser
      * @deprecated
      * @return
      */
+    @Deprecated
     public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
     {
         List<DiscoverableAnnotationHandler> allAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
@@ -544,6 +562,7 @@ public class AnnotationParser
      * @deprecated see registerHandler(Handler)
      * @param handler
      */
+    @Deprecated
     public void registerClassHandler (ClassHandler handler)
     {
         _handlers.add(handler);
@@ -649,10 +668,10 @@ public class AnnotationParser
      * @param visitSuperClasses
      * @throws Exception
      */
-    public void parse (Class clazz, ClassNameResolver resolver, boolean visitSuperClasses)
+    public void parse (Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
     throws Exception
     {
-        Class cz = clazz;
+        Class<?> cz = clazz;
         while (cz != null)
         {
             if (!resolver.isExcluded(cz.getName()))
@@ -782,6 +801,7 @@ public class AnnotationParser
 
         JarScanner scanner = new JarScanner()
         {
+            @Override
             public void processEntry(URI jarUri, JarEntry entry)
             {
                 try
@@ -827,6 +847,7 @@ public class AnnotationParser
 
         JarScanner scanner = new JarScanner()
         {
+            @Override
             public void processEntry(URI jarUri, JarEntry entry)
             {
                 try

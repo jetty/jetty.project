@@ -309,8 +309,6 @@ public class SslConnection extends AbstractConnection
                     }
 
                     getWriteFlusher().onFail(x);
-
-                    // TODO release all buffers??? or may in onClose
                 }
             }
         };
@@ -596,7 +594,6 @@ public class SslConnection extends AbstractConnection
             }
             catch (SSLException e)
             {
-                LOG.warn(getEndPoint().toString(),e);
                 getEndPoint().close();
                 throw new EofException(e);
             }

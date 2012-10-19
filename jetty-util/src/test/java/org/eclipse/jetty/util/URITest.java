@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */

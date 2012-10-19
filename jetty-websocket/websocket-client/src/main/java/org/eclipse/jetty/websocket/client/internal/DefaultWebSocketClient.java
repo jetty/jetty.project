@@ -72,7 +72,6 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
     public void completed(UpgradeResponse context)
     {
         LOG.debug("completed() - {}",context);
-        // TODO Auto-generated method stub
         super.completed(context);
     }
 
@@ -130,7 +129,6 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
     {
         LOG.debug("failed() - {}, {}",context,cause);
         LOG.info(cause);
-        // TODO Auto-generated method stub
         super.failed(context,cause);
     }
 

@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 
 public class Utf8LineParserTest
 {

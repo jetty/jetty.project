@@ -20,13 +20,10 @@
 package org.eclipse.jetty.server;
 
 
-import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;

@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,13 +50,11 @@ public class TestClient
         @Override
         public void onWebSocketBinary(byte[] payload, int offset, int len)
         {
-            // TODO
         }
 
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            // TODO Auto-generated method stub
             super.onWebSocketClose(statusCode,reason);
         }
 
@@ -84,19 +81,6 @@ public class TestClient
             while (off < data.length)
             {
                 __framesSent++;
-                byte flags = (byte)((off + len) == data.length?0x8:0);
-                // byte op = (byte)(off == 0?opcode:WebSocketConnectionRFC6455.OP_CONTINUATION);
-
-                if (_verbose)
-                {
-                    // System.err.printf("%s#sendFrame %s|%s %s\n",
-                    // this.getClass().getSimpleName(),
-                    // TypeUtil.toHexString(flags),
-                    // TypeUtil.toHexString(op),
-                    // TypeUtil.toHexString(data,off,len));
-                }
-
-                // _connection.sendFrame(flags,op,data,off,len);
 
                 off += len;
                 if ((data.length - off) > len)
@@ -121,7 +105,6 @@ public class TestClient
     private final String _protocol;
     private final int _timeout;
 
-    private static boolean __quiet;
     private static int __framesSent;
     private static int __messagesSent;
     private static AtomicInteger __framesReceived = new AtomicInteger();
@@ -186,10 +169,6 @@ public class TestClient
             else if ("-d".equals(a) || "--delay".equals(a))
             {
                 delay = Integer.parseInt(args[++i]);
-            }
-            else if ("-q".equals(a) || "--quiet".equals(a))
-            {
-                __quiet = true;
             }
             else if (a.startsWith("-"))
             {
@@ -287,7 +266,6 @@ public class TestClient
         System.err.println("  -p|--port PORT  (default 8080)");
         System.err.println("  -b|--binary");
         System.err.println("  -v|--verbose");
-        System.err.println("  -q|--quiet");
         System.err.println("  -c|--count n    (default 10)");
         System.err.println("  -s|--size n     (default 64)");
         System.err.println("  -f|--fragment n (default 4000) ");
@@ -302,7 +280,6 @@ public class TestClient
     int _messageBytes;
     int _frames;
     byte _opcode = -1;
-    private final CountDownLatch _handshook = new CountDownLatch(1);
     private WebSocketClientFactory factory;
     private TestSocket socket;
 

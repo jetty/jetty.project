@@ -62,7 +62,7 @@ public class ErrorHandler extends AbstractHandler
         if (_cacheControl!=null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
         ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
-        String reason=(response instanceof Response)?((Response)response).getReason():null; // TODO
+        String reason=(response instanceof Response)?((Response)response).getReason():null;
         handleErrorPage(request, writer, response.getStatus(), reason);
         writer.flush();
         response.setContentLength(writer.size());

@@ -112,7 +112,7 @@
     <Set name="stopAtShutdown">true</Set>
     <Set name="sendServerVersion">true</Set>
     <Set name="sendDateHeader">true</Set>
-    <Set name="stopTimeout">1000</Set>
+    <Set name="stopTimeout">5000</Set>
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 

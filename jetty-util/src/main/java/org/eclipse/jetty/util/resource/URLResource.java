@@ -323,6 +323,6 @@ public class URLResource extends Resource
     @Override
     public boolean isContainedIn (Resource containingResource) throws MalformedURLException
     {
-        return false; //TODO check this!
+        return false;
     }
 }

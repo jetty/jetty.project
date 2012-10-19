@@ -31,7 +31,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 

@@ -398,7 +398,6 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            // TODO should we change state here?
             if (_event!=null)
                 _event._cause=th;
         }
@@ -554,7 +553,6 @@ public class HttpChannelState implements AsyncContext, Continuation
                     if (_continuation)
                         dispatch();
                    else
-                        // TODO maybe error dispatch?
                         complete();
             }
         }

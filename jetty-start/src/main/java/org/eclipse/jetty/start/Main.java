@@ -856,19 +856,8 @@ public class Main
             {
                 return JarVersion.getVersion(element);
             }
-
-            if (name.endsWith(".zip"))
-            {
-                return getZipVersion(element);
-            }
         }
 
-        return "";
-    }
-
-    private String getZipVersion(File element)
-    {
-        // TODO - find version in zip file. Look for META-INF/MANIFEST.MF ?
         return "";
     }
 

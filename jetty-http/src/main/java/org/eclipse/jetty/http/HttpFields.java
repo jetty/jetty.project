@@ -46,9 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-// TODO: Make this class inherit from oej.util.Fields
-// TODO move this class to jetty-http?
-
+// TODO Make this class inherit from oej.util.Fields
 
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
