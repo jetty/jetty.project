@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class StandardStream implements IStream
 {
-    private static final Logger logger = Log.getLogger(Stream.class);
+    private static final Logger LOG = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final int id;
     private final byte priority;
@@ -110,7 +110,7 @@ public class StandardStream implements IStream
     public void updateWindowSize(int delta)
     {
         int size = windowSize.addAndGet(delta);
-        logger.debug("Updated window size {} -> {} for {}", size - delta, size, this);
+        LOG.debug("Updated window size {} -> {} for {}", size - delta, size, this);
     }
 
     @Override
@@ -151,6 +151,7 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close, boolean local)
     {
+        LOG.debug("{} close={} local={}",this,close,local);
         if (close)
         {
             switch (closeState)
@@ -178,7 +179,7 @@ public class StandardStream implements IStream
                 }
                 default:
                 {
-                    throw new IllegalStateException("closed state=="+closeState);
+                    LOG.warn("Already CLOSED! {} local={}",this,local);
                 }
             }
         }
@@ -231,13 +232,13 @@ public class StandardStream implements IStream
         // ignore data frame if this stream is remotelyClosed already
         if (isRemotelyClosed())
         {
-            logger.debug("Stream is remotely closed, ignoring {}", dataInfo);
+            LOG.debug("Stream is remotely closed, ignoring {}", dataInfo);
             return;
         }
 
         if (!canReceive())
         {
-            logger.debug("Protocol error receiving {}, resetting" + dataInfo);
+            LOG.debug("Protocol error receiving {}, resetting" + dataInfo);
             session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             return;
         }
@@ -254,17 +255,17 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
+                LOG.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
                 listener.onReply(this, replyInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
@@ -276,17 +277,17 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
+                LOG.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
                 listener.onHeaders(this, headersInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
@@ -298,18 +299,18 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
+                LOG.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
                 listener.onData(this, dataInfo);
-                logger.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
+                LOG.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            logger.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
