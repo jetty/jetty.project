@@ -178,7 +178,7 @@ public class StandardStream implements IStream
                 }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("closed state=="+closeState);
                 }
             }
         }
