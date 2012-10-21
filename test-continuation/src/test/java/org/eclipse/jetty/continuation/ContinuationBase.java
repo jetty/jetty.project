@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.continuation.test;
+package org.eclipse.jetty.continuation;
 
 import java.io.IOException;
 import java.io.InputStream;

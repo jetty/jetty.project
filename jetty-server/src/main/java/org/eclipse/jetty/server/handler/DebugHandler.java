@@ -107,7 +107,7 @@ public class DebugHandler extends HandlerWrapper
             long now=System.currentTimeMillis();
             final String d=_date.format(now);
             final int ms=(int)(now%1000);
-            suspend=baseRequest.getAsyncContinuation().isSuspended();
+            suspend=baseRequest.getHttpChannelState().isSuspended();
             if (suspend)
             {
                 request.setAttribute("org.eclipse.jetty.thread.name",name);

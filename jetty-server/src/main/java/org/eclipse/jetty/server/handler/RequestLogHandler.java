@@ -55,7 +55,7 @@ public class RequestLogHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        HttpChannelState continuation = baseRequest.getAsyncContinuation();
+        HttpChannelState continuation = baseRequest.getHttpChannelState();
         if (!continuation.isInitial())
         {
             baseRequest.setDispatchTime(System.currentTimeMillis());

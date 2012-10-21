@@ -58,8 +58,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -230,8 +228,6 @@ public class Request implements HttpServletRequest
     {
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
-        if (listener instanceof ContinuationListener)
-            throw new IllegalArgumentException(listener.getClass().toString());
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
@@ -349,14 +345,14 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        HttpChannelState continuation = getAsyncContinuation();
-        if (continuation.isInitial() && !continuation.isAsyncStarted())
+        HttpChannelState continuation = getHttpChannelState();
+        if (continuation.isInitial() && !continuation.isAsync())
             throw new IllegalStateException(continuation.getStatusString());
         return continuation;
     }
 
     /* ------------------------------------------------------------ */
-    public HttpChannelState getAsyncContinuation()
+    public HttpChannelState getHttpChannelState()
     {
         return _channel.getState();
     }
@@ -368,10 +364,7 @@ public class Request implements HttpServletRequest
     @Override
     public Object getAttribute(String name)
     {
-        Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
-        if (attr == null && Continuation.ATTRIBUTE.equals(name))
-            return getAsyncContinuation();
-        return attr;
+        return (_attributes == null)?null:_attributes.getAttribute(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -1355,7 +1348,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncStarted()
     {
-       return getAsyncContinuation().isAsyncStarted();
+       return getHttpChannelState().isAsync();
     }
 
 
@@ -1468,7 +1461,7 @@ public class Request implements HttpServletRequest
         }
 
         setAuthentication(Authentication.NOT_CHECKED);
-        getAsyncContinuation().recycle();
+        getHttpChannelState().recycle();
         _asyncSupported = true;
         _handled = false;
         if (_context != null)
@@ -1948,9 +1941,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        HttpChannelState continuation = getAsyncContinuation();
-        continuation.suspend();
-        return continuation;
+        HttpChannelState state = getHttpChannelState();
+        state.startAsync();
+        return state;
     }
 
     /* ------------------------------------------------------------ */
@@ -1959,9 +1952,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        HttpChannelState continuation = getAsyncContinuation();
-        continuation.suspend(_context, servletRequest, servletResponse);
-        return continuation;
+        HttpChannelState state = getHttpChannelState();
+        state.startAsync(_context, servletRequest, servletResponse);
+        return state;
     }
 
     /* ------------------------------------------------------------ */

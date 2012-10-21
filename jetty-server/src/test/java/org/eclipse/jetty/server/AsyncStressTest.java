@@ -247,7 +247,7 @@ public class AsyncStressTest
                                     System.err.println("\n"+e.toString());
                                     System.err.println(baseRequest+"=="+br);
                                     System.err.println(uri+"=="+br.getUri());
-                                    System.err.println(asyncContext+"=="+br.getAsyncContinuation());
+                                    System.err.println(asyncContext+"=="+br.getHttpChannelState());
 
                                     LOG.warn(e);
                                     System.exit(1);

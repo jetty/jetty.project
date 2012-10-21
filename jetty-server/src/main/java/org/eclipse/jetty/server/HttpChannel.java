@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
-import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -251,9 +250,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         getServer().handleAsync(this);
                     }
                 }
-                catch (ContinuationThrowable e)
+                catch (Error e)
                 {
-                    LOG.ignore(e);
+                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                        LOG.ignore(e);
+                    else 
+                        throw e;
                 }
                 catch (Exception e)
                 {

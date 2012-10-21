@@ -19,16 +19,15 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -87,24 +86,28 @@ public class AsyncContextDispatchWithQueryStrings {
 	private class TestServlet extends HttpServlet {
 		private static final long serialVersionUID = 1L;
 
+		@Override
 		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 			String path = request.getRequestURI();
 			String queryString = request.getQueryString();
-			if ("/initialCall".equals(path)) {
-			    HttpChannelState continuation = (HttpChannelState) ContinuationSupport.getContinuation(request);
-				continuation.suspend();
-				continuation.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
-				assertEquals("initialParam=right", queryString);
-			} else if ("/firstDispatchWithNewQueryString".equals(path)) {
-			    HttpChannelState continuation = (HttpChannelState) ContinuationSupport.getContinuation(request);
-				continuation.suspend();
-				continuation.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
-				assertEquals("newQueryString=initialValue&initialParam=right", queryString);
-			} else {
-				response.setContentType("text/html");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().println("<h1>woohhooooo</h1>");
-				assertEquals("newQueryString=newValue&initialParam=right", queryString);
+			if ("/initialCall".equals(path)) 
+			{
+			    AsyncContext async = request.startAsync();
+		            async.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
+	                    assertEquals("initialParam=right", queryString);
+			} 
+			else if ("/firstDispatchWithNewQueryString".equals(path)) 
+			{
+                            AsyncContext async = request.startAsync();
+                            async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
+                            assertEquals("newQueryString=initialValue&initialParam=right", queryString);
+			} 
+			else 
+			{
+			    response.setContentType("text/html");
+			    response.setStatus(HttpServletResponse.SC_OK);
+			    response.getWriter().println("<h1>woohhooooo</h1>");
+			    assertEquals("newQueryString=newValue&initialParam=right", queryString);
 			}
 		}
 	}

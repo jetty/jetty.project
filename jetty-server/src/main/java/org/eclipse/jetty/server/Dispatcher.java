@@ -260,7 +260,7 @@ public class Dispatcher implements RequestDispatcher
 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
-                if (!baseRequest.getAsyncContinuation().isAsyncStarted())
+                if (!baseRequest.getHttpChannelState().isAsync())
                     commitResponse(response,baseRequest);
             }
         }

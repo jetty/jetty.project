@@ -31,8 +31,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -67,6 +65,7 @@ public class DumpHandler extends AbstractHandler
     /*
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
@@ -90,13 +89,6 @@ public class DumpHandler extends AbstractHandler
             return;
         }
 
-        if (request.getParameter("continue")!=null)
-        {
-            Continuation continuation = ContinuationSupport.getContinuation(request,response);
-            continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
-            continuation.suspend();
-        }
-
         baseRequest.setHandled(true);
         response.setHeader(HttpHeader.CONTENT_TYPE.asString(),MimeTypes.Type.TEXT_HTML.asString());
 
@@ -109,17 +101,17 @@ public class DumpHandler extends AbstractHandler
         writer.write("<pre>\nencoding="+request.getCharacterEncoding()+"\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(request.getMethod()+" "+request.getRequestURI()+" "+request.getProtocol()+"\n");
-        Enumeration headers = request.getHeaderNames();
+        Enumeration<String> headers = request.getHeaderNames();
         while(headers.hasMoreElements())
         {
-            String name=(String)headers.nextElement();
+            String name=headers.nextElement();
             writer.write(name);
             writer.write(": ");
             writer.write(request.getHeader(name));
             writer.write("\n");
         }
         writer.write("</pre>\n<h3>Parameters:</h3>\n<pre>");
-        Enumeration names=request.getParameterNames();
+        Enumeration<String> names=request.getParameterNames();
         while(names.hasMoreElements())
         {
             String name=names.nextElement().toString();

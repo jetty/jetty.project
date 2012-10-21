@@ -45,7 +45,7 @@ public class Servlet3Continuation implements Continuation
     private final ServletRequest _request;
     private ServletResponse _response;
     private AsyncContext _context;
-    private List<AsyncListener> _listeners=new ArrayList<AsyncListener>();
+    private final List<AsyncListener> _listeners=new ArrayList<AsyncListener>();
     private volatile boolean _initial=true;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
@@ -60,19 +60,23 @@ public class Servlet3Continuation implements Continuation
 
         _listeners.add(new AsyncListener()
         {
+            @Override
             public void onComplete(AsyncEvent event) throws IOException
             {
             }
 
+            @Override
             public void onError(AsyncEvent event) throws IOException
             {
             }
 
+            @Override
             public void onStartAsync(AsyncEvent event) throws IOException
             {
                 event.getAsyncContext().addListener(this);
             }
 
+            @Override
             public void onTimeout(AsyncEvent event) throws IOException
             {
                 _initial=false;
@@ -82,25 +86,30 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void addContinuationListener(final ContinuationListener listener)
     {
         AsyncListener wrapped = new AsyncListener()
         {
+            @Override
             public void onComplete(final AsyncEvent event) throws IOException
             {
                 listener.onComplete(Servlet3Continuation.this);
             }
 
+            @Override
             public void onError(AsyncEvent event) throws IOException
             {
                 listener.onComplete(Servlet3Continuation.this);
             }
 
+            @Override
             public void onStartAsync(AsyncEvent event) throws IOException
             {
                 event.getAsyncContext().addListener(this);
             }
 
+            @Override
             public void onTimeout(AsyncEvent event) throws IOException
             {
                 _expired=true;
@@ -115,6 +124,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void complete()
     {
         AsyncContext context=_context;
@@ -124,31 +134,35 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public ServletResponse getServletResponse()
     {
         return _response;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isExpired()
     {
         return _expired;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isInitial()
     {
-        // TODO - this is not perfect if non continuation API is used directly
         return _initial&&_request.getDispatcherType()!=DispatcherType.ASYNC;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isResumed()
     {
         return _resumed;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isSuspended()
     {
         return _request.isAsyncStarted();
@@ -161,6 +175,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void resume()
     {
         AsyncContext context=_context;
@@ -171,6 +186,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setTimeout(long timeoutMs)
     {
         _timeoutMs=timeoutMs;
@@ -179,6 +195,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void suspend(ServletResponse response)
     {
         _response=response;
@@ -194,6 +211,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void suspend()
     {
         _resumed=false;
@@ -207,6 +225,7 @@ public class Servlet3Continuation implements Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isResponseWrapped()
     {
         return _responseWrapped;
@@ -216,6 +235,7 @@ public class Servlet3Continuation implements Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
      */
+    @Override
     public Object getAttribute(String name)
     {
         return _request.getAttribute(name);
@@ -225,6 +245,7 @@ public class Servlet3Continuation implements Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
      */
+    @Override
     public void removeAttribute(String name)
     {
         _request.removeAttribute(name);
@@ -234,6 +255,7 @@ public class Servlet3Continuation implements Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
      */
+    @Override
     public void setAttribute(String name, Object attribute)
     {
         _request.setAttribute(name,attribute);
@@ -243,6 +265,7 @@ public class Servlet3Continuation implements Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#undispatch()
      */
+    @Override
     public void undispatch()
     {
         if (isSuspended())

@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -425,7 +426,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
     {
-        final HttpChannelState async = connection.getRequest().getAsyncContinuation();
+        final HttpChannelState async = connection.getRequest().getHttpChannelState();
         final HttpChannelState.AsyncEventState state = async.getAsyncEventState();
 
         final Request baseRequest=connection.getRequest();
@@ -434,8 +435,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (path!=null)
         {
             // this is a dispatch with a path
-            final String contextPath=state.getServletContext().getContextPath();
-            HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
+            ServletContext context=state.getServletContext();
+            HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
