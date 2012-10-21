@@ -198,7 +198,7 @@ public class ChatServlet extends HttpServlet
 
                     // wakeup member if polling
                     AsyncContext async=m._async.get();
-                    if (m._async.compareAndSet(async,null))
+                    if (async!=null & m._async.compareAndSet(async,null))
                         async.dispatch();
                 }
             }
