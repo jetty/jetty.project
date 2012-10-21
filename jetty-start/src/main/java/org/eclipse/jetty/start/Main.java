@@ -38,6 +38,7 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -182,7 +183,7 @@ public class Main
             {
                 int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
                 String key = Config.getProperty("STOP.KEY",null);
-                stop(port,key, false);
+                stop(port,key);
                 return null;
             }
             
@@ -190,7 +191,8 @@ public class Main
             {
                 int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
                 String key = Config.getProperty("STOP.KEY",null);
-                stop(port,key, true);
+                int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT", "0"));
+                stop(port,key, true, timeout);
                 return null;  
             }
 
@@ -1012,11 +1014,11 @@ public class Main
      */
     public void stop(int port, String key)
     {
-        stop (port,key,false);
+        stop (port,key,false, 0);
     }
+
     
-    
-    public void stop (int port, String key, boolean wait)
+    public void stop (int port, String key, boolean wait, int timeout)
     {
         int _port = port;
         String _key = key;
@@ -1035,6 +1037,8 @@ public class Main
             }
 
             Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
+            if (wait && timeout > 0)
+                s.setSoTimeout(timeout*1000);
             try
             {
                 OutputStream out = s.getOutputStream();
@@ -1043,6 +1047,7 @@ public class Main
 
                 if (wait)
                 {
+                    System.err.println("Waiting"+(timeout > 0 ? (" "+timeout+"sec") : "")+" for jetty to stop");
                     LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
                     String response=lin.readLine();
                     if ("Stopped".equals(response))
@@ -1053,6 +1058,11 @@ public class Main
             {
                 s.close();
             }
+        }
+        catch (SocketTimeoutException e)
+        {
+            System.err.println("Timed out waiting for stop confirmation");
+            System.exit(ERR_UNKNOWN);
         }
         catch (ConnectException e)
         {
