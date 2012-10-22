@@ -40,7 +40,22 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /* ------------------------------------------------------------ */
-/** Implementation of Continuation and AsyncContext interfaces
+/** Implementation of AsyncContext interface that holds the state of request-response cycle.
+ *
+ * <table>
+ * <tr><th>STATE</th><th colspan=6>ACTION</th></tr>
+ * <tr><th></th>                           <th>handling()</th>  <th>startAsync()</th><th>unhandle()</th>  <th>dispatch()</th>   <th>complete()</th>      <th>completed()</th></tr>
+ * <tr><th align=right>IDLE:</th>          <td>DISPATCHED</td>  <td></td>            <td></td>            <td></td>             <td>COMPLETECALLED??</td><td></td></tr>
+ * <tr><th align=right>DISPATCHED:</th>    <td></td>            <td>ASYNCSTARTED</td><td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
+ * <tr><th align=right>ASYNCSTARTED:</th>  <td></td>            <td></td>            <td>ASYNCWAIT</td>   <td>REDISPATCHING</td><td>COMPLETECALLED</td>  <td></td></tr>
+ * <tr><th align=right>REDISPATCHING:</th> <td></td>            <td></td>            <td>REDISPATCHED</td><td></td>             <td></td>                <td></td></tr>
+ * <tr><th align=right>ASYNCWAIT:</th>     <td></td>            <td></td>            <td></td>            <td>REDISPATCH</td>   <td>COMPLETECALLED</td>  <td></td></tr>
+ * <tr><th align=right>REDISPATCH:</th>    <td>REDISPATCHED</td><td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
+ * <tr><th align=right>REDISPATCHED:</th>  <td></td>            <td>ASYNCSTARTED</td><td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
+ * <tr><th align=right>COMPLETECALLED:</th><td>COMPLETING</td>  <td></td>            <td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
+ * <tr><th align=right>COMPLETING:</th>    <td>COMPLETING</td>  <td></td>            <td></td>            <td></td>             <td></td>                <td>COMPLETED</td></tr>
+ * <tr><th align=right>COMPLETED:</th>     <td></td>            <td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
+ * </table>
  *
  */
 public class HttpChannelState implements AsyncContext
@@ -48,20 +63,6 @@ public class HttpChannelState implements AsyncContext
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
     private final static long DEFAULT_TIMEOUT=30000L;
-
-    // STATES:
-    //                handling()    suspend()     unhandle()    resume()       complete()     completed()
-    //                              startAsync()                dispatch()
-    // IDLE           DISPATCHED                                               COMPLETECALLED
-    // DISPATCHED                   ASYNCSTARTED  COMPLETING
-    // ASYNCSTARTED                               ASYNCWAIT     REDISPATCHING  COMPLETECALLED
-    // REDISPATCHING                              REDISPATCHED
-    // ASYNCWAIT                                                REDISPATCH     COMPLETECALLED
-    // REDISPATCH     REDISPATCHED
-    // REDISPATCHED                 ASYNCSTARTED  COMPLETING
-    // COMPLETECALLED COMPLETING                  COMPLETING
-    // COMPLETING     COMPLETING                                                              COMPLETED
-    // COMPLETED
 
     public enum State
     {
