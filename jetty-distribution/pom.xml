@@ -439,6 +439,7 @@
               <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
             </configuration>
           </execution>
+	  <!--
           <execution>
             <id>copy-spdy</id>
             <phase>process-resources</phase>
@@ -460,6 +461,7 @@
               </artifactItems>
             </configuration>
           </execution>
+	  -->
           <execution>
             <id>unpack-spdy</id>
             <phase>process-resources</phase>

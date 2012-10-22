@@ -14,7 +14,9 @@ Command Line Options:
   --list-options   List the details of each classpath OPTION
   
   --list-config    List the start.config file.
-                                    
+                            
+  --exec-print	   Same as --dry-run
+
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
                    when the start.ini includes -X or -D arguments.
@@ -25,6 +27,8 @@ Command Line Options:
                    JVM instance.
                      
   --stop           Send a stop signal to the running Jetty instance.
+                   The server must have been started with a STOP.PORT=<port>
+		   property set and the stop command must have the same property.
   
   --stop-wait      Send a stop signal to the running Jetty instance, waiting for
                    confirmation that it is stopping.

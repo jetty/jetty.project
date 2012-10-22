@@ -1,13 +1,25 @@
 
-This directory is scanned by the WebAppDeployer provider for
-web applications to deploy.   It may contain:
+This directory is scanned by the WebAppDeployer provider for web
+applications to deploy using the following conventions:
 
- + standard WAR files
- + directories that are deployed as static content, except for
-   directories ending in ".d", which are ignored.
- + Context XML files that contain XmlConfiguration which 
-   describe individual contexts to be deployed to the server.  
-   
++ A directory called example/ will be deployed as a standard web
+application if it contains a WEB-INF/ subdirectory, otherwise it will be
+deployed as context of static content. The context path will be /example
+(eg http://localhost:8080/example/) unless the base name is root, in
+which case the context path is /. If the directory name ends with ".d"
+it is ignored (by may be used by explicit configuration).
+
++ A file called example.war will be deployed as a standard web application
+with the context path /example  (eg http://localhost:8080/example/). If he
+base name is root, then the context path is /. If example.war and example/
+exist, then only the WAR is deployed (which may use the directory as an
+unpack location).
+
++ An XML file like example.xml will be deployed as a context whose
+configuration is defined by the XML. The context path must be set by
+the configuration itself. If example.xml and example.war exist, then
+only the XML is deployed (which may use the war in its configuration).
+
 This directory is scanned for additions, removals and updates 
 for hot deployment.
 
