@@ -38,12 +38,12 @@ public class CloseInfo
 
     public CloseInfo()
     {
-        this(-1,null);
+        this(StatusCode.NO_CODE,null);
     }
 
     public CloseInfo(ByteBuffer payload, boolean validate)
     {
-        this.statusCode = -1;
+        this.statusCode = StatusCode.NO_CODE;
         this.reason = null;
 
         if ((payload == null) || (payload.remaining() == 0))
@@ -130,19 +130,21 @@ public class CloseInfo
 
     public ByteBuffer asByteBuffer()
     {
-        if (statusCode != (-1))
+        if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
         {
-            ByteBuffer buf = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD);
-            buf.putChar((char)statusCode);
-            if (StringUtil.isNotBlank(reason))
-            {
-                byte utf[] = StringUtil.getUtf8Bytes(reason);
-                buf.put(utf,0,utf.length);
-            }
-            BufferUtil.flipToFlush(buf,0);
-            return buf;
+            // codes that are not allowed to be used in endpoint.
+            return null;
         }
-        return null;
+
+        ByteBuffer buf = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD);
+        buf.putChar((char)statusCode);
+        if (StringUtil.isNotBlank(reason))
+        {
+            byte utf[] = StringUtil.getUtf8Bytes(reason);
+            buf.put(utf,0,utf.length);
+        }
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
     }
 
     public WebSocketFrame asFrame()
