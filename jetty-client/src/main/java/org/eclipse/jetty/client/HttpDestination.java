@@ -347,7 +347,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         private final Request request;
         private final Response.Listener listener;
 
-        public RequestPair(Request request, Response.Listener listener)
+        private RequestPair(Request request, Response.Listener listener)
         {
             this.request = request;
             this.listener = listener;

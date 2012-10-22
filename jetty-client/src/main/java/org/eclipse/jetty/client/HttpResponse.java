@@ -92,7 +92,7 @@ public class HttpResponse implements Response
     @Override
     public void abort()
     {
-        exchange.abort();
+        exchange.request().abort();
     }
 
     @Override

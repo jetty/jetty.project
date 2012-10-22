@@ -73,6 +73,7 @@ public class HttpReceiverTest
         conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
         exchange.requestComplete(null);
+        exchange.terminate();
         return exchange;
     }
 

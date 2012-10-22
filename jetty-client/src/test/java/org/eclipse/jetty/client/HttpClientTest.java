@@ -621,4 +621,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
     }
+
+    // TODO: add a test to idle timeout a request that is in the queue...
+    // TODO: even though "idle timeout" only applies to connections
+    // TODO: so do we still need a "global" timeout that takes in count queue time + send time + receive time ?
 }

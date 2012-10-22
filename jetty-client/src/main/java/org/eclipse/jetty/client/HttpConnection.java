@@ -307,6 +307,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange existing = this.exchange.getAndSet(null);
         if (existing == exchange)
         {
+            exchange.awaitTermination();
+
             // Restore idle timeout
             getEndPoint().setIdleTimeout(idleTimeout);
 
@@ -348,9 +350,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public void abort(HttpResponse response)
+    public boolean abort(HttpExchange exchange)
     {
-        receiver.fail(new HttpResponseException("Response aborted", response));
+        // We want the return value to be that of the response
+        // because if the response has already successfully
+        // arrived then we failed to abort the exchange
+        sender.abort(exchange);
+        return receiver.abort(exchange);
     }
 
     public void proceed(boolean proceed)

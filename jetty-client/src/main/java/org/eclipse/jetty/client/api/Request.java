@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -208,7 +209,7 @@ public interface Request
     /**
      * @return the listener for request events
      */
-    Listener listener();
+    List<Listener> listeners();
 
     /**
      * @param listener the listener for request events
@@ -246,12 +247,12 @@ public interface Request
     /**
      * Attempts to abort the send of this request.
      *
-     * @see #aborted()
+     * @return whether the abort succeeded
      */
-    void abort();
+    boolean abort();
 
     /**
-     * @return whether {@link #abort()} was called
+     * @return whether {@link #abort(boolean)} was called
      */
     boolean aborted();
 

@@ -24,7 +24,9 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,8 +50,9 @@ public class HttpRequest implements Request
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields();
     private final Map<String, Object> attributes = new HashMap<>();
+    private final List<Listener> listeners = new ArrayList<>();
     private final HttpClient client;
-    private final long id;
+    private final long conversation;
     private final String host;
     private final int port;
     private String scheme;
@@ -57,7 +60,6 @@ public class HttpRequest implements Request
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
-    private Listener listener;
     private ContentProvider content;
     private boolean followRedirects;
     private volatile boolean aborted;
@@ -67,10 +69,10 @@ public class HttpRequest implements Request
         this(client, ids.incrementAndGet(), uri);
     }
 
-    protected HttpRequest(HttpClient client, long id, URI uri)
+    protected HttpRequest(HttpClient client, long conversation, URI uri)
     {
         this.client = client;
-        this.id = id;
+        this.conversation = conversation;
         scheme(uri.getScheme());
         host = uri.getHost();
         port = uri.getPort();
@@ -103,7 +105,7 @@ public class HttpRequest implements Request
     @Override
     public long conversation()
     {
-        return id;
+        return conversation;
     }
 
     @Override
@@ -238,15 +240,15 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Listener listener()
+    public List<Listener> listeners()
     {
-        return listener;
+        return listeners;
     }
 
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.listener = listener;
+        this.listeners.add(listener);
         return this;
     }
 
@@ -324,9 +326,11 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public void abort()
+    public boolean abort()
     {
         aborted = true;
+        HttpConversation conversation = client.getConversation(conversation());
+        return conversation != null && conversation.abort();
     }
 
     @Override

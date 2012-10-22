@@ -21,7 +21,9 @@ package org.eclipse.jetty.client;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,18 +33,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 {
@@ -76,23 +80,23 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         }
                     })
                     .send().get(5, TimeUnit.SECONDS);
-            fail();
+            Assert.fail();
         }
         catch (ExecutionException x)
         {
-            HttpRequestException xx = (HttpRequestException)x.getCause();
-            Request request = xx.getRequest();
-            Assert.assertNotNull(request);
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
             Assert.assertFalse(begin.get());
         }
     }
 
+    @Slow
     @Test
     public void testAbortOnBegin() throws Exception
     {
         start(new EmptyServerHandler());
 
-        final AtomicBoolean headers = new AtomicBoolean();
+        final CountDownLatch aborted = new CountDownLatch(1);
+        final CountDownLatch headers = new CountDownLatch(1);
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
@@ -102,24 +106,24 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onBegin(Request request)
                         {
-                            request.abort();
+                            if (request.abort())
+                                aborted.countDown();
                         }
 
                         @Override
                         public void onHeaders(Request request)
                         {
-                            headers.set(true);
+                            headers.countDown();
                         }
                     })
                     .send().get(5, TimeUnit.SECONDS);
-            fail();
+            Assert.fail();
         }
         catch (ExecutionException x)
         {
-            HttpRequestException xx = (HttpRequestException)x.getCause();
-            Request request = xx.getRequest();
-            Assert.assertNotNull(request);
-            Assert.assertFalse(headers.get());
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
+            Assert.assertFalse(headers.await(1, TimeUnit.SECONDS));
         }
     }
 
@@ -128,19 +132,34 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .listener(new Request.Listener.Empty()
-                {
-                    @Override
-                    public void onHeaders(Request request)
+        // Test can behave in 2 ways:
+        // A) the request is failed before the response arrived, then we get an ExecutionException
+        // B) the request is failed after the response arrived, we get the 200 OK
+
+        final CountDownLatch aborted = new CountDownLatch(1);
+        try
+        {
+            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .listener(new Request.Listener.Empty()
                     {
-                        // Too late to abort
-                        request.abort();
-                    }
-                })
-                .send().get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.status());
+                        @Override
+                        public void onHeaders(Request request)
+                        {
+                            if (request.abort())
+                                aborted.countDown();
+                        }
+                    })
+                    .send().get(5, TimeUnit.SECONDS);
+            Assert.assertEquals(200, response.status());
+            Assert.assertFalse(aborted.await(1, TimeUnit.SECONDS));
+        }
+        catch (ExecutionException x)
+        {
+            Throwable cause = x.getCause();
+            Assert.assertTrue(cause instanceof HttpResponseException);
+            Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test
@@ -167,14 +186,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         // Test can behave in 3 ways:
         // A) non-SSL, if the request is failed before the response arrived, then we get an ExecutionException
-        // B) non-SSL, if the request is failed after the response arrived, then we get a 500
+        // B) non-SSL, if the request is failed after the response arrived, then we get the 500
         // C) SSL, the server tries to write the 500, but the connection is already closed, the client
         //    reads -1 with a pending exchange and fails the response with an EOFException
+        StdErrLog.getLogger(HttpChannel.class).setHideStacks(true);
         try
         {
-            Log.getLogger(HttpChannel.class).info("Excpecting java.nio.channels.ClosedChannelException...");
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .listener(new Request.Listener.Empty()
                     {
@@ -193,8 +211,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         }
                     })
                     .send().get(5, TimeUnit.SECONDS);
-            Assert.assertNotNull(failure.get());
-            assertEquals(500, response.status());
+            Assert.fail();
         }
         catch (ExecutionException x)
         {
@@ -205,10 +222,17 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
             else if (cause instanceof HttpRequestException)
             {
-                // Request failed, behavior A
+                // Request failed, behavior B
                 HttpRequestException xx = (HttpRequestException)cause;
                 Request request = xx.getRequest();
                 Assert.assertNotNull(request);
+            }
+            else if (cause instanceof HttpResponseException)
+            {
+                // Response failed, behavior A
+                HttpResponseException xx = (HttpResponseException)cause;
+                Response response = xx.getResponse();
+                Assert.assertNotNull(response);
             }
             else
             {
@@ -217,7 +241,86 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+            StdErrLog.getLogger(HttpChannel.class).setHideStacks(false);
         }
+    }
+
+    @Slow
+    @Test
+    public void testAbortLongPoll() throws Exception
+    {
+        final long delay = 1000;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme);
+        Future<ContentResponse> future = request.send();
+
+        TimeUnit.MILLISECONDS.sleep(delay);
+
+        request.abort();
+
+        try
+        {
+            future.get(5, TimeUnit.SECONDS);
+        }
+        catch (ExecutionException x)
+        {
+            Throwable cause = x.getCause();
+            Assert.assertTrue(cause instanceof HttpResponseException);
+        }
+    }
+
+    // TODO: this test is not passing yet
+    @Ignore()
+    @Test
+    public void testAbortConversation() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                if (!"/done".equals(request.getRequestURI()))
+                    response.sendRedirect("/done");
+            }
+        });
+
+        client.getProtocolHandlers().clear();
+        client.getProtocolHandlers().add(new RedirectProtocolHandler(client)
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                // Abort the request after the 3xx response but before issuing the next request
+                if (!result.isFailed())
+                    result.getRequest().abort();
+                super.onComplete(result);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/redirect")
+                .send()
+                .get(5, TimeUnit.SECONDS);
+
+        Thread.sleep(1000);
     }
 }

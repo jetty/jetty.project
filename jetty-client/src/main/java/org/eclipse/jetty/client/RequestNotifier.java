@@ -35,7 +35,8 @@ public class RequestNotifier
 
     public void notifyQueued(Request request)
     {
-        notifyQueued(request.listener(), request);
+        for (Request.Listener listener : request.listeners())
+            notifyQueued(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyQueued(listener, request);
     }
@@ -55,7 +56,8 @@ public class RequestNotifier
 
     public void notifyBegin(Request request)
     {
-        notifyBegin(request.listener(), request);
+        for (Request.Listener listener : request.listeners())
+            notifyBegin(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyBegin(listener, request);
     }
@@ -75,7 +77,8 @@ public class RequestNotifier
 
     public void notifyHeaders(Request request)
     {
-        notifyHeaders(request.listener(), request);
+        for (Request.Listener listener : request.listeners())
+            notifyHeaders(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyHeaders(listener, request);
     }
@@ -95,7 +98,8 @@ public class RequestNotifier
 
     public void notifySuccess(Request request)
     {
-        notifySuccess(request.listener(), request);
+        for (Request.Listener listener : request.listeners())
+            notifySuccess(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifySuccess(listener, request);
     }
@@ -115,7 +119,8 @@ public class RequestNotifier
 
     public void notifyFailure(Request request, Throwable failure)
     {
-        notifyFailure(request.listener(), request, failure);
+        for (Request.Listener listener : request.listeners())
+            notifyFailure(listener, request, failure);
         for (Request.Listener listener : client.getRequestListeners())
             notifyFailure(listener, request, failure);
     }

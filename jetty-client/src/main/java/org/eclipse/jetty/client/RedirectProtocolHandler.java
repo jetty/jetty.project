@@ -26,7 +26,7 @@ import org.eclipse.jetty.http.HttpMethod;
 
 public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
 {
-    private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirect";
+    private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirects";
 
     private final HttpClient client;
     private final ResponseNotifier notifier;
@@ -104,7 +104,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
 
     private void redirect(Result result, HttpMethod method, String location)
     {
-        Request request = result.getRequest();
+        final Request request = result.getRequest();
         HttpConversation conversation = client.getConversation(request.conversation());
         Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
@@ -129,6 +129,16 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             // Copy content
             redirect.content(request.content());
 
+            redirect.listener(new Request.Listener.Empty()
+            {
+                @Override
+                public void onBegin(Request redirect)
+                {
+                    if (request.aborted())
+                        redirect.abort();
+                }
+            });
+
             redirect.send(new Response.Listener.Empty());
         }
         else
@@ -143,7 +153,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         Response response = result.getResponse();
         HttpConversation conversation = client.getConversation(request.conversation());
         Response.Listener listener = conversation.exchanges().peekFirst().listener();
-        // TODO: should we reply all event, or just the failure ?
+        // TODO: should we replay all events, or just the failure ?
         notifier.notifyFailure(listener, response, failure);
         notifier.notifyComplete(listener, new Result(request, response, failure));
     }
