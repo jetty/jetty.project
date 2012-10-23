@@ -115,7 +115,6 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.exchanges().offer(exchange);
-        conversation.listener(listener);
 
         sender.send(exchange);
     }

@@ -40,12 +40,10 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpRequestAbortTest extends AbstractHttpClientServerTest
@@ -156,8 +154,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Throwable cause = x.getCause();
-            Assert.assertTrue(cause instanceof HttpResponseException);
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
             Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
         }
     }
@@ -281,13 +278,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Throwable cause = x.getCause();
-            Assert.assertTrue(cause instanceof HttpResponseException);
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
         }
     }
 
-    // TODO: this test is not passing yet
-    @Ignore()
     @Test
     public void testAbortConversation() throws Exception
     {
@@ -315,12 +309,18 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/redirect")
-                .send()
-                .get(5, TimeUnit.SECONDS);
-
-        Thread.sleep(1000);
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path("/redirect")
+                    .send()
+                    .get(5, TimeUnit.SECONDS);
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+        }
     }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -63,6 +64,15 @@ public class HttpSender
     {
         if (!updateState(State.IDLE, State.SEND))
             throw new IllegalStateException();
+
+        // Arrange the listeners, so that if there is a request failure the proper listeners are notified
+        HttpConversation conversation = exchange.conversation();
+        Response.Listener currentListener = exchange.listener();
+        Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
+        if (initialListener == currentListener)
+            conversation.listener(initialListener);
+        else
+            conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
 
         Request request = exchange.request();
         if (request.aborted())

@@ -150,7 +150,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     if (currentListener == initialListener)
                         conversation.listener(initialListener);
                     else
-                        conversation.listener(new DoubleResponseListener(currentListener, initialListener));
+                        conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
                 }
                 else
                 {
@@ -158,7 +158,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     if (currentListener == initialListener)
                         conversation.listener(handlerListener);
                     else
-                        conversation.listener(new DoubleResponseListener(currentListener, handlerListener));
+                        conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, handlerListener));
                 }
 
                 LOG.debug("Receiving {}", response);
@@ -384,60 +384,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         if (!updated)
             LOG.debug("State update failed: {} -> {}: {}", from, to, state.get());
         return updated;
-    }
-
-    private class DoubleResponseListener implements Response.Listener
-    {
-        private final Response.Listener listener1;
-        private final Response.Listener listener2;
-
-        private DoubleResponseListener(Response.Listener listener1, Response.Listener listener2)
-        {
-            this.listener1 = listener1;
-            this.listener2 = listener2;
-        }
-
-        @Override
-        public void onBegin(Response response)
-        {
-            responseNotifier.notifyBegin(listener1, response);
-            responseNotifier.notifyBegin(listener2, response);
-        }
-
-        @Override
-        public void onHeaders(Response response)
-        {
-            responseNotifier.notifyHeaders(listener1, response);
-            responseNotifier.notifyHeaders(listener2, response);
-        }
-
-        @Override
-        public void onContent(Response response, ByteBuffer content)
-        {
-            responseNotifier.notifyContent(listener1, response, content);
-            responseNotifier.notifyContent(listener2, response, content);
-        }
-
-        @Override
-        public void onSuccess(Response response)
-        {
-            responseNotifier.notifySuccess(listener1, response);
-            responseNotifier.notifySuccess(listener2, response);
-        }
-
-        @Override
-        public void onFailure(Response response, Throwable failure)
-        {
-            responseNotifier.notifyFailure(listener1, response, failure);
-            responseNotifier.notifyFailure(listener2, response, failure);
-        }
-
-        @Override
-        public void onComplete(Result result)
-        {
-            responseNotifier.notifyComplete(listener1, result);
-            responseNotifier.notifyComplete(listener2, result);
-        }
     }
 
     private enum State
