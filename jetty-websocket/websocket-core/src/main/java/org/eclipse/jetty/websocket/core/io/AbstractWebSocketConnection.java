@@ -353,6 +353,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         fillInterested();
     }
 
+    @Override
+    protected boolean onReadTimeout()
+    {
+        LOG.debug("Read Timeout. disconnecting connection");
+        // TODO: notify end user websocket of read timeout?
+        return true;
+    }
+
     /**
      * Enqueue internal frame from {@link OutgoingFrames} stack for eventual write out on the physical connection.
      */
