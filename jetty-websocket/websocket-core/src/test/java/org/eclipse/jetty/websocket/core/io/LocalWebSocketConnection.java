@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements WebSocketConnection
@@ -74,7 +76,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public State getState()
+    public ConnectionState getState()
     {
         return null;
     }
@@ -86,8 +88,23 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public boolean isInputClosed()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
     public boolean isOpen()
     {
+        return false;
+    }
+
+
+    @Override
+    public boolean isOutputClosed()
+    {
+        // TODO Auto-generated method stub
         return false;
     }
 
@@ -98,8 +115,9 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public void notifyClosing()
+    public void onCloseHandshake(boolean incoming, CloseInfo close)
     {
+        // TODO Auto-generated method stub
     }
 
     @Override

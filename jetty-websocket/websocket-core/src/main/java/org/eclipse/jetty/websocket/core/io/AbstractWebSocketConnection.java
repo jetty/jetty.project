@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
 import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.protocol.Generator;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
@@ -68,7 +69,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private List<ExtensionConfig> extensions;
     private boolean flushing;
     private boolean isFilling;
-    private BaseConnection.State connectionState;
+    private ConnectionState connectionState;
+    private final AtomicBoolean inputClosed;
+    private final AtomicBoolean outputClosed;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -81,7 +84,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.extensions = new ArrayList<>();
         this.queue = new FrameQueue();
         this.suspendToken = new AtomicBoolean(false);
-        this.connectionState = BaseConnection.State.OPENING;
+        this.connectionState = ConnectionState.CONNECTING;
+
+        this.inputClosed = new AtomicBoolean(false);
+        this.outputClosed = new AtomicBoolean(false);
     }
 
     @Override
@@ -116,7 +122,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public void disconnect(boolean onlyOutput)
     {
-        connectionState = BaseConnection.State.CLOSED;
+        connectionState = ConnectionState.CLOSED;
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -183,7 +189,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
 
-            if (connectionState != BaseConnection.State.CLOSED)
+            if (connectionState != ConnectionState.CLOSED)
             {
                 write(buffer,frameBytes);
             }
@@ -244,15 +250,27 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public BaseConnection.State getState()
+    public ConnectionState getState()
     {
         return connectionState;
     }
 
     @Override
+    public boolean isInputClosed()
+    {
+        return inputClosed.get();
+    }
+
+    @Override
     public boolean isOpen()
     {
-        return (getState() != BaseConnection.State.CLOSED) && getEndPoint().isOpen();
+        return (getState() != ConnectionState.CLOSED) && getEndPoint().isOpen();
+    }
+
+    @Override
+    public boolean isOutputClosed()
+    {
+        return outputClosed.get();
     }
 
     @Override
@@ -262,16 +280,41 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public void notifyClosing()
-    {
-        this.connectionState = BaseConnection.State.CLOSING;
-    }
-
-    @Override
     public void onClose()
     {
         super.onClose();
-        this.connectionState = BaseConnection.State.CLOSED;
+        this.connectionState = ConnectionState.CLOSED;
+    }
+
+    @Override
+    public void onCloseHandshake(boolean incoming, CloseInfo close)
+    {
+        boolean in = inputClosed.get();
+        boolean out = outputClosed.get();
+        if (incoming)
+        {
+            in = true;
+            this.inputClosed.set(true);
+        }
+        else
+        {
+            out = true;
+            this.outputClosed.set(true);
+        }
+
+        LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
+
+        if (in && out)
+        {
+            LOG.debug("Close Handshake satisfied, disconnecting");
+            this.disconnect(false);
+        }
+
+        if (close.isHarsh())
+        {
+            LOG.debug("Close status code was harsh, disconnecting");
+            this.disconnect(false);
+        }
     }
 
     @Override
@@ -305,7 +348,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         super.onOpen();
-        this.connectionState = BaseConnection.State.OPENED;
+        this.connectionState = ConnectionState.OPEN;
         LOG.debug("fillInterested");
         fillInterested();
     }
@@ -449,7 +492,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG_FRAMES.debug("{} Writing {} frame bytes of {}",policy.getBehavior(),buffer.remaining(),frameBytes);
         }
 
-        if (connectionState == BaseConnection.State.CLOSED)
+        if (connectionState == ConnectionState.CLOSED)
         {
             // connection is closed, STOP WRITING, geez.
             return;

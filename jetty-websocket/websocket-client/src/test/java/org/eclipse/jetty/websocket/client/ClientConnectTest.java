@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
@@ -34,6 +35,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -41,6 +43,9 @@ import org.junit.Test;
  */
 public class ClientConnectTest
 {
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     private BlockheadServer server;
     private WebSocketClientFactory factory;
 

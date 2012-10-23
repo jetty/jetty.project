@@ -164,4 +164,15 @@ public class CloseInfo
     {
         return statusCode;
     }
+
+    public boolean isHarsh()
+    {
+        return !((statusCode == StatusCode.NORMAL) || (statusCode == StatusCode.NO_CODE));
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("CloseInfo[code=%d,reason=%s]",statusCode,reason);
+    }
 }

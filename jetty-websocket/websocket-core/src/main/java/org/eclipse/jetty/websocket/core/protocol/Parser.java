@@ -201,7 +201,7 @@ public class Parser
 
     protected void notifyWebSocketException(WebSocketException e)
     {
-        LOG.debug(e);
+        LOG.warn(e);
         if (incomingFramesHandler == null)
         {
             return;
@@ -217,6 +217,8 @@ public class Parser
         }
         try
         {
+            // TODO: create DebugBuffer
+
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
@@ -234,16 +236,15 @@ public class Parser
         }
         catch (WebSocketException e)
         {
+            buffer.position(buffer.limit()); // consume remaining
+            this.payload = null; // reset
             notifyWebSocketException(e);
         }
         catch (Throwable t)
         {
+            buffer.position(buffer.limit()); // consume remaining
+            this.payload = null; // reset
             notifyWebSocketException(new WebSocketException(t));
-        }
-        finally
-        {
-            // Be sure to consume after exceptions
-            buffer.position(buffer.limit());
         }
     }
 

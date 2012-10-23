@@ -23,14 +23,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.protocol.Parser;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -38,6 +41,15 @@ import org.junit.Test;
  */
 public class TestABCase7 extends AbstractABCase
 {
+    private static void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
+    }
+
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     /**
      * Basic message then close frame, normal behavior
      */
@@ -183,7 +195,6 @@ public class TestABCase7 extends AbstractABCase
      * 256k msg, then close, then ping
      */
     @Test
-    @Ignore("Problematic")
     public void testCase7_1_6() throws Exception
     {
         byte msg[] = new byte[256 * 1024];
@@ -195,7 +206,7 @@ public class TestABCase7 extends AbstractABCase
         send.add(new WebSocketFrame(OpCode.PING).setPayload("out of band"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -258,6 +269,7 @@ public class TestABCase7 extends AbstractABCase
         Fuzzer fuzzer = new Fuzzer(this);
         try
         {
+            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -266,6 +278,7 @@ public class TestABCase7 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -382,6 +395,7 @@ public class TestABCase7 extends AbstractABCase
         Fuzzer fuzzer = new Fuzzer(this);
         try
         {
+            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -390,12 +404,13 @@ public class TestABCase7 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
 
     /**
-     * close with invalid payload (124 byte reason) (exceeds total allowed control frame payload bytes)
+     * close with invalid UTF8 in payload
      */
     @Test
     public void testCase7_5_1() throws Exception
@@ -409,8 +424,8 @@ public class TestABCase7 extends AbstractABCase
         BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        WebSocketFrame close = new WebSocketFrame();
-        close.setPayload(payload);
+        WebSocketFrame close = new WebSocketFrame(); // anonymous (no opcode) intentionally
+        close.setPayload(payload); // intentionally bad payload
         close.setOpCode(OpCode.CLOSE); // set opcode after payload (to prevent early bad payload detection)
         send.add(close);
 
@@ -420,6 +435,7 @@ public class TestABCase7 extends AbstractABCase
         Fuzzer fuzzer = new Fuzzer(this);
         try
         {
+            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -428,6 +444,7 @@ public class TestABCase7 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

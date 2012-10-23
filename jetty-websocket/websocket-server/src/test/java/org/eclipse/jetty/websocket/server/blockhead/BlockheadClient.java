@@ -371,12 +371,23 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
     }
 
+    public int read() throws IOException
+    {
+        return in.read();
+    }
+
     public int read(ByteBuffer buf) throws IOException
     {
         int len = 0;
+        int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
         {
-            buf.put((byte)in.read());
+            b = in.read();
+            if (b == (-1))
+            {
+                throw new EOFException("Hit EOF");
+            }
+            buf.put((byte)b);
             len++;
         }
         return len;

@@ -20,23 +20,14 @@ package org.eclipse.jetty.websocket.core.api;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
+
 /**
  * Base Connection concepts
  */
 public interface BaseConnection
 {
-    public static enum State
-    {
-        /** Connection created, but not yet connected */
-        OPENING,
-        /** Connection created and connected */
-        OPENED,
-        /** Close handshake initiated, response pending. */
-        CLOSING,
-        /** Close handshake responded. */
-        CLOSED
-    }
-
     /**
      * Connection suspend token
      */
@@ -49,7 +40,7 @@ public interface BaseConnection
     }
 
     /**
-     * Send a websocket Close frame, {@link StatusCode#NORMAL}, without a reason.
+     * Send a websocket Close frame, without a status code or reason.
      * <p>
      * Basic usage: results in an non-blocking async write, then connection close.
      * 
@@ -84,11 +75,18 @@ public interface BaseConnection
     InetSocketAddress getRemoteAddress();
 
     /**
-     * Get the state of the connection.
+     * Get the WebSocket connection State.
      * 
-     * @return the state of the connection.
+     * @return the connection state.
      */
-    State getState();
+    ConnectionState getState();
+
+    /**
+     * Test if input is closed (as a result of receiving a close frame)
+     * 
+     * @return true if input is closed.
+     */
+    boolean isInputClosed();
 
     /**
      * Simple test to see if connection is open (and not closed)
@@ -98,6 +96,13 @@ public interface BaseConnection
     boolean isOpen();
 
     /**
+     * Test if output is closed (as a result of sending a close frame)
+     * 
+     * @return true if output is closed.
+     */
+    boolean isOutputClosed();
+
+    /**
      * Tests if the connection is actively reading.
      * 
      * @return true if connection is actively attempting to read.
@@ -105,9 +110,14 @@ public interface BaseConnection
     boolean isReading();
 
     /**
-     * Notify that the connection has entered the closing handshake
+     * A close handshake frame has been detected
+     * 
+     * @param incoming
+     *            true if part of an incoming frame, false if part of an outgoing frame.
+     * @param close
+     *            the close details
      */
-    void notifyClosing();
+    void onCloseHandshake(boolean incoming, CloseInfo close);
 
     /**
      * Suspend a the incoming read events on the connection.

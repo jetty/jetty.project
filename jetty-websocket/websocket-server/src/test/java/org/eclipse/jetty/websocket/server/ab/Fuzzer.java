@@ -168,7 +168,12 @@ public class Fuzzer
     public void expectNoMoreFrames()
     {
         // TODO Should test for no more frames. success if connection closed.
+    }
 
+    public void expectServerClose() throws IOException
+    {
+        int val = client.read();
+        Assert.assertThat("Should have detected EOF",val,is(-1));
     }
 
     public SendMode getSendMode()
@@ -236,6 +241,8 @@ public class Fuzzer
                 case SLOW:
                     client.writeRawSlowly(buf,slowSendSegmentSize);
                     break;
+                default:
+                    throw new RuntimeException("Whoops, unsupported sendMode: " + sendMode);
             }
         }
         else if (sendMode == SendMode.PER_FRAME)
