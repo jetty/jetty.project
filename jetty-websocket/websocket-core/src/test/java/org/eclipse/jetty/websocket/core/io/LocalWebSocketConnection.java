@@ -32,6 +32,7 @@ import org.junit.rules.TestName;
 public class LocalWebSocketConnection implements WebSocketConnection
 {
     private final String id;
+    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
     public LocalWebSocketConnection()
     {
@@ -66,7 +67,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return null;
+        return policy;
     }
 
     @Override
@@ -123,6 +124,11 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
+    }
+
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        this.policy = policy;
     }
 
     @Override
