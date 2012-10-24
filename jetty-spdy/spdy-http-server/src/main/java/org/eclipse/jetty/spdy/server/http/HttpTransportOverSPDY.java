@@ -96,12 +96,12 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
         }
 
-        boolean noContent = BufferUtil.isEmpty(content);
-        boolean close = noContent && lastContent;
+        boolean hasContent = !BufferUtil.isEmpty(content);
+        boolean close = !hasContent && lastContent;
         reply(stream, new ReplyInfo(headers, close));
 
-        if (!noContent)
-            stream.data(new ByteBufferDataInfo(content, lastContent));
+        if (hasContent)
+            sendToStream(content, lastContent);
     }
 
     @Override
@@ -111,7 +111,20 @@ public class HttpTransportOverSPDY implements HttpTransport
         // TODO work out if we can avoid double calls for lastContent==true
         if (stream.isClosed() && BufferUtil.isEmpty(content) && lastContent)
             return;
-        stream.data(new ByteBufferDataInfo(content, lastContent));
+
+        sendToStream(content, lastContent);
+    }
+
+    private void sendToStream(ByteBuffer content, boolean lastContent)
+    {
+        try
+        {
+            stream.data(new ByteBufferDataInfo(content, lastContent)).get();
+        }
+        catch (Exception e)
+        {
+            endPoint.close();
+        }
     }
 
     @Override
