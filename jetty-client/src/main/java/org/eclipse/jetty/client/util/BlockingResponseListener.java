@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -28,38 +27,20 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 
 public class BlockingResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
+    private final Request request;
     private ContentResponse response;
     private Throwable failure;
     private volatile boolean cancelled;
 
-    @Override
-    public void onBegin(Response response)
+    public BlockingResponseListener(Request request)
     {
-        super.onBegin(response);
-        if (cancelled)
-            response.abort();
-    }
-
-    @Override
-    public void onHeaders(Response response)
-    {
-        super.onHeaders(response);
-        if (cancelled)
-            response.abort();
-    }
-
-    @Override
-    public void onContent(Response response, ByteBuffer content)
-    {
-        super.onContent(response, content);
-        if (cancelled)
-            response.abort();
+        this.request = request;
     }
 
     @Override
@@ -75,7 +56,7 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         cancelled = true;
-        return latch.getCount() == 0;
+        return request.abort("Cancelled");
     }
 
     @Override
@@ -102,7 +83,10 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     {
         boolean expired = !latch.await(timeout, unit);
         if (expired)
+        {
+            request.abort("Total timeout elapsed");
             throw new TimeoutException();
+        }
         return result();
     }
 

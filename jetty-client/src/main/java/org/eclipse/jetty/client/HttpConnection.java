@@ -349,13 +349,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public boolean abort(HttpExchange exchange)
+    public boolean abort(HttpExchange exchange, String reason)
     {
         // We want the return value to be that of the response
         // because if the response has already successfully
         // arrived then we failed to abort the exchange
-        sender.abort(exchange);
-        return receiver.abort(exchange);
+        sender.abort(exchange, reason);
+        return receiver.abort(exchange, reason);
     }
 
     public void proceed(boolean proceed)

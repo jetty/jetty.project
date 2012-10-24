@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -120,6 +121,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int responseBufferSize = 4096;
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
+    private volatile long connectTimeout = 15000;
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
@@ -168,6 +170,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
+        selectorManager.setConnectTimeout(getConnectTimeout());
         addBean(selectorManager);
 
         handlers.add(new ContinueProtocolHandler(this));
@@ -278,7 +281,7 @@ public class HttpClient extends ContainerLifeCycle
         return provideDestination(scheme, host, port);
     }
 
-    private HttpDestination provideDestination(String scheme, String host, int port)
+    protected HttpDestination provideDestination(String scheme, String host, int port)
     {
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
@@ -305,7 +308,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(Request request, Response.Listener listener)
+    protected void send(final Request request, long timeout, TimeUnit unit, Response.Listener listener)
     {
         String scheme = request.scheme().toLowerCase();
         if (!Arrays.asList("http", "https").contains(scheme))
@@ -315,7 +318,20 @@ public class HttpClient extends ContainerLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        provideDestination(scheme, request.host(), port).send(request, listener);
+        if (timeout > 0)
+        {
+            scheduler.schedule(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    request.abort("Total timeout elapsed");
+                }
+            }, timeout, unit);
+        }
+
+        HttpDestination destination = provideDestination(scheme, request.host(), port);
+        destination.send(request, listener);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
@@ -403,6 +419,16 @@ public class HttpClient extends ContainerLifeCycle
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+    }
+
+    public long getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(long connectTimeout)
+    {
+        this.connectTimeout = connectTimeout;
     }
 
     public long getIdleTimeout()

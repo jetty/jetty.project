@@ -135,7 +135,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                 public void onBegin(Request redirect)
                 {
                     if (request.aborted())
-                        redirect.abort();
+                        redirect.abort(null);
                 }
             });
 

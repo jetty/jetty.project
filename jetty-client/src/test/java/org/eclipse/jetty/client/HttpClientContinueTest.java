@@ -408,7 +408,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     @Override
                     public void onBegin(Response response)
                     {
-                        response.abort();
+                        response.abort(null);
                     }
 
                     @Override

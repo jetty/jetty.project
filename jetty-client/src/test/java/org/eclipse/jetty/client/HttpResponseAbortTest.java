@@ -60,7 +60,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                     @Override
                     public void onBegin(Response response)
                     {
-                        response.abort();
+                        response.abort(null);
                     }
 
                     @Override
@@ -86,7 +86,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                     @Override
                     public void onHeaders(Response response)
                     {
-                        response.abort();
+                        response.abort(null);
                     }
 
                     @Override
@@ -131,7 +131,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                     @Override
                     public void onContent(Response response, ByteBuffer content)
                     {
-                        response.abort();
+                        response.abort(null);
                     }
 
                     @Override

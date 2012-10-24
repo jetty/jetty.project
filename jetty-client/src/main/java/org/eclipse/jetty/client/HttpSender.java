@@ -77,7 +77,7 @@ public class HttpSender
         Request request = exchange.request();
         if (request.aborted())
         {
-            exchange.abort();
+            exchange.abort(null);
         }
         else
         {
@@ -344,7 +344,7 @@ public class HttpSender
         if (!updateState(State.COMMIT, State.IDLE))
             throw new IllegalStateException();
 
-        exchange.terminate();
+        exchange.terminateRequest();
 
         // It is important to notify completion *after* we reset because
         // the notification may trigger another request/response
@@ -385,7 +385,7 @@ public class HttpSender
                 break;
         }
 
-        exchange.terminate();
+        exchange.terminateRequest();
 
         Request request = exchange.request();
         requestNotifier.notifyFailure(request, failure);
@@ -396,7 +396,7 @@ public class HttpSender
         if (result == null && notCommitted && !request.aborted())
         {
             result = exchange.responseComplete(failure).getReference();
-            exchange.terminate();
+            exchange.terminateResponse();
             LOG.debug("Failed on behalf {}", exchange);
         }
 
@@ -411,12 +411,12 @@ public class HttpSender
         return true;
     }
 
-    public boolean abort(HttpExchange exchange)
+    public boolean abort(HttpExchange exchange, String reason)
     {
         State current = state.get();
         boolean abortable = current == State.IDLE || current == State.SEND ||
                 current == State.COMMIT && contentIterator.hasNext();
-        return abortable && fail(new HttpRequestException("Request aborted", exchange.request()));
+        return abortable && fail(new HttpRequestException(reason == null ? "Request aborted" : reason, exchange.request()));
     }
 
     private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)

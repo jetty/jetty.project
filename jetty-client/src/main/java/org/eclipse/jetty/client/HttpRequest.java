@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -314,7 +315,7 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        BlockingResponseListener listener = new BlockingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener(this);
         send(listener);
         return listener;
     }
@@ -322,15 +323,23 @@ public class HttpRequest implements Request
     @Override
     public void send(final Response.Listener listener)
     {
-        client.send(this, listener);
+        send(0, TimeUnit.SECONDS, listener);
     }
 
     @Override
-    public boolean abort()
+    public void send(long timeout, TimeUnit unit, Response.Listener listener)
+    {
+        client.send(this, timeout, unit, listener);
+    }
+
+    @Override
+    public boolean abort(String reason)
     {
         aborted = true;
+        if (client.provideDestination(scheme(), host(), port()).abort(this, reason))
+            return true;
         HttpConversation conversation = client.getConversation(conversation());
-        return conversation != null && conversation.abort();
+        return conversation.abort(reason);
     }
 
     @Override

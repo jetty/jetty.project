@@ -22,11 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -66,14 +64,15 @@ public class HttpReceiverTest
         client.stop();
     }
 
-    protected HttpExchange newExchange(Response.Listener listener)
+    protected HttpExchange newExchange()
     {
         HttpRequest request = new HttpRequest(client, URI.create("http://localhost"));
+        BlockingResponseListener listener = new BlockingResponseListener(request);
         HttpExchange exchange = new HttpExchange(conversation, connection, request, listener);
         conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
         exchange.requestComplete(null);
-        exchange.terminate();
+        exchange.terminateRequest();
         return exchange;
     }
 
@@ -84,21 +83,11 @@ public class HttpReceiverTest
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
-        final AtomicReference<Response> responseRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-        HttpExchange exchange = newExchange(new Response.Listener.Empty()
-        {
-            @Override
-            public void onSuccess(Response response)
-            {
-                responseRef.set(response);
-                latch.countDown();
-            }
-        });
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Response response = responseRef.get();
+        Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertEquals("OK", response.reason());
@@ -118,8 +107,8 @@ public class HttpReceiverTest
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
                 content);
-        BlockingResponseListener listener = new BlockingResponseListener();
-        HttpExchange exchange = newExchange(listener);
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -145,8 +134,8 @@ public class HttpReceiverTest
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
                 content1);
-        BlockingResponseListener listener = new BlockingResponseListener();
-        HttpExchange exchange = newExchange(listener);
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
         endPoint.setInputEOF();
         exchange.receive();
@@ -169,8 +158,8 @@ public class HttpReceiverTest
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
-        BlockingResponseListener listener = new BlockingResponseListener();
-        HttpExchange exchange = newExchange(listener);
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
         // Simulate an idle timeout
         connection.idleTimeout();
@@ -193,8 +182,8 @@ public class HttpReceiverTest
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
-        BlockingResponseListener listener = new BlockingResponseListener();
-        HttpExchange exchange = newExchange(listener);
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
 
         try
@@ -224,8 +213,8 @@ public class HttpReceiverTest
                 "Content-Length: " + gzip.length + "\r\n" +
                 "Content-Encoding: gzip\r\n" +
                 "\r\n");
-        BlockingResponseListener listener = new BlockingResponseListener();
-        HttpExchange exchange = newExchange(listener);
+        HttpExchange exchange = newExchange();
+        BlockingResponseListener listener = (BlockingResponseListener)exchange.listener();
         exchange.receive();
         endPoint.reset();
 

@@ -48,7 +48,7 @@ public class HttpExchange
         this.connection = connection;
         this.request = request;
         this.listener = listener;
-        this.response = new HttpResponse(this, listener);
+        this.response = new HttpResponse(request, listener);
     }
 
     public HttpConversation conversation()
@@ -168,10 +168,10 @@ public class HttpExchange
         return new AtomicMarkableReference<>(result, modified);
     }
 
-    public boolean abort()
+    public boolean abort(String reason)
     {
-        LOG.debug("Aborting {}", this);
-        boolean aborted = connection.abort(this);
+        LOG.debug("Aborting {} reason {}", this, reason);
+        boolean aborted = connection.abort(this, reason);
         LOG.debug("Aborted {}: {}", this, aborted);
         return aborted;
     }
@@ -189,7 +189,12 @@ public class HttpExchange
         connection.proceed(proceed);
     }
 
-    public void terminate()
+    public void terminateRequest()
+    {
+        terminate.countDown();
+    }
+
+    public void terminateResponse()
     {
         terminate.countDown();
     }

@@ -216,7 +216,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
      */
     protected void process(final Connection connection, boolean dispatch)
     {
-        final RequestPair requestPair = requests.poll();
+        RequestPair requestPair = requests.poll();
         if (requestPair == null)
         {
             LOG.debug("{} idle", connection);
@@ -234,25 +234,35 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
         else
         {
-            LOG.debug("{} active", connection);
-            if (!activeConnections.offer(connection))
+            final Request request = requestPair.request;
+            final Response.Listener listener = requestPair.listener;
+            if (request.aborted())
             {
-                LOG.warn("{} active overflow");
-            }
-            if (dispatch)
-            {
-                client.getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        connection.send(requestPair.request, requestPair.listener);
-                    }
-                });
+                abort(request, listener, "Aborted");
+                LOG.debug("Aborted {} before processing", request);
             }
             else
             {
-                connection.send(requestPair.request, requestPair.listener);
+                LOG.debug("{} active", connection);
+                if (!activeConnections.offer(connection))
+                {
+                    LOG.warn("{} active overflow");
+                }
+                if (dispatch)
+                {
+                    client.getExecutor().execute(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            connection.send(request, listener);
+                        }
+                    });
+                }
+                else
+                {
+                    connection.send(request, listener);
+                }
             }
         }
     }
@@ -283,7 +293,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         activeConnections.remove(connection);
         idleConnections.remove(connection);
 
-        // We need to executed queued requests even if this connection failed.
+        // We need to execute queued requests even if this connection failed.
         // We may create a connection that is not needed, but it will eventually
         // idle timeout, so no worries
         if (!requests.isEmpty())
@@ -316,6 +326,33 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         connectionCount.set(0);
 
         LOG.debug("Closed {}", this);
+    }
+
+    public boolean abort(Request request, String reason)
+    {
+        for (RequestPair pair : requests)
+        {
+            if (pair.request == request)
+            {
+                if (requests.remove(pair))
+                {
+                    // We were able to remove the pair, so it won't be processed
+                    abort(request, pair.listener, reason);
+                    LOG.debug("Aborted {} while queued", request);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void abort(Request request, Response.Listener listener, String reason)
+    {
+        HttpResponse response = new HttpResponse(request, listener);
+        HttpResponseException responseFailure = new HttpResponseException(reason, response);
+        responseNotifier.notifyFailure(listener, response, responseFailure);
+        HttpRequestException requestFailure = new HttpRequestException(reason, request);
+        responseNotifier.notifyComplete(listener, new Result(request, requestFailure, response, responseFailure));
     }
 
     @Override

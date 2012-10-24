@@ -125,7 +125,7 @@ public class Usage
         try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", 8080);
-            BlockingResponseListener listener = new BlockingResponseListener();
+            BlockingResponseListener listener = new BlockingResponseListener(request);
             connection.send(request, listener);
             Response response = listener.get(5, TimeUnit.SECONDS);
             Assert.assertNotNull(response);
@@ -191,7 +191,7 @@ public class Usage
         }
         else
         {
-            response.abort();
+            response.abort(null);
         }
     }
 

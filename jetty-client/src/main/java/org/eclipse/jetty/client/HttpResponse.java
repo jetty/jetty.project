@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -25,15 +26,15 @@ import org.eclipse.jetty.http.HttpVersion;
 public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
-    private final HttpExchange exchange;
+    private final Request request;
     private final Listener listener;
     private HttpVersion version;
     private int status;
     private String reason;
 
-    public HttpResponse(HttpExchange exchange, Listener listener)
+    public HttpResponse(Request request, Listener listener)
     {
-        this.exchange = exchange;
+        this.request = request;
         this.listener = listener;
     }
 
@@ -80,7 +81,7 @@ public class HttpResponse implements Response
     @Override
     public long conversation()
     {
-        return exchange.request().conversation();
+        return request.conversation();
     }
 
     @Override
@@ -90,9 +91,9 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public void abort()
+    public boolean abort(String reason)
     {
-        exchange.request().abort();
+        return request.abort(reason);
     }
 
     @Override

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -45,7 +44,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -110,7 +108,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         for (String failure : failures)
             System.err.println("FAILED: "+failure);
-        
+
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 

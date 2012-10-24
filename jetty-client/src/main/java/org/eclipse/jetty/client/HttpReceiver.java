@@ -284,7 +284,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         if (!updateState(State.RECEIVE, State.IDLE))
             throw new IllegalStateException();
 
-        exchange.terminate();
+        exchange.terminateResponse();
 
         HttpResponse response = exchange.response();
         Response.Listener listener = exchange.conversation().listener();
@@ -326,7 +326,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 break;
         }
 
-        exchange.terminate();
+        exchange.terminateResponse();
 
         HttpResponse response = exchange.response();
         HttpConversation conversation = exchange.conversation();
@@ -373,9 +373,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new TimeoutException());
     }
 
-    public boolean abort(HttpExchange exchange)
+    public boolean abort(HttpExchange exchange, String reason)
     {
-        return fail(new HttpResponseException("Response aborted", exchange.response()));
+        return fail(new HttpResponseException(reason == null ? "Response aborted" : reason, exchange.response()));
     }
 
     private boolean updateState(State from, State to)

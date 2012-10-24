@@ -68,7 +68,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onQueued(Request request)
                         {
-                            request.abort();
+                            request.abort(null);
                         }
 
                         @Override
@@ -104,7 +104,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onBegin(Request request)
                         {
-                            if (request.abort())
+                            if (request.abort(null))
                                 aborted.countDown();
                         }
 
@@ -144,7 +144,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onHeaders(Request request)
                         {
-                            if (request.abort())
+                            if (request.abort(null))
                                 aborted.countDown();
                         }
                     })
@@ -196,7 +196,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onHeaders(Request request)
                         {
-                            request.abort();
+                            request.abort(null);
                         }
                     })
                     .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
@@ -270,7 +270,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         TimeUnit.MILLISECONDS.sleep(delay);
 
-        request.abort();
+        request.abort(null);
 
         try
         {
@@ -304,7 +304,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 // Abort the request after the 3xx response but before issuing the next request
                 if (!result.isFailed())
-                    result.getRequest().abort();
+                    result.getRequest().abort(null);
                 super.onComplete(result);
             }
         });

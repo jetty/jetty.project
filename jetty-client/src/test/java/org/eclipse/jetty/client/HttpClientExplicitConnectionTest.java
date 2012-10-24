@@ -46,7 +46,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest(destination.host(), destination.port()).scheme(scheme);
-            BlockingResponseListener listener = new BlockingResponseListener();
+            BlockingResponseListener listener = new BlockingResponseListener(request);
             connection.send(request, listener);
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
@@ -68,7 +68,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS);
         Request request = client.newRequest(destination.host(), destination.port()).scheme(scheme);
-        BlockingResponseListener listener = new BlockingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 

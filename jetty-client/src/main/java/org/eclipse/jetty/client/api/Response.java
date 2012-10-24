@@ -67,9 +67,12 @@ public interface Response
     HttpFields headers();
 
     /**
-     * Attempts to abort the send of this request.
+     * Attempts to abort the receive of this response.
+     *
+     * @param reason the abort reason
+     * @return whether the abort succeeded
      */
-    void abort();
+    boolean abort(String reason);
 
     /**
      * Listener for response events
