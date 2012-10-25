@@ -540,7 +540,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         //if the session has no expiry, or it is not already expired
                         if (data._expiryTime <= 0 || data._expiryTime > now)
                         {
-                            LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
                             data.setLastNode(getSessionIdManager().getWorkerName());
                             //session last used on a different node, or we don't have it in memory
                             session = new Session(now,data);
@@ -551,18 +551,21 @@ public class JDBCSessionManager extends AbstractSessionManager
                             updateSessionNode(data);
                         }
                         else
-                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session has expired");
+                        {
+                            LOG.debug("getSession ({}): Session has expired", idInCluster);
+                            
+                        }
 
                     }
                     else
-                        if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session not stale "+session._data);
+                       LOG.debug("getSession({}): Session not stale {}", idInCluster,session._data);
                     //session in db shares same id, but is not for this context
                 }
                 else
                 {
                     //No session in db with matching id and context path.
                     session=null;
-                    if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): No session in database matching id="+idInCluster);
+                    LOG.debug("getSession({}): No session in database matching id={}",idInCluster,idInCluster);
                 }
 
                 return session;
@@ -606,6 +609,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         _jdbcSessionIdMgr = (JDBCSessionIdManager)_sessionIdManager;
         
         _sessions = new ConcurrentHashMap<String, AbstractSession>();
+
         super.doStart();
     }
 
