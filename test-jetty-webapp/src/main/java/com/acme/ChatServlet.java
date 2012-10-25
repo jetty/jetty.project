@@ -164,13 +164,6 @@ public class ChatServlet extends HttpServlet
                 response.setContentLength(bytes.length);
                 response.getOutputStream().write(bytes);
             }
-            else if (request.getDispatcherType()==DispatcherType.ASYNC)
-            {
-                // Timeout so send empty response
-                response.setContentType("text/json;charset=utf-8");
-                PrintWriter out=response.getWriter();
-                out.print("{action:\"poll\"}");
-            }
             else
             {
                 AsyncContext async = request.startAsync();
