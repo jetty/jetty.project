@@ -192,8 +192,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                                 RequestPair pair = requests.poll();
                                 if (pair != null)
                                 {
-                                    requestNotifier.notifyFailure(pair.request, x);
-                                    responseNotifier.notifyComplete(pair.listener, new Result(pair.request, x, null));
+                                    Request request = pair.request;
+                                    requestNotifier.notifyFailure(request, x);
+                                    Response.Listener listener = pair.listener;
+                                    HttpResponse response = new HttpResponse(request, listener);
+                                    responseNotifier.notifyFailure(listener, response, x);
+                                    responseNotifier.notifyComplete(listener, new Result(request, x, response, x));
                                 }
                             }
                         });
