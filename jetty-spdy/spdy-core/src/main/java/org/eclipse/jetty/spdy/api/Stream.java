@@ -158,10 +158,11 @@ public interface Stream
      * @param dataInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
+     * @param context  the context passed to the callback
      * @param callback  the completion callback that gets notified of data sent
      * @see #data(DataInfo)
      */
-    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> callback);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>

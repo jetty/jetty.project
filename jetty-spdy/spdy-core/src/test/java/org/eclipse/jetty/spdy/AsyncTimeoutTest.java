@@ -125,7 +125,7 @@ public class AsyncTimeoutTest
 
         Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Empty<Void>()
+        stream.data(new StringDataInfo("data", true), timeout, unit, null,new Callback.Empty<Void>()
         {
             @Override
             public void failed(Void context, Throwable x)

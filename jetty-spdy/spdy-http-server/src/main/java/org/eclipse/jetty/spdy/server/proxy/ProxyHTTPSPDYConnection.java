@@ -286,23 +286,23 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
         {
             try
             {
                 // Data buffer must be copied, as the ByteBuffer is pooled
                 ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
 
-                send(byteBuffer, dataInfo.isClose());
+                send(null, byteBuffer, dataInfo.isClose());
 
                 if (dataInfo.isClose())
                     completed();
 
-                handler.completed(null);
+                handler.completed(context);
             }
             catch (IOException x)
             {
-                handler.failed(null, x);
+                handler.failed(context, x);
             }
         }
     }
@@ -322,10 +322,10 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
         {
             // Ignore pushed data
-            handler.completed(null);
+            handler.completed(context);
         }
     }
 }

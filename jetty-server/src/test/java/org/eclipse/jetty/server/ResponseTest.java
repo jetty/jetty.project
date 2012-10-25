@@ -42,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -84,9 +86,9 @@ public class ResponseTest
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
             {
             }
-
+            
             @Override
-            public void send(ByteBuffer content, boolean lastContent) throws IOException
+            public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
             {
             }
 
@@ -94,6 +96,7 @@ public class ResponseTest
             public void completed()
             {
             }
+
         }, input);
     }
 

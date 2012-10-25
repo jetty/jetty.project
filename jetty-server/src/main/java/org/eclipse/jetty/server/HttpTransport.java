@@ -22,12 +22,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.util.Callback;
 
 public interface HttpTransport
 {
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException;
 
-    void send(ByteBuffer content, boolean lastContent) throws IOException;
-
+    <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback);
+    
     void completed();
 }

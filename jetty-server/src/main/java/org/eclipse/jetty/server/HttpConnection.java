@@ -21,9 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpGenerator;
@@ -32,6 +30,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -322,8 +321,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
-        // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
-
         // If we are still expecting a 100 continues
         if (_channel.isExpecting100Continue())
             // then we can't be persistent
@@ -413,11 +410,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
     }
-
+    
     @Override
-    public void send(ByteBuffer content, boolean lastContent) throws IOException
+    public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
     {
-        send(null, content, lastContent);
+        try
+        {
+            send(info,content,lastContent);
+            callback.completed(context);
+        }
+        catch (IOException e)
+        {
+            callback.failed(context,e);
+        }
     }
 
     private void blockingWrite(ByteBuffer... bytes) throws IOException

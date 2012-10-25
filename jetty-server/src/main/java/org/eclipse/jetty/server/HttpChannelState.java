@@ -619,7 +619,7 @@ public class HttpChannelState implements AsyncContext
     protected void scheduleTimeout()
     {
         Scheduler scheduler = _channel.getScheduler();
-        if (scheduler!=null)
+        if (scheduler!=null && _timeoutMs>0)
             _event._timeout=scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS);
     }
 

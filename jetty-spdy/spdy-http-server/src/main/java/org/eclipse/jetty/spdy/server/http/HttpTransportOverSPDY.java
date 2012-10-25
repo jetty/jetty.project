@@ -21,9 +21,8 @@ package org.eclipse.jetty.spdy.server.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.HttpTransport;
@@ -40,10 +38,10 @@ import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -57,6 +55,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final PushStrategy pushStrategy;
     private final Stream stream;
     private final Fields requestHeaders;
+    private final BlockingCallback streamBlocker = new BlockingCallback();
 
     public HttpTransportOverSPDY(Connector connector, HttpChannelConfig configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
@@ -69,78 +68,71 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
+    public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
+    {
+        boolean hasContent = !BufferUtil.isEmpty(content);
+        
+        if (info!=null)
+        {
+            short version = stream.getSession().getVersion();
+            Fields headers = new Fields();
+
+            HttpVersion httpVersion = HttpVersion.HTTP_1_1;
+            headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
+
+            int status = info.getStatus();
+            StringBuilder httpStatus = new StringBuilder().append(status);
+            String reason = info.getReason();
+            if (reason == null)
+                reason = HttpStatus.getMessage(status);
+            if (reason != null)
+                httpStatus.append(" ").append(reason);
+            headers.put(HTTPSPDYHeader.STATUS.name(version), httpStatus.toString());
+            LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
+
+            // TODO merge the two Field classes into one
+            HttpFields fields = info.getHttpFields();
+            if (fields != null)
+            {
+                for (int i = 0; i < fields.size(); ++i)
+                {
+                    HttpFields.Field field = fields.getField(i);
+                    String name = field.getName();
+                    String value = field.getValue();
+                    headers.put(name, value);
+                    LOG.debug("HTTP < {}: {}", name, value);
+                }
+            }
+
+            boolean close = !hasContent && lastContent;
+            reply(stream, new ReplyInfo(headers, close));
+        }
+
+        if ((hasContent || lastContent ) && !stream.isClosed() )
+            stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        else
+            callback.completed(context);
+
+    }
+    
+    @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
-        short version = stream.getSession().getVersion();
-        Fields headers = new Fields();
-
-        HttpVersion httpVersion = HttpVersion.HTTP_1_1;
-        headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
-
-        int status = info.getStatus();
-        StringBuilder httpStatus = new StringBuilder().append(status);
-        String reason = info.getReason();
-        if (reason == null)
-            reason = HttpStatus.getMessage(status);
-        if (reason != null)
-            httpStatus.append(" ").append(reason);
-        headers.put(HTTPSPDYHeader.STATUS.name(version), httpStatus.toString());
-        LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
-
-        // TODO merge the two Field classes into one
-        HttpFields fields = info.getHttpFields();
-        if (fields != null)
-        {
-            for (int i = 0; i < fields.size(); ++i)
-            {
-                HttpFields.Field field = fields.getField(i);
-                String name = field.getName();
-                String value = field.getValue();
-                headers.put(name, value);
-                LOG.debug("HTTP < {}: {}", name, value);
-            }
-        }
-
-        boolean hasContent = !BufferUtil.isEmpty(content);
-        boolean close = !hasContent && lastContent;
-        reply(stream, new ReplyInfo(headers, close));
-
-        if (hasContent)
-            sendToStream(content, lastContent);
-    }
-
-    @Override
-    public void send(ByteBuffer content, boolean lastContent) throws IOException
-    {
-        // Guard against a last 0 bytes write
-        // TODO work out if we can avoid double calls for lastContent==true
-        if (stream.isClosed() && BufferUtil.isEmpty(content) && lastContent)
-            return;
-
-        sendToStream(content, lastContent);
-    }
-
-    private void sendToStream(ByteBuffer content, boolean lastContent) throws IOException
-    {
-        FutureCallback<Void> future = new FutureCallback<>();
-            
-        stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,future);
-
+        send(info,content,lastContent,streamBlocker.getPhase(),streamBlocker);
         try
         {
-            future.get();
+            streamBlocker.block();
         }
-        catch (ExecutionException e)
+        catch (IOException e)
         {
-            LOG.debug(e);
-            Throwable cause=e.getCause();
-            throw new EofException(cause);
+            throw e;
         }
         catch (Exception e)
         {
             throw new EofException(e);
         }
     }
+
 
     @Override
     public void completed()

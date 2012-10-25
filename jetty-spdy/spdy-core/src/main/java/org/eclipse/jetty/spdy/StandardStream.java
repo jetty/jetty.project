@@ -359,12 +359,12 @@ public class StandardStream implements IStream
     public Future<Void> data(DataInfo dataInfo)
     {
         FutureCallback<Void> fcb = new FutureCallback<>();
-        data(dataInfo,0,TimeUnit.MILLISECONDS,fcb);
+        data(dataInfo,0,TimeUnit.MILLISECONDS,null,fcb);
         return fcb;
     }
 
     @Override
-    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> callback)
+    public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> callback)
     {
         if (!canSend())
         {
@@ -379,15 +379,15 @@ public class StandardStream implements IStream
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, timeout, unit, callback, null);
+        session.data(this, dataInfo, timeout, unit, callback, context);
     }
 
     @Override
     public Future<Void> headers(HeadersInfo headersInfo)
     {
-        Promise<Void> result = new Promise<>();
-        headers(headersInfo,0,TimeUnit.MILLISECONDS,result);
-        return result;
+        FutureCallback<Void> fcb = new FutureCallback<>();
+        headers(headersInfo,0,TimeUnit.MILLISECONDS,fcb);
+        return fcb;
     }
 
     @Override

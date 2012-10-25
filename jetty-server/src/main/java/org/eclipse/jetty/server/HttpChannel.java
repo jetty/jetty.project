@@ -611,7 +611,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         if (isCommitted())
         {
-            _transport.send(content, complete);
+            _transport.send(null, content, complete);
         }
         else
         {
