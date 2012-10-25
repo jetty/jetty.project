@@ -130,7 +130,7 @@ public class TestServer
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol()); 
         ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
         spdyConnector.setPort(8443);
-        spdyConnector.setIdleTimeout(30000);
+        spdyConnector.setIdleTimeout(15000);
         server.addConnector(spdyConnector);
         
         

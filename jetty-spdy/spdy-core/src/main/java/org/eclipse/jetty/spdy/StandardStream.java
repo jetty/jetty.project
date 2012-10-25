@@ -38,6 +38,7 @@ import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -357,9 +358,9 @@ public class StandardStream implements IStream
     @Override
     public Future<Void> data(DataInfo dataInfo)
     {
-        Promise<Void> result = new Promise<>();
-        data(dataInfo,0,TimeUnit.MILLISECONDS,result);
-        return result;
+        FutureCallback<Void> fcb = new FutureCallback<>();
+        data(dataInfo,0,TimeUnit.MILLISECONDS,fcb);
+        return fcb;
     }
 
     @Override

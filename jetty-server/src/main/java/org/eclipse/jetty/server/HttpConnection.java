@@ -23,6 +23,8 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -57,6 +60,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
+    private BlockingCallback _readBlocker = new BlockingCallback();
+    private BlockingCallback _writeBlocker = new BlockingCallback();
     
     // TODO get rid of this
     private final Runnable _channelRunner = new Runnable()
@@ -419,23 +424,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         try
         {
-            FutureCallback<Void> callback = new FutureCallback<>();
-            getEndPoint().write(null, callback, bytes);
-            callback.get();
+            getEndPoint().write(_writeBlocker.getPhase(), _writeBlocker, bytes);
+            _writeBlocker.block();
         }
         catch (InterruptedException x)
         {
             throw (IOException)new InterruptedIOException().initCause(x);
         }
-        catch (ExecutionException x)
+        catch (TimeoutException e)
         {
-            Throwable cause = x.getCause();
-            if (cause instanceof IOException)
-                throw (IOException)cause;
-            else if (cause instanceof Exception)
-                throw new IOException(cause);
-            else
-                throw (Error)cause;
+            throw new IOException(e);
         }
     }
 
@@ -549,10 +547,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
 
                         // Wait until we can read
-                        FutureCallback<Void> block=new FutureCallback<>();
-                        getEndPoint().fillInterested(null,block);
-                        LOG.debug("{} block readable on {}",this,block);
-                        block.get();
+                        getEndPoint().fillInterested(_readBlocker.getPhase(),_readBlocker);
+                        LOG.debug("{} block readable on {}",this,_readBlocker);
+                        _readBlocker.block();
 
                         // We will need a buffer to read into
                         if (_requestBuffer==null)
@@ -575,13 +572,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                 }
             }
+            catch (TimeoutException e)
+            {
+                throw new EofException(e);
+            }
             catch (final InterruptedException x)
             {
                 throw new InterruptedIOException(getEndPoint().toString()){{initCause(x);}};
-            }
-            catch (ExecutionException e)
-            {
-                FutureCallback.rethrow(e);
             }
         }
 

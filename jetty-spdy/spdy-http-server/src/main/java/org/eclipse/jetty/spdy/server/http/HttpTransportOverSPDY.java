@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannelConfig;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -120,30 +122,27 @@ public class HttpTransportOverSPDY implements HttpTransport
 
     private void sendToStream(ByteBuffer content, boolean lastContent) throws IOException
     {
-        Future<Void> future = stream.data(new ByteBufferDataInfo(content, lastContent));
+        FutureCallback<Void> future = new FutureCallback<>();
+            
+        stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,future);
+
         try
         {
-            if (endPoint.getIdleTimeout()>0)           
-                future.get(endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS);
-            else
-                future.get();
+            future.get();
         }
         catch (ExecutionException e)
         {
             LOG.debug(e);
             Throwable cause=e.getCause();
-            if (cause instanceof IOException)
-                throw (IOException)cause;
-            throw new RuntimeIOException(cause);
+            throw new EofException(cause);
         }
         catch (Exception e)
         {
-            throw new RuntimeIOException(e);
+            throw new EofException(e);
         }
     }
 
     @Override
-    // TODO move to channel ?
     public void completed()
     {
         LOG.debug("completed");
