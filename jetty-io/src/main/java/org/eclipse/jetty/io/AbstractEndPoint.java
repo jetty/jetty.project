@@ -222,7 +222,7 @@ public abstract class AbstractEndPoint implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s}{%s}",
+        return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s,to=%d}{%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
@@ -232,6 +232,7 @@ public abstract class AbstractEndPoint implements EndPoint
                 isOutputShutdown(),
                 _fillInterest,
                 _writeFlusher,
+                _idleTimeout,
                 getConnection());
     }
 }

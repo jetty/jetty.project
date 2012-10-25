@@ -43,7 +43,7 @@ public class ChatServlet extends HttpServlet
 {
 
     // inner class to hold message queue for each chat room member
-    class Member
+    class Member implements AsyncListener
     {
         final String _name;
         final AtomicReference<AsyncContext> _async=new AtomicReference<>();
@@ -54,6 +54,35 @@ public class ChatServlet extends HttpServlet
             _name=name;
         }
         
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            AsyncContext async = _async.get();
+            if (async!=null && _async.compareAndSet(async,null))
+            {
+                HttpServletResponse response = (HttpServletResponse)async.getResponse();
+                response.setContentType("text/json;charset=utf-8");
+                PrintWriter out=response.getWriter();
+                out.print("{action:\"poll\"}");
+                async.complete();
+            }
+        }
+        
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            event.getAsyncContext().addListener(this);
+        }
+        
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+        
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+        }
     }
 
     Map<String,Map<String,Member>> _rooms = new HashMap<String,Map<String, Member>>();
@@ -145,39 +174,10 @@ public class ChatServlet extends HttpServlet
             else
             {
                 AsyncContext async = request.startAsync();
-                async.setTimeout(20000);
-                async.addListener(new AsyncListener()
-                {
-                    @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
-                    {
-                        
-                    }
-                    
-                    @Override
-                    public void onStartAsync(AsyncEvent event) throws IOException
-                    {
-                        AsyncContext async = member._async.get();
-                        if (member._async.compareAndSet(async,null))
-                        {
-                            HttpServletResponse response = (HttpServletResponse)async.getResponse();
-                            response.setContentType("text/json;charset=utf-8");
-                            PrintWriter out=response.getWriter();
-                            out.print("{action:\"poll\"}");
-                        }
-                    }
-                    
-                    @Override
-                    public void onError(AsyncEvent event) throws IOException
-                    {
-                    }
-                    
-                    @Override
-                    public void onComplete(AsyncEvent event) throws IOException
-                    {
-                    }
-                });
-                member._async.compareAndSet(null,async);
+                async.setTimeout(10000);
+                async.addListener(member);
+                if (!member._async.compareAndSet(null,async))
+                    throw new IllegalStateException();
             }
         }
     }

@@ -22,12 +22,8 @@ import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.FilterConnection;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.server.FilterConnectionFactory;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelConfig;
@@ -49,7 +45,6 @@ import org.eclipse.jetty.spdy.server.http.PushStrategy;
 import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class SpdyServer
 {
@@ -81,14 +76,12 @@ public class SpdyServer
         
         // Http Connector
         HttpConnectionFactory http = new HttpConnectionFactory(config);
-        FilterConnectionFactory filter = new FilterConnectionFactory(http.getProtocol());
-        filter.addFilter(new FilterConnection.DumpToFileFilter("http-"));
-        ServerConnector httpConnector = new ServerConnector(server,filter,http);
+        ServerConnector httpConnector = new ServerConnector(server,http);
         httpConnector.setPort(8080);
-        httpConnector.setIdleTimeout(30000);
-
+        httpConnector.setIdleTimeout(10000);
         server.addConnector(httpConnector);
 
+        
         
         // SSL configurations
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -123,15 +116,10 @@ public class SpdyServer
         NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
         npn.setDefaultProtocol(http.getProtocol());
         npn.setInputBufferSize(1024);
-
-        FilterConnectionFactory npn_filter = new FilterConnectionFactory(npn.getProtocol());
-        npn_filter.addFilter(new FilterConnection.DumpToFileFilter("npn-"));
-
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn_filter.getProtocol());
-        FilterConnectionFactory ssl_filter = new FilterConnectionFactory(ssl.getProtocol());
-        ssl_filter.addFilter(new FilterConnection.DumpToFileFilter("ssl-"));
-
-        ServerConnector spdyConnector = new ServerConnector(server,ssl_filter,ssl,npn_filter,npn,spdy3,spdy2,http);
+        
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
+        
+        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
         spdyConnector.setPort(8443);
 
         server.addConnector(spdyConnector);

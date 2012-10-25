@@ -21,6 +21,8 @@ package org.eclipse.jetty.spdy.server.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.HttpTransport;
@@ -115,15 +118,27 @@ public class HttpTransportOverSPDY implements HttpTransport
         sendToStream(content, lastContent);
     }
 
-    private void sendToStream(ByteBuffer content, boolean lastContent)
+    private void sendToStream(ByteBuffer content, boolean lastContent) throws IOException
     {
+        Future<Void> future = stream.data(new ByteBufferDataInfo(content, lastContent));
         try
         {
-            stream.data(new ByteBufferDataInfo(content, lastContent)).get();
+            if (endPoint.getIdleTimeout()>0)           
+                future.get(endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS);
+            else
+                future.get();
+        }
+        catch (ExecutionException e)
+        {
+            LOG.debug(e);
+            Throwable cause=e.getCause();
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            throw new RuntimeIOException(cause);
         }
         catch (Exception e)
         {
-            endPoint.close();
+            throw new RuntimeIOException(e);
         }
     }
 

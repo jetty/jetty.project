@@ -141,7 +141,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
     private volatile CountDownLatch _stopping;
-    private long _idleTimeout = 200000;
+    private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
 

@@ -315,8 +315,8 @@ public class SslConnection extends AbstractConnection
 
         public DecryptedEndPoint()
         {
-            // TODO does this need idle timeouts
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            setIdleTimeout(getEndPoint().getIdleTimeout());
         }
 
         @Override

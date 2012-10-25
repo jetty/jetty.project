@@ -372,6 +372,14 @@ public class FilterConnection extends AbstractConnection
         public FilteredEndPoint()
         {
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            setIdleTimeout(getEndPoint().getIdleTimeout());
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            super.setIdleTimeout(idleTimeout);
+            getEndPoint().setIdleTimeout(idleTimeout);
         }
 
         @Override
