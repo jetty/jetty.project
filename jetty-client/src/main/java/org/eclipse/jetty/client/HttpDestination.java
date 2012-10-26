@@ -189,16 +189,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                             @Override
                             public void run()
                             {
-                                RequestPair pair = requests.poll();
-                                if (pair != null)
-                                {
-                                    Request request = pair.request;
-                                    requestNotifier.notifyFailure(request, x);
-                                    Response.Listener listener = pair.listener;
-                                    HttpResponse response = new HttpResponse(request, listener);
-                                    responseNotifier.notifyFailure(listener, response, x);
-                                    responseNotifier.notifyComplete(listener, new Result(request, x, response, x));
-                                }
+                                drain(x);
                             }
                         });
                     }
@@ -206,6 +197,20 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 // Try again the idle connections
                 return idleConnections.poll();
             }
+        }
+    }
+
+    private void drain(Throwable x)
+    {
+        RequestPair pair;
+        while ((pair = requests.poll()) != null)
+        {
+            Request request = pair.request;
+            requestNotifier.notifyFailure(request, x);
+            Response.Listener listener = pair.listener;
+            HttpResponse response = new HttpResponse(request, listener);
+            responseNotifier.notifyFailure(listener, response, x);
+            responseNotifier.notifyComplete(listener, new Result(request, x, response, x));
         }
     }
 
@@ -319,13 +324,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             connection.close();
         activeConnections.clear();
 
-        AsynchronousCloseException failure = new AsynchronousCloseException();
-        RequestPair pair;
-        while ((pair = requests.poll()) != null)
-        {
-            requestNotifier.notifyFailure(pair.request, failure);
-            responseNotifier.notifyComplete(pair.listener, new Result(pair.request, failure, null));
-        }
+        drain(new AsynchronousCloseException());
 
         connectionCount.set(0);
 
