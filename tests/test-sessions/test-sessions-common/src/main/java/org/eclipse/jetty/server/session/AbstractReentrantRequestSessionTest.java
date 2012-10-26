@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -27,12 +30,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -54,16 +54,12 @@ public abstract class AbstractReentrantRequestSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
+                ContentResponse response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.status());
             }
             finally
             {
@@ -103,16 +99,12 @@ public abstract class AbstractReentrantRequestSessionTest
                 try
                 {
                     HttpClient client = new HttpClient();
-                    client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                     client.start();
                     try
                     {
-                        ContentExchange exchange = new ContentExchange(true);
-                        exchange.setMethod(HttpMethods.GET);
-                        exchange.setURL("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
-                        client.send(exchange);
-                        exchange.waitForDone();
-                        assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                        Future<ContentResponse> future = client.GET("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
+                        ContentResponse resp = future.get();
+                        assertEquals(HttpServletResponse.SC_OK,resp.status());
                         assertEquals("true",session.getAttribute("reentrant"));
                     }
                     finally

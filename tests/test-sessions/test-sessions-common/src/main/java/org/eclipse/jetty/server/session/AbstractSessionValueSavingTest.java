@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -28,12 +31,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -58,26 +61,21 @@ public abstract class AbstractSessionValueSavingTest
         {
             
                 HttpClient client = new HttpClient();
-                client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                 client.start();
                 try
                 {
                     long sessionTestValue = 0;
 
                     // Perform one request to server1 to create a session
-                    ContentExchange exchange1 = new ContentExchange(true);
-                    exchange1.setMethod(HttpMethods.GET);
-                    exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                    client.send(exchange1);
-                    exchange1.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                    Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                    ContentResponse response1 = future.get();
                     
-                    System.out.println("Checking: " + sessionTestValue + " vs " + exchange1.getResponseContent());
-                    assertTrue(sessionTestValue < Long.parseLong(exchange1.getResponseContent()));
+                    assertEquals(HttpServletResponse.SC_OK, response1.status());                   
+                    assertTrue(sessionTestValue < Long.parseLong(response1.contentAsString()));
                    
-                    sessionTestValue = Long.parseLong(exchange1.getResponseContent());
+                    sessionTestValue = Long.parseLong(response1.contentAsString());
                     
-                    String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -92,20 +90,16 @@ public abstract class AbstractSessionValueSavingTest
                     
                     for (int i = 0; i < 10; ++i)
                     {
-                        ContentExchange exchange2 = new ContentExchange(true);
-                        exchange2.setMethod(HttpMethods.GET);
-                        exchange2.setURL("http://localhost:" + port1 + contextPath + servletMapping);
-                        exchange2.getRequestFields().add("Cookie", sessionCookie);
-                        client.send(exchange2);
-                        exchange2.waitForDone();
-                        assertEquals(HttpServletResponse.SC_OK , exchange2.getResponseStatus());
+                        Request request2 = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping);
+                        request2.header("Cookie", sessionCookie);
+                        future = request2.send();
+                        ContentResponse response2 = future.get();
                         
-                        System.out.println("Checking: " + sessionTestValue + " vs " + exchange2.getResponseContent());
-                        assertTrue(sessionTestValue < Long.parseLong(exchange2.getResponseContent()));
+                        assertEquals(HttpServletResponse.SC_OK , response2.status());                     
+                        assertTrue(sessionTestValue < Long.parseLong(response2.contentAsString()));
+                        sessionTestValue = Long.parseLong(response2.contentAsString());
                         
-                        sessionTestValue = Long.parseLong(exchange2.getResponseContent());
-                        
-                        String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                        String setCookie = response1.headers().getStringField("Set-Cookie");
                         if (setCookie!=null)                    
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                         

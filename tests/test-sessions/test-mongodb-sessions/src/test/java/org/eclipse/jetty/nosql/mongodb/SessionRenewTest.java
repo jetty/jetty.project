@@ -16,23 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.nosql.mongodb;
 
+import org.eclipse.jetty.server.session.AbstractSessionRenewTest;
+import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
 
-/**
- * LastAccessTimeTest
- */
-public class SessionValueSavingTest extends AbstractSessionValueSavingTest
+public class SessionRenewTest extends AbstractSessionRenewTest
 {
+
+    @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new MongoTestServer(port, max, scavenge);
     }
 
-	@Test
-	public void testSessionValueSaving() throws Exception 
-	{
-		super.testSessionValueSaving();
-	} 
+    @Test
+    public void testSessionRenewal() throws Exception
+    {
+        super.testSessionRenewal();
+    }
 }

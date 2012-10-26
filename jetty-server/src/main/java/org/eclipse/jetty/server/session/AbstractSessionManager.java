@@ -75,7 +75,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             new HashSet<SessionTrackingMode>(
                     Arrays.asList(new SessionTrackingMode[]{SessionTrackingMode.COOKIE,SessionTrackingMode.URL})));
 
-    public final static String SESSION_KNOWN_ONLY_TO_AUTHENTICATED="org.eclipse.jetty.security.sessionKnownOnlytoAuthenticated";
+    
 
     /* ------------------------------------------------------------ */
     public final static int __distantFuture=60*60*24*7*52*20;
@@ -129,27 +129,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected final CounterStatistic _sessionsStats = new CounterStatistic();
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
 
-
-    /* ------------------------------------------------------------ */
-    public static HttpSession renewSession (HttpServletRequest request, HttpSession httpSession, boolean authenticated)
-    {
-        Map<String,Object> attributes = new HashMap<String, Object>();
-
-        for (Enumeration<String> e=httpSession.getAttributeNames();e.hasMoreElements();)
-        {
-            String name=e.nextElement();
-            attributes.put(name,httpSession.getAttribute(name));
-            httpSession.removeAttribute(name);
-        }
-
-        httpSession.invalidate();
-        httpSession = request.getSession(true);
-        if (authenticated)
-            httpSession.setAttribute(SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
-        for (Map.Entry<String, Object> entry: attributes.entrySet())
-            httpSession.setAttribute(entry.getKey(),entry.getValue());
-        return httpSession;
-    }
 
     /* ------------------------------------------------------------ */
     public AbstractSessionManager()

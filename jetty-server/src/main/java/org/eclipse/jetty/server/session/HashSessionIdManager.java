@@ -218,5 +218,40 @@ public class HashSessionIdManager extends AbstractSessionIdManager
             sessions.clear();
         }
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
+    {
+        //generate a new id
+        String newClusterId = newSessionId(request.hashCode());
+
+
+        synchronized (this)
+        {
+            Set<WeakReference<HttpSession>> sessions = _sessions.remove(oldClusterId); //get the list of sessions with same id from other contexts
+            if (sessions!=null)
+            {
+                for (Iterator<WeakReference<HttpSession>> iter = sessions.iterator(); iter.hasNext();)
+                {
+                    WeakReference<HttpSession> ref = iter.next();
+                    HttpSession s = ref.get();
+                    if (s == null)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        if (s instanceof AbstractSession)
+                        {
+                            AbstractSession abstractSession = (AbstractSession)s;
+                            abstractSession.getSessionManager().renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                        }
+                    }
+                }
+                _sessions.put(newClusterId, sessions);
+            }
+        }
+    }
 
 }

@@ -386,6 +386,28 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
         }
     }
+    
+  
+    public void addSession(String id)
+    {
+        if (id == null)
+            return;
+
+        synchronized (_sessionIds)
+        {           
+            try
+            {
+                insert(id);
+                _sessionIds.add(id);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem storing session id="+id, e);
+            }
+        }
+    }
+
+
 
     public void removeSession(HttpSession session)
     {
@@ -500,6 +522,35 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     if (manager != null && manager instanceof JDBCSessionManager)
                     {
                         ((JDBCSessionManager)manager).invalidateSession(id);
+                    }
+                }
+            }
+        }
+    }
+
+
+    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
+    {
+        //generate a new id
+        String newClusterId = newSessionId(request.hashCode());
+
+        synchronized (_sessionIds)
+        {
+            removeSession(oldClusterId);//remove the old one from the list (and database)
+            addSession(newClusterId); //add in the new session id to the list (and database)
+
+            //tell all contexts to update the id 
+            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+            for (int i=0; contexts!=null && i<contexts.length; i++)
+            {
+                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                if (sessionHandler != null) 
+                {
+                    SessionManager manager = sessionHandler.getSessionManager();
+
+                    if (manager != null && manager instanceof JDBCSessionManager)
+                    {
+                        ((JDBCSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
                     }
                 }
             }
@@ -655,7 +706,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             " where "+_sessionTableRowId+" = ?";
 
             _updateSession = "update "+_sessionTable+
-            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
+            " set sessionId = ?, lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
 
             _updateSessionNode = "update "+_sessionTable+
             " set lastNode = ? where "+_sessionTableRowId+" = ?";

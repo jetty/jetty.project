@@ -25,17 +25,17 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,7 +73,6 @@ public class MaxInactiveMigrationTest
         testServer1.start();
         testServer2.start();
         client = new HttpClient();
-        client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         client.start();
     }
 
@@ -99,22 +98,19 @@ public class MaxInactiveMigrationTest
         int port=server.getPort();
 
         //Log.getLog().setDebugEnabled(true);
-        
-        ContentExchange exchange1 = new ContentExchange(true);
-        exchange1.setMethod(HttpMethods.GET);
-        exchange1.setURL("http://localhost:" + port + "" + "/test");
+        Request request = client.newRequest("http://localhost:" + port + "" + "/test");
         if (sessionCookie != null)
-            exchange1.getRequestFields().add("Cookie", sessionCookie);
-        client.send(exchange1);
-        exchange1.waitForDone();
-        assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+            request.header("Cookie", sessionCookie);
+        Future<ContentResponse> future = request.send();
+        ContentResponse response = future.get();
+        assertEquals(HttpServletResponse.SC_OK, response.status());
 
-        sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+        sessionCookie = response.headers().getStringField("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-        return exchange1.getResponseContent();
+        return response.contentAsString();
     }
 
 

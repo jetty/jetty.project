@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HashSessionManager extends AbstractSessionManager
 {
-    final static Logger __log = SessionHandler.LOG;
+    final static Logger LOG = SessionHandler.LOG;
 
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
@@ -152,10 +152,10 @@ public class HashSessionManager extends AbstractSessionManager
     public int getSessions()
     {
         int sessions=super.getSessions();
-        if (__log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             if (_sessions.size()!=sessions)
-                __log.warn("sessions: "+_sessions.size()+"!="+sessions);
+                LOG.warn("sessions: "+_sessions.size()+"!="+sessions);
         }
         return sessions;
     }
@@ -225,7 +225,7 @@ public class HashSessionManager extends AbstractSessionManager
                             }
                             catch (Exception e)
                             {
-                                __log.warn(e);
+                                LOG.warn(e);
                             }
                         }
                     };
@@ -320,7 +320,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         catch (Throwable t)
         {
-            __log.warn("Problem scavenging sessions", t);
+            LOG.warn("Problem scavenging sessions", t);
         }
         finally
         {
@@ -348,7 +348,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             catch(Exception e)
             {
-                __log.warn(e);
+                LOG.warn(e);
             }
         }
 
@@ -396,6 +396,37 @@ public class HashSessionManager extends AbstractSessionManager
 
             // check that no new sessions were created while we were iterating
             sessions=new ArrayList<HashedSession>(_sessions.values());
+        }
+    }
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     */
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    {
+        try
+        {
+            Map<String,HashedSession> sessions=_sessions;
+            if (sessions == null)
+                return;
+
+            HashedSession session = sessions.remove(oldClusterId);
+            if (session == null)
+                return;
+
+            session.remove(); //delete any previously saved session
+            session.setClusterId(newClusterId); //update ids
+            session.setNodeId(newNodeId);
+            session.save(); //save updated session: TODO consider only saving file if idled
+            sessions.put(newClusterId, session);
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
         }
     }
 
@@ -467,7 +498,7 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (!_storeDir.canRead())
         {
-            __log.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
+            LOG.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
             return;
         }
 
@@ -503,11 +534,11 @@ public class HashSessionManager extends AbstractSessionManager
                 if (file.exists())
                 {
                     file.delete();
-                    __log.warn("Deleting file for unrestorable session "+idInCuster, e);
+                    LOG.warn("Deleting file for unrestorable session "+idInCuster, e);
                 }
             }
             else
-                __log.warn("Problem restoring session "+idInCuster, e);
+                LOG.warn("Problem restoring session "+idInCuster, e);
 
         }
         return null;
@@ -523,12 +554,12 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (!_storeDir.canWrite())
         {
-            __log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
+            LOG.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
             return;
         }
 
         for (HashedSession session : _sessions.values())
-            session.save(true);
+            session.save(reactivate);
     }
 
     /* ------------------------------------------------------------ */
