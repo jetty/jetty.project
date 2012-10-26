@@ -367,6 +367,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void destroyInstance (Object o)
     throws Exception
     {
@@ -510,7 +511,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
 
             initMultiPart();
-            
+
+            LOG.debug("Filter.init {}",_servlet);
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -591,6 +593,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * @see org.eclipse.jetty.server.UserIdentity.Scope#getContextPath()
      */
+    @Override
     public String getContextPath()
     {
         return _config.getServletContext().getContextPath();
@@ -600,6 +603,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * @see org.eclipse.jetty.server.UserIdentity.Scope#getRoleRefMap()
      */
+    @Override
     public Map<String, String> getRoleRefMap()
     {
         return _roleMap;
@@ -719,6 +723,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     protected class Config extends HolderConfig implements ServletConfig
     {
         /* -------------------------------------------------------- */
+        @Override
         public String getServletName()
         {
             return getName();
@@ -733,6 +738,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         protected MultipartConfigElement _multipartConfig;
 
+        @Override
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -765,6 +771,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return Collections.emptySet();
         }
 
+        @Override
         public Collection<String> getMappings()
         {
             ServletMapping[] mappings =_servletHandler.getServletMappings();
@@ -839,6 +846,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         Stack<Servlet> _stack=new Stack<Servlet>();
 
+        @Override
         public void destroy()
         {
             synchronized(this)
@@ -848,16 +856,19 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
 
+        @Override
         public ServletConfig getServletConfig()
         {
             return _config;
         }
 
+        @Override
         public String getServletInfo()
         {
             return null;
         }
 
+        @Override
         public void init(ServletConfig config) throws ServletException
         {
             synchronized(this)
@@ -882,6 +893,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
 
+        @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             Servlet s;

@@ -758,12 +758,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     protected void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
+        LOG.debug("contextInitialized: {}->{}",e,l);
         l.contextInitialized(e);
     }
 
     /* ------------------------------------------------------------ */
     protected void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
     {
+        LOG.debug("contextDestroyed: {}->{}",e,l);
         l.contextDestroyed(e);
     }
 

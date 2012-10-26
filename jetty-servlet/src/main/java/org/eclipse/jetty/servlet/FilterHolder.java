@@ -114,6 +114,7 @@ public class FilterHolder extends Holder<Filter>
         }
 
         _config=new Config();
+        LOG.debug("Filter.init {}",_filter);
         _filter.init(_config);
     }
 
