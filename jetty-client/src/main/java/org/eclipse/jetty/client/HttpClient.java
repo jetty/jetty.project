@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -308,7 +307,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(final Request request, long timeout, TimeUnit unit, Response.Listener listener)
+    protected void send(final Request request, Response.Listener listener)
     {
         String scheme = request.scheme().toLowerCase();
         if (!Arrays.asList("http", "https").contains(scheme))
@@ -318,17 +317,8 @@ public class HttpClient extends ContainerLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        if (timeout > 0)
-        {
-            scheduler.schedule(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    request.abort("Total timeout elapsed");
-                }
-            }, timeout, unit);
-        }
+        if (listener instanceof ResponseListener.Timed)
+            ((ResponseListener.Timed)listener).schedule(scheduler);
 
         HttpDestination destination = provideDestination(scheme, request.host(), port);
         destination.send(request, listener);

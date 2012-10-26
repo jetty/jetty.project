@@ -160,7 +160,13 @@ public class HttpExchange
                 // Request and response completed
                 LOG.debug("{} complete", this);
                 if (conversation.last() == this)
+                {
+                    HttpExchange first = conversation.exchanges().peekFirst();
+                    Response.Listener listener = first.listener();
+                    if (listener instanceof ResponseListener.Timed)
+                        ((ResponseListener.Timed)listener).cancel();
                     conversation.complete();
+                }
             }
             result = new Result(request(), requestFailure(), response(), responseFailure());
         }

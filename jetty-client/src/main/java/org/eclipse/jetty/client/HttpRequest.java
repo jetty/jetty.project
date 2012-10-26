@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -323,13 +322,7 @@ public class HttpRequest implements Request
     @Override
     public void send(final Response.Listener listener)
     {
-        send(0, TimeUnit.SECONDS, listener);
-    }
-
-    @Override
-    public void send(long timeout, TimeUnit unit, Response.Listener listener)
-    {
-        client.send(this, timeout, unit, listener);
+        client.send(this, listener);
     }
 
     @Override

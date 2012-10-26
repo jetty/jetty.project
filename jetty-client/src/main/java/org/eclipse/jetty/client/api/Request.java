@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -242,24 +241,8 @@ public interface Request
      * as they happen, or when the application needs to efficiently manage the response content.
      *
      * @param listener the listener that receives response events
-     * @see #send(long, TimeUnit, Response.Listener)
      */
     void send(Response.Listener listener);
-
-    /**
-     * Sends this request and asynchronously notifies the given listener for response events.
-     * <p />
-     * This method should be used when the application needs to be notified of the various response events
-     * as they happen, or when the application needs to efficiently manage the response content.
-     * <p />
-     * This method waits for the given timeout before aborting the HTTP conversation. A {@code timeout}
-     * value of zero means to wait indefinitely to the conversation to complete.
-     *
-     * @param timeout the total timeout in the given {@code unit}
-     * @param unit the timeout unit
-     * @param listener the listener that receives response events
-     */
-    void send(long timeout, TimeUnit unit, Response.Listener listener);
 
     /**
      * Attempts to abort the send of this request.
