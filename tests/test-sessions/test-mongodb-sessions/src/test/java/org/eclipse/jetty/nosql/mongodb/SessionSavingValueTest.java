@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
+import java.util.concurrent.Future;
 
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletException;
@@ -33,9 +34,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.nosql.NoSqlSession;
@@ -51,31 +52,31 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
     
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-//        ConnectorServer srv = null;
+        ConnectorServer srv = null;
         try
         {
-//            srv = new ConnectorServer(
-//                    new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:0/jettytest"),
-//                    "org.eclipse.jetty:name=rmiconnectorserver");
-//            srv.start();
+            srv = new ConnectorServer(
+                    new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:0/jettytest"),
+                    "org.eclipse.jetty:name=rmiconnectorserver");
+            srv.start();
             
             MongoTestServer server = new MongoTestServer(port,max,scavenge,true);
 
-//            MBeanContainer mbean = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-//           
-//            server.getServer().getContainer().addEventListener(mbean);
-//            server.getServer().addBean(mbean);
-//
-//            mbean.start();
+            MBeanContainer mbean = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+           
+            //server.getServer().getContainer().addEventListener(mbean);
+            server.getServer().addBean(mbean);
+
+            //mbean.start();
                     
             return server;
 
         }
-//        catch (MalformedURLException e)
-//        {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
+        catch (MalformedURLException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         catch (Exception e)
         {
             // TODO Auto-generated catch block
@@ -86,7 +87,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
     }
 
     @Test
-    @Ignore ("requires mongodb server")
+    //@Ignore ("requires mongodb server")
     public void testSessionValueSaving() throws Exception
     {
         String contextPath = "";
@@ -101,7 +102,6 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
         {
 
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
@@ -109,19 +109,17 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
                 { "0", "null" };
 
                 // Perform one request to server1 to create a session
-                ContentExchange exchange1 = new ContentExchange(true);
-                exchange1.setMethod(HttpMethods.GET);
-                exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                client.send(exchange1);
-                exchange1.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
+                Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                Future<ContentResponse> future = request.send();
+                ContentResponse response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.status());
 
-                String[] sessionTestResponse = exchange1.getResponseContent().split("/");
+                String[] sessionTestResponse = response.contentAsString().split("/");
                 assertTrue(Long.parseLong(sessionTestValue[0]) < Long.parseLong(sessionTestResponse[0]));
 
                 sessionTestValue = sessionTestResponse;
 
-                String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                String sessionCookie = response.headers().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
@@ -135,22 +133,21 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    ContentExchange exchange2 = new ContentExchange(true);
-                    exchange2.setMethod(HttpMethods.GET);
-                    exchange2.setURL("http://localhost:" + port1 + contextPath + servletMapping);
-                    exchange2.getRequestFields().add("Cookie",sessionCookie);
-                    client.send(exchange2);
-                    exchange2.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
+                    Request request2 = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping);
+                    request2.header("Cookie",sessionCookie);
+                    Future<ContentResponse> future2 = request2.send();
+                    ContentResponse response2 = future2.get();
+         
+                    assertEquals(HttpServletResponse.SC_OK,response2.status());
 
-                    sessionTestResponse = exchange2.getResponseContent().split("/");
+                    sessionTestResponse = response2.contentAsString().split("/");
 
                     assertTrue(Long.parseLong(sessionTestValue[0]) < Long.parseLong(sessionTestResponse[0]));
                     assertTrue(Long.parseLong(sessionTestValue[1]) < Long.parseLong(sessionTestResponse[1]));
 
                     sessionTestValue = sessionTestResponse;
 
-                    String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                    String setCookie = response2.headers().getStringField("Set-Cookie");
                     if (setCookie != null)
                         sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
 

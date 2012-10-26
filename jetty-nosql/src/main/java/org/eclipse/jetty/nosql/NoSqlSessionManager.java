@@ -308,6 +308,34 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     }
     
     /* ------------------------------------------------------------ */
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    {
+        
+        // Take the old session out of the list of sessions
+        // Change to the new id
+        // Put it back into the list of sessions
+        // Update permanent storage
+
+        synchronized (this)
+        {
+            try
+            {
+                NoSqlSession session = _sessions.remove(oldClusterId);
+                update (session, newClusterId, newNodeId);
+                session.setClusterId(newClusterId);
+                session.setNodeId(newNodeId);
+                _sessions.put(newClusterId, session);
+            }
+            catch (Exception e)
+            {
+                __log.warn(e);
+            }
+        }
+    }
+
+    
+    /* ------------------------------------------------------------ */
     abstract protected NoSqlSession loadSession(String clusterId);
     
     /* ------------------------------------------------------------ */
@@ -318,5 +346,8 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
 
     /* ------------------------------------------------------------ */
     abstract protected boolean remove(NoSqlSession session);
+
+    /* ------------------------------------------------------------ */
+    abstract protected void update(NoSqlSession session, String newClusterId, String newNodeId) throws Exception;
     
 }

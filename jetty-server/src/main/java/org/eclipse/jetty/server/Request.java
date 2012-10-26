@@ -69,6 +69,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
@@ -1218,7 +1219,15 @@ public class Request implements HttpServletRequest
         if (session == null)
             throw new IllegalStateException("No session");
 
-        AbstractSessionManager.renewSession(this, session, getRemoteUser()!=null);
+        if (session instanceof AbstractSession)
+        {
+            AbstractSession abstractSession =  ((AbstractSession)session);
+            abstractSession.renewId(this);
+            if (getRemoteUser() != null)
+                abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+            if (abstractSession.isIdChanged())
+                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
+        }
 
         return session.getId();
     }

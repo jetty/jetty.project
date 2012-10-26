@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -33,16 +36,14 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractSessionInvalidateAndCreateTest
@@ -107,7 +108,6 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
@@ -115,26 +115,21 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
 
                 // Create the session
-                ContentExchange exchange1 = new ContentExchange(true);
-                exchange1.setMethod(HttpMethods.GET);
-                exchange1.setURL(url + "?action=init");
-                client.send(exchange1);
-                exchange1.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
-                String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                Future<ContentResponse> future = client.GET(url + "?action=init");
+                ContentResponse response1 = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response1.status());
+                String sessionCookie = response1.headers().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
 
                 // Make a request which will invalidate the existing session and create a new one
-                ContentExchange exchange2 = new ContentExchange(true);
-                exchange2.setMethod(HttpMethods.GET);
-                exchange2.setURL(url + "?action=test");
-                exchange2.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange2);
-                exchange2.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
+                Request request2 = client.newRequest(url + "?action=test");
+                request2.header("Cookie", sessionCookie);
+                future = request2.send();
+                ContentResponse response2 = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response2.status());
 
                 // Wait for the scavenger to run, waiting 2.5 times the scavenger period
                 pause(scavengePeriod);

@@ -36,6 +36,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
@@ -49,10 +50,10 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
     final static Logger LOG = SessionHandler.LOG;
-
+    public final static String SESSION_KNOWN_ONLY_TO_AUTHENTICATED="org.eclipse.jetty.security.sessionKnownOnlytoAuthenticated";
+    private  String _clusterId; // ID unique within cluster
+    private  String _nodeId;    // ID unique within node
     private final AbstractSessionManager _manager;
-    private final String _clusterId; // ID unique within cluster
-    private final String _nodeId;    // ID unique within node
     private final Map<String,Object> _attributes=new HashMap<String, Object>();
     private boolean _idChanged;
     private final long _created;
@@ -271,7 +272,34 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return (String[])_attributes.keySet().toArray(a);
         }
     }
+
+
+    /* ------------------------------------------------------------ */
+    public void renewId(HttpServletRequest request)
+    {
+        _manager._sessionIdManager.renewSessionId(getClusterId(), getNodeId(), request); 
+        setIdChanged(true);
+    }
+       
+    /* ------------------------------------------------------------- */
+    public SessionManager getSessionManager()
+    {
+        return _manager;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void setClusterId (String clusterId)
+    {
+        _clusterId = clusterId;
+    }
     
+    /* ------------------------------------------------------------ */
+    protected void setNodeId (String nodeId)
+    {
+        _nodeId = nodeId;
+    }
+    
+
     /* ------------------------------------------------------------ */
     protected boolean access(long time)
     {

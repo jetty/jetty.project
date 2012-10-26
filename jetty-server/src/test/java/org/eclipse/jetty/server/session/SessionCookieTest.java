@@ -104,6 +104,13 @@ public class SessionCookieTest
             return clusterId+'.'+_workerName;
         }
 
+        @Override
+        public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
     }
 
     public class MockSessionManager extends AbstractSessionManager
@@ -147,6 +154,13 @@ public class SessionCookieTest
         protected boolean removeSession(String idInCluster)
         {
             return false;
+        }
+
+        @Override
+        public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+        {
+            // TODO Auto-generated method stub
+            
         }
 
     }

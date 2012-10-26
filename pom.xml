@@ -420,6 +420,8 @@
     <module>examples/embedded</module>
     <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
+    <module>jetty-nosql</module>
+    <module>tests/test-sessions</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
@@ -431,7 +433,6 @@
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
-    <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
     <module>test-jetty-nested</module>
     -->

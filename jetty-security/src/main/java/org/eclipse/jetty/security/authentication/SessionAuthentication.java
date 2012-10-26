@@ -33,6 +33,7 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -107,7 +108,7 @@ public class SessionAuthentication implements Authentication.User, Serializable,
         if (security!=null)
             security.logout(this);
         if (_session!=null)
-            _session.removeAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED);
+            _session.removeAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED);
     }
 
     @Override
