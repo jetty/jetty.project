@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -134,7 +135,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         Request request = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .content(new BytesContentProvider(content));
+                .content(new InputStreamContentProvider(new ByteArrayInputStream(content)));
         request.send(new TimedResponseListener(2 * timeout, TimeUnit.MILLISECONDS, request, new BufferingResponseListener()
         {
             @Override

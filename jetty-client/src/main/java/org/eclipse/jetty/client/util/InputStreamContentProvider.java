@@ -19,44 +19,34 @@
 package org.eclipse.jetty.client.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.util.BufferUtil;
 
-public class PathContentProvider implements ContentProvider
+public class InputStreamContentProvider implements ContentProvider
 {
-    private final Path filePath;
-    private final long fileSize;
+    private final InputStream stream;
     private final int bufferSize;
 
-    public PathContentProvider(Path filePath) throws IOException
+    public InputStreamContentProvider(InputStream stream)
     {
-        this(filePath, 4096);
+        this(stream, 4096);
     }
 
-    public PathContentProvider(Path filePath, int bufferSize) throws IOException
+    public InputStreamContentProvider(InputStream stream, int bufferSize)
     {
-        if (!Files.isRegularFile(filePath))
-            throw new NoSuchFileException(filePath.toString());
-        if (!Files.isReadable(filePath))
-            throw new AccessDeniedException(filePath.toString());
-        this.filePath = filePath;
-        this.fileSize = Files.size(filePath);
+        this.stream = stream;
         this.bufferSize = bufferSize;
     }
 
     @Override
     public long length()
     {
-        return fileSize;
+        return -1;
     }
 
     @Override
@@ -64,14 +54,13 @@ public class PathContentProvider implements ContentProvider
     {
         return new Iterator<ByteBuffer>()
         {
-            private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-            private SeekableByteChannel channel;
-            private long position;
+            private final byte[] buffer = new byte[bufferSize];
+            public boolean eof;
 
             @Override
             public boolean hasNext()
             {
-                return position < length();
+                return !eof;
             }
 
             @Override
@@ -79,17 +68,22 @@ public class PathContentProvider implements ContentProvider
             {
                 try
                 {
-                    if (channel == null)
-                        channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-
-                    buffer.clear();
-                    int read = channel.read(buffer);
-                    if (read < 0)
-                        throw new NoSuchElementException();
-
-                    position += read;
-                    buffer.flip();
-                    return buffer;
+                    int read = stream.read(buffer);
+                    if (read > 0)
+                    {
+                        return ByteBuffer.wrap(buffer, 0, read);
+                    }
+                    else if (read < 0)
+                    {
+                        if (eof)
+                            throw new NoSuchElementException();
+                        eof = true;
+                        return BufferUtil.EMPTY_BUFFER;
+                    }
+                    else
+                    {
+                        return BufferUtil.EMPTY_BUFFER;
+                    }
                 }
                 catch (IOException x)
                 {
