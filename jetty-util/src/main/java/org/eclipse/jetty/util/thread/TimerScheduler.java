@@ -87,5 +87,14 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
         {
             _task.run();
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s.%s@%x",
+                    TimerScheduler.class.getSimpleName(),
+                    SimpleTask.class.getSimpleName(),
+                    hashCode());
+        }
     }
 }
