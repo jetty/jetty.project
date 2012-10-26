@@ -109,12 +109,12 @@ public class HttpConnection extends AbstractConnection implements Connection
         // Save the old idle timeout to restore it
         EndPoint endPoint = getEndPoint();
         idleTimeout = endPoint.getIdleTimeout();
-        endPoint.setIdleTimeout(request.idleTimeout());
+        endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.conversation());
+        HttpConversation conversation = client.getConversation(request.getConversationID());
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
-        conversation.exchanges().offer(exchange);
+        conversation.getExchanges().offer(exchange);
 
         if (listener instanceof ResponseListener.Timed)
             ((ResponseListener.Timed)listener).schedule(client.getScheduler());
@@ -124,32 +124,32 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     private void normalizeRequest(Request request)
     {
-        if (request.method() == null)
+        if (request.getMethod() == null)
             request.method(HttpMethod.GET);
 
-        if (request.version() == null)
+        if (request.getVersion() == null)
             request.version(HttpVersion.HTTP_1_1);
 
-        if (request.agent() == null)
+        if (request.getAgent() == null)
             request.agent(client.getUserAgent());
 
-        if (request.idleTimeout() <= 0)
+        if (request.getIdleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout());
 
-        HttpMethod method = request.method();
-        HttpVersion version = request.version();
-        HttpFields headers = request.headers();
-        ContentProvider content = request.content();
+        HttpMethod method = request.getMethod();
+        HttpVersion version = request.getVersion();
+        HttpFields headers = request.getHeaders();
+        ContentProvider content = request.getContent();
 
         // Make sure the path is there
-        String path = request.path();
+        String path = request.getPath();
         if (path.matches("\\s*"))
         {
             path = "/";
             request.path(path);
         }
 
-        Fields fields = request.params();
+        Fields fields = request.getParams();
         if (!fields.isEmpty())
         {
             StringBuilder params = new StringBuilder();
@@ -169,7 +169,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             }
 
             // Behave as a GET, adding the params to the path, if it's a POST with some content
-            if (method == HttpMethod.POST && request.content() != null)
+            if (method == HttpMethod.POST && request.getContent() != null)
                 method = HttpMethod.GET;
 
             switch (method)
@@ -195,8 +195,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
             {
-                String value = request.host();
-                int port = request.port();
+                String value = request.getHost();
+                int port = request.getPort();
                 if (port > 0)
                     value += ":" + port;
                 headers.put(HttpHeader.HOST, value);
@@ -206,7 +206,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         // Add content headers
         if (content != null)
         {
-            long contentLength = content.length();
+            long contentLength = content.getLength();
             if (contentLength >= 0)
             {
                 if (!headers.containsKey(HttpHeader.CONTENT_LENGTH.asString()))
@@ -220,7 +220,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.path());
+        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.getPath());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {
@@ -235,7 +235,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.getURI());
         if (authnResult != null)
             authnResult.apply(request);
 
@@ -317,7 +317,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
-                HttpFields responseHeaders = exchange.response().headers();
+                HttpFields responseHeaders = exchange.getResponse().getHeaders();
                 Enumeration<String> values = responseHeaders.getValues(HttpHeader.CONNECTION.asString(), ",");
                 if (values != null)
                 {

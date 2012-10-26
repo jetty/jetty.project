@@ -54,7 +54,7 @@ public class PathContentProvider implements ContentProvider
     }
 
     @Override
-    public long length()
+    public long getLength()
     {
         return fileSize;
     }
@@ -71,7 +71,7 @@ public class PathContentProvider implements ContentProvider
             @Override
             public boolean hasNext()
             {
-                return position < length();
+                return position < getLength();
             }
 
             @Override

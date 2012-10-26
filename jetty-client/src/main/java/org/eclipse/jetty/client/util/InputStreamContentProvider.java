@@ -44,7 +44,7 @@ public class InputStreamContentProvider implements ContentProvider
     }
 
     @Override
-    public long length()
+    public long getLength()
     {
         return -1;
     }

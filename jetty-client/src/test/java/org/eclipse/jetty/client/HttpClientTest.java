@@ -73,7 +73,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         String path = "/";
         Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
 
@@ -111,9 +111,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(1, destinations.size());
         Destination destination = destinations.get(0);
         Assert.assertNotNull(destination);
-        Assert.assertEquals(scheme, destination.scheme());
-        Assert.assertEquals(host, destination.host());
-        Assert.assertEquals(port, destination.port());
+        Assert.assertEquals(scheme, destination.getScheme());
+        Assert.assertEquals(host, destination.getHost());
+        Assert.assertEquals(port, destination.getPort());
     }
 
     @Test
@@ -124,7 +124,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -144,8 +144,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        byte[] content = response.content();
+        Assert.assertEquals(200, response.getStatus());
+        byte[] content = response.getContent();
         Assert.assertArrayEquals(data, content);
     }
 
@@ -176,8 +176,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        String content = new String(response.content(), "UTF-8");
+        Assert.assertEquals(200, response.getStatus());
+        String content = new String(response.getContent(), "UTF-8");
         Assert.assertEquals(value1 + "empty", content);
     }
 
@@ -212,8 +212,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        String content = new String(response.content(), "UTF-8");
+        Assert.assertEquals(200, response.getStatus());
+        String content = new String(response.getContent(), "UTF-8");
         Assert.assertEquals(value11 + value12 + value2, content);
     }
 
@@ -242,8 +242,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .param(paramName, paramValue).send().get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(paramValue, new String(response.content(), "UTF-8"));
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
     }
 
     @Test
@@ -274,8 +274,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send().get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertArrayEquals(content, response.content());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(content, response.getContent());
     }
 
     @Test
@@ -309,7 +309,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(200, response.status());
+                        Assert.assertEquals(200, response.getStatus());
                         successLatch.countDown();
                     }
                 });
@@ -329,7 +329,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(200, response.status());
+                        Assert.assertEquals(200, response.getStatus());
                         successLatch.countDown();
                     }
                 });
@@ -387,7 +387,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(200, response.status());
+                        Assert.assertEquals(200, response.getStatus());
                         latch.countDown();
                     }
                 });
@@ -477,7 +477,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .content(new ContentProvider()
                 {
                     @Override
-                    public long length()
+                    public long getLength()
                     {
                         return -1;
                     }
@@ -572,8 +572,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send()
                 .get(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(200, response.status());
-        Assert.assertArrayEquals(data, response.content());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 
     @Slow
@@ -619,7 +619,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send().get(3 * idleTimeout, TimeUnit.MILLISECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     // TODO: add a test to idle timeout a request that is in the queue...

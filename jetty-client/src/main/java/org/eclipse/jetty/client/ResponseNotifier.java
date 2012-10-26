@@ -120,13 +120,13 @@ public class ResponseNotifier
         notifyBegin(listener, response);
         notifyHeaders(listener, response);
         if (response instanceof ContentResponse)
-            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
         notifySuccess(listener, response);
     }
 
     public void forwardSuccessComplete(Response.Listener listener, Request request, Response response)
     {
-        HttpConversation conversation = client.getConversation(request.conversation());
+        HttpConversation conversation = client.getConversation(request.getConversationID());
         forwardSuccess(listener, response);
         conversation.complete();
         notifyComplete(listener, new Result(request, response));
@@ -137,13 +137,13 @@ public class ResponseNotifier
         notifyBegin(listener, response);
         notifyHeaders(listener, response);
         if (response instanceof ContentResponse)
-            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).content()));
+            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
         notifyFailure(listener, response, failure);
     }
 
     public void forwardFailureComplete(Response.Listener listener, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
-        HttpConversation conversation = client.getConversation(request.conversation());
+        HttpConversation conversation = client.getConversation(request.getConversationID());
         forwardFailure(listener, response, responseFailure);
         conversation.complete();
         notifyComplete(listener, new Result(request, requestFailure, response, responseFailure));

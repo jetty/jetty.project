@@ -153,7 +153,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             @Override
             public void onHeaders(Response response)
             {
-                String content = response.headers().get("X-Content");
+                String content = response.getHeaders().get("X-Content");
                 if (content != null)
                     contentLength.set(Integer.parseInt(content));
             }

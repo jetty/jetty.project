@@ -324,7 +324,7 @@ public class GZIPContentDecoder implements ContentDecoder
         flags = 0;
     }
 
-    protected boolean finished()
+    protected boolean isFinished()
     {
         return state == State.INITIAL;
     }

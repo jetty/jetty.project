@@ -39,32 +39,32 @@ public interface Response
     /**
      * @return the conversation id
      */
-    long conversation();
+    long getConversationID();
 
     /**
      * @return the response listener passed to {@link Request#send(Listener)}
      */
-    Listener listener();
+    Listener getListener();
 
     /**
      * @return the HTTP version of this response, such as "HTTP/1.1"
      */
-    HttpVersion version();
+    HttpVersion getVersion();
 
     /**
      * @return the HTTP status code of this response, such as 200 or 404
      */
-    int status();
+    int getStatus();
 
     /**
-     * @return the HTTP reason associated to the {@link #status()}
+     * @return the HTTP reason associated to the {@link #getStatus}
      */
-    String reason();
+    String getReason();
 
     /**
      * @return the headers of this response
      */
-    HttpFields headers();
+    HttpFields getHeaders();
 
     /**
      * Attempts to abort the receive of this response.

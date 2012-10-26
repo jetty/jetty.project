@@ -40,39 +40,39 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
-        return response.conversation();
+        return response.getConversationID();
     }
 
     @Override
-    public Listener listener()
+    public Listener getListener()
     {
-        return response.listener();
+        return response.getListener();
     }
 
     @Override
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
-        return response.version();
+        return response.getVersion();
     }
 
     @Override
-    public int status()
+    public int getStatus()
     {
-        return response.status();
+        return response.getStatus();
     }
 
     @Override
-    public String reason()
+    public String getReason()
     {
-        return response.reason();
+        return response.getReason();
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
-        return response.headers();
+        return response.getHeaders();
     }
 
     @Override
@@ -82,18 +82,18 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public byte[] content()
+    public byte[] getContent()
     {
         return content;
     }
 
     @Override
-    public String contentAsString()
+    public String getContentAsString()
     {
         String encoding = this.encoding;
         try
         {
-            return new String(content(), encoding == null ? "UTF-8" : encoding);
+            return new String(getContent(), encoding == null ? "UTF-8" : encoding);
         }
         catch (UnsupportedEncodingException e)
         {
@@ -106,9 +106,9 @@ public class HttpContentResponse implements ContentResponse
     {
         return String.format("%s[%s %d %s - %d bytes]",
                 HttpContentResponse.class.getSimpleName(),
-                version(),
-                status(),
-                reason(),
-                content().length);
+                getVersion(),
+                getStatus(),
+                getReason(),
+                getContent().length);
     }
 }

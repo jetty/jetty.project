@@ -51,32 +51,32 @@ public class HttpExchange
         this.response = new HttpResponse(request, listener);
     }
 
-    public HttpConversation conversation()
+    public HttpConversation getConversation()
     {
         return conversation;
     }
 
-    public Request request()
+    public Request getRequest()
     {
         return request;
     }
 
-    public Throwable requestFailure()
+    public Throwable getRequestFailure()
     {
         return requestFailure;
     }
 
-    public Response.Listener listener()
+    public Response.Listener getResponseListener()
     {
         return listener;
     }
 
-    public HttpResponse response()
+    public HttpResponse getResponse()
     {
         return response;
     }
 
-    public Throwable responseFailure()
+    public Throwable getResponseFailure()
     {
         return responseFailure;
     }
@@ -159,16 +159,16 @@ public class HttpExchange
             {
                 // Request and response completed
                 LOG.debug("{} complete", this);
-                if (conversation.last() == this)
+                if (conversation.getLastExchange() == this)
                 {
-                    HttpExchange first = conversation.exchanges().peekFirst();
-                    Response.Listener listener = first.listener();
+                    HttpExchange first = conversation.getExchanges().peekFirst();
+                    Response.Listener listener = first.getResponseListener();
                     if (listener instanceof ResponseListener.Timed)
                         ((ResponseListener.Timed)listener).cancel();
                     conversation.complete();
                 }
             }
-            result = new Result(request(), requestFailure(), response(), responseFailure());
+            result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }
 
         return new AtomicMarkableReference<>(result, modified);

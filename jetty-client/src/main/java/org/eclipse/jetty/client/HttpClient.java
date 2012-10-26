@@ -309,18 +309,18 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void send(final Request request, Response.Listener listener)
     {
-        String scheme = request.scheme().toLowerCase();
+        String scheme = request.getScheme().toLowerCase();
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        int port = request.port();
+        int port = request.getPort();
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
         if (listener instanceof ResponseListener.Timed)
             ((ResponseListener.Timed)listener).schedule(scheduler);
 
-        HttpDestination destination = provideDestination(scheme, request.host(), port);
+        HttpDestination destination = provideDestination(scheme, request.getHost(), port);
         destination.send(request, listener);
     }
 
@@ -335,7 +335,7 @@ public class HttpClient extends ContainerLifeCycle
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(destination.host(), destination.port()));
+            channel.connect(new InetSocketAddress(destination.getHost(), destination.getPort()));
 
             Future<Connection> result = new ConnectionCallback(destination, callback);
             selectorManager.connect(channel, result);
@@ -612,11 +612,11 @@ public class HttpClient extends ContainerLifeCycle
             HttpDestination destination = callback.destination;
 
             SslContextFactory sslContextFactory = getSslContextFactory();
-            if ("https".equals(destination.scheme()))
+            if ("https".equals(destination.getScheme()))
             {
                 if (sslContextFactory == null)
                 {
-                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.scheme() + " requests");
+                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
                     callback.failed(null, failure);
                     throw failure;
                 }

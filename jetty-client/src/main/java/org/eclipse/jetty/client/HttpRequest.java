@@ -103,13 +103,13 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
         return conversation;
     }
 
     @Override
-    public String scheme()
+    public String getScheme()
     {
         return scheme;
     }
@@ -122,19 +122,19 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String host()
+    public String getHost()
     {
         return host;
     }
 
     @Override
-    public int port()
+    public int getPort()
     {
         return port;
     }
 
     @Override
-    public HttpMethod method()
+    public HttpMethod getMethod()
     {
         return method;
     }
@@ -147,7 +147,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String path()
+    public String getPath()
     {
         return path;
     }
@@ -160,19 +160,19 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String uri()
+    public String getURI()
     {
-        String scheme = scheme();
-        String result = scheme + "://" + host();
-        int port = port();
+        String scheme = getScheme();
+        String result = scheme + "://" + getHost();
+        int port = getPort();
         result += "http".equals(scheme) && port != 80 ? ":" + port : "";
         result += "https".equals(scheme) && port != 443 ? ":" + port : "";
-        result += path();
+        result += getPath();
         return result;
     }
 
     @Override
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
         return version;
     }
@@ -192,13 +192,13 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Fields params()
+    public Fields getParams()
     {
         return params;
     }
 
     @Override
-    public String agent()
+    public String getAgent()
     {
         return headers.get(HttpHeader.USER_AGENT);
     }
@@ -228,19 +228,19 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Map<String, Object> attributes()
+    public Map<String, Object> getAttributes()
     {
         return attributes;
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
         return headers;
     }
 
     @Override
-    public List<Listener> listeners()
+    public List<Listener> getListeners()
     {
         return listeners;
     }
@@ -253,7 +253,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public ContentProvider content()
+    public ContentProvider getContent()
     {
         return content;
     }
@@ -286,7 +286,7 @@ public class HttpRequest implements Request
 //    }
 
     @Override
-    public boolean followRedirects()
+    public boolean isFollowRedirects()
     {
         return followRedirects;
     }
@@ -299,7 +299,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long idleTimeout()
+    public long getIdleTimeout()
     {
         return idleTimeout;
     }
@@ -329,9 +329,9 @@ public class HttpRequest implements Request
     public boolean abort(String reason)
     {
         aborted = true;
-        if (client.provideDestination(scheme(), host(), port()).abort(this, reason))
+        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, reason))
             return true;
-        HttpConversation conversation = client.getConversation(conversation());
+        HttpConversation conversation = client.getConversation(getConversationID());
         return conversation.abort(reason);
     }
 
@@ -344,6 +344,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), method(), path(), version(), hashCode());
+        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

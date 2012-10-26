@@ -80,30 +80,30 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     }
 
     @Override
-    public String scheme()
+    public String getScheme()
     {
         return scheme;
     }
 
     @Override
-    public String host()
+    public String getHost()
     {
         return host;
     }
 
     @Override
-    public int port()
+    public int getPort()
     {
         return port;
     }
 
     public void send(Request request, Response.Listener listener)
     {
-        if (!scheme.equals(request.scheme()))
-            throw new IllegalArgumentException("Invalid request scheme " + request.scheme() + " for destination " + this);
-        if (!host.equals(request.host()))
-            throw new IllegalArgumentException("Invalid request host " + request.host() + " for destination " + this);
-        int port = request.port();
+        if (!scheme.equals(request.getScheme()))
+            throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
+        if (!host.equals(request.getHost()))
+            throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
+        int port = request.getPort();
         if (port >= 0 && this.port != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
 
@@ -379,7 +379,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s(%s://%s:%d)", HttpDestination.class.getSimpleName(), scheme(), host(), port());
+        return String.format("%s(%s://%s:%d)", HttpDestination.class.getSimpleName(), getScheme(), getHost(), getPort());
     }
 
     private static class RequestPair

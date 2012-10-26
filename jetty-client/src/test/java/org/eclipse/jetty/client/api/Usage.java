@@ -45,13 +45,13 @@ public class Usage
         HttpClient client = new HttpClient();
         Future<ContentResponse> responseFuture = client.GET("http://localhost:8080/foo");
         Response response = responseFuture.get();
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
         // Headers abstraction needed for:
         // 1. case insensitivity
         // 2. multi values
         // 3. value conversion
         // Reuse SPDY's ?
-        response.headers().get("Content-Length");
+        response.getHeaders().get("Content-Length");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class Usage
                 .idleTimeout(5000L);
         Future<ContentResponse> responseFuture = request.send();
         Response response = responseFuture.get();
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -93,7 +93,7 @@ public class Usage
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Response response = responseRef.get();
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -115,7 +115,7 @@ public class Usage
                     {
                     }
                 }).send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class Usage
             connection.send(request, listener);
             Response response = listener.get(5, TimeUnit.SECONDS);
             Assert.assertNotNull(response);
-            Assert.assertEquals(200, response.status());
+            Assert.assertEquals(200, response.getStatus());
         }
     }
 
@@ -139,7 +139,7 @@ public class Usage
         HttpClient client = new HttpClient();
         Response response = client.newRequest("localhost", 8080)
                 .content(new PathContentProvider(Paths.get(""))).send().get();
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -148,7 +148,7 @@ public class Usage
         HttpClient client = new HttpClient();
         client.getCookieStore().addCookie(client.getDestination("http", "host", 8080), new HttpCookie("name", "value"));
         Response response = client.newRequest("host", 8080).send().get();
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
 //    @Test
@@ -163,7 +163,7 @@ public class Usage
     {
         HttpClient client = new HttpClient();
         client.setFollowRedirects(false);
-        client.newRequest("localhost", 8080).followRedirects(true).send().get().status(); // 200
+        client.newRequest("localhost", 8080).followRedirects(true).send().get().getStatus(); // 200
     }
 
     @Test
@@ -174,7 +174,7 @@ public class Usage
         client.newRequest("localhost", 8080).send(listener);
         // Call to get() blocks until the headers arrived
         Response response = listener.get(5, TimeUnit.SECONDS);
-        if (response.status() == 200)
+        if (response.getStatus() == 200)
         {
             // Solution 1: use input stream
             byte[] buffer = new byte[256];

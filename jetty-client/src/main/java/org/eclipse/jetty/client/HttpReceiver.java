@@ -133,36 +133,36 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                HttpConversation conversation = exchange.conversation();
-                HttpResponse response = exchange.response();
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
 
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
-                Response.Listener currentListener = exchange.listener();
-                Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
+                Response.Listener currentListener = exchange.getResponseListener();
+                Response.Listener initialListener = conversation.getExchanges().peekFirst().getResponseListener();
                 HttpClient client = connection.getHttpClient();
-                ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.request(), response);
+                ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
                 Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
                 if (handlerListener == null)
                 {
-                    conversation.last(exchange);
+                    conversation.setLastExchange(exchange);
                     if (currentListener == initialListener)
-                        conversation.listener(initialListener);
+                        conversation.setResponseListener(initialListener);
                     else
-                        conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
+                        conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
                 }
                 else
                 {
                     LOG.debug("Found protocol handler {}", protocolHandler);
                     if (currentListener == initialListener)
-                        conversation.listener(handlerListener);
+                        conversation.setResponseListener(handlerListener);
                     else
-                        conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, handlerListener));
+                        conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, handlerListener));
                 }
 
                 LOG.debug("Receiving {}", response);
-                responseNotifier.notifyBegin(conversation.listener(), response);
+                responseNotifier.notifyBegin(conversation.getResponseListener(), response);
             }
         }
         return false;
@@ -177,7 +177,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                exchange.response().headers().add(name, value);
+                exchange.getResponse().getHeaders().add(name, value);
                 switch (name.toLowerCase())
                 {
                     case "set-cookie":
@@ -209,12 +209,12 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                HttpConversation conversation = exchange.conversation();
-                HttpResponse response = exchange.response();
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
                 LOG.debug("Headers {}", response);
-                responseNotifier.notifyHeaders(conversation.listener(), response);
+                responseNotifier.notifyHeaders(conversation.getResponseListener(), response);
 
-                Enumeration<String> contentEncodings = response.headers().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
+                Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
                 if (contentEncodings != null)
                 {
                     for (ContentDecoder.Factory factory : connection.getHttpClient().getContentDecoderFactories())
@@ -243,8 +243,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                HttpConversation conversation = exchange.conversation();
-                HttpResponse response = exchange.response();
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
                 LOG.debug("Content {}: {} bytes", response, buffer.remaining());
 
                 ContentDecoder decoder = this.decoder;
@@ -254,7 +254,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
                 }
 
-                responseNotifier.notifyContent(conversation.listener(), response, buffer);
+                responseNotifier.notifyContent(conversation.getResponseListener(), response, buffer);
             }
         }
         return false;
@@ -286,8 +286,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
         exchange.terminateResponse();
 
-        HttpResponse response = exchange.response();
-        Response.Listener listener = exchange.conversation().listener();
+        HttpResponse response = exchange.getResponse();
+        Response.Listener listener = exchange.getConversation().getResponseListener();
         responseNotifier.notifySuccess(listener, response);
         LOG.debug("Received {}", response);
 
@@ -328,9 +328,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
         exchange.terminateResponse();
 
-        HttpResponse response = exchange.response();
-        HttpConversation conversation = exchange.conversation();
-        responseNotifier.notifyFailure(conversation.listener(), response, failure);
+        HttpResponse response = exchange.getResponse();
+        HttpConversation conversation = exchange.getConversation();
+        responseNotifier.notifyFailure(conversation.getResponseListener(), response, failure);
         LOG.debug("Failed {} {}", response, failure);
 
         Result result = completion.getReference();
@@ -338,7 +338,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             connection.complete(exchange, false);
 
-            responseNotifier.notifyComplete(conversation.listener(), result);
+            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
         }
 
         return true;
@@ -361,7 +361,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public void badMessage(int status, String reason)
     {
         HttpExchange exchange = connection.getExchange();
-        HttpResponse response = exchange.response();
+        HttpResponse response = exchange.getResponse();
         response.status(status).reason(reason);
         failAndClose(new HttpResponseException("HTTP protocol violation: bad response", response));
     }
@@ -375,7 +375,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
     public boolean abort(HttpExchange exchange, String reason)
     {
-        return fail(new HttpResponseException(reason == null ? "Response aborted" : reason, exchange.response()));
+        return fail(new HttpResponseException(reason == null ? "Response aborted" : reason, exchange.getResponse()));
     }
 
     private boolean updateState(State from, State to)

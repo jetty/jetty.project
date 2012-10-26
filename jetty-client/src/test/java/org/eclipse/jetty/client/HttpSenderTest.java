@@ -258,7 +258,7 @@ public class HttpSenderTest
         request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8")))
         {
             @Override
-            public long length()
+            public long getLength()
             {
                 return -1;
             }

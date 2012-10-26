@@ -75,7 +75,7 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     public ContentResponse get() throws InterruptedException, ExecutionException
     {
         latch.await();
-        return result();
+        return getResult();
     }
 
     @Override
@@ -87,10 +87,10 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
             request.abort("Total timeout elapsed");
             throw new TimeoutException();
         }
-        return result();
+        return getResult();
     }
 
-    private ContentResponse result() throws ExecutionException
+    private ContentResponse getResult() throws ExecutionException
     {
         if (isCancelled())
             throw (CancellationException)new CancellationException().initCause(failure);

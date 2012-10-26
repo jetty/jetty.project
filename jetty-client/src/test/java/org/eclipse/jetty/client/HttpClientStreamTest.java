@@ -84,7 +84,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 .get(10, TimeUnit.SECONDS);
         long responseTime = System.nanoTime();
 
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(requestTime.get() <= responseTime);
 
         // Give some time to the server to consume the request content
@@ -114,7 +114,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);
@@ -162,7 +162,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);

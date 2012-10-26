@@ -48,26 +48,26 @@ public class HttpConversation implements Attributes
         return id;
     }
 
-    public Deque<HttpExchange> exchanges()
+    public Deque<HttpExchange> getExchanges()
     {
         return exchanges;
     }
 
-    public Response.Listener listener()
+    public Response.Listener getResponseListener()
     {
         return listener;
     }
 
-    public void listener(Response.Listener listener)
+    public void setResponseListener(Response.Listener listener)
     {
         this.listener = listener;
     }
 
     /**
      * @return the exchange that has been identified as the last of this conversation
-     * @see #last(HttpExchange)
+     * @see #last
      */
-    public HttpExchange last()
+    public HttpExchange getLastExchange()
     {
         return last;
     }
@@ -76,9 +76,9 @@ public class HttpConversation implements Attributes
      * Remembers the given {@code exchange} as the last of this conversation.
      *
      * @param exchange the exchange that is the last of this conversation
-     * @see #last()
+     * @see #last
      */
-    public void last(HttpExchange exchange)
+    public void setLastExchange(HttpExchange exchange)
     {
         if (last == null)
             last = exchange;

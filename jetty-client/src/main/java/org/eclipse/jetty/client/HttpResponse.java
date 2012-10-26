@@ -38,7 +38,7 @@ public class HttpResponse implements Response
         this.listener = listener;
     }
 
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
         return version;
     }
@@ -50,7 +50,7 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public int status()
+    public int getStatus()
     {
         return status;
     }
@@ -61,7 +61,7 @@ public class HttpResponse implements Response
         return this;
     }
 
-    public String reason()
+    public String getReason()
     {
         return reason;
     }
@@ -73,19 +73,19 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
         return headers;
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
-        return request.conversation();
+        return request.getConversationID();
     }
 
     @Override
-    public Listener listener()
+    public Listener getListener()
     {
         return listener;
     }
@@ -99,6 +99,6 @@ public class HttpResponse implements Response
     @Override
     public String toString()
     {
-        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), version(), status(), reason());
+        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason());
     }
 }

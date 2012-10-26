@@ -139,10 +139,10 @@ public class GZIPContentDecoderTest
         GZIPContentDecoder decoder = new GZIPContentDecoder();
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(data, Charset.forName("UTF-8").decode(decoded).toString());
-        assertFalse(decoder.finished());
+        assertFalse(decoder.isFinished());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
         assertEquals(0, decoded.remaining());
-        assertTrue(decoder.finished());
+        assertTrue(decoder.isFinished());
     }
 
     @Test
@@ -194,11 +194,11 @@ public class GZIPContentDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         ByteBuffer decoded = decoder.decode(buffer);
         assertEquals(data1, Charset.forName("UTF-8").decode(decoded).toString());
-        assertTrue(decoder.finished());
+        assertTrue(decoder.isFinished());
         assertTrue(buffer.hasRemaining());
         decoded = decoder.decode(buffer);
         assertEquals(data2, Charset.forName("UTF-8").decode(decoded).toString());
-        assertTrue(decoder.finished());
+        assertTrue(decoder.isFinished());
         assertFalse(buffer.hasRemaining());
     }
 
@@ -247,7 +247,7 @@ public class GZIPContentDecoderTest
                 result += Charset.forName("UTF-8").decode(decoded).toString();
         }
         assertEquals(data, result);
-        assertTrue(decoder.finished());
+        assertTrue(decoder.isFinished());
     }
 
     @Test
@@ -277,7 +277,7 @@ public class GZIPContentDecoderTest
             ByteBuffer decoded = decoder.decode(buffer);
             if (decoded.hasRemaining())
                 result += Charset.forName("UTF-8").decode(decoded).toString();
-            if (decoder.finished())
+            if (decoder.isFinished())
                 break;
         }
         assertEquals(data1, result);

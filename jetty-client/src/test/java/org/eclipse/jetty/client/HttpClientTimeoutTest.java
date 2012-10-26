@@ -191,14 +191,14 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest(destination.host(), destination.port()).scheme(scheme);
+            Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
             connection.send(request, new TimedResponseListener(2 * timeout, TimeUnit.MILLISECONDS, request)
             {
                 @Override
                 public void onComplete(Result result)
                 {
                     Response response = result.getResponse();
-                    Assert.assertEquals(200, response.status());
+                    Assert.assertEquals(200, response.getStatus());
                     Assert.assertFalse(result.isFailed());
                     latch.countDown();
                 }

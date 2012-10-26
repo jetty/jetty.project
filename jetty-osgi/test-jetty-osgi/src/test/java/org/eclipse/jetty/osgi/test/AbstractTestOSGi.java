@@ -23,15 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -49,7 +47,7 @@ public class AbstractTestOSGi
 {
 
 	private Map<String,Bundle> _bundles;
-	
+
 	/**
 	 * Note: this will run many more tests.
 	 * TODO: find a better way to control this and use non-deprecated methods.
@@ -62,7 +60,7 @@ public class AbstractTestOSGi
         options.add(CoreOptions.felix().version("3.2.2"));
         options.add(CoreOptions.felix().version("4.0.2"));
 	}
-	
+
 	protected Bundle getBundle(BundleContext bundleContext, String symbolicName)
 	{
 		if (_bundles == null)
@@ -80,23 +78,23 @@ public class AbstractTestOSGi
 		}
 		return _bundles.get(symbolicName);
 	}
-	
+
 	protected void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception
 	{
 		Bundle b = getBundle(bundleContext, symbolicName);
 		Assert.assertNotNull(b);
 		Assert.assertEquals(b.getSymbolicName()+" must be active.", Bundle.ACTIVE, b.getState());
 	}
-	
+
 	protected void assertActiveOrResolvedBundle(BundleContext bundleContext, String symbolicName) throws Exception
 	{
 		Bundle b = getBundle(bundleContext, symbolicName);
 		Assert.assertNotNull(b);
 		if (b.getHeaders().get("Fragment-Host") == null) diagnoseNonActiveOrNonResolvedBundle(b);
-		Assert.assertTrue(b.getSymbolicName()+" must be active or resolved. It was "+b.getState(), 
+		Assert.assertTrue(b.getSymbolicName()+" must be active or resolved. It was "+b.getState(),
 				b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
 	}
-	
+
 	protected void assertAllBundlesActiveOrResolved(BundleContext bundleContext)
 	{
 		for (Bundle b : bundleContext.getBundles())
@@ -131,7 +129,7 @@ public class AbstractTestOSGi
 		System.err.println(b.getSymbolicName() + " was already started");
 		return false;
 	}
-	
+
 	protected void debugBundles(BundleContext bundleContext)
 	{
         Map<String,Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
@@ -144,19 +142,19 @@ public class AbstractTestOSGi
             System.err.println("    " + b.getSymbolicName() + " " + b.getState());
         }
 	}
-	
+
 	protected SslContextFactory getSslContextFactory()
 	{
 		return new SslContextFactory(true);
 	}
-		
+
 	protected void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception
 	{
         assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
-        
+
         assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.httpservice");
         assertActiveBundle(bundleContext, "org.eclipse.equinox.http.servlet");
-        
+
         //in the OSGi world this would be bad code and we should use a bundle tracker.
         //here we purposely want to make sure that the httpService is actually ready.
         ServiceReference sr = bundleContext.getServiceReference(HttpService.class.getName());
@@ -172,16 +170,16 @@ public class AbstractTestOSGi
                 resp.getWriter().write("Hello");
             }
         }, null, null);
-        
+
         //now test the servlet
         HttpClient client = protocol.equals("https") ? new HttpClient(getSslContextFactory()) : new HttpClient();
         try
         {
             client.start();
-            Response response = client.GET(protocol+"://127.0.0.1:"+port+"/greetings").get(5, TimeUnit.SECONDS);;
-            Assert.assertEquals(HttpStatus.OK_200, response.status());
-     
-            String content = new String(((HttpContentResponse)response).content());
+            ContentResponse response = client.GET(protocol+"://127.0.0.1:"+port+"/greetings").get(5, TimeUnit.SECONDS);;
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            String content = new String(response.getContent());
             Assert.assertEquals("Hello", content);
         }
         finally

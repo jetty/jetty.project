@@ -63,7 +63,7 @@ public class BasicAuthentication implements Authentication
         try
         {
             String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
-            return new BasicResult(request.uri(), value);
+            return new BasicResult(request.getURI(), value);
         }
         catch (UnsupportedEncodingException x)
         {
@@ -91,7 +91,7 @@ public class BasicAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (request.uri().startsWith(uri))
+            if (request.getURI().startsWith(uri))
                 request.header(HttpHeader.AUTHORIZATION.asString(), value);
         }
 

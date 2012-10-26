@@ -60,7 +60,7 @@ public class BufferingResponseListener extends Response.Listener.Empty
     @Override
     public void onHeaders(Response response)
     {
-        HttpFields headers = response.headers();
+        HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         if (length > maxLength)
             response.abort("Buffering capacity exceeded");

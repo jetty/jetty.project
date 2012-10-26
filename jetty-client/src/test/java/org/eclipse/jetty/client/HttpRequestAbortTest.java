@@ -149,7 +149,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         }
                     })
                     .send().get(5, TimeUnit.SECONDS);
-            Assert.assertEquals(200, response.status());
+            Assert.assertEquals(200, response.getStatus());
             Assert.assertFalse(aborted.await(1, TimeUnit.SECONDS));
         }
         catch (ExecutionException x)
@@ -202,7 +202,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                     .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                     {
                         @Override
-                        public long length()
+                        public long getLength()
                         {
                             return -1;
                         }

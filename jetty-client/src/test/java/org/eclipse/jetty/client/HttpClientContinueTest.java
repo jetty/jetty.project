@@ -86,10 +86,10 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         int index = 0;
-        byte[] responseContent = response.content();
+        byte[] responseContent = response.getContent();
         for (byte[] content : contents)
         {
             for (byte b : content)
@@ -124,7 +124,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .content(new BytesContentProvider(content1, content2)
                 {
                     @Override
-                    public long length()
+                    public long getLength()
                     {
                         return -1;
                     }
@@ -133,10 +133,10 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         int index = 0;
-        byte[] responseContent = response.content();
+        byte[] responseContent = response.getContent();
         for (byte b : content1)
             Assert.assertEquals(b, responseContent[index++]);
         for (byte b : content2)
@@ -185,7 +185,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         byte[] content = getContent();
                         Assert.assertNotNull(content);
                         Assert.assertTrue(content.length > 0);
-                        Assert.assertEquals(error, result.getResponse().status());
+                        Assert.assertEquals(error, result.getResponse().getStatus());
                         latch.countDown();
                     }
                 });
@@ -231,7 +231,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     public void onComplete(Result result)
                     {
                         Assert.assertFalse(result.isFailed());
-                        Assert.assertEquals(200, result.getResponse().status());
+                        Assert.assertEquals(200, result.getResponse().getStatus());
                         Assert.assertEquals(data, getContentAsString());
                         latch.countDown();
                     }
@@ -282,7 +282,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         Assert.assertTrue(result.isFailed());
                         Assert.assertNotNull(result.getRequestFailure());
                         Assert.assertNull(result.getResponseFailure());
-                        Assert.assertEquals(302, result.getResponse().status());
+                        Assert.assertEquals(302, result.getResponse().getStatus());
                         latch.countDown();
                     }
                 });

@@ -195,7 +195,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.status());
+                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
                         successLatch.countDown();
@@ -268,7 +268,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.status());
+                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
                         successLatch.countDown();
@@ -405,7 +405,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Assert.assertEquals(0, activeConnections.size());
 
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
-            
+
             final CountDownLatch latch = new CountDownLatch(1);
             client.newRequest(host, port)
                     .scheme(scheme)
@@ -453,7 +453,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 .send()
                 .get(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         connector.stop();
 

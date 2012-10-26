@@ -66,15 +66,15 @@ public class HttpSender
             throw new IllegalStateException();
 
         // Arrange the listeners, so that if there is a request failure the proper listeners are notified
-        HttpConversation conversation = exchange.conversation();
-        Response.Listener currentListener = exchange.listener();
-        Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
+        HttpConversation conversation = exchange.getConversation();
+        Response.Listener currentListener = exchange.getResponseListener();
+        Response.Listener initialListener = conversation.getExchanges().peekFirst().getResponseListener();
         if (initialListener == currentListener)
-            conversation.listener(initialListener);
+            conversation.setResponseListener(initialListener);
         else
-            conversation.listener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
+            conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
 
-        Request request = exchange.request();
+        Request request = exchange.getRequest();
         if (request.aborted())
         {
             exchange.abort(null);
@@ -83,7 +83,7 @@ public class HttpSender
         {
             LOG.debug("Sending {}", request);
             requestNotifier.notifyBegin(request);
-            ContentProvider content = request.content();
+            ContentProvider content = request.getContent();
             this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
             send();
         }
@@ -104,7 +104,7 @@ public class HttpSender
             {
                 HttpExchange exchange = connection.getExchange();
                 if (exchange != null)
-                    fail(new HttpRequestException("Expectation failed", exchange.request()));
+                    fail(new HttpRequestException("Expectation failed", exchange.getRequest()));
             }
         }
     }
@@ -122,11 +122,11 @@ public class HttpSender
             if (exchange == null)
                 return;
 
-            final Request request = exchange.request();
-            HttpConversation conversation = client.getConversation(request.conversation());
+            final Request request = exchange.getRequest();
+            HttpConversation conversation = client.getConversation(request.getConversationID());
             HttpGenerator.RequestInfo requestInfo = null;
 
-            boolean expect100 = request.headers().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+            boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
             expect100 &= conversation.getAttribute(EXPECT_100_ATTRIBUTE) == null;
             if (expect100)
                 conversation.setAttribute(EXPECT_100_ATTRIBUTE, Boolean.TRUE);
@@ -145,9 +145,9 @@ public class HttpSender
                 {
                     case NEED_INFO:
                     {
-                        ContentProvider content = request.content();
-                        long contentLength = content == null ? -1 : content.length();
-                        requestInfo = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), request.path());
+                        ContentProvider content = request.getContent();
+                        long contentLength = content == null ? -1 : content.getLength();
+                        requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod().asString(), request.getPath());
                         break;
                     }
                     case NEED_HEADER:
@@ -349,7 +349,7 @@ public class HttpSender
         // It is important to notify completion *after* we reset because
         // the notification may trigger another request/response
 
-        Request request = exchange.request();
+        Request request = exchange.getRequest();
         requestNotifier.notifySuccess(request);
         LOG.debug("Sent {}", request);
 
@@ -358,8 +358,8 @@ public class HttpSender
         {
             connection.complete(exchange, !result.isFailed());
 
-            HttpConversation conversation = exchange.conversation();
-            responseNotifier.notifyComplete(conversation.listener(), result);
+            HttpConversation conversation = exchange.getConversation();
+            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
         }
 
         return true;
@@ -387,7 +387,7 @@ public class HttpSender
 
         exchange.terminateRequest();
 
-        Request request = exchange.request();
+        Request request = exchange.getRequest();
         requestNotifier.notifyFailure(request, failure);
         LOG.debug("Failed {} {}", request, failure);
 
@@ -404,8 +404,8 @@ public class HttpSender
         {
             connection.complete(exchange, false);
 
-            HttpConversation conversation = exchange.conversation();
-            responseNotifier.notifyComplete(conversation.listener(), result);
+            HttpConversation conversation = exchange.getConversation();
+            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
         }
 
         return true;
@@ -416,7 +416,7 @@ public class HttpSender
         State current = state.get();
         boolean abortable = current == State.IDLE || current == State.SEND ||
                 current == State.COMMIT && contentIterator.hasNext();
-        return abortable && fail(new HttpRequestException(reason == null ? "Request aborted" : reason, exchange.request()));
+        return abortable && fail(new HttpRequestException(reason == null ? "Request aborted" : reason, exchange.getRequest()));
     }
 
     private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)

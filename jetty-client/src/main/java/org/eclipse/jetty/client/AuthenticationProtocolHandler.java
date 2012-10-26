@@ -58,7 +58,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        return response.status() == 401;
+        return response.getStatus() == 401;
     }
 
     @Override
@@ -79,8 +79,8 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            HttpConversation conversation = client.getConversation(request.conversation());
-            Response.Listener listener = conversation.exchanges().peekFirst().listener();
+            HttpConversation conversation = client.getConversation(request.getConversationID());
+            Response.Listener listener = conversation.getExchanges().peekFirst().getResponseListener();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())
             {
@@ -98,7 +98,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            final String uri = request.uri();
+            final String uri = request.getURI();
             Authentication authentication = null;
             WWWAuthenticate wwwAuthenticate = null;
             for (WWWAuthenticate wwwAuthn : wwwAuthenticates)
@@ -140,7 +140,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         {
             // TODO: these should be ordered by strength
             List<WWWAuthenticate> result = new ArrayList<>();
-            List<String> values = Collections.list(response.headers().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
+            List<String> values = Collections.list(response.getHeaders().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
             for (String value : values)
             {
                 Matcher matcher = WWW_AUTHENTICATE_PATTERN.matcher(value);

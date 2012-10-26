@@ -45,12 +45,12 @@ public interface Request
     /**
      * @return the conversation id
      */
-    long conversation();
+    long getConversationID();
 
     /**
      * @return the scheme of this request, such as "http" or "https"
      */
-    String scheme();
+    String getScheme();
 
     /**
      * @param scheme the scheme of this request, such as "http" or "https"
@@ -61,17 +61,17 @@ public interface Request
     /**
      * @return the host of this request, such as "127.0.0.1" or "google.com"
      */
-    String host();
+    String getHost();
 
     /**
      * @return the port of this request such as 80 or 443
      */
-    int port();
+    int getPort();
 
     /**
      * @return the method of this request, such as GET or POST
      */
-    HttpMethod method();
+    HttpMethod getMethod();
 
     /**
      * @param method the method of this request, such as GET or POST
@@ -82,7 +82,7 @@ public interface Request
     /**
      * @return the path of this request, such as "/"
      */
-    String path();
+    String getPath();
 
     /**
      * @param path the path of this request, such as "/"
@@ -93,12 +93,12 @@ public interface Request
     /**
      * @return the full URI of this request such as "http://host:port/path"
      */
-    String uri();
+    String getURI();
 
     /**
      * @return the HTTP version of this request, such as "HTTP/1.1"
      */
-    HttpVersion version();
+    HttpVersion getVersion();
 
     /**
      * @param version the HTTP version of this request, such as "HTTP/1.1"
@@ -109,7 +109,7 @@ public interface Request
     /**
      * @return the query parameters of this request
      */
-    Fields params();
+    Fields getParams();
 
     /**
      * @param name the name of the query parameter
@@ -121,7 +121,7 @@ public interface Request
     /**
      * @return the headers of this request
      */
-    HttpFields headers();
+    HttpFields getHeaders();
 
     /**
      * @param name the name of the header
@@ -140,12 +140,12 @@ public interface Request
     /**
      * @return the attributes of this request
      */
-    Map<String, Object> attributes();
+    Map<String, Object> getAttributes();
 
     /**
      * @return the content provider of this request
      */
-    ContentProvider content();
+    ContentProvider getContent();
 
     /**
      * @param content the content provider of this request
@@ -176,7 +176,7 @@ public interface Request
     /**
      * @return the user agent for this request
      */
-    String agent();
+    String getAgent();
 
     /**
      * @param agent the user agent for this request
@@ -187,7 +187,7 @@ public interface Request
     /**
      * @return the idle timeout for this request
      */
-    long idleTimeout();
+    long getIdleTimeout();
 
     /**
      * @param timeout the idle timeout for this request
@@ -198,7 +198,7 @@ public interface Request
     /**
      * @return whether this request follows redirects
      */
-    boolean followRedirects();
+    boolean isFollowRedirects();
 
     /**
      * @param follow whether this request follows redirects
@@ -209,7 +209,7 @@ public interface Request
     /**
      * @return the listener for request events
      */
-    List<Listener> listeners();
+    List<Listener> getListeners();
 
     /**
      * @param listener the listener for request events
