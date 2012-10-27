@@ -20,7 +20,8 @@ package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Random;
+import java.util.concurrent.Future;
+
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -28,9 +29,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
+
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,33 +64,28 @@ public abstract class AbstractSessionMigrationTest
             try
             {
                 HttpClient client = new HttpClient();
-                client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                 client.start();
                 try
                 {
                     // Perform one request to server1 to create a session
                     int value = 1;
-                    ContentExchange exchange1 = new ContentExchange(true);
-                    exchange1.setMethod(HttpMethods.POST);
-                    exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=set&value=" + value);
-                    client.send(exchange1);
-                    exchange1.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
-                    String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                    Request request1 = client.POST("http://localhost:" + port1 + contextPath + servletMapping + "?action=set&value=" + value);
+                    Future<ContentResponse> future = request1.send();
+                    ContentResponse response1 = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     // Perform a request to server2 using the session cookie from the previous request
                     // This should migrate the session from server1 to server2.
-                    ContentExchange exchange2 = new ContentExchange(true);
-                    exchange2.setMethod(HttpMethods.GET);
-                    exchange2.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
-                    exchange2.getRequestFields().add("Cookie", sessionCookie);
-                    client.send(exchange2);
-                    exchange2.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
-                    String response = exchange2.getResponseContent();
+                    Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
+                    request2.header("Cookie", sessionCookie);
+                    future = request2.send();
+                    ContentResponse response2 = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    String response = response2.getContentAsString();
                     assertEquals(response.trim(),String.valueOf(value));               }
                 finally
                 {

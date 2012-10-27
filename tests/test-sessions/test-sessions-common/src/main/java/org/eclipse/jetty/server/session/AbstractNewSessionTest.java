@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -27,13 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractNewSessionTest
@@ -68,17 +69,13 @@ public abstract class AbstractNewSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
-                String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
+                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                ContentResponse response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -88,13 +85,11 @@ public abstract class AbstractNewSessionTest
 
                 // The session is not there anymore, but we present an old cookie
                 // The server creates a new session, we must ensure we released all locks
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
-                exchange.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
+                request.header("Cookie", sessionCookie);
+                future = request.send();
+                response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

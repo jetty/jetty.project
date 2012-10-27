@@ -42,6 +42,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
+import com.mongodb.WriteResult;
 
 
 @ManagedObject("Mongo Session Manager")
@@ -88,8 +89,9 @@ public class MongoSessionManager extends NoSqlSessionManager
     {
         super.doStart();
         String[] hosts = getContextHandler().getVirtualHosts();
-        if (hosts == null || hosts.length == 0)
-            hosts = getContextHandler().getConnectorNames();
+        //TODO: can this be replaced?
+        /*if (hosts == null || hosts.length == 0)
+            hosts = getContextHandler().getConnectorNames();*/
         if (hosts == null || hosts.length == 0)
             hosts = new String[]
             { "::" }; // IPv6 equiv of 0.0.0.0
@@ -416,6 +418,18 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
     
     /*------------------------------------------------------------ */
+    @Override
+    protected void update(NoSqlSession session, String newClusterId, String newNodeId) throws Exception
+    {
+        // Form query for update - use object's existing session id
+        BasicDBObject key = new BasicDBObject(__ID, session.getClusterId());
+        BasicDBObject sets = new BasicDBObject();
+        BasicDBObject update = new BasicDBObject(__ID, newClusterId);
+        sets.put("$set", update);
+        _sessions.update(key, sets, false, false);
+    }
+
+    /*------------------------------------------------------------ */
     protected String encodeName(String name)
     {
         return name.replace("%","%25").replace(".","%2E");
@@ -612,5 +626,6 @@ public class MongoSessionManager extends NoSqlSessionManager
             }
         }
     }
+
 
 }

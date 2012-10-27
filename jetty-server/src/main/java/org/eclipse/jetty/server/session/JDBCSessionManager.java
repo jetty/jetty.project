@@ -84,7 +84,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      */
     public class SessionData
     {
-        private final String _id;
+        private String _id;
         private String _rowId;
         private long _accessed;
         private long _lastAccessed;
@@ -119,6 +119,11 @@ public class JDBCSessionManager extends AbstractSessionManager
         public synchronized String getId ()
         {
             return _id;
+        }
+        
+        public synchronized void setId (String id)
+        {
+            _id = id;
         }
 
         public synchronized long getCreated ()
@@ -311,8 +316,38 @@ public class JDBCSessionManager extends AbstractSessionManager
              _dirty=true;
          }
 
+
+
          @Override
-        protected void cookieSet()
+         protected void setClusterId(String clusterId)
+         {
+             super.setClusterId(clusterId);
+             _data.setId(clusterId); 
+             _dirty = true;
+         }
+
+         @Override
+         protected void setNodeId(String nodeId)
+         {
+             _data.setLastNode(nodeId);
+             super.setNodeId(nodeId);
+             _dirty = true;
+         }
+
+        protected void save() throws Exception
+        {
+            try
+            {
+                updateSession(_data);
+            }
+            finally
+            {
+                _dirty = false;
+            }
+        }
+
+         @Override
+         protected void cookieSet()
          {
              _data.setCookieSet(_data.getAccessed());
          }
@@ -638,6 +673,35 @@ public class JDBCSessionManager extends AbstractSessionManager
         //any other nodes
     }
 
+    
+    /**
+     * 
+     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     */
+    public void renewSessionId (String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    {
+        Session session = null;
+        synchronized (this)
+        {
+            try
+            {
+                session = (Session)_sessions.remove(oldClusterId);
+                if (session != null)
+                {
+                    session.setClusterId(newClusterId); //update ids
+                    session.setNodeId(newNodeId);
+                    _sessions.put(newClusterId, session); //put it into list in memory
+                    session.save(); //update database
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
+    }
+
+    
 
     /**
      * Invalidate a session.
@@ -971,11 +1035,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
             statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSession);
-            statement.setString(1, getSessionIdManager().getWorkerName());//my node id
-            statement.setLong(2, data.getAccessed());//accessTime
-            statement.setLong(3, data.getLastAccessed()); //lastAccessTime
-            statement.setLong(4, now); //last saved time
-            statement.setLong(5, data.getExpiryTime());
+            statement.setString(1, data.getId());
+            statement.setString(2, getSessionIdManager().getWorkerName());//my node id
+            statement.setLong(3, data.getAccessed());//accessTime
+            statement.setLong(4, data.getLastAccessed()); //lastAccessTime
+            statement.setLong(5, now); //last saved time
+            statement.setLong(6, data.getExpiryTime());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -983,8 +1048,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             byte[] bytes = baos.toByteArray();
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
-            statement.setBinaryStream(6, bais, bytes.length);//attribute map as blob
-            statement.setString(7, data.getRowId()); //rowId
+            statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+            statement.setString(8, data.getRowId()); //rowId
             statement.executeUpdate();
 
             data.setLastSaved(now);

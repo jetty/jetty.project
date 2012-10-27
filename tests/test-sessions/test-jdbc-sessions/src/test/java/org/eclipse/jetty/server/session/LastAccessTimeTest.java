@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
 /**

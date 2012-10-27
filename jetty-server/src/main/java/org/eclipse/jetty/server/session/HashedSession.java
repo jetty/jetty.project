@@ -88,8 +88,16 @@ public class HashedSession extends AbstractSession
     throws IllegalStateException
     {
         super.doInvalidate();
-
-        // Remove from the disk
+        remove();
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Remove from the disk
+     */
+    synchronized void remove ()
+    {
         if (_hashSessionManager._storeDir!=null && getId()!=null)
         {
             String id=getId();
@@ -107,41 +115,57 @@ public class HashedSession extends AbstractSession
             if (LOG.isDebugEnabled())
                 LOG.debug("Saving {} {}",super.getId(),reactivate);
 
-            File file = null;
-            FileOutputStream fos = null;
-
             try
             {
-                file = new File(_hashSessionManager._storeDir, super.getId());
-
-                if (file.exists())
-                    file.delete();
-                file.createNewFile();
-                fos = new FileOutputStream(file);
                 willPassivate();
-                save(fos);
+                save();
                 if (reactivate)
                     didActivate();
                 else
                     clearAttributes();
             }
             catch (Exception e)
-            {
-                saveFailed(); // We won't try again for this session
-
+            {       
                 LOG.warn("Problem saving session " + super.getId(), e);
-
+                _idled=false; // assume problem was before _values.clear();
+            }
+        }
+    }
+    
+    
+    
+    synchronized void save ()
+    throws Exception
+    {   
+        File file = null;
+        FileOutputStream fos = null;
+        if (!_saveFailed && _hashSessionManager._storeDir != null)
+        {
+            try
+            {
+                file = new File(_hashSessionManager._storeDir, super.getId());
+                if (file.exists())
+                    file.delete();
+                file.createNewFile();
+                fos = new FileOutputStream(file);
+                save(fos);
+            }
+            catch (Exception e)
+            {
+                saveFailed();
                 if (fos != null)
                 {
                     // Must not leave the file open if the saving failed
                     IO.close(fos);
                     // No point keeping the file if we didn't save the whole session
                     file.delete();
-                    _idled=false; // assume problem was before _values.clear();
+                    throw e;
                 }
             }
         }
     }
+    
+    
     /* ------------------------------------------------------------ */
     public synchronized void save(OutputStream os)  throws IOException
     {

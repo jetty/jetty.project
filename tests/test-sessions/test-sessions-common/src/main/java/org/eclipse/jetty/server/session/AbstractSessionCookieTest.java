@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,14 +30,13 @@ import javax.servlet.http.HttpSession;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.client.Address;
-import org.eclipse.jetty.client.ContentExchange;
+
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -76,43 +76,33 @@ public abstract class AbstractSessionCookieTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
-                String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
+              
+                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                ContentResponse response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 //sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
-                //pause(scavengePeriod);
-
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=check-cookie");
-                exchange.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                //pause(scavengePeriod); 
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check-cookie");
+                request.header("Cookie", sessionCookie);
+                future = request.send();
+                response = future.get();
                 
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=null-cookie");
-                //exchange.getRequestFields().add("Cookie", "null");
-                HttpDestination dest = client.getDestination(new Address("localhost",port),false);
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
-                dest.addCookie(new HttpCookie("Cookie",null));
-                
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=null-cookie");
+                request.header("Cookie", sessionCookie);
+                future = request.send();
+                response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -30,13 +33,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractServerCrossContextSessionTest
@@ -62,17 +62,13 @@ public abstract class AbstractServerCrossContextSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
                 // Perform a request, on server side a cross context dispatch will be done
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextA + servletMapping);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextA + servletMapping);
+                ContentResponse response = future.get();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

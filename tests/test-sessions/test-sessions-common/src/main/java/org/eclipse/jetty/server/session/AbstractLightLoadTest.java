@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -32,12 +36,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -70,7 +72,6 @@ public abstract class AbstractLightLoadTest
                 try
                 {
                     HttpClient client = new HttpClient();
-                    client.setConnectorType( HttpClient.CONNECTOR_SOCKET );
                     client.start();
                     try
                     {
@@ -78,13 +79,10 @@ public abstract class AbstractLightLoadTest
                         urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
                         urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
-                        ContentExchange exchange1 = new ContentExchange( true );
-                        exchange1.setMethod( HttpMethods.GET );
-                        exchange1.setURL( urls[0] + "?action=init" );
-                        client.send( exchange1 );
-                        exchange1.waitForDone();
-                        assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
-                        String sessionCookie = exchange1.getResponseFields().getStringField( "Set-Cookie" );
+                        Future<ContentResponse> future = client.GET( urls[0] + "?action=init" );
+                        ContentResponse response1 = future.get();
+                        assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                        String sessionCookie = response1.getHeaders().getStringField( "Set-Cookie" );
                         assertTrue(sessionCookie != null);
                         // Mangle the cookie, replacing Path with $Path, etc.
                         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -115,14 +113,12 @@ public abstract class AbstractLightLoadTest
                         executor.shutdownNow();
 
                         // Perform one request to get the result
-                        ContentExchange exchange2 = new ContentExchange( true );
-                        exchange2.setMethod( HttpMethods.GET );
-                        exchange2.setURL( urls[0] + "?action=result" );
-                        exchange2.getRequestFields().add( "Cookie", sessionCookie );
-                        client.send( exchange2 );
-                        exchange2.waitForDone();
-                        assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
-                        String response = exchange2.getResponseContent();
+                        Request request = client.newRequest( urls[0] + "?action=result" );
+                        request.header("Cookie", sessionCookie);
+                        future = request.send();
+                        ContentResponse response2 = future.get();
+                        assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                        String response = response2.getContentAsString();
                         System.out.println( "get = " + response );
                         assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
                     }
@@ -155,11 +151,11 @@ public abstract class AbstractLightLoadTest
         private final String sessionCookie;
 
         private final String[] urls;
+        
 
         public Worker( CyclicBarrier barrier, int requestsCount, String sessionCookie, String[] urls )
         {
             this.client = new HttpClient();
-            this.client.setConnectorType( HttpClient.CONNECTOR_SOCKET );
             this.barrier = barrier;
             this.requestsCount = requestsCount;
             this.sessionCookie = sessionCookie;
@@ -186,18 +182,15 @@ public abstract class AbstractLightLoadTest
                 barrier.await();
 
                 Random random = new Random( System.nanoTime() );
-
+                
                 for ( int i = 0; i < requestsCount; ++i )
                 {
                     int urlIndex = random.nextInt( urls.length );
-
-                    ContentExchange exchange = new ContentExchange( true );
-                    exchange.setMethod( HttpMethods.GET );
-                    exchange.setURL( urls[urlIndex] + "?action=increment" );
-                    exchange.getRequestFields().add( "Cookie", sessionCookie );
-                    client.send( exchange );
-                    exchange.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                    Request request = client.newRequest(urls[urlIndex] + "?action=increment");
+                    request.header("Cookie", sessionCookie);
+                    Future<ContentResponse> future = request.send();
+                    ContentResponse response = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 }
 
                 // Wait for all workers to be done
