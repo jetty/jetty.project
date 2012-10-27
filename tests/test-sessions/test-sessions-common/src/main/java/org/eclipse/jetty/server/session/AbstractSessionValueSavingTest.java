@@ -33,9 +33,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
 
 
@@ -70,12 +68,12 @@ public abstract class AbstractSessionValueSavingTest
                     Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     ContentResponse response1 = future.get();
                     
-                    assertEquals(HttpServletResponse.SC_OK, response1.status());                   
-                    assertTrue(sessionTestValue < Long.parseLong(response1.contentAsString()));
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());                   
+                    assertTrue(sessionTestValue < Long.parseLong(response1.getContentAsString()));
                    
-                    sessionTestValue = Long.parseLong(response1.contentAsString());
+                    sessionTestValue = Long.parseLong(response1.getContentAsString());
                     
-                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -95,11 +93,11 @@ public abstract class AbstractSessionValueSavingTest
                         future = request2.send();
                         ContentResponse response2 = future.get();
                         
-                        assertEquals(HttpServletResponse.SC_OK , response2.status());                     
-                        assertTrue(sessionTestValue < Long.parseLong(response2.contentAsString()));
-                        sessionTestValue = Long.parseLong(response2.contentAsString());
+                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());                     
+                        assertTrue(sessionTestValue < Long.parseLong(response2.getContentAsString()));
+                        sessionTestValue = Long.parseLong(response2.getContentAsString());
                         
-                        String setCookie = response1.headers().getStringField("Set-Cookie");
+                        String setCookie = response1.getHeaders().getStringField("Set-Cookie");
                         if (setCookie!=null)                    
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                         

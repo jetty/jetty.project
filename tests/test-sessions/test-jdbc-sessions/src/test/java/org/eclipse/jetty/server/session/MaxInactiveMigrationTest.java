@@ -103,14 +103,14 @@ public class MaxInactiveMigrationTest
             request.header("Cookie", sessionCookie);
         Future<ContentResponse> future = request.send();
         ContentResponse response = future.get();
-        assertEquals(HttpServletResponse.SC_OK, response.status());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-        sessionCookie = response.headers().getStringField("Set-Cookie");
+        sessionCookie = response.getHeaders().getStringField("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-        return response.contentAsString();
+        return response.getContentAsString();
     }
 
 

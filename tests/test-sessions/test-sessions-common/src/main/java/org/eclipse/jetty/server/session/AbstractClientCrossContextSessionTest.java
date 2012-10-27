@@ -32,9 +32,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
@@ -76,8 +74,8 @@ public abstract class AbstractClientCrossContextSessionTest
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextA + servletMapping);
                 ContentResponse response = future.get();
 
-                assertEquals(HttpServletResponse.SC_OK,response.status());
-                String sessionCookie = response.headers().getStringField("Set-Cookie");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -87,7 +85,7 @@ public abstract class AbstractClientCrossContextSessionTest
                 request.header("Cookie", sessionCookie);
                 future = request.send();
                 ContentResponse responseB = future.get();
-                assertEquals(HttpServletResponse.SC_OK,responseB.status());
+                assertEquals(HttpServletResponse.SC_OK,responseB.getStatus());
                 assertEquals(servletA.sessionId, servletB.sessionId);
             }
             finally

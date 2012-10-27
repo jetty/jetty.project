@@ -59,7 +59,7 @@ public abstract class AbstractReentrantRequestSessionTest
             {
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 ContentResponse response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {
@@ -104,7 +104,7 @@ public abstract class AbstractReentrantRequestSessionTest
                     {
                         Future<ContentResponse> future = client.GET("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
                         ContentResponse resp = future.get();
-                        assertEquals(HttpServletResponse.SC_OK,resp.status());
+                        assertEquals(HttpServletResponse.SC_OK,resp.getStatus());
                         assertEquals("true",session.getAttribute("reentrant"));
                     }
                     finally

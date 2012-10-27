@@ -68,8 +68,8 @@ public abstract class AbstractRemoveSessionTest
             {
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 ContentResponse response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
-                String sessionCookie = response.headers().getStringField("Set-Cookie");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -81,7 +81,7 @@ public abstract class AbstractRemoveSessionTest
                 request.header("Cookie", sessionCookie);
                 future = request.send();
                 response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
                 assertTrue(testListener.isDestroyed());
                 
@@ -92,7 +92,7 @@ public abstract class AbstractRemoveSessionTest
                 request.header("Cookie", sessionCookie);
                 future = request.send();
                 response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

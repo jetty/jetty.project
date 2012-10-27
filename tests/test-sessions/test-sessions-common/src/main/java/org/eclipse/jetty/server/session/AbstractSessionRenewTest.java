@@ -63,9 +63,9 @@ public abstract class AbstractSessionRenewTest
             //make a request to create a session
             Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             ContentResponse response = future.get();
-            assertEquals(HttpServletResponse.SC_OK,response.status());
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
-            String sessionCookie = response.headers().getStringField("Set-Cookie");
+            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
 
             //make a request to change the sessionid
@@ -73,8 +73,8 @@ public abstract class AbstractSessionRenewTest
             request.header("Cookie", sessionCookie);
             future = request.send();
             ContentResponse renewResponse = future.get();
-            assertEquals(HttpServletResponse.SC_OK,renewResponse.status());
-            String renewSessionCookie = renewResponse.headers().getStringField("Set-Cookie");
+            assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
+            String renewSessionCookie = renewResponse.getHeaders().getStringField("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
         }

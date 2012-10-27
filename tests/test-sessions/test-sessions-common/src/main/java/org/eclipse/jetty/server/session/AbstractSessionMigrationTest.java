@@ -72,8 +72,8 @@ public abstract class AbstractSessionMigrationTest
                     Request request1 = client.POST("http://localhost:" + port1 + contextPath + servletMapping + "?action=set&value=" + value);
                     Future<ContentResponse> future = request1.send();
                     ContentResponse response1 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response1.status());
-                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -84,8 +84,8 @@ public abstract class AbstractSessionMigrationTest
                     request2.header("Cookie", sessionCookie);
                     future = request2.send();
                     ContentResponse response2 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response2.status());
-                    String response = response2.contentAsString();
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    String response = response2.getContentAsString();
                     assertEquals(response.trim(),String.valueOf(value));               }
                 finally
                 {

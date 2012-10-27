@@ -33,9 +33,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
 
 /**
@@ -77,8 +75,8 @@ public abstract class AbstractOrphanedSessionTest
                     // Connect to server1 to create a session and get its session cookie
                     Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     ContentResponse response1 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response1.status());
-                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -93,7 +91,7 @@ public abstract class AbstractOrphanedSessionTest
                     request.header("Cookie", sessionCookie);
                     future = request.send();
                     ContentResponse response2 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response2.status());
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally
                 {

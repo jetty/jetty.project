@@ -33,9 +33,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
 
 
@@ -67,13 +65,13 @@ public abstract class AbstractImmortalSessionTest
                 int value = 42; 
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
                 ContentResponse response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
-                String sessionCookie = response.headers().getStringField("Set-Cookie");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                String resp = response.contentAsString();
+                String resp = response.getContentAsString();
                 assertEquals(resp.trim(),String.valueOf(value));
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
@@ -84,8 +82,8 @@ public abstract class AbstractImmortalSessionTest
                 request.header("Cookie", sessionCookie);
                 future = request.send();
                 response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
-                resp = response.contentAsString();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                resp = response.getContentAsString();
                 assertEquals(String.valueOf(value),resp.trim());
             }
             finally

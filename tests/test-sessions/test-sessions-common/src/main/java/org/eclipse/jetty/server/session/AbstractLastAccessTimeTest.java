@@ -84,9 +84,9 @@ public abstract class AbstractLastAccessTimeTest
                     // Perform one request to server1 to create a session
                     Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     ContentResponse response1 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK, response1.status());
-                    assertEquals("test", response1.contentAsString());
-                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                    assertEquals("test", response1.getContentAsString());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -103,10 +103,10 @@ public abstract class AbstractLastAccessTimeTest
                         request.header("Cookie", sessionCookie);
                         future = request.send();
                         ContentResponse response2 = future.get();
-                        assertEquals(HttpServletResponse.SC_OK , response2.status());
-                        assertEquals("test", response2.contentAsString());
+                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
+                        assertEquals("test", response2.getContentAsString());
 
-                        String setCookie = response2.headers().getStringField("Set-Cookie");
+                        String setCookie = response2.getHeaders().getStringField("Set-Cookie");
                         if (setCookie!=null)                    
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                         

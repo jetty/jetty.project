@@ -38,9 +38,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
 
 
@@ -83,8 +81,8 @@ public abstract class AbstractLightLoadTest
 
                         Future<ContentResponse> future = client.GET( urls[0] + "?action=init" );
                         ContentResponse response1 = future.get();
-                        assertEquals(HttpServletResponse.SC_OK,response1.status());
-                        String sessionCookie = response1.headers().getStringField( "Set-Cookie" );
+                        assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                        String sessionCookie = response1.getHeaders().getStringField( "Set-Cookie" );
                         assertTrue(sessionCookie != null);
                         // Mangle the cookie, replacing Path with $Path, etc.
                         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -119,8 +117,8 @@ public abstract class AbstractLightLoadTest
                         request.header("Cookie", sessionCookie);
                         future = request.send();
                         ContentResponse response2 = future.get();
-                        assertEquals(HttpServletResponse.SC_OK,response2.status());
-                        String response = response2.contentAsString();
+                        assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                        String response = response2.getContentAsString();
                         System.out.println( "get = " + response );
                         assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
                     }
@@ -192,7 +190,7 @@ public abstract class AbstractLightLoadTest
                     request.header("Cookie", sessionCookie);
                     Future<ContentResponse> future = request.send();
                     ContentResponse response = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response.status());
+                    assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 }
 
                 // Wait for all workers to be done

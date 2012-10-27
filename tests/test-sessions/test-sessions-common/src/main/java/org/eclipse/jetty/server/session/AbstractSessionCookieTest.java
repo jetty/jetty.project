@@ -82,9 +82,9 @@ public abstract class AbstractSessionCookieTest
               
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 ContentResponse response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
-                String sessionCookie = response.headers().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 //sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -96,13 +96,13 @@ public abstract class AbstractSessionCookieTest
                 future = request.send();
                 response = future.get();
                 
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=null-cookie");
                 request.header("Cookie", sessionCookie);
                 future = request.send();
                 response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

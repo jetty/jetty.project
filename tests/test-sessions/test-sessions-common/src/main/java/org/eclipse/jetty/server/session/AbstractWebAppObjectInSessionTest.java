@@ -30,9 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -119,8 +117,8 @@ public abstract class AbstractWebAppObjectInSessionTest
                     
                     Future<ContentResponse> future = request.send();
                     ContentResponse response = future.get();
-                    assertEquals( HttpServletResponse.SC_OK, response.status());
-                    String sessionCookie = response.headers().getStringField("Set-Cookie");
+                    assertEquals( HttpServletResponse.SC_OK, response.getStatus());
+                    String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -132,7 +130,7 @@ public abstract class AbstractWebAppObjectInSessionTest
                     future = request2.send();
                     ContentResponse response2 = future.get();
 
-                    assertEquals(HttpServletResponse.SC_OK,response2.status());
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally
                 {

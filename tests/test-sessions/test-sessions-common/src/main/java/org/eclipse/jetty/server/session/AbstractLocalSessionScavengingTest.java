@@ -32,8 +32,6 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
 import org.junit.Test;
@@ -87,8 +85,8 @@ public abstract class AbstractLocalSessionScavengingTest
                     // Create the session on node1
                     Future<ContentResponse> future = client.GET(urls[0] + "?action=init");
                     ContentResponse response1 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response1.status());
-                    String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -98,7 +96,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     future = request.send();
                     ContentResponse response2 = future.get();            
-                    assertEquals(HttpServletResponse.SC_OK,response2.status());
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                     
                     
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
@@ -109,7 +107,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     future = request.send();
                     response1 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response1.status());
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
 
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
@@ -121,7 +119,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     request.header("Cookie", sessionCookie);
                     future = request.send();
                     response2 = future.get();
-                    assertEquals(HttpServletResponse.SC_OK,response2.status());
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally
                 {

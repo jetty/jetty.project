@@ -68,7 +68,7 @@ public abstract class AbstractServerCrossContextSessionTest
                 // Perform a request, on server side a cross context dispatch will be done
                 Future<ContentResponse> future = client.GET("http://localhost:" + port + contextA + servletMapping);
                 ContentResponse response = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response.status());
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {

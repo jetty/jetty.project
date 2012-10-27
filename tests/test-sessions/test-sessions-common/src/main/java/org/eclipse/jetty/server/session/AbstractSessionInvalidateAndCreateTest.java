@@ -38,9 +38,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
@@ -117,8 +115,8 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 // Create the session
                 Future<ContentResponse> future = client.GET(url + "?action=init");
                 ContentResponse response1 = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response1.status());
-                String sessionCookie = response1.headers().getStringField("Set-Cookie");
+                assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -129,7 +127,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 request2.header("Cookie", sessionCookie);
                 future = request2.send();
                 ContentResponse response2 = future.get();
-                assertEquals(HttpServletResponse.SC_OK,response2.status());
+                assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
                 // Wait for the scavenger to run, waiting 2.5 times the scavenger period
                 pause(scavengePeriod);
