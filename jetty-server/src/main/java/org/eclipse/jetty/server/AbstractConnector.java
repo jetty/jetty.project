@@ -85,7 +85,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * the method {@link #setDefaultProtocol(String)} or defaults to the protocol of the first configured factory.
  * <p>
  * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to
- * configure the HTTP protocol, you pass a {@link HttpChannelConfig} instance to the {@link HttpConnectionFactory}
+ * configure the HTTP protocol, you pass a {@link HttpConfiguration} instance to the {@link HttpConnectionFactory}
  * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is
  * configured by passing it a {@link SslContextFactory} and a next protocol name.
  *

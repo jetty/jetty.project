@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -50,14 +50,14 @@ public class HttpTransportOverSPDY implements HttpTransport
     private static final Logger LOG = Log.getLogger(HttpTransportOverSPDY.class);
 
     private final Connector connector;
-    private final HttpChannelConfig configuration;
+    private final HttpConfiguration configuration;
     private final EndPoint endPoint;
     private final PushStrategy pushStrategy;
     private final Stream stream;
     private final Fields requestHeaders;
     private final BlockingCallback streamBlocker = new BlockingCallback();
 
-    public HttpTransportOverSPDY(Connector connector, HttpChannelConfig configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
+    public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
         this.connector = connector;
         this.configuration = configuration;

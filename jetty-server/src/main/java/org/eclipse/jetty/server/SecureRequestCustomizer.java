@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SecureRequestCustomizer implements HttpChannelConfig.Customizer
+public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
     
@@ -43,7 +43,7 @@ public class SecureRequestCustomizer implements HttpChannelConfig.Customizer
 
 
     @Override
-    public void customize(Connector connector, HttpChannelConfig channelConfig, Request request)
+    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         if (request.getHttpChannel().getEndPoint() instanceof DecryptedEndPoint)
         {

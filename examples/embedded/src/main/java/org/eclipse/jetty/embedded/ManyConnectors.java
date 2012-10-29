@@ -22,7 +22,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
@@ -67,7 +67,7 @@ public class ManyConnectors
 
         // A verbosely fully configured connector with SSL, SPDY and HTTP
 
-        HttpChannelConfig config = new HttpChannelConfig();
+        HttpConfiguration config = new HttpConfiguration();
         config.setSecureScheme("https");
         config.setSecurePort(8443);
         config.setOutputBufferSize(32768);

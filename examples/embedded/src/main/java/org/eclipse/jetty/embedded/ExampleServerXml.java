@@ -16,25 +16,16 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.embedded;
 
-package org.eclipse.jetty.spdy.server.proxy;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.server.SPDYServerConnector;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-public class HTTPSPDYProxyConnector extends SPDYServerConnector
+public class ExampleServerXml
 {
-    public HTTPSPDYProxyConnector(Server server, ProxyEngineSelector proxyEngineSelector)
+    public static void main(String[] args) throws Exception
     {
-        this(server, null, proxyEngineSelector);
-    }
-
-    public HTTPSPDYProxyConnector(Server server, SslContextFactory sslContextFactory, ProxyEngineSelector proxyEngineSelector)
-    {
-        super(server, sslContextFactory, proxyEngineSelector);
-        addConnectionFactory(new ProxyHTTPConnectionFactory(new HttpConfiguration(), SPDY.V2, proxyEngineSelector));
+        Resource fileserver_xml = Resource.newSystemResource("exampleserver.xml");
+        XmlConfiguration.main(fileserver_xml.getFile().getAbsolutePath());
     }
 }

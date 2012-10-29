@@ -51,7 +51,7 @@
     </Arg>
 
     <!-- =========================================================== -->
-    <!-- HttpChannel Configuration.                                  -->
+    <!-- Http Configuration.                                         -->
     <!-- This is a common configuration instance used by all         -->
     <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, SPDY)-->
     <!-- It configures the non wire protocol aspects of the HTTP     -->
@@ -62,10 +62,10 @@
     <!-- jetty-spdy.xml configuration files which instantiate the    -->
     <!-- connectors.                                                 -->
     <!--                                                             -->
-    <!-- Consult the javadoc of o.e.j.server.HttpChannelConfig       -->
+    <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
     <!-- for all configuration that may be set here.                 -->
     <!-- =========================================================== -->
-    <New id="httpConfig" class="org.eclipse.jetty.server.HttpChannelConfig">
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
       <Set name="secureScheme">https</Set>
       <Set name="securePort"><Property name="jetty.tls.port" default="8443" /></Set>
       <Set name="outputBufferSize">32768</Set>
