@@ -410,7 +410,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                         purge();
                     }
                 };
-                _purgeTimer.schedule(_purgeTask,_purgeDelay);
+               
+                _purgeTimer.schedule(_purgeTask,0,_purgeDelay);
             }
         }
     }
