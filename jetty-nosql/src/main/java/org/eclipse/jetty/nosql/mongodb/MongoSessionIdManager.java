@@ -234,9 +234,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             BasicDBObject validQuery = new BasicDBObject();
 
             validQuery.put(MongoSessionManager.__ACCESSED,new BasicDBObject("$lt",System.currentTimeMillis() - _purgeValidAge));
-            validQuery.put(MongoSessionManager.__VALID, __valid_false);
+            validQuery.put(MongoSessionManager.__VALID, true);
 
-            oldSessions = _sessions.find(invalidQuery,new BasicDBObject(MongoSessionManager.__ID,1));
+            oldSessions = _sessions.find(validQuery,new BasicDBObject(MongoSessionManager.__ID,1));
 
             for (DBObject session : oldSessions)
             {
