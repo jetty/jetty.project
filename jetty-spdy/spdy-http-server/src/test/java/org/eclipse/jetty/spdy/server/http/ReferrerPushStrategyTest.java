@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -58,7 +58,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         HTTPSPDYServerConnector connector =
-            new HTTPSPDYServerConnector(server,version,new HttpChannelConfig(),new ReferrerPushStrategy());
+            new HTTPSPDYServerConnector(server,version,new HttpConfiguration(),new ReferrerPushStrategy());
         return connector;
     }
 
@@ -70,7 +70,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
         if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
             connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
@@ -98,7 +98,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
         if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
             connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
@@ -123,7 +123,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
         connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 

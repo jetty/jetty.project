@@ -79,9 +79,9 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 
         for (ConnectionFactory factory : factories)
         {
-            if (factory instanceof HttpChannelConfig.ConnectionFactory)
+            if (factory instanceof HttpConfiguration.ConnectionFactory)
             {
-                HttpChannelConfig config = ((HttpChannelConfig.ConnectionFactory)factory).getHttpChannelConfig();
+                HttpConfiguration config = ((HttpConfiguration.ConnectionFactory)factory).getHttpConfiguration();
                 if (config.getCustomizer(SecureRequestCustomizer.class)==null)
                     config.addCustomizer(new SecureRequestCustomizer());
             }

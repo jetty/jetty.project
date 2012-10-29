@@ -106,7 +106,7 @@ public class SSLEngineTest
         server=new Server();
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(512);
-        http.getHttpChannelConfig().setRequestHeaderSize(512);
+        http.getHttpConfiguration().setRequestHeaderSize(512);
         connector=new ServerConnector(server, sslContextFactory, http);
         connector.setPort(0);
 

@@ -40,7 +40,7 @@ import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -694,7 +694,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
             return true;
 
-        HttpChannelConfig httpConfig = HttpChannel.getCurrentHttpChannel().getHttpChannelConfig();
+        HttpConfiguration httpConfig = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
 
         if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {

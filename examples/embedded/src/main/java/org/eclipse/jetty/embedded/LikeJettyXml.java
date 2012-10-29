@@ -59,7 +59,7 @@ public class LikeJettyXml
 
         // Setup Connectors
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpChannelConfig().setSecurePort(8443);
+        http.getHttpConfiguration().setSecurePort(8443);
         ServerConnector connector = new ServerConnector(server,http);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);

@@ -25,7 +25,7 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.server.HttpChannelConfig.Customizer;
+import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 
 public class ForwardedRequestCustomizer implements Customizer
 {
@@ -185,7 +185,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /* ------------------------------------------------------------ */
     @Override
-    public void customize(Connector connector, HttpChannelConfig config, Request request)
+    public void customize(Connector connector, HttpConfiguration config, Request request)
     {
         HttpFields httpFields = request.getHttpFields();
 

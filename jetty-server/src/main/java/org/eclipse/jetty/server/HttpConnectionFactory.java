@@ -25,17 +25,17 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
-public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpChannelConfig.ConnectionFactory
+public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
-    private final HttpChannelConfig _config;
+    private final HttpConfiguration _config;
 
     public HttpConnectionFactory()
     {
-        this(new HttpChannelConfig());
+        this(new HttpConfiguration());
         setInputBufferSize(16384);
     }
 
-    public HttpConnectionFactory(@Name("config") HttpChannelConfig config)
+    public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
         super(HttpVersion.HTTP_1_1.toString());
         _config=config;
@@ -43,7 +43,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     }
 
     @Override
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
         return _config;
     }

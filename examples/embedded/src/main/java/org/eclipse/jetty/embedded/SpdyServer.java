@@ -26,7 +26,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -68,7 +68,7 @@ public class SpdyServer
 
 
         // Common HTTP configuration
-        HttpChannelConfig config = new HttpChannelConfig();
+        HttpConfiguration config = new HttpConfiguration();
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());

@@ -25,8 +25,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
-@ManagedObject("HTTP Channel Configuration")
-public class HttpChannelConfig
+@ManagedObject("HTTP Configuration")
+public class HttpConfiguration
 {
     private List<Customizer> _customizers=new CopyOnWriteArrayList<>();
     private int _outputBufferSize=32*1024;
@@ -37,19 +37,19 @@ public class HttpChannelConfig
 
     public interface Customizer
     {
-        public void customize(Connector connector, HttpChannelConfig channelConfig, Request request);
+        public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
     }
     
     public interface ConnectionFactory
     {
-        HttpChannelConfig getHttpChannelConfig();
+        HttpConfiguration getHttpConfiguration();
     }
     
-    public HttpChannelConfig()
+    public HttpConfiguration()
     {
     }
     
-    public HttpChannelConfig(HttpChannelConfig config)
+    public HttpConfiguration(HttpConfiguration config)
     {
         _customizers.addAll(config._customizers);
         _outputBufferSize=config._outputBufferSize;

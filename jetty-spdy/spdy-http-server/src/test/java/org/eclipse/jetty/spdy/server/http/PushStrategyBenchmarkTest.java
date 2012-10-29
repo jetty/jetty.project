@@ -38,7 +38,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -82,7 +82,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler());
 
         // Plain HTTP
-        ConnectionFactory factory = new HttpConnectionFactory(new HttpChannelConfig());
+        ConnectionFactory factory = new HttpConnectionFactory(new HttpConfiguration());
         connector.setDefaultProtocol(factory.getProtocol());
         HttpClient httpClient = new HttpClient();
         // Simulate browsers, that open 6 connection per origin
@@ -93,7 +93,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 
         // First push strategy
         PushStrategy pushStrategy = new PushStrategy.None();
-        factory = new HTTPSPDYServerConnectionFactory(version, new HttpChannelConfig(), pushStrategy);
+        factory = new HTTPSPDYServerConnectionFactory(version, new HttpConfiguration(), pushStrategy);
         connector.setDefaultProtocol(factory.getProtocol());
         Session session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);
@@ -101,7 +101,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 
         // Second push strategy
         pushStrategy = new ReferrerPushStrategy();
-        factory = new HTTPSPDYServerConnectionFactory(version, new HttpChannelConfig(), pushStrategy);
+        factory = new HTTPSPDYServerConnectionFactory(version, new HttpConfiguration(), pushStrategy);
         connector.setDefaultProtocol(factory.getProtocol());
         session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);

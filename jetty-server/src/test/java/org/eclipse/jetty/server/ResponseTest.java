@@ -72,7 +72,7 @@ public class ResponseTest
     {
         _server = new Server();
         _scheduler = new TimerScheduler();
-        HttpChannelConfig config = new HttpChannelConfig();
+        HttpConfiguration config = new HttpConfiguration();
         LocalConnector connector = new LocalConnector(_server,null,_scheduler,null,1,new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
@@ -80,7 +80,7 @@ public class ResponseTest
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel<ByteBuffer>(connector, new HttpChannelConfig(), endp, new HttpTransport()
+        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
