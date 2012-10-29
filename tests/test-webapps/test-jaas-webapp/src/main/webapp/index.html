@@ -1,0 +1,52 @@
+<HTML><HEAD><TITLE>Welcome to the JAAS Authentication and Authorization Test</TITLE></HEAD>
+<BODY>
+  <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
+
+<p>&nbsp;</p>
+  <a  href="http://localhost:8080/">Home</a>
+<center>
+  <hr/>
+</center>
+
+  <H1>JAAS Authentication and Authorization Demo </H1>
+  <h2>Preparation</h2>
+  <ol>
+   <li>You will need to edit your $JETTY_HOME/start.ini file and add the following lines:
+    <pre>
+     OPTIONS=jaas
+     etc/jetty-jaas.xml
+    </pre>
+    </li>
+
+    <li>Unjar the test-jaas-webapp-&lt;version&gt;-config.jar inside $JETTY_HOME. The following files will be added:
+     <pre>
+       etc/jetty-jaas.xml
+       etc/login.conf
+       etc/login.properties
+       contexts/test-jaas.xml
+    </pre>
+    </li>
+  </ol>
+
+  <p>Now start jetty as usual.</p>
+
+
+
+  <h2>Using the Demo</h2>
+  <P>
+  Click on the following link to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>.
+  </P>
+  <p>
+   This demo uses a simple login module that stores its configuration in a properties file. There are other types of login module provided with the jetty distro. For full information, please refer to the jetty documentation: <a href="http://www.eclipse.org/jetty/documentation/current/">http://www.eclipse.org/jetty/documentation/current/</a>.
+  </p>
+  <P>
+  To authenticate successfully with this demonstration, you must use username=&quot;me&quot; with password=&quot;me&quot;.  All other usernames, passwords should result in authentication failure.
+  </P>
+  <A HREF="auth.html">Login</A>
+
+  <center>
+   <hr/>
+   <a href="http://www.eclipse.org/jetty"><img style="border:0" src="images/small_powered_by.gif"/></a>
+  </center>
+</BODY>
+</HTML>
