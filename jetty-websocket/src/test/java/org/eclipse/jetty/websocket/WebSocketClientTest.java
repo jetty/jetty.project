@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,9 +48,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
 
 public class WebSocketClientTest
 {
@@ -103,6 +102,7 @@ public class WebSocketClientTest
             {
             }
         };
+        
         client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"), websocket);
 
         Socket socket = _server.accept();
