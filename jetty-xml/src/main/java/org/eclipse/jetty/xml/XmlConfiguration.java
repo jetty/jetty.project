@@ -1125,7 +1125,7 @@ public class XmlConfiguration
      *            array of property and xml configuration filenames or {@link Resource}s.
      * @throws Exception if the XML configurations cannot be run
      */
-    public static void main(final String[] args) throws Exception
+    public static void main(final String... args) throws Exception
     {
         final AtomicReference<Throwable> exception = new AtomicReference<>();
 
