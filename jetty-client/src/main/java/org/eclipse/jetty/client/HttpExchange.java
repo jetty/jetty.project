@@ -163,8 +163,8 @@ public class HttpExchange
                 {
                     HttpExchange first = conversation.getExchanges().peekFirst();
                     Response.Listener listener = first.getResponseListener();
-                    if (listener instanceof ResponseListener.Timed)
-                        ((ResponseListener.Timed)listener).cancel();
+                    if (listener instanceof Schedulable)
+                        ((Schedulable)listener).cancel();
                     conversation.complete();
                 }
             }

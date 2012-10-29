@@ -116,8 +116,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         setExchange(exchange);
         conversation.getExchanges().offer(exchange);
 
-        if (listener instanceof ResponseListener.Timed)
-            ((ResponseListener.Timed)listener).schedule(client.getScheduler());
+        if (listener instanceof Schedulable)
+            ((Schedulable)listener).schedule(client.getScheduler());
 
         sender.send(exchange);
     }

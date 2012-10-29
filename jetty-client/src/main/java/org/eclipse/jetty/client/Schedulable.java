@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public interface ResponseListener extends Response.Listener
+public interface Schedulable
 {
-    public interface Timed extends Response.Listener
-    {
-        public boolean schedule(Scheduler scheduler);
+    public boolean schedule(Scheduler scheduler);
 
-        public boolean cancel();
-    }
+    public boolean cancel();
 }

@@ -317,8 +317,8 @@ public class HttpClient extends ContainerLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        if (listener instanceof ResponseListener.Timed)
-            ((ResponseListener.Timed)listener).schedule(scheduler);
+        if (listener instanceof Schedulable)
+            ((Schedulable)listener).schedule(scheduler);
 
         HttpDestination destination = provideDestination(scheme, request.getHost(), port);
         destination.send(request, listener);
