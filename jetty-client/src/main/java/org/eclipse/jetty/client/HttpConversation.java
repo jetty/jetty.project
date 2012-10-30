@@ -35,7 +35,6 @@ public class HttpConversation implements Attributes
     private final HttpClient client;
     private final long id;
     private volatile Response.Listener listener;
-    private volatile HttpExchange last;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -61,27 +60,6 @@ public class HttpConversation implements Attributes
     public void setResponseListener(Response.Listener listener)
     {
         this.listener = listener;
-    }
-
-    /**
-     * @return the exchange that has been identified as the last of this conversation
-     * @see #last
-     */
-    public HttpExchange getLastExchange()
-    {
-        return last;
-    }
-
-    /**
-     * Remembers the given {@code exchange} as the last of this conversation.
-     *
-     * @param exchange the exchange that is the last of this conversation
-     * @see #last
-     */
-    public void setLastExchange(HttpExchange exchange)
-    {
-        if (last == null)
-            last = exchange;
     }
 
     public void complete()

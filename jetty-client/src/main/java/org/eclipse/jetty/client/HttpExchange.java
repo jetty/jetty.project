@@ -39,6 +39,7 @@ public class HttpExchange
     private final Request request;
     private final Response.Listener listener;
     private final HttpResponse response;
+    private volatile boolean last;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
 
@@ -79,6 +80,22 @@ public class HttpExchange
     public Throwable getResponseFailure()
     {
         return responseFailure;
+    }
+
+    /**
+     * @return whether this exchange is the last in the conversation
+     */
+    public boolean isLast()
+    {
+        return last;
+    }
+
+    /**
+     * @param last whether this exchange is the last in the conversation
+     */
+    public void setLast(boolean last)
+    {
+        this.last = last;
     }
 
     public void receive()
@@ -159,7 +176,7 @@ public class HttpExchange
             {
                 // Request and response completed
                 LOG.debug("{} complete", this);
-                if (conversation.getLastExchange() == this)
+                if (isLast())
                 {
                     HttpExchange first = conversation.getExchanges().peekFirst();
                     Response.Listener listener = first.getResponseListener();

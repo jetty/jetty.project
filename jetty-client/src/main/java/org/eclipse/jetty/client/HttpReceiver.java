@@ -146,7 +146,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
                 if (handlerListener == null)
                 {
-                    conversation.setLastExchange(exchange);
+                    exchange.setLast(true);
                     if (currentListener == initialListener)
                         conversation.setResponseListener(initialListener);
                     else
