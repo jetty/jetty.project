@@ -50,7 +50,8 @@ public class HttpRequest implements Request
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields();
     private final Map<String, Object> attributes = new HashMap<>();
-    private final List<RequestListener> listeners = new ArrayList<>();
+    private final List<RequestListener> requestListeners = new ArrayList<>();
+    private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final HttpClient client;
     private final long conversation;
     private final String host;
@@ -240,10 +241,10 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public <T extends RequestListener> List<T> getListeners(Class<T> type)
+    public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
         ArrayList<T> result = new ArrayList<>();
-        for (RequestListener listener : listeners)
+        for (RequestListener listener : requestListeners)
             if (type == null || type.isInstance(listener))
                 result.add((T)listener);
         return result;
@@ -252,42 +253,77 @@ public class HttpRequest implements Request
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
     public Request onRequestQueued(QueuedListener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
     public Request onRequestBegin(BeginListener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
     public Request onRequestHeaders(HeadersListener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
     public Request onRequestSuccess(SuccessListener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
     public Request onRequestFailure(FailureListener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseBegin(Response.BeginListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseHeaders(Response.HeadersListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseContent(Response.ContentListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseSuccess(Response.SuccessListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseFailure(Response.FailureListener listener)
+    {
+        this.responseListeners.add(listener);
         return this;
     }
 
@@ -359,9 +395,11 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public void send(final Response.Listener listener)
+    public void send(Response.CompleteListener listener)
     {
-        client.send(this, listener);
+        if (listener != null)
+            responseListeners.add(listener);
+        client.send(this, responseListeners);
     }
 
     @Override

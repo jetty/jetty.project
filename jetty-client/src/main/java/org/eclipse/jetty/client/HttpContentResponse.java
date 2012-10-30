@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
@@ -46,9 +47,9 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public Listener getListener()
+    public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass)
     {
-        return response.getListener();
+        return response.getListeners(listenerClass);
     }
 
     @Override

@@ -46,7 +46,6 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     @Override
     public void onComplete(Result result)
     {
-        super.onComplete(result);
         response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
         failure = result.getFailure();
         latch.countDown();

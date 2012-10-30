@@ -210,43 +210,73 @@ public interface Request
      * @param listenerClass the class of the listener, or null for all listeners classes
      * @return the listeners for request events of the given class
      */
-    <T extends RequestListener> List<T> getListeners(Class<T> listenerClass);
+    <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
     /**
-     * @param listener the listener for request events
+     * @param listener a listener for request events
      * @return this request object
      */
     Request listener(Listener listener);
 
     /**
-     * @param listener the listener for request queued events
+     * @param listener a listener for request queued event
      * @return this request object
      */
     Request onRequestQueued(QueuedListener listener);
 
     /**
-     * @param listener the listener for request begin events
+     * @param listener a listener for request begin event
      * @return this request object
      */
     Request onRequestBegin(BeginListener listener);
 
     /**
-     * @param listener the listener for request headers events
+     * @param listener a listener for request headers event
      * @return this request object
      */
     Request onRequestHeaders(HeadersListener listener);
 
     /**
-     * @param listener the listener for request headers events
+     * @param listener a listener for request success event
      * @return this request object
      */
     Request onRequestSuccess(SuccessListener listener);
 
     /**
-     * @param listener the listener for request headers events
+     * @param listener a listener for request failure event
      * @return this request object
      */
     Request onRequestFailure(FailureListener listener);
+
+    /**
+     * @param listener a listener for response begin event
+     * @return this request object
+     */
+    Request onResponseBegin(Response.BeginListener listener);
+
+    /**
+     * @param listener a listener for response headers event
+     * @return this request object
+     */
+    Request onResponseHeaders(Response.HeadersListener listener);
+
+    /**
+     * @param listener a listener for response content events
+     * @return this request object
+     */
+    Request onResponseContent(Response.ContentListener listener);
+
+    /**
+     * @param listener a listener for response success event
+     * @return this request object
+     */
+    Request onResponseSuccess(Response.SuccessListener listener);
+
+    /**
+     * @param listener a listener for response failure event
+     * @return this request object
+     */
+    Request onResponseFailure(Response.FailureListener listener);
 
     /**
      * Sends this request and returns a {@link Future} that can be used to wait for the
@@ -273,7 +303,7 @@ public interface Request
      *
      * @param listener the listener that receives response events
      */
-    void send(Response.Listener listener);
+    void send(Response.CompleteListener listener);
 
     /**
      * Attempts to abort the send of this request.

@@ -55,14 +55,16 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send(new Response.Listener.Empty()
+                .onResponseBegin(new Response.BeginListener()
                 {
                     @Override
                     public void onBegin(Response response)
                     {
                         response.abort(null);
                     }
-
+                })
+                .send(new Response.CompleteListener()
+                {
                     @Override
                     public void onComplete(Result result)
                     {
@@ -81,13 +83,16 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send(new Response.Listener.Empty()
+                .onResponseHeaders(new Response.HeadersListener()
                 {
                     @Override
                     public void onHeaders(Response response)
                     {
                         response.abort(null);
                     }
+                })
+                .send(new Response.CompleteListener()
+                {
 
                     @Override
                     public void onComplete(Result result)
@@ -126,14 +131,16 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send(new Response.Listener.Empty()
+                .onResponseContent(new Response.ContentListener()
                 {
                     @Override
                     public void onContent(Response response, ByteBuffer content)
                     {
                         response.abort(null);
                     }
-
+                })
+                .send(new Response.CompleteListener()
+                {
                     @Override
                     public void onComplete(Result result)
                     {

@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -34,7 +35,7 @@ public class HttpConversation implements Attributes
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private final HttpClient client;
     private final long id;
-    private volatile Response.Listener listener;
+    private volatile List<Response.ResponseListener> listeners;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -52,14 +53,14 @@ public class HttpConversation implements Attributes
         return exchanges;
     }
 
-    public Response.Listener getResponseListener()
+    public List<Response.ResponseListener> getResponseListeners()
     {
-        return listener;
+        return listeners;
     }
 
-    public void setResponseListener(Response.Listener listener)
+    public void setResponseListeners(List<Response.ResponseListener> listeners)
     {
-        this.listener = listener;
+        this.listeners = listeners;
     }
 
     public void complete()

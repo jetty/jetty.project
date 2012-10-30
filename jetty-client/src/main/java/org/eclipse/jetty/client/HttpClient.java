@@ -45,6 +45,7 @@ import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -265,9 +266,15 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request newRequest(long id, String uri)
+    protected Request copyRequest(Request oldRequest, String newURI)
     {
-        return new HttpRequest(this, id, URI.create(uri));
+        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), URI.create(newURI));
+        newRequest.method(oldRequest.getMethod())
+                .version(oldRequest.getVersion())
+                .content(oldRequest.getContent());
+        for (HttpFields.Field header : oldRequest.getHeaders())
+            newRequest.header(header.getName(), header.getValue());
+        return newRequest;
     }
 
     private String address(String scheme, String host, int port)
@@ -307,7 +314,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(final Request request, Response.Listener listener)
+    protected void send(final Request request, List<Response.ResponseListener> listeners)
     {
         String scheme = request.getScheme().toLowerCase();
         if (!Arrays.asList("http", "https").contains(scheme))
@@ -317,11 +324,12 @@ public class HttpClient extends ContainerLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        if (listener instanceof Schedulable)
-            ((Schedulable)listener).schedule(scheduler);
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Schedulable)
+                ((Schedulable)listener).schedule(scheduler);
 
         HttpDestination destination = provideDestination(scheme, request.getHost(), port);
-        destination.send(request, listener);
+        destination.send(request, listeners);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)

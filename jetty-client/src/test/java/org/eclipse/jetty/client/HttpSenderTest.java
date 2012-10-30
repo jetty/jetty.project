@@ -79,7 +79,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(request, null);
+        connection.send(request, (Response.CompleteListener)null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -96,7 +96,7 @@ public class HttpSenderTest
         HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
-        connection.send(request, null);
+        connection.send(request, (Response.CompleteListener)null);
 
         // This take will free space in the buffer and allow for the write to complete
         StringBuilder builder = new StringBuilder(endPoint.takeOutputString());
@@ -126,7 +126,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.onRequestFailure(new Request.FailureListener()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -155,7 +155,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.onRequestFailure(new Request.FailureListener()
+        request.listener(new Request.Listener.Empty()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -207,7 +207,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(request, null);
+        connection.send(request, (Response.CompleteListener)null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -242,7 +242,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(request, null);
+        connection.send(request, (Response.CompleteListener)null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -284,7 +284,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(request, null);
+        connection.send(request, (Response.CompleteListener)null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));

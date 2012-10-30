@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client.api;
 
 import java.nio.ByteBuffer;
+import java.util.EventListener;
+import java.util.List;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -42,9 +44,9 @@ public interface Response
     long getConversationID();
 
     /**
-     * @return the response listener passed to {@link Request#send(Listener)}
+     * @return the response listener passed to {@link Request#send(CompleteListener)}
      */
-    Listener getListener();
+    <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);
 
     /**
      * @return the HTTP version of this response, such as "HTTP/1.1"
@@ -74,10 +76,11 @@ public interface Response
      */
     boolean abort(String reason);
 
-    /**
-     * Listener for response events
-     */
-    public interface Listener
+    public interface ResponseListener extends EventListener
+    {
+    }
+
+    public interface BeginListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response line containing HTTP version,
@@ -88,14 +91,20 @@ public interface Response
          * @param response the response containing the response line data
          */
         public void onBegin(Response response);
+    }
 
+    public interface HeadersListener extends ResponseListener
+    {
         /**
          * Callback method invoked when the response headers have been received and parsed.
          *
          * @param response the response containing the response line data and the headers
          */
         public void onHeaders(Response response);
+    }
 
+    public interface ContentListener extends ResponseListener
+    {
         /**
          * Callback method invoked when the response content has been received.
          * This method may be invoked multiple times, and the {@code content} buffer must be consumed
@@ -105,14 +114,20 @@ public interface Response
          * @param content the content bytes received
          */
         public void onContent(Response response, ByteBuffer content);
+    }
 
+    public interface SuccessListener extends ResponseListener
+    {
         /**
          * Callback method invoked when the whole response has been successfully received.
          *
          * @param response the response containing the response line data and the headers
          */
         public void onSuccess(Response response);
+    }
 
+    public interface FailureListener extends ResponseListener
+    {
         /**
          * Callback method invoked when the response has failed in the process of being received
          *
@@ -120,7 +135,10 @@ public interface Response
          * @param failure the failure happened
          */
         public void onFailure(Response response, Throwable failure);
+    }
 
+    public interface CompleteListener extends ResponseListener
+    {
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
          * either successfully or not.
@@ -129,13 +147,20 @@ public interface Response
          * <p/>
          * Requests may complete <em>after</em> response, for example in case of big uploads that are
          * discarded or read asynchronously by the server.
-         * This method is always invoked <em>after</em> {@link #onSuccess(Response)} or
-         * {@link #onFailure(Response, Throwable)}, and only when request indicates that it is completed.
+         * This method is always invoked <em>after</em> {@link SuccessListener#onSuccess(Response)} or
+         * {@link FailureListener#onFailure(Response, Throwable)}, and only when request indicates that
+         * it is completed.
          *
          * @param result the result of the request / response exchange
          */
         public void onComplete(Result result);
+    }
 
+    /**
+     * Listener for response events
+     */
+    public interface Listener extends BeginListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    {
         /**
          * An empty implementation of {@link Listener}
          */

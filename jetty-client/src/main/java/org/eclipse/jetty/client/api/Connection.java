@@ -37,7 +37,7 @@ public interface Connection extends AutoCloseable
      * @param request the request to send
      * @param listener the response listener
      */
-    void send(Request request, Response.Listener listener);
+    void send(Request request, Response.CompleteListener listener);
 
     @Override
     void close();

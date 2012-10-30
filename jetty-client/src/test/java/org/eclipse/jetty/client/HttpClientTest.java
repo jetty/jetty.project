@@ -371,18 +371,19 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .onResponseFailure(new Response.FailureListener()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
                     {
                         latch.countDown();
                     }
-                });
+                })
+                .send(null);
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send(new Response.Listener.Empty()
+                .onResponseSuccess(new Response.SuccessListener()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -390,7 +391,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         Assert.assertEquals(200, response.getStatus());
                         latch.countDown();
                     }
-                });
+                })
+                .send(null);
 
         Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }

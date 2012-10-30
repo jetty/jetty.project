@@ -50,7 +50,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final String scheme;
     private final String host;
     private final int port;
-    private final Queue<RequestPair> requests;
+    private final Queue<RequestContext> requests;
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
     private final RequestNotifier requestNotifier;
@@ -97,7 +97,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return port;
     }
 
-    public void send(Request request, Response.Listener listener)
+    public void send(Request request, List<Response.ResponseListener> listeners)
     {
         if (!scheme.equals(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
@@ -107,12 +107,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         if (port >= 0 && this.port != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
 
-        RequestPair requestPair = new RequestPair(request, listener);
+        RequestContext requestContext = new RequestContext(request, listeners);
         if (client.isRunning())
         {
-            if (requests.offer(requestPair))
+            if (requests.offer(requestContext))
             {
-                if (!client.isRunning() && requests.remove(requestPair))
+                if (!client.isRunning() && requests.remove(requestContext))
                 {
                     throw new RejectedExecutionException(client + " is stopping");
                 }
@@ -202,15 +202,15 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
     private void drain(Throwable x)
     {
-        RequestPair pair;
-        while ((pair = requests.poll()) != null)
+        RequestContext requestContext;
+        while ((requestContext = requests.poll()) != null)
         {
-            Request request = pair.request;
+            Request request = requestContext.request;
             requestNotifier.notifyFailure(request, x);
-            Response.Listener listener = pair.listener;
-            HttpResponse response = new HttpResponse(request, listener);
-            responseNotifier.notifyFailure(listener, response, x);
-            responseNotifier.notifyComplete(listener, new Result(request, x, response, x));
+            List<Response.ResponseListener> listeners = requestContext.listeners;
+            HttpResponse response = new HttpResponse(request, listeners);
+            responseNotifier.notifyFailure(listeners, response, x);
+            responseNotifier.notifyComplete(listeners, new Result(request, x, response, x));
         }
     }
 
@@ -223,37 +223,40 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
      *
      * @param connection the new connection
      */
-    protected void process(final Connection connection, boolean dispatch)
+    protected void process(Connection connection, boolean dispatch)
     {
-        RequestPair requestPair = requests.poll();
-        if (requestPair == null)
+        // Ugly cast, but lack of generic reification forces it
+        final HttpConnection httpConnection = (HttpConnection)connection;
+
+        RequestContext requestContext = requests.poll();
+        if (requestContext == null)
         {
-            LOG.debug("{} idle", connection);
-            if (!idleConnections.offer(connection))
+            LOG.debug("{} idle", httpConnection);
+            if (!idleConnections.offer(httpConnection))
             {
                 LOG.debug("{} idle overflow");
-                connection.close();
+                httpConnection.close();
             }
             if (!client.isRunning())
             {
                 LOG.debug("{} is stopping", client);
-                remove(connection);
-                connection.close();
+                remove(httpConnection);
+                httpConnection.close();
             }
         }
         else
         {
-            final Request request = requestPair.request;
-            final Response.Listener listener = requestPair.listener;
+            final Request request = requestContext.request;
+            final List<Response.ResponseListener> listeners = requestContext.listeners;
             if (request.aborted())
             {
-                abort(request, listener, "Aborted");
+                abort(request, listeners, "Aborted");
                 LOG.debug("Aborted {} before processing", request);
             }
             else
             {
-                LOG.debug("{} active", connection);
-                if (!activeConnections.offer(connection))
+                LOG.debug("{} active", httpConnection);
+                if (!activeConnections.offer(httpConnection))
                 {
                     LOG.warn("{} active overflow");
                 }
@@ -264,13 +267,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                         @Override
                         public void run()
                         {
-                            connection.send(request, listener);
+                            httpConnection.send(request, listeners);
                         }
                     });
                 }
                 else
                 {
-                    connection.send(request, listener);
+                    httpConnection.send(request, listeners);
                 }
             }
         }
@@ -333,14 +336,14 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
     public boolean abort(Request request, String reason)
     {
-        for (RequestPair pair : requests)
+        for (RequestContext requestContext : requests)
         {
-            if (pair.request == request)
+            if (requestContext.request == request)
             {
-                if (requests.remove(pair))
+                if (requests.remove(requestContext))
                 {
                     // We were able to remove the pair, so it won't be processed
-                    abort(request, pair.listener, reason);
+                    abort(request, requestContext.listeners, reason);
                     LOG.debug("Aborted {} while queued", request);
                     return true;
                 }
@@ -349,13 +352,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return false;
     }
 
-    private void abort(Request request, Response.Listener listener, String reason)
+    private void abort(Request request, List<Response.ResponseListener> listeners, String reason)
     {
-        HttpResponse response = new HttpResponse(request, listener);
+        HttpResponse response = new HttpResponse(request, listeners);
         HttpResponseException responseFailure = new HttpResponseException(reason, response);
-        responseNotifier.notifyFailure(listener, response, responseFailure);
+        responseNotifier.notifyFailure(listeners, response, responseFailure);
         HttpRequestException requestFailure = new HttpRequestException(reason, request);
-        responseNotifier.notifyComplete(listener, new Result(request, requestFailure, response, responseFailure));
+        responseNotifier.notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
     }
 
     @Override
@@ -382,15 +385,15 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return String.format("%s(%s://%s:%d)", HttpDestination.class.getSimpleName(), getScheme(), getHost(), getPort());
     }
 
-    private static class RequestPair
+    private static class RequestContext
     {
         private final Request request;
-        private final Response.Listener listener;
+        private final List<Response.ResponseListener> listeners;
 
-        private RequestPair(Request request, Response.Listener listener)
+        private RequestContext(Request request, List<Response.ResponseListener> listeners)
         {
             this.request = request;
-            this.listener = listener;
+            this.listeners = listeners;
         }
     }
 }

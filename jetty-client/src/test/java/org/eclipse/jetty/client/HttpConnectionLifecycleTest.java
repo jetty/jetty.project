@@ -76,7 +76,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .onResponseHeaders(new Response.HeadersListener()
                 {
                     @Override
                     public void onHeaders(Response response)
@@ -85,7 +85,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         Assert.assertEquals(1, activeConnections.size());
                         headersLatch.countDown();
                     }
-
+                })
+                .send(new Response.Listener.Empty()
+                {
                     @Override
                     public void onSuccess(Response response)
                     {

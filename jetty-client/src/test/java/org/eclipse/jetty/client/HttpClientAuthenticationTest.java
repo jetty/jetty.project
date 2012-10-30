@@ -99,14 +99,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_BasicAuthentication() throws Exception
     {
         startBasic(new EmptyServerHandler());
-        test_Authentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
     @Test
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyServerHandler());
-        test_Authentication(new DigestAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        test_Authentication(new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
     private void test_Authentication(Authentication authentication) throws Exception
@@ -189,7 +191,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
@@ -227,7 +230,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
@@ -268,7 +272,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
-        BasicAuthentication authentication = new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic");
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");

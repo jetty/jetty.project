@@ -20,6 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -139,30 +141,41 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
-                Response.Listener currentListener = exchange.getResponseListener();
-                Response.Listener initialListener = conversation.getExchanges().peekFirst().getResponseListener();
+                HttpExchange initialExchange = conversation.getExchanges().peekFirst();
                 HttpClient client = connection.getHttpClient();
                 ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
                 Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
                 if (handlerListener == null)
                 {
                     exchange.setLast(true);
-                    if (currentListener == initialListener)
-                        conversation.setResponseListener(initialListener);
+                    if (initialExchange == exchange)
+                    {
+                        conversation.setResponseListeners(exchange.getResponseListeners());
+                    }
                     else
-                        conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
+                    {
+                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
+                        listeners.addAll(initialExchange.getResponseListeners());
+                        conversation.setResponseListeners(listeners);
+                    }
                 }
                 else
                 {
                     LOG.debug("Found protocol handler {}", protocolHandler);
-                    if (currentListener == initialListener)
-                        conversation.setResponseListener(handlerListener);
+                    if (initialExchange == exchange)
+                    {
+                        conversation.setResponseListeners(Collections.<Response.ResponseListener>singletonList(handlerListener));
+                    }
                     else
-                        conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, handlerListener));
+                    {
+                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
+                        listeners.add(handlerListener);
+                        conversation.setResponseListeners(listeners);
+                    }
                 }
 
                 LOG.debug("Receiving {}", response);
-                responseNotifier.notifyBegin(conversation.getResponseListener(), response);
+                responseNotifier.notifyBegin(conversation.getResponseListeners(), response);
             }
         }
         return false;
@@ -212,7 +225,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
                 LOG.debug("Headers {}", response);
-                responseNotifier.notifyHeaders(conversation.getResponseListener(), response);
+                responseNotifier.notifyHeaders(conversation.getResponseListeners(), response);
 
                 Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
                 if (contentEncodings != null)
@@ -254,7 +267,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
                 }
 
-                responseNotifier.notifyContent(conversation.getResponseListener(), response, buffer);
+                responseNotifier.notifyContent(conversation.getResponseListeners(), response, buffer);
             }
         }
         return false;
@@ -287,8 +300,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         exchange.terminateResponse();
 
         HttpResponse response = exchange.getResponse();
-        Response.Listener listener = exchange.getConversation().getResponseListener();
-        responseNotifier.notifySuccess(listener, response);
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+        responseNotifier.notifySuccess(listeners, response);
         LOG.debug("Received {}", response);
 
         Result result = completion.getReference();
@@ -296,7 +309,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             connection.complete(exchange, !result.isFailed());
 
-            responseNotifier.notifyComplete(listener, result);
+            responseNotifier.notifyComplete(listeners, result);
         }
 
         return true;
@@ -330,7 +343,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
         HttpResponse response = exchange.getResponse();
         HttpConversation conversation = exchange.getConversation();
-        responseNotifier.notifyFailure(conversation.getResponseListener(), response, failure);
+        responseNotifier.notifyFailure(conversation.getResponseListeners(), response, failure);
         LOG.debug("Failed {} {}", response, failure);
 
         Result result = completion.getReference();
@@ -338,7 +351,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             connection.complete(exchange, false);
 
-            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
+            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;

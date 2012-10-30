@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 
 public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
@@ -115,19 +116,10 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
 
-            Request redirect = client.newRequest(request.getConversationID(), location);
+            Request redirect = client.copyRequest(request, location);
 
             // Use given method
             redirect.method(method);
-
-            redirect.version(request.getVersion());
-
-            // Copy headers
-            for (HttpFields.Field header : request.getHeaders())
-                redirect.header(header.getName(), header.getValue());
-
-            // Copy content
-            redirect.content(request.getContent());
 
             redirect.onRequestBegin(new Request.BeginListener()
             {
@@ -139,7 +131,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                 }
             });
 
-            redirect.send(new Response.Listener.Empty());
+            redirect.send(null);
         }
         else
         {
@@ -152,9 +144,9 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         Request request = result.getRequest();
         Response response = result.getResponse();
         HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-        Response.Listener listener = conversation.getExchanges().peekFirst().getResponseListener();
+        List<Response.ResponseListener> listeners = conversation.getExchanges().peekFirst().getResponseListeners();
         // TODO: should we replay all events, or just the failure ?
-        notifier.notifyFailure(listener, response, failure);
-        notifier.notifyComplete(listener, new Result(request, response, failure));
+        notifier.notifyFailure(listeners, response, failure);
+        notifier.notifyComplete(listeners, new Result(request, response, failure));
     }
 }

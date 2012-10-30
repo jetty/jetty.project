@@ -33,7 +33,7 @@ import org.eclipse.jetty.http.HttpHeader;
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  */
-public class BufferingResponseListener extends Response.Listener.Empty
+public abstract class BufferingResponseListener extends Response.Listener.Empty
 {
     private final int maxLength;
     private volatile byte[] buffer = new byte[0];
@@ -94,6 +94,9 @@ public class BufferingResponseListener extends Response.Listener.Empty
         content.get(newBuffer, buffer.length, content.remaining());
         buffer = newBuffer;
     }
+
+    @Override
+    public abstract void onComplete(Result result);
 
     public String getEncoding()
     {

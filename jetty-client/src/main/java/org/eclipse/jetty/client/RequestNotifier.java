@@ -35,7 +35,7 @@ public class RequestNotifier
 
     public void notifyQueued(Request request)
     {
-        for (Request.QueuedListener listener : request.getListeners(Request.QueuedListener.class))
+        for (Request.QueuedListener listener : request.getRequestListeners(Request.QueuedListener.class))
             notifyQueued(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyQueued(listener, request);
@@ -56,7 +56,7 @@ public class RequestNotifier
 
     public void notifyBegin(Request request)
     {
-        for (Request.BeginListener listener : request.getListeners(Request.BeginListener.class))
+        for (Request.BeginListener listener : request.getRequestListeners(Request.BeginListener.class))
             notifyBegin(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyBegin(listener, request);
@@ -77,7 +77,7 @@ public class RequestNotifier
 
     public void notifyHeaders(Request request)
     {
-        for (Request.HeadersListener listener : request.getListeners(Request.HeadersListener.class))
+        for (Request.HeadersListener listener : request.getRequestListeners(Request.HeadersListener.class))
             notifyHeaders(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyHeaders(listener, request);
@@ -98,7 +98,7 @@ public class RequestNotifier
 
     public void notifySuccess(Request request)
     {
-        for (Request.SuccessListener listener : request.getListeners(Request.SuccessListener.class))
+        for (Request.SuccessListener listener : request.getRequestListeners(Request.SuccessListener.class))
             notifySuccess(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifySuccess(listener, request);
@@ -119,7 +119,7 @@ public class RequestNotifier
 
     public void notifyFailure(Request request, Throwable failure)
     {
-        for (Request.FailureListener listener : request.getListeners(Request.FailureListener.class))
+        for (Request.FailureListener listener : request.getRequestListeners(Request.FailureListener.class))
             notifyFailure(listener, request, failure);
         for (Request.Listener listener : client.getRequestListeners())
             notifyFailure(listener, request, failure);
