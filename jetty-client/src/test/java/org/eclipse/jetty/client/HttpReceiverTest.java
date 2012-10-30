@@ -34,13 +34,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpReceiverTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     private HttpClient client;
     private HttpDestination destination;
     private ByteArrayEndPoint endPoint;

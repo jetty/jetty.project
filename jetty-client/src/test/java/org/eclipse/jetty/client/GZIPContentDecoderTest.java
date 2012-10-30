@@ -25,6 +25,8 @@ import java.nio.charset.Charset;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,6 +35,9 @@ import static org.junit.Assert.assertTrue;
 
 public class GZIPContentDecoderTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     @Test
     public void testStreamNoBlocks() throws Exception
     {

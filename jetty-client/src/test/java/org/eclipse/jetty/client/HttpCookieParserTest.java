@@ -21,11 +21,16 @@ package org.eclipse.jetty.client;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpCookieParserTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     @Test
     public void testParseCookie1() throws Exception
     {

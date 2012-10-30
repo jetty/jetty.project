@@ -28,14 +28,19 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpSenderTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     private HttpClient client;
 
     @Before
