@@ -289,7 +289,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestBegin(new Request.BeginListener()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -316,7 +316,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestQueued(new Request.QueuedListener()
                 {
                     @Override
                     public void onQueued(Request request)
@@ -419,7 +419,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .file(file)
-                .listener(new Request.Listener.Empty()
+                .onRequestSuccess(new Request.SuccessListener()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -529,7 +529,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestBegin(new Request.BeginListener()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -621,8 +621,4 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
     }
-
-    // TODO: add a test to idle timeout a request that is in the queue...
-    // TODO: even though "idle timeout" only applies to connections
-    // TODO: so do we still need a "global" timeout that takes in count queue time + send time + receive time ?
 }

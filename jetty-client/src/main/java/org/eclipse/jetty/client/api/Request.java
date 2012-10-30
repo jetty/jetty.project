@@ -20,12 +20,12 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -207,15 +207,46 @@ public interface Request
     Request followRedirects(boolean follow);
 
     /**
-     * @return the listener for request events
+     * @param listenerClass the class of the listener, or null for all listeners classes
+     * @return the listeners for request events of the given class
      */
-    List<Listener> getListeners();
+    <T extends RequestListener> List<T> getListeners(Class<T> listenerClass);
 
     /**
      * @param listener the listener for request events
      * @return this request object
      */
     Request listener(Listener listener);
+
+    /**
+     * @param listener the listener for request queued events
+     * @return this request object
+     */
+    Request onRequestQueued(QueuedListener listener);
+
+    /**
+     * @param listener the listener for request begin events
+     * @return this request object
+     */
+    Request onRequestBegin(BeginListener listener);
+
+    /**
+     * @param listener the listener for request headers events
+     * @return this request object
+     */
+    Request onRequestHeaders(HeadersListener listener);
+
+    /**
+     * @param listener the listener for request headers events
+     * @return this request object
+     */
+    Request onRequestSuccess(SuccessListener listener);
+
+    /**
+     * @param listener the listener for request headers events
+     * @return this request object
+     */
+    Request onRequestFailure(FailureListener listener);
 
     /**
      * Sends this request and returns a {@link Future} that can be used to wait for the
@@ -257,10 +288,11 @@ public interface Request
      */
     boolean aborted();
 
-    /**
-     * Listener for request events
-     */
-    public interface Listener
+    public interface RequestListener extends EventListener
+    {
+    }
+
+    public interface QueuedListener extends RequestListener
     {
         /**
          * Callback method invoked when the request is queued, waiting to be sent
@@ -268,7 +300,10 @@ public interface Request
          * @param request the request being queued
          */
         public void onQueued(Request request);
+    }
 
+    public interface BeginListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request begins being processed in order to be sent.
          * This is the last opportunity to modify the request.
@@ -276,7 +311,10 @@ public interface Request
          * @param request the request that begins being processed
          */
         public void onBegin(Request request);
+    }
 
+    public interface HeadersListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
          * The request is now committed, and in transit to the server, and further modifications to the
@@ -284,21 +322,33 @@ public interface Request
          * @param request the request that has been committed
          */
         public void onHeaders(Request request);
+    }
 
+    public interface SuccessListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request has been successfully sent.
          *
          * @param request the request sent
          */
         public void onSuccess(Request request);
+    }
 
+    public interface FailureListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request has failed to be sent
          * @param request the request that failed
          * @param failure the failure
          */
         public void onFailure(Request request, Throwable failure);
+    }
 
+    /**
+     * Listener for all request events
+     */
+    public interface Listener extends QueuedListener, BeginListener, HeadersListener, SuccessListener, FailureListener
+    {
         /**
          * An empty implementation of {@link Listener}
          */

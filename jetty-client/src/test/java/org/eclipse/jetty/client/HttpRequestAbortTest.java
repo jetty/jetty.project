@@ -139,7 +139,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .listener(new Request.Listener.Empty()
+                    .onRequestHeaders(new Request.HeadersListener()
                     {
                         @Override
                         public void onHeaders(Request request)
@@ -191,7 +191,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .listener(new Request.Listener.Empty()
+                    .onRequestHeaders(new Request.HeadersListener()
                     {
                         @Override
                         public void onHeaders(Request request)

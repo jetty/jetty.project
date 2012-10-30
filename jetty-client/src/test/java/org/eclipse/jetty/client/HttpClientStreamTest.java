@@ -72,7 +72,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .file(upload)
-                .listener(new Request.Listener.Empty()
+                .onRequestSuccess(new Request.SuccessListener()
                 {
                     @Override
                     public void onSuccess(Request request)

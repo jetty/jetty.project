@@ -129,7 +129,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             // Copy content
             redirect.content(request.getContent());
 
-            redirect.listener(new Request.Listener.Empty()
+            redirect.onRequestBegin(new Request.BeginListener()
             {
                 @Override
                 public void onBegin(Request redirect)

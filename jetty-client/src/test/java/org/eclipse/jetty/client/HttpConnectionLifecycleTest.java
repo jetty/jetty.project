@@ -68,7 +68,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestSuccess(new Request.SuccessListener()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -308,7 +308,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestFailure(new Request.FailureListener()
                 {
                     @Override
                     public void onFailure(Request request, Throwable failure)

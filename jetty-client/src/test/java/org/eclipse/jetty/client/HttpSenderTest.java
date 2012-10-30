@@ -126,7 +126,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.listener(new Request.Listener.Empty()
+        request.onRequestFailure(new Request.FailureListener()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -155,7 +155,7 @@ public class HttpSenderTest
         HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        request.listener(new Request.Listener.Empty()
+        request.onRequestFailure(new Request.FailureListener()
         {
             @Override
             public void onFailure(Request request, Throwable x)

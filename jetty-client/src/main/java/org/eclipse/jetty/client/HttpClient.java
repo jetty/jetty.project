@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Asynchronously
  * HttpClient client = new HttpClient();
- * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
+ * client.newRequest("http://localhost:8080").send(new Response.Listener.Empty()
  * {
  *     &#64;Override
  *     public void onSuccess(Response response)
