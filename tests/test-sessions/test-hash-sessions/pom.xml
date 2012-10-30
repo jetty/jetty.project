@@ -68,7 +68,8 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
+      <!-- Leaving at compile scope for intellij bug reasons -->
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 </project>
