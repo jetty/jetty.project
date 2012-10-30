@@ -221,7 +221,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         BasicDBObject invalidQuery = new BasicDBObject();
 
         invalidQuery.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _purgeInvalidAge));
-        invalidQuery.put(MongoSessionManager.__VALID, __valid_false);
+        invalidQuery.put(MongoSessionManager.__VALID, false);
         
         DBCursor oldSessions = _sessions.find(invalidQuery, new BasicDBObject(MongoSessionManager.__ID, 1));
 
@@ -239,9 +239,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             BasicDBObject validQuery = new BasicDBObject();
 
             validQuery.put(MongoSessionManager.__ACCESSED,new BasicDBObject("$lt",System.currentTimeMillis() - _purgeValidAge));
-            validQuery.put(MongoSessionManager.__VALID, __valid_false);
+            validQuery.put(MongoSessionManager.__VALID, true);
 
-            oldSessions = _sessions.find(invalidQuery,new BasicDBObject(MongoSessionManager.__ID,1));
+            oldSessions = _sessions.find(validQuery,new BasicDBObject(MongoSessionManager.__ID,1));
 
             for (DBObject session : oldSessions)
             {
@@ -421,7 +421,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                         purge();
                     }
                 };
-                _purgeTimer.schedule(_purgeTask,_purgeDelay);
+               
+                _purgeTimer.schedule(_purgeTask,0,_purgeDelay);
             }
         }
     }

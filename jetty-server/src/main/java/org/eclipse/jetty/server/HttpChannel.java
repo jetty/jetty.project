@@ -78,7 +78,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
-    private final HttpChannelConfig _configuration;
+    private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
     private final HttpURI _uri;
@@ -90,7 +90,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
 
-    public HttpChannel(Connector connector, HttpChannelConfig configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
     {
         _connector = connector;
         _configuration = configuration;
@@ -131,7 +131,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _connector.getByteBufferPool();
     }
 
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
         return _configuration;
     }
@@ -240,7 +240,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         _request.setTimeStamp(System.currentTimeMillis());
                         _request.setDispatcherType(DispatcherType.REQUEST);
                         
-                        for (HttpChannelConfig.Customizer customizer : _configuration.getCustomizers())
+                        for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
                             customizer.customize(getConnector(),_configuration,_request);
                         getServer().handle(this);
                     }

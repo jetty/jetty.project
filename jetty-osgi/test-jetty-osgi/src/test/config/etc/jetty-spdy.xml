@@ -6,7 +6,7 @@
     <!-- =========================================================== -->
     <!-- HttpChannel Configuration                                   -->
     <!-- =========================================================== -->
-    <New id="httpConfig" class="org.eclipse.jetty.server.HttpChannelConfig">
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
       <Set name="secureScheme">https</Set>
       <Set name="securePort"><SystemProperty name="jetty.spdy.port" default="8443"/></Set>
       <Set name="outputBufferSize">32768</Set>

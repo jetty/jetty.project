@@ -5,7 +5,8 @@
  
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.ServerConnector">
+          <New class="org.eclipse.jetty.server.ServerConnector">
+            <Arg><Ref id="ExampleServer"/></Arg>
             <Set name="port">8080</Set>
           </New>
       </Arg>

@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -92,7 +92,7 @@ public abstract class AbstractHTTPSPDYTest
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version,new HttpChannelConfig(), new PushStrategy.None());
+        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version,new HttpConfiguration(), new PushStrategy.None());
         return connector;
     }
 

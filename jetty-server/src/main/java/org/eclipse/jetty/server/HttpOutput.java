@@ -62,7 +62,7 @@ public class HttpOutput extends ServletOutputStream
     public HttpOutput(HttpChannel<?> channel)
     {
         _channel = channel;
-        _bufferSize = _channel.getHttpChannelConfig().getOutputBufferSize();
+        _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
     }
 
     public boolean isWritten()

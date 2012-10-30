@@ -100,7 +100,7 @@ public class CheckReverseProxyHeadersTest
         Server server = new Server();
         // Activate reverse proxy headers checking
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpChannelConfig().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
 
         LocalConnector connector = new LocalConnector(server,http);
 

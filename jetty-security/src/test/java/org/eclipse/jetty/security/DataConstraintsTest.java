@@ -28,7 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -62,16 +62,16 @@ public class DataConstraintsTest
         _server = new Server();
         
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpChannelConfig().setSecurePort(9999);
-        http.getHttpChannelConfig().setSecureScheme("BWTP");
+        http.getHttpConfiguration().setSecurePort(9999);
+        http.getHttpConfiguration().setSecureScheme("BWTP");
         _connector = new LocalConnector(_server,http);
         _connector.setIdleTimeout(300000);
 
         HttpConnectionFactory https = new HttpConnectionFactory();
-        https.getHttpChannelConfig().addCustomizer(new HttpChannelConfig.Customizer()
+        https.getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
         {
             @Override
-            public void customize(Connector connector, HttpChannelConfig channelConfig, Request request)
+            public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
             {
                 request.setScheme(HttpScheme.HTTPS.asString());
                 request.setSecure(true);

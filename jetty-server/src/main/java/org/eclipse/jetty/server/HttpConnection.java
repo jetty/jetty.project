@@ -51,7 +51,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
-    private final HttpChannelConfig _config;
+    private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
     private final HttpGenerator _generator;
@@ -91,12 +91,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         __currentConnection.set(connection);
     }
 
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
         return _config;
     }
 
-    public HttpConnection(HttpChannelConfig config, Connector connector, EndPoint endPoint)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
         // Tell AbstractConnector executeOnFillable==false because we are guaranteeing that onfillable
         // will never block nor take an excessive amount of CPU.  ie it is OK for the selector thread to
@@ -116,7 +116,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpParser newHttpParser()
     {
-        return new HttpParser(newRequestHandler(), getHttpChannelConfig().getRequestHeaderSize());
+        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
     }
 
     protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
@@ -621,7 +621,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
-        public HttpChannelOverHttp(Connector connector, HttpChannelConfig config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+        public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
         }

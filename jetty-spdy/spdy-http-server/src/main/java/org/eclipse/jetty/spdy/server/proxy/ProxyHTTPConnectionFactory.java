@@ -25,33 +25,33 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 
-public class ProxyHTTPConnectionFactory extends AbstractConnectionFactory implements HttpChannelConfig.ConnectionFactory
+public class ProxyHTTPConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final short version;
     private final ProxyEngineSelector proxyEngineSelector;
-    private final HttpChannelConfig httpChannelConfig;
+    private final HttpConfiguration httpConfiguration;
 
-    public ProxyHTTPConnectionFactory(HttpChannelConfig httpChannelConfig,short version, ProxyEngineSelector proxyEngineSelector)
+    public ProxyHTTPConnectionFactory(HttpConfiguration httpConfiguration,short version, ProxyEngineSelector proxyEngineSelector)
     {
         // replaces http/1.1
         super(HttpVersion.HTTP_1_1.asString());
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
-        this.httpChannelConfig=httpChannelConfig;
+        this.httpConfiguration=httpConfiguration;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new ProxyHTTPSPDYConnection(connector, httpChannelConfig, endPoint, version, proxyEngineSelector),connector,endPoint);
+        return configure(new ProxyHTTPSPDYConnection(connector, httpConfiguration, endPoint, version, proxyEngineSelector),connector,endPoint);
     }
 
     @Override
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
-        return httpChannelConfig;
+        return httpConfiguration;
     }
 
 }
