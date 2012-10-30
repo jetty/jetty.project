@@ -331,8 +331,8 @@ public class HttpRequest implements Request
         aborted = true;
         if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, reason))
             return true;
-        HttpConversation conversation = client.getConversation(getConversationID());
-        return conversation.abort(reason);
+        HttpConversation conversation = client.getConversation(getConversationID(), false);
+        return conversation != null && conversation.abort(reason);
     }
 
     @Override

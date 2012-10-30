@@ -111,7 +111,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         idleTimeout = endPoint.getIdleTimeout();
         endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.getConversationID());
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.getExchanges().offer(exchange);

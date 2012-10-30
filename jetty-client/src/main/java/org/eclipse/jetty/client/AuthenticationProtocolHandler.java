@@ -79,7 +79,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            HttpConversation conversation = client.getConversation(request.getConversationID());
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
             Response.Listener listener = conversation.getExchanges().peekFirst().getResponseListener();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())

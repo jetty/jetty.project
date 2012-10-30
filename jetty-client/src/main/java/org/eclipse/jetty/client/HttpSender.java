@@ -123,7 +123,7 @@ public class HttpSender
                 return;
 
             final Request request = exchange.getRequest();
-            HttpConversation conversation = client.getConversation(request.getConversationID());
+            HttpConversation conversation = exchange.getConversation();
             HttpGenerator.RequestInfo requestInfo = null;
 
             boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());

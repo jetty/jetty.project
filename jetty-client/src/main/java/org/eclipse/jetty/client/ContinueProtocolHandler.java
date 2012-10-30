@@ -41,7 +41,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
     public boolean accept(Request request, Response response)
     {
         boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        boolean handled100 = client.getConversation(request.getConversationID()).getAttribute(ATTRIBUTE) != null;
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        boolean handled100 = conversation != null && conversation.getAttribute(ATTRIBUTE) != null;
         return expect100 && !handled100;
     }
 
@@ -60,7 +61,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Handling of success must be done here and not from onComplete(),
             // since the onComplete() is not invoked because the request is not completed yet.
 
-            HttpConversation conversation = client.getConversation(response.getConversationID());
+            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
@@ -92,7 +93,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
         @Override
         public void onFailure(Response response, Throwable failure)
         {
-            HttpConversation conversation = client.getConversation(response.getConversationID());
+            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 

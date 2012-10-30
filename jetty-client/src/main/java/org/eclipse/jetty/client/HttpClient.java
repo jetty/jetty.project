@@ -365,10 +365,10 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
-    protected HttpConversation getConversation(long id)
+    protected HttpConversation getConversation(long id, boolean create)
     {
         HttpConversation conversation = conversations.get(id);
-        if (conversation == null)
+        if (conversation == null && create)
         {
             conversation = new HttpConversation(this, id);
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
@@ -395,7 +395,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         for (ProtocolHandler handler : getProtocolHandlers())
         {
-            if (handler.accept(request,  response))
+            if (handler.accept(request, response))
                 return handler;
         }
         return null;

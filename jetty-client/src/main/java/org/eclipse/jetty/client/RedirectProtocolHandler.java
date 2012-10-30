@@ -105,7 +105,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     private void redirect(Result result, HttpMethod method, String location)
     {
         final Request request = result.getRequest();
-        HttpConversation conversation = client.getConversation(request.getConversationID());
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
             redirects = 0;
@@ -151,7 +151,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     {
         Request request = result.getRequest();
         Response response = result.getResponse();
-        HttpConversation conversation = client.getConversation(request.getConversationID());
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         Response.Listener listener = conversation.getExchanges().peekFirst().getResponseListener();
         // TODO: should we replay all events, or just the failure ?
         notifier.notifyFailure(listener, response, failure);
