@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxDropChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxFlowControl;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxNewChannelSlot;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.junit.Assert;
 
 public class MuxEventCapture implements MuxParser.Listener
@@ -42,6 +43,24 @@ public class MuxEventCapture implements MuxParser.Listener
     public void assertFrameCount(int expected)
     {
         Assert.assertThat("Frame Count",frames.size(), is(expected));
+    }
+
+    public void assertHasFrame(byte opcode, long channelId, int expectedCount)
+    {
+        int actualCount = 0;
+
+        for (MuxedFrame frame : frames)
+        {
+            if (frame.getChannelId() == channelId)
+            {
+                if (frame.getOpCode() == opcode)
+                {
+                    actualCount++;
+                }
+            }
+        }
+
+        Assert.assertThat("Expected Count of " + OpCode.name(opcode) + " frames on Channel ID " + channelId,actualCount,is(expectedCount));
     }
 
     public void assertHasOp(byte opCode, int expectedCount)

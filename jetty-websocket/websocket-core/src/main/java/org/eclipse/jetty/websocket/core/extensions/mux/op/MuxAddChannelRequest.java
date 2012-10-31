@@ -65,6 +65,16 @@ public class MuxAddChannelRequest implements MuxControlBlock
         return rsv;
     }
 
+    public boolean isDeltaEncoded()
+    {
+        return (enc == 1);
+    }
+
+    public boolean isIdentityEncoded()
+    {
+        return (enc == 0);
+    }
+
     public void setChannelId(long channelId)
     {
         this.channelId = channelId;

@@ -29,6 +29,8 @@ import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.io.LocalWebSocketConnection;
+import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,15 +46,16 @@ public class MuxerAddServerTest
     {
         LocalWebSocketConnection physical = new LocalWebSocketConnection(testname);
         physical.setPolicy(WebSocketPolicy.newServerPolicy());
+        physical.onOpen();
 
         MuxReducer reducer = new MuxReducer();
 
+        // Represents a server side muxer.
         Muxer muxer = new Muxer(physical,reducer);
         DummyMuxAddServer addServer = new DummyMuxAddServer();
         muxer.setAddServer(addServer);
 
         MuxInjector inject = new MuxInjector(muxer);
-
 
         // Trigger AddChannel
         StringBuilder request = new StringBuilder();
@@ -71,11 +74,20 @@ public class MuxerAddServerTest
 
         inject.op(req);
 
+        // Make sure we got AddChannelResponse
         reducer.assertHasOp(MuxOp.ADD_CHANNEL_RESPONSE,1);
         MuxAddChannelResponse response = (MuxAddChannelResponse)reducer.getOps().pop();
         Assert.assertThat("AddChannelResponse.channelId",response.getChannelId(),is(1L));
         Assert.assertThat("AddChannelResponse.failed",response.isFailed(),is(false));
         Assert.assertThat("AddChannelResponse.handshake",response.getHandshake(),notNullValue());
         Assert.assertThat("AddChannelResponse.handshakeSize",response.getHandshakeSize(),is(57L));
+
+        reducer.reset();
+
+        // Send simple echo request
+        inject.frame(1,WebSocketFrame.text("Hello World"));
+
+        // Test for echo response (is there a user echo websocket connected to the sub-channel?)
+        reducer.assertHasFrame(OpCode.TEXT,1L,1);
     }
 }

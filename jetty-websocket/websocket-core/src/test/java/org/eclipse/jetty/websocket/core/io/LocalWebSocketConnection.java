@@ -33,6 +33,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
 {
     private final String id;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private boolean open = false;
 
     public LocalWebSocketConnection()
     {
@@ -52,16 +53,19 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public void close()
     {
+        open = false;
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
+        open = false;
     }
 
     @Override
     public void disconnect()
     {
+        open = false;
     }
 
     @Override
@@ -98,9 +102,8 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public boolean isOpen()
     {
-        return false;
+        return open;
     }
-
 
     @Override
     public boolean isOutputClosed()
@@ -119,6 +122,10 @@ public class LocalWebSocketConnection implements WebSocketConnection
     public void onCloseHandshake(boolean incoming, CloseInfo close)
     {
         // TODO Auto-generated method stub
+    }
+
+    public void onOpen() {
+        open = true;
     }
 
     @Override

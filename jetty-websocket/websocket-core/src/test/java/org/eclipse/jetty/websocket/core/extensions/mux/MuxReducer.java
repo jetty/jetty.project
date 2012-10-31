@@ -43,5 +43,6 @@ public class MuxReducer extends MuxEventCapture implements OutgoingFrames
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
         parser.parse(frame);
+        callback.completed(context); // let blocked calls know the send is complete.
     }
 }

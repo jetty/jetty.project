@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.extensions.mux.op;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxControlBlock;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxOp;
 
@@ -96,6 +97,11 @@ public class MuxAddChannelResponse implements MuxControlBlock
         {
             this.handshake = handshake.slice();
         }
+    }
+
+    public void setHandshake(String responseHandshake)
+    {
+        setHandshake(BufferUtil.toBuffer(responseHandshake));
     }
 
     public void setRsv(byte rsv)

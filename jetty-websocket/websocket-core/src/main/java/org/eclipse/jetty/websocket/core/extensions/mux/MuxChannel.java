@@ -254,6 +254,8 @@ public class MuxChannel implements WebSocketConnection, IncomingFrames, Outgoing
     public void setSession(WebSocketSession session)
     {
         this.session = session;
+        this.incoming = session;
+        session.setOutgoing(this);
     }
 
     public void setSubProtocol(String subProtocol)

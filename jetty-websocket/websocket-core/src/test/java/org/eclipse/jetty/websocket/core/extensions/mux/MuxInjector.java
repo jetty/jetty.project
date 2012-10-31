@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.core.extensions.mux;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
@@ -32,6 +34,7 @@ import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
  */
 public class MuxInjector implements OutgoingFrames
 {
+    private static final Logger LOG = Log.getLogger(MuxInjector.class);
     private IncomingFrames incoming;
     private MuxGenerator generator;
 
@@ -42,7 +45,7 @@ public class MuxInjector implements OutgoingFrames
         this.generator.setOutgoing(this);
     }
 
-    public void op(long channelId, WebSocketFrame frame) throws IOException
+    public void frame(long channelId, WebSocketFrame frame) throws IOException
     {
         this.generator.generate(channelId,frame);
     }
@@ -55,6 +58,7 @@ public class MuxInjector implements OutgoingFrames
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
+        LOG.debug("Injecting {} to {}",frame,incoming);
         this.incoming.incoming(frame);
     }
 }

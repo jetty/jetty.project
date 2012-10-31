@@ -21,8 +21,10 @@ package org.eclipse.jetty.websocket.core.extensions.mux;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -71,6 +73,10 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     private MuxGenerator generator;
     private MuxAddServer addServer;
     private MuxAddClient addClient;
+    /** The original request headers, used for delta encoded AddChannelRequest blocks */
+    private List<String> physicalRequestHeaders;
+    /** The original response headers, used for delta encoded AddChannelResponse blocks */
+    private List<String> physicalResponseHeaders;
 
     public Muxer(final WebSocketConnection connection, final OutgoingFrames outgoing)
     {
@@ -135,6 +141,12 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         return physicalConnection.isOpen();
     }
 
+    public String mergeHeaders(List<String> physicalHeaders, String deltaHeaders)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * Per spec, the physical connection must be failed.
      * <p>
@@ -194,17 +206,27 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         // submit to upgrade handshake process
         try
         {
-            MuxAddChannelResponse response = addServer.handshake(physicalConnection,request);
-            if (response == null)
+            String requestHandshake = BufferUtil.toUTF8String(request.getHandshake());
+            if (request.isDeltaEncoded())
             {
-                LOG.warn("AddChannelResponse is null");
-                // no upgrade possible?
-                response = new MuxAddChannelResponse();
-                response.setChannelId(request.getChannelId());
-                response.setFailed(true);
+                // Merge original request headers out of physical connection.
+                requestHandshake = mergeHeaders(physicalRequestHeaders,requestHandshake);
             }
-            // send response
-            this.generator.generate(response);
+            String responseHandshake = addServer.handshake(channel,requestHandshake);
+            if (StringUtil.isNotBlank(responseHandshake))
+            {
+                // Upgrade Success
+                MuxAddChannelResponse response = new MuxAddChannelResponse();
+                response.setChannelId(request.getChannelId());
+                response.setFailed(false);
+                response.setHandshake(responseHandshake);
+                // send response
+                this.generator.generate(response);
+            }
+            else
+            {
+                // TODO: trigger error?
+            }
         }
         catch (Throwable t)
         {
@@ -369,6 +391,10 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
      */
     public <C> void output(C context, Callback<C> callback, long channelId, WebSocketFrame frame) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("output({}, {}, {}, {})",context,callback,channelId,frame);
+        }
         generator.output(context,callback,channelId,frame);
     }
 
@@ -393,5 +419,11 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     public void setRemoteAddress(InetSocketAddress remoteAddress)
     {
         this.remoteAddress = remoteAddress;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("Muxer[subChannels.size=%d]", channels.size());
     }
 }

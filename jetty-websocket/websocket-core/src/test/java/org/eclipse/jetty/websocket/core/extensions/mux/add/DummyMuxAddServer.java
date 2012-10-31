@@ -19,42 +19,52 @@
 package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelRequest;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
+import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.examples.echo.AdapterEchoSocket;
+import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
+import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.event.EventDriver;
+import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
 
 /**
  * Dummy impl of MuxAddServer
  */
 public class DummyMuxAddServer implements MuxAddServer
 {
+    @SuppressWarnings("unused")
     private static final Logger LOG = Log.getLogger(DummyMuxAddServer.class);
+    private AdapterEchoSocket echo;
+    private WebSocketPolicy policy;
+    private EventDriverFactory eventDriverFactory;
+
+    public DummyMuxAddServer()
+    {
+        this.policy = WebSocketPolicy.newServerPolicy();
+        this.eventDriverFactory = new EventDriverFactory(policy);
+        this.echo = new AdapterEchoSocket();
+    }
 
     @Override
-    public MuxAddChannelResponse handshake(WebSocketConnection physicalConnection, MuxAddChannelRequest request) throws IOException
+    public String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException
     {
-
-        MuxAddChannelResponse response = new MuxAddChannelResponse();
-        response.setChannelId(request.getChannelId());
-        response.setEnc((byte)0);
-
-        StringBuilder hresp = new StringBuilder();
-        hresp.append("HTTP/1.1 101 Switching Protocols\r\n");
-        hresp.append("Connection: upgrade\r\n");
+        StringBuilder response = new StringBuilder();
+        response.append("HTTP/1.1 101 Switching Protocols\r\n");
+        response.append("Connection: upgrade\r\n");
         // not meaningful (per Draft 08) hresp.append("Upgrade: websocket\r\n");
         // not meaningful (per Draft 08) hresp.append("Sec-WebSocket-Accept: Kgo85/8KVE8YPONSeyhgL3GwqhI=\r\n");
-        hresp.append("\r\n");
+        response.append("\r\n");
 
-        ByteBuffer handshake = BufferUtil.toBuffer(hresp.toString());
-        LOG.debug("Handshake: {}",BufferUtil.toDetailString(handshake));
+        EventDriver websocket = this.eventDriverFactory.wrap(echo);
+        WebSocketSession session = new WebSocketSession(websocket,channel,channel.getPolicy(),"echo");
+        channel.setSession(session);
+        channel.setSubProtocol("echo");
+        channel.onOpen();
+        session.onConnect();
 
-        response.setHandshake(handshake);
-
-        return response;
+        return response.toString();
     }
 }

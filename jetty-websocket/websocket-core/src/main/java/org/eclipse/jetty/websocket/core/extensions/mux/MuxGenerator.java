@@ -154,6 +154,7 @@ public class MuxGenerator
     public <C> void output(C context, Callback<C> callback, long channelId, WebSocketFrame frame) throws IOException
     {
         ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
+        BufferUtil.flipToFill(muxPayload);
 
         // start building mux payload
         writeChannelId(muxPayload,channelId);
@@ -167,6 +168,7 @@ public class MuxGenerator
 
         // build muxed frame
         WebSocketFrame muxFrame = WebSocketFrame.binary();
+        BufferUtil.flipToFlush(muxPayload,0);
         muxFrame.setPayload(muxPayload);
         // NOTE: the physical connection will handle masking rules for this frame.
 
