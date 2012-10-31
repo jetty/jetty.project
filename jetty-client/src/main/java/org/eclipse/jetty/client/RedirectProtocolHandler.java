@@ -126,7 +126,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                 @Override
                 public void onBegin(Request redirect)
                 {
-                    if (request.aborted())
+                    if (request.isAborted())
                         redirect.abort(null);
                 }
             });

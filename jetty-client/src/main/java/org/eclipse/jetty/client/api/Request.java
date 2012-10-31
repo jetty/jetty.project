@@ -316,7 +316,7 @@ public interface Request
     /**
      * @return whether {@link #abort(String)} was called
      */
-    boolean aborted();
+    boolean isAborted();
 
     public interface RequestListener extends EventListener
     {

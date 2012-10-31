@@ -413,7 +413,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public boolean aborted()
+    public boolean isAborted()
     {
         return aborted;
     }

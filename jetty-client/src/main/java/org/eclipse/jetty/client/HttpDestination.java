@@ -248,7 +248,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         {
             final Request request = requestContext.request;
             final List<Response.ResponseListener> listeners = requestContext.listeners;
-            if (request.aborted())
+            if (request.isAborted())
             {
                 abort(request, listeners, "Aborted");
                 LOG.debug("Aborted {} before processing", request);

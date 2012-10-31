@@ -82,7 +82,7 @@ public class HttpSender
         }
 
         Request request = exchange.getRequest();
-        if (request.aborted())
+        if (request.isAborted())
         {
             exchange.abort(null);
         }
@@ -400,7 +400,7 @@ public class HttpSender
 
         Result result = completion.getReference();
         boolean notCommitted = current == State.IDLE || current == State.SEND;
-        if (result == null && notCommitted && !request.aborted())
+        if (result == null && notCommitted && !request.isAborted())
         {
             result = exchange.responseComplete(failure).getReference();
             exchange.terminateResponse();
