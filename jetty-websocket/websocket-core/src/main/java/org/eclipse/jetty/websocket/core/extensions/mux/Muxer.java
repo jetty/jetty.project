@@ -302,11 +302,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         }
 
         String reason = "Mux " + drop.toString();
-        if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
-        {
-            reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
-        }
-
+        reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
         channel.close(StatusCode.PROTOCOL,reason);
         // TODO: set channel to inactive?
     }
