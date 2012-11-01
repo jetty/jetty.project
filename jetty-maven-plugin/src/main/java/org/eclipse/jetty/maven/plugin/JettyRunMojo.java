@@ -63,6 +63,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyRunMojo extends AbstractJettyMojo
 {
+     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    
     /**
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
@@ -148,8 +150,9 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             if ((getWebAppSourceDirectory() == null) || !getWebAppSourceDirectory().exists())
             {
-                webAppSourceDirectory = new File (project.getBasedir(), "src"+File.separator+"main"+File.separator+"webapp");
-                getLog().info("webAppSourceDirectory "+getWebAppSourceDirectory() +" does not exist. Defaulting to "+webAppSourceDirectory.getAbsolutePath());   
+                File defaultWebAppSrcDir = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
+                getLog().info("webAppSourceDirectory"+(getWebAppSourceDirectory()==null?" not set.":" does not exist.")+" Defaulting to "+defaultWebAppSrcDir.getAbsolutePath());  
+                webAppSourceDirectory = defaultWebAppSrcDir;
             }
             else
                 getLog().info( "Webapp source directory = " + getWebAppSourceDirectory().getCanonicalPath());
