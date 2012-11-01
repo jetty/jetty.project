@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
@@ -41,13 +42,22 @@ import org.junit.Test;
 
 public class MuxParserRFCTest
 {
+    public static class DummyMuxExtension extends AbstractMuxExtension
+    {
+        @Override
+        public void configureMuxer(Muxer muxer)
+        {
+            /* nothing to do */
+        }
+    }
+
     private LinkedList<WebSocketFrame> asFrames(byte[] buf)
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Parser parser = new Parser(policy);
         parser.setIncomingFramesHandler(capture);
-        List<MuxExtension> muxList = Collections.singletonList(new MuxExtension());
+        List<? extends Extension> muxList = Collections.singletonList(new DummyMuxExtension());
         parser.configureFromExtensions(muxList);
         ByteBuffer bbuf = ByteBuffer.wrap(buf);
         parser.parse(bbuf);
