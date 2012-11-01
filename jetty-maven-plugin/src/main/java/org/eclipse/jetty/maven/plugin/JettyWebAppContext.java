@@ -344,36 +344,39 @@ public class JettyWebAppContext extends WebAppContext
     @Override
     public Set<String> getResourcePaths(String path)
     {
-        // Try to get regular resource paths
+        // Try to get regular resource paths - this will get appropriate paths from any overlaid wars etc
         Set<String> paths = super.getResourcePaths(path);
-
-        // If no paths are returned check for virtual paths /WEB-INF/classes and /WEB-INF/lib
-        if (paths.isEmpty() && path != null)
+        
+        if (path != null)
         {
-            path = URIUtil.canonicalPath(path);
+            TreeSet<String> allPaths = new TreeSet<String>();
+            allPaths.addAll(paths);
+            
+            //add in the dependency jars as a virtual WEB-INF/lib entry
             if (path.startsWith(WEB_INF_LIB_PREFIX))
             {
-                paths = new TreeSet<String>();
                 for (String fileName : webInfJarMap.keySet())
                 {
                     // Return all jar files from class path
-                    paths.add(WEB_INF_LIB_PREFIX + "/" + fileName);
+                    allPaths.add(WEB_INF_LIB_PREFIX + "/" + fileName);
                 }
             }
             else if (path.startsWith(WEB_INF_CLASSES_PREFIX))
             {
                 int i=0;
                
-                while (paths.isEmpty() && (i < webInfClasses.size()))
+                while (i < webInfClasses.size())
                 {
                     String newPath = path.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
-                    paths = super.getResourcePaths(newPath);
+                    allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }
             }
+            return allPaths;
         }
         return paths;
     }
+    
     
     public String addPattern (String s, String pattern)
     {
