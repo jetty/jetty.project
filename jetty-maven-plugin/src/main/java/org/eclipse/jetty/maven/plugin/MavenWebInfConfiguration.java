@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -40,8 +41,8 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
     protected Resource _originalResourceBase;
     protected Resource[]  _unpackedOverlays;
-
-
+  
+    
     public void configure(WebAppContext context) throws Exception
     {
         JettyWebAppContext jwac = (JettyWebAppContext)context;
@@ -54,11 +55,11 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
             while (itor.hasNext())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(((File)itor.next()).getCanonicalPath());
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Classpath = "+((URLClassLoader)context.getClassLoader()).getURLs());
+            //if (LOG.isDebugEnabled())
+                //LOG.debug("Classpath = "+LazyList.array2List(((URLClassLoader)context.getClassLoader()).getURLs()));
         }
         super.configure(context);
-
+        
         // knock out environmental maven and plexus classes from webAppContext
         String[] existingServerClasses = context.getServerClasses();
         String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
@@ -71,7 +72,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
             for (int i=0;i<newServerClasses.length;i++)
                 LOG.debug(newServerClasses[i]);
         }
-        context.setServerClasses( newServerClasses );
+        context.setServerClasses( newServerClasses ); 
     }
 
 
@@ -79,6 +80,53 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         super.preConfigure(context);
 
+    }
+    
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        super.postConfigure(context);
+    }
+
+
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        
+        //remove the unpacked wars
+        if (_unpackedOverlays != null && _unpackedOverlays.length>0)
+        {
+            try
+            {
+                for (int i=0; i<_unpackedOverlays.length; i++)
+                {
+                    IO.delete(_unpackedOverlays[i].getFile());
+                }
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        super.deconfigure(context);
+        //restore whatever the base resource was before we might have included overlaid wars
+        context.setBaseResource(_originalResourceBase);
+  
+    }
+
+    
+    
+  
+    /** 
+     * @see org.eclipse.jetty.webapp.WebInfConfiguration#unpack(org.eclipse.jetty.webapp.WebAppContext)
+     */
+    @Override
+    public void unpack(WebAppContext context) throws IOException
+    {
+        //Unpack and find base resource as normal
+        super.unpack(context);
+        
+        
+        //Add in any overlays as a resource collection for the base
         _originalResourceBase = context.getBaseResource();
         JettyWebAppContext jwac = (JettyWebAppContext)context;
 
@@ -102,7 +150,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                     origSize = 1;
                 }
             }
-
+            
             int overlaySize = jwac.getOverlays().size();
             Resource[] newResources = new Resource[origSize + overlaySize];
 
@@ -112,7 +160,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                 if (jwac.getBaseAppFirst())
                 {
                     System.arraycopy(origResources,0,newResources,0,origSize);
-
                     offset = origSize;
                 }
                 else
@@ -120,51 +167,21 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                     System.arraycopy(origResources,0,newResources,overlaySize,origSize);
                 }
             }
-
+            
             // Overlays are always unpacked
             _unpackedOverlays = new Resource[overlaySize];
             List<Resource> overlays = jwac.getOverlays();
             for (int idx=0; idx<overlaySize; idx++)
-            {
+            { 
+                LOG.info("Unpacking overlay: " + overlays.get(idx));
                 _unpackedOverlays[idx] = unpackOverlay(context, overlays.get(idx));
                  newResources[idx+offset] = _unpackedOverlays[idx];
 
                 LOG.info("Adding overlay: " + _unpackedOverlays[idx]);
             }
-
+            
             jwac.setBaseResource(new ResourceCollection(newResources));
         }
-    }
-
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-        super.postConfigure(context);
-    }
-
-
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
-
-        //remove the unpacked wars
-        if (_unpackedOverlays != null && _unpackedOverlays.length>0)
-        {
-            try
-            {
-                for (int i=0; i<_unpackedOverlays.length; i++)
-                {
-                    IO.delete(_unpackedOverlays[i].getFile());
-                }
-            }
-            catch (IOException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        super.deconfigure(context);
-        //restore whatever the base resource was before we might have included overlaid wars
-        context.setBaseResource(_originalResourceBase);
-
     }
 
 
@@ -175,6 +192,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
      * @param context
      * @return the list of jars found
      */
+    @Override
     protected List<Resource> findJars (WebAppContext context)
     throws Exception
     {
@@ -203,14 +221,16 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
             list.addAll(superList);
         return list;
     }
+    
+    
 
     protected  Resource unpackOverlay (WebAppContext context, Resource overlay)
     throws IOException
     {
         //resolve if not already resolved
         resolveTempDirectory(context);
-
-
+        
+   
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
         String name = overlay.getName();
@@ -225,6 +245,4 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         Resource unpackedOverlay = Resource.newResource(dir.getCanonicalPath());
         return  unpackedOverlay;
     }
-
-
 }

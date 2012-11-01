@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-
 /**
  * <p>
  * This goal is used to run Jetty with a pre-assembled war.

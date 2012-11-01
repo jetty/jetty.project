@@ -483,7 +483,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 if (connectors == null || connectors.length == 0)
                 {
                     //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-                    this.connectors = new Connector[] { this.server.createDefaultConnector(server, System.getProperty(PORT_SYSPROPERTY, null)) };
+                    this.connectors = new Connector[] { this.server.createDefaultConnector(System.getProperty(PORT_SYSPROPERTY, null)) };
                     this.server.setConnectors(this.connectors);
                 }
             }

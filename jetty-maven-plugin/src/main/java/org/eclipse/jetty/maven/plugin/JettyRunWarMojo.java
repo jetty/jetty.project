@@ -21,10 +21,14 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * <p>
@@ -32,18 +36,18 @@ import org.eclipse.jetty.util.Scanner;
  *  </p>
  *  <p>
  *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and to the
- *  war file and automatically performing a
- *  hot redeploy when necessary.
+ *  war file and automatically performing a 
+ *  hot redeploy when necessary. 
  *  </p>
  *  <p>
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
- *  This can be used, for example, to deploy a static webapp that is not part of your maven build.
+ *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
  *  </p>
  *  <p>
  *  There is a <a href="run-war-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
  *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin/">Configuration Guide</a>.
  *  </p>
- *
+ * 
  * @goal run-war
  * @requiresDependencyResolution compile+runtime
  * @execute phase="package"
@@ -61,13 +65,13 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     private File war;
 
 
-
+    
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        super.execute();
+        super.execute();  
     }
 
 
@@ -75,18 +79,18 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     public void configureWebApplication () throws Exception
     {
         super.configureWebApplication();
-
+        
         webApp.setWar(war.getCanonicalPath());
     }
-
+ 
 
 
     /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPomConfiguration()
+     * @see org.mortbay.jetty.plugin.AbstractJettyMojo#checkPomConfiguration()
      */
     public void checkPomConfiguration() throws MojoExecutionException
     {
-       return;
+       return;        
     }
 
 
@@ -100,7 +104,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
         scanList.add(getProject().getFile());
         scanList.add(war);
         setScanList(scanList);
-
+        
         ArrayList listeners = new ArrayList();
         listeners.add(new Scanner.BulkListener()
         {
@@ -117,11 +121,11 @@ public class JettyRunWarMojo extends AbstractJettyMojo
                 }
             }
         });
-        setScannerListeners(listeners);
+        setScannerListeners(listeners);        
     }
 
 
-    public void restartWebApp(boolean reconfigureScanner) throws Exception
+    public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("Restarting webapp ...");
         getLog().debug("Stopping webapp ...");

@@ -63,7 +63,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyRunMojo extends AbstractJettyMojo
 {
-     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    
     
     /**
      * If true, the &lt;testOutputDirectory&gt;
@@ -136,12 +137,13 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     private List<File> extraScanTargets;
     
-
+    
+    
     
     /**
      * Verify the configuration given in the pom.
      * 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPomConfiguration()
+     * @see org.mortbay.jetty.plugin.AbstractJettyMojo#checkPomConfiguration()
      */
     public void checkPomConfiguration () throws MojoExecutionException
     {
@@ -149,7 +151,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         try
         {
             if ((getWebAppSourceDirectory() == null) || !getWebAppSourceDirectory().exists())
-            {
+            {              
                 File defaultWebAppSrcDir = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
                 getLog().info("webAppSourceDirectory"+(getWebAppSourceDirectory()==null?" not set.":" does not exist.")+" Defaulting to "+defaultWebAppSrcDir.getAbsolutePath());  
                 webAppSourceDirectory = defaultWebAppSrcDir;
@@ -444,6 +446,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();
+            
             // Include runtime and compile time libraries, and possibly test libs too
             if(artifact.getType().equals("war"))
             {
@@ -451,6 +454,7 @@ public class JettyRunMojo extends AbstractJettyMojo
                 {
                     Resource r=Resource.newResource("jar:"+Resource.toURL(artifact.getFile()).toString()+"!/");
                     overlays.add(r);
+                    getLog().info("Adding overlay for war project artifact "+artifact.getId());
                     getExtraScanTargets().add(artifact.getFile());
                 }
                 catch(Exception e)
