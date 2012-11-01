@@ -128,6 +128,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jndi.",         // don't hide naming classes
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.websocket.",    // WebSocket is a jetty extension
+        "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "org.eclipse.jetty."                // hide other jetty classes
@@ -650,12 +651,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _serverClasses.getPatterns();
     }
 
-    public void addServerClass(String classname)
+    /* ------------------------------------------------------------ */
+    /** Add to the list of Server classes.
+     * @see #setServerClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the server classes and order is thus
+     * important when added system class patterns. This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void addServerClass(String classOrPackage)
     {
         if (_serverClasses == null)
             loadServerClasses();
 
-        _serverClasses.addPattern(classname);
+        _serverClasses.addPattern(classOrPackage);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Prepend to the list of Server classes.
+     * @see #setServerClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the server classes and order is thus
+     * important when added system class patterns. This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void prependServerClass(String classOrPackage)
+    {
+        if (_serverClasses == null)
+            loadServerClasses();
+
+        _serverClasses.prependPattern(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
@@ -673,12 +700,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public void addSystemClass(String classname)
+    /** Add to the list of System classes.
+     * @see #setSystemClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the system classes and order is thus
+     * important when added system class patterns.  This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void addSystemClass(String classOrPackage)
     {
         if (_systemClasses == null)
             loadSystemClasses();
 
-        _systemClasses.addPattern(classname);
+        _systemClasses.addPattern(classOrPackage);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** Prepend to the list of System classes.
+     * @see #setSystemClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the system classes and order is thus
+     * important when added system class patterns.This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void prependSystemClass(String classOrPackage)
+    {
+        if (_systemClasses == null)
+            loadSystemClasses();
+
+        _systemClasses.prependPattern(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */

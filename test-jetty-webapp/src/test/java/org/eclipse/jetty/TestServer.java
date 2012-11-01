@@ -165,7 +165,7 @@ public class TestServer
         server.setSendServerVersion(true);
 
         WebAppContext webapp = new WebAppContext();
-        webapp.setParentLoaderPriority(true);
+        //webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);

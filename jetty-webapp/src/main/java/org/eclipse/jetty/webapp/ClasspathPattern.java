@@ -81,8 +81,6 @@ public class ClasspathPattern
     
     /* ------------------------------------------------------------ */
     /**
-     * Initialize the matcher by parsing each classpath pattern in an array
-     * 
      * @param patterns array of classpath patterns
      */
     private void addPatterns(String[] patterns)
@@ -93,9 +91,33 @@ public class ClasspathPattern
             for (String pattern : patterns)
             {
                 entry = createEntry(pattern);
-                if (entry != null) {
+                if (entry != null) 
+                {
                     _patterns.add(pattern);
                     _entries.add(entry);
+                }
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param patterns array of classpath patterns
+     */
+    private void prependPatterns(String[] patterns)
+    {
+        if (patterns != null)
+        {
+            Entry entry = null;
+            int i=0;
+            for (String pattern : patterns)
+            {
+                entry = createEntry(pattern);
+                if (entry != null) 
+                {
+                    _patterns.add(i,pattern);
+                    _entries.add(i,entry);
+                    i++;
                 }
             }
         }
@@ -156,8 +178,23 @@ public class ClasspathPattern
             patterns.add(entries.nextToken());
         }
         
-        addPatterns((String[])patterns.toArray(new String[patterns.size()]));
+        addPatterns(patterns.toArray(new String[patterns.size()]));
     }   
+    
+
+    /* ------------------------------------------------------------ */
+    public void prependPattern(String classOrPackage)
+    {
+        ArrayList<String> patterns = new ArrayList<String>();
+        StringTokenizer entries = new StringTokenizer(classOrPackage, ":,");
+        while (entries.hasMoreTokens())
+        {
+            patterns.add(entries.nextToken());
+        }
+        
+        prependPatterns(patterns.toArray(new String[patterns.size()]));
+    }
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -217,4 +254,5 @@ public class ClasspathPattern
         }
         return result;
     }
+
 }
