@@ -16,31 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions.mux.add;
+package org.eclipse.jetty.websocket.server.mux;
 
 import java.io.IOException;
 
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
+import org.eclipse.jetty.websocket.core.extensions.mux.add.MuxAddServer;
 
 /**
- * Server interface, for dealing with incoming AddChannelRequest / AddChannelResponse flows.
+ * Handler for incoming MuxAddChannel requests.
  */
-public interface MuxAddServer
+public class MuxAddHandler implements MuxAddServer
 {
     /**
-     * Perform the handshake.
+     * An incoming MuxAddChannel request.
      * 
-     * @param channel
-     *            the channel to attach the {@link WebSocketSession} to.
+     * @param the
+     *            channel this request should be bound to
      * @param requestHandshake
-     *            the request handshake (request headers)
-     * @return the response handshake (the response headers)
-     * @throws AbstractMuxException
-     *             if unable to handshake
-     * @throws IOException
-     *             if unable to parse request headers
+     *            the incoming request headers
+     * @return the outgoing response headers
      */
-    String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException;
+    @Override
+    public String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException
+    {
+        // Need to call into HttpChannel to get the websocket properly setup.
+
+        return null;
+    }
 }
