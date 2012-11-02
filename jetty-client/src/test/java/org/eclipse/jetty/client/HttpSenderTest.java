@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -288,8 +289,8 @@ public class HttpSenderTest
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
-        String content = Integer.toHexString(content1.length()).toUpperCase() + "\r\n" + content1 + "\r\n";
-        content += Integer.toHexString(content2.length()).toUpperCase() + "\r\n" + content2 + "\r\n";
+        String content = Integer.toHexString(content1.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content1 + "\r\n";
+        content += Integer.toHexString(content2.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content2 + "\r\n";
         content += "0\r\n\r\n";
         Assert.assertTrue(requestString.endsWith("\r\n\r\n" + content));
         Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));

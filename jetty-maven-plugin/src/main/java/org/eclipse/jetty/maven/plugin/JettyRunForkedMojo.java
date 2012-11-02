@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -774,7 +775,7 @@ public class JettyRunForkedMojo extends AbstractMojo
     
     private String createToken ()
     {
-        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase();
+        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
     }
     
     

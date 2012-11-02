@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.regex.Pattern;
@@ -144,7 +145,7 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
     throws Exception
     {
         LOG.debug("Search of {}",uri);
-        if (uri.toString().toLowerCase().endsWith(".jar"))
+        if (uri.toString().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
         {
          
             InputStream in = Resource.newResource(uri).getInputStream();

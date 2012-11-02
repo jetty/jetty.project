@@ -25,6 +25,7 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -280,7 +281,7 @@ public class Fuzzer
             // early socket close can propagate back to the client
             // before it has a chance to finish writing out the
             // remaining frame octets
-            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(),containsString("broken pipe"));
+            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
         }
     }
 

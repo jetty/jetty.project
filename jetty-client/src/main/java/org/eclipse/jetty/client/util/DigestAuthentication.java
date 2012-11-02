@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -108,7 +109,7 @@ public class DigestAuthentication implements Authentication
             Matcher matcher = PARAM_PATTERN.matcher(part);
             if (matcher.matches())
             {
-                String name = matcher.group(1).trim().toLowerCase();
+                String name = matcher.group(1).trim().toLowerCase(Locale.ENGLISH);
                 String value = matcher.group(2).trim();
                 if (value.startsWith("\"") && value.endsWith("\""))
                     value = value.substring(1, value.length() - 1);
@@ -251,7 +252,7 @@ public class DigestAuthentication implements Authentication
         private String nextNonceCount()
         {
             String padding = "00000000";
-            String next = Integer.toHexString(nonceCount.incrementAndGet()).toLowerCase();
+            String next = Integer.toHexString(nonceCount.incrementAndGet()).toLowerCase(Locale.ENGLISH);
             return padding.substring(0, padding.length() - next.length()) + next;
         }
 
@@ -265,7 +266,7 @@ public class DigestAuthentication implements Authentication
 
         private String toHexString(byte[] bytes)
         {
-            return TypeUtil.toHexString(bytes).toLowerCase();
+            return TypeUtil.toHexString(bytes).toLowerCase(Locale.ENGLISH);
         }
     }
 }

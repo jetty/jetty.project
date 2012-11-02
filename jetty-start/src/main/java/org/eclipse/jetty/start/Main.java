@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
@@ -365,7 +366,7 @@ public class Main
                                     return false;
                                 }
 
-                                String name = path.getName().toLowerCase();
+                                String name = path.getName().toLowerCase(Locale.ENGLISH);
                                 return (name.startsWith("jetty") && name.endsWith(".xml"));
                             }
                         });
@@ -639,7 +640,7 @@ public class Main
 
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
-        if (!xmlFilename.toLowerCase().endsWith(".xml"))
+        if (!xmlFilename.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
         {
             // Nothing to resolve.
             return xmlFilename;
@@ -853,7 +854,7 @@ public class Main
 
         if (element.isFile())
         {
-            String name = element.getName().toLowerCase();
+            String name = element.getName().toLowerCase(Locale.ENGLISH);
             if (name.endsWith(".jar"))
             {
                 return JarVersion.getVersion(element);
@@ -1105,7 +1106,7 @@ public class Main
                                 @Override
                                 public boolean accept(File dir, String name)
                                 {
-                                    return name.toLowerCase().endsWith(".ini");
+                                    return name.toLowerCase(Locale.ENGLISH).endsWith(".ini");
                                 }
                             });
                             Arrays.sort(inis);

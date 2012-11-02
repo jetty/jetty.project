@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.server.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -92,7 +93,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     @Override
     public boolean parsedHeader(HttpHeader header, String headerName, String headerValue)
     {
-        switch (headerName.toLowerCase())
+        switch (headerName.toLowerCase(Locale.ENGLISH))
         {
             case "host":
                 headers.put(HTTPSPDYHeader.HOST.name(version), headerValue);

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -184,7 +185,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            String method = request.getMethod().toUpperCase();
+            String method = request.getMethod().toUpperCase(Locale.ENGLISH);
             switch (method)
             {
                 case "GET":

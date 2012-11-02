@@ -129,7 +129,7 @@ public class Dump extends HttpServlet
         final boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
 
 
-        if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
+        if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase(Locale.ENGLISH).indexOf("script")!=-1)
         {
             response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
             return;

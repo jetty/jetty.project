@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.generator;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Locale;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
@@ -45,7 +46,7 @@ public class HeadersBlockGenerator
         writeCount(version, buffer, headers.size());
         for (Fields.Field header : headers)
         {
-            String name = header.name().toLowerCase();
+            String name = header.name().toLowerCase(Locale.ENGLISH);
             byte[] nameBytes = name.getBytes(iso1);
             writeNameLength(version, buffer, nameBytes.length);
             buffer.write(nameBytes, 0, nameBytes.length);

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -90,7 +91,7 @@ public class MuxGeneratorWrite139SizeTest
         generator.write139Size(bbuf,value);
         BufferUtil.flipToFlush(bbuf,0);
         byte actual[] = BufferUtil.toArray(bbuf);
-        String actualHex = TypeUtil.toHexString(actual).toUpperCase();
+        String actualHex = TypeUtil.toHexString(actual).toUpperCase(Locale.ENGLISH);
         Assert.assertThat("1/3/9 encoded size of [" + value + "]",actualHex,is(expectedHex));
     }
 }

@@ -24,6 +24,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
@@ -202,7 +203,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         {
             for (File f: jwac.getClassPathFiles())
             {
-                if (f.getName().toLowerCase().endsWith(".jar"))
+                if (f.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
                 {
                     try
                     {

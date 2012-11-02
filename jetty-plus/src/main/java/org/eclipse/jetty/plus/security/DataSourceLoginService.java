@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -413,7 +414,7 @@ public class DataSourceLoginService extends MappedLoginService
                 DatabaseMetaData metaData = connection.getMetaData();
 
                 //check if tables exist
-                String tableName = (metaData.storesLowerCaseIdentifiers()? _userTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_userTableName.toUpperCase(): _userTableName));
+                String tableName = (metaData.storesLowerCaseIdentifiers()? _userTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userTableName.toUpperCase(Locale.ENGLISH): _userTableName));
                 ResultSet result = metaData.getTables(null, null, tableName, null);
                 if (!result.next())
                 {
@@ -431,7 +432,7 @@ public class DataSourceLoginService extends MappedLoginService
 
                 result.close();
 
-                tableName = (metaData.storesLowerCaseIdentifiers()? _roleTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_roleTableName.toUpperCase(): _roleTableName));
+                tableName = (metaData.storesLowerCaseIdentifiers()? _roleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_roleTableName.toUpperCase(Locale.ENGLISH): _roleTableName));
                 result = metaData.getTables(null, null, tableName, null);
                 if (!result.next())
                 {
@@ -448,7 +449,7 @@ public class DataSourceLoginService extends MappedLoginService
 
                 result.close();
 
-                tableName = (metaData.storesLowerCaseIdentifiers()? _userRoleTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_userRoleTableName.toUpperCase(): _userRoleTableName));
+                tableName = (metaData.storesLowerCaseIdentifiers()? _userRoleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userRoleTableName.toUpperCase(Locale.ENGLISH): _userRoleTableName));
                 result = metaData.getTables(null, null, tableName, null);
                 if (!result.next())
                 {
