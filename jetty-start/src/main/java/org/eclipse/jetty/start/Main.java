@@ -386,7 +386,7 @@ public class Main
                                     return false;
                                 }
 
-                                String name = path.getName().toLowerCase();
+                                String name = path.getName().toLowerCase(Locale.ENGLISH);
                                 return (name.startsWith("jetty") && name.endsWith(".xml"));
                             }
                         });
