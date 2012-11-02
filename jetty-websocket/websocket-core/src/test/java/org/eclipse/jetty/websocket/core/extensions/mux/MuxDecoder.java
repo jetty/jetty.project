@@ -21,44 +21,28 @@ package org.eclipse.jetty.websocket.core.extensions.mux;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 /**
- * Helpful utility class to send arbitrary mux events into a physical connection's IncomingFrames.
+ * Helpful utility class to parse arbitrary mux events from a physical connection's OutgoingFrames.
  * 
- * @see MuxReducer
+ * @see MuxEncoder
  */
-public class MuxInjector implements OutgoingFrames
+public class MuxDecoder extends MuxEventCapture implements OutgoingFrames
 {
-    private static final Logger LOG = Log.getLogger(MuxInjector.class);
-    private IncomingFrames incoming;
-    private MuxGenerator generator;
+    private MuxParser parser;
 
-    public MuxInjector(IncomingFrames incoming)
+    public MuxDecoder()
     {
-        this.incoming = incoming;
-        this.generator = new MuxGenerator();
-        this.generator.setOutgoing(this);
-    }
-
-    public void frame(long channelId, WebSocketFrame frame) throws IOException
-    {
-        this.generator.generate(channelId,frame);
-    }
-
-    public void op(MuxControlBlock op) throws IOException
-    {
-        this.generator.generate(op);
+        parser = new MuxParser();
+        parser.setEvents(this);
     }
 
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
-        LOG.debug("Injecting {} to {}",frame,incoming);
-        this.incoming.incoming(frame);
+        parser.parse(frame);
+        callback.completed(context); // let blocked calls know the send is complete.
     }
 }

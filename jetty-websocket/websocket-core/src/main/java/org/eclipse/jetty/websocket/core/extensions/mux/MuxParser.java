@@ -147,7 +147,7 @@ public class MuxParser
                     {
                         MuxAddChannelRequest op = new MuxAddChannelRequest();
                         op.setRsv((byte)((b & 0x1C) >> 2));
-                        op.setEnc((byte)(b & 0x03));
+                        op.setEncoding((byte)(b & 0x03));
                         op.setChannelId(readChannelId(buffer));
                         long handshakeSize = read139EncodedSize(buffer);
                         op.setHandshake(readBlock(buffer,handshakeSize));
@@ -159,7 +159,7 @@ public class MuxParser
                         MuxAddChannelResponse op = new MuxAddChannelResponse();
                         op.setFailed((b & 0x10) != 0);
                         op.setRsv((byte)((byte)(b & 0x0C) >> 2));
-                        op.setEnc((byte)(b & 0x03));
+                        op.setEncoding((byte)(b & 0x03));
                         op.setChannelId(readChannelId(buffer));
                         long handshakeSize = read139EncodedSize(buffer);
                         op.setHandshake(readBlock(buffer,handshakeSize));

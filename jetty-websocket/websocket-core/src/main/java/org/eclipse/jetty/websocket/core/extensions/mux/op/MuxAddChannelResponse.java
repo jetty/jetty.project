@@ -21,13 +21,17 @@ package org.eclipse.jetty.websocket.core.extensions.mux.op;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxControlBlock;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxOp;
 
 public class MuxAddChannelResponse implements MuxControlBlock
 {
+    public static final byte IDENTITY_ENCODING = (byte)0x00;
+    public static final byte DELTA_ENCODING = (byte)0x01;
+
     private long channelId;
-    private byte enc;
+    private byte encoding;
     private byte rsv;
     private boolean failed = false;
     private ByteBuffer handshake;
@@ -37,9 +41,9 @@ public class MuxAddChannelResponse implements MuxControlBlock
         return channelId;
     }
 
-    public byte getEnc()
+    public byte getEncoding()
     {
-        return enc;
+        return encoding;
     }
 
     public ByteBuffer getHandshake()
@@ -67,9 +71,19 @@ public class MuxAddChannelResponse implements MuxControlBlock
         return rsv;
     }
 
+    public boolean isDeltaEncoded()
+    {
+        return (encoding == DELTA_ENCODING);
+    }
+
     public boolean isFailed()
     {
         return failed;
+    }
+
+    public boolean isIdentityEncoded()
+    {
+        return (encoding == IDENTITY_ENCODING);
     }
 
     public void setChannelId(long channelId)
@@ -77,9 +91,9 @@ public class MuxAddChannelResponse implements MuxControlBlock
         this.channelId = channelId;
     }
 
-    public void setEnc(byte enc)
+    public void setEncoding(byte enc)
     {
-        this.enc = enc;
+        this.encoding = enc;
     }
 
     public void setFailed(boolean failed)
@@ -101,7 +115,7 @@ public class MuxAddChannelResponse implements MuxControlBlock
 
     public void setHandshake(String responseHandshake)
     {
-        setHandshake(BufferUtil.toBuffer(responseHandshake));
+        setHandshake(BufferUtil.toBuffer(responseHandshake,StringUtil.__UTF8_CHARSET));
     }
 
     public void setRsv(byte rsv)

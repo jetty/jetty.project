@@ -23,17 +23,21 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.api.SuspendToken;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
+import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements WebSocketConnection
+public class LocalWebSocketConnection implements WebSocketConnection, IncomingFrames
 {
     private final String id;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private boolean open = false;
+    private IncomingFrames incoming;
 
     public LocalWebSocketConnection()
     {
@@ -68,6 +72,11 @@ public class LocalWebSocketConnection implements WebSocketConnection
         open = false;
     }
 
+    public IncomingFrames getIncoming()
+    {
+        return incoming;
+    }
+
     @Override
     public WebSocketPolicy getPolicy()
     {
@@ -93,9 +102,20 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public void incoming(WebSocketException e)
+    {
+        incoming.incoming(e);
+    }
+
+    @Override
+    public void incoming(WebSocketFrame frame)
+    {
+        incoming.incoming(frame);
+    }
+
+    @Override
     public boolean isInputClosed()
     {
-        // TODO Auto-generated method stub
         return false;
     }
 
@@ -108,7 +128,6 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public boolean isOutputClosed()
     {
-        // TODO Auto-generated method stub
         return false;
     }
 
@@ -121,7 +140,6 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public void onCloseHandshake(boolean incoming, CloseInfo close)
     {
-        // TODO Auto-generated method stub
     }
 
     public void onOpen() {
@@ -129,8 +147,18 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    {
+    }
+
+    @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
+    }
+
+    public void setIncoming(IncomingFrames incoming)
+    {
+        this.incoming = incoming;
     }
 
     public void setPolicy(WebSocketPolicy policy)

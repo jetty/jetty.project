@@ -81,7 +81,7 @@ public class MuxGenerator
                     MuxAddChannelRequest op = (MuxAddChannelRequest)block;
                     byte b = (byte)((op.getOpCode() & 0x07) << 5); // opcode
                     b |= (byte)((op.getRsv() & 0x07) << 2); // rsv
-                    b |= (op.getEnc() & 0x03); // enc
+                    b |= (op.getEncoding() & 0x03); // enc
                     payload.put(b); // opcode + rsv + enc
                     writeChannelId(payload,op.getChannelId());
                     write139Buffer(payload,op.getHandshake());
@@ -93,7 +93,7 @@ public class MuxGenerator
                     byte b = (byte)((op.getOpCode() & 0x07) << 5); // opcode
                     b |= (op.isFailed()?0x10:0x00); // failure bit
                     b |= (byte)((op.getRsv() & 0x03) << 2); // rsv
-                    b |= (op.getEnc() & 0x03); // enc
+                    b |= (op.getEncoding() & 0x03); // enc
                     payload.put(b); // opcode + f + rsv + enc
                     writeChannelId(payload,op.getChannelId());
                     if (op.getHandshake() != null)

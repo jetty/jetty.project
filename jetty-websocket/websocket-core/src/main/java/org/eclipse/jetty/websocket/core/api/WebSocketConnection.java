@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
 /**
  * Connection interface for WebSocket protocol <a href="https://tools.ietf.org/html/rfc6455">RFC-6455</a>.
  */
-public interface WebSocketConnection extends BaseConnection
+public interface WebSocketConnection extends LogicalConnection
 {
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
