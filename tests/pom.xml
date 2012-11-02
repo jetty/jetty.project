@@ -40,9 +40,13 @@
     </plugins>
   </build>
   <modules>
+<!--
     <module>test-integration</module>
+-->
     <module>test-webapps</module>
     <module>test-sessions</module>
+<!--
     <module>test-loginservice</module>
+-->
   </modules>
 </project>

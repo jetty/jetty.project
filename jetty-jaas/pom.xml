@@ -45,7 +45,6 @@
           </archive>
         </configuration>
       </plugin>
-<!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -63,7 +62,6 @@
           </execution>
         </executions>
       </plugin>
--->
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->
       <plugin>

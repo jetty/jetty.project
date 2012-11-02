@@ -1,4 +1,15 @@
-<HTML><HEAD><TITLE>Welcome to the JAAS Authentication and Authorization Test</TITLE></HEAD>
+<HTML>
+  <HEAD>
+    <TITLE>JAAS Authentication and Authorization Test</TITLE>
+    <META http-equiv="Pragma" content="no-cache">
+    <META http-equiv="Cache-Control" content="no-cache,no-store">
+    <style>
+       body {color: #2E2E2E; font-family:sans-serif; font-size:90%;}
+       h1 {font-variant: small-caps; font-size:130%; letter-spacing: 0.1em;}
+       h2 {font-variant: small-caps; font-size:100%; letter-spacing: 0.1em;}
+    </style>
+
+  </HEAD>
 <BODY>
   <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
 
@@ -6,6 +17,7 @@
   <a  href="http://localhost:8080/">Home</a>
 <center>
   <hr/>
+ <span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span>
 </center>
 
   <H1>JAAS Authentication and Authorization Demo </H1>
@@ -20,7 +32,6 @@
 
     <li>Unjar the test-jaas-webapp-&lt;version&gt;-config.jar inside $JETTY_HOME. The following files will be added:
      <pre>
-       etc/jetty-jaas.xml
        etc/login.conf
        etc/login.properties
        contexts/test-jaas.xml
@@ -37,7 +48,7 @@
   Click on the following link to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>.
   </P>
   <p>
-   This demo uses a simple login module that stores its configuration in a properties file. There are other types of login module provided with the jetty distro. For full information, please refer to the jetty documentation: <a href="http://www.eclipse.org/jetty/documentation/current/">http://www.eclipse.org/jetty/documentation/current/</a>.
+   This demo uses a simple login module that stores its configuration in a properties file. There are other types of login module provided with the jetty distro. For full information, please refer to the <a href="http://www.eclipse.org/jetty/documentation/current/">Jetty 9 documentation</a>.
   </p>
   <P>
   To authenticate successfully with this demonstration, you must use username=&quot;me&quot; with password=&quot;me&quot;.  All other usernames, passwords should result in authentication failure.

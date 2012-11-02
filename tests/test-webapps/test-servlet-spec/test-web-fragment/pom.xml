@@ -1,0 +1,30 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>test-servlet-spec-parent</artifactId>
+    <version>9.0.0-SNAPSHOT</version>
+  </parent>
+  <name>Jetty Tests :: WebApp :: Servlet Spec :: Fragment Jar</name>
+  <groupId>org.eclipse.jetty.tests</groupId>
+  <artifactId>test-web-fragment</artifactId>
+  <packaging>jar</packaging>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+          <verbose>false</verbose>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
+  </dependencies>
+</project>

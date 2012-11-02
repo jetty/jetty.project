@@ -7,7 +7,8 @@
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
   <Set name="contextPath">/test-jaas</Set>
-  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test-jaas</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test-jaas.war</Set>
+  <Set name="extractWAR">true</Set>
 
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
