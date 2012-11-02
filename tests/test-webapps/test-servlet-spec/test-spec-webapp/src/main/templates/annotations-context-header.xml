@@ -33,7 +33,7 @@
    </Set>
 
   <Set name="contextPath">/test-annotations</Set>
-  <Set name="war"><SystemProperty name="jetty.home"/>/webapps/test-annotations</Set>
+  <Set name="war"><SystemProperty name="jetty.home"/>/webapps/test-spec.war</Set>
   <Set name="configurationDiscovered">true</Set>
 
   <Get name="securityHandler">

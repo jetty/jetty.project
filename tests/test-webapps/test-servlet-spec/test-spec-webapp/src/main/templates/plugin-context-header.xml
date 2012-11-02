@@ -10,9 +10,11 @@
 
 
   <!-- Configure the tx mgr (only needed for mvn jetty:run -->
-    <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
       <Arg>
-        <New class="com.atomikos.icatch.jta.UserTransactionImp"/>
+        <New class="com.acme.MockUserTransaction"/>
       </Arg>
     </New>
+
+
 

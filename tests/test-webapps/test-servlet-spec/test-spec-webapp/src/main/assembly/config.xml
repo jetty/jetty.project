@@ -20,7 +20,7 @@
        <directory>target</directory>
       <outputDirectory>webapps</outputDirectory>
       <includes>
-        <include>test-annotations.xml</include>
+        <include>test-spec.xml</include>
       </includes>
     </fileSet>
     <fileSet>

@@ -6,18 +6,15 @@
 <!-- =============================================================== -->
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
+  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+      <Arg>
+        <New class="com.acme.MockUserTransaction"/>
+      </Arg>
+    </New>
+
   
   <!-- only necessary for mvn jetty:run -->
-  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
-   <Arg>
-     <New class="com.atomikos.icatch.jta.UserTransactionImp"/>
-   </Arg>
-  </New>
 
-  <Call class="java.lang.System" name="setProperty">
-    <Arg>derby.system.home</Arg>
-    <Arg><SystemProperty name="java.io.tmpdir"/></Arg>
-  </Call>
 
 
 
