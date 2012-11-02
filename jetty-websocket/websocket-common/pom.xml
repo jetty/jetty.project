@@ -7,11 +7,11 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>websocket-core</artifactId>
-    <name>Jetty :: Websocket :: Core</name>
+    <artifactId>websocket-common</artifactId>
+    <name>Jetty :: Websocket :: Common</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
     </properties>
 
     <dependencies>
