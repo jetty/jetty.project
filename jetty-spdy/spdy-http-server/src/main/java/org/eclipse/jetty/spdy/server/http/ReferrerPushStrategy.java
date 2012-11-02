@@ -122,6 +122,36 @@ public class ReferrerPushStrategy implements PushStrategy
         this.referrerPushPeriod = referrerPushPeriod;
     }
 
+    public Set<Pattern> getPushRegexps()
+    {
+        return pushRegexps;
+    }
+
+    public Set<String> getPushContentTypes()
+    {
+        return pushContentTypes;
+    }
+
+    public Set<Pattern> getAllowedPushOrigins()
+    {
+        return allowedPushOrigins;
+    }
+
+    public Set<Pattern> getUserAgentBlacklist()
+    {
+        return userAgentBlacklist;
+    }
+
+    public int getMaxAssociatedResources()
+    {
+        return maxAssociatedResources;
+    }
+
+    public int getReferrerPushPeriod()
+    {
+        return referrerPushPeriod;
+    }
+
     @Override
     public Set<String> apply(Stream stream, Fields requestHeaders, Fields responseHeaders)
     {
