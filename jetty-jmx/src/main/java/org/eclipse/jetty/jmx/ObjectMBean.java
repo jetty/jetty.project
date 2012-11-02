@@ -564,7 +564,7 @@ public class ObjectMBean implements DynamicMBean
         }
         
 
-        String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
+        String uName = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
         Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
         if (LOG.isDebugEnabled())

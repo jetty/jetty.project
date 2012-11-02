@@ -36,6 +36,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -172,7 +173,7 @@ public class MultiPartFilter implements Filter
                     int c=line.indexOf(':',0);
                     if(c>0)
                     {
-                        String key=line.substring(0,c).trim().toLowerCase();
+                        String key=line.substring(0,c).trim().toLowerCase(Locale.ENGLISH);
                         String value=line.substring(c+1,line.length()).trim();
                         if(key.equals("content-disposition"))
                             content_disposition=value;

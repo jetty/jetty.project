@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -126,7 +127,7 @@ public class SslSecurityListenerTest
     public void testSslGet() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
-        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")>=0)
+        if (System.getProperty("java.vendor").toLowerCase(Locale.ENGLISH).indexOf("ibm")>=0)
         {
             LOG.warn("Skipped SSL testSslGet on IBM JVM");
             return;

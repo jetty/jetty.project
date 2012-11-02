@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -217,7 +218,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 while(iter.hasNext())
                 {
                     String location = iter.next();
-                    if (location!=null && location.toLowerCase().endsWith(".tld"))
+                    if (location!=null && location.toLowerCase(Locale.ENGLISH).endsWith(".tld"))
                     {
                         if (!location.startsWith("/"))
                             location="/WEB-INF/"+location;
@@ -234,7 +235,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 String[] contents = web_inf.list();
                 for (int i=0;contents!=null && i<contents.length;i++)
                 {
-                    if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
+                    if (contents[i]!=null && contents[i].toLowerCase(Locale.ENGLISH).endsWith(".tld"))
                     {
                         Resource l=web_inf.addPath(contents[i]);
                         tlds.add(l);
@@ -249,7 +250,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                     String[] contents = web_inf_tlds.list();
                     for (int i=0;contents!=null && i<contents.length;i++)
                     {
-                        if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
+                        if (contents[i]!=null && contents[i].toLowerCase(Locale.ENGLISH).endsWith(".tld"))
                         {
                             Resource l=web_inf_tlds.addPath(contents[i]);
                             tlds.add(l);

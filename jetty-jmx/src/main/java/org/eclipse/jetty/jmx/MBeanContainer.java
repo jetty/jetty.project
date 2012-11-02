@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -251,7 +252,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             //no override mbean object name, so make a generic one
             if (oname == null)
             {
-                String type = obj.getClass().getName().toLowerCase();
+                String type = obj.getClass().getName().toLowerCase(Locale.ENGLISH);
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);

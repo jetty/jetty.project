@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -152,7 +153,7 @@ public class IPAccessHandlerTest
             assertTrue(header.lookingAt());
             String headerName = header.group(1);
             String headerValue = header.group(2);
-            headers.put(headerName.toLowerCase(), headerValue.toLowerCase());
+            headers.put(headerName.toLowerCase(Locale.ENGLISH), headerValue.toLowerCase(Locale.ENGLISH));
         }
 
         StringBuilder body = new StringBuilder();

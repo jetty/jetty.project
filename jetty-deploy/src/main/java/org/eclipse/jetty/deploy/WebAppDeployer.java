@@ -19,6 +19,7 @@
 package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.Handler;
@@ -223,7 +224,7 @@ public class WebAppDeployer extends AbstractLifeCycle
 
             Resource app=r.addPath(r.encode(context));
 
-            if (context.toLowerCase().endsWith(".war")||context.toLowerCase().endsWith(".jar"))
+            if (context.toLowerCase(Locale.ENGLISH).endsWith(".war")||context.toLowerCase(Locale.ENGLISH).endsWith(".jar"))
             {
                 context=context.substring(0,context.length()-4);
                 Resource unpacked=r.addPath(context);
