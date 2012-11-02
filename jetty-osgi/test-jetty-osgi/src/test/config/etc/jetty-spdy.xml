@@ -57,7 +57,7 @@
       <!-- Uncomment to blacklist browsers for this push strategy. If one of the blacklisted Strings occurs in the
            user-agent header sent by the client, push will be disabled for this browser. This is case insensitive" -->
       <!--
-      <Set name="BlacklistUserAgents">
+      <Set name="UserAgentBlacklist">
           <Array type="String">
               <Item>.*(?i)firefox/14.*</Item>
               <Item>.*(?i)firefox/15.*</Item>
