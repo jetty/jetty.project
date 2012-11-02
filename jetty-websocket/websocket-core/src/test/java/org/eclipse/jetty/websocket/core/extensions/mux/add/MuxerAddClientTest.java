@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
-import static org.hamcrest.Matchers.*;
-
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxDecoder;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxEncoder;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxOp;
@@ -28,43 +27,35 @@ import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.io.LocalWebSocketConnection;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-public class MuxerAddServerTest
+public class MuxerAddClientTest
 {
     @Rule
     public TestName testname = new TestName();
 
     @Test
     @Ignore("Interrim, not functional yet")
-    public void testAddChannel_Server() throws Exception
+    public void testAddChannel_Client() throws Exception
     {
-        // Server side physical connection
+        // Client side physical socket
         LocalWebSocketConnection physical = new LocalWebSocketConnection(testname);
-        physical.setPolicy(WebSocketPolicy.newServerPolicy());
+        physical.setPolicy(WebSocketPolicy.newClientPolicy());
         physical.onOpen();
 
-        // Client reader
-        MuxDecoder clientRead = new MuxDecoder();
+        // Server Reader
+        MuxDecoder serverRead = new MuxDecoder();
 
-        // Build up server side muxer.
-        Muxer muxer = new Muxer(physical,clientRead);
-        DummyMuxAddServer addServer = new DummyMuxAddServer();
-        muxer.setAddServer(addServer);
+        // Client side Muxer
+        Muxer muxer = new Muxer(physical,serverRead);
+        DummyMuxAddClient addClient = new DummyMuxAddClient();
+        muxer.setAddClient(addClient);
 
-        // Wire up physical connection to forward incoming frames to muxer
-        physical.setIncoming(muxer);
-
-        // Client simulator
-        // Can inject mux encapsulated frames into physical connection as if from
-        // physical connection.
-        MuxEncoder clientWrite = MuxEncoder.toIncoming(physical);
+        // Server Writer
+        MuxEncoder serverWrite = MuxEncoder.toIncoming(physical);
 
         // Build AddChannelRequest handshake data
         StringBuilder request = new StringBuilder();
@@ -77,28 +68,37 @@ public class MuxerAddServerTest
         request.append("\r\n");
 
         // Build AddChannelRequest
+        long channelId = 1L;
         MuxAddChannelRequest req = new MuxAddChannelRequest();
-        req.setChannelId(1);
+        req.setChannelId(channelId);
         req.setEncoding((byte)0);
         req.setHandshake(request.toString());
 
         // Have client sent AddChannelRequest
+        MuxChannel channel = muxer.getChannel(channelId,true);
+        MuxEncoder clientWrite = MuxEncoder.toOutgoing(channel);
         clientWrite.op(req);
 
-        // Make sure client got AddChannelResponse
-        clientRead.assertHasOp(MuxOp.ADD_CHANNEL_RESPONSE,1);
-        MuxAddChannelResponse response = (MuxAddChannelResponse)clientRead.getOps().pop();
-        Assert.assertThat("AddChannelResponse.channelId",response.getChannelId(),is(1L));
-        Assert.assertThat("AddChannelResponse.failed",response.isFailed(),is(false));
-        Assert.assertThat("AddChannelResponse.handshake",response.getHandshake(),notNullValue());
-        Assert.assertThat("AddChannelResponse.handshakeSize",response.getHandshakeSize(),is(57L));
+        // Have server read request
+        serverRead.assertHasOp(MuxOp.ADD_CHANNEL_REQUEST,1);
 
-        clientRead.reset();
+        // prepare AddChannelResponse
+        StringBuilder response = new StringBuilder();
+        response.append("HTTP/1.1 101 Switching Protocols\r\n");
+        response.append("Upgrade: websocket\r\n");
+        response.append("Connection: upgrade\r\n");
+        response.append("Sec-WebSocket-Accept: Kgo85/8KVE8YPONSeyhgL3GwqhI=\r\n");
+        response.append("\r\n");
 
-        // Send simple echo request
-        clientWrite.frame(1,WebSocketFrame.text("Hello World"));
+        MuxAddChannelResponse resp = new MuxAddChannelResponse();
+        resp.setChannelId(channelId);
+        resp.setFailed(false);
+        resp.setEncoding((byte)0);
+        resp.setHandshake(resp.toString());
 
-        // Test for echo response (is there a user echo websocket connected to the sub-channel?)
-        clientRead.assertHasFrame(OpCode.TEXT,1L,1);
+        // Server writes add channel response
+        serverWrite.op(resp);
+
+        // TODO: handle the upgrade on client side.
     }
 }

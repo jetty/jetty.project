@@ -92,9 +92,29 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
     }
 
     @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public String getHost()
     {
         return getHeader("Host");
+    }
+
+    @Override
+    public String getHttpVersion()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getOrigin()
+    {
+        return getHeader("Origin");
     }
 
     /**
@@ -103,15 +123,9 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
      * Per the <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (RFC 6455)</a>
      */
     @Override
-    public String getHttpEndPointName()
+    public String getRemoteURI()
     {
         return getRequestURI();
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
     }
 
     @Override

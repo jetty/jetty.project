@@ -18,42 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.api;
 
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
-
-public interface UpgradeRequest
+/**
+ * Connection suspend token
+ */
+public interface SuspendToken
 {
-    public void addExtensions(String... extConfigs);
-
-    public Map<String, String> getCookieMap();
-
-    public List<ExtensionConfig> getExtensions();
-
-    public String getHeader(String name);
-
-    public Map<String, List<String>> getHeaders();
-
-    public String getHost();
-
-    public String getHttpVersion();
-
-    public String getMethod();
-
-    public String getOrigin();
-
-    public Map<String,String[]> getParameterMap();
-
-    public String getQueryString();
-
-    public String getRemoteURI();
-
-    public List<String> getSubProtocols();
-
-    public boolean hasSubProtocol(String test);
-
-    public boolean isOrigin(String test);
-
-    public void setSubProtocols(String protocols);
+    /**
+     * Resume a previously suspended connection.
+     */
+    void resume();
 }

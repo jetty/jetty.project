@@ -20,8 +20,17 @@ package org.eclipse.jetty.websocket.server.mux;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
 import org.eclipse.jetty.websocket.core.extensions.mux.add.MuxAddServer;
 
 /**
@@ -29,20 +38,73 @@ import org.eclipse.jetty.websocket.core.extensions.mux.add.MuxAddServer;
  */
 public class MuxAddHandler implements MuxAddServer
 {
+    /** Represents physical connector */
+    private Connector connector;
+
+    /** Used for local address */
+    private EndPoint endPoint;
+
+    /** The original request handshake */
+    private UpgradeRequest baseHandshakeRequest;
+
+    /** The original request handshake */
+    private UpgradeResponse baseHandshakeResponse;
+
+    private int maximumHeaderSize = 32 * 1024;
+
+    @Override
+    public UpgradeRequest getPhysicalHandshakeRequest()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public UpgradeResponse getPhysicalHandshakeResponse()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * An incoming MuxAddChannel request.
      * 
      * @param the
      *            channel this request should be bound to
-     * @param requestHandshake
-     *            the incoming request headers
+     * @param request
+     *            the incoming request headers (complete and merged if delta encoded)
      * @return the outgoing response headers
      */
     @Override
-    public String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException
+    public void handshake(Muxer muxer, MuxChannel channel, UpgradeRequest request) throws MuxException, IOException
     {
         // Need to call into HttpChannel to get the websocket properly setup.
+        HttpTransportOverMux transport = new HttpTransportOverMux(muxer,channel);
+        EmptyHttpInput input = new EmptyHttpInput();
+        HttpConfiguration configuration = new HttpConfiguration();
 
-        return null;
+        HttpChannelOverMux httpChannel = new HttpChannelOverMux(//
+                connector,configuration,endPoint,transport,input);
+
+        HttpMethod method = HttpMethod.fromString(request.getMethod());
+        HttpVersion version = HttpVersion.fromString(request.getHttpVersion());
+        httpChannel.startRequest(method,request.getMethod(),request.getRemoteURI(),version);
+
+        for (String headerName : request.getHeaders().keySet())
+        {
+            HttpHeader header = HttpHeader.lookAheadGet(headerName.getBytes(),0,headerName.length());
+            for (String value : request.getHeaders().get(headerName))
+            {
+                httpChannel.parsedHeader(header,headerName,value);
+            }
+        }
+
+        httpChannel.headerComplete();
+        httpChannel.messageComplete();
+        httpChannel.run(); // calls into server for appropriate resource
+
+        // TODO: what's in request handshake is not enough to process the request.
+        // like a partial http request. (consider this a AddChannelRequest failure)
+        throw new MuxException("Not a valid request");
     }
 }

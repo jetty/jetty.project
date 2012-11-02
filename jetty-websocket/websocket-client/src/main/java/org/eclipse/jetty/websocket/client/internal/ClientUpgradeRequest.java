@@ -222,15 +222,23 @@ public class ClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public String getHost()
     {
         return this.host;
     }
 
     @Override
-    public String getHttpEndPointName()
+    public String getHttpVersion()
     {
-        return httpEndPointName;
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public String getKey()
@@ -239,9 +247,36 @@ public class ClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
+    public String getMethod()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public String getOrigin()
     {
         return getHeader("Origin");
+    }
+
+    @Override
+    public Map<String, String[]> getParameterMap()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getQueryString()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getRemoteURI()
+    {
+        return httpEndPointName;
     }
 
     @Override

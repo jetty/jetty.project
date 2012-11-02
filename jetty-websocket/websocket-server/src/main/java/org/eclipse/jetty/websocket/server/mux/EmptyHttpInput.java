@@ -16,33 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions.mux;
+package org.eclipse.jetty.websocket.server.mux;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.server.HttpInput;
 
 /**
- * Helpful utility class to parse arbitrary mux events from a physical connection's OutgoingFrames.
- * 
- * @see MuxInjector
+ * HttpInput for Empty Http body sections.
  */
-public class MuxReducer extends MuxEventCapture implements OutgoingFrames
+public class EmptyHttpInput extends HttpInput<ByteBuffer>
 {
-    private MuxParser parser;
-
-    public MuxReducer()
+    @Override
+    protected int get(ByteBuffer item, byte[] buffer, int offset, int length)
     {
-        parser = new MuxParser();
-        parser.setEvents(this);
+        return 0;
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    protected void onContentConsumed(ByteBuffer item)
     {
-        parser.parse(frame);
-        callback.completed(context); // let blocked calls know the send is complete.
+        // do nothing
+    }
+
+    @Override
+    protected int remaining(ByteBuffer item)
+    {
+        return 0;
     }
 }

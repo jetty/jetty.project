@@ -20,13 +20,18 @@ package org.eclipse.jetty.websocket.core.extensions.mux.op;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxControlBlock;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxOp;
 
 public class MuxAddChannelRequest implements MuxControlBlock
 {
+    public static final byte IDENTITY_ENCODING = (byte)0x00;
+    public static final byte DELTA_ENCODING = (byte)0x01;
+
     private long channelId = -1;
-    private byte enc;
+    private byte encoding;
     private ByteBuffer handshake;
     private byte rsv;
 
@@ -35,9 +40,9 @@ public class MuxAddChannelRequest implements MuxControlBlock
         return channelId;
     }
 
-    public byte getEnc()
+    public byte getEncoding()
     {
-        return enc;
+        return encoding;
     }
 
     public ByteBuffer getHandshake()
@@ -67,12 +72,12 @@ public class MuxAddChannelRequest implements MuxControlBlock
 
     public boolean isDeltaEncoded()
     {
-        return (enc == 1);
+        return (encoding == DELTA_ENCODING);
     }
 
     public boolean isIdentityEncoded()
     {
-        return (enc == 0);
+        return (encoding == IDENTITY_ENCODING);
     }
 
     public void setChannelId(long channelId)
@@ -80,9 +85,9 @@ public class MuxAddChannelRequest implements MuxControlBlock
         this.channelId = channelId;
     }
 
-    public void setEnc(byte enc)
+    public void setEncoding(byte enc)
     {
-        this.enc = enc;
+        this.encoding = enc;
     }
 
     public void setHandshake(ByteBuffer handshake)
@@ -95,6 +100,11 @@ public class MuxAddChannelRequest implements MuxControlBlock
         {
             this.handshake = handshake.slice();
         }
+    }
+
+    public void setHandshake(String rawstring)
+    {
+        setHandshake(BufferUtil.toBuffer(rawstring,StringUtil.__UTF8_CHARSET));
     }
 
     public void setRsv(byte rsv)

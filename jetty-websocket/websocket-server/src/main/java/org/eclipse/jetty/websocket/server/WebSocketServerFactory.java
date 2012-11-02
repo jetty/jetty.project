@@ -51,6 +51,7 @@ import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
+import org.eclipse.jetty.websocket.core.io.InternalConnection;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 import org.eclipse.jetty.websocket.core.io.event.EventDriver;
@@ -64,6 +65,18 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
+
+    private static final ThreadLocal<UpgradeContext> ACTIVE_CONTEXT = new ThreadLocal<>();
+
+    public static UpgradeContext getActiveUpgradeContext()
+    {
+        return ACTIVE_CONTEXT.get();
+    }
+
+    protected static void setActiveUpgradeContext(UpgradeContext connection)
+    {
+        ACTIVE_CONTEXT.set(connection);
+    }
 
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
@@ -124,6 +137,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
 
         WebSocketCreator creator = getCreator();
+
+        UpgradeContext context = getActiveUpgradeContext();
+        if (context == null)
+        {
+            context = new UpgradeContext();
+            setActiveUpgradeContext(context);
+        }
+        context.setRequest(sockreq);
+        context.setResponse(sockresp);
 
         Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
 
@@ -357,14 +379,20 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         // Create connection
-        HttpConnection http = HttpConnection.getCurrentConnection();
-        EndPoint endp = http.getEndPoint();
-        Executor executor = http.getConnector().getExecutor();
-        ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        WebSocketServerConnection connection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool,this);
+        UpgradeContext context = getActiveUpgradeContext();
+        InternalConnection connection = context.getConnection();
 
-        LOG.debug("HttpConnection: {}",http);
-        LOG.debug("AsyncWebSocketConnection: {}",connection);
+        if (connection == null)
+        {
+            HttpConnection http = HttpConnection.getCurrentConnection();
+            EndPoint endp = http.getEndPoint();
+            Executor executor = http.getConnector().getExecutor();
+            ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
+            connection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool,this);
+
+            LOG.debug("HttpConnection: {}",http);
+            LOG.debug("AsyncWebSocketConnection: {}",connection);
+        }
 
         // Initialize / Negotiate Extensions
         WebSocketSession session = new WebSocketSession(driver,connection,getPolicy(),response.getAcceptedSubProtocol());
@@ -379,8 +407,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Connect extensions
         if (extensions != null)
         {
-            connection.getParser().configureFromExtensions(extensions);
-            connection.getGenerator().configureFromExtensions(extensions);
+            connection.configureFromExtensions(extensions);
 
             Iterator<Extension> extIter;
             // Connect outgoings
@@ -406,7 +433,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // configure session for outgoing flows
         session.setOutgoing(outgoing);
         // configure connection for incoming flows
-        connection.getParser().setIncomingFramesHandler(incoming);
+        connection.setIncoming(incoming);
 
         // Tell jetty about the new connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);

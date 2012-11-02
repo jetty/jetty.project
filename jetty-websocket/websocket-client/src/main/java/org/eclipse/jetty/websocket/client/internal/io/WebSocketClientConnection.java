@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.internal.io;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.EndPoint;
@@ -25,7 +26,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.io.IncomingFrames;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
 /**
@@ -47,6 +50,12 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.masker = client.getMasker();
     }
 
+    @Override
+    public void configureFromExtensions(List<Extension> extensions)
+    {
+        /* do nothing */
+    }
+
     public DefaultWebSocketClient getClient()
     {
         return client;
@@ -57,7 +66,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         super.onClose();
         factory.sessionClosed(getSession());
-    };
+    }
 
     @Override
     public void onOpen()
@@ -68,12 +77,18 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
-    }
+    };
 
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
         masker.setMask(frame);
         super.output(context,callback,frame);
+    }
+
+    @Override
+    public void setIncoming(IncomingFrames incoming)
+    {
+        getParser().setIncomingFramesHandler(incoming);
     }
 }

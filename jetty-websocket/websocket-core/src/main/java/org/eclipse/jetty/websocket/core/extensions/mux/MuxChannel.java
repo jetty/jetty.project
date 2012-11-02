@@ -30,13 +30,14 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.BaseConnection.SuspendToken;
 import org.eclipse.jetty.websocket.core.api.Extension;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
+import org.eclipse.jetty.websocket.core.api.SuspendToken;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.IncomingFrames;
+import org.eclipse.jetty.websocket.core.io.InternalConnection;
 import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
  */
-public class MuxChannel implements WebSocketConnection, IncomingFrames, OutgoingFrames, SuspendToken
+public class MuxChannel implements WebSocketConnection, InternalConnection, IncomingFrames, OutgoingFrames, SuspendToken
 {
     private static final Logger LOG = Log.getLogger(MuxChannel.class);
 
@@ -93,6 +94,12 @@ public class MuxChannel implements WebSocketConnection, IncomingFrames, Outgoing
             LOG.warn("Unable to issue Close",e);
             disconnect();
         }
+    }
+
+    @Override
+    public void configureFromExtensions(List<Extension> extensions)
+    {
+        /* ignore */
     }
 
     @Override
@@ -251,10 +258,16 @@ public class MuxChannel implements WebSocketConnection, IncomingFrames, Outgoing
         }
     }
 
+    @Override
+    public void setIncoming(IncomingFrames incoming)
+    {
+        this.incoming = incoming;
+    }
+
+    @Override
     public void setSession(WebSocketSession session)
     {
         this.session = session;
-        this.incoming = session;
         session.setOutgoing(this);
     }
 
