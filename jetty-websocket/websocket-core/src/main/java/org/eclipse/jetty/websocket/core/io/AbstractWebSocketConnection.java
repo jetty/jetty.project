@@ -37,9 +37,9 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.core.api.BaseConnection;
 import org.eclipse.jetty.websocket.core.api.CloseException;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
+import org.eclipse.jetty.websocket.core.api.SuspendToken;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements BaseConnection, BaseConnection.SuspendToken, OutgoingFrames
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements InternalConnection, SuspendToken
 {
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");

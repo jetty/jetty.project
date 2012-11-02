@@ -22,10 +22,14 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.examples.echo.AdapterEchoSocket;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 import org.eclipse.jetty.websocket.core.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
@@ -49,7 +53,21 @@ public class DummyMuxAddServer implements MuxAddServer
     }
 
     @Override
-    public String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException
+    public UpgradeRequest getPhysicalHandshakeRequest()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public UpgradeResponse getPhysicalHandshakeResponse()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void handshake(Muxer muxer, MuxChannel channel, UpgradeRequest request) throws MuxException, IOException
     {
         StringBuilder response = new StringBuilder();
         response.append("HTTP/1.1 101 Switching Protocols\r\n");
@@ -65,6 +83,12 @@ public class DummyMuxAddServer implements MuxAddServer
         channel.onOpen();
         session.onConnect();
 
-        return response.toString();
+        MuxAddChannelResponse addChannelResponse = new MuxAddChannelResponse();
+        addChannelResponse.setChannelId(channel.getChannelId());
+        addChannelResponse.setEncoding(MuxAddChannelResponse.IDENTITY_ENCODING);
+        addChannelResponse.setFailed(false);
+        addChannelResponse.setHandshake(response.toString());
+
+        muxer.output(addChannelResponse);
     }
 }

@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
@@ -96,6 +96,29 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     public MuxAddServer getAddServer()
     {
         return addServer;
+    }
+
+    public MuxChannel getChannel(long channelId, boolean create)
+    {
+        if (channelId == CONTROL_CHANNEL_ID)
+        {
+            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Invalid Channel ID");
+        }
+
+        MuxChannel channel = channels.get(channelId);
+        if (channel == null)
+        {
+            if (create)
+            {
+                channel = new MuxChannel(channelId,this);
+                channels.put(channelId,channel);
+            }
+            else
+            {
+                throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Unknown Channel ID");
+            }
+        }
+        return channel;
     }
 
     public WebSocketPolicy getPolicy()
@@ -193,39 +216,35 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
             throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_REQUEST_ENCODING,"RSV Not allowed to be set");
         }
 
-        if (request.getChannelId() == CONTROL_CHANNEL_ID)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Invalid Channel ID");
-        }
-
         // Pre-allocate channel.
         long channelId = request.getChannelId();
-        MuxChannel channel = new MuxChannel(channelId,this);
-        this.channels.put(channelId,channel);
+        MuxChannel channel = getChannel(channelId, true);
 
         // submit to upgrade handshake process
         try
         {
-            String requestHandshake = BufferUtil.toUTF8String(request.getHandshake());
-            if (request.isDeltaEncoded())
+            switch (request.getEncoding())
             {
-                // Merge original request headers out of physical connection.
-                requestHandshake = mergeHeaders(physicalRequestHeaders,requestHandshake);
-            }
-            String responseHandshake = addServer.handshake(channel,requestHandshake);
-            if (StringUtil.isNotBlank(responseHandshake))
-            {
-                // Upgrade Success
-                MuxAddChannelResponse response = new MuxAddChannelResponse();
-                response.setChannelId(request.getChannelId());
-                response.setFailed(false);
-                response.setHandshake(responseHandshake);
-                // send response
-                this.generator.generate(response);
-            }
-            else
-            {
-                // TODO: trigger error?
+                case MuxAddChannelRequest.IDENTITY_ENCODING:
+                {
+                    UpgradeRequest idenReq = MuxRequest.parse(request.getHandshake());
+                    addServer.handshake(this,channel,idenReq);
+                    break;
+                }
+                case MuxAddChannelRequest.DELTA_ENCODING:
+                {
+                    UpgradeRequest baseReq = addServer.getPhysicalHandshakeRequest();
+                    UpgradeRequest deltaReq = MuxRequest.parse(request.getHandshake());
+                    UpgradeRequest mergedReq = MuxRequest.merge(baseReq,deltaReq);
+
+                    addServer.handshake(this,channel,mergedReq);
+                    break;
+                }
+                default:
+                {
+                    // TODO: ERROR
+                    break;
+                }
             }
         }
         catch (Throwable t)
@@ -250,18 +269,9 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
             throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_RESPONSE_ENCODING,"RSV Not allowed to be set");
         }
 
-        if (response.getChannelId() == CONTROL_CHANNEL_ID)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Invalid Channel ID");
-        }
-
         // Process channel
         long channelId = response.getChannelId();
-        MuxChannel channel = this.channels.get(channelId);
-        if (channel == null)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Unknown Channel ID");
-        }
+        MuxChannel channel = getChannel(channelId,false);
 
         // Process Response headers
         try
@@ -288,18 +298,9 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     @Override
     public void onMuxDropChannel(MuxDropChannel drop)
     {
-        if (drop.getChannelId() == CONTROL_CHANNEL_ID)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Invalid Channel ID");
-        }
-
         // Process channel
         long channelId = drop.getChannelId();
-        MuxChannel channel = this.channels.get(channelId);
-        if (channel == null)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Unknown Channel ID");
-        }
+        MuxChannel channel = getChannel(channelId,false);
 
         String reason = "Mux " + drop.toString();
         reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
@@ -335,11 +336,6 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     @Override
     public void onMuxFlowControl(MuxFlowControl flow)
     {
-        if (flow.getChannelId() == CONTROL_CHANNEL_ID)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Invalid Channel ID");
-        }
-
         if (flow.getSendQuotaSize() > 0x7F_FF_FF_FF_FF_FF_FF_FFL)
         {
             throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.SEND_QUOTA_OVERFLOW,"Send Quota Overflow");
@@ -347,11 +343,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
 
         // Process channel
         long channelId = flow.getChannelId();
-        MuxChannel channel = this.channels.get(channelId);
-        if (channel == null)
-        {
-            throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.UNKNOWN_MUX_CONTROL_BLOCK,"Unknown Channel ID");
-        }
+        MuxChannel channel = getChannel(channelId,false);
 
         // TODO: set channel quota
     }
@@ -394,6 +386,18 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         generator.output(context,callback,channelId,frame);
     }
 
+    /**
+     * Write an OP out the physical connection.
+     * 
+     * @param op
+     *            the mux operation to write
+     * @throws IOException
+     */
+    public void output(MuxControlBlock op) throws IOException
+    {
+        generator.generate(op);
+    }
+
     public void setAddClient(MuxAddClient addClient)
     {
         this.addClient = addClient;
@@ -420,6 +424,6 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     @Override
     public String toString()
     {
-        return String.format("Muxer[subChannels.size=%d]", channels.size());
+        return String.format("Muxer[subChannels.size=%d]",channels.size());
     }
 }

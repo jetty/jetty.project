@@ -16,25 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.mux;
+package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
+import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpTransport;
-
-/**
- * Process incoming AddChannelRequest headers within the existing Jetty framework. Benefiting from Server container knowledge and various webapp configuration
- * knowledge.
- */
-public class HttpChannelOverMux extends HttpChannel<ByteBuffer>
+public class DummyMuxAddClient implements MuxAddClient
 {
-    public HttpChannelOverMux(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+    @Override
+    public WebSocketSession createSession(MuxAddChannelResponse response)
     {
-        super(connector,configuration,endPoint,transport,input);
+        // TODO Auto-generated method stub
+        return null;
     }
 }

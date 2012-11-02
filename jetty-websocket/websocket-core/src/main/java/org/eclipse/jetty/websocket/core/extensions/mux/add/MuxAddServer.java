@@ -20,8 +20,11 @@ package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
 import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 
 /**
@@ -29,6 +32,10 @@ import org.eclipse.jetty.websocket.core.io.WebSocketSession;
  */
 public interface MuxAddServer
 {
+    public UpgradeRequest getPhysicalHandshakeRequest();
+
+    public UpgradeResponse getPhysicalHandshakeResponse();
+
     /**
      * Perform the handshake.
      * 
@@ -36,11 +43,10 @@ public interface MuxAddServer
      *            the channel to attach the {@link WebSocketSession} to.
      * @param requestHandshake
      *            the request handshake (request headers)
-     * @return the response handshake (the response headers)
      * @throws AbstractMuxException
      *             if unable to handshake
      * @throws IOException
      *             if unable to parse request headers
      */
-    String handshake(MuxChannel channel, String requestHandshake) throws MuxException, IOException;
+    void handshake(Muxer muxer, MuxChannel channel, UpgradeRequest request) throws MuxException, IOException;
 }

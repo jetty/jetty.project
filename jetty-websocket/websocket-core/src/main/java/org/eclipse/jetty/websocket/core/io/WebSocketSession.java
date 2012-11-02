@@ -26,7 +26,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.BaseConnection;
+import org.eclipse.jetty.websocket.core.api.LogicalConnection;
+import org.eclipse.jetty.websocket.core.api.SuspendToken;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
@@ -41,17 +42,17 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
 
     /**
-     * The reference to the base connection.
+     * The reference to the logical connection.
      * <p>
-     * This will be the {@link AbstractWebSocketConnection} on normal websocket use, and be a MuxConnection when MUX is in the picture.
+     * This will be the {@link AbstractWebSocketConnection} on normal websocket use, and be a MuxChannel when MUX is in the picture.
      */
-    private final BaseConnection baseConnection;
+    private final LogicalConnection baseConnection;
     private final WebSocketPolicy policy;
     private final String subprotocol;
     private final EventDriver websocket;
     private OutgoingFrames outgoing;
 
-    public WebSocketSession(EventDriver websocket, BaseConnection connection, WebSocketPolicy policy, String subprotocol)
+    public WebSocketSession(EventDriver websocket, LogicalConnection connection, WebSocketPolicy policy, String subprotocol)
     {
         super();
         this.websocket = websocket;

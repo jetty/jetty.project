@@ -20,25 +20,12 @@ package org.eclipse.jetty.websocket.core.api;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
 
-/**
- * Base Connection concepts
- */
-public interface BaseConnection
+public interface LogicalConnection extends OutgoingFrames
 {
-    /**
-     * Connection suspend token
-     */
-    public static interface SuspendToken
-    {
-        /**
-         * Resume a previously suspended connection.
-         */
-        void resume();
-    }
-
     /**
      * Send a websocket Close frame, without a status code or reason.
      * <p>
@@ -47,7 +34,7 @@ public interface BaseConnection
      * @see StatusCode
      * @see #close(int, String)
      */
-    void close();
+    public void close();
 
     /**
      * Send a websocket Close frame, with status code.
@@ -60,7 +47,7 @@ public interface BaseConnection
      *            the (optional) reason. (can be null for no reason)
      * @see StatusCode
      */
-    void close(int statusCode, String reason);
+    public void close(int statusCode, String reason);
 
     /**
      * Terminate the connection (no close frame sent)
