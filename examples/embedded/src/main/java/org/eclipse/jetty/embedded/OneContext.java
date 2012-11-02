@@ -21,13 +21,6 @@ package org.eclipse.jetty.embedded;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
-/* ------------------------------------------------------------ */
-/**
- * A {@link ContextHandler} provides a common environment for multiple Handlers,
- * such as: URI context path, class loader, static resource base.
- * 
- * Typically a ContextHandler is used only when multiple contexts are likely.
- */
 public class OneContext
 {
     public static void main(String[] args) throws Exception
@@ -38,9 +31,9 @@ public class OneContext
         context.setContextPath("/");
         context.setResourceBase(".");
         context.setClassLoader(Thread.currentThread().getContextClassLoader());
-        server.setHandler(context);
-
         context.setHandler(new HelloHandler());
+
+        server.setHandler(context);
 
         server.start();
         server.join();
