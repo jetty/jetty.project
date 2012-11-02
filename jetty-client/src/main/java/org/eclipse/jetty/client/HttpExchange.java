@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -37,18 +38,19 @@ public class HttpExchange
     private final HttpConversation conversation;
     private final HttpConnection connection;
     private final Request request;
-    private final Response.Listener listener;
+    private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
+    private volatile boolean last;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
 
-    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, Response.Listener listener)
+    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, List<Response.ResponseListener> listeners)
     {
         this.conversation = conversation;
         this.connection = connection;
         this.request = request;
-        this.listener = listener;
-        this.response = new HttpResponse(request, listener);
+        this.listeners = listeners;
+        this.response = new HttpResponse(request, listeners);
     }
 
     public HttpConversation getConversation()
@@ -66,9 +68,9 @@ public class HttpExchange
         return requestFailure;
     }
 
-    public Response.Listener getResponseListener()
+    public List<Response.ResponseListener> getResponseListeners()
     {
-        return listener;
+        return listeners;
     }
 
     public HttpResponse getResponse()
@@ -79,6 +81,22 @@ public class HttpExchange
     public Throwable getResponseFailure()
     {
         return responseFailure;
+    }
+
+    /**
+     * @return whether this exchange is the last in the conversation
+     */
+    public boolean isLast()
+    {
+        return last;
+    }
+
+    /**
+     * @param last whether this exchange is the last in the conversation
+     */
+    public void setLast(boolean last)
+    {
+        this.last = last;
     }
 
     public void receive()
@@ -159,12 +177,13 @@ public class HttpExchange
             {
                 // Request and response completed
                 LOG.debug("{} complete", this);
-                if (conversation.getLastExchange() == this)
+                if (isLast())
                 {
                     HttpExchange first = conversation.getExchanges().peekFirst();
-                    Response.Listener listener = first.getResponseListener();
-                    if (listener instanceof ResponseListener.Timed)
-                        ((ResponseListener.Timed)listener).cancel();
+                    List<Response.ResponseListener> listeners = first.getResponseListeners();
+                    for (Response.ResponseListener listener : listeners)
+                        if (listener instanceof Schedulable)
+                            ((Schedulable)listener).cancel();
                     conversation.complete();
                 }
             }

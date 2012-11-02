@@ -26,6 +26,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
@@ -443,7 +444,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 {
                     // look for a sibling like "foo/" to a "foo.war"
                     File warfile=Resource.newResource(war).getFile();
-                    if (warfile!=null && warfile.getName().toLowerCase().endsWith(".war"))
+                    if (warfile!=null && warfile.getName().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
                         File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
                         if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
@@ -716,7 +717,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 try
                 {
                     Resource file = web_inf_lib.addPath(files[f]);
-                    String fnlc = file.getName().toLowerCase();
+                    String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
                     if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))

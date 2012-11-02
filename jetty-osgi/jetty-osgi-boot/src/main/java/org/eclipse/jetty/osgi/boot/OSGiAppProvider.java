@@ -23,6 +23,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -116,7 +117,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
      */
     private static String getDeployedAppName(String contextFileName)
     {
-        String lowername = contextFileName.toLowerCase();
+        String lowername = contextFileName.toLowerCase(Locale.ENGLISH);
         if (lowername.endsWith(".xml"))
         {
             String contextName = contextFileName.substring(0, lowername.length() - ".xml".length());

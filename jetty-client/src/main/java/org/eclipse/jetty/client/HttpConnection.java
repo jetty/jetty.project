@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -102,7 +103,12 @@ public class HttpConnection extends AbstractConnection implements Connection
     }
 
     @Override
-    public void send(Request request, Response.Listener listener)
+    public void send(Request request, Response.CompleteListener listener)
+    {
+        send(request, Collections.<Response.ResponseListener>singletonList(listener));
+    }
+
+    public void send(Request request, List<Response.ResponseListener> listeners)
     {
         normalizeRequest(request);
 
@@ -111,13 +117,14 @@ public class HttpConnection extends AbstractConnection implements Connection
         idleTimeout = endPoint.getIdleTimeout();
         endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.getConversationID());
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
         setExchange(exchange);
         conversation.getExchanges().offer(exchange);
 
-        if (listener instanceof ResponseListener.Timed)
-            ((ResponseListener.Timed)listener).schedule(client.getScheduler());
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Schedulable)
+                ((Schedulable)listener).schedule(client.getScheduler());
 
         sender.send(exchange);
     }

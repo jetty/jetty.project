@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -37,12 +38,18 @@ public class ResponseNotifier
         this.client = client;
     }
 
-    public void notifyBegin(Response.Listener listener, Response response)
+    public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.BeginListener)
+                notifyBegin((Response.BeginListener)listener, response);
+    }
+
+    private void notifyBegin(Response.BeginListener listener, Response response)
     {
         try
         {
-            if (listener != null)
-                listener.onBegin(response);
+            listener.onBegin(response);
         }
         catch (Exception x)
         {
@@ -50,12 +57,18 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyHeaders(Response.Listener listener, Response response)
+    public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.HeadersListener)
+                notifyHeaders((Response.HeadersListener)listener, response);
+    }
+
+    private void notifyHeaders(Response.HeadersListener listener, Response response)
     {
         try
         {
-            if (listener != null)
-                listener.onHeaders(response);
+            listener.onHeaders(response);
         }
         catch (Exception x)
         {
@@ -63,12 +76,19 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(Response.Listener listener, Response response, ByteBuffer buffer)
+    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.ContentListener)
+                notifyContent((Response.ContentListener)listener, response, buffer);
+
+    }
+
+    private void notifyContent(Response.ContentListener listener, Response response, ByteBuffer buffer)
     {
         try
         {
-            if (listener != null)
-                listener.onContent(response, buffer);
+            listener.onContent(response, buffer);
         }
         catch (Exception x)
         {
@@ -76,12 +96,18 @@ public class ResponseNotifier
         }
     }
 
-    public void notifySuccess(Response.Listener listener, Response response)
+    public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.SuccessListener)
+                notifySuccess((Response.SuccessListener)listener, response);
+    }
+
+    private void notifySuccess(Response.SuccessListener listener, Response response)
     {
         try
         {
-            if (listener != null)
-                listener.onSuccess(response);
+            listener.onSuccess(response);
         }
         catch (Exception x)
         {
@@ -89,12 +115,18 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyFailure(Response.Listener listener, Response response, Throwable failure)
+    public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.FailureListener)
+                notifyFailure((Response.FailureListener)listener, response, failure);
+    }
+
+    private void notifyFailure(Response.FailureListener listener, Response response, Throwable failure)
     {
         try
         {
-            if (listener != null)
-                listener.onFailure(response, failure);
+            listener.onFailure(response, failure);
         }
         catch (Exception x)
         {
@@ -102,12 +134,18 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyComplete(Response.Listener listener, Result result)
+    public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
+    {
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.CompleteListener)
+                notifyComplete((Response.CompleteListener)listener, result);
+    }
+
+    private void notifyComplete(Response.CompleteListener listener, Result result)
     {
         try
         {
-            if (listener != null)
-                listener.onComplete(result);
+            listener.onComplete(result);
         }
         catch (Exception x)
         {
@@ -115,37 +153,37 @@ public class ResponseNotifier
         }
     }
 
-    public void forwardSuccess(Response.Listener listener, Response response)
+    public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        notifyBegin(listener, response);
-        notifyHeaders(listener, response);
+        notifyBegin(listeners, response);
+        notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
-        notifySuccess(listener, response);
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+        notifySuccess(listeners, response);
     }
 
-    public void forwardSuccessComplete(Response.Listener listener, Request request, Response response)
+    public void forwardSuccessComplete(List<Response.ResponseListener> listeners, Request request, Response response)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID());
-        forwardSuccess(listener, response);
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        forwardSuccess(listeners, response);
         conversation.complete();
-        notifyComplete(listener, new Result(request, response));
+        notifyComplete(listeners, new Result(request, response));
     }
 
-    public void forwardFailure(Response.Listener listener, Response response, Throwable failure)
+    public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
-        notifyBegin(listener, response);
-        notifyHeaders(listener, response);
+        notifyBegin(listeners, response);
+        notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listener, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
-        notifyFailure(listener, response, failure);
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+        notifyFailure(listeners, response, failure);
     }
 
-    public void forwardFailureComplete(Response.Listener listener, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+    public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID());
-        forwardFailure(listener, response, responseFailure);
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        forwardFailure(listeners, response, responseFailure);
         conversation.complete();
-        notifyComplete(listener, new Result(request, requestFailure, response, responseFailure));
+        notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
     }
 }

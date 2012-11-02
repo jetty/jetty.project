@@ -21,6 +21,7 @@ package org.eclipse.jetty.annotations;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Locale;
 import javax.annotation.Resource;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
@@ -261,7 +262,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
             //default name is the javabean property name
             String name = method.getName().substring(3);
-            name = name.substring(0,1).toLowerCase()+name.substring(1);
+            name = name.substring(0,1).toLowerCase(Locale.ENGLISH)+name.substring(1);
             name = clazz.getCanonicalName()+"/"+name;
 
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);

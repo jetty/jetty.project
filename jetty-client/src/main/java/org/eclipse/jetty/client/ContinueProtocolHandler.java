@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -41,7 +44,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
     public boolean accept(Request request, Response response)
     {
         boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        boolean handled100 = client.getConversation(request.getConversationID()).getAttribute(ATTRIBUTE) != null;
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        boolean handled100 = conversation != null && conversation.getAttribute(ATTRIBUTE) != null;
         return expect100 && !handled100;
     }
 
@@ -60,20 +64,20 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Handling of success must be done here and not from onComplete(),
             // since the onComplete() is not invoked because the request is not completed yet.
 
-            HttpConversation conversation = client.getConversation(response.getConversationID());
+            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
             assert exchange.getResponse() == response;
-            Response.Listener listener = exchange.getResponseListener();
+            List<Response.ResponseListener> listeners = exchange.getResponseListeners();
             switch (response.getStatus())
             {
                 case 100:
                 {
                     // All good, continue
                     exchange.resetResponse(true);
-                    conversation.setResponseListener(listener);
+                    conversation.setResponseListeners(listeners);
                     exchange.proceed(true);
                     break;
                 }
@@ -81,8 +85,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 {
                     // Server either does not support 100 Continue, or it does and wants to refuse the request content
                     HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getEncoding());
-                    notifier.forwardSuccess(listener, contentResponse);
-                    conversation.setResponseListener(listener);
+                    notifier.forwardSuccess(listeners, contentResponse);
+                    conversation.setResponseListeners(listeners);
                     exchange.proceed(false);
                     break;
                 }
@@ -92,15 +96,20 @@ public class ContinueProtocolHandler implements ProtocolHandler
         @Override
         public void onFailure(Response response, Throwable failure)
         {
-            HttpConversation conversation = client.getConversation(response.getConversationID());
+            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
             assert exchange.getResponse() == response;
-            Response.Listener listener = exchange.getResponseListener();
+            List<Response.ResponseListener> listeners = exchange.getResponseListeners();
             HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getEncoding());
-            notifier.forwardFailureComplete(listener, exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure);
+            notifier.forwardFailureComplete(listeners, exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure);
+        }
+
+        @Override
+        public void onComplete(Result result)
+        {
         }
     }
 }

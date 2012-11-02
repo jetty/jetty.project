@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -86,7 +89,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Asynchronously
  * HttpClient client = new HttpClient();
- * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
+ * client.newRequest("http://localhost:8080").send(new Response.Listener.Empty()
  * {
  *     &#64;Override
  *     public void onSuccess(Response response)
@@ -265,9 +268,21 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request newRequest(long id, String uri)
+    protected Request copyRequest(Request oldRequest, String newURI)
     {
-        return new HttpRequest(this, id, URI.create(uri));
+        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), URI.create(newURI));
+        newRequest.method(oldRequest.getMethod())
+                .version(oldRequest.getVersion())
+                .content(oldRequest.getContent());
+        for (HttpFields.Field header : oldRequest.getHeaders())
+        {
+            // We have a new URI, so skip the host header if present
+            if (HttpHeader.HOST == header.getHeader())
+                continue;
+
+            newRequest.header(header.getName(), header.getValue());
+        }
+        return newRequest;
     }
 
     private String address(String scheme, String host, int port)
@@ -307,9 +322,9 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(final Request request, Response.Listener listener)
+    protected void send(final Request request, List<Response.ResponseListener> listeners)
     {
-        String scheme = request.getScheme().toLowerCase();
+        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
@@ -317,11 +332,12 @@ public class HttpClient extends ContainerLifeCycle
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        if (listener instanceof ResponseListener.Timed)
-            ((ResponseListener.Timed)listener).schedule(scheduler);
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Schedulable)
+                ((Schedulable)listener).schedule(scheduler);
 
         HttpDestination destination = provideDestination(scheme, request.getHost(), port);
-        destination.send(request, listener);
+        destination.send(request, listeners);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
@@ -365,10 +381,10 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
-    protected HttpConversation getConversation(long id)
+    protected HttpConversation getConversation(long id, boolean create)
     {
         HttpConversation conversation = conversations.get(id);
-        if (conversation == null)
+        if (conversation == null && create)
         {
             conversation = new HttpConversation(this, id);
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
@@ -395,7 +411,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         for (ProtocolHandler handler : getProtocolHandlers())
         {
-            if (handler.accept(request,  response))
+            if (handler.accept(request, response))
                 return handler;
         }
         return null;

@@ -20,6 +20,7 @@ package org.eclipse.jetty.jmx;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -164,7 +165,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                     domain = obj.getClass().getPackage().getName();
 
 
-                String type = obj.getClass().getName().toLowerCase();
+                String type = obj.getClass().getName().toLowerCase(Locale.ENGLISH);
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);

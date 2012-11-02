@@ -23,19 +23,23 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class Starter
-{
+{ 
     public static final String PORT_SYSPROPERTY = "jetty.port";
     private static final Logger LOG = Log.getLogger(Starter.class);
 
@@ -45,21 +49,21 @@ public class Starter
     private JettyServer server;
     private JettyWebAppContext webApp;
     private Monitor monitor;
-
+    
     private int stopPort=0;
     private String stopKey=null;
     private Properties props;
     private String token;
 
-
-
+    
+    
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
 
         this.server = new JettyServer();
 
-        //apply any configs from jetty.xml files first
+        //apply any configs from jetty.xml files first 
         applyJettyXml ();
 
         // if the user hasn't configured a connector in the jetty.xml
@@ -68,7 +72,7 @@ public class Starter
         if (connectors == null|| connectors.length == 0)
         {
             //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            connectors = new Connector[] { this.server.createDefaultConnector(server, System.getProperty(PORT_SYSPROPERTY, null)) };
+            connectors = new Connector[] { this.server.createDefaultConnector(System.getProperty(PORT_SYSPROPERTY, null)) };
             this.server.setConnectors(connectors);
         }
 
@@ -84,15 +88,15 @@ public class Starter
         this.server.configureHandlers();
 
         webApp = new JettyWebAppContext();
-
+        
         //configure webapp from properties file describing unassembled webapp
         configureWebApp();
-
+        
         //set up the webapp from the context xml file provided
         //NOTE: just like jetty:run mojo this means that the context file can
         //potentially override settings made in the pom. Ideally, we'd like
         //the pom to override the context xml file, but as the other mojos all
-        //configure a WebAppContext in the pom (the <webApp> element), it is
+        //configure a WebAppContext in the pom (the <webApp> element), it is 
         //already configured by the time the context xml file is applied.
         if (contextXml != null)
         {
@@ -109,30 +113,30 @@ public class Starter
             monitor = new Monitor(stopPort, stopKey, new Server[]{server}, true);
         }
     }
-
-
+    
+    
     public void configureWebApp ()
     throws Exception
     {
         if (props == null)
             return;
-
+        
         //apply a properties file that defines the things that we configure in the jetty:run plugin:
         // - the context path
         String str = (String)props.get("context.path");
         if (str != null)
             webApp.setContextPath(str);
-
+        
         // - web.xml
         str = (String)props.get("web.xml");
         if (str != null)
             webApp.setDescriptor(str);
-
+        
         // - the tmp directory
         str = (String)props.getProperty("tmp.dir");
         if (str != null)
             webApp.setTempDirectory(new File(str.trim()));
-
+        
         // - the base directory
         str = (String)props.getProperty("base.dir");
         if (str != null && !"".equals(str.trim()))
@@ -145,7 +149,7 @@ public class Starter
             ResourceCollection resources = new ResourceCollection(str);
             webApp.setBaseResource(resources);
         }
-
+        
         // - overlays
         str = (String)props.getProperty("overlay.files");
         if (str != null && !"".equals(str.trim()))
@@ -163,8 +167,8 @@ public class Starter
         {
             webApp.setClasses(new File(str));
         }
-
-        str = (String)props.getProperty("testClasses.dir");
+        
+        str = (String)props.getProperty("testClasses.dir"); 
         if (str != null && !"".equals(str.trim()))
         {
             webApp.setTestClasses(new File(str));
@@ -181,7 +185,7 @@ public class Starter
                 jars.add(new File(names[j].trim()));
             webApp.setWebInfLib(jars);
         }
-
+        
     }
 
     public void getConfiguration (String[] args)
@@ -205,7 +209,7 @@ public class Starter
                 for (int j=0; names!= null && j < names.length; j++)
                 {
                     jettyXmls.add(new File(names[j].trim()));
-                }
+                }  
             }
 
             //--context-xml
@@ -221,7 +225,7 @@ public class Starter
                 props = new Properties();
                 props.load(new FileInputStream(f));
             }
-
+            
             //--token
             if ("--token".equals(args[i]))
             {
@@ -237,16 +241,16 @@ public class Starter
             monitor.start();
 
         LOG.info("Started Jetty Server");
-        server.start();
+        server.start();  
     }
 
-
+    
     public void join () throws Exception
     {
         server.join();
     }
-
-
+    
+    
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -257,16 +261,16 @@ public class Starter
                 System.out.println(token+"\t"+e.getMessage());
         }
     }
-
-
+    
+    
     public void applyJettyXml() throws Exception
     {
         if (jettyXmls == null)
             return;
-
+        
         for ( File xmlFile : jettyXmls )
         {
-            LOG.info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );
+            LOG.info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
             xmlConfiguration.configure(this.server);
         }
@@ -286,8 +290,8 @@ public class Starter
         System.arraycopy(existing, 0, children, 1, existing.length);
         handlers.setHandlers(children);
     }
-
-
+    
+    
     public static final void main(String[] args)
     {
        if (args == null)

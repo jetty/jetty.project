@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -176,7 +177,7 @@ public class MultiPartInputStream
         {
             if (name == null)
                 return null;
-            return (String)_headers.getValue(name.toLowerCase(), 0);
+            return (String)_headers.getValue(name.toLowerCase(Locale.ENGLISH), 0);
         }
 
         /**
@@ -500,7 +501,7 @@ public class MultiPartInputStream
                 int c=line.indexOf(':',0);
                 if(c>0)
                 {
-                    String key=line.substring(0,c).trim().toLowerCase();
+                    String key=line.substring(0,c).trim().toLowerCase(Locale.ENGLISH);
                     String value=line.substring(c+1,line.length()).trim();
                     headers.put(key, value);
                     if (key.equalsIgnoreCase("content-disposition"))
@@ -526,7 +527,7 @@ public class MultiPartInputStream
             while(tok.hasMoreTokens())
             {
                 String t=tok.nextToken().trim();
-                String tl=t.toLowerCase();
+                String tl=t.toLowerCase(Locale.ENGLISH);
                 if(t.startsWith("form-data"))
                     form_data=true;
                 else if(tl.startsWith("name="))

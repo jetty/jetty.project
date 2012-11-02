@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -206,7 +207,7 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (header == null)
                     return true;
 
-                String contentType = header.value().toLowerCase();
+                String contentType = header.value().toLowerCase(Locale.ENGLISH);
                 for (String pushContentType : pushContentTypes)
                     if (contentType.startsWith(pushContentType))
                         return true;

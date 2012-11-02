@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -489,7 +490,7 @@ public class ProxyServlet implements Servlet
                     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
                     {
                         String nameString = name.toString();
-                        String s = nameString.toLowerCase();
+                        String s = nameString.toLowerCase(Locale.ENGLISH);
                         if (!_DontProxyHeaders.contains(s) || (HttpHeader.CONNECTION.is(name) && HttpHeaderValue.CLOSE.is(value)))
                         {
                             if (debug != 0)
@@ -560,7 +561,7 @@ public class ProxyServlet implements Servlet
                 String connectionHdr = request.getHeader("Connection");
                 if (connectionHdr != null)
                 {
-                    connectionHdr = connectionHdr.toLowerCase();
+                    connectionHdr = connectionHdr.toLowerCase(Locale.ENGLISH);
                     if (connectionHdr.indexOf("keep-alive") < 0 && connectionHdr.indexOf("close") < 0)
                         connectionHdr = null;
                 }
@@ -578,7 +579,7 @@ public class ProxyServlet implements Servlet
                 {
                     // TODO could be better than this!
                     String hdr = (String)enm.nextElement();
-                    String lhdr = hdr.toLowerCase();
+                    String lhdr = hdr.toLowerCase(Locale.ENGLISH);
 
                     if (_DontProxyHeaders.contains(lhdr))
                         continue;

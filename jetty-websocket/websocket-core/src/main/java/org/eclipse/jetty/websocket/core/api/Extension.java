@@ -38,6 +38,7 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
     private ExtensionConfig config;
     private IncomingFrames nextIncomingFrames;
     private OutgoingFrames nextOutgoingFrames;
+    private WebSocketConnection connection;
 
     public ByteBufferPool getBufferPool()
     {
@@ -47,6 +48,11 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
     public ExtensionConfig getConfig()
     {
         return config;
+    }
+
+    public WebSocketConnection getConnection()
+    {
+        return connection;
     }
 
     public String getName()
@@ -209,6 +215,11 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
     public void setConfig(ExtensionConfig config)
     {
         this.config = config;
+    }
+
+    public void setConnection(WebSocketConnection connection)
+    {
+        this.connection = connection;
     }
 
     public void setNextIncomingFrames(IncomingFrames nextIncomingFramesHandler)

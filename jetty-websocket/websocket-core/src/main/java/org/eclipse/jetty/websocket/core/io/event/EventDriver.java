@@ -180,14 +180,7 @@ public abstract class EventDriver implements IncomingFrames
     protected void terminateConnection(int statusCode, String rawreason)
     {
         String reason = rawreason;
-        if (StringUtil.isNotBlank(reason))
-        {
-            // Trim big exception messages here.
-            if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
-            {
-                reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
-            }
-        }
+        reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
         LOG.debug("terminateConnection({},{})",statusCode,rawreason);
         session.close(statusCode,reason);
     }

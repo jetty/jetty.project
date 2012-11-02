@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.server;
+import java.util.Locale;
+
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.util.LazyList;
@@ -283,7 +285,7 @@ public class CookieCutter
                     {
                         if (name.startsWith("$"))
                         {
-                            String lowercaseName = name.toLowerCase();
+                            String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                             if ("$path".equals(lowercaseName))
                             {
                                 if (cookie!=null)

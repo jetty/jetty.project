@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.ResponseListener;
+import org.eclipse.jetty.client.Schedulable;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class TimedResponseListener implements ResponseListener.Timed, Runnable
+public class TimedResponseListener implements Response.Listener, Schedulable, Runnable
 {
     private static final Logger LOG = Log.getLogger(TimedResponseListener.class);
 

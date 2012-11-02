@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -188,7 +189,7 @@ public class ClientUpgradeRequest implements UpgradeRequest
         for (String key : headers.keySet())
         {
             String value = headers.get(key);
-            if (FORBIDDEN_HEADERS.contains(key.toLowerCase()))
+            if (FORBIDDEN_HEADERS.contains(key.toLowerCase(Locale.ENGLISH)))
             {
                 LOG.warn("Skipping forbidden header - {}: {}",key,value);
                 continue; // skip

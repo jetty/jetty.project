@@ -44,7 +44,7 @@ public class HttpCookieParser
 
     public static List<HttpCookie> parseCookies(String headerValue)
     {
-        if (headerValue.toLowerCase().contains("expires="))
+        if (headerValue.toLowerCase(Locale.ENGLISH).contains("expires="))
         {
             HttpCookie cookie = parseCookie(headerValue, 0);
             if (cookie != null)
@@ -111,7 +111,7 @@ public class HttpCookieParser
             try
             {
                 String[] attributeParts = cookieParts[i].split("=", 2);
-                String attributeName = attributeParts[0].trim().toLowerCase();
+                String attributeName = attributeParts[0].trim().toLowerCase(Locale.ENGLISH);
                 String attributeValue = attributeParts.length < 2 ? "" : attributeParts[1].trim();
                 switch (attributeName)
                 {

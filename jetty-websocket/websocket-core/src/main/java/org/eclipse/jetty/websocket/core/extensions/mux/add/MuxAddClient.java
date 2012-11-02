@@ -16,17 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
+import org.eclipse.jetty.websocket.core.io.WebSocketSession;
 
-public interface ResponseListener extends Response.Listener
+/**
+ * Interface for Mux Client to handle receiving a AddChannelResponse
+ */
+public interface MuxAddClient
 {
-    public interface Timed extends Response.Listener
-    {
-        public boolean schedule(Scheduler scheduler);
-
-        public boolean cancel();
-    }
+    WebSocketSession createSession(MuxAddChannelResponse response);
 }

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -27,15 +30,15 @@ public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
     private final Request request;
-    private final Listener listener;
+    private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
 
-    public HttpResponse(Request request, Listener listener)
+    public HttpResponse(Request request, List<ResponseListener> listeners)
     {
         this.request = request;
-        this.listener = listener;
+        this.listeners = listeners;
     }
 
     public HttpVersion getVersion()
@@ -85,9 +88,13 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public Listener getListener()
+    public <T extends ResponseListener> List<T> getListeners(Class<T> type)
     {
-        return listener;
+        ArrayList<T> result = new ArrayList<>();
+        for (ResponseListener listener : listeners)
+            if (type == null || type.isInstance(listener))
+                result.add((T)listener);
+        return result;
     }
 
     @Override

@@ -21,10 +21,15 @@ package org.eclipse.jetty.deploy;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -32,42 +37,55 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * Supplies properties defined in a file.
  */
-public class FileConfigurationManager implements ConfigurationManager
+@ManagedObject("Configure deployed webapps via properties")
+public class PropertiesConfigurationManager implements ConfigurationManager
 {
-    private Resource _file;
-    private Map<String,String> _map = new HashMap<String,String>();
+    private String _properties;
+    private final Map<String,String> _map = new HashMap<String,String>();
 
-    public FileConfigurationManager()
+    public PropertiesConfigurationManager(String properties)
+    {
+    }
+    
+    public PropertiesConfigurationManager()
     {
     }
 
-    public void setFile(String filename) throws MalformedURLException, IOException
+    @ManagedAttribute("A file or URL of properties")
+    public void setFile(String resource) throws MalformedURLException, IOException
     {
-        _file = Resource.newResource(filename);
+        _properties=resource;
+        _map.clear();
+        loadProperties(_properties);
     }
 
+    public String getFile()
+    {
+        return _properties;
+    }
+    
+    @ManagedOperation("Set a property")
+    public void put(@Name("name")String name, @Name("value")String value)
+    {
+        _map.put(name,value);
+    }
+    
     /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
+    @Override
     public Map<String, String> getProperties()
     {
-        try
-        {
-            loadProperties();
-            return _map;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        return new HashMap<>(_map);
     }
 
-    private void loadProperties() throws FileNotFoundException, IOException
-    {
-        if (_map.isEmpty() && _file!=null)
+    private void loadProperties(String resource) throws FileNotFoundException, IOException
+    {   
+        Resource file=Resource.newResource(resource);
+        if (file!=null && file.exists())
         {
             Properties properties = new Properties();
-            properties.load(_file.getInputStream());
+            properties.load(file.getInputStream());
             for (Map.Entry<Object, Object> entry : properties.entrySet())
                 _map.put(entry.getKey().toString(),String.valueOf(entry.getValue()));
         }

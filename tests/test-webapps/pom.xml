@@ -40,5 +40,8 @@
   </build>
   <modules>
     <module>test-webapp-rfc2616</module>
+    <module>test-mock-resources</module>
+    <module>test-servlet-spec</module>
+    <module>test-jaas-webapp</module>
   </modules>
 </project>

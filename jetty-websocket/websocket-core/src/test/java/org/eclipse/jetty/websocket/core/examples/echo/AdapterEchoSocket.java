@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.core.examples.echo;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
 
 /**
@@ -27,16 +29,20 @@ import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
  */
 public class AdapterEchoSocket extends WebSocketAdapter
 {
+    private static final Logger LOG = Log.getLogger(AdapterEchoSocket.class);
+
     @Override
     public void onWebSocketText(String message)
     {
         if (isNotConnected())
         {
+            LOG.debug("WebSocket Not Connected");
             return;
         }
 
         try
         {
+            LOG.debug("Echoing back message [{}]",message);
             // echo the data back
             getBlockingConnection().write(message);
         }

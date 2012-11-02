@@ -19,8 +19,10 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -67,15 +69,20 @@ public class HttpSender
 
         // Arrange the listeners, so that if there is a request failure the proper listeners are notified
         HttpConversation conversation = exchange.getConversation();
-        Response.Listener currentListener = exchange.getResponseListener();
-        Response.Listener initialListener = conversation.getExchanges().peekFirst().getResponseListener();
-        if (initialListener == currentListener)
-            conversation.setResponseListener(initialListener);
+        HttpExchange initialExchange = conversation.getExchanges().peekFirst();
+        if (initialExchange == exchange)
+        {
+            conversation.setResponseListeners(exchange.getResponseListeners());
+        }
         else
-            conversation.setResponseListener(new DoubleResponseListener(responseNotifier, currentListener, initialListener));
+        {
+            List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
+            listeners.addAll(initialExchange.getResponseListeners());
+            conversation.setResponseListeners(listeners);
+        }
 
         Request request = exchange.getRequest();
-        if (request.aborted())
+        if (request.isAborted())
         {
             exchange.abort(null);
         }
@@ -123,7 +130,7 @@ public class HttpSender
                 return;
 
             final Request request = exchange.getRequest();
-            HttpConversation conversation = client.getConversation(request.getConversationID());
+            HttpConversation conversation = exchange.getConversation();
             HttpGenerator.RequestInfo requestInfo = null;
 
             boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
@@ -359,7 +366,7 @@ public class HttpSender
             connection.complete(exchange, !result.isFailed());
 
             HttpConversation conversation = exchange.getConversation();
-            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
+            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;
@@ -393,7 +400,7 @@ public class HttpSender
 
         Result result = completion.getReference();
         boolean notCommitted = current == State.IDLE || current == State.SEND;
-        if (result == null && notCommitted && !request.aborted())
+        if (result == null && notCommitted && !request.isAborted())
         {
             result = exchange.responseComplete(failure).getReference();
             exchange.terminateResponse();
@@ -405,7 +412,7 @@ public class HttpSender
             connection.complete(exchange, false);
 
             HttpConversation conversation = exchange.getConversation();
-            responseNotifier.notifyComplete(conversation.getResponseListener(), result);
+            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;

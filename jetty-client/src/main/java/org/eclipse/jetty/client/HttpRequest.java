@@ -50,7 +50,8 @@ public class HttpRequest implements Request
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields();
     private final Map<String, Object> attributes = new HashMap<>();
-    private final List<Listener> listeners = new ArrayList<>();
+    private final List<RequestListener> requestListeners = new ArrayList<>();
+    private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final HttpClient client;
     private final long conversation;
     private final String host;
@@ -240,15 +241,89 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public List<Listener> getListeners()
+    public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
-        return listeners;
+        ArrayList<T> result = new ArrayList<>();
+        for (RequestListener listener : requestListeners)
+            if (type == null || type.isInstance(listener))
+                result.add((T)listener);
+        return result;
     }
 
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.listeners.add(listener);
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestQueued(QueuedListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestBegin(BeginListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestHeaders(HeadersListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestSuccess(SuccessListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestFailure(FailureListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseBegin(Response.BeginListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseHeaders(Response.HeadersListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseContent(Response.ContentListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseSuccess(Response.SuccessListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseFailure(Response.FailureListener listener)
+    {
+        this.responseListeners.add(listener);
         return this;
     }
 
@@ -320,9 +395,11 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public void send(final Response.Listener listener)
+    public void send(Response.CompleteListener listener)
     {
-        client.send(this, listener);
+        if (listener != null)
+            responseListeners.add(listener);
+        client.send(this, responseListeners);
     }
 
     @Override
@@ -331,12 +408,12 @@ public class HttpRequest implements Request
         aborted = true;
         if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, reason))
             return true;
-        HttpConversation conversation = client.getConversation(getConversationID());
-        return conversation.abort(reason);
+        HttpConversation conversation = client.getConversation(getConversationID(), false);
+        return conversation != null && conversation.abort(reason);
     }
 
     @Override
-    public boolean aborted()
+    public boolean isAborted()
     {
         return aborted;
     }

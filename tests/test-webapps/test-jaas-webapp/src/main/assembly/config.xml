@@ -10,7 +10,7 @@
       <directory>src/main/config</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>contexts/**</include>
+        <include>webapps/test-jaas.xml</include>
         <include>etc/**</include>
       </includes>
     </fileSet>

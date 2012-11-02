@@ -556,6 +556,10 @@ public class WebSocketFrame implements Frame
         b.append('[');
         b.append("len=").append(payloadLength);
         b.append(",fin=").append(fin);
+        b.append(",rsv=");
+        b.append(rsv1?'1':'.');
+        b.append(rsv2?'1':'.');
+        b.append(rsv3?'1':'.');
         b.append(",masked=").append(masked);
         b.append(",continuation=").append(continuation);
         b.append(']');

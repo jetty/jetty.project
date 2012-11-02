@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -385,7 +386,7 @@ public class HttpFieldsTest
     {
         Set<String> s=new HashSet<String>();
         while(e.hasMoreElements())
-            s.add(e.nextElement().toLowerCase());
+            s.add(e.nextElement().toLowerCase(Locale.ENGLISH));
         return s;
     }
 

@@ -32,6 +32,8 @@ import org.junit.rules.TestName;
 public class LocalWebSocketConnection implements WebSocketConnection
 {
     private final String id;
+    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private boolean open = false;
 
     public LocalWebSocketConnection()
     {
@@ -51,22 +53,25 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public void close()
     {
+        open = false;
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
+        open = false;
     }
 
     @Override
     public void disconnect()
     {
+        open = false;
     }
 
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return null;
+        return policy;
     }
 
     @Override
@@ -97,9 +102,8 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public boolean isOpen()
     {
-        return false;
+        return open;
     }
-
 
     @Override
     public boolean isOutputClosed()
@@ -120,9 +124,18 @@ public class LocalWebSocketConnection implements WebSocketConnection
         // TODO Auto-generated method stub
     }
 
+    public void onOpen() {
+        open = true;
+    }
+
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
+    }
+
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        this.policy = policy;
     }
 
     @Override

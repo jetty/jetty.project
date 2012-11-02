@@ -95,6 +95,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         catch (IOException x)
         {
             LOG.debug(x);
+            NextProtoNego.remove(engine);
             getEndPoint().close();
             return -1;
         }

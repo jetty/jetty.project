@@ -47,8 +47,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
@@ -63,8 +61,6 @@ import org.eclipse.jetty.websocket.server.WebSocketServlet;
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
 {
-    private static final Logger LOG = Log.getLogger(WebSocketChatServlet.class);
-
     /** Holds active sockets to other members of the chat */
     private final List<ChatWebSocket> members = new CopyOnWriteArrayList<ChatWebSocket>();
 
@@ -131,7 +127,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    getServletContext().log("write failed",e);
                 }
             }
         }

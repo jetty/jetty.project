@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +68,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         client.setMaxQueueSizePerAddress(1024 * 1024);
         client.setDispatchIO(false);
 
-        Random random = new Random(1000L);
+        Random random = new Random();
         int iterations = 500;
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
@@ -132,15 +133,15 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         else if (!ssl && random.nextBoolean())
             request.header("X-Close", "true");
 
+        int contentLength = random.nextInt(maxContentLength) + 1;
         switch (method)
         {
             case GET:
                 // Randomly ask the server to download data upon this GET request
                 if (random.nextBoolean())
-                    request.header("X-Download", String.valueOf(random.nextInt(maxContentLength) + 1));
+                    request.header("X-Download", String.valueOf(contentLength));
                 break;
             case POST:
-                int contentLength = random.nextInt(maxContentLength) + 1;
                 request.header("X-Upload", String.valueOf(contentLength));
                 request.content(new BytesContentProvider(new byte[contentLength]));
                 break;
@@ -184,7 +185,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            String method = request.getMethod().toUpperCase();
+            String method = request.getMethod().toUpperCase(Locale.ENGLISH);
             switch (method)
             {
                 case "GET":
