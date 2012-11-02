@@ -561,7 +561,7 @@ public class ProxyServlet implements Servlet
                 String connectionHdr = request.getHeader("Connection");
                 if (connectionHdr != null)
                 {
-                    connectionHdr = connectionHdr.toLowerCase();
+                    connectionHdr = connectionHdr.toLowerCase(Locale.ENGLISH);
                     if (connectionHdr.indexOf("keep-alive") < 0 && connectionHdr.indexOf("close") < 0)
                         connectionHdr = null;
                 }
@@ -579,7 +579,7 @@ public class ProxyServlet implements Servlet
                 {
                     // TODO could be better than this!
                     String hdr = (String)enm.nextElement();
-                    String lhdr = hdr.toLowerCase();
+                    String lhdr = hdr.toLowerCase(Locale.ENGLISH);
 
                     if (_DontProxyHeaders.contains(lhdr))
                         continue;

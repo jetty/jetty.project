@@ -135,7 +135,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     case 1:
                         if (name.startsWith("set") && name.length()>3)
                         {
-                            name=name.substring(3,4).toLowerCase()+name.substring(4);
+                            name=name.substring(3,4).toLowerCase(Locale.ENGLISH)+name.substring(4);
                             if(includeField(name, m))
                                 addSetter(name, m);
                         }

@@ -371,7 +371,7 @@ public class ProxyRule extends PatternRule
         {
             // TODO could be better than this!
             String hdr = (String)enm.nextElement();
-            String lhdr = hdr.toLowerCase();
+            String lhdr = hdr.toLowerCase(Locale.ENGLISH);
 
             if (_DontProxyHeaders.contains(lhdr))
                 continue;
