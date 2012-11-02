@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -664,7 +665,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 for (int i = 0; i < fields.size(); ++i)
                 {
                     HttpFields.Field field = fields.getField(i);
-                    String name = field.getName().toLowerCase();
+                    String name = field.getName().toLowerCase(Locale.ENGLISH);
                     String value = field.getValue();
                     headers.put(name, value);
                     logger.debug("HTTP < {}: {}", name, value);

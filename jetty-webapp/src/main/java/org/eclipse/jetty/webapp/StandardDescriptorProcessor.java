@@ -29,6 +29,7 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -333,7 +334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node startup = node.get("load-on-startup");
         if (startup != null)
         {
-            String s = startup.toString(false, true).toLowerCase();
+            String s = startup.toString(false, true).toLowerCase(Locale.ENGLISH);
             int order = 0;
             if (s.startsWith("t"))
             {
@@ -1394,7 +1395,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (data != null)
             {
                 data = data.get("transport-guarantee");
-                String guarantee = data.toString(false, true).toUpperCase();
+                String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
                 if (guarantee == null || guarantee.length() == 0 || "NONE".equals(guarantee))
                     scBase.setDataConstraint(Constraint.DC_NONE);
                 else if ("INTEGRAL".equals(guarantee))

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -653,12 +654,12 @@ public class LdapLoginModule extends AbstractLoginModule
 
     public static String convertCredentialJettyToLdap(String encryptedPassword)
     {
-        if ("MD5:".startsWith(encryptedPassword.toUpperCase()))
+        if ("MD5:".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
         {
             return "{MD5}" + encryptedPassword.substring("MD5:".length(), encryptedPassword.length());
         }
 
-        if ("CRYPT:".startsWith(encryptedPassword.toUpperCase()))
+        if ("CRYPT:".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
         {
             return "{CRYPT}" + encryptedPassword.substring("CRYPT:".length(), encryptedPassword.length());
         }
@@ -673,12 +674,12 @@ public class LdapLoginModule extends AbstractLoginModule
             return encryptedPassword;
         }
 
-        if ("{MD5}".startsWith(encryptedPassword.toUpperCase()))
+        if ("{MD5}".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
         {
             return "MD5:" + encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
         }
 
-        if ("{CRYPT}".startsWith(encryptedPassword.toUpperCase()))
+        if ("{CRYPT}".startsWith(encryptedPassword.toUpperCase(Locale.ENGLISH)))
         {
             return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length(), encryptedPassword.length());
         }

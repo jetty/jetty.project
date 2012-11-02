@@ -19,6 +19,7 @@
 package org.eclipse.jetty.deploy.util;
 
 import java.io.File;
+import java.util.Locale;
 
 /**
  * Simple, yet surprisingly common utility methods for identifying various file types commonly seen and worked with in a
@@ -38,7 +39,7 @@ public class FileID
     {
         if (path.isFile())
         {
-            String name = path.getName().toLowerCase();
+            String name = path.getName().toLowerCase(Locale.ENGLISH);
             return (name.endsWith(".war") || name.endsWith(".jar"));
         }
 
@@ -62,7 +63,7 @@ public class FileID
             return false;
         }
 
-        String name = path.getName().toLowerCase();
+        String name = path.getName().toLowerCase(Locale.ENGLISH);
         return (name.endsWith(".war") || name.endsWith(".jar"));
     }
 
@@ -73,7 +74,7 @@ public class FileID
             return false;
         }
 
-        String name = path.getName().toLowerCase();
+        String name = path.getName().toLowerCase(Locale.ENGLISH);
         return name.endsWith(".xml");
     }
 }

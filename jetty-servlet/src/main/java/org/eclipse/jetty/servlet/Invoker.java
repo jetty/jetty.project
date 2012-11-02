@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.ServletContext;
@@ -91,7 +92,7 @@ public class Invoker extends HttpServlet
         {
             String param=(String)e.nextElement();
             String value=getInitParameter(param);
-            String lvalue=value.toLowerCase();
+            String lvalue=value.toLowerCase(Locale.ENGLISH);
             if ("nonContextServlets".equals(param))
             {
                 _nonContextServlets=value.length()>0 && lvalue.startsWith("t");

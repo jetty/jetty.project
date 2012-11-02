@@ -1001,7 +1001,7 @@ public class HttpFields
         {
             hasDomain = true;
             buf.append(";Domain=");
-            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase(),delim);
+            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase(Locale.ENGLISH),delim);
         }
 
         if (maxAge >= 0)

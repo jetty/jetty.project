@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -489,7 +490,7 @@ public class ProxyServlet implements Servlet
                     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
                     {
                         String nameString = name.toString();
-                        String s = nameString.toLowerCase();
+                        String s = nameString.toLowerCase(Locale.ENGLISH);
                         if (!_DontProxyHeaders.contains(s) || (HttpHeaders.CONNECTION_BUFFER.equals(name) && HttpHeaderValues.CLOSE_BUFFER.equals(value)))
                         {
                             if (debug != 0)

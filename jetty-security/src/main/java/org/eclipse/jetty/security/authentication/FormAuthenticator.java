@@ -21,6 +21,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Locale;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -402,7 +403,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public long getDateHeader(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return -1;
             return super.getDateHeader(name);
         }
@@ -410,7 +411,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public String getHeader(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return null;
             return super.getHeader(name);
         }
@@ -424,7 +425,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public Enumeration getHeaders(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return Collections.enumeration(Collections.EMPTY_LIST);
             return super.getHeaders(name);
         }

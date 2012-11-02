@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.eclipse.jetty.io.Buffer;
@@ -312,8 +313,8 @@ public class HttpFieldsTest
         s=enum2set(fields.getFieldNames());
         assertEquals(3,s.size());
         assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
+        assertEquals("value",fields.getStringField("message-id").toLowerCase(Locale.ENGLISH));
+        assertEquals("value",fields.getStringField("Message-ID").toLowerCase(Locale.ENGLISH));
 
         fields.clear();
 
@@ -323,8 +324,8 @@ public class HttpFieldsTest
         s=enum2set(fields.getFieldNames());
         assertEquals(3,s.size());
         assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
+        assertEquals("value",fields.getStringField("Message-ID").toLowerCase(Locale.ENGLISH));
+        assertEquals("value",fields.getStringField("message-id").toLowerCase(Locale.ENGLISH));
 
         fields.clear();
 
@@ -334,8 +335,8 @@ public class HttpFieldsTest
         s=enum2set(fields.getFieldNames());
         assertEquals(3,s.size());
         assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
+        assertEquals("value",fields.getStringField("message-id").toLowerCase(Locale.ENGLISH));
+        assertEquals("value",fields.getStringField("Message-ID").toLowerCase(Locale.ENGLISH));
 
         fields.clear();
 
@@ -345,8 +346,8 @@ public class HttpFieldsTest
         s=enum2set(fields.getFieldNames());
         assertEquals(3,s.size());
         assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
+        assertEquals("value",fields.getStringField("Message-ID").toLowerCase(Locale.ENGLISH));
+        assertEquals("value",fields.getStringField("message-id").toLowerCase(Locale.ENGLISH));
     }
 
     @Test
@@ -458,7 +459,7 @@ public class HttpFieldsTest
     {
         Set<String> s=new HashSet<String>();
         while(e.hasMoreElements())
-            s.add(e.nextElement().toLowerCase());
+            s.add(e.nextElement().toLowerCase(Locale.ENGLISH));
         return s;
     }
 

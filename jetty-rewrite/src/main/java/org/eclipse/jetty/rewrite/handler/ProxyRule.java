@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -229,7 +230,7 @@ public class ProxyRule extends PatternRule
             @Override
             protected void onResponseHeader(Buffer name, Buffer value) throws IOException
             {
-                String s = name.toString().toLowerCase();
+                String s = name.toString().toLowerCase(Locale.ENGLISH);
                 if (!_DontProxyHeaders.contains(s) || (HttpHeaders.CONNECTION_BUFFER.equals(name) && HttpHeaderValues.CLOSE_BUFFER.equals(value)))
                 {
                     if (debug != 0)
@@ -348,7 +349,7 @@ public class ProxyRule extends PatternRule
         String connectionHdr = request.getHeader("Connection");
         if (connectionHdr != null)
         {
-            connectionHdr = connectionHdr.toLowerCase();
+            connectionHdr = connectionHdr.toLowerCase(Locale.ENGLISH);
             if (connectionHdr.indexOf("keep-alive") < 0 && connectionHdr.indexOf("close") < 0)
             {
                 connectionHdr = null;

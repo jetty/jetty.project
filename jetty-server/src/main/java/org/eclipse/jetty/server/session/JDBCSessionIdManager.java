@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -124,7 +125,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         public DatabaseAdaptor (DatabaseMetaData dbMeta)
         throws SQLException
         {
-            _dbName = dbMeta.getDatabaseProductName().toLowerCase(); 
+            _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH); 
             LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
             _isUpper = dbMeta.storesUpperCaseIdentifiers();            
@@ -140,9 +141,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         public String convertIdentifier (String identifier)
         {
             if (_isLower)
-                return identifier.toLowerCase();
+                return identifier.toLowerCase(Locale.ENGLISH);
             if (_isUpper)
-                return identifier.toUpperCase();
+                return identifier.toUpperCase(Locale.ENGLISH);
             
             return identifier;
         }

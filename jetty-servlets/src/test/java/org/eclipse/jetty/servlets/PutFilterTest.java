@@ -30,6 +30,7 @@ import java.util.EnumSet;
 import javax.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
@@ -63,7 +64,7 @@ public class PutFilterTest
         FilterHolder holder = tester.addFilter(PutFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed","true");
         // Bloody Windows does not allow file renaming
-        if (!System.getProperty("os.name").toLowerCase().contains("windows"))
+        if (!System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows"))
             holder.setInitParameter("putAtomic","true");
         tester.start();
     }

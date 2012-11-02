@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.util.Locale;
 
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -54,7 +55,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setResumeAfter(25);
-        assertTrue(process(null).toUpperCase().contains("RESUMED"));
+        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("RESUMED"));
     }
 
     @Test
@@ -68,7 +69,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         _server.start();
 
         _handler.setSuspendFor(50);
-        assertTrue(process(null).toUpperCase().contains("TIMEOUT"));
+        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("TIMEOUT"));
     }
 
     @Test
@@ -83,7 +84,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
-        assertTrue(process(null).toUpperCase().contains("COMPLETED"));
+        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("COMPLETED"));
     }
 
     private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException

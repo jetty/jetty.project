@@ -20,6 +20,7 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
@@ -45,7 +46,7 @@ public class ContextProvider extends ScanningAppProvider
             {
                 if (!dir.exists())
                     return false;
-                String lowername = name.toLowerCase();
+                String lowername = name.toLowerCase(Locale.ENGLISH);
                 if (lowername.startsWith("."))
                     return false;
                 

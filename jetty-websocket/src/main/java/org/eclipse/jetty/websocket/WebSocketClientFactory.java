@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -389,7 +390,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                         _accept = value.toString();
                 }
 
-                @Override
+                @Override // TODO simone says shouldn't be needed
                 public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
                 {
                     if (_error == null)
@@ -397,7 +398,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                     _endp.close();
                 }
 
-                @Override
+                @Override // TODO simone says shouldn't be needed
                 public void content(Buffer ref) throws IOException
                 {
                     if (_error == null)
@@ -515,6 +516,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
         private WebSocketConnection newWebSocketConnection() throws IOException
         {
+            __log.debug("newWebSocketConnection()");
             return new WebSocketClientConnection(
                     _future._client.getFactory(),
                     _future.getWebSocket(),

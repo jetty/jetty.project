@@ -80,6 +80,20 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _response.setStatus(200);
         _request.setHandled(false);
         _handler.setOriginalPathAttribute("/before");
+        _handler.setRewriteRequestURI(true);
+        _handler.setRewritePathInfo(true);
+        _request.setRequestURI("/xxx/bar");
+        _request.setPathInfo("/xxx/bar");
+        _handler.handle("/xxx/bar",_request,_request, _response);
+        assertEquals(201,_response.getStatus());
+        assertEquals("/bar/zzz",_request.getAttribute("target"));
+        assertEquals("/bar/zzz",_request.getAttribute("URI"));
+        assertEquals("/bar/zzz",_request.getAttribute("info"));
+        assertEquals(null,_request.getAttribute("before"));
+        
+        _response.setStatus(200);
+        _request.setHandled(false);
+        _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(false);
         _handler.setRewritePathInfo(false);
         _request.setRequestURI("/foo/bar");

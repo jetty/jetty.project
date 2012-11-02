@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.jar.JarEntry;
 
@@ -788,7 +789,7 @@ public class AnnotationParser
                 try
                 {
                     String name = entry.getName();
-                    if (name.toLowerCase().endsWith(".class"))
+                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
                         if ((resolver == null)
@@ -833,7 +834,7 @@ public class AnnotationParser
                 try
                 {
                     String name = entry.getName();
-                    if (name.toLowerCase().endsWith(".class"))
+                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
 

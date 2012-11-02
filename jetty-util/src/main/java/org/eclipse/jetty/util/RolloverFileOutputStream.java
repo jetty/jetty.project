@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -221,7 +222,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
         
         // Is this a rollover file?
         String filename=file.getName();
-        int i=filename.toLowerCase().indexOf(YYYY_MM_DD);
+        int i=filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
         if (i>=0)
         {
             file=new File(dir,
@@ -258,7 +259,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             File file= new File(_filename);
             File dir = new File(file.getParent());
             String fn=file.getName();
-            int s=fn.toLowerCase().indexOf(YYYY_MM_DD);
+            int s=fn.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
             if (s<0)
                 return;
             String prefix=fn.substring(0,s);
