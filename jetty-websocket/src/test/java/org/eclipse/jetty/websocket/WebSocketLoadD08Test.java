@@ -72,6 +72,7 @@ public class WebSocketLoadD08Test
                 return new EchoWebSocket();
             }
         };
+        wsHandler.getWebSocketFactory().setMinVersion(8);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
 
@@ -196,7 +197,7 @@ public class WebSocketLoadD08Test
                     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                     "Sec-WebSocket-Origin: http://example.com\r\n"+
                     "Sec-WebSocket-Protocol: onConnect\r\n" +
-                    "Sec-WebSocket-Version: 7\r\n"+
+                    "Sec-WebSocket-Version: 8\r\n"+
                     "\r\n");
             output.flush();
 

@@ -77,6 +77,7 @@ public class WebSocketMessageD08Test
                 return __serverWebSocket;
             }
         };
+        wsHandler.getWebSocketFactory().setMinVersion(8);
         wsHandler.getWebSocketFactory().setBufferSize(8192);
         wsHandler.getWebSocketFactory().setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());

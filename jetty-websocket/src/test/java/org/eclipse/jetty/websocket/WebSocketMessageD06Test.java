@@ -66,6 +66,7 @@ public class WebSocketMessageD06Test
                 return _serverWebSocket;
             }
         };
+        wsHandler.getWebSocketFactory().setMinVersion(6);
         wsHandler.getWebSocketFactory().setBufferSize(8192);
         wsHandler.getWebSocketFactory().setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
