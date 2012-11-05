@@ -1,4 +1,29 @@
-jetty-9.0.0-SNAPSHOT
+jetty-9.0.0.M2 - 05 November 2012
+ + 371170 MongoSessionManager LastAccessTimeTest fails
+ + 391877 org.eclipse.jetty.webapp.FragmentDescriptor incorrectly reporting
+   duplicate others for after ordering
+ + 392237 Split jaas from jetty-plus into jetty-jaas and port the
+   test-jaas-webapp from codehaus
+ + 392239 Allow no error-code or exception for error-pages
+ + 392304 fixed intermittent client SSL failure. Correctly compact in flip2fill
+ + 392525 Add option to --stop-wait to specify timeout
+ + 392641 JDBC Sessions not scavenged if expired during downtime
+ + 392812 MongoSessionIDManager never purges old sessions
+ + 392959 Review HttpClient.getConversation(long).
+ + 393014 Mongodb purgevalid using query for purgeinvalid
+ + 393015 Mongodb purge not rescheduled
+ + 393075 Jetty WebSocket client cannot connect to Tomcat WebSocket Server
+ + 393218 add xsd=application/xml mime mapping to defaults
+ + 393291 Confusing log entry about (non) existing webAppSourceDirectory
+ + 393303 use jetty-web.xml to explicitly add the jetty packages that need
+   visability.   This commit also sucked in some changes made to help with the
+   documentation process (improving deployer configuration management
+ + 393363 Use Locale.ENGLISH for all toUpperCase and toLowerCase calls
+ + 393368 min websocket version
+ + 393383 delay onClose call until closeOut is done
+ + 393494 HashSessionManager can't delete unrestorable sessions on Windows
+ + JETTY-1549 jetty-maven-plugin fails to reload the LoginService properly
+ + JETTY-1550 virtual WEB-INF not created if project has overlays
 
 jetty-9.0.0.M1 - 15 October 2012
  + 369349 directory with spaces --dry-run fix
