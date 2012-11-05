@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -34,13 +34,32 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public abstract class AbstractDiscoverableAnnotationHandler implements DiscoverableAnnotationHandler
 {
     protected WebAppContext _context;
-    protected List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
+    protected List<DiscoveredAnnotation> _annotations; 
+    protected Resource _resource;
     
     public AbstractDiscoverableAnnotationHandler(WebAppContext context)
     {
+        this(context, null);
+    }
+    
+    public AbstractDiscoverableAnnotationHandler(WebAppContext  context, List<DiscoveredAnnotation> list)
+    {
         _context = context;
+        if (list == null)
+            _annotations = new ArrayList<DiscoveredAnnotation>();
+        else
+            _annotations = list;
     }
 
+    public Resource getResource()
+    {
+        return _resource;
+    }
+    
+    public void setResource(Resource resource)
+    {
+        _resource = resource;
+    }
     
     public List<DiscoveredAnnotation> getAnnotationList ()
     {

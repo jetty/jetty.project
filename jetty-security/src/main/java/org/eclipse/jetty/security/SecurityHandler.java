@@ -335,18 +335,22 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
         if (_identityService==null)
         {
+           
             if (_loginService!=null)
                 _identityService=_loginService.getIdentityService();
 
+            System.err.println("Null identity service, trying login service: "+_identityService);
             if (_identityService==null)
                 _identityService=findIdentityService();
             
+            System.err.println("Finding identity service: "+_identityService);
             if (_identityService==null && _realmName!=null)
                 _identityService=new DefaultIdentityService();
         }
         
         if (_loginService!=null)
         {
+            System.err.println("LoginService="+_loginService + " identityService="+_identityService);
             if (_loginService.getIdentityService()==null)
                 _loginService.setIdentityService(_identityService);
             else if (_loginService.getIdentityService()!=_identityService)
@@ -525,8 +529,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 else if (authentication instanceof Authentication.Deferred)
                 {
                     DeferredAuthentication deferred= (DeferredAuthentication)authentication;
-                    deferred.setIdentityService(_identityService);
-                    deferred.setLoginService(_loginService);
                     baseRequest.setAuthentication(authentication);
 
                     try
@@ -536,7 +538,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     finally
                     {
                         previousIdentity = deferred.getPreviousAssociation();
-                        deferred.setIdentityService(null);
                     }
 
                     if (authenticator!=null)

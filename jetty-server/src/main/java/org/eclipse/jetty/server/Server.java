@@ -388,7 +388,7 @@ public class Server extends HandlerWrapper implements Attributes
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryString(uri.getQuery());
+                baseRequest.mergeQueryString(uri.getQuery()); //we have to assume dispatch path and query are UTF8
         }
 
         final String target=baseRequest.getPathInfo();

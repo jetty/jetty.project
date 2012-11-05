@@ -354,6 +354,6 @@ public class BufferUtil
     {
         if (buffer instanceof CachedBuffer)
             return buffer.toString();
-        return buffer.toString(StringUtil.__ISO_8859_1);
+        return buffer.toString(StringUtil.__ISO_8859_1_CHARSET);
     }
 }

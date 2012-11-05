@@ -29,6 +29,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.Authenticator;
@@ -45,58 +46,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class DeferredAuthentication implements Authentication.Deferred
 {
     private static final Logger LOG = Log.getLogger(DeferredAuthentication.class);
-
-    protected final Authenticator _authenticator;
-
-    private LoginService _loginService;
-    private IdentityService _identityService;
+    protected final LoginAuthenticator _authenticator;
     private Object _previousAssociation;
 
-
-    /* ------------------------------------------------------------ */
-    public DeferredAuthentication(Authenticator authenticator)
-    {
-        if (authenticator == null)
-            throw new NullPointerException("No Authenticator");
-        this._authenticator = authenticator;
-    }
-    
     /* ------------------------------------------------------------ */
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
             throw new NullPointerException("No Authenticator");
         this._authenticator = authenticator;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Get the identityService.
-     * @return the identityService
-     */
-    public IdentityService getIdentityService()
-    {
-        return _identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the identityService.
-     * @param identityService the identityService to set
-     */
-    public void setIdentityService(IdentityService identityService)
-    {
-        _identityService = identityService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public LoginService getLoginService()
-    {
-        return _loginService;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setLoginService(LoginService loginService)
-    {
-        _loginService = loginService;
     }
 
     /* ------------------------------------------------------------ */
@@ -111,8 +69,12 @@ public class DeferredAuthentication implements Authentication.Deferred
             
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                LoginService login_service= _authenticator.getLoginService();
+                IdentityService identity_service=login_service.getIdentityService();
+                
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
+                
                 return authentication;
             }
         }
@@ -120,6 +82,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
+
         return this;
     }
     
@@ -131,9 +94,12 @@ public class DeferredAuthentication implements Authentication.Deferred
     {
         try
         {
+            LoginService login_service= _authenticator.getLoginService();
+            IdentityService identity_service=login_service.getIdentityService();
+            
             Authentication authentication = _authenticator.validateRequest(request,response,true);
-            if (authentication instanceof Authentication.User && _identityService!=null)
-                _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            if (authentication instanceof Authentication.User && identity_service!=null)
+                _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
         }
         catch (ServerAuthException e)
@@ -147,18 +113,16 @@ public class DeferredAuthentication implements Authentication.Deferred
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
      */
-    public Authentication login(String username, String password)
+    public Authentication login(String username, Object password, ServletRequest request)
     {
-        if (_loginService!=null)
+        UserIdentity identity = _authenticator.login(username, password, request);
+        if (identity != null)
         {
-            UserIdentity user = _loginService.login(username,password);
-            if (user!=null)
-            {
-                UserAuthentication authentication = new UserAuthentication("API",user);
-                if (_identityService!=null)
-                    _previousAssociation=_identityService.associate(user);
-                return authentication;
-            }
+            IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
+            UserAuthentication authentication = new UserAuthentication("API",identity);
+            if (identity_service != null)
+                _previousAssociation=identity_service.associate(identity);
+            return authentication;
         }
         return null;
     }

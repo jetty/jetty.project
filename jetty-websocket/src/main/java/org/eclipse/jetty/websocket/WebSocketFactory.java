@@ -81,16 +81,37 @@ public class WebSocketFactory extends AbstractLifeCycle
     private int _maxIdleTime = 300000;
     private int _maxTextMessageSize = 16 * 1024;
     private int _maxBinaryMessageSize = -1;
+    private int _minVersion;
 
     public WebSocketFactory(Acceptor acceptor)
     {
-        this(acceptor, 64 * 1024);
+        this(acceptor, 64 * 1024, WebSocketConnectionRFC6455.VERSION);
     }
 
     public WebSocketFactory(Acceptor acceptor, int bufferSize)
     {
+        this(acceptor, bufferSize, WebSocketConnectionRFC6455.VERSION);
+    }
+
+    public WebSocketFactory(Acceptor acceptor, int bufferSize, int minVersion)
+    {
         _buffers = new WebSocketBuffers(bufferSize);
         _acceptor = acceptor;
+        _minVersion=WebSocketConnectionRFC6455.VERSION;
+    }
+
+    public int getMinVersion()
+    {
+        return _minVersion;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param minVersion The minimum support version (default RCF6455.VERSION == 13 )
+     */
+    public void setMinVersion(int minVersion)
+    {
+        _minVersion = minVersion;
     }
 
     /**
@@ -227,6 +248,8 @@ public class WebSocketFactory extends AbstractLifeCycle
         }
 
         final WebSocketServletConnection connection;
+        if (draft<_minVersion)
+            draft=Integer.MAX_VALUE;
         switch (draft)
         {
             case -1: // unspecified draft/version
@@ -263,7 +286,15 @@ public class WebSocketFactory extends AbstractLifeCycle
                 LOG.warn("Unsupported Websocket version: " + draft);
                 // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
                 // Using the examples as outlined
-                response.setHeader("Sec-WebSocket-Version", "13, 8, 6, 0");
+                String versions="13";
+                if (_minVersion<=8)
+                    versions+=", 8";
+                if (_minVersion<=6)
+                    versions+=", 6";
+                if (_minVersion<=0)
+                    versions+=", 0";
+                    
+                response.setHeader("Sec-WebSocket-Version", versions);
                 throw new HttpException(400, "Unsupported websocket version specification: " + draft);
             }
         }

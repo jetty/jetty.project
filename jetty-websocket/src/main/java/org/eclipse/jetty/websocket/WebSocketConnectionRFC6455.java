@@ -323,13 +323,13 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
 
         try
         {
-            if (tell_app)
-                _webSocket.onClose(code,message);
+            if (!closed_out)
+                closeOut(code,message);
         }
         finally
         {
-            if (!closed_out)
-                closeOut(code,message);
+            if  (tell_app)
+                _webSocket.onClose(code,message);
         }
     }
 
@@ -353,7 +353,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         }
 
         try
-        {
+        {                    
             if (tell_app)
                 _webSocket.onClose(code,message);
         }

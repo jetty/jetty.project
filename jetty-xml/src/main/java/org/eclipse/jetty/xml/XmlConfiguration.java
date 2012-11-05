@@ -39,6 +39,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -424,7 +425,7 @@ public class XmlConfiguration
         private void set(Object obj, XmlParser.Node node) throws Exception
         {
             String attr = node.getAttribute("name");
-            String name = "set" + attr.substring(0,1).toUpperCase() + attr.substring(1);
+            String name = "set" + attr.substring(0,1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             Object value = value(obj,node);
             Object[] arg =
             { value };
@@ -663,7 +664,7 @@ public class XmlConfiguration
             try
             {
                 // try calling a getXxx method.
-                Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase() + name.substring(1),(java.lang.Class[])null);
+                Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase(Locale.ENGLISH) + name.substring(1),(java.lang.Class[])null);
                 obj = method.invoke(obj,(java.lang.Object[])null);
                 configure(obj,node,0);
             }
@@ -1232,7 +1233,7 @@ public class XmlConfiguration
                     Object[] obj = new Object[args.length];
                     for (int i = 0; i < args.length; i++)
                     {
-                        if (args[i].toLowerCase().endsWith(".properties"))
+                        if (args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
                             properties.load(Resource.newResource(args[i]).getInputStream());
                         }

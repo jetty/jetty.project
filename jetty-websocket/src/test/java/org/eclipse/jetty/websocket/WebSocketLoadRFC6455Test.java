@@ -194,7 +194,7 @@ public class WebSocketLoadRFC6455Test
                     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                     "Sec-WebSocket-Origin: http://example.com\r\n"+
                     "Sec-WebSocket-Protocol: onConnect\r\n" +
-                    "Sec-WebSocket-Version: 7\r\n"+
+                    "Sec-WebSocket-Version: 13\r\n"+
                     "\r\n");
             output.flush();
 

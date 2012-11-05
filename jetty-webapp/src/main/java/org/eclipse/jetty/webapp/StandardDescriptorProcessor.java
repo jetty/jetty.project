@@ -29,6 +29,7 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -333,7 +334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node startup = node.get("load-on-startup");
         if (startup != null)
         {
-            String s = startup.toString(false, true).toLowerCase();
+            String s = startup.toString(false, true).toLowerCase(Locale.ENGLISH);
             int order = 0;
             if (s.startsWith("t"))
             {
@@ -626,7 +627,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no servlet mappings
                 context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
-                ServletMapping mapping = addServletMapping(servlet_name, node, context);
+                ServletMapping mapping = addServletMapping(servlet_name, node, context, descriptor);
                 mapping.setDefault(context.getMetaData().getOrigin(servlet_name+".servlet.mappings") == Origin.WebDefaults);
                 break;
             }
@@ -638,14 +639,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 //otherwise just ignore it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                   addServletMapping(servlet_name, node, context);
+                   addServletMapping(servlet_name, node, context, descriptor);
                 }
                 break;
             }
             case WebFragment:
             {
                 //mappings previously set by another web-fragment, so merge in this web-fragment's mappings
-                addServletMapping(servlet_name, node, context);
+                addServletMapping(servlet_name, node, context, descriptor);
                 break;
             }
         }        
@@ -1099,16 +1100,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String error = node.getString("error-code", false, true);
         int code=0;
         if (error == null || error.length() == 0) 
+        {
             error = node.getString("exception-type", false, true);
+            if (error == null || error.length() == 0)
+                error = ErrorPageErrorHandler.GLOBAL_ERROR_PAGE;
+        }
         else
             code=Integer.valueOf(error);
+        
         String location = node.getString("location", false, true);
-
-        
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
-        
-        
         Origin o = context.getMetaData().getOrigin("error."+error);
+        
         switch (o)
         {
             case NotSet:
@@ -1128,11 +1131,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 //an error page setup was set in web.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    if (code>0)
-                        handler.addErrorPage(code,location);
+                    if (descriptor instanceof OverrideDescriptor || descriptor instanceof DefaultsDescriptor)
+                    {
+                        if (code>0)
+                            handler.addErrorPage(code,location);
+                        else
+                            handler.addErrorPage(error,location);
+                        context.getMetaData().setOrigin("error."+error, descriptor);
+                    }
                     else
-                        handler.addErrorPage(error,location);
-                    context.getMetaData().setOrigin("error."+error, descriptor);
+                        throw new IllegalStateException("Duplicate global error-page "+location);
                 }
                 break;
             }
@@ -1170,7 +1178,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @param context
      */
-    protected ServletMapping addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
+    protected ServletMapping addServletMapping (String servletName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(servletName);
@@ -1182,6 +1190,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String p = iter.next().toString(false, true);
             p = normalizePattern(p);
             paths.add(p);
+            context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, descriptor);
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
         context.getServletHandler().addServletMapping(mapping);
@@ -1193,7 +1202,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @param context
      */
-    protected void addFilterMapping (String filterName, XmlParser.Node node, WebAppContext context)
+    protected void addFilterMapping (String filterName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
         FilterMapping mapping = new FilterMapping();
         mapping.setFilterName(filterName);
@@ -1205,6 +1214,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String p = iter.next().toString(false, true);
             p = normalizePattern(p);
             paths.add(p);
+            context.getMetaData().setOrigin(filterName+".filter.mapping."+p, descriptor);
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
 
@@ -1308,7 +1318,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             jpg.setIsXml(group.getString("is-xml", false, true));
             jpg.setDeferredSyntaxAllowedAsLiteral(group.getString("deferred-syntax-allowed-as-literal", false, true));
             jpg.setTrimDirectiveWhitespaces(group.getString("trim-directive-whitespaces", false, true));
-            jpg.setDefaultContentType(group.getString("defaultContentType", false, true));
+            jpg.setDefaultContentType(group.getString("default-content-type", false, true));
             jpg.setBuffer(group.getString("buffer", false, true));
             jpg.setErrorOnUndeclaredNamespace(group.getString("error-on-undeclared-namespace", false, true));
             
@@ -1361,6 +1371,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive 
         //across fragments
+        
+        //TODO: need to remember origin of the constraints
         try
         {
             XmlParser.Node auths = node.get("auth-constraint");
@@ -1383,7 +1395,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (data != null)
             {
                 data = data.get("transport-guarantee");
-                String guarantee = data.toString(false, true).toUpperCase();
+                String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
                 if (guarantee == null || guarantee.length() == 0 || "NONE".equals(guarantee))
                     scBase.setDataConstraint(Constraint.DC_NONE);
                 else if ("INTEGRAL".equals(guarantee))
@@ -1409,29 +1421,50 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     String url = iter2.next().toString(false, true);
                     url = normalizePattern(url);
-
+                    //remember origin so we can process ServletRegistration.Dynamic.setServletSecurityElement() correctly
+                    context.getMetaData().setOrigin("constraint.url."+url, descriptor);
+                    
                     Iterator<XmlParser.Node> iter3 = collection.iterator("http-method");
+                    Iterator<XmlParser.Node> iter4 = collection.iterator("http-method-omission");
+                   
                     if (iter3.hasNext())
                     {
+                        if (iter4.hasNext())
+                            throw new IllegalStateException ("web-resource-collection cannot contain both http-method and http-method-omission");
+                        
+                        //configure all the http-method elements for each url
                         while (iter3.hasNext())
                         {
                             String method = ((XmlParser.Node) iter3.next()).toString(false, true);
                             ConstraintMapping mapping = new ConstraintMapping();
                             mapping.setMethod(method);
                             mapping.setPathSpec(url);
+                            mapping.setConstraint(sc);                                                      
+                            ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
+                        }
+                    }
+                    else if (iter4.hasNext())
+                    {
+                        //configure all the http-method-omission elements for each url
+                        while (iter4.hasNext())
+                        {
+                            String method = ((XmlParser.Node)iter4.next()).toString(false, true);
+                            ConstraintMapping mapping = new ConstraintMapping();
+                            mapping.setMethodOmissions(new String[]{method});
+                            mapping.setPathSpec(url);
                             mapping.setConstraint(sc);
-                                                        
                             ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                         }
                     }
                     else
                     {
+                        //No http-methods or http-method-omissions specified, the constraint applies to all
                         ConstraintMapping mapping = new ConstraintMapping();
                         mapping.setPathSpec(url);
                         mapping.setConstraint(sc);
                         ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                     }
-                }
+                } 
             }
         }
         catch (CloneNotSupportedException e)
@@ -1777,7 +1810,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no filtermappings for this filter yet defined
                 context.getMetaData().setOrigin(filter_name+".filter.mappings", descriptor);
-                addFilterMapping(filter_name, node, context);
+                addFilterMapping(filter_name, node, context, descriptor);
                 break;
             }
             case WebDefaults:
@@ -1787,14 +1820,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 //filter mappings defined in a web xml file. If we're processing a fragment, we ignore filter mappings.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                   addFilterMapping(filter_name, node, context);
+                   addFilterMapping(filter_name, node, context, descriptor);
                 }
                 break;
             }
             case WebFragment:
             {
                 //filter mappings first defined in a web-fragment, allow other fragments to add
-                addFilterMapping(filter_name, node, context);
+                addFilterMapping(filter_name, node, context, descriptor);
                 break;
             }
         }

@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 
 /**
@@ -365,7 +366,10 @@ public interface Buffer extends Cloneable
     /* ------------------------------------------------------------ */
     String toString(String charset);
     
-    /* 
+    /* ------------------------------------------------------------ */
+    String toString(Charset charset);
+
+    /*
      * Buffers implementing this interface should be compared with case insensitive equals
      *
      */

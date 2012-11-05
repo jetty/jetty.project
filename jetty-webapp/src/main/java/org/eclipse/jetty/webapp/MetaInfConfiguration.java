@@ -22,6 +22,7 @@ package org.eclipse.jetty.webapp;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 
 import org.eclipse.jetty.util.log.Log;
@@ -136,7 +137,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             else
             {
-                String lcname = name.toLowerCase();
+                String lcname = name.toLowerCase(Locale.ENGLISH);
                 if (lcname.endsWith(".tld"))
                 {
                     addResource(context,METAINF_TLDS,Resource.newResource("jar:"+jarUri+"!/"+name));

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -122,9 +123,9 @@ public class JSONPojoConvertor implements JSON.Convertor
                         if(m.getReturnType()!=null)
                         {
                             if (name.startsWith("is") && name.length()>2)
-                                name=name.substring(2,3).toLowerCase()+name.substring(3);
+                                name=name.substring(2,3).toLowerCase(Locale.ENGLISH)+name.substring(3);
                             else if (name.startsWith("get") && name.length()>3)
-                                name=name.substring(3,4).toLowerCase()+name.substring(4);
+                                name=name.substring(3,4).toLowerCase(Locale.ENGLISH)+name.substring(4);
                             else 
                                 break;
                             if(includeField(name, m))
@@ -134,7 +135,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     case 1:
                         if (name.startsWith("set") && name.length()>3)
                         {
-                            name=name.substring(3,4).toLowerCase()+name.substring(4);
+                            name=name.substring(3,4).toLowerCase(Locale.ENGLISH)+name.substring(4);
                             if(includeField(name, m))
                                 addSetter(name, m);
                         }

@@ -34,8 +34,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -59,7 +61,7 @@ public class MultiPartInputStream
     protected MultiMap<String> _parts;
     protected File _tmpDir;
     protected File _contextTmpDir;
- 
+    protected boolean _deleteOnExit;
     
     
     
@@ -73,6 +75,7 @@ public class MultiPartInputStream
         protected String _contentType;
         protected MultiMap<String> _headers;
         protected long _size = 0;
+        protected boolean _temporary = true;
 
         public MultiPart (String name, String filename) 
         throws IOException
@@ -141,6 +144,8 @@ public class MultiPartInputStream
         throws IOException
         {
             _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
+            if (_deleteOnExit)
+                _file.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(_file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             
@@ -177,7 +182,7 @@ public class MultiPartInputStream
         {
             if (name == null)
                 return null;
-            return (String)_headers.getValue(name.toLowerCase(), 0);
+            return (String)_headers.getValue(name.toLowerCase(Locale.ENGLISH), 0);
         }
 
         /** 
@@ -203,11 +208,12 @@ public class MultiPartInputStream
         {
            if (_file != null)
            {
+               //written to a file, whether temporary or not
                return new BufferedInputStream (new FileInputStream(_file));
            }
            else
            {
-               //part content is in a ByteArrayOutputStream
+               //part content is in memory
                return new ByteArrayInputStream(_bout.getBuf(),0,_bout.size());
            }
         }
@@ -232,7 +238,7 @@ public class MultiPartInputStream
          */
         public long getSize()
         {
-            return _size;
+            return _size;         
         }
 
         /** 
@@ -242,8 +248,11 @@ public class MultiPartInputStream
         {
             if (_file == null)
             {
+                _temporary = false;
+                
                 //part data is only in the ByteArrayOutputStream and never been written to disk
                 _file = new File (_tmpDir, fileName);
+
                 BufferedOutputStream bos = null;
                 try
                 {
@@ -261,6 +270,8 @@ public class MultiPartInputStream
             else
             {
                 //the part data is already written to a temporary file, just rename it
+                _temporary = false;
+                
                 File f = new File(_tmpDir, fileName);
                 if (_file.renameTo(f))
                     _file = f;
@@ -268,12 +279,25 @@ public class MultiPartInputStream
         }
         
         /** 
+         * Remove the file, whether or not Part.write() was called on it
+         * (ie no longer temporary)
          * @see javax.servlet.http.Part#delete()
          */
         public void delete() throws IOException
         {
-            if (_file != null)
+            if (_file != null && _file.exists())
                 _file.delete();     
+        }
+        
+        /**
+         * Only remove tmp files.
+         * 
+         * @throws IOException
+         */
+        public void cleanUp() throws IOException
+        {
+            if (_temporary && _file != null && _file.exists())
+                _file.delete();
         }
         
         
@@ -314,12 +338,65 @@ public class MultiPartInputStream
        _contextTmpDir = contextTmpDir;
        if (_contextTmpDir == null)
            _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
+       
        if (_config == null)
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
 
+    /**
+     * Get the already parsed parts.
+     * 
+     * @return
+     */
+    public Collection<Part> getParsedParts()
+    {
+        if (_parts == null)
+            return Collections.emptyList();
+
+        Collection<Object> values = _parts.values();
+        List<Part> parts = new ArrayList<Part>();
+        for (Object o: values)
+        {
+            List<Part> asList = LazyList.getList(o, false);
+            parts.addAll(asList);
+        }
+        return parts;
+    }
     
+    /**
+     * Delete any tmp storage for parts, and clear out the parts list.
+     * 
+     * @throws MultiException
+     */
+    public void deleteParts ()
+    throws MultiException
+    {
+        Collection<Part> parts = getParsedParts();
+        MultiException err = new MultiException();
+        for (Part p:parts)
+        {
+            try
+            {
+                ((MultiPartInputStream.MultiPart)p).cleanUp();
+            } 
+            catch(Exception e)
+            {     
+                err.add(e); 
+            }
+        }
+        _parts.clear();
+        
+        err.ifExceptionThrowMulti();
+    }
+
    
+    /**
+     * Parse, if necessary, the multipart data and return the list of Parts.
+     * 
+     * @return
+     * @throws IOException
+     * @throws ServletException
+     */
     public Collection<Part> getParts()
     throws IOException, ServletException
     {
@@ -335,6 +412,14 @@ public class MultiPartInputStream
     }
     
     
+    /**
+     * Get the named Part.
+     * 
+     * @param name
+     * @return
+     * @throws IOException
+     * @throws ServletException
+     */
     public Part getPart(String name)
     throws IOException, ServletException
     {
@@ -343,6 +428,12 @@ public class MultiPartInputStream
     }
     
     
+    /**
+     * Parse, if necessary, the multipart stream.
+     * 
+     * @throws IOException
+     * @throws ServletException
+     */
     protected void parse ()
     throws IOException, ServletException
     {
@@ -415,7 +506,7 @@ public class MultiPartInputStream
                 int c=line.indexOf(':',0);
                 if(c>0)
                 {
-                    String key=line.substring(0,c).trim().toLowerCase();
+                    String key=line.substring(0,c).trim().toLowerCase(Locale.ENGLISH);
                     String value=line.substring(c+1,line.length()).trim();
                     headers.put(key, value);
                     if (key.equalsIgnoreCase("content-disposition"))
@@ -441,7 +532,7 @@ public class MultiPartInputStream
             while(tok.hasMoreTokens())
             {
                 String t=tok.nextToken().trim();
-                String tl=t.toLowerCase();
+                String tl=t.toLowerCase(Locale.ENGLISH);
                 if(t.startsWith("form-data"))
                     form_data=true;
                 else if(tl.startsWith("name="))
@@ -589,9 +680,22 @@ public class MultiPartInputStream
                 part.close();
             }
         }
+        if (!lastPart)
+            throw new IOException("Incomplete parts");
     }
     
-    
+    public void setDeleteOnExit(boolean deleteOnExit)
+    {
+        _deleteOnExit = deleteOnExit;
+    }
+
+
+    public boolean isDeleteOnExit()
+    {
+        return _deleteOnExit;
+    }
+
+
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue, boolean splitAfterSpace)
     {

@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -278,7 +279,7 @@ public class GzipFilter extends UserAgentFilter
             {
                 for (int i=0; i< encodings.length; i++)
                 {
-                    if (encodings[i].toLowerCase().contains(GZIP))
+                    if (encodings[i].toLowerCase(Locale.ENGLISH).contains(GZIP))
                     {
                         if (isEncodingAcceptable(encodings[i]))
                         {
@@ -287,7 +288,7 @@ public class GzipFilter extends UserAgentFilter
                         }
                     }
 
-                    if (encodings[i].toLowerCase().contains(DEFLATE))
+                    if (encodings[i].toLowerCase(Locale.ENGLISH).contains(DEFLATE))
                     {
                         if (isEncodingAcceptable(encodings[i]))
                         {

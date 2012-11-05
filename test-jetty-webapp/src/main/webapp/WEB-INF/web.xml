@@ -18,20 +18,6 @@
     <listener-class>com.acme.TestListener</listener-class>
   </listener>
 
-  <filter>
-    <filter-name>TestFilter</filter-name>
-    <filter-class>com.acme.TestFilter</filter-class>
-    <async-support>true</async-support>
-    <init-param>
-      <param-name>remote</param-name>
-      <param-value>false</param-value>
-    </init-param>
-  </filter>
-  <filter-mapping>
-    <filter-name>TestFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping>
-
 
   <filter>
     <filter-name>QoSFilter</filter-name>
@@ -119,6 +105,16 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
   -->
+  <servlet>
+    <servlet-name>Login</servlet-name>
+    <servlet-class>com.acme.LoginServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Login</servlet-name>
+    <url-pattern>/login/*</url-pattern>
+  </servlet-mapping>
 
 
   <servlet>
@@ -274,6 +270,18 @@
     <error-code>404</error-code>
     <location>/error404.html</location>
   </error-page>
+
+
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Rego2</web-resource-name>
+      <url-pattern>/rego2/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>server-administrator</role-name>
+    </auth-constraint>
+  </security-constraint>
 
   <security-constraint>
     <web-resource-collection>

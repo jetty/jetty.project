@@ -18,6 +18,7 @@
 
 package com.acme;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
@@ -26,12 +27,21 @@ import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
+import javax.servlet.ServletRegistration;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletSecurityElement;
+import javax.servlet.HttpConstraintElement;
+import javax.servlet.HttpMethodConstraintElement;
+import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 public class TestListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
@@ -62,16 +72,30 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
     public void contextInitialized(ServletContextEvent sce)
     {	
-    	/* TODO  for servlet 3.0
-    	 * FilterRegistration registration=context.addFilter("TestFilter",TestFilter.class.getName());
-    	
-    	
+        //configure programmatic security
+        ServletRegistration.Dynamic rego = sce.getServletContext().addServlet("RegoTest", RegTest.class.getName());
+        rego.addMapping("/rego/*");
+        HttpConstraintElement constraintElement = new HttpConstraintElement(ServletSecurity.EmptyRoleSemantic.PERMIT, 
+                                                                            ServletSecurity.TransportGuarantee.NONE, new String[]{"admin"});
+        ServletSecurityElement securityElement = new ServletSecurityElement(constraintElement, null);
+        Set<String> unchanged = rego.setServletSecurity(securityElement);
+        //System.err.println("Security constraints registered: "+unchanged.isEmpty());
+
+        //Test that a security constraint from web.xml can't be overridden programmatically
+        ServletRegistration.Dynamic rego2 = sce.getServletContext().addServlet("RegoTest2", RegTest.class.getName());
+        rego2.addMapping("/rego2/*");
+        securityElement = new ServletSecurityElement(constraintElement, null);
+        unchanged = rego2.setServletSecurity(securityElement);
+        //System.err.println("Overridding web.xml constraints not possible:" +!unchanged.isEmpty());
+
+    	/* For servlet 3.0 */
+    	FilterRegistration.Dynamic registration = sce.getServletContext().addFilter("TestFilter",TestFilter.class.getName());
+    	registration.setInitParameter("remote", "false");
     	registration.setAsyncSupported(true);
     	registration.addMappingForUrlPatterns(
     	        EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
     	        true, 
-    	        new String[]{"/dump/*","/dispatch/*","*.dump"});
-    	        */
+    	        new String[]{"/*"});
     }
 
     public void contextDestroyed(ServletContextEvent sce)

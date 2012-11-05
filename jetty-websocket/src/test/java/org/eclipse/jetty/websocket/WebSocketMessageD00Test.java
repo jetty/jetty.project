@@ -80,6 +80,7 @@ public class WebSocketMessageD00Test
                 return __serverWebSocket;
             }
         };
+        wsHandler.getWebSocketFactory().setMinVersion(-1);
         wsHandler.setHandler(new DefaultHandler());
         __server.setHandler(wsHandler);
         __server.start();

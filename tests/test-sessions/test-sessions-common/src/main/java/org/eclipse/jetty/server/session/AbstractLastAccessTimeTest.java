@@ -27,10 +27,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,7 +55,12 @@ public abstract class AbstractLastAccessTimeTest
         int maxInactivePeriod = 8;
         int scavengePeriod = 2;
         AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        TestServlet servlet1 = new TestServlet();
+        ServletHolder holder1 = new ServletHolder(servlet1);
+        ServletContextHandler context = server1.addContext(contextPath);
+        TestSessionListener listener1 = new TestSessionListener();
+        context.addEventListener(listener1);
+        context.addServlet(holder1, servletMapping);
         server1.start();
         int port1=server1.getPort();
         try
@@ -108,17 +117,9 @@ public abstract class AbstractLastAccessTimeTest
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
-                    // Access again server1, and ensure that we can still access the session
-                    exchange1 = new ContentExchange(true);
-                    exchange1.setMethod(HttpMethods.GET);
-                    exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping);
-                    exchange1.getRequestFields().add("Cookie", sessionCookie);
-                    client.send(exchange1);
-                    exchange1.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
-                    //test that the session was kept alive by server 2 and still contains what server1 put in it
-                    assertEquals("test", exchange1.getResponseContent());
-                    
+                    //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
+                    assertTrue (listener1.destroyed == false);  
+
                 }
                 finally
                 {
@@ -135,6 +136,25 @@ public abstract class AbstractLastAccessTimeTest
             server1.stop();
         }
     }
+
+    public static class TestSessionListener implements HttpSessionListener
+    {
+        public boolean destroyed = false;
+        public boolean created = false;
+
+ 
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+            destroyed = true;
+        }
+
+   
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            created = true;
+        }
+    }
+
 
     public static class TestServlet extends HttpServlet
     {

@@ -41,6 +41,9 @@ public class TestAnnotationParser
         {
             private List<String> methods = Arrays.asList("a", "b", "c", "d", "l");
 
+           
+            
+            
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                                     List<Value> values)
             {
@@ -81,9 +84,15 @@ public class TestAnnotationParser
                 assertTrue(methods.contains(methodName));
                 assertEquals("org.eclipse.jetty.annotations.Sample", annotation);
             }
+
+            @Override
+            public String getAnnotationName()
+            {
+                return "org.eclipse.jetty.annotations.Sample";
+            }
         }
 
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", new SampleAnnotationHandler());
+        parser.registerHandler(new SampleAnnotationHandler());
 
         long start = System.currentTimeMillis();
         parser.parse(classNames, new ClassNameResolver ()
@@ -140,9 +149,17 @@ public class TestAnnotationParser
                     System.err.println(anv.toString());
                 }
             }
+
+            @Override
+            public String getAnnotationName()
+            {
+                return "org.eclipse.jetty.annotations.Multi";
+            }
+            
+            
         }
 
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Multi", new MultiAnnotationHandler());
+        parser.registerHandler(new MultiAnnotationHandler());
         parser.parse(classNames, null);
     }
 }

@@ -60,6 +60,8 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         return _authMethod;
     }
 
+
+
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {        
         HttpServletRequest req = (HttpServletRequest)request;
@@ -69,7 +71,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
 
         if (!mandatory)
         {
-        	return _deferred;
+            return new DeferredAuthentication(this);
         }
         
         // check to see if we have authorization headers required to continue
@@ -77,7 +79,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             try
             {
-            	 if (_deferred.isDeferred(res))
+            	 if (DeferredAuthentication.isDeferred(res))
             	 {
                      return Authentication.UNAUTHENTICATED;
             	 }
@@ -96,7 +98,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             String spnegoToken = header.substring(10);
             
-            UserIdentity user = _loginService.login(null,spnegoToken);
+            UserIdentity user = login(null,spnegoToken, request);
             
             if ( user != null )
             {

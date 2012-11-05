@@ -37,7 +37,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequestEvent;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
@@ -131,7 +134,7 @@ public class RequestTest
     }
     
     @Test
-    public void testMultiPart() throws Exception
+    public void testMultiPartNoConfig() throws Exception
     {
         _handler._checker = new RequestTester()
         {
@@ -140,14 +143,16 @@ public class RequestTest
                 try
                 {
                     Part foo = request.getPart("stuff");
-                    assertNotNull(foo);
-                    String value = request.getParameter("stuff");
-                    byte[] expected = "000000000000000000000000000000000000000000000000000".getBytes("ISO-8859-1");
-                    return value.equals(new String(expected, "ISO-8859-1"));
+                    return false;
+                }
+                catch (IllegalStateException e)
+                {
+                    //expected exception because no multipart config is set up
+                    assertTrue(e.getMessage().startsWith("No multipart config"));
+                    return true;
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
                     return false;
                 }
             }
@@ -172,6 +177,66 @@ public class RequestTest
         multipart;
 
         String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+    
+    
+    @Test
+    public void testMultiPart() throws Exception
+    {
+        final File tmpDir = new File (System.getProperty("java.io.tmpdir"));
+        final File testTmpDir = new File (tmpDir, "reqtest");
+        testTmpDir.deleteOnExit();
+        assertTrue(testTmpDir.mkdirs());
+        assertTrue(testTmpDir.list().length == 0);
+        
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+        contextHandler.addEventListener(new Request.MultiPartCleanerListener()
+        {
+
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                MultiPartInputStream m = (MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                assertNotNull (m);
+                assertNotNull (c);
+                assertTrue(c == sre.getServletContext());
+                assertTrue(!m.getParsedParts().isEmpty());
+                assertTrue(testTmpDir.list().length == 2);
+                super.requestDestroyed(sre);
+                String[] files = testTmpDir.list();
+                assertTrue(files.length == 0);
+            }
+            
+        });
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _server.start();
+        
+        String multipart =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"field1\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+        "\r\n"+
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
+        
+        String request="GET /foo/x.html HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponses(request);
+        System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 
@@ -910,6 +975,45 @@ public class RequestTest
                 response.sendError(500);
 
 
+        }
+    }
+    
+    private class MultiPartRequestHandler extends AbstractHandler
+    {
+        File tmpDir;
+        
+        public MultiPartRequestHandler(File tmpDir)
+        {
+            this.tmpDir = tmpDir;
+        }
+        
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            ((Request)request).setHandled(true);
+            try
+            { 
+
+                MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(),-1, -1, 2);
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+               
+                Part foo = request.getPart("stuff");
+                assertNotNull(foo);
+                assertTrue(foo.getSize() > 0);
+               
+                response.setStatus(200);
+            }
+            catch (IllegalStateException e)
+            {
+                //expected exception because no multipart config is set up
+                assertTrue(e.getMessage().startsWith("No multipart config"));
+                response.setStatus(200);
+            }
+            catch (Exception e)
+            {
+                response.sendError(500);
+            }
         }
     }
 }

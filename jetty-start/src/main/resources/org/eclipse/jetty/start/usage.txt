@@ -24,7 +24,10 @@ Command Line Options:
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
                      
-  --stop           Stop the running Jetty instance.
+  --stop           Send a stop signal to the running Jetty instance.
+  
+  --stop-wait      Send a stop signal to the running Jetty instance, waiting for
+                   confirmation that it is stopping.
   
   --daemon         Start in daemon mode with stderr and stdout 
                    redirected to ${jetty.log}/start.log
@@ -92,6 +95,11 @@ Properties:
     STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
       Requried along with STOP.PORT if you want to use the --stop option above.
+
+    STOP.WAIT=[number]
+      The time (in seconds) to wait for confirmation that the running Jetty server
+      has stopped. If not specified, the stopper will wait indefinitely. Use in 
+      conjunction with the --stop-wait option.
       
     DEBUG=true
       Enable debug on the start mechanism and sets the

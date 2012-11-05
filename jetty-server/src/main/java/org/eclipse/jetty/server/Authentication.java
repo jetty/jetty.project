@@ -85,7 +85,7 @@ public interface Authentication
          * @param password
          * @return The new Authentication state
          */
-        Authentication login(String username,String password);
+        Authentication login(String username,Object password,ServletRequest request);
     }
 
     
