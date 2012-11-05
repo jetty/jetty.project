@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -38,6 +39,7 @@ public interface HttpContent
     Resource getResource();
     long getContentLength();
     InputStream getInputStream() throws IOException;
+    ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
 
     /* ------------------------------------------------------------ */
@@ -129,6 +131,13 @@ public interface HttpContent
         public InputStream getInputStream() throws IOException
         {
             return _resource.getInputStream();
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public ReadableByteChannel getReadableByteChannel() throws IOException
+        {
+            return _resource.getReadableByteChannel();
         }
 
         /* ------------------------------------------------------------ */

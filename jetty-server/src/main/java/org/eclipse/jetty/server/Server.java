@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,14 +45,11 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -428,7 +426,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
     {
-        final HttpChannelState async = connection.getRequest().getAsyncContinuation();
+        final HttpChannelState async = connection.getRequest().getHttpChannelState();
         final HttpChannelState.AsyncEventState state = async.getAsyncEventState();
 
         final Request baseRequest=connection.getRequest();
@@ -437,8 +435,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (path!=null)
         {
             // this is a dispatch with a path
-            final String contextPath=state.getServletContext().getContextPath();
-            HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
+            ServletContext context=state.getServletContext();
+            HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
@@ -568,21 +566,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         addBean(attribute);
         _attributes.setAttribute(name, attribute);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the
-     * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
-     * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
-     * will be accepted, but existing requests can complete.  The server will then wait the configured timeout
-     * before stopping.
-     * @param timeoutMS the milliseconds to wait for existing request to complete before stopping the server.
-     *
-     */
-    public void setGracefulShutdown(int timeoutMS)
-    {
-        // TODO
     }
 
     /* ------------------------------------------------------------ */

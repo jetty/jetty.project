@@ -42,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -70,7 +72,7 @@ public class ResponseTest
     {
         _server = new Server();
         _scheduler = new TimerScheduler();
-        HttpChannelConfig config = new HttpChannelConfig();
+        HttpConfiguration config = new HttpConfiguration();
         LocalConnector connector = new LocalConnector(_server,null,_scheduler,null,1,new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
@@ -78,15 +80,15 @@ public class ResponseTest
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel<ByteBuffer>(connector, new HttpChannelConfig(), endp, new HttpTransport()
+        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
             {
             }
-
+            
             @Override
-            public void send(ByteBuffer content, boolean lastContent) throws IOException
+            public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
             {
             }
 
@@ -94,6 +96,7 @@ public class ResponseTest
             public void completed()
             {
             }
+
         }, input);
     }
 

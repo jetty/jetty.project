@@ -73,10 +73,10 @@ public class RequestTest
         _server = new Server();
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(1024);
-        http.getHttpChannelConfig().setRequestHeaderSize(512);
-        http.getHttpChannelConfig().setResponseHeaderSize(512);
-        http.getHttpChannelConfig().setOutputBufferSize(2048);
-        http.getHttpChannelConfig().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().setRequestHeaderSize(512);
+        http.getHttpConfiguration().setResponseHeaderSize(512);
+        http.getHttpConfiguration().setOutputBufferSize(2048);
+        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         _connector = new LocalConnector(_server,http);
         _server.addConnector(_connector);
         _handler = new RequestHandler();

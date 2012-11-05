@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.eclipse.jetty.util.MultiMap;
@@ -47,7 +48,7 @@ public class ClientUpgradeResponse implements UpgradeResponse
     @Override
     public void addHeader(String name, String value)
     {
-        headers.add(name.toLowerCase(),value);
+        headers.add(name.toLowerCase(Locale.ENGLISH),value);
     }
 
     @Override
@@ -71,13 +72,13 @@ public class ClientUpgradeResponse implements UpgradeResponse
     @Override
     public String getHeaderValue(String name)
     {
-        return headers.getValue(name.toLowerCase(),0);
+        return headers.getValue(name.toLowerCase(Locale.ENGLISH),0);
     }
 
     @Override
     public Iterator<String> getHeaderValues(String name)
     {
-        List<String> values = headers.getValues(name.toLowerCase());
+        List<String> values = headers.getValues(name.toLowerCase(Locale.ENGLISH));
         if (values == null)
         {
             return Collections.emptyIterator();

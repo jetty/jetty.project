@@ -25,11 +25,15 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements WebSocketConnection
 {
     private final String id;
+    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private boolean open = false;
 
     public LocalWebSocketConnection()
     {
@@ -49,22 +53,25 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public void close()
     {
+        open = false;
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
+        open = false;
     }
 
     @Override
     public void disconnect()
     {
+        open = false;
     }
 
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return null;
+        return policy;
     }
 
     @Override
@@ -74,7 +81,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public State getState()
+    public ConnectionState getState()
     {
         return null;
     }
@@ -86,8 +93,22 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public boolean isInputClosed()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
     public boolean isOpen()
     {
+        return open;
+    }
+
+    @Override
+    public boolean isOutputClosed()
+    {
+        // TODO Auto-generated method stub
         return false;
     }
 
@@ -98,13 +119,23 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public void notifyClosing()
+    public void onCloseHandshake(boolean incoming, CloseInfo close)
     {
+        // TODO Auto-generated method stub
+    }
+
+    public void onOpen() {
+        open = true;
     }
 
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
+    }
+
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        this.policy = policy;
     }
 
     @Override

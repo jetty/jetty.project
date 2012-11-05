@@ -134,7 +134,7 @@ public class ResetStreamTest extends AbstractTest
         });
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
-        stream.data(new StringDataInfo("data",true),5,TimeUnit.SECONDS,new Callback.Empty<Void>()
+        stream.data(new StringDataInfo("data",true),5,TimeUnit.SECONDS,null,new Callback.Empty<Void>()
         {
             @Override
             public void completed(Void context)
@@ -182,9 +182,9 @@ public class ResetStreamTest extends AbstractTest
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         assertThat("syn is received by server", synLatch.await(5,TimeUnit.SECONDS),is(true));
-        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,null);
+        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,null,null);
         assertThat("stream is reset",rstLatch.await(5,TimeUnit.SECONDS),is(true));
-        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Callback.Empty<Void>()
+        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,null,new Callback.Empty<Void>()
         {
             @Override
             public void failed(Void context, Throwable x)

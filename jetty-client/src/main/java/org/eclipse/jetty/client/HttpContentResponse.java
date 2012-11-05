@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
@@ -40,60 +41,60 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
-        return response.conversation();
+        return response.getConversationID();
     }
 
     @Override
-    public Listener listener()
+    public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass)
     {
-        return response.listener();
+        return response.getListeners(listenerClass);
     }
 
     @Override
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
-        return response.version();
+        return response.getVersion();
     }
 
     @Override
-    public int status()
+    public int getStatus()
     {
-        return response.status();
+        return response.getStatus();
     }
 
     @Override
-    public String reason()
+    public String getReason()
     {
-        return response.reason();
+        return response.getReason();
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
-        return response.headers();
+        return response.getHeaders();
     }
 
     @Override
-    public void abort()
+    public boolean abort(String reason)
     {
-        response.abort();
+        return response.abort(reason);
     }
 
     @Override
-    public byte[] content()
+    public byte[] getContent()
     {
         return content;
     }
 
     @Override
-    public String contentAsString()
+    public String getContentAsString()
     {
         String encoding = this.encoding;
         try
         {
-            return new String(content(), encoding == null ? "UTF-8" : encoding);
+            return new String(getContent(), encoding == null ? "UTF-8" : encoding);
         }
         catch (UnsupportedEncodingException e)
         {
@@ -106,9 +107,9 @@ public class HttpContentResponse implements ContentResponse
     {
         return String.format("%s[%s %d %s - %d bytes]",
                 HttpContentResponse.class.getSimpleName(),
-                version(),
-                status(),
-                reason(),
-                content().length);
+                getVersion(),
+                getStatus(),
+                getReason(),
+                getContent().length);
     }
 }

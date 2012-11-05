@@ -38,7 +38,10 @@ import org.eclipse.jetty.spdy.client.FlowControlStrategyFactory;
 import org.eclipse.jetty.spdy.client.SPDYConnection;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
     // This method is placed here so as to provide a check for NPN before attempting to load any
@@ -75,6 +78,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         setInitialWindowSize(65536);
     }
 
+    @ManagedAttribute("SPDY version")
     public short getVersion()
     {
         return version;
@@ -118,6 +122,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         return listener;
     }
 
+    @ManagedAttribute("Initial Window Size")
     public int getInitialWindowSize()
     {
         return initialWindowSize;
@@ -155,7 +160,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         super.doStop();
     }
 
-    protected Collection<Session> getSessions()
+    public Collection<Session> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
     }

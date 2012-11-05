@@ -277,7 +277,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
         private void data(final Stream stream, final DataInfo dataInfo)
         {
-            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback<Void>()
+            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, null,new Callback<Void>()
             {
                 @Override
                 public void completed(Void context)
@@ -393,7 +393,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         private void flush(Stream serverStream, DataInfoHandler dataInfoHandler)
         {
             logger.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
-            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS, dataInfoHandler);
+            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS, null,dataInfoHandler);
         }
 
         private class DataInfoHandler implements Callback<Void>

@@ -20,17 +20,38 @@ package org.eclipse.jetty.websocket.core.ab;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.protocol.Parser;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestABCase4
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    @BeforeClass
+    public static void disableParserStacks()
+    {
+        enableStacks(Parser.class,false);
+    }
+
+    @AfterClass
+    public static void enableParserStacks()
+    {
+        enableStacks(Parser.class,true);
+    }
+
+    private static void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
+    }
+
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
     @Test
     public void testParserControlOpCode11Case4_2_1()

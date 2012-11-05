@@ -35,12 +35,13 @@ public class RequestNotifier
 
     public void notifyQueued(Request request)
     {
-        notifyQueued(request.listener(), request);
+        for (Request.QueuedListener listener : request.getRequestListeners(Request.QueuedListener.class))
+            notifyQueued(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyQueued(listener, request);
     }
 
-    private void notifyQueued(Request.Listener listener, Request request)
+    private void notifyQueued(Request.QueuedListener listener, Request request)
     {
         try
         {
@@ -55,12 +56,13 @@ public class RequestNotifier
 
     public void notifyBegin(Request request)
     {
-        notifyBegin(request.listener(), request);
+        for (Request.BeginListener listener : request.getRequestListeners(Request.BeginListener.class))
+            notifyBegin(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyBegin(listener, request);
     }
 
-    private void notifyBegin(Request.Listener listener, Request request)
+    private void notifyBegin(Request.BeginListener listener, Request request)
     {
         try
         {
@@ -75,12 +77,13 @@ public class RequestNotifier
 
     public void notifyHeaders(Request request)
     {
-        notifyHeaders(request.listener(), request);
+        for (Request.HeadersListener listener : request.getRequestListeners(Request.HeadersListener.class))
+            notifyHeaders(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifyHeaders(listener, request);
     }
 
-    private void notifyHeaders(Request.Listener listener, Request request)
+    private void notifyHeaders(Request.HeadersListener listener, Request request)
     {
         try
         {
@@ -95,12 +98,13 @@ public class RequestNotifier
 
     public void notifySuccess(Request request)
     {
-        notifySuccess(request.listener(), request);
+        for (Request.SuccessListener listener : request.getRequestListeners(Request.SuccessListener.class))
+            notifySuccess(listener, request);
         for (Request.Listener listener : client.getRequestListeners())
             notifySuccess(listener, request);
     }
 
-    private void notifySuccess(Request.Listener listener, Request request)
+    private void notifySuccess(Request.SuccessListener listener, Request request)
     {
         try
         {
@@ -115,12 +119,13 @@ public class RequestNotifier
 
     public void notifyFailure(Request request, Throwable failure)
     {
-        notifyFailure(request.listener(), request, failure);
+        for (Request.FailureListener listener : request.getRequestListeners(Request.FailureListener.class))
+            notifyFailure(listener, request, failure);
         for (Request.Listener listener : client.getRequestListeners())
             notifyFailure(listener, request, failure);
     }
 
-    private void notifyFailure(Request.Listener listener, Request request, Throwable failure)
+    private void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
     {
         try
         {

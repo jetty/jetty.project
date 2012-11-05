@@ -39,7 +39,7 @@ public class ByteBufferContentProvider implements ContentProvider
     }
 
     @Override
-    public long length()
+    public long getLength()
     {
         return length;
     }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.continuation;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
@@ -68,7 +67,7 @@ public class ContinuationTest extends ContinuationBase
     @Test
     public void testContinuation() throws Exception
     {
-        doNormal("HttpChannelState");
+        doNormal("Servlet3Continuation");
     }
 
     @Test

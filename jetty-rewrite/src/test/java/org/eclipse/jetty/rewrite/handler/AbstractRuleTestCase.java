@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -53,10 +53,10 @@ public abstract class AbstractRuleTestCase
     protected void start(final boolean isSecure) throws Exception
     {
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpChannelConfig().addCustomizer(new HttpChannelConfig.Customizer()
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
         {
             @Override
-            public void customize(Connector connector, HttpChannelConfig channelConfig, Request request)
+            public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
             {
                 request.setSecure(isSecure);
             }

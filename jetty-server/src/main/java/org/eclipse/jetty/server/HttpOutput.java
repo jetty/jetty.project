@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -46,6 +49,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class HttpOutput extends ServletOutputStream
 {
+    private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
     private boolean _closed;
     private long _written;
@@ -55,7 +59,7 @@ public class HttpOutput extends ServletOutputStream
     public HttpOutput(HttpChannel<?> channel)
     {
         _channel = channel;
-        _bufferSize = _channel.getHttpChannelConfig().getOutputBufferSize();
+        _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
     }
 
     public boolean isWritten()
@@ -80,14 +84,22 @@ public class HttpOutput extends ServletOutputStream
     }
 
     @Override
-    public void close() throws IOException
+    public void close() 
     {
         if (!_closed)
         {
-            if (BufferUtil.hasContent(_aggregate))
-                _channel.write(_aggregate, !_channel.getResponse().isIncluding());
-            else
-                _channel.write(BufferUtil.EMPTY_BUFFER, !_channel.getResponse().isIncluding());
+            try
+            {
+                if (BufferUtil.hasContent(_aggregate))
+                    _channel.write(_aggregate, !_channel.getResponse().isIncluding());
+                else
+                    _channel.write(BufferUtil.EMPTY_BUFFER, !_channel.getResponse().isIncluding());
+            }
+            catch(IOException e)
+            {
+                _channel.getEndPoint().shutdownOutput();
+                LOG.ignore(e);
+            }
         }
         _closed = true;
         if (_aggregate != null)
@@ -229,6 +241,8 @@ public class HttpOutput extends ServletOutputStream
             if (content == null)
                 content = httpContent.getIndirectBuffer();
             if (content == null)
+                content = httpContent.getReadableByteChannel();
+            if (content == null)
                 content = httpContent.getInputStream();
         }
         else if (content instanceof Resource)
@@ -243,12 +257,56 @@ public class HttpOutput extends ServletOutputStream
         {
             _channel.write((ByteBuffer)content, true); // TODO: we have written all content ?
         }
+        else if (content instanceof ReadableByteChannel)
+        {
+            ReadableByteChannel channel = (ReadableByteChannel)content;
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), true);
+            try
+            {
+                while(channel.isOpen())
+                {
+                    int pos = BufferUtil.flipToFill(buffer);
+                    int len=channel.read(buffer);
+                    if (len<0)
+                        break;
+                    BufferUtil.flipToFlush(buffer,pos);
+                    _channel.write(buffer,false);
+                }
+            }
+            finally
+            {
+                close();
+                _channel.getByteBufferPool().release(buffer);
+            }
+        }
         else if (content instanceof InputStream)
         {
-            throw new IllegalArgumentException("not implemented!");
+            InputStream in = (InputStream)content;
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+            byte[] array = buffer.array();
+            int offset=buffer.arrayOffset();
+            int size=array.length-offset;
+            try
+            {
+                while(true)
+                {
+                    int len=in.read(array,offset,size);
+                    if (len<0)
+                        break;
+                    buffer.position(0);
+                    buffer.limit(len);
+                    _channel.write(buffer,false);
+                }
+                _channel.write(BufferUtil.EMPTY_BUFFER,true);
+            }
+            finally
+            {
+                close();
+                _channel.getByteBufferPool().release(buffer);
+            }
         }
         else
-            throw new IllegalArgumentException("unknown content type?");
+            throw new IllegalArgumentException("unknown content type "+content.getClass());
     }
 
     public int getBufferSize()

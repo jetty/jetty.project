@@ -31,10 +31,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
-
 /* ------------------------------------------------------------ */
 /** Test Servlet RequestDispatcher.
  *
@@ -43,8 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("serial")
 public class DispatchServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(DispatchServlet.class);
-
     /* ------------------------------------------------------------ */
     String pageType;
 
@@ -165,7 +159,7 @@ public class DispatchServlet extends HttpServlet
                 }
                 catch(IOException e)
                 {
-                    LOG.ignore(e);
+                    // getServletContext().log("ignore",e);
                 }
             }
             else

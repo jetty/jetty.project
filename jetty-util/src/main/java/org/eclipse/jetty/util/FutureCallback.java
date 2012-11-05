@@ -23,97 +23,104 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.management.RuntimeErrorException;
 
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
-    private enum State {NOT_DONE,DOING,DONE};
-    private final AtomicReference<State> _state=new AtomicReference<>(State.NOT_DONE);
-    private CountDownLatch _done= new CountDownLatch(1);
+    private static Throwable COMPLETED=new Throwable();
+    private final AtomicBoolean _done=new AtomicBoolean(false);
+    private final CountDownLatch _latch=new CountDownLatch(1);
     private Throwable _cause;
     private C _context;
-    private boolean _completed;
     
     public FutureCallback()
     {}
 
     public FutureCallback(C ctx)
     {
-        _state.set(State.DONE);
+        _cause=COMPLETED;
         _context=ctx;
-        _completed=true;
-        _done.countDown();
+        _done.set(true);
+        _latch.countDown();
     }
 
     public FutureCallback(C ctx, Throwable failed)
     {
-        _state.set(State.DONE);
         _context=ctx;
         _cause=failed;
-        _done.countDown();
+        _done.set(true);
+        _latch.countDown();
     }
 
     @Override
     public void completed(C context)
     {
-        if (_state.compareAndSet(State.NOT_DONE,State.DOING))
+        if (_done.compareAndSet(false,true))
         {
             _context=context;
-            _completed=true;
-            if (_state.compareAndSet(State.DOING,State.DONE))
-            {
-                _done.countDown();
-                return;
-            }
+            _cause=COMPLETED;
+            _latch.countDown();
         }
-        else if (!isCancelled())
-            throw new IllegalStateException();
     }
 
     @Override
     public void failed(C context, Throwable cause)
     {
-        if (_state.compareAndSet(State.NOT_DONE,State.DOING))
+        if (_done.compareAndSet(false,true))
         {
             _context=context;
             _cause=cause;
-            if (_state.compareAndSet(State.DOING,State.DONE))
-            {
-                _done.countDown();
-                return;
-            }
+            _latch.countDown();
         }
-        else if (!isCancelled())
-            throw new IllegalStateException();
     }
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
-        failed(null,new CancellationException());
+        if (_done.compareAndSet(false,true))
+        {
+            _context=null;
+            _cause=new CancellationException();
+            _latch.countDown();
+            return true;
+        }
         return false;
     }
 
     @Override
     public boolean isCancelled()
     {
-        return State.DONE.equals(_state.get())&&_cause instanceof CancellationException;
+        if (_done.get())
+        {
+            try
+            {
+                _latch.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+            return _cause instanceof CancellationException;
+        }
+        return false;
     }
 
     @Override
     public boolean isDone()
     {
-        return State.DONE.equals(_state.get());
+        return _done.get() && _latch.getCount()==0;
     }
 
     @Override
     public C get() throws InterruptedException, ExecutionException
     {
-        _done.await();
-        if (_completed)
+        _latch.await();
+        if (_cause==COMPLETED)
             return _context;
         if (_cause instanceof CancellationException)
             throw (CancellationException) new CancellationException().initCause(_cause);
@@ -123,9 +130,10 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     @Override
     public C get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        if (!_done.await(timeout,unit))
+        if (!_latch.await(timeout,unit))
             throw new TimeoutException();
-        if (_completed)
+
+        if (_cause==COMPLETED)
             return _context;
         if (_cause instanceof TimeoutException)
             throw (TimeoutException)_cause;
@@ -146,11 +154,10 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
         throw new RuntimeException(cause);
     }
     
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return String.format("FutureCallback@%x{%s,%b,%s}",hashCode(),_state,_completed,_context);
+        return String.format("FutureCallback@%x{%b,%b,%s}",hashCode(),_done,_cause==COMPLETED,_context);
     }
     
 }

@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,18 +31,20 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -121,8 +125,7 @@ public class StatisticsHandlerTest
 
 
         barrier[1].await();
-        boolean passed = _latchHandler.await(1000);
-        assertTrue(passed);
+        assertTrue(_latchHandler.await());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -132,8 +135,8 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
-        assertEquals(0, _statsHandler.getSuspends());
-        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
@@ -157,8 +160,7 @@ public class StatisticsHandlerTest
 
 
         barrier[1].await();
-        passed = _latchHandler.await(1000);
-        assertTrue(passed);
+        assertTrue(_latchHandler.await());
 
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -168,8 +170,8 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
-        assertEquals(0, _statsHandler.getSuspends());
-        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(2, _statsHandler.getResponses2xx());
 
@@ -194,8 +196,7 @@ public class StatisticsHandlerTest
 
 
         barrier[1].await();
-        passed = _latchHandler.await(1000);
-        assertTrue(passed);
+        assertTrue(_latchHandler.await());
 
         assertEquals(4, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -205,8 +206,8 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getDispatchedActive());
         assertEquals(2, _statsHandler.getDispatchedActiveMax());
 
-        assertEquals(0, _statsHandler.getSuspends());
-        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(4, _statsHandler.getResponses2xx());
 
@@ -216,7 +217,7 @@ public class StatisticsHandlerTest
     @Test
     public void testSuspendResume() throws Exception
     {
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -228,14 +229,13 @@ public class StatisticsHandlerTest
                 try
                 {
                     barrier[0].await();
-                    Thread.sleep(10);
-                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                    if (continuationHandle.get() == null)
-                    {
-                        continuation.suspend();
-                        continuationHandle.set(continuation);
-                    }
 
+                    Thread.sleep(10);
+                    
+                    if (asyncHolder.get() == null)
+                    {
+                        asyncHolder.set(request.startAsync());
+                    }
                 }
                 catch (Exception x)
                 {
@@ -276,9 +276,10 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
-        assertTrue(_latchHandler.await(1000));
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
+
+        assertTrue(_latchHandler.await());
+        assertNotNull(asyncHolder.get());
+        assertTrue(asyncHolder.get()!=null);
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -290,24 +291,35 @@ public class StatisticsHandlerTest
         barrier[0].reset();
         barrier[1].reset();
 
-        continuationHandle.get().addContinuationListener(new ContinuationListener()
+        Thread.sleep(50);
+
+        asyncHolder.get().addListener(new AsyncListener()
         {
             @Override
-            public void onTimeout(Continuation continuation)
+            public void onTimeout(AsyncEvent event) throws IOException
             {
             }
-
+            
             @Override
-            public void onComplete(Continuation continuation)
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+            }
+            
+            @Override
+            public void onError(AsyncEvent event) throws IOException
+            {
+            }
+            
+            @Override
+            public void onComplete(AsyncEvent event) throws IOException
             {
                 try { barrier[2].await(); } catch(Exception e) {}
             }
         });
+        
+        asyncHolder.get().dispatch();
 
-        continuationHandle.get().resume();
-
-
-        barrier[0].await();
+        barrier[0].await(); // entered app handler
 
         assertEquals(1, _statistics.getConnectionsOpen());
 
@@ -316,9 +328,9 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
-        barrier[1].await();
-        assertTrue(_latchHandler.await(1000));
-        barrier[2].await();
+        barrier[1].await(); // exiting app handler
+        assertTrue(_latchHandler.await()); // exited stats handler
+        barrier[2].await(); // onComplete called
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -326,13 +338,13 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getDispatchedActive());
 
 
-        assertEquals(1, _statsHandler.getSuspends());
-        assertEquals(1, _statsHandler.getResumes());
+        assertEquals(1, _statsHandler.getAsyncRequests());
+        assertEquals(1, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
 
-        assertTrue(_statsHandler.getRequestTimeTotal()>=30);
+        assertThat(_statsHandler.getRequestTimeTotal(),greaterThanOrEqualTo(50L));
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMean(), 0.01);
 
@@ -345,7 +357,7 @@ public class StatisticsHandlerTest
     @Test
     public void testSuspendExpire() throws Exception
     {
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -358,14 +370,12 @@ public class StatisticsHandlerTest
                 {
                     barrier[0].await();
                     Thread.sleep(10);
-                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                    if (continuationHandle.get() == null)
+                    if (asyncHolder.get() == null)
                     {
-                        continuation.setTimeout(100);
-                        continuation.suspend();
-                        continuationHandle.set(continuation);
+                        AsyncContext async=request.startAsync();
+                        async.setTimeout(100);
+                        asyncHolder.set(async);
                     }
-
                 }
                 catch (Exception x)
                 {
@@ -406,51 +416,48 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
-        assertTrue(_latchHandler.await(1000));
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
-
-        continuationHandle.get().addContinuationListener(new ContinuationListener()
+        assertTrue(_latchHandler.await());
+        assertNotNull(asyncHolder.get());
+        asyncHolder.get().addListener(new AsyncListener()
         {
             @Override
-            public void onTimeout(Continuation continuation)
+            public void onTimeout(AsyncEvent event) throws IOException
             {
             }
-
+            
             @Override
-            public void onComplete(Continuation continuation)
+            public void onStartAsync(AsyncEvent event) throws IOException
             {
-                try { barrier[2].await(); } catch(Exception e) {}
+            }
+            
+            @Override
+            public void onError(AsyncEvent event) throws IOException
+            {
+            }
+            
+            @Override
+            public void onComplete(AsyncEvent event) throws IOException
+            {
+                try { barrier[2].await(); } catch(Exception e) {}                
             }
         });
+
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
 
-        _latchHandler.reset();
-        barrier[0].reset();
-        barrier[1].reset();
-
-        barrier[0].await();
-
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(2, _statsHandler.getDispatched());
-        assertEquals(1, _statsHandler.getDispatchedActive());
-
-        barrier[1].await();
-        assertTrue(_latchHandler.await(1000));
+        
         barrier[2].await();
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
 
-        assertEquals(1, _statsHandler.getSuspends());
-        assertEquals(1, _statsHandler.getResumes());
+        assertEquals(1, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(1, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
@@ -459,16 +466,14 @@ public class StatisticsHandlerTest
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMean(), 0.01);
 
-        assertTrue(_statsHandler.getDispatchedTimeTotal()>=20);
-        assertTrue(_statsHandler.getDispatchedTimeMean()+10<=_statsHandler.getDispatchedTimeTotal());
-        assertTrue(_statsHandler.getDispatchedTimeMax()+10<=_statsHandler.getDispatchedTimeTotal());
+        assertThat(_statsHandler.getDispatchedTimeTotal(),greaterThanOrEqualTo(10L));
 
     }
 
     @Test
     public void testSuspendComplete() throws Exception
     {
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
         final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -481,12 +486,35 @@ public class StatisticsHandlerTest
                 {
                     barrier[0].await();
                     Thread.sleep(10);
-                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                    if (continuationHandle.get() == null)
+                    if (asyncHolder.get() == null)
                     {
-                        continuation.setTimeout(1000);
-                        continuation.suspend();
-                        continuationHandle.set(continuation);
+                        AsyncContext async=request.startAsync();
+                        async.setTimeout(1000);
+                        asyncHolder.set(async);
+                        asyncHolder.get().addListener(new AsyncListener()
+                        {
+                            
+                            @Override
+                            public void onTimeout(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onStartAsync(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onError(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onComplete(AsyncEvent event) throws IOException
+                            {
+                                try { barrier[2].await(); } catch(Exception e) {}                
+                            }
+                        });
                     }
 
                 }
@@ -530,22 +558,8 @@ public class StatisticsHandlerTest
 
 
         barrier[1].await();
-        assertTrue(_latchHandler.await(1000));
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
-        continuationHandle.get().addContinuationListener(new ContinuationListener()
-        {
-            @Override
-            public void onTimeout(Continuation continuation)
-            {
-            }
-
-            @Override
-            public void onComplete(Continuation continuation)
-            {
-                try { barrier[2].await(); } catch(Exception e) {}
-            }
-        });
+        assertTrue(_latchHandler.await());
+        assertNotNull(asyncHolder.get());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -553,7 +567,7 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getDispatchedActive());
 
         Thread.sleep(10);
-        continuationHandle.get().complete();
+        asyncHolder.get().complete();
         barrier[2].await();
 
         assertEquals(1, _statsHandler.getRequests());
@@ -561,8 +575,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
 
-        assertEquals(1, _statsHandler.getSuspends());
-        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(1, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
         assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
@@ -610,9 +624,9 @@ public class StatisticsHandlerTest
             _latch=new CountDownLatch(count);
         }
 
-        private boolean await(long ms) throws InterruptedException
+        private boolean await() throws InterruptedException
         {
-            return _latch.await(ms, TimeUnit.MILLISECONDS);
+            return _latch.await(10000, TimeUnit.MILLISECONDS);
         }
     }
 }

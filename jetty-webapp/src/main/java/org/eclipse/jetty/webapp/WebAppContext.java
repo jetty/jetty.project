@@ -32,12 +32,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
-import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -66,7 +63,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */
 /** Web Application Context Handler.
@@ -115,10 +111,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
-        "org.apache.commons.logging.",      // TODO: review if special case still needed
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
-        "org.eclipse.jetty.plus.jaas.",     // webapp cannot change jaas classes
+        "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // WebSocket is a jetty extension
         "org.eclipse.jetty.servlet.DefaultServlet" // webapp cannot change default servlets
     } ;
@@ -131,8 +126,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         "-org.eclipse.jetty.continuation.", // don't hide continuation classes
         "-org.eclipse.jetty.jndi.",         // don't hide naming classes
-        "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas classes
+        "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.websocket.",    // WebSocket is a jetty extension
+        "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "org.eclipse.jetty."                // hide other jetty classes
@@ -149,7 +145,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
-    private boolean _copyWebInf=false; // TODO change to true?
+    private boolean _copyWebInf=false;
     private boolean _logUrlOnStart =false;
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
@@ -635,6 +631,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return Returns the permissions.
      */
+    @Override
     public PermissionCollection getPermissions()
     {
         return _permissions;
@@ -654,12 +651,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _serverClasses.getPatterns();
     }
 
-    public void addServerClass(String classname)
+    /* ------------------------------------------------------------ */
+    /** Add to the list of Server classes.
+     * @see #setServerClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the server classes and order is thus
+     * important when added system class patterns. This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void addServerClass(String classOrPackage)
     {
         if (_serverClasses == null)
             loadServerClasses();
 
-        _serverClasses.addPattern(classname);
+        _serverClasses.addPattern(classOrPackage);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Prepend to the list of Server classes.
+     * @see #setServerClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the server classes and order is thus
+     * important when added system class patterns. This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void prependServerClass(String classOrPackage)
+    {
+        if (_serverClasses == null)
+            loadServerClasses();
+
+        _serverClasses.prependPattern(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
@@ -677,15 +700,42 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public void addSystemClass(String classname)
+    /** Add to the list of System classes.
+     * @see #setSystemClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the system classes and order is thus
+     * important when added system class patterns.  This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void addSystemClass(String classOrPackage)
     {
         if (_systemClasses == null)
             loadSystemClasses();
 
-        _systemClasses.addPattern(classname);
+        _systemClasses.addPattern(classOrPackage);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** Prepend to the list of System classes.
+     * @see #setSystemClasses(String[])
+     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
+     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
+     * or package has '-' it is excluded from the system classes and order is thus
+     * important when added system class patterns.This argument may also be a comma 
+     * separated list of classOrPackage patterns.
+     */
+    public void prependSystemClass(String classOrPackage)
+    {
+        if (_systemClasses == null)
+            loadSystemClasses();
+
+        _systemClasses.prependPattern(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isServerClass(String name)
     {
         if (_serverClasses == null)
@@ -695,6 +745,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isSystemClass(String name)
     {
         if (_systemClasses == null)
@@ -821,6 +872,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
      * spec recommendation).
      */
+    @Override
     @ManagedAttribute(value="parent classloader given priority", readonly=true)
     public boolean isParentLoaderPriority()
     {
@@ -985,34 +1037,41 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _sessionHandler.clearEventListeners();
 
         super.setEventListeners(eventListeners);
-
-        for (int i=0; eventListeners!=null && i<eventListeners.length;i ++)
-        {
-            EventListener listener = eventListeners[i];
-
-            if ((listener instanceof HttpSessionActivationListener)
-                            || (listener instanceof HttpSessionAttributeListener)
-                            || (listener instanceof HttpSessionBindingListener)
-                            || (listener instanceof HttpSessionListener))
-            {
-                if (_sessionHandler!=null)
-                    _sessionHandler.addEventListener(listener);
-            }
-
-        }
     }
 
     /* ------------------------------------------------------------ */
     /** Add EventListener
-     * Conveniance method that calls {@link #setEventListeners(EventListener[])}
+     * Convenience method that calls {@link #setEventListeners(EventListener[])}
      * @param listener
      */
     @Override
     public void addEventListener(EventListener listener)
     {
-        setEventListeners(ArrayUtil.addToArray(getEventListeners(), listener, EventListener.class));
+        super.addEventListener(listener);
+        if ((listener instanceof HttpSessionActivationListener)
+            || (listener instanceof HttpSessionAttributeListener)
+            || (listener instanceof HttpSessionBindingListener)
+            || (listener instanceof HttpSessionListener))
+        {
+            if (_sessionHandler!=null)
+                _sessionHandler.addEventListener(listener);
+        }
     }
-
+    
+    @Override
+    public void removeEventListener(EventListener listener)
+    {
+        super.removeEventListener(listener);
+        if ((listener instanceof HttpSessionActivationListener)
+            || (listener instanceof HttpSessionAttributeListener)
+            || (listener instanceof HttpSessionBindingListener)
+            || (listener instanceof HttpSessionListener))
+        {
+            if (_sessionHandler!=null)
+                _sessionHandler.removeEventListener(listener);
+        }
+        
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1174,6 +1233,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * pointing to directories or jar files. Directories should end
      * with '/'.
      */
+    @Override
     @ManagedAttribute(value="extra classpath for context classloader", readonly=true)
     public String getExtraClasspath()
     {
@@ -1290,7 +1350,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         Collection<String> pathMappings = registration.getMappings();
         if (pathMappings != null)
         {
-            Constraint constraint = ConstraintSecurityHandler.createConstraint(registration.getName(), servletSecurityElement);
+            ConstraintSecurityHandler.createConstraint(registration.getName(), servletSecurityElement);
 
             for (String pathSpec:pathMappings)
             {

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -37,6 +38,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -54,9 +56,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
 /**
  *
  */
@@ -186,7 +185,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                throw new ServletException("handler exception");
+                throw new ServletException("TEST handler exception");
             }
         });
 
@@ -196,11 +195,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(HOST, _connector.getLocalPort());
         OutputStream os = client.getOutputStream();
 
-        os.write(request.toString().getBytes());
-        os.flush();
+        try
+        { 
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
+            os.write(request.toString().getBytes());
+            os.flush();
 
-        String response = readResponse(client);
-        assertThat("response code is 500", response.contains("500"), is(true));
+            String response = readResponse(client);
+            assertThat("response code is 500", response.contains("500"), is(true));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
     }
 
     @Test

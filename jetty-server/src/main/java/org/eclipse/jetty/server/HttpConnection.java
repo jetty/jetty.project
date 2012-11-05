@@ -21,8 +21,8 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -30,13 +30,15 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -49,7 +51,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
-    private final HttpChannelConfig _config;
+    private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
     private final HttpGenerator _generator;
@@ -57,6 +59,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
+    private BlockingCallback _readBlocker = new BlockingCallback();
+    private BlockingCallback _writeBlocker = new BlockingCallback();
     
     // TODO get rid of this
     private final Runnable _channelRunner = new Runnable()
@@ -87,12 +91,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         __currentConnection.set(connection);
     }
 
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
         return _config;
     }
 
-    public HttpConnection(HttpChannelConfig config, Connector connector, EndPoint endPoint)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
         // Tell AbstractConnector executeOnFillable==false because we are guaranteeing that onfillable
         // will never block nor take an excessive amount of CPU.  ie it is OK for the selector thread to
@@ -112,7 +116,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpParser newHttpParser()
     {
-        return new HttpParser(newRequestHandler(), getHttpChannelConfig().getRequestHeaderSize());
+        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
     }
 
     protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
@@ -317,8 +321,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
-        // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
-
         // If we are still expecting a 100 continues
         if (_channel.isExpecting100Continue())
             // then we can't be persistent
@@ -408,34 +410,35 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
     }
-
+    
     @Override
-    public void send(ByteBuffer content, boolean lastContent) throws IOException
+    public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
     {
-        send(null, content, lastContent);
+        try
+        {
+            send(info,content,lastContent);
+            callback.completed(context);
+        }
+        catch (IOException e)
+        {
+            callback.failed(context,e);
+        }
     }
 
     private void blockingWrite(ByteBuffer... bytes) throws IOException
     {
         try
         {
-            FutureCallback<Void> callback = new FutureCallback<>();
-            getEndPoint().write(null, callback, bytes);
-            callback.get();
+            getEndPoint().write(_writeBlocker.getPhase(), _writeBlocker, bytes);
+            _writeBlocker.block();
         }
         catch (InterruptedException x)
         {
             throw (IOException)new InterruptedIOException().initCause(x);
         }
-        catch (ExecutionException x)
+        catch (TimeoutException e)
         {
-            Throwable cause = x.getCause();
-            if (cause instanceof IOException)
-                throw (IOException)cause;
-            else if (cause instanceof Exception)
-                throw new IOException(cause);
-            else
-                throw (Error)cause;
+            throw new IOException(e);
         }
     }
 
@@ -549,10 +552,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
 
                         // Wait until we can read
-                        FutureCallback<Void> block=new FutureCallback<>();
-                        getEndPoint().fillInterested(null,block);
-                        LOG.debug("{} block readable on {}",this,block);
-                        block.get();
+                        getEndPoint().fillInterested(_readBlocker.getPhase(),_readBlocker);
+                        LOG.debug("{} block readable on {}",this,_readBlocker);
+                        _readBlocker.block();
 
                         // We will need a buffer to read into
                         if (_requestBuffer==null)
@@ -575,13 +577,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                 }
             }
+            catch (TimeoutException e)
+            {
+                throw new EofException(e);
+            }
             catch (final InterruptedException x)
             {
                 throw new InterruptedIOException(getEndPoint().toString()){{initCause(x);}};
-            }
-            catch (ExecutionException e)
-            {
-                FutureCallback.rethrow(e);
             }
         }
 
@@ -619,7 +621,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
-        public HttpChannelOverHttp(Connector connector, HttpChannelConfig config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+        public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
         }

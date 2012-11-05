@@ -20,8 +20,10 @@ package org.eclipse.jetty.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -97,27 +99,29 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_BasicAuthentication() throws Exception
     {
         startBasic(new EmptyServerHandler());
-        test_Authentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
     @Test
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyServerHandler());
-        test_Authentication(new DigestAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        test_Authentication(new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
     private void test_Authentication(Authentication authentication) throws Exception
     {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
-        final AtomicInteger requests = new AtomicInteger();
+        final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.get().countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
@@ -126,19 +130,19 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(401, response.status());
-        Assert.assertEquals(1, requests.get());
+        Assert.assertEquals(401, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
-        requests.set(0);
 
         authenticationStore.addAuthentication(authentication);
 
+        requests.set(new CountDownLatch(2));
         requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.get().countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
@@ -146,17 +150,17 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         // Request with authentication causes a 401 (no previous successful authentication) + 200
         response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(2, requests.get());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
-        requests.set(0);
 
+        requests.set(new CountDownLatch(1));
         requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.get().countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
@@ -166,10 +170,9 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         request.header(HttpHeader.AUTHORIZATION.asString(), null);
         response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(1, requests.get());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
-        requests.set(0);
     }
 
     @Test
@@ -188,15 +191,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
-        final AtomicInteger requests = new AtomicInteger();
+        final CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
@@ -207,8 +211,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 .send()
                 .get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(3, requests.get());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
     }
 
@@ -226,15 +230,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
-        final AtomicInteger requests = new AtomicInteger();
+        final CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
@@ -245,8 +250,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 .send()
                 .get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(3, requests.get());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
     }
 
@@ -255,46 +260,46 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         startBasic(new EmptyServerHandler());
 
-        final AtomicInteger requests = new AtomicInteger();
+        final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
         Request.Listener.Empty requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
             {
-                requests.incrementAndGet();
+                requests.get().countDown();
             }
         };
         client.getRequestListeners().add(requestListener);
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
-        BasicAuthentication authentication = new BasicAuthentication(scheme + "://localhost:" + connector.getLocalPort(), realm, "basic", "basic");
+        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(2, requests.get());
-        requests.set(0);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
 
         authenticationStore.removeAuthentication(authentication);
 
+        requests.set(new CountDownLatch(1));
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
-        Assert.assertEquals(1, requests.get());
-        requests.set(0);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
 
-        Authentication.Result result = authenticationStore.findAuthenticationResult(request.uri());
+        Authentication.Result result = authenticationStore.findAuthenticationResult(request.getURI());
         Assert.assertNotNull(result);
         authenticationStore.removeAuthenticationResult(result);
 
+        requests.set(new CountDownLatch(1));
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
-        Assert.assertEquals(401, response.status());
-        Assert.assertEquals(1, requests.get());
-        requests.set(0);
+        Assert.assertEquals(401, response.getStatus());
+        Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
     }
 }

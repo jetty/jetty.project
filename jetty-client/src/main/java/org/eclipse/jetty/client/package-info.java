@@ -36,7 +36,7 @@
  * <p />
  * When a request is sent, its exchange is associated to a connection, either taken from an idle queue or created
  * anew, and when both the request and response are completed, the exchange is disassociated from the connection.
- * Conversation may span multiple connections on different destinations, and therefore are maintained at the
+ * A conversation may span multiple connections on different destinations, and therefore are maintained at the
  * {@link HttpClient} level.
  * <p />
  * Applications may decide to send the request and wait for the response in a blocking way, using

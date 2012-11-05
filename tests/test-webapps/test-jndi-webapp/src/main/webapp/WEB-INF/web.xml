@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/j2ee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_5.xsd" 
+   metadata-complete="true"
+   version="2.5"> 
+
+  <display-name>Test JNDI WebApp</display-name>
+  
+  <servlet>
+    <servlet-name>JNDITest</servlet-name>
+    <servlet-class>com.acme.JNDITest</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>JNDITest</servlet-name>
+    <url-pattern>/test/*</url-pattern>
+  </servlet-mapping>
+
+  <env-entry>
+    <env-entry-name>wiggle</env-entry-name>
+    <env-entry-value>99.99</env-entry-value>
+    <env-entry-type>java.lang.Double</env-entry-type>
+    <injection-target>
+      <injection-target-class>com.acme.JNDITest</injection-target-class>
+      <injection-target-name>wiggle</injection-target-name>
+    </injection-target>
+  </env-entry>
+
+  <resource-ref>
+    <res-ref-name>mail/Session</res-ref-name>
+    <res-type>javax.mail.Session</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+
+  <resource-ref>
+    <res-ref-name>jdbc/mydatasource1</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+    <injection-target>
+      <injection-target-class>com.acme.JNDITest</injection-target-class>
+      <injection-target-name>myDatasource</injection-target-name>
+    </injection-target>
+  </resource-ref>
+
+
+  <post-construct>
+    <lifecycle-callback-class>com.acme.JNDITest</lifecycle-callback-class>
+    <lifecycle-callback-method>postConstruct</lifecycle-callback-method>
+  </post-construct>
+
+  <pre-destroy>
+    <lifecycle-callback-class>com.acme.JNDITest</lifecycle-callback-class>
+    <lifecycle-callback-method>preDestroy</lifecycle-callback-method>
+  </pre-destroy>
+
+</web-app>
+
+

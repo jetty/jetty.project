@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -105,12 +106,12 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpChannelConfig(), connector, endPoint)
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     protected HttpParser newHttpParser()
                     {
-                        return new HttpParser(newRequestHandler(), getHttpChannelConfig().getRequestHeaderSize())
+                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize())
                         {
                             @Override
                             public boolean parseNext(ByteBuffer buffer)
@@ -123,7 +124,7 @@ public class SslBytesServerTest extends SslBytesTest
                 }, connector, endPoint);
             }
         };
-        httpFactory.getHttpChannelConfig().addCustomizer(new SecureRequestCustomizer());
+        httpFactory.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer());
         SslConnectionFactory sslFactory = new SslConnectionFactory(sslContextFactory, httpFactory.getProtocol())
         {
             @Override

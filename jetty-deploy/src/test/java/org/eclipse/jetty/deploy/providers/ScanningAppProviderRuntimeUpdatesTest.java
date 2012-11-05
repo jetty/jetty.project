@@ -134,12 +134,13 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         jetty.assertWebAppContextsExists("/foo");
 
+        jetty.removeWebapp("foo.war");
         jetty.removeWebapp("foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
 
-        // FIXME: hot undeploy with removal not working! - jetty.assertNoWebAppContexts();
+        jetty.assertNoWebAppContexts();
     }
 
     /**

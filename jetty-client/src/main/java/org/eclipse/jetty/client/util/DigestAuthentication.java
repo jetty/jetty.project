@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,7 +97,7 @@ public class DigestAuthentication implements Authentication
                 clientQOP = "auth-int";
         }
 
-        return new DigestResult(request.uri(), response.content(), realm, user, password, algorithm, nonce, clientQOP, opaque);
+        return new DigestResult(request.getURI(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
     }
 
     private Map<String, String> parseParams(String wwwAuthenticate)
@@ -108,7 +109,7 @@ public class DigestAuthentication implements Authentication
             Matcher matcher = PARAM_PATTERN.matcher(part);
             if (matcher.matches())
             {
-                String name = matcher.group(1).trim().toLowerCase();
+                String name = matcher.group(1).trim().toLowerCase(Locale.ENGLISH);
                 String value = matcher.group(2).trim();
                 if (value.startsWith("\"") && value.endsWith("\""))
                     value = value.substring(1, value.length() - 1);
@@ -196,7 +197,7 @@ public class DigestAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (!request.uri().startsWith(uri))
+            if (!request.getURI().startsWith(uri))
                 return;
 
             MessageDigest digester = getMessageDigest(algorithm);
@@ -207,7 +208,7 @@ public class DigestAuthentication implements Authentication
             String A1 = user + ":" + realm + ":" + password;
             String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
 
-            String A2 = request.method().asString() + ":" + request.uri();
+            String A2 = request.getMethod().asString() + ":" + request.getURI();
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
             String hashA2 = toHexString(digester.digest(A2.getBytes(charset)));
@@ -236,7 +237,7 @@ public class DigestAuthentication implements Authentication
             if (opaque != null)
                 value.append(", opaque=\"").append(opaque).append("\"");
             value.append(", algorithm=\"").append(algorithm).append("\"");
-            value.append(", uri=\"").append(request.uri()).append("\"");
+            value.append(", uri=\"").append(request.getURI()).append("\"");
             if (qop != null)
             {
                 value.append(", qop=\"").append(qop).append("\"");
@@ -251,7 +252,7 @@ public class DigestAuthentication implements Authentication
         private String nextNonceCount()
         {
             String padding = "00000000";
-            String next = Integer.toHexString(nonceCount.incrementAndGet()).toLowerCase();
+            String next = Integer.toHexString(nonceCount.incrementAndGet()).toLowerCase(Locale.ENGLISH);
             return padding.substring(0, padding.length() - next.length()) + next;
         }
 
@@ -265,7 +266,7 @@ public class DigestAuthentication implements Authentication
 
         private String toHexString(byte[] bytes)
         {
-            return TypeUtil.toHexString(bytes).toLowerCase();
+            return TypeUtil.toHexString(bytes).toLowerCase(Locale.ENGLISH);
         }
     }
 }

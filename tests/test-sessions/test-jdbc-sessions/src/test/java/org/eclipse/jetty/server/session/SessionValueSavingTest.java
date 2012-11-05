@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
 /**
@@ -31,7 +30,7 @@ public class SessionValueSavingTest extends AbstractSessionValueSavingTest
         return new JdbcTestServer(port,max,scavenge);
     }
 
-	@Override
+	@Test
 	public void testSessionValueSaving() throws Exception 
 	{
 		super.testSessionValueSaving();

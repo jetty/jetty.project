@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -86,7 +89,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Asynchronously
  * HttpClient client = new HttpClient();
- * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
+ * client.newRequest("http://localhost:8080").send(new Response.Listener.Empty()
  * {
  *     &#64;Override
  *     public void onSuccess(Response response)
@@ -120,6 +123,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int responseBufferSize = 4096;
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
+    private volatile long connectTimeout = 15000;
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
@@ -168,6 +172,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
+        selectorManager.setConnectTimeout(getConnectTimeout());
         addBean(selectorManager);
 
         handlers.add(new ContinueProtocolHandler(this));
@@ -263,9 +268,21 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request newRequest(long id, String uri)
+    protected Request copyRequest(Request oldRequest, String newURI)
     {
-        return new HttpRequest(this, id, URI.create(uri));
+        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), URI.create(newURI));
+        newRequest.method(oldRequest.getMethod())
+                .version(oldRequest.getVersion())
+                .content(oldRequest.getContent());
+        for (HttpFields.Field header : oldRequest.getHeaders())
+        {
+            // We have a new URI, so skip the host header if present
+            if (HttpHeader.HOST == header.getHeader())
+                continue;
+
+            newRequest.header(header.getName(), header.getValue());
+        }
+        return newRequest;
     }
 
     private String address(String scheme, String host, int port)
@@ -278,7 +295,7 @@ public class HttpClient extends ContainerLifeCycle
         return provideDestination(scheme, host, port);
     }
 
-    private HttpDestination provideDestination(String scheme, String host, int port)
+    protected HttpDestination provideDestination(String scheme, String host, int port)
     {
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
@@ -305,17 +322,22 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(Request request, Response.Listener listener)
+    protected void send(final Request request, List<Response.ResponseListener> listeners)
     {
-        String scheme = request.scheme().toLowerCase();
+        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        int port = request.port();
+        int port = request.getPort();
         if (port < 0)
             port = "https".equals(scheme) ? 443 : 80;
 
-        provideDestination(scheme, request.host(), port).send(request, listener);
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Schedulable)
+                ((Schedulable)listener).schedule(scheduler);
+
+        HttpDestination destination = provideDestination(scheme, request.getHost(), port);
+        destination.send(request, listeners);
     }
 
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
@@ -329,7 +351,7 @@ public class HttpClient extends ContainerLifeCycle
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(destination.host(), destination.port()));
+            channel.connect(new InetSocketAddress(destination.getHost(), destination.getPort()));
 
             Future<Connection> result = new ConnectionCallback(destination, callback);
             selectorManager.connect(channel, result);
@@ -359,10 +381,10 @@ public class HttpClient extends ContainerLifeCycle
         }
     }
 
-    protected HttpConversation getConversation(long id)
+    protected HttpConversation getConversation(long id, boolean create)
     {
         HttpConversation conversation = conversations.get(id);
-        if (conversation == null)
+        if (conversation == null && create)
         {
             conversation = new HttpConversation(this, id);
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
@@ -389,7 +411,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         for (ProtocolHandler handler : getProtocolHandlers())
         {
-            if (handler.accept(request,  response))
+            if (handler.accept(request, response))
                 return handler;
         }
         return null;
@@ -403,6 +425,16 @@ public class HttpClient extends ContainerLifeCycle
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+    }
+
+    public long getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(long connectTimeout)
+    {
+        this.connectTimeout = connectTimeout;
     }
 
     public long getIdleTimeout()
@@ -596,11 +628,11 @@ public class HttpClient extends ContainerLifeCycle
             HttpDestination destination = callback.destination;
 
             SslContextFactory sslContextFactory = getSslContextFactory();
-            if ("https".equals(destination.scheme()))
+            if ("https".equals(destination.getScheme()))
             {
                 if (sslContextFactory == null)
                 {
-                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.scheme() + " requests");
+                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
                     callback.failed(null, failure);
                     throw failure;
                 }

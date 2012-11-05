@@ -39,7 +39,7 @@ public class BytesContentProvider implements ContentProvider
     }
 
     @Override
-    public long length()
+    public long getLength()
     {
         return length;
     }

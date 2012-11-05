@@ -89,8 +89,6 @@ public class ServletContextHandler extends ContextHandler
     protected ServletHandler _servletHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
-    protected List<ServletContextListener> _restrictedContextListeners = new ArrayList<>();
-    private boolean _restrictListeners = true;
 
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -414,29 +412,12 @@ public class ServletContextHandler extends ContextHandler
     }
 
     @Override
-    public void restrictEventListener (EventListener e)
-    {
-        if (_restrictListeners && e instanceof ServletContextListener)
-        {
-            _restrictedContextListeners.add((ServletContextListener)e);
-        }
-    }
-
-    public boolean isRestrictListeners() {
-        return _restrictListeners;
-    }
-
-    public void setRestrictListeners(boolean restrictListeners) {
-        this._restrictListeners = restrictListeners;
-    }
-
-    @Override
     public void callContextInitialized(ServletContextListener l, ServletContextEvent e)
     {
         try
         {
             //toggle state of the dynamic API so that the listener cannot use it
-            if(_restrictedContextListeners.contains(l))
+            if(isProgrammaticListener(l))
                 this.getServletContext().setEnabled(false);
 
             super.callContextInitialized(l, e);
@@ -1066,7 +1047,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public boolean setInitParameter(String name, String value)
         {
-            // TODO other started conditions
             if (!isStarting())
                 throw new IllegalStateException();
 
@@ -1197,7 +1177,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public SessionCookieConfig getSessionCookieConfig()
         {
-            // TODO other started conditions
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -1209,7 +1188,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
         {
-            // TODO other started conditions
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
@@ -1223,7 +1201,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public void addListener(String className)
         {
-            // TODO other started conditions
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
@@ -1234,7 +1211,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public <T extends EventListener> void addListener(T t)
         {
-            // TODO other started conditions
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
@@ -1245,7 +1221,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public void addListener(Class<? extends EventListener> listenerClass)
         {
-            // TODO other started conditions
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)

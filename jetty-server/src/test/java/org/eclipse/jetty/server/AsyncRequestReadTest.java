@@ -29,12 +29,11 @@ import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -68,7 +67,6 @@ public class AsyncRequestReadTest
     }
 
     @Test
-    @Ignore
     public void test() throws Exception
     {
         final Socket socket =  new Socket("localhost",connector.getLocalPort());
@@ -159,12 +157,14 @@ public class AsyncRequestReadTest
 
     private static class EmptyHandler extends AbstractHandler
     {
+        @Override
         public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            final Continuation continuation = ContinuationSupport.getContinuation(request);
             httpResponse.setStatus(500);
             request.setHandled(true);
 
+            final AsyncContext async = request.startAsync();
+            
             new Thread()
             {
                 @Override
@@ -187,7 +187,7 @@ public class AsyncRequestReadTest
                     finally
                     {
                         httpResponse.setStatus(200);
-                        continuation.complete();
+                        async.complete();
                         try
                         {
                             __total.exchange(total);
@@ -199,8 +199,6 @@ public class AsyncRequestReadTest
                     }
                 }
             }.start();
-
-            continuation.suspend();
         }
     }
 }

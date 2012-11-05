@@ -304,4 +304,14 @@ public interface SessionManager extends LifeCycle
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
     public void setCheckingRemoteSessionIdEncoding(boolean remote);
+    
+    /* ------------------------------------------------------------ */
+    /** Change the existing session id.
+    * 
+    * @param oldClusterId
+    * @param oldNodeId
+    * @param newClusterId
+    * @param newNodeId
+    */
+    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
 }

@@ -49,7 +49,7 @@ public abstract class Rule
      * @param response
      * 
      * @return The new target if the rule has matched, else null
-     * @throws IOException TODO
+     * @throws IOException
      */
     public abstract String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;   
     

@@ -27,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.channels.ReadableByteChannel;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -407,6 +408,13 @@ public abstract class Resource implements ResourceFactory
      * Returns an input stream to the resource
      */
     public abstract InputStream getInputStream()
+        throws java.io.IOException;
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Returns an readable bytechannel to the resource or null if one is not available.
+     */
+    public abstract ReadableByteChannel getReadableByteChannel()
         throws java.io.IOException;
 
     /* ------------------------------------------------------------ */

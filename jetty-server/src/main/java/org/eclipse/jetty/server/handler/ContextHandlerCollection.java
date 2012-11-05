@@ -187,7 +187,7 @@ public class ContextHandlerCollection extends HandlerCollection
         if (handlers==null || handlers.length==0)
 	    return;
 
-	HttpChannelState async = baseRequest.getAsyncContinuation();
+	HttpChannelState async = baseRequest.getHttpChannelState();
 	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();

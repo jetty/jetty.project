@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -248,7 +247,7 @@ public class AsyncStressTest
                                     System.err.println("\n"+e.toString());
                                     System.err.println(baseRequest+"=="+br);
                                     System.err.println(uri+"=="+br.getUri());
-                                    System.err.println(asyncContext+"=="+br.getAsyncContinuation());
+                                    System.err.println(asyncContext+"=="+br.getHttpChannelState());
 
                                     LOG.warn(e);
                                     System.exit(1);

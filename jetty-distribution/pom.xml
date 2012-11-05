@@ -366,24 +366,25 @@
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jaas</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
 
-    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -439,6 +440,7 @@
               <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
             </configuration>
           </execution>
+	  <!--
           <execution>
             <id>copy-spdy</id>
             <phase>process-resources</phase>
@@ -460,6 +462,7 @@
               </artifactItems>
             </configuration>
           </execution>
+	  -->
           <execution>
             <id>unpack-spdy</id>
             <phase>process-resources</phase>

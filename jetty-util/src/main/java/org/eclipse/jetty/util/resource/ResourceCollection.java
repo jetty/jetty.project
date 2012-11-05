@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -325,6 +326,22 @@ public class ResourceCollection extends Resource
             InputStream is = r.getInputStream();
             if(is!=null)
                 return is;
+        }
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override 
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        if(_resources==null)
+            throw new IllegalStateException("*resources* not set.");
+        
+        for(Resource r : _resources)
+        {
+            ReadableByteChannel channel = r.getReadableByteChannel();
+            if(channel!=null)
+                return channel;
         }
         return null;
     }

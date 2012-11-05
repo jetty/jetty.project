@@ -33,9 +33,11 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
 import javax.servlet.DispatcherType;
@@ -67,11 +69,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -127,9 +127,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private final AttributesMap _attributes;
     private final AttributesMap _contextAttributes;
-
     private final Map<String, String> _initParams;
-
     private ClassLoader _classLoader;
     private String _contextPath = "/";
 
@@ -138,30 +136,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
-
     private String[] _welcomeFiles;
-
     private ErrorHandler _errorHandler;
-
     private String[] _vhosts;
 
-    private EventListener[] _eventListeners;
     private Logger _logger;
-
     private boolean _allowNullPathInfo;
-
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
-
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
-
     private boolean _compactPath = false;
-
     private boolean _aliases = false;
 
-    private Object _contextListeners;
-    private Object _contextAttributeListeners;
-    private Object _requestListeners;
-    private Object _requestAttributeListeners;
+    private final List<EventListener> _eventListeners=new CopyOnWriteArrayList<>();
+    private final List<EventListener> _programmaticListeners=new CopyOnWriteArrayList<>();
+    private final List<ServletContextListener> _contextListeners=new CopyOnWriteArrayList<>();
+    private final List<ServletContextAttributeListener> _contextAttributeListeners=new CopyOnWriteArrayList<>();
+    private final List<ServletRequestListener> _requestListeners=new CopyOnWriteArrayList<>();
+    private final List<ServletRequestAttributeListener> _requestAttributeListeners=new CopyOnWriteArrayList<>();
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
 
@@ -396,9 +387,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see javax.servlet.ServletContext#getAttributeNames()
      */
-    @SuppressWarnings("unchecked")
     @Override
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -518,7 +508,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public EventListener[] getEventListeners()
     {
-        return _eventListeners;
+        return _eventListeners.toArray(new EventListener[_eventListeners.size()]);
     }
 
     /* ------------------------------------------------------------ */
@@ -534,29 +524,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setEventListeners(EventListener[] eventListeners)
     {
-        _contextListeners = null;
-        _contextAttributeListeners = null;
-        _requestListeners = null;
-        _requestAttributeListeners = null;
+        _contextListeners.clear();
+        _contextAttributeListeners.clear();
+        _requestListeners.clear();
+        _requestAttributeListeners.clear();
 
-        _eventListeners = eventListeners;
-
-        for (int i = 0; eventListeners != null && i < eventListeners.length; i++)
-        {
-            EventListener listener = _eventListeners[i];
-
-            if (listener instanceof ServletContextListener)
-                _contextListeners = LazyList.add(_contextListeners,listener);
-
-            if (listener instanceof ServletContextAttributeListener)
-                _contextAttributeListeners = LazyList.add(_contextAttributeListeners,listener);
-
-            if (listener instanceof ServletRequestListener)
-                _requestListeners = LazyList.add(_requestListeners,listener);
-
-            if (listener instanceof ServletRequestAttributeListener)
-                _requestAttributeListeners = LazyList.add(_requestAttributeListeners,listener);
-        }
+        if (eventListeners!=null)
+            for (EventListener listener : _eventListeners)
+                addEventListener(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -570,22 +545,64 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])ArrayUtil.addToArray(getEventListeners(),listener,EventListener.class));
+        _eventListeners.add(listener);
+        
+        if (listener instanceof ServletContextListener)
+            _contextListeners.add((ServletContextListener)listener);
+
+        if (listener instanceof ServletContextAttributeListener)
+            _contextAttributeListeners.add((ServletContextAttributeListener)listener);
+
+        if (listener instanceof ServletRequestListener)
+            _requestListeners.add((ServletRequestListener)listener);
+
+        if (listener instanceof ServletRequestAttributeListener)
+            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Remove a context event listeners.
+     *
+     * @see ServletContextListener
+     * @see ServletContextAttributeListener
+     * @see ServletRequestListener
+     * @see ServletRequestAttributeListener
+     */
+    public void removeEventListener(EventListener listener)
+    {
+        _eventListeners.remove(listener);
+        
+        if (listener instanceof ServletContextListener)
+            _contextListeners.remove(listener);
+
+        if (listener instanceof ServletContextAttributeListener)
+            _contextAttributeListeners.remove(listener);
+
+        if (listener instanceof ServletRequestListener)
+            _requestListeners.remove(listener);
+
+        if (listener instanceof ServletRequestAttributeListener)
+            _requestAttributeListeners.remove(listener);
     }
 
-
+    /* ------------------------------------------------------------ */
     /**
-     * Apply any necessary restrictions on a programmatically added
-     * listener.
-     *
-     * Superclasses should implement.
+     * Apply any necessary restrictions on a programmatic added listener.
      *
      * @param listener
      */
-    public void restrictEventListener (EventListener listener)
+    protected void addProgrammaticListener (EventListener listener)
     {
+        _programmaticListeners.add(listener);
     }
-
+    
+    /* ------------------------------------------------------------ */
+    protected boolean isProgrammaticListener(EventListener listener)
+    {
+        return _programmaticListeners.contains(listener);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return true if this context is accepting new requests
@@ -696,11 +713,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             __context.set(old_context);
 
             // reset the classloader
-            if (_classLoader != null)
-            {
+            if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);
-            }
-
         }
     }
 
@@ -721,10 +735,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             for (String attribute : attributes)
                 _managedAttributes.put(attribute,null);
 
-            Enumeration e = _scontext.getAttributeNames();
+            Enumeration<String> e = _scontext.getAttributeNames();
             while (e.hasMoreElements())
             {
-                String name = (String)e.nextElement();
+                String name = e.nextElement();
                 Object value = _scontext.getAttribute(name);
                 checkManagedAttribute(name,value);
             }
@@ -733,25 +747,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStart();
 
         // Context listeners
-        if (_contextListeners != null)
+        if (!_contextListeners.isEmpty())
         {
             ServletContextEvent event = new ServletContextEvent(_scontext);
-            for (int i = 0; i < LazyList.size(_contextListeners); i++)
-            {
-                callContextInitialized(((ServletContextListener)LazyList.get(_contextListeners, i)), event);
-            }
+            for (ServletContextListener listener:_contextListeners)
+                callContextInitialized(listener, event);
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
+    protected void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
+        LOG.debug("contextInitialized: {}->{}",e,l);
         l.contextInitialized(e);
     }
 
     /* ------------------------------------------------------------ */
-    public void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
+    protected void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
     {
+        LOG.debug("contextDestroyed: {}->{}",e,l);
         l.contextDestroyed(e);
     }
 
@@ -782,31 +796,33 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             super.doStop();
 
             // Context listeners
-            if (_contextListeners != null)
+            if (!_contextListeners.isEmpty())
             {
                 ServletContextEvent event = new ServletContextEvent(_scontext);
-                for (int i = LazyList.size(_contextListeners); i-- > 0;)
-                {
-                    ((ServletContextListener)LazyList.get(_contextListeners,i)).contextDestroyed(event);
-                }
+                for (ServletContextListener listener : _contextListeners)
+                    callContextDestroyed(listener,event);
             }
 
             if (_errorHandler != null)
                 _errorHandler.stop();
 
-            Enumeration e = _scontext.getAttributeNames();
+            Enumeration<String> e = _scontext.getAttributeNames();
             while (e.hasMoreElements())
             {
-                String name = (String)e.nextElement();
+                String name = e.nextElement();
                 checkManagedAttribute(name,null);
             }
+            
+            for (EventListener l : _programmaticListeners)
+                removeEventListener(l);
+            _programmaticListeners.clear();
         }
         finally
         {
             LOG.info("stopped {}",this);
             __context.set(old_context);
             // reset the classloader
-            if (_classLoader != null)
+            if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);
         }
 
@@ -817,7 +833,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException, ServletException
+    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
     {
         DispatcherType dispatch = baseRequest.getDispatcherType();
 
@@ -840,7 +856,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             boolean match = false;
 
-            // TODO non-linear lookup
             for (int i = 0; !match && i < _vhosts.length; i++)
             {
                 String contextVhost = _vhosts[i];
@@ -982,7 +997,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (old_context != _scontext)
             {
                 // reset the classloader
-                if (_classLoader != null)
+                if (_classLoader != null && current_thread!=null)
                 {
                     current_thread.setContextClassLoader(old_classloader);
                 }
@@ -1012,20 +1027,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (new_context)
             {
                 // Handle the REALLY SILLY request events!
-                if (_requestAttributeListeners != null)
-                {
-                    // TODO COW lists ???
-                    final int s = LazyList.size(_requestAttributeListeners);
-                    for (int i = 0; i < s; i++)
-                        baseRequest.addEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
-                }
+                if (!_requestAttributeListeners.isEmpty())
+                    for (ServletRequestAttributeListener l :_requestAttributeListeners)
+                        baseRequest.addEventListener(l);
 
-                if (_requestListeners != null)
+                if (!_requestListeners.isEmpty())
                 {
-                    final int s = LazyList.size(_requestListeners);
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
-                    for (int i = 0; i < s; i++)
-                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestInitialized(sre);
+                    for (ServletRequestListener l : _requestListeners)
+                        l.requestInitialized(sre);
                 }
             }
 
@@ -1051,17 +1061,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // Handle more REALLY SILLY request events!
             if (new_context)
             {
-                if (_requestListeners != null)
+                if (!_requestListeners.isEmpty())
                 {
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
-                    for (int i = LazyList.size(_requestListeners); i-- > 0;)
-                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestDestroyed(sre);
+                    ListIterator<ServletRequestListener> iter = _requestListeners.listIterator(_requestListeners.size());
+                    while (iter.hasNext())
+                        iter.next();
+                    while (iter.hasPrevious())
+                        iter.previous().requestDestroyed(sre);
                 }
 
-                if (_requestAttributeListeners != null)
+                if (!_requestAttributeListeners.isEmpty())
                 {
-                    for (int i = LazyList.size(_requestAttributeListeners); i-- > 0;)
-                        baseRequest.removeEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
+                    ListIterator<ServletRequestAttributeListener> iter = _requestAttributeListeners.listIterator(_requestAttributeListeners.size());
+                    while(iter.hasNext())
+                        iter.next();
+                    while(iter.hasPrevious())
+                        baseRequest.removeEventListener(iter.previous());
                 }
             }
         }
@@ -1094,7 +1110,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         finally
         {
             __context.set(old_context);
-            if (old_classloader != null)
+            if (old_classloader != null && current_thread!=null)
             {
                 current_thread.setContextClassLoader(old_classloader);
             }
@@ -1182,10 +1198,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         _attributes.clearAttributes();
         _attributes.addAll(attributes);
-        Enumeration e = _attributes.getAttributeNames();
+        Enumeration<String> e = _attributes.getAttributeNames();
         while (e.hasMoreElements())
         {
-            String name = (String)e.nextElement();
+            String name = e.nextElement();
             checkManagedAttribute(name,attributes.getAttribute(name));
         }
     }
@@ -1194,10 +1210,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void clearAttributes()
     {
-        Enumeration e = _attributes.getAttributeNames();
+        Enumeration<String> e = _attributes.getAttributeNames();
         while (e.hasMoreElements())
         {
-            String name = (String)e.nextElement();
+            String name = e.nextElement();
             checkManagedAttribute(name,null);
         }
         _attributes.clearAttributes();
@@ -1651,7 +1667,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /* ------------------------------------------------------------ */
         public ContextHandler getContextHandler()
         {
-            // TODO reduce visibility of this method
             return ContextHandler.this;
         }
 
@@ -1890,7 +1905,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          * @see javax.servlet.ServletContext#getResourcePaths(java.lang.String)
          */
         @Override
-        public Set getResourcePaths(String path)
+        public Set<String> getResourcePaths(String path)
         {
             return ContextHandler.this.getResourcePaths(path);
         }
@@ -1923,7 +1938,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @SuppressWarnings("unchecked")
         @Override
         @Deprecated
-        public Enumeration getServletNames()
+        public Enumeration<String> getServletNames()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
@@ -1935,7 +1950,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @SuppressWarnings("unchecked")
         @Override
         @Deprecated
-        public Enumeration getServlets()
+        public Enumeration<Servlet> getServlets()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
@@ -1986,7 +2001,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          */
         @SuppressWarnings("unchecked")
         @Override
-        public Enumeration getInitParameterNames()
+        public Enumeration<String> getInitParameterNames()
         {
             return ContextHandler.this.getInitParameterNames();
         }
@@ -2008,9 +2023,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /*
          * @see javax.servlet.ServletContext#getAttributeNames()
          */
-        @SuppressWarnings("unchecked")
         @Override
-        public synchronized Enumeration getAttributeNames()
+        public synchronized Enumeration<String> getAttributeNames()
         {
             HashSet<String> set = new HashSet<String>();
             if (_contextAttributes != null)
@@ -2041,14 +2055,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             else
                 _contextAttributes.setAttribute(name,value);
 
-            if (_contextAttributeListeners != null)
+            if (!_contextAttributeListeners.isEmpty())
             {
                 ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext,name,old_value == null?value:old_value);
 
-                for (int i = 0; i < LazyList.size(_contextAttributeListeners); i++)
+                for (ServletContextAttributeListener l : _contextAttributeListeners)
                 {
-                    ServletContextAttributeListener l = (ServletContextAttributeListener)LazyList.get(_contextAttributeListeners,i);
-
                     if (old_value == null)
                         l.attributeAdded(event);
                     else if (value == null)
@@ -2077,15 +2089,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             Object old_value = _contextAttributes.getAttribute(name);
             _contextAttributes.removeAttribute(name);
-            if (old_value != null)
+            if (old_value != null &&!_contextAttributeListeners.isEmpty())
             {
-                if (_contextAttributeListeners != null)
-                {
-                    ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext,name,old_value);
+                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext,name,old_value);
 
-                    for (int i = 0; i < LazyList.size(_contextAttributeListeners); i++)
-                        ((ServletContextAttributeListener)LazyList.get(_contextAttributeListeners,i)).attributeRemoved(event);
-                }
+                for (ServletContextAttributeListener l : _contextAttributeListeners)
+                    l.attributeRemoved(event);
             }
         }
 
@@ -2278,7 +2287,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 EventListener e = createListener(listenerClass);
                 ContextHandler.this.addEventListener(e);
-                ContextHandler.this.restrictEventListener(e);
+                ContextHandler.this.addProgrammaticListener(e);
             }
             catch (ServletException e)
             {
@@ -2351,9 +2360,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 throw new IllegalStateException ();
             if (!_enabled)
                 throw new UnsupportedOperationException();
-
-            // TODO Auto-generated method stub
-
         }
 
         public void setEnabled(boolean enabled)

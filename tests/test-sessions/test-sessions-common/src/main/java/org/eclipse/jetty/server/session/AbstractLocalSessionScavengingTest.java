@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
-import java.util.Random;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -27,14 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractLocalSessionScavengingTest
@@ -75,7 +75,6 @@ public abstract class AbstractLocalSessionScavengingTest
             try
             {
                 HttpClient client = new HttpClient();
-                client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                 client.start();
                 try
                 {
@@ -84,50 +83,43 @@ public abstract class AbstractLocalSessionScavengingTest
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
                     // Create the session on node1
-                    ContentExchange exchange1 = new ContentExchange(true);
-                    exchange1.setMethod(HttpMethods.GET);
-                    exchange1.setURL(urls[0] + "?action=init");
-                    client.send(exchange1);
-                    exchange1.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
-                    String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                    Future<ContentResponse> future = client.GET(urls[0] + "?action=init");
+                    ContentResponse response1 = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                    // Be sure the session is also present in node2
-                    ContentExchange exchange2 = new ContentExchange(true);
-                    exchange2.setMethod(HttpMethods.GET);
-                    exchange2.setURL(urls[1] + "?action=test");
-                    exchange2.getRequestFields().add("Cookie", sessionCookie);
-                    client.send(exchange2);
-                    exchange2.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
+                    // Be sure the session is also present in node2                    
+                    org.eclipse.jetty.client.api.Request request = client.newRequest(urls[1] + "?action=test");
+                    request.header("Cookie", sessionCookie);
+                    future = request.send();
+                    ContentResponse response2 = future.get();            
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                     
                     
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);
                     
                     // Check that node1 does not have any local session cached
-                    exchange1 = new ContentExchange(true);
-                    exchange1.setMethod(HttpMethods.GET);
-                    exchange1.setURL(urls[0] + "?action=check");
-                    client.send(exchange1);
-                    exchange1.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
+                    request = client.newRequest(urls[0] + "?action=check");
+                    request.header("Cookie", sessionCookie);
+                    future = request.send();
+                    response1 = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
 
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
                     // This ensures that the scavenger on node2 runs at least once.
                     pause(scavengePeriod);
 
-                    // Check that node2 does not have any local session cached   
-                    exchange2 = new ContentExchange(true);
-                    exchange2.setMethod(HttpMethods.GET);
-                    exchange2.setURL(urls[1] + "?action=check");
-                    client.send(exchange2);
-                    exchange2.waitForDone();
-                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
+                    // Check that node2 does not have any local session cached
+                    request = client.newRequest(urls[1] + "?action=check");
+                    request.header("Cookie", sessionCookie);
+                    future = request.send();
+                    response2 = future.get();
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally
                 {

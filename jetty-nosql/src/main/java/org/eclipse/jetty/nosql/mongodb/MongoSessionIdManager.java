@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -69,6 +70,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     final static DBObject __valid_false = new BasicDBObject(MongoSessionManager.__VALID,false);
     final static DBObject __valid_true = new BasicDBObject(MongoSessionManager.__VALID,true);
 
+    final static long __defaultScavengeDelay =  10 * 6 * 1000; // wait at least 10 minutes
+    final static long __defaultScavengePeriod = 30 * 60 * 1000; // every 30 minutes
+   
     
     final DBCollection _sessions;
     protected Server _server;
@@ -79,8 +83,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     
     
-    private long _scavengeDelay = 30 * 60 * 1000; // every 30 minutes
-    private long _scavengePeriod = 10 * 6 * 1000; // wait at least 10 minutes
+    private long _scavengeDelay = __defaultScavengeDelay;
+    private long _scavengePeriod = __defaultScavengePeriod;
     
 
     /** 
@@ -145,8 +149,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      */
     protected void scavenge()
     {
-        __log.debug("SessionIdManager:scavenge:called with delay" + _scavengeDelay);
-                
+        long now = System.currentTimeMillis();
+        __log.debug("SessionIdManager:scavenge:at  " + now);        
         synchronized (_sessionsIds)
         {         
             /*
@@ -158,7 +162,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
              */
             BasicDBObject query = new BasicDBObject();     
             query.put(MongoSessionManager.__ID,new BasicDBObject("$in", _sessionsIds ));
-            query.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _scavengeDelay));
+         
+            query.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",now - _scavengePeriod));
             
             DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
                         
@@ -216,7 +221,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         BasicDBObject invalidQuery = new BasicDBObject();
 
         invalidQuery.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _purgeInvalidAge));
-        invalidQuery.put(MongoSessionManager.__VALID, __valid_false);
+        invalidQuery.put(MongoSessionManager.__VALID, false);
         
         DBCursor oldSessions = _sessions.find(invalidQuery, new BasicDBObject(MongoSessionManager.__ID, 1));
 
@@ -234,9 +239,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             BasicDBObject validQuery = new BasicDBObject();
 
             validQuery.put(MongoSessionManager.__ACCESSED,new BasicDBObject("$lt",System.currentTimeMillis() - _purgeValidAge));
-            validQuery.put(MongoSessionManager.__VALID, __valid_false);
+            validQuery.put(MongoSessionManager.__VALID, true);
 
-            oldSessions = _sessions.find(invalidQuery,new BasicDBObject(MongoSessionManager.__ID,1));
+            oldSessions = _sessions.find(validQuery,new BasicDBObject(MongoSessionManager.__ID,1));
 
             for (DBObject session : oldSessions)
             {
@@ -301,16 +306,22 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      */
     public void setScavengeDelay(long scavengeDelay)
     {
-        this._scavengeDelay = scavengeDelay;  
+        if (scavengeDelay <= 0)
+            this._scavengeDelay = __defaultScavengeDelay;
+        else
+            this._scavengeDelay = TimeUnit.SECONDS.toMillis(scavengeDelay);  
     }
 
 
     /* ------------------------------------------------------------ */
     public void setScavengePeriod(long scavengePeriod)
     {
-        this._scavengePeriod = scavengePeriod;
+        if (scavengePeriod <= 0)
+            _scavengePeriod = __defaultScavengePeriod;
+        else
+            _scavengePeriod = TimeUnit.SECONDS.toMillis(scavengePeriod);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setPurgeDelay(long purgeDelay)
     {
@@ -410,7 +421,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                         purge();
                     }
                 };
-                _purgeTimer.schedule(_purgeTask,_purgeDelay);
+               
+                _purgeTimer.schedule(_purgeTask,0,_purgeDelay);
             }
         }
     }
@@ -538,6 +550,37 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             return clusterId+'.'+_workerName;
 
         return clusterId;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+    {
+        //generate a new id
+        String newClusterId = newSessionId(request.hashCode());
+
+        synchronized (_sessionsIds)
+        {
+            _sessionsIds.remove(oldClusterId);//remove the old one from the list
+            _sessionsIds.add(newClusterId); //add in the new session id to the list
+
+            //tell all contexts to update the id 
+            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+            for (int i=0; contexts!=null && i<contexts.length; i++)
+            {
+                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                if (sessionHandler != null) 
+                {
+                    SessionManager manager = sessionHandler.getSessionManager();
+
+                    if (manager != null && manager instanceof MongoSessionManager)
+                    {
+                        ((MongoSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                    }
+                }
+            }
+        }
     }
 
 }

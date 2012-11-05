@@ -53,10 +53,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /** 
  * Dump Servlet Request.
@@ -64,8 +60,6 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("serial")
 public class Dump extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(Dump.class);
-
     boolean fixed;
     Timer _timer;
 
@@ -135,7 +129,7 @@ public class Dump extends HttpServlet
         final boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
 
 
-        if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
+        if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase(Locale.ENGLISH).indexOf("script")!=-1)
         {
             response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
             return;
@@ -162,7 +156,7 @@ public class Dump extends HttpServlet
             try
             {
                 long s = Long.parseLong(request.getParameter("sleep"));
-                if (request.getHeader(HttpHeader.EXPECT.asString())!=null && request.getHeader(HttpHeader.EXPECT.asString()).indexOf("102")>=0)
+                if (request.getHeader("Expect")!=null && request.getHeader("Expect").indexOf("102")>=0)
                 {
                     Thread.sleep(s/2);
                     response.sendError(102);
@@ -232,6 +226,7 @@ public class Dump extends HttpServlet
 
                 continuation.addContinuationListener(new ContinuationListener()
                 {
+                    @Override
                     public void onTimeout(Continuation continuation)
                     {
                         response.addHeader("Dump","onTimeout");
@@ -246,10 +241,11 @@ public class Dump extends HttpServlet
                         }
                         catch (IOException e)
                         {
-                            LOG.ignore(e);
+                            getServletContext().log("",e);
                         }
                     }
 
+                    @Override
                     public void onComplete(Continuation continuation)
                     {
                         response.addHeader("Dump","onComplete");
@@ -1004,9 +1000,9 @@ public class Dump extends HttpServlet
     {
         if (s==null)
             return "null";
-        s=StringUtil.replace(s,"&","&amp;");
-        s=StringUtil.replace(s,"<","&lt;");
-        s=StringUtil.replace(s,">","&gt;");
+        s=s.replaceAll("&","&amp;");
+        s=s.replaceAll("<","&lt;");
+        s=s.replaceAll(">","&gt;");
         return s;
     }
 }

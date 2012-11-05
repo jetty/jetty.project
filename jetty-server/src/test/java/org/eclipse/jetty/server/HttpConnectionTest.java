@@ -66,8 +66,8 @@ public class HttpConnectionTest
         server = new Server();
 
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpChannelConfig().setRequestHeaderSize(1024);
-        http.getHttpChannelConfig().setResponseHeaderSize(1024);
+        http.getHttpConfiguration().setRequestHeaderSize(1024);
+        http.getHttpConfiguration().setResponseHeaderSize(1024);
         
         connector = new LocalConnector(server,http,null);
         server.addConnector(connector);

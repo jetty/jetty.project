@@ -50,7 +50,7 @@
               <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
               <Set name="scanInterval">1</Set>
               <Set name="configurationManager">
-                <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
+                <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
                   <Set name="file">
                     <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
                   </Set>

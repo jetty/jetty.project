@@ -25,7 +25,6 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -93,6 +92,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         catch (IOException x)
         {
             LOG.debug(x);
+            NextProtoNego.remove(engine);
             getEndPoint().close();
             return -1;
         }

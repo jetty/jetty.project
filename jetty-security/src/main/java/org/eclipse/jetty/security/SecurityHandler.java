@@ -23,9 +23,9 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,8 +42,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
-import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -71,10 +70,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
     private String _realmName;
     private String _authMethod;
-    private final Map<String,String> _initParameters=new HashMap<>();
+    private final Map<String,String> _initParameters=new HashMap<String,String>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession=true;
+    private boolean _discoveredIdentityService = false;
+    private boolean _discoveredLoginService = false;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -329,7 +330,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     
                     if (request.isSecure())
                     {
-                        se.getSession().setAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                        se.getSession().setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
                     }
                 }
             });
@@ -339,7 +340,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         // many different ways these can be constructed and injected.
 
         if (_loginService==null)
+        {
             setLoginService(findLoginService());
+            _discoveredLoginService = true;
+        }
 
         if (_identityService==null)
         {
@@ -351,6 +355,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (_identityService==null && _realmName!=null)
                 setIdentityService(new DefaultIdentityService());
+
+            _discoveredIdentityService = true;
         }
 
         if (_loginService!=null)
@@ -374,6 +380,27 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
 
         super.doStart();
+    }
+
+    @Override
+    /* ------------------------------------------------------------ */
+    protected void doStop() throws Exception
+    {
+        //if we discovered the services (rather than had them explicitly configured), remove them.
+        if (_discoveredIdentityService)
+        {
+            removeBean(_identityService);
+            _identityService = null;
+            
+        }
+        
+        if (_discoveredLoginService)
+        {
+            removeBean(_loginService);
+            _loginService = null;
+        }
+        
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */

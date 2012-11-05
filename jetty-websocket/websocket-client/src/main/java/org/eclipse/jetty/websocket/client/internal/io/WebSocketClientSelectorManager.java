@@ -82,10 +82,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     return sslConnection;
                 }
                 else
-                {
-                    // FIXME: throw error
                     throw new IOException("Cannot init SSL");
-                }
             }
             else
             {

@@ -54,7 +54,7 @@ public class PathContentProvider implements ContentProvider
     }
 
     @Override
-    public long length()
+    public long getLength()
     {
         return fileSize;
     }
@@ -62,48 +62,46 @@ public class PathContentProvider implements ContentProvider
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new LazyIterator();
-    }
-
-    private class LazyIterator implements Iterator<ByteBuffer>
-    {
-        private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-        private SeekableByteChannel channel;
-        private long position;
-
-        @Override
-        public boolean hasNext()
+        return new Iterator<ByteBuffer>()
         {
-            return position < length();
-        }
+            private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
+            private SeekableByteChannel channel;
+            private long position;
 
-        @Override
-        public ByteBuffer next()
-        {
-            try
+            @Override
+            public boolean hasNext()
             {
-                if (channel == null)
-                    channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-
-                buffer.clear();
-                int read = channel.read(buffer);
-                if (read < 0)
-                    throw new NoSuchElementException();
-
-                position += read;
-                buffer.flip();
-                return buffer;
+                return position < getLength();
             }
-            catch (IOException x)
+
+            @Override
+            public ByteBuffer next()
             {
-                throw (NoSuchElementException)new NoSuchElementException().initCause(x);
-            }
-        }
+                try
+                {
+                    if (channel == null)
+                        channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
 
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
+                    buffer.clear();
+                    int read = channel.read(buffer);
+                    if (read < 0)
+                        throw new NoSuchElementException();
+
+                    position += read;
+                    buffer.flip();
+                    return buffer;
+                }
+                catch (IOException x)
+                {
+                    throw (NoSuchElementException)new NoSuchElementException().initCause(x);
+                }
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }

@@ -58,7 +58,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        return response.status() == 401;
+        return response.getStatus() == 401;
     }
 
     @Override
@@ -79,14 +79,14 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            HttpConversation conversation = client.getConversation(request.conversation());
-            Response.Listener listener = conversation.exchanges().peekFirst().listener();
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            List<Response.ResponseListener> listeners = conversation.getExchanges().peekFirst().getResponseListeners();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())
             {
                 Throwable failure = result.getFailure();
                 LOG.debug("Authentication challenge failed {}", failure);
-                notifier.forwardFailureComplete(listener, request, result.getRequestFailure(), response, result.getResponseFailure());
+                notifier.forwardFailureComplete(listeners, request, result.getRequestFailure(), response, result.getResponseFailure());
                 return;
             }
 
@@ -94,11 +94,11 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             if (wwwAuthenticates.isEmpty())
             {
                 LOG.debug("Authentication challenge without WWW-Authenticate header");
-                notifier.forwardFailureComplete(listener, request, null, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
+                notifier.forwardFailureComplete(listeners, request, null, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
                 return;
             }
 
-            final String uri = request.uri();
+            final String uri = request.getURI();
             Authentication authentication = null;
             WWWAuthenticate wwwAuthenticate = null;
             for (WWWAuthenticate wwwAuthn : wwwAuthenticates)
@@ -113,7 +113,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             if (authentication == null)
             {
                 LOG.debug("No authentication available for {}", request);
-                notifier.forwardSuccessComplete(listener, request, response);
+                notifier.forwardSuccessComplete(listeners, request, response);
                 return;
             }
 
@@ -121,26 +121,27 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             LOG.debug("Authentication result {}", authnResult);
             if (authnResult == null)
             {
-                notifier.forwardSuccessComplete(listener, request, response);
+                notifier.forwardSuccessComplete(listeners, request, response);
                 return;
             }
 
-            authnResult.apply(request);
-            request.send(new Response.Listener.Empty()
+            Request newRequest = client.copyRequest(request, request.getURI());
+            authnResult.apply(newRequest);
+            newRequest.onResponseSuccess(new Response.SuccessListener()
             {
                 @Override
                 public void onSuccess(Response response)
                 {
                     client.getAuthenticationStore().addAuthenticationResult(authnResult);
                 }
-            });
+            }).send(null);
         }
 
         private List<WWWAuthenticate> parseWWWAuthenticate(Response response)
         {
             // TODO: these should be ordered by strength
             List<WWWAuthenticate> result = new ArrayList<>();
-            List<String> values = Collections.list(response.headers().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
+            List<String> values = Collections.list(response.getHeaders().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
             for (String value : values)
             {
                 Matcher matcher = WWW_AUTHENTICATE_PATTERN.matcher(value);

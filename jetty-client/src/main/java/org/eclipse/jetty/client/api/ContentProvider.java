@@ -36,5 +36,5 @@ public interface ContentProvider extends Iterable<ByteBuffer>
     /**
      * @return the content length, if known, or -1 if the content length is unknown
      */
-    long length();
+    long getLength();
 }

@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.server.SPDYServerConnector;
@@ -35,6 +35,6 @@ public class HTTPSPDYProxyConnector extends SPDYServerConnector
     public HTTPSPDYProxyConnector(Server server, SslContextFactory sslContextFactory, ProxyEngineSelector proxyEngineSelector)
     {
         super(server, sslContextFactory, proxyEngineSelector);
-        addConnectionFactory(new ProxyHTTPConnectionFactory(new HttpChannelConfig(), SPDY.V2, proxyEngineSelector));
+        addConnectionFactory(new ProxyHTTPConnectionFactory(new HttpConfiguration(), SPDY.V2, proxyEngineSelector));
     }
 }

@@ -15,26 +15,19 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
- 
+
 package org.eclipse.jetty.osgi.test;
- 
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
- 
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
- 
 import javax.inject.Inject;
- 
+
 import junit.framework.Assert;
- 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.junit.Ignore;
@@ -45,7 +38,11 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.BundleContext;
- 
+
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
  * Then make sure we can deploy an OSGi service on the top of this.
@@ -55,24 +52,24 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
 {
     private static final boolean LOGGING_ENABLED = true;
     private static final boolean REMOTE_DEBUGGING = false;
- 
+
     @Inject
     BundleContext bundleContext = null;
- 
+
     @Configuration
     public static Option[] configure()
     {
- 
+
         ArrayList<Option> options = new ArrayList<Option>();
-         
+
         addMoreOSGiContainers(options);
-         
+
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*",
                 "org.w3c.*", "javax.xml.*"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
- 
+
         // Enable Logging
         if(LOGGING_ENABLED) {
             options.addAll(Arrays.asList(options(
@@ -82,9 +79,9 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
             systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" )
             )));
         }
-         
+
         options.addAll(jspDependencies());
- 
+
         // Remote JDWP Debugging, this won't work with the forked container.
 //      if(REMOTE_DEBUGGING) {
 //          options.addAll(Arrays.asList(options(
@@ -92,14 +89,14 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
 //              PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" )
 //          )));
 //      }
- 
+
         //bug at the moment: this would make the httpservice catch all
         //requests and prevent the webapp at the root context to catch any of them.
         //options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
-         
+
         return options.toArray(new Option[options.size()]);
     }
-     
+
     public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
     {
         File etcFolder = new File("src/test/config/etc");
@@ -108,13 +105,13 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS)
                 .value(etc + "/jetty.xml;" +
                        etc + "/" + jettySelectorFileName + ";" +
-                       etc + "/jetty-deployer.xml;" + 
+                       etc + "/jetty-deployer.xml;" +
                        etc + "/jetty-testrealm.xml"));
         options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
     }
-     
+
     public static List<Option> jspDependencies() {
         List<Option> res = new ArrayList<Option>();
         /* orbit deps */
@@ -125,21 +122,21 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "org.apache.jasper.glassfish" ).versionAsInProject());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "org.apache.taglibs.standard.glassfish" ).versionAsInProject());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "org.eclipse.jdt.core" ).versionAsInProject());
- 
+
         /* jetty-osgi deps */
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject().noStart());
- 
+
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "test-jetty-webapp" ).classifier("webbundle").versionAsInProject());
- 
+
         return res;
     }
- 
+
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
         assertAllBundlesActiveOrResolved(bundleContext);
     }
- 
+
     //at the moment can't run httpservice with jsp at the same time.
     //that is a regression in jetty-9
     @Ignore
@@ -148,11 +145,11 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
     {
         super.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT);
     }
-         
+
     @Test
     public void testJspDump() throws Exception
     {
- 
+
 //System.err.println("http://127.0.0.1:9876/jsp/dump.jsp  sleeping....");
 //Thread.currentThread().sleep(5000000);
         //now test the jsp/dump.jsp
@@ -160,20 +157,20 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
         try
         {
             client.start();
-            Response response = client.GET("http://127.0.0.1:"+
+            ContentResponse response = client.GET("http://127.0.0.1:"+
                     TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT+"/jsp/dump.jsp").get(5, TimeUnit.SECONDS);
-            Assert.assertEquals(HttpStatus.OK_200, response.status());
- 
-            String content = new String(((HttpContentResponse)response).content());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            String content = new String(response.getContent());
             //System.err.println("content: " + content);
-            Assert.assertTrue(content.indexOf("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>") != -1);
+            Assert.assertTrue(content.contains("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>"));
         }
         finally
         {
             client.stop();
         }
- 
+
     }
- 
- 
+
+
 }

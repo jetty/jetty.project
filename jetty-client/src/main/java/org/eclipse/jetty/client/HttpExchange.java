@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -31,51 +34,69 @@ public class HttpExchange
     private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
     private final AtomicInteger complete = new AtomicInteger();
+    private final CountDownLatch terminate = new CountDownLatch(2);
     private final HttpConversation conversation;
     private final HttpConnection connection;
     private final Request request;
-    private final Response.Listener listener;
+    private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
+    private volatile boolean last;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
 
-    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, Response.Listener listener)
+    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, List<Response.ResponseListener> listeners)
     {
         this.conversation = conversation;
         this.connection = connection;
         this.request = request;
-        this.listener = listener;
-        this.response = new HttpResponse(this, listener);
+        this.listeners = listeners;
+        this.response = new HttpResponse(request, listeners);
     }
 
-    public HttpConversation conversation()
+    public HttpConversation getConversation()
     {
         return conversation;
     }
 
-    public Request request()
+    public Request getRequest()
     {
         return request;
     }
 
-    public Throwable requestFailure()
+    public Throwable getRequestFailure()
     {
         return requestFailure;
     }
 
-    public Response.Listener listener()
+    public List<Response.ResponseListener> getResponseListeners()
     {
-        return listener;
+        return listeners;
     }
 
-    public HttpResponse response()
+    public HttpResponse getResponse()
     {
         return response;
     }
 
-    public Throwable responseFailure()
+    public Throwable getResponseFailure()
     {
         return responseFailure;
+    }
+
+    /**
+     * @return whether this exchange is the last in the conversation
+     */
+    public boolean isLast()
+    {
+        return last;
+    }
+
+    /**
+     * @param last whether this exchange is the last in the conversation
+     */
+    public void setLast(boolean last)
+    {
+        this.last = last;
     }
 
     public void receive()
@@ -83,27 +104,25 @@ public class HttpExchange
         connection.receive();
     }
 
-    public Result requestComplete(Throwable failure)
+    public AtomicMarkableReference<Result> requestComplete(Throwable failure)
     {
-        this.requestFailure = failure;
         int requestSuccess = 0b0011;
         int requestFailure = 0b0001;
-        return complete(failure == null ? requestSuccess : requestFailure);
+        return complete(failure == null ? requestSuccess : requestFailure, failure);
     }
 
-    public Result responseComplete(Throwable failure)
+    public AtomicMarkableReference<Result> responseComplete(Throwable failure)
     {
-        this.responseFailure = failure;
         if (failure == null)
         {
             int responseSuccess = 0b1100;
-            return complete(responseSuccess);
+            return complete(responseSuccess, failure);
         }
         else
         {
             proceed(false);
             int responseFailure = 0b0100;
-            return complete(responseFailure);
+            return complete(responseFailure, failure);
         }
     }
 
@@ -121,29 +140,65 @@ public class HttpExchange
      * whether the exchange is completed and whether is successful.
      *
      * @param code the bits representing the status code for either the request or the response
-     * @return the result if the exchange completed, or null if the exchange did not complete
+     * @param failure the failure - if any - associated with the status code for either the request or the response
+     * @return an AtomicMarkableReference holding whether the operation modified the
+     * completion status and the {@link Result} - if any - associated with the status
      */
-    private Result complete(int code)
+    private AtomicMarkableReference<Result> complete(int code, Throwable failure)
     {
-        int status = complete.addAndGet(code);
-        int completed = 0b0101;
-        if ((status & completed) == completed)
+        Result result = null;
+        boolean modified = false;
+
+        int current;
+        while (true)
         {
-            boolean success = status == 0b1111;
-            LOG.debug("{} complete success={}", this, success);
-            // Request and response completed
-            if (this == conversation.last())
-                conversation.complete();
-            connection.complete(this, success);
-            return new Result(request(), requestFailure(), response(), responseFailure());
+            current = complete.get();
+            boolean updateable = (current & code) == 0;
+            if (updateable)
+            {
+                int candidate = current | code;
+                if (!complete.compareAndSet(current, candidate))
+                    continue;
+                current = candidate;
+                modified = true;
+                if ((code & 0b01) == 0b01)
+                    requestFailure = failure;
+                else
+                    responseFailure = failure;
+                LOG.debug("{} updated", this);
+            }
+            break;
         }
-        return null;
+
+        int completed = 0b0101;
+        if ((current & completed) == completed)
+        {
+            if (modified)
+            {
+                // Request and response completed
+                LOG.debug("{} complete", this);
+                if (isLast())
+                {
+                    HttpExchange first = conversation.getExchanges().peekFirst();
+                    List<Response.ResponseListener> listeners = first.getResponseListeners();
+                    for (Response.ResponseListener listener : listeners)
+                        if (listener instanceof Schedulable)
+                            ((Schedulable)listener).cancel();
+                    conversation.complete();
+                }
+            }
+            result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
+        }
+
+        return new AtomicMarkableReference<>(result, modified);
     }
 
-    public void abort()
+    public boolean abort(String reason)
     {
-        LOG.debug("Aborting {}", response);
-        connection.abort(response);
+        LOG.debug("Aborting {} reason {}", this, reason);
+        boolean aborted = connection.abort(this, reason);
+        LOG.debug("Aborted {}: {}", this, aborted);
+        return aborted;
     }
 
     public void resetResponse(boolean success)
@@ -157,6 +212,28 @@ public class HttpExchange
     public void proceed(boolean proceed)
     {
         connection.proceed(proceed);
+    }
+
+    public void terminateRequest()
+    {
+        terminate.countDown();
+    }
+
+    public void terminateResponse()
+    {
+        terminate.countDown();
+    }
+
+    public void awaitTermination()
+    {
+        try
+        {
+            terminate.await();
+        }
+        catch (InterruptedException x)
+        {
+            LOG.ignore(x);
+        }
     }
 
     @Override

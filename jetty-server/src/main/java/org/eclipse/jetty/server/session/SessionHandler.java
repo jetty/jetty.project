@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.EventListener;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
@@ -31,7 +32,6 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -317,6 +317,16 @@ public class SessionHandler extends ScopedHandler
     {
         if (_sessionManager != null)
             _sessionManager.addEventListener(listener);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    public void removeEventListener(EventListener listener)
+    {
+        if (_sessionManager != null)
+            _sessionManager.removeEventListener(listener);
     }
 
     /* ------------------------------------------------------------ */

@@ -26,9 +26,10 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -51,7 +52,7 @@ public abstract class LoginAuthenticator implements Authenticator
         UserIdentity user = _loginService.login(username,password);
         if (user!=null)
         {
-            renewSession((HttpServletRequest)request, null);
+            renewSession((HttpServletRequest)request, (request instanceof Request? ((Request)request).getResponse() : null));
             return user;
         }
         return null;
@@ -95,11 +96,22 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
+                if (httpSession.getAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
                 {
-                    HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
-                    LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
-                    httpSession=newSession;
+                    if (httpSession instanceof AbstractSession)
+                    {
+                        AbstractSession abstractSession = (AbstractSession)httpSession;
+                        String oldId = abstractSession.getId();
+                        abstractSession.renewId(request);
+                        abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                        if (abstractSession.isIdChanged() && response != null && (response instanceof Response))
+                            ((Response)response).addCookie(abstractSession.getSessionManager().getSessionCookie(abstractSession, request.getContextPath(), request.isSecure()));
+                        LOG.debug("renew {}->{}",oldId,abstractSession.getId());
+                    }
+                    else
+                        LOG.warn("Unable to renew session "+httpSession);
+                    
+                    return httpSession;
                 }
             }
         }

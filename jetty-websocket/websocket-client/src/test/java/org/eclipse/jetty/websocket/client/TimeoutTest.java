@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
@@ -30,9 +33,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 /**
  * Various tests for Timeout handling
@@ -40,6 +42,9 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 @Ignore("Idle timeouts not working yet")
 public class TimeoutTest
 {
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     private BlockheadServer server;
     private WebSocketClientFactory factory;
 

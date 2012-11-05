@@ -21,7 +21,7 @@ package org.eclipse.jetty.spdy.server.http;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -35,36 +35,36 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory implements HttpChannelConfig.ConnectionFactory
+public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.HTTPChannelOverSPDY";
     private static final Logger logger = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
 
     private final PushStrategy pushStrategy;
-    private final HttpChannelConfig httpChannelConfig;
+    private final HttpConfiguration httpConfiguration;
 
     public HTTPSPDYServerConnectionFactory(
         @Name("version") int version,
-        @Name("config") HttpChannelConfig config)
+        @Name("config") HttpConfiguration config)
     {
         this(version,config,new PushStrategy.None());
     }
 
     public HTTPSPDYServerConnectionFactory(
         @Name("version") int version,
-        @Name("config") HttpChannelConfig config,
+        @Name("config") HttpConfiguration config,
         @Name("pushStrategy") PushStrategy pushStrategy)
     {
         super(version);
         this.pushStrategy = pushStrategy;
-        httpChannelConfig = config;
-        addBean(httpChannelConfig);
+        httpConfiguration = config;
+        addBean(httpConfiguration);
     }
 
     @Override
-    public HttpChannelConfig getHttpChannelConfig()
+    public HttpConfiguration getHttpConfiguration()
     {
-        return httpChannelConfig;
+        return httpConfiguration;
     }
 
     @Override
@@ -96,9 +96,9 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             logger.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
-            HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpChannelConfig, endPoint, pushStrategy, stream, headers);
+            HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy, stream, headers);
             HttpInputOverSPDY input = new HttpInputOverSPDY();
-            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, httpChannelConfig, endPoint, transport, input, stream);
+            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, httpConfiguration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
             channel.requestStart(headers, synInfo.isClose());

@@ -18,15 +18,18 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.hamcrest.Matchers.*;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class WebSocketClientFactoryTest
 {
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     @Test
     public void testNewSocket()
     {

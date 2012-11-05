@@ -18,38 +18,14 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 public class Utf8StringBuilderTest
 {
-    @Test
-    public void testInvalid() throws Exception
-    {
-        String[] invalids =
-        { "c0af", "EDA080", "f08080af", "f8808080af", "e080af", "F4908080", "fbbfbfbfbf", "10FFFF",
-          "CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564" };
-
-        for (String i : invalids)
-        {
-            byte[] bytes = TypeUtil.fromHexString(i);
-            try
-            {
-                Utf8StringBuilder buffer = new Utf8StringBuilder();
-                buffer.append(bytes,0,bytes.length);
-
-                Assert.fail("Should have thrown a NotUtf8Exception");
-            }
-            catch (Utf8Appendable.NotUtf8Exception e)
-            {
-                // expected path
-            }
-        }
-    }
-
     @Test
     public void testFastFail_1() throws Exception
     {
@@ -78,7 +54,7 @@ public class Utf8StringBuilderTest
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
-        // Here for test tracking reasons, not needed to satisfy test
+        // Here for test search/tracking reasons, not needed to satisfy test
         // byte[] part3 = TypeUtil.fromHexString("8080656469746564");
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();

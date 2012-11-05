@@ -48,6 +48,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
 
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
+    public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
 
     protected ServletContext _servletContext;
     private final Map<String,String> _errorPages= new HashMap<String,String>(); // code or exception to URL
@@ -117,6 +118,12 @@ public class ErrorPageErrorHandler extends ErrorHandler
                         }
                     }
                 }
+            }
+            
+            //try new servlet 3.0 global error page
+            if (error_page == null)
+            {
+                error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
             }
 
             if (error_page!=null)
@@ -226,14 +233,6 @@ public class ErrorPageErrorHandler extends ErrorHandler
     {
         super.doStart();
         _servletContext=ContextHandler.getCurrentContext();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStop() throws Exception
-    {
-        // TODO Auto-generated method stub
-        super.doStop();
     }
 
     /* ------------------------------------------------------------ */

@@ -154,8 +154,6 @@ public class BufferUtil
         if (limit==capacity)
         {
             buffer.compact();
-            buffer.position(buffer.limit());
-            buffer.limit(buffer.capacity());
             return 0;
         }
 
@@ -468,8 +466,6 @@ public class BufferUtil
         boolean started = false;
         boolean minus = false;
 
-        // TODO add version that operates on array
-
         for (int i = buffer.position(); i < buffer.limit(); i++)
         {
             byte b = buffer.get(i);
@@ -508,7 +504,6 @@ public class BufferUtil
         long val = 0;
         boolean started = false;
         boolean minus = false;
-        // TODO add version that operates on array
 
         for (int i = buffer.position(); i < buffer.limit(); i++)
         {

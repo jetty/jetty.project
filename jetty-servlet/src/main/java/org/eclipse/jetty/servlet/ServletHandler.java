@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -45,7 +46,6 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -439,10 +439,6 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
-        catch(ContinuationThrowable e)
-        {
-            throw e;
-        }
         catch(Exception e)
         {
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
@@ -498,8 +494,8 @@ public class ServletHandler extends ScopedHandler
 
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,th);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -516,6 +512,8 @@ public class ServletHandler extends ScopedHandler
         }
         catch(Error e)
         {
+            if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                throw e;
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
             LOG.warn("Error for "+request.getRequestURI(),e);
@@ -524,8 +522,8 @@ public class ServletHandler extends ScopedHandler
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,e);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
             }
             else

@@ -35,10 +35,13 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -83,10 +86,10 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         int index = 0;
-        byte[] responseContent = response.content();
+        byte[] responseContent = response.getContent();
         for (byte[] content : contents)
         {
             for (byte b : content)
@@ -121,7 +124,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .content(new BytesContentProvider(content1, content2)
                 {
                     @Override
-                    public long length()
+                    public long getLength()
                     {
                         return -1;
                     }
@@ -130,10 +133,10 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         int index = 0;
-        byte[] responseContent = response.content();
+        byte[] responseContent = response.getContent();
         for (byte b : content1)
             Assert.assertEquals(b, responseContent[index++]);
         for (byte b : content2)
@@ -182,7 +185,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         byte[] content = getContent();
                         Assert.assertNotNull(content);
                         Assert.assertTrue(content.length > 0);
-                        Assert.assertEquals(error, result.getResponse().status());
+                        Assert.assertEquals(error, result.getResponse().getStatus());
                         latch.countDown();
                     }
                 });
@@ -228,7 +231,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     public void onComplete(Result result)
                     {
                         Assert.assertFalse(result.isFailed());
-                        Assert.assertEquals(200, result.getResponse().status());
+                        Assert.assertEquals(200, result.getResponse().getStatus());
                         Assert.assertEquals(data, getContentAsString());
                         latch.countDown();
                     }
@@ -279,7 +282,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         Assert.assertTrue(result.isFailed());
                         Assert.assertNotNull(result.getRequestFailure());
                         Assert.assertNull(result.getResponseFailure());
-                        Assert.assertEquals(302, result.getResponse().status());
+                        Assert.assertEquals(302, result.getResponse().getStatus());
                         latch.countDown();
                     }
                 });
@@ -405,7 +408,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     @Override
                     public void onBegin(Response response)
                     {
-                        response.abort();
+                        response.abort(null);
                     }
 
                     @Override
@@ -417,24 +420,34 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             }
         });
 
-        byte[] content = new byte[1024];
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
-                .content(new BytesContentProvider(content))
-                .send(new BufferingResponseListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        Assert.assertNotNull(result.getRequestFailure());
-                        Assert.assertNotNull(result.getResponseFailure());
-                        latch.countDown();
-                    }
-                });
+        try
+        {
+            Log.getLogger(HttpChannel.class).info("Expecting Close warning...");
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            byte[] content = new byte[1024];
+            final CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+            .content(new BytesContentProvider(content))
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    Assert.assertTrue(result.isFailed());
+                    Assert.assertNotNull(result.getRequestFailure());
+                    Assert.assertNotNull(result.getResponseFailure());
+                    latch.countDown();
+                }
+            });
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
     }
 }

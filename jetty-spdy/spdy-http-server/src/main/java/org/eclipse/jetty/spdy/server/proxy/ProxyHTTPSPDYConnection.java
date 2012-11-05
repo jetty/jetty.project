@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.server.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.spdy.ISession;
@@ -62,7 +63,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     private HTTPStream stream;
     private ByteBuffer content;
 
-    public ProxyHTTPSPDYConnection(Connector connector, HttpChannelConfig config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
+    public ProxyHTTPSPDYConnection(Connector connector, HttpConfiguration config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
         super(config,connector,endPoint);
         this.version = version;
@@ -92,7 +93,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     @Override
     public boolean parsedHeader(HttpHeader header, String headerName, String headerValue)
     {
-        switch (headerName.toLowerCase())
+        switch (headerName.toLowerCase(Locale.ENGLISH))
         {
             case "host":
                 headers.put(HTTPSPDYHeader.HOST.name(version), headerValue);
@@ -132,7 +133,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean messageComplete(long contentLength)
+    public boolean messageComplete()
     {
         if (stream == null)
         {
@@ -286,23 +287,23 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
         {
             try
             {
                 // Data buffer must be copied, as the ByteBuffer is pooled
                 ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
 
-                send(byteBuffer, dataInfo.isClose());
+                send(null, byteBuffer, dataInfo.isClose());
 
                 if (dataInfo.isClose())
                     completed();
 
-                handler.completed(null);
+                handler.completed(context);
             }
             catch (IOException x)
             {
-                handler.failed(null, x);
+                handler.failed(context, x);
             }
         }
     }
@@ -322,10 +323,10 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
         {
             // Ignore pushed data
-            handler.completed(null);
+            handler.completed(context);
         }
     }
 }

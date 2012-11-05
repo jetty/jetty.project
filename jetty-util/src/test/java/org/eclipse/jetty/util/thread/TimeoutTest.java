@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 
 public class TimeoutTest

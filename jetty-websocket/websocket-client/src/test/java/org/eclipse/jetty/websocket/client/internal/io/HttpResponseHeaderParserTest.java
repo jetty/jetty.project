@@ -18,22 +18,25 @@
 
 package org.eclipse.jetty.websocket.client.internal.io;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 public class HttpResponseHeaderParserTest
 {
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     private void appendUtf8(ByteBuffer buf, String line)
     {
         buf.put(ByteBuffer.wrap(StringUtil.getBytes(line,StringUtil.__UTF8)));

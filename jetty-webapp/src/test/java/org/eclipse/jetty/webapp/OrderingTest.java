@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +93,12 @@ public class OrderingTest
          */
         @Override
         public InputStream getInputStream() throws IOException
+        {
+            return null;
+        }
+
+        @Override
+        public ReadableByteChannel getReadableByteChannel() throws IOException
         {
             return null;
         }
@@ -852,6 +859,44 @@ public class OrderingTest
             fail ("No outcome matched "+result);
     }
 
+    @Test
+    public void testRelativeOrderingWithPlainJars2 ()
+    throws Exception
+    {
+        //web.xml has no ordering, jar A has fragment after others, jar B is plain, jar C is plain
+        List<Resource> resources = new ArrayList<Resource>();
+        WebAppContext wac = new WebAppContext();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
+        
+        //A has after others
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
+        f1._name = "A";
+        metaData._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
+        f1._otherType = FragmentDescriptor.OtherType.After;
+        
+        //No fragment jar B
+        TestResource r4 = new TestResource("plainB");
+        resources.add(r4);
+        
+        //No fragment jar C
+        TestResource r5 = new TestResource("plainC");
+        resources.add(r5);
+        
+        List<Resource> orderedList = metaData._ordering.order(resources);
+        String[] outcomes = {"plainBplainCA"};
+        String result = "";
+        for (Resource r:orderedList)
+           result+=(((TestResource)r)._name);
+        
+        if (!checkResult(result, outcomes))
+            fail ("No outcome matched "+result);
+    }
+    
     @Test
     public void testAbsoluteOrderingWithPlainJars()
     throws Exception

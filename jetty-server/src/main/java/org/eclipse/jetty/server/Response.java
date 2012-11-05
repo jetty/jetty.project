@@ -21,12 +21,13 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
-import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -790,19 +791,6 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-
-
-/* TODO merged code not used???
-        else if (_mimeType!=null)
-            _contentType=_mimeType;
-
-
-
-        if (_contentType==null)
-            _connection.getResponseFields().remove(HttpHeaders.CONTENT_TYPE_BUFFER);
-        else
-            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
-*/
     }
 
     @Override

@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class TypeUtil
 {
     private static final Logger LOG = Log.getLogger(TypeUtil.class);
+    public static final Class<?>[] NO_ARGS = new Class[]{};
     public static int CR = '\015';
     public static int LF = '\012';
 

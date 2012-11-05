@@ -20,19 +20,22 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler
 {
-    /* this class uses the Timer class rather than an ScheduledExecutionService because
+    /*
+     * This class uses the Timer class rather than an ScheduledExecutionService because
      * it uses the same algorithm internally and the signature is cheaper to use as there are no
      * Futures involved (which we do not need).
      * However, Timer is still locking and a concurrent queue would be better.
      */
-    Timer _timer;
-    final String _name;
+
+    private final String _name;
+    private Timer _timer;
 
     public TimerScheduler()
     {
@@ -63,20 +66,18 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
     public Task schedule(final Runnable task, final long delay, final TimeUnit units)
     {
         Timer timer=_timer;
-        if (timer!=null)
-        {
-           SimpleTask t = new SimpleTask(task);
-           _timer.schedule(t,units.toMillis(delay));
-           return t;
-        }
-        throw new IllegalStateException("STOPPED: "+this);
+        if (timer==null)
+            throw new RejectedExecutionException("STOPPED: "+this);
+       SimpleTask t = new SimpleTask(task);
+       timer.schedule(t,units.toMillis(delay));
+       return t;
     }
 
     private static class SimpleTask extends TimerTask implements Task
     {
         private final Runnable _task;
 
-        SimpleTask(Runnable runnable)
+        private SimpleTask(Runnable runnable)
         {
             _task=runnable;
         }
@@ -86,7 +87,14 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
         {
             _task.run();
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s.%s@%x",
+                    TimerScheduler.class.getSimpleName(),
+                    SimpleTask.class.getSimpleName(),
+                    hashCode());
+        }
     }
-
-
 }

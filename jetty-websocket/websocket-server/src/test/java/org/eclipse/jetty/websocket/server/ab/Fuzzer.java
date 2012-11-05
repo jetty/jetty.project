@@ -25,6 +25,7 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -168,7 +169,12 @@ public class Fuzzer
     public void expectNoMoreFrames()
     {
         // TODO Should test for no more frames. success if connection closed.
+    }
 
+    public void expectServerClose() throws IOException
+    {
+        int val = client.read();
+        Assert.assertThat("Should have detected EOF",val,is(-1));
     }
 
     public SendMode getSendMode()
@@ -236,6 +242,8 @@ public class Fuzzer
                 case SLOW:
                     client.writeRawSlowly(buf,slowSendSegmentSize);
                     break;
+                default:
+                    throw new RuntimeException("Whoops, unsupported sendMode: " + sendMode);
             }
         }
         else if (sendMode == SendMode.PER_FRAME)
@@ -273,7 +281,7 @@ public class Fuzzer
             // early socket close can propagate back to the client
             // before it has a chance to finish writing out the
             // remaining frame octets
-            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(),containsString("broken pipe"));
+            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
         }
     }
 

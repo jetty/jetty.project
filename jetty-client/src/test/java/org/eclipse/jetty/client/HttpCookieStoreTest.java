@@ -23,11 +23,16 @@ import java.util.List;
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpCookieStoreTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     private HttpClient client = new HttpClient();
 
     @Test

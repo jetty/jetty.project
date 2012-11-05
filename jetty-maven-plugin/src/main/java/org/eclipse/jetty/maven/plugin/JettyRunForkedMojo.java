@@ -18,23 +18,33 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
@@ -42,7 +52,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.repository.ComponentDependency;
+import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /**
@@ -64,7 +77,7 @@ import org.eclipse.jetty.util.IO;
  *  There is a <a href="run-war-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
  *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin/">Configuration Guide</a>.
  *  </p>
- *
+ * 
  * @goal run-forked
  * @requiresDependencyResolution compile+runtime
  * @execute phase="test-compile"
@@ -72,17 +85,17 @@ import org.eclipse.jetty.util.IO;
  *
  */
 public class JettyRunForkedMojo extends AbstractMojo
-{
+{    
     public String PORT_SYSPROPERTY = "jetty.port";
-
+    
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
      * @parameter  default-value="false"
      */
     protected boolean useProvidedScope;
-
-
+    
+    
     /**
      * The maven project.
      *
@@ -91,9 +104,9 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @readonly
      */
     private MavenProject project;
+    
 
-
-
+    
     /**
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
@@ -101,27 +114,27 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @parameter alias="useTestClasspath" default-value="false"
      */
     private boolean useTestScope;
-
-
+    
+    
     /**
      * The default location of the web.xml file. Will be used
      * if &lt;webAppConfig&gt;&lt;descriptor&gt; is not set.
-     *
+     * 
      * @parameter expression="${basedir}/src/main/webapp/WEB-INF/web.xml"
      * @readonly
      */
     private String webXml;
-
+    
     /**
      * The target directory
-     *
+     * 
      * @parameter expression="${project.build.directory}"
      * @required
      * @readonly
      */
     protected File target;
-
-
+    
+    
     /**
      * The temporary directory to use for the webapp.
      * Defaults to target/tmp
@@ -132,26 +145,26 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     protected File tmpDirectory;
 
-
+    
     /**
      * The directory containing generated classes.
      *
      * @parameter expression="${project.build.outputDirectory}"
      * @required
-     *
+     * 
      */
     private File classesDirectory;
-
-
-
+    
+    
+    
     /**
      * The directory containing generated test classes.
-     *
+     * 
      * @parameter expression="${project.build.testOutputDirectory}"
      * @required
      */
     private File testClassesDirectory;
-
+    
     /**
      * Root directory for all html/jsp etc files
      *
@@ -159,34 +172,34 @@ public class JettyRunForkedMojo extends AbstractMojo
      *
      */
     private File webAppSourceDirectory;
-
-
+    
+    
     /**
      * Directories that contain static resources
      * for the webapp. Optional.
-     *
+     * 
      * @parameter
      */
     private File[] resourceBases;
-
-
+    
+    
     /**
-     * If true, the webAppSourceDirectory will be first on the list of
-     * resources that form the resource base for the webapp. If false,
+     * If true, the webAppSourceDirectory will be first on the list of 
+     * resources that form the resource base for the webapp. If false, 
      * it will be last.
-     *
+     * 
      * @parameter  default-value="true"
      */
     private boolean baseAppFirst;
-
+    
 
     /**
-     * Location of jetty xml configuration files whose contents
+     * Location of jetty xml configuration files whose contents 
      * will be applied before any plugin configuration. Optional.
      * @parameter
      */
     private String jettyXml;
-
+    
     /**
      * The context path for the webapp. Defaults to the
      * name of the webapp's artifact.
@@ -205,71 +218,71 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     private String contextXml;
 
-
-    /**
+    
+    /**  
      * @parameter expression="${jetty.skip}" default-value="false"
      */
     private boolean skip;
 
     /**
-     * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt;
+     * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt; 
      * -DSTOP.KEY=&lt;stopKey&gt; -jar start.jar --stop
      * @parameter
      * @required
      */
     protected int stopPort;
-
+    
     /**
-     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt;
+     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
      * @parameter
      * @required
      */
     protected String stopKey;
 
-
+    
     /**
      * Arbitrary jvm args to pass to the forked process
      * @parameter
      */
     private String jvmArgs;
 
-
-
+    
+    
     /**
      * @parameter expression="${plugin.artifacts}"
      * @readonly
      */
     private List pluginArtifacts;
-
-
+    
+    
     /**
      * @parameter expression="${plugin}"
      * @readonly
      */
     private PluginDescriptor plugin;
-
-
-
+    
+    
+    
     /**
      * @parameter expression="true" default-value="true"
      */
     private boolean waitForChild;
 
-
+    
     private Process forkedProcess;
-
+    
     private Random random;
-
-
-
+    
+    
+    
     public class ShutdownThread extends Thread
     {
         public ShutdownThread()
         {
             super("RunForkedShutdown");
         }
-
+        
         public void run ()
         {
             if (forkedProcess != null && waitForChild)
@@ -278,7 +291,7 @@ public class JettyRunForkedMojo extends AbstractMojo
             }
         }
     }
-
+    
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
@@ -295,20 +308,20 @@ public class JettyRunForkedMojo extends AbstractMojo
         random = new Random();
         startJettyRunner();
     }
-
-
+    
+    
     public List<String> getProvidedJars() throws MojoExecutionException
-    {
+    {  
         //if we are configured to include the provided dependencies on the plugin's classpath
         //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
         //try and filter out ones that will clash with jars that are plugin dependencies, then
         //create a new classloader that we setup in the parent chain.
         if (useProvidedScope)
         {
-
-                List<String> provided = new ArrayList<String>();
+            
+                List<String> provided = new ArrayList<String>();        
                 for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-                {
+                {                   
                     Artifact artifact = iter.next();
                     if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
                     {
@@ -322,16 +335,16 @@ public class JettyRunForkedMojo extends AbstractMojo
         else
             return null;
     }
-
+    
     /* ------------------------------------------------------------ */
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
-        {
+        {   
             //work out the configuration based on what is configured in the pom
             File propsFile = new File (target, "fork.props");
             if (propsFile.exists())
-                propsFile.delete();
+                propsFile.delete();   
 
             propsFile.createNewFile();
             //propsFile.deleteOnExit();
@@ -358,9 +371,9 @@ public class JettyRunForkedMojo extends AbstractMojo
             //sort out base dir of webapp
             if (webAppSourceDirectory != null)
                 props.put("base.dir", webAppSourceDirectory.getAbsolutePath());
-
+            
             //sort out the resource base directories of the webapp
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new StringBuilder();            
             if (baseAppFirst)
             {
                add((webAppSourceDirectory==null?null:webAppSourceDirectory.getAbsolutePath()), builder);
@@ -371,7 +384,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                }
             }
             else
-            {
+            { 
                 if (resourceBases != null)
                 {
                     for (File resDir:resourceBases)
@@ -380,7 +393,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 add((webAppSourceDirectory==null?null:webAppSourceDirectory.getAbsolutePath()), builder);
             }
             props.put("res.dirs", builder.toString());
-
+                   
 
             //web-inf classes
             List<File> classDirs = getClassesDirs();
@@ -397,7 +410,7 @@ public class JettyRunForkedMojo extends AbstractMojo
             {
                 props.put("classes.dir", classesDirectory.getAbsolutePath());
             }
-
+            
             if (useTestScope && testClassesDirectory != null)
             {
                 props.put("testClasses.dir", testClassesDirectory.getAbsolutePath());
@@ -435,7 +448,7 @@ public class JettyRunForkedMojo extends AbstractMojo
             throw new MojoExecutionException("Prepare webapp configuration", e);
         }
     }
-
+    
     private void add (String string, StringBuilder builder)
     {
         if (string == null)
@@ -448,62 +461,62 @@ public class JettyRunForkedMojo extends AbstractMojo
     private List<File> getClassesDirs ()
     {
         List<File> classesDirs = new ArrayList<File>();
-
+        
         //if using the test classes, make sure they are first
         //on the list
         if (useTestScope && (testClassesDirectory != null))
             classesDirs.add(testClassesDirectory);
-
+        
         if (classesDirectory != null)
             classesDirs.add(classesDirectory);
-
+        
         return classesDirs;
     }
-
-
-
+  
+    
+    
     private List<File> getOverlays()
     throws MalformedURLException, IOException
     {
         List<File> overlays = new ArrayList<File>();
         for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next();
-
+            Artifact artifact = (Artifact) iter.next();  
+            
             if (artifact.getType().equals("war"))
                 overlays.add(artifact.getFile());
         }
 
         return overlays;
     }
-
-
-
+    
+    
+    
     private List<File> getDependencyFiles ()
     {
         List<File> dependencyFiles = new ArrayList<File>();
-
+    
         for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();
-
-            if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope())))
+            
+            if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope()))) 
                     ||
                 (useTestScope && Artifact.SCOPE_TEST.equals( artifact.getScope())))
             {
                 dependencyFiles.add(artifact.getFile());
-                getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );
+                getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );   
             }
         }
-
-        return dependencyFiles;
+        
+        return dependencyFiles; 
     }
-
+    
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
             return false;
-
+        
         boolean isPluginArtifact = false;
         for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext() && !isPluginArtifact; )
         {
@@ -512,18 +525,18 @@ public class JettyRunForkedMojo extends AbstractMojo
             if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 isPluginArtifact = true;
         }
-
+        
         return isPluginArtifact;
     }
-
-
-
+    
+    
+    
     private Set<Artifact>  getExtraJars()
     throws Exception
     {
         Set<Artifact> extraJars = new HashSet<Artifact>();
-
-
+  
+        
         List l = pluginArtifacts;
         Artifact pluginArtifact = null;
 
@@ -531,7 +544,7 @@ public class JettyRunForkedMojo extends AbstractMojo
         {
             Iterator itor = l.iterator();
             while (itor.hasNext() && pluginArtifact == null)
-            {
+            {              
                 Artifact a = (Artifact)itor.next();
                 if (a.getArtifactId().equals(plugin.getArtifactId())) //get the jetty-maven-plugin jar
                 {
@@ -543,18 +556,18 @@ public class JettyRunForkedMojo extends AbstractMojo
         return extraJars;
     }
 
-
+    
     /* ------------------------------------------------------------ */
     public void startJettyRunner() throws MojoExecutionException
-    {
+    {      
         try
         {
-
+        
             File props = prepareConfiguration();
-
+            
             List<String> cmd = new ArrayList<String>();
             cmd.add(getJavaBin());
-
+            
             if (jvmArgs != null)
             {
                 String[] args = jvmArgs.split(" ");
@@ -564,7 +577,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                         cmd.add(args[i].trim());
                 }
             }
-
+            
             String classPath = getClassPath();
             if (classPath != null && classPath.length() > 0)
             {
@@ -572,7 +585,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 cmd.add(classPath);
             }
             cmd.add(Starter.class.getCanonicalName());
-
+            
             if (stopPort > 0 && stopKey != null)
             {
                 cmd.add("--stop-port");
@@ -585,26 +598,26 @@ public class JettyRunForkedMojo extends AbstractMojo
                 cmd.add("--jetty-xml");
                 cmd.add(jettyXml);
             }
-
+        
             if (contextXml != null)
             {
                 cmd.add("--context-xml");
                 cmd.add(contextXml);
             }
-
+            
             cmd.add("--props");
             cmd.add(props.getAbsolutePath());
-
+            
             String token = createToken();
             cmd.add("--token");
             cmd.add(token);
-
+            
             ProcessBuilder builder = new ProcessBuilder(cmd);
             builder.directory(project.getBasedir());
-
+            
             if (PluginLog.getLog().isDebugEnabled())
                 PluginLog.getLog().debug(Arrays.toString(cmd.toArray()));
-
+            
             forkedProcess = builder.start();
             PluginLog.getLog().info("Forked process starting");
 
@@ -612,7 +625,7 @@ public class JettyRunForkedMojo extends AbstractMojo
             {
                 startPump("STDOUT",forkedProcess.getInputStream());
                 startPump("STDERR",forkedProcess.getErrorStream());
-                int exitcode = forkedProcess.waitFor();
+                int exitcode = forkedProcess.waitFor();            
                 PluginLog.getLog().info("Forked execution exit: "+exitcode);
             }
             else
@@ -652,20 +665,20 @@ public class JettyRunForkedMojo extends AbstractMojo
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
-
+            
             throw new MojoExecutionException("Failed to start Jetty within time limit");
         }
         catch (Exception ex)
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
-
+            
             throw new MojoExecutionException("Failed to create Jetty process", ex);
         }
     }
-
-
-
+    
+ 
+    
     public String getClassPath() throws Exception
     {
         StringBuilder classPath = new StringBuilder();
@@ -682,16 +695,16 @@ public class JettyRunForkedMojo extends AbstractMojo
 
             }
         }
-
+        
         //Any jars that we need from the plugin environment (like the ones containing Starter class)
         Set<Artifact> extraJars = getExtraJars();
         for (Artifact a:extraJars)
-        {
+        { 
             classPath.append(File.pathSeparator);
             classPath.append(a.getFile().getAbsolutePath());
         }
-
-
+        
+        
         //Any jars that we need from the project's dependencies because we're useProvided
         List<String> providedJars = getProvidedJars();
         if (providedJars != null && !providedJars.isEmpty())
@@ -703,7 +716,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 if (getLog().isDebugEnabled()) getLog().debug("Adding provided jar: "+jar);
             }
         }
-
+        
         return classPath.toString();
     }
 
@@ -724,7 +737,7 @@ public class JettyRunForkedMojo extends AbstractMojo
 
         return "java";
     }
-
+    
     public static String fileSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -759,13 +772,13 @@ public class JettyRunForkedMojo extends AbstractMojo
         return ret.toString();
     }
 
-
+    
     private String createToken ()
     {
-        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase();
+        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
     }
-
-
+    
+    
     private void startPump(String mode, InputStream inputStream)
     {
         ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
@@ -774,7 +787,7 @@ public class JettyRunForkedMojo extends AbstractMojo
         thread.start();
     }
 
-
+  
 
 
     /**

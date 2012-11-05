@@ -24,7 +24,9 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,8 +50,10 @@ public class HttpRequest implements Request
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields();
     private final Map<String, Object> attributes = new HashMap<>();
+    private final List<RequestListener> requestListeners = new ArrayList<>();
+    private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final HttpClient client;
-    private final long id;
+    private final long conversation;
     private final String host;
     private final int port;
     private String scheme;
@@ -57,7 +61,6 @@ public class HttpRequest implements Request
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
-    private Listener listener;
     private ContentProvider content;
     private boolean followRedirects;
     private volatile boolean aborted;
@@ -67,10 +70,10 @@ public class HttpRequest implements Request
         this(client, ids.incrementAndGet(), uri);
     }
 
-    protected HttpRequest(HttpClient client, long id, URI uri)
+    protected HttpRequest(HttpClient client, long conversation, URI uri)
     {
         this.client = client;
-        this.id = id;
+        this.conversation = conversation;
         scheme(uri.getScheme());
         host = uri.getHost();
         port = uri.getPort();
@@ -101,13 +104,13 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
-        return id;
+        return conversation;
     }
 
     @Override
-    public String scheme()
+    public String getScheme()
     {
         return scheme;
     }
@@ -120,19 +123,19 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String host()
+    public String getHost()
     {
         return host;
     }
 
     @Override
-    public int port()
+    public int getPort()
     {
         return port;
     }
 
     @Override
-    public HttpMethod method()
+    public HttpMethod getMethod()
     {
         return method;
     }
@@ -145,7 +148,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String path()
+    public String getPath()
     {
         return path;
     }
@@ -158,19 +161,19 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public String uri()
+    public String getURI()
     {
-        String scheme = scheme();
-        String result = scheme + "://" + host();
-        int port = port();
+        String scheme = getScheme();
+        String result = scheme + "://" + getHost();
+        int port = getPort();
         result += "http".equals(scheme) && port != 80 ? ":" + port : "";
         result += "https".equals(scheme) && port != 443 ? ":" + port : "";
-        result += path();
+        result += getPath();
         return result;
     }
 
     @Override
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
         return version;
     }
@@ -190,13 +193,13 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Fields params()
+    public Fields getParams()
     {
         return params;
     }
 
     @Override
-    public String agent()
+    public String getAgent()
     {
         return headers.get(HttpHeader.USER_AGENT);
     }
@@ -226,32 +229,106 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Map<String, Object> attributes()
+    public Map<String, Object> getAttributes()
     {
         return attributes;
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
         return headers;
     }
 
     @Override
-    public Listener listener()
+    public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
-        return listener;
+        ArrayList<T> result = new ArrayList<>();
+        for (RequestListener listener : requestListeners)
+            if (type == null || type.isInstance(listener))
+                result.add((T)listener);
+        return result;
     }
 
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.listener = listener;
+        this.requestListeners.add(listener);
         return this;
     }
 
     @Override
-    public ContentProvider content()
+    public Request onRequestQueued(QueuedListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestBegin(BeginListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestHeaders(HeadersListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestSuccess(SuccessListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestFailure(FailureListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseBegin(Response.BeginListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseHeaders(Response.HeadersListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseContent(Response.ContentListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseSuccess(Response.SuccessListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseFailure(Response.FailureListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public ContentProvider getContent()
     {
         return content;
     }
@@ -284,7 +361,7 @@ public class HttpRequest implements Request
 //    }
 
     @Override
-    public boolean followRedirects()
+    public boolean isFollowRedirects()
     {
         return followRedirects;
     }
@@ -297,7 +374,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long idleTimeout()
+    public long getIdleTimeout()
     {
         return idleTimeout;
     }
@@ -312,25 +389,31 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        BlockingResponseListener listener = new BlockingResponseListener();
+        BlockingResponseListener listener = new BlockingResponseListener(this);
         send(listener);
         return listener;
     }
 
     @Override
-    public void send(final Response.Listener listener)
+    public void send(Response.CompleteListener listener)
     {
-        client.send(this, listener);
+        if (listener != null)
+            responseListeners.add(listener);
+        client.send(this, responseListeners);
     }
 
     @Override
-    public void abort()
+    public boolean abort(String reason)
     {
         aborted = true;
+        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, reason))
+            return true;
+        HttpConversation conversation = client.getConversation(getConversationID(), false);
+        return conversation != null && conversation.abort(reason);
     }
 
     @Override
-    public boolean aborted()
+    public boolean isAborted()
     {
         return aborted;
     }
@@ -338,6 +421,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), method(), path(), version(), hashCode());
+        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

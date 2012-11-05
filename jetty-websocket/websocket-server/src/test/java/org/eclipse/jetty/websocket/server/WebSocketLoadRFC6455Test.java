@@ -75,13 +75,11 @@ public class WebSocketLoadRFC6455Test
             @Override
             public void incoming(WebSocketException e)
             {
-                // TODO Auto-generated method stub
             }
 
             @Override
             public void incoming(WebSocketFrame frame)
             {
-                // TODO Auto-generated method stub
             }
         };
         private volatile ByteBuffer _response;

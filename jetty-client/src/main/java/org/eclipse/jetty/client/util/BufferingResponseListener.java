@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.util;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.http.HttpHeader;
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  */
-public class BufferingResponseListener extends Response.Listener.Empty
+public abstract class BufferingResponseListener extends Response.Listener.Empty
 {
     private final int maxLength;
     private volatile byte[] buffer = new byte[0];
@@ -60,16 +61,16 @@ public class BufferingResponseListener extends Response.Listener.Empty
     @Override
     public void onHeaders(Response response)
     {
-        HttpFields headers = response.headers();
+        HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         if (length > maxLength)
-            response.abort();
+            response.abort("Buffering capacity exceeded");
 
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         if (contentType != null)
         {
             String charset = "charset=";
-            int index = contentType.toLowerCase().indexOf(charset);
+            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
             if (index > 0)
             {
                 String encoding = contentType.substring(index + charset.length());
@@ -94,6 +95,9 @@ public class BufferingResponseListener extends Response.Listener.Empty
         content.get(newBuffer, buffer.length, content.remaining());
         buffer = newBuffer;
     }
+
+    @Override
+    public abstract void onComplete(Result result);
 
     public String getEncoding()
     {

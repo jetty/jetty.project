@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -282,6 +283,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     @Override
+    @ManagedAttribute("local port")
     public int getLocalPort()
     {
         return _localPort;
@@ -296,6 +298,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * @return the linger time
      * @see Socket#getSoLinger()
      */
+    @ManagedAttribute("linger time")
     public int getLingerTime()
     {
         return _lingerTime;
@@ -313,6 +316,7 @@ public class ServerConnector extends AbstractNetworkConnector
     /**
      * @return the accept queue size
      */
+    @ManagedAttribute("Accept Queue size")
     public int getAcceptQueueSize()
     {
         return _acceptQueueSize;

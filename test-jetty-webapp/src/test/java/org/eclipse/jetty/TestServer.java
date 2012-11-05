@@ -27,10 +27,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SslConnectionFactory;
@@ -42,6 +45,11 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.http.PushStrategy;
+import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -74,32 +82,60 @@ public class TestServer
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
         server.addBean(Log.getLog());
+        
 
-        // Setup Connectors
-        ServerConnector connector0 = new ServerConnector(server);
-        connector0.setPort(8080);
-        connector0.setIdleTimeout(30000);
-        connector0.getConnectionFactory(HttpConnectionFactory.class).getHttpChannelConfig().setSecurePort(8443);
-        server.addConnector(connector0);
+        // Common HTTP configuration
+        HttpConfiguration config = new HttpConfiguration();
+        config.setSecurePort(8443);
+        config.addCustomizer(new ForwardedRequestCustomizer());
+        config.addCustomizer(new SecureRequestCustomizer());
+        
+        
+        // Http Connector
+        HttpConnectionFactory http = new HttpConnectionFactory(config);
+        ServerConnector httpConnector = new ServerConnector(server,http);
+        httpConnector.setPort(8080);
+        httpConnector.setIdleTimeout(30000);
+        server.addConnector(httpConnector);
 
-        // Setup Connectors
-        ServerConnector connector1 = new ServerConnector(server);
-        connector1.setPort(8081);
-        connector1.setIdleTimeout(30000);
-        connector1.getConnectionFactory(HttpConnectionFactory.class).getHttpChannelConfig().setSecurePort(8443);
-        server.addConnector(connector1);
-
-     
-        ServerConnector ssl_connector = new ServerConnector(server,new SslContextFactory());
-        ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
-        cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        cf.setTrustStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        cf.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        server.addConnector(ssl_connector);
-
+        
+        // SSL configurations
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setTrustStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setExcludeCipherSuites(
+                "SSL_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+        
+        
+        // Spdy Connector
+        SPDYServerConnectionFactory.checkNPNAvailable();
+        PushStrategy push = new ReferrerPushStrategy();
+        HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
+        spdy2.setInputBufferSize(8192);
+        spdy2.setInitialWindowSize(32768);
+        HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
+        spdy2.setInputBufferSize(8192);
+        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
+        npn.setDefaultProtocol(http.getProtocol());
+        npn.setInputBufferSize(1024); 
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol()); 
+        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
+        spdyConnector.setPort(8443);
+        spdyConnector.setIdleTimeout(15000);
+        server.addConnector(spdyConnector);
+        
+        
+        
+        // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
@@ -129,7 +165,7 @@ public class TestServer
         server.setSendServerVersion(true);
 
         WebAppContext webapp = new WebAppContext();
-        webapp.setParentLoaderPriority(true);
+        //webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);

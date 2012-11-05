@@ -119,14 +119,10 @@ public class Dispatcher implements RequestDispatcher
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
 
-
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
-
-
-        // TODO - allow stream or writer????
 
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr=baseRequest.getAttributes();
@@ -264,7 +260,7 @@ public class Dispatcher implements RequestDispatcher
 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
-                if (!baseRequest.getAsyncContinuation().isAsyncStarted())
+                if (!baseRequest.getHttpChannelState().isAsync())
                     commitResponse(response,baseRequest);
             }
         }
@@ -330,6 +326,7 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public Object getAttribute(String key)
         {
             if (Dispatcher.this._named==null)
@@ -353,13 +350,14 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
-        public Enumeration getAttributeNames()
+        @Override
+        public Enumeration<String> getAttributeNames()
         {
-            HashSet set=new HashSet();
-            Enumeration e=_attr.getAttributeNames();
+            HashSet<String> set=new HashSet<>();
+            Enumeration<String> e=_attr.getAttributeNames();
             while(e.hasMoreElements())
             {
-                String name=(String)e.nextElement();
+                String name=e.nextElement();
                 if (!name.startsWith(__INCLUDE_PREFIX) &&
                     !name.startsWith(__FORWARD_PREFIX))
                     set.add(name);
@@ -384,6 +382,7 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void setAttribute(String key, Object value)
         {
             if (_named==null && key.startsWith("javax.servlet."))
@@ -418,12 +417,14 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void clearAttributes()
         {
             throw new IllegalStateException();
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void removeAttribute(String name)
         {
             setAttribute(name,null);
@@ -449,6 +450,7 @@ public class Dispatcher implements RequestDispatcher
         /* ------------------------------------------------------------ */
         /* ------------------------------------------------------------ */
         /* ------------------------------------------------------------ */
+        @Override
         public Object getAttribute(String key)
         {
             if (Dispatcher.this._named==null)
@@ -467,13 +469,14 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
-        public Enumeration getAttributeNames()
+        @Override
+        public Enumeration<String> getAttributeNames()
         {
-            HashSet set=new HashSet();
-            Enumeration e=_attr.getAttributeNames();
+            HashSet<String> set=new HashSet<>();
+            Enumeration<String> e=_attr.getAttributeNames();
             while(e.hasMoreElements())
             {
-                String name=(String)e.nextElement();
+                String name=e.nextElement();
                 if (!name.startsWith(__INCLUDE_PREFIX))
                     set.add(name);
             }
@@ -497,6 +500,7 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void setAttribute(String key, Object value)
         {
             if (_named==null && key.startsWith("javax.servlet."))
@@ -525,12 +529,14 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void clearAttributes()
         {
             throw new IllegalStateException();
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void removeAttribute(String name)
         {
             setAttribute(name,null);

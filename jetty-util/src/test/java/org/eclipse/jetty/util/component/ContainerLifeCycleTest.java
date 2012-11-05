@@ -24,7 +24,6 @@ import java.io.StringReader;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;

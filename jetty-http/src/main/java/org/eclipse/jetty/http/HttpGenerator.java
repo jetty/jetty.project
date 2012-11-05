@@ -255,7 +255,7 @@ public class HttpGenerator
                     return len>0?Result.FLUSH:Result.CONTINUE;
                 }
 
-                return len>0?Result.FLUSH:Result.DONE;
+                return Result.FLUSH;
             }
 
             case COMPLETING:

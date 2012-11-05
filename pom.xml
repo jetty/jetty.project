@@ -394,9 +394,8 @@
     <module>jetty-util-ajax</module>
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
-    <module>example-jetty-embedded</module>
-    <!--module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module-->
+    <module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
@@ -404,12 +403,17 @@
     <module>jetty-annotations</module>
     <module>jetty-jndi</module>
     <module>jetty-jsp</module>
+    <module>jetty-jaas</module>
     <module>jetty-distribution</module>
     <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-osgi</module>
-    <module>example-async-rest</module>
+    <module>examples/embedded</module>
+    <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
+    <module>jetty-nosql</module>
+    <module>tests/test-sessions</module>
+    <module>tests/test-webapps</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
@@ -417,13 +421,10 @@
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
-    <module>jetty-client</module>
     <module>jetty-proxy</module>
-    <module>jetty-policy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
-    <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
     <module>test-jetty-nested</module>
     -->

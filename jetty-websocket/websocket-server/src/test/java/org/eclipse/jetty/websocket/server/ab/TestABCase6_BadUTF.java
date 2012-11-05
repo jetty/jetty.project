@@ -24,9 +24,11 @@ import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.core.protocol.Parser;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Test;
@@ -162,14 +164,23 @@ public class TestABCase6_BadUTF extends AbstractABCase
         Fuzzer fuzzer = new Fuzzer(this);
         try
         {
+            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerClose();
         }
         finally
         {
             fuzzer.close();
+            enableStacks(Parser.class,true);
         }
+    }
+
+    private void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
     }
 }

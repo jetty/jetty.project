@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.BaseConnection;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
@@ -31,6 +31,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 {
     private static final Logger LOG = Log.getLogger(ControlFrameBytes.class);
     private ByteBuffer buffer;
+    private ByteBuffer origPayload;
 
     public ControlFrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
@@ -46,22 +47,11 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            // is this outgoing close frame a response to a close?
-            if (connection.getState() == BaseConnection.State.CLOSING)
-            {
-                // Disconnect the connection (no more packets/frames)
-                connection.disconnect(false);
-            }
-            else
-            {
-                // Then this is the initiator for a close handshake.
-                connection.notifyClosing();
-            }
+            CloseInfo close = new CloseInfo(origPayload,false);
+            connection.onCloseHandshake(false,close);
         }
-        else
-        {
-            connection.flush();
-        }
+
+        connection.flush();
     }
 
     @Override
@@ -69,6 +59,10 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
     {
         if (buffer == null)
         {
+            if (frame.hasPayload())
+            {
+                origPayload = frame.getPayload().slice();
+            }
             buffer = connection.getGenerator().generate(frame);
         }
         return buffer;

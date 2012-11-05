@@ -24,14 +24,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
-
 
 // Simple asynchronous Chat room.
 // This does not handle duplicate usernames or multiple frames/tabs from the same browser
@@ -41,11 +43,46 @@ public class ChatServlet extends HttpServlet
 {
 
     // inner class to hold message queue for each chat room member
-    class Member
+    class Member implements AsyncListener
     {
-        String _name;
-        Continuation _continuation;
-        Queue<String> _queue = new LinkedList<String>();
+        final String _name;
+        final AtomicReference<AsyncContext> _async=new AtomicReference<>();
+        final Queue<String> _queue = new LinkedList<String>();
+        
+        Member(String name)
+        {
+            _name=name;
+        }
+        
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            AsyncContext async = _async.get();
+            if (async!=null && _async.compareAndSet(async,null))
+            {
+                HttpServletResponse response = (HttpServletResponse)async.getResponse();
+                response.setContentType("text/json;charset=utf-8");
+                PrintWriter out=response.getWriter();
+                out.print("{action:\"poll\"}");
+                async.complete();
+            }
+        }
+        
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            event.getAsyncContext().addListener(this);
+        }
+        
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+        
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+        }
     }
 
     Map<String,Map<String,Member>> _rooms = new HashMap<String,Map<String, Member>>();
@@ -71,8 +108,7 @@ public class ChatServlet extends HttpServlet
     private synchronized void join(HttpServletRequest request,HttpServletResponse response,String username)
     throws IOException
     {
-        Member member = new Member();
-        member._name=username;
+        Member member = new Member(username);
         Map<String,Member> room=_rooms.get(request.getPathInfo());
         if (room==null)
         {
@@ -94,7 +130,7 @@ public class ChatServlet extends HttpServlet
             response.sendError(503);
             return;
         }
-        Member member = room.get(username);
+        final Member member = room.get(username);
         if (member==null)
         {
             response.sendError(503);
@@ -130,21 +166,11 @@ public class ChatServlet extends HttpServlet
             }
             else
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isInitial())
-                {
-                    // No chat in queue, so suspend and wait for timeout or chat
-                    continuation.setTimeout(20000);
-                    continuation.suspend();
-                    member._continuation=continuation;
-                }
-                else
-                {
-                    // Timeout so send empty response
-                    response.setContentType("text/json;charset=utf-8");
-                    PrintWriter out=response.getWriter();
-                    out.print("{action:\"poll\"}");
-                }
+                AsyncContext async = request.startAsync();
+                async.setTimeout(10000);
+                async.addListener(member);
+                if (!member._async.compareAndSet(null,async))
+                    throw new IllegalStateException();
             }
         }
     }
@@ -164,11 +190,9 @@ public class ChatServlet extends HttpServlet
                     m._queue.add(message);  // chat
 
                     // wakeup member if polling
-                    if (m._continuation!=null)
-                    {
-                        m._continuation.resume();
-                        m._continuation=null;
-                    }
+                    AsyncContext async=m._async.get();
+                    if (async!=null & m._async.compareAndSet(async,null))
+                        async.dispatch();
                 }
             }
         }

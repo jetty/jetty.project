@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -25,19 +29,19 @@ import org.eclipse.jetty.http.HttpVersion;
 public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
-    private final HttpExchange exchange;
-    private final Listener listener;
+    private final Request request;
+    private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
 
-    public HttpResponse(HttpExchange exchange, Listener listener)
+    public HttpResponse(Request request, List<ResponseListener> listeners)
     {
-        this.exchange = exchange;
-        this.listener = listener;
+        this.request = request;
+        this.listeners = listeners;
     }
 
-    public HttpVersion version()
+    public HttpVersion getVersion()
     {
         return version;
     }
@@ -49,7 +53,7 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public int status()
+    public int getStatus()
     {
         return status;
     }
@@ -60,7 +64,7 @@ public class HttpResponse implements Response
         return this;
     }
 
-    public String reason()
+    public String getReason()
     {
         return reason;
     }
@@ -72,32 +76,36 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public HttpFields headers()
+    public HttpFields getHeaders()
     {
         return headers;
     }
 
     @Override
-    public long conversation()
+    public long getConversationID()
     {
-        return exchange.request().conversation();
+        return request.getConversationID();
     }
 
     @Override
-    public Listener listener()
+    public <T extends ResponseListener> List<T> getListeners(Class<T> type)
     {
-        return listener;
+        ArrayList<T> result = new ArrayList<>();
+        for (ResponseListener listener : listeners)
+            if (type == null || type.isInstance(listener))
+                result.add((T)listener);
+        return result;
     }
 
     @Override
-    public void abort()
+    public boolean abort(String reason)
     {
-        exchange.abort();
+        return request.abort(reason);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), version(), status(), reason());
+        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason());
     }
 }

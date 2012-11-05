@@ -199,7 +199,7 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isHalfClosed());
 
                 stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Callback.Empty<Void>()
+                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, null,new Callback.Empty<Void>()
                 {
                     @Override
                     public void completed(Void context)

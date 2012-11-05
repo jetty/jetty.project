@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.protocol;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,14 +33,8 @@ import org.eclipse.jetty.websocket.core.api.BadPayloadException;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class ParserTest
 {

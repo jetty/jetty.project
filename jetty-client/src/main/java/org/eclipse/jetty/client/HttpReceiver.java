@@ -20,9 +20,14 @@ package org.eclipse.jetty.client;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
@@ -41,16 +46,16 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
+    private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final HttpParser parser = new HttpParser(this);
     private final HttpConnection connection;
-    private final ResponseNotifier notifier;
+    private final ResponseNotifier responseNotifier;
     private ContentDecoder decoder;
-    private State state = State.IDLE;
 
     public HttpReceiver(HttpConnection connection)
     {
         this.connection = connection;
-        this.notifier = new ResponseNotifier(connection.getHttpClient());
+        this.responseNotifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     public void receive()
@@ -67,20 +72,16 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 LOG.debug("Read {} bytes from {}", read, connection);
                 if (read > 0)
                 {
-                    while (buffer.hasRemaining())
-                        parser.parseNext(buffer);
+                    parse(buffer);
                 }
                 else if (read == 0)
                 {
-                    connection.fillInterested();
+                    fillInterested();
                     break;
                 }
                 else
                 {
-                    // Shutting down the parser may invoke messageComplete() or fail()
-                    parser.shutdownInput();
-                    if (state == State.IDLE || state == State.RECEIVE)
-                        fail(new EOFException());
+                    shutdown();
                     break;
                 }
             }
@@ -88,12 +89,12 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         catch (EofException x)
         {
             LOG.ignore(x);
-            fail(x);
+            failAndClose(x);
         }
         catch (Exception x)
         {
             LOG.debug(x);
-            fail(x);
+            failAndClose(x);
         }
         finally
         {
@@ -101,151 +102,221 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
+    private void parse(ByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+            parser.parseNext(buffer);
+    }
+
+    private void fillInterested()
+    {
+        State state = this.state.get();
+        if (state == State.IDLE || state == State.RECEIVE)
+            connection.fillInterested();
+    }
+
+    private void shutdown()
+    {
+        // Shutting down the parser may invoke messageComplete() or fail()
+        parser.shutdownInput();
+        State state = this.state.get();
+        if (state == State.IDLE || state == State.RECEIVE)
+        {
+            if (!fail(new EOFException()))
+                connection.close();
+        }
+    }
+
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
-        state = State.RECEIVE;
-
-        HttpExchange exchange = connection.getExchange();
-        HttpConversation conversation = exchange.conversation();
-        HttpResponse response = exchange.response();
-
-        response.version(version).status(status).reason(reason);
-
-        // Probe the protocol handlers
-        Response.Listener currentListener = exchange.listener();
-        Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
-        HttpClient client = connection.getHttpClient();
-        ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.request(), response);
-        Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
-        if (handlerListener == null)
+        if (updateState(State.IDLE, State.RECEIVE))
         {
-            conversation.last(exchange);
-            if (currentListener == initialListener)
-                conversation.listener(initialListener);
-            else
-                conversation.listener(new DoubleResponseListener(currentListener, initialListener));
-        }
-        else
-        {
-            LOG.debug("Found protocol handler {}", protocolHandler);
-            if (currentListener == initialListener)
-                conversation.listener(handlerListener);
-            else
-                conversation.listener(new DoubleResponseListener(currentListener, handlerListener));
-        }
+            HttpExchange exchange = connection.getExchange();
+            // The exchange may be null if it failed concurrently
+            if (exchange != null)
+            {
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
 
-        LOG.debug("Receiving {}", response);
+                response.version(version).status(status).reason(reason);
 
-        notifier.notifyBegin(conversation.listener(), response);
+                // Probe the protocol handlers
+                HttpExchange initialExchange = conversation.getExchanges().peekFirst();
+                HttpClient client = connection.getHttpClient();
+                ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
+                Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
+                if (handlerListener == null)
+                {
+                    exchange.setLast(true);
+                    if (initialExchange == exchange)
+                    {
+                        conversation.setResponseListeners(exchange.getResponseListeners());
+                    }
+                    else
+                    {
+                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
+                        listeners.addAll(initialExchange.getResponseListeners());
+                        conversation.setResponseListeners(listeners);
+                    }
+                }
+                else
+                {
+                    LOG.debug("Found protocol handler {}", protocolHandler);
+                    if (initialExchange == exchange)
+                    {
+                        conversation.setResponseListeners(Collections.<Response.ResponseListener>singletonList(handlerListener));
+                    }
+                    else
+                    {
+                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
+                        listeners.add(handlerListener);
+                        conversation.setResponseListeners(listeners);
+                    }
+                }
+
+                LOG.debug("Receiving {}", response);
+                responseNotifier.notifyBegin(conversation.getResponseListeners(), response);
+            }
+        }
         return false;
     }
 
     @Override
     public boolean parsedHeader(HttpHeader header, String name, String value)
     {
-        HttpExchange exchange = connection.getExchange();
-        exchange.response().headers().add(name, value);
-
-        switch (name.toLowerCase())
+        if (updateState(State.RECEIVE, State.RECEIVE))
         {
-            case "set-cookie":
-            case "set-cookie2":
+            HttpExchange exchange = connection.getExchange();
+            // The exchange may be null if it failed concurrently
+            if (exchange != null)
             {
-                CookieStore cookieStore = connection.getHttpClient().getCookieStore();
-                HttpDestination destination = connection.getDestination();
-                List<HttpCookie> cookies = HttpCookieParser.parseCookies(value);
-                for (HttpCookie cookie : cookies)
-                    cookieStore.addCookie(destination, cookie);
-                break;
-            }
-            default:
-            {
-                break;
+                exchange.getResponse().getHeaders().add(name, value);
+                switch (name.toLowerCase(Locale.ENGLISH))
+                {
+                    case "set-cookie":
+                    case "set-cookie2":
+                    {
+                        CookieStore cookieStore = connection.getHttpClient().getCookieStore();
+                        HttpDestination destination = connection.getDestination();
+                        List<HttpCookie> cookies = HttpCookieParser.parseCookies(value);
+                        for (HttpCookie cookie : cookies)
+                            cookieStore.addCookie(destination, cookie);
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
             }
         }
-
         return false;
     }
 
     @Override
     public boolean headerComplete()
     {
-        HttpExchange exchange = connection.getExchange();
-        HttpConversation conversation = exchange.conversation();
-        HttpResponse response = exchange.response();
-        LOG.debug("Headers {}", response);
-        notifier.notifyHeaders(conversation.listener(), response);
-
-        Enumeration<String> contentEncodings = response.headers().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
-        if (contentEncodings != null)
+        if (updateState(State.RECEIVE, State.RECEIVE))
         {
-            for (ContentDecoder.Factory factory : connection.getHttpClient().getContentDecoderFactories())
+            HttpExchange exchange = connection.getExchange();
+            // The exchange may be null if it failed concurrently
+            if (exchange != null)
             {
-                while (contentEncodings.hasMoreElements())
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
+                LOG.debug("Headers {}", response);
+                responseNotifier.notifyHeaders(conversation.getResponseListeners(), response);
+
+                Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
+                if (contentEncodings != null)
                 {
-                    if (factory.getEncoding().equalsIgnoreCase(contentEncodings.nextElement()))
+                    for (ContentDecoder.Factory factory : connection.getHttpClient().getContentDecoderFactories())
                     {
-                        this.decoder = factory.newContentDecoder();
-                        break;
+                        while (contentEncodings.hasMoreElements())
+                        {
+                            if (factory.getEncoding().equalsIgnoreCase(contentEncodings.nextElement()))
+                            {
+                                this.decoder = factory.newContentDecoder();
+                                break;
+                            }
+                        }
                     }
                 }
             }
         }
-
         return false;
     }
 
     @Override
     public boolean content(ByteBuffer buffer)
     {
-        HttpExchange exchange = connection.getExchange();
-        HttpConversation conversation = exchange.conversation();
-        HttpResponse response = exchange.response();
-        LOG.debug("Content {}: {} bytes", response, buffer.remaining());
-
-        ContentDecoder decoder = this.decoder;
-        if (decoder != null)
+        if (updateState(State.RECEIVE, State.RECEIVE))
         {
-            buffer = decoder.decode(buffer);
-            LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
-        }
+            HttpExchange exchange = connection.getExchange();
+            // The exchange may be null if it failed concurrently
+            if (exchange != null)
+            {
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
+                LOG.debug("Content {}: {} bytes", response, buffer.remaining());
 
-        notifier.notifyContent(conversation.listener(), response, buffer);
+                ContentDecoder decoder = this.decoder;
+                if (decoder != null)
+                {
+                    buffer = decoder.decode(buffer);
+                    LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
+                }
+
+                responseNotifier.notifyContent(conversation.getResponseListeners(), response, buffer);
+            }
+        }
         return false;
     }
 
     @Override
-    public boolean messageComplete(long contentLength)
+    public boolean messageComplete()
     {
-        HttpExchange exchange = connection.getExchange();
-        // The exchange may be null if it was failed before
-        if (exchange != null && state == State.RECEIVE)
+        if (updateState(State.RECEIVE, State.RECEIVE))
             success();
         return true;
     }
 
-    protected void success()
+    protected boolean success()
     {
-        parser.reset();
-        state = State.SUCCESS;
-
         HttpExchange exchange = connection.getExchange();
-        HttpResponse response = exchange.response();
+        if (exchange == null)
+            return false;
+
+        AtomicMarkableReference<Result> completion = exchange.responseComplete(null);
+        if (!completion.isMarked())
+            return false;
+
+        parser.reset();
+        decoder = null;
+
+        if (!updateState(State.RECEIVE, State.IDLE))
+            throw new IllegalStateException();
+
+        exchange.terminateResponse();
+
+        HttpResponse response = exchange.getResponse();
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+        responseNotifier.notifySuccess(listeners, response);
         LOG.debug("Received {}", response);
 
-        Result result = exchange.responseComplete(null);
-
-        HttpConversation conversation = exchange.conversation();
-        notifier.notifySuccess(conversation.listener(), response);
+        Result result = completion.getReference();
         if (result != null)
         {
-            notifier.notifyComplete(conversation.listener(), result);
-            reset();
+            connection.complete(exchange, !result.isFailed());
+
+            responseNotifier.notifyComplete(listeners, result);
         }
+
+        return true;
     }
 
-    protected void fail(Throwable failure)
+    protected boolean fail(Throwable failure)
     {
         HttpExchange exchange = connection.getExchange();
         // In case of a response error, the failure has already been notified
@@ -253,108 +324,84 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         // loop throws an exception that reenters here but without exchange;
         // or, the server could just have timed out the connection.
         if (exchange == null)
-            return;
+            return false;
+
+        AtomicMarkableReference<Result> completion = exchange.responseComplete(failure);
+        if (!completion.isMarked())
+            return false;
 
         parser.close();
-        state = State.FAILURE;
+        decoder = null;
 
-        HttpResponse response = exchange.response();
+        while (true)
+        {
+            State current = state.get();
+            if (updateState(current, State.FAILURE))
+                break;
+        }
+
+        exchange.terminateResponse();
+
+        HttpResponse response = exchange.getResponse();
+        HttpConversation conversation = exchange.getConversation();
+        responseNotifier.notifyFailure(conversation.getResponseListeners(), response, failure);
         LOG.debug("Failed {} {}", response, failure);
 
-        Result result = exchange.responseComplete(failure);
-
-        HttpConversation conversation = exchange.conversation();
-        notifier.notifyFailure(conversation.listener(), response, failure);
+        Result result = completion.getReference();
         if (result != null)
         {
-            notifier.notifyComplete(conversation.listener(), result);
-            reset();
+            connection.complete(exchange, false);
+
+            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
         }
+
+        return true;
     }
 
     @Override
     public boolean earlyEOF()
     {
-        fail(new EOFException());
+        failAndClose(new EOFException());
         return false;
+    }
+
+    private void failAndClose(Throwable failure)
+    {
+        fail(failure);
+        connection.close();
     }
 
     @Override
     public void badMessage(int status, String reason)
     {
         HttpExchange exchange = connection.getExchange();
-        HttpResponse response = exchange.response();
+        HttpResponse response = exchange.getResponse();
         response.status(status).reason(reason);
-        fail(new HttpResponseException("HTTP protocol violation: bad response", response));
+        failAndClose(new HttpResponseException("HTTP protocol violation: bad response", response));
     }
 
     public void idleTimeout()
     {
+        // If we cannot fail, it means a response arrived
+        // just when we were timeout idling, so we don't close
         fail(new TimeoutException());
     }
 
-    private void reset()
+    public boolean abort(HttpExchange exchange, String reason)
     {
-        decoder = null;
-        state = State.IDLE;
+        return fail(new HttpResponseException(reason == null ? "Response aborted" : reason, exchange.getResponse()));
     }
 
-    private class DoubleResponseListener implements Response.Listener
+    private boolean updateState(State from, State to)
     {
-        private final Response.Listener listener1;
-        private final Response.Listener listener2;
-
-        private DoubleResponseListener(Response.Listener listener1, Response.Listener listener2)
-        {
-            this.listener1 = listener1;
-            this.listener2 = listener2;
-        }
-
-        @Override
-        public void onBegin(Response response)
-        {
-            notifier.notifyBegin(listener1, response);
-            notifier.notifyBegin(listener2, response);
-        }
-
-        @Override
-        public void onHeaders(Response response)
-        {
-            notifier.notifyHeaders(listener1, response);
-            notifier.notifyHeaders(listener2, response);
-        }
-
-        @Override
-        public void onContent(Response response, ByteBuffer content)
-        {
-            notifier.notifyContent(listener1, response, content);
-            notifier.notifyContent(listener2, response, content);
-        }
-
-        @Override
-        public void onSuccess(Response response)
-        {
-            notifier.notifySuccess(listener1, response);
-            notifier.notifySuccess(listener2, response);
-        }
-
-        @Override
-        public void onFailure(Response response, Throwable failure)
-        {
-            notifier.notifyFailure(listener1, response, failure);
-            notifier.notifyFailure(listener2, response, failure);
-        }
-
-        @Override
-        public void onComplete(Result result)
-        {
-            notifier.notifyComplete(listener1, result);
-            notifier.notifyComplete(listener2, result);
-        }
+        boolean updated = state.compareAndSet(from, to);
+        if (!updated)
+            LOG.debug("State update failed: {} -> {}: {}", from, to, state.get());
+        return updated;
     }
 
     private enum State
     {
-        IDLE, RECEIVE, SUCCESS, FAILURE
+        IDLE, RECEIVE, FAILURE
     }
 }

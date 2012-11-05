@@ -18,17 +18,22 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class ConnectionManagerTest
 {
+    @Rule
+    public TestTracker tt = new TestTracker();
+
     private void assertToSocketAddress(String uriStr, String expectedHost, int expectedPort) throws URISyntaxException
     {
         URI uri = new URI(uriStr);

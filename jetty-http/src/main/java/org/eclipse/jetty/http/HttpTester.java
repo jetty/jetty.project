@@ -126,7 +126,7 @@ public class HttpTester
         }
 
         @Override
-        public boolean messageComplete(long contentLength)
+        public boolean messageComplete()
         {
             return true;
         }

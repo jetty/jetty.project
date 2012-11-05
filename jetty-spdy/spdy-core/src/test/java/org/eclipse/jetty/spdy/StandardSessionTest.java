@@ -430,9 +430,9 @@ public class StandardSessionTest
         };
 
         // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, null,callback);
         // second data frame should fail without controller.writer() as the connection is expected to be broken after first controller.write() call failed.
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, null,callback);
 
         verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class), any(FrameBytes.class));
         assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));

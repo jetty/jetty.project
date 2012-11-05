@@ -23,8 +23,8 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.client.HttpClient;
 
 /**
- * {@link Destination} represents the triple made of the {@link #scheme()}, the {@link #host()}
- * and the {@link #port()}.
+ * {@link Destination} represents the triple made of the {@link #getScheme}, the {@link #getHost}
+ * and the {@link #getPort}.
  * <p />
  * {@link Destination} holds a pool of {@link Connection}s, but allows to create unpooled
  * connections if the application wants full control over connection management via {@link #newConnection()}.
@@ -36,17 +36,17 @@ public interface Destination
     /**
      * @return the scheme of this destination, such as "http" or "https"
      */
-    String scheme();
+    String getScheme();
 
     /**
      * @return the host of this destination, such as "127.0.0.1" or "google.com"
      */
-    String host();
+    String getHost();
 
     /**
      * @return the port of this destination such as 80 or 443
      */
-    int port();
+    int getPort();
 
     /**
      * @return a future to a new, unpooled, {@link Connection}

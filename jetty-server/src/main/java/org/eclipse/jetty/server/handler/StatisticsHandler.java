@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -46,9 +46,9 @@ public class StatisticsHandler extends HandlerWrapper
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final CounterStatistic _dispatchedStats = new CounterStatistic();
     private final SampleStatistic _dispatchedTimeStats = new SampleStatistic();
-    private final CounterStatistic _suspendStats = new CounterStatistic();
+    private final CounterStatistic _asyncWaitStats = new CounterStatistic();
 
-    private final AtomicInteger _resumes = new AtomicInteger();
+    private final AtomicInteger _asyncDispatches = new AtomicInteger();
     private final AtomicInteger _expires = new AtomicInteger();
 
     private final AtomicInteger _responses1xx = new AtomicInteger();
@@ -58,11 +58,31 @@ public class StatisticsHandler extends HandlerWrapper
     private final AtomicInteger _responses5xx = new AtomicInteger();
     private final AtomicLong _responsesTotalBytes = new AtomicLong();
 
-    private final ContinuationListener _onCompletion = new ContinuationListener()
+    private final AsyncListener _onCompletion = new AsyncListener()
     {
-        public void onComplete(Continuation continuation)
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
         {
-            final Request request = ((HttpChannelState)continuation).getBaseRequest();
+            _expires.incrementAndGet();
+        }
+        
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            event.getAsyncContext().addListener(this);
+        }
+        
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+        
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+            HttpChannelState state = (HttpChannelState)event.getAsyncContext();
+            
+            Request request = state.getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
 
             _requestStats.decrement();
@@ -70,14 +90,10 @@ public class StatisticsHandler extends HandlerWrapper
 
             updateResponse(request);
 
-            if (!continuation.isResumed())
-                _suspendStats.decrement();
+            if (!state.isDispatched())
+                _asyncWaitStats.decrement();
         }
-
-        public void onTimeout(Continuation continuation)
-        {
-            _expires.incrementAndGet();
-        }
+        
     };
 
     /**
@@ -92,9 +108,9 @@ public class StatisticsHandler extends HandlerWrapper
         _requestTimeStats.reset();
         _dispatchedStats.reset();
         _dispatchedTimeStats.reset();
-        _suspendStats.reset();
+        _asyncWaitStats.reset();
 
-        _resumes.set(0);
+        _asyncDispatches.set(0);
         _expires.set(0);
         _responses1xx.set(0);
         _responses2xx.set(0);
@@ -110,8 +126,8 @@ public class StatisticsHandler extends HandlerWrapper
         _dispatchedStats.increment();
 
         final long start;
-        HttpChannelState continuation = request.getAsyncContinuation();
-        if (continuation.isInitial())
+        HttpChannelState state = request.getHttpChannelState();
+        if (state.isInitial())
         {
             // new request
             _requestStats.increment();
@@ -121,9 +137,9 @@ public class StatisticsHandler extends HandlerWrapper
         {
             // resumed request
             start = System.currentTimeMillis();
-            _suspendStats.decrement();
-            if (continuation.isResumed())
-                _resumes.incrementAndGet();
+            _asyncWaitStats.decrement();
+            if (state.isDispatched())
+                _asyncDispatches.incrementAndGet();
         }
 
         try
@@ -138,13 +154,13 @@ public class StatisticsHandler extends HandlerWrapper
             _dispatchedStats.decrement();
             _dispatchedTimeStats.set(dispatched);
 
-            if (continuation.isSuspended())
+            if (state.isSuspended())
             {
-                if (continuation.isInitial())
-                    continuation.addContinuationListener(_onCompletion);
-                _suspendStats.increment();
+                if (state.isInitial())
+                    state.addListener(_onCompletion);
+                _asyncWaitStats.increment();
             }
-            else if (continuation.isInitial())
+            else if (state.isInitial())
             {
                 _requestStats.decrement();
                 _requestTimeStats.set(dispatched);
@@ -197,7 +213,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of requests handled by this handler
      * since {@link #statsReset()} was last called, excluding
      * active requests
-     * @see #getResumes()
+     * @see #getAsyncDispatches()
      */
     @ManagedAttribute("number of requests")
     public int getRequests()
@@ -350,49 +366,48 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of requests handled by this handler
      * since {@link #statsReset()} was last called, including
      * resumed requests
-     * @see #getResumes()
+     * @see #getAsyncDispatches()
      */
-    @ManagedAttribute("number of requests suspended")
-    public int getSuspends()
+    @ManagedAttribute("total number of async requests")
+    public int getAsyncRequests()
     {
-        return (int)_suspendStats.getTotal();
+        return (int)_asyncWaitStats.getTotal();
     }
 
     /**
      * @return the number of requests currently suspended.
      * since {@link #statsReset()} was last called.
      */
-    @ManagedAttribute("number of currently suspended requests")
-    public int getSuspendsActive()
+    @ManagedAttribute("currently waiting async requests")
+    public int getAsyncRequestsWaiting()
     {
-        return (int)_suspendStats.getCurrent();
+        return (int)_asyncWaitStats.getCurrent();
     }
 
     /**
      * @return the maximum number of current suspended requests
      * since {@link #statsReset()} was last called.
      */
-    @ManagedAttribute("maximum number of suspended requests")
-    public int getSuspendsActiveMax()
+    @ManagedAttribute("maximum number of waiting async requests")
+    public int getAsyncRequestsWaitingMax()
     {
-        return (int)_suspendStats.getMax();
+        return (int)_asyncWaitStats.getMax();
     }
 
     /**
-     * @return the number of requests that have been resumed
-     * @see #getExpires()
+     * @return the number of requests that have been asynchronously dispatched
      */
-    @ManagedAttribute("number of requested that have been resumed")
-    public int getResumes()
+    @ManagedAttribute("number of requested that have been asynchronously dispatched")
+    public int getAsyncDispatches()
     {
-        return _resumes.get();
+        return _asyncDispatches.get();
     }
 
     /**
      * @return the number of requests that expired while suspended.
-     * @see #getResumes()
+     * @see #getAsyncDispatches()
      */
-    @ManagedAttribute("number of requests have have expired")
+    @ManagedAttribute("number of async requests requests that have expired")
     public int getExpires()
     {
         return _expires.get();
@@ -493,9 +508,9 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Dispatched time standard deviation: ").append(getDispatchedTimeStdDev()).append("<br />\n");
 
 
-        sb.append("Total requests suspended: ").append(getSuspends()).append("<br />\n");
+        sb.append("Total requests suspended: ").append(getAsyncRequests()).append("<br />\n");
         sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
-        sb.append("Total requests resumed: ").append(getResumes()).append("<br />\n");
+        sb.append("Total requests resumed: ").append(getAsyncDispatches()).append("<br />\n");
 
         sb.append("<h2>Responses:</h2>\n");
         sb.append("1xx responses: ").append(getResponses1xx()).append("<br />\n");

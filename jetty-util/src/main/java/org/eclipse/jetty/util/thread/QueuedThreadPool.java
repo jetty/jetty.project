@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
-import org.omg.CORBA._IDLTypeStub;
 
 @ManagedObject("A thread pool with no max bound by default")
 public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Dumpable
@@ -110,7 +109,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     protected void doStop() throws Exception
     {
         super.doStop();
-        long start=System.currentTimeMillis();
 
         long timeout=getStopTimeout();
         BlockingQueue<Runnable> jobs = getQueue();
@@ -247,6 +245,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * @return maximum queue size
      */
+    @ManagedAttribute("maximum queue size")
     public int getMaxQueued()
     {
         return _maxQueued;
@@ -375,6 +374,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return The total number of threads currently in the pool
      */
     @Override
+    @ManagedAttribute("total number of threads currently in the pool")
     public int getThreads()
     {
         return _threadsStarted.get();
@@ -384,6 +384,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return The number of idle threads in the pool
      */
     @Override
+    @ManagedAttribute("total number of idle threads in the pool")
     public int getIdleThreads()
     {
         return _threadsIdle.get();
@@ -393,6 +394,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
      */
     @Override
+    @ManagedAttribute("True if the pools is at maxThreads and there are not idle threads than queued jobs")
     public boolean isLowOnThreads()
     {
         return _threadsStarted.get()==_maxThreads && _jobs.size()>=_threadsIdle.get();

@@ -120,6 +120,11 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
         {
             LOG.debug(e);
         }
+        finally
+        {
+            _ishut=true;
+            _oshut=true;
+        }
     }
 
     @Override
@@ -179,7 +184,7 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
             }
             LOG.debug("flushed {} {}", flushed, this);
         }
-        catch (ClosedChannelException | EOFException | SocketException e)
+        catch (IOException e)
         {
             throw new EofException(e);
         }

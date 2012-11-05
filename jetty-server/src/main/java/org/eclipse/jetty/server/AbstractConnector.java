@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -85,7 +86,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * the method {@link #setDefaultProtocol(String)} or defaults to the protocol of the first configured factory.
  * <p>
  * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to
- * configure the HTTP protocol, you pass a {@link HttpChannelConfig} instance to the {@link HttpConnectionFactory}
+ * configure the HTTP protocol, you pass a {@link HttpConfiguration} instance to the {@link HttpConnectionFactory}
  * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is
  * configured by passing it a {@link SslContextFactory} and a next protocol name.
  *
@@ -124,8 +125,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <li>perform any configuration of the connection (eg. socket linger times)
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
  * method to create a new Connection instance.
- * <li>call the {@link #connectionOpened(Connection)} method to signal a new connection has been created.
- * <li>arrange for the {@link #connectionClosed(Connection)} method to be called once the connection is closed.
  * </nl>
  * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
  * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
@@ -143,7 +142,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
     private volatile CountDownLatch _stopping;
-    private long _idleTimeout = 200000;
+    private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
 
@@ -205,6 +204,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
+    @ManagedAttribute("Idle timeout")
     public long getIdleTimeout()
     {
         return _idleTimeout;
@@ -315,7 +315,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            return _factories.get(protocol.toLowerCase());
+            return _factories.get(protocol.toLowerCase(Locale.ENGLISH));
         }
     }
 
@@ -338,7 +338,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             ConnectionFactory old=_factories.remove(factory.getProtocol());
             if (old!=null)
                 removeBean(old);
-            _factories.put(factory.getProtocol().toLowerCase(), factory);
+            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
@@ -349,7 +349,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory factory= _factories.remove(protocol.toLowerCase());
+            ConnectionFactory factory= _factories.remove(protocol.toLowerCase(Locale.ENGLISH));
             removeBean(factory);
             return factory;
         }
@@ -379,6 +379,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
 
     @Override
+    @ManagedAttribute("Protocols supported by this connector")
     public List<String> getProtocols()
     {
         synchronized (_factories)
@@ -395,6 +396,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
     }
 
+    @ManagedAttribute("This connector's default protocol")
     public String getDefaultProtocol()
     {
         return _defaultProtocol;
@@ -402,7 +404,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        _defaultProtocol = defaultProtocol.toLowerCase();
+        _defaultProtocol = defaultProtocol.toLowerCase(Locale.ENGLISH);
         if (isRunning())
             _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }

@@ -39,8 +39,8 @@ public class HttpCookieStore implements CookieStore
     {
         List<HttpCookie> result = new ArrayList<>();
 
-        String host = destination.host();
-        int port = destination.port();
+        String host = destination.getHost();
+        int port = destination.getPort();
         String key = host + ":" + port + path;
 
         // First lookup: direct hit
@@ -83,7 +83,7 @@ public class HttpCookieStore implements CookieStore
             }
             else
             {
-                if (!"https".equalsIgnoreCase(destination.scheme()) && cookie.isSecure())
+                if (!"https".equalsIgnoreCase(destination.getScheme()) && cookie.isSecure())
                     continue;
                 result.add(cookie);
             }
@@ -93,7 +93,7 @@ public class HttpCookieStore implements CookieStore
     @Override
     public boolean addCookie(Destination destination, HttpCookie cookie)
     {
-        String destinationDomain = destination.host() + ":" + destination.port();
+        String destinationDomain = destination.getHost() + ":" + destination.getPort();
 
         // Check whether it is the same domain
         String domain = cookie.getDomain();
@@ -101,7 +101,7 @@ public class HttpCookieStore implements CookieStore
             domain = destinationDomain;
 
         if (domain.indexOf(':') < 0)
-            domain += ":" + ("https".equalsIgnoreCase(destination.scheme()) ? 443 : 80);
+            domain += ":" + ("https".equalsIgnoreCase(destination.getScheme()) ? 443 : 80);
 
         // Cookie domains may start with a ".", like ".domain.com"
         // This also avoids that a request to sub.domain.com sets a cookie for domain.com
@@ -113,7 +113,7 @@ public class HttpCookieStore implements CookieStore
         if (path == null || path.length() == 0)
             path = "/";
 
-        String key = destination.host() + ":" + destination.port() + path;
+        String key = destination.getHost() + ":" + destination.getPort() + path;
         Queue<HttpCookie> cookies = allCookies.get(key);
         if (cookies == null)
         {

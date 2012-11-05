@@ -60,7 +60,10 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         try
         {
             getEndPoint().flush(BufferUtil.EMPTY_BUFFER);
-            fillInterested();
+            if (completed)
+                replaceConnection();
+            else
+                fillInterested();
         }
         catch(IOException e)
         {
@@ -92,6 +95,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         catch (IOException x)
         {
             LOG.debug(x);
+            NextProtoNego.remove(engine);
             getEndPoint().close();
             return -1;
         }
@@ -126,6 +130,5 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         endPoint.getConnection().onClose();
         endPoint.setConnection(connection);
         connection.onOpen();
-        completed = true;
     }
 }

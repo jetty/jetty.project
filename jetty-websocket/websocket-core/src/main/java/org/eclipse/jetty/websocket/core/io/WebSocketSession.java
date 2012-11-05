@@ -31,6 +31,8 @@ import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.event.EventDriver;
+import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.core.protocol.ConnectionState;
 import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 
@@ -99,7 +101,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     }
 
     @Override
-    public BaseConnection.State getState()
+    public ConnectionState getState()
     {
         return baseConnection.getState();
     }
@@ -113,6 +115,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public void incoming(WebSocketException e)
     {
+        if (baseConnection.isInputClosed())
+        {
+            return; // input is closed
+        }
         // pass on incoming to websocket itself
         websocket.incoming(e);
     }
@@ -120,8 +126,18 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public void incoming(WebSocketFrame frame)
     {
+        if (baseConnection.isInputClosed())
+        {
+            return; // input is closed
+        }
         // pass on incoming to websocket itself
         websocket.incoming(frame);
+    }
+
+    @Override
+    public boolean isInputClosed()
+    {
+        return baseConnection.isInputClosed();
     }
 
     @Override
@@ -131,15 +147,21 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     }
 
     @Override
+    public boolean isOutputClosed()
+    {
+        return baseConnection.isOutputClosed();
+    }
+
+    @Override
     public boolean isReading()
     {
         return baseConnection.isReading();
     }
 
     @Override
-    public void notifyClosing()
+    public void onCloseHandshake(boolean incoming, CloseInfo close)
     {
-        baseConnection.notifyClosing();
+        baseConnection.onCloseHandshake(incoming,close);
     }
 
     public void onConnect()
@@ -206,6 +228,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
     {
+        if (baseConnection.isOutputClosed())
+        {
+            return; // output is closed
+        }
         if (LOG.isDebugEnabled())
         {
             LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
@@ -223,6 +249,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
     {
+        if (baseConnection.isOutputClosed())
+        {
+            return; // output is closed
+        }
         if (LOG.isDebugEnabled())
         {
             LOG.debug("write(context,{},ByteBuffer->{})",callback,BufferUtil.toDetailString(buffer));
@@ -240,6 +270,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public <C> void write(C context, Callback<C> callback, String message) throws IOException
     {
+        if (baseConnection.isOutputClosed())
+        {
+            return; // output is closed
+        }
         if (LOG.isDebugEnabled())
         {
             LOG.debug("write(context,{},message.length:{})",callback,message.length());

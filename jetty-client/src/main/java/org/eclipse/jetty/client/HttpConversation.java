@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -34,8 +35,7 @@ public class HttpConversation implements Attributes
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private final HttpClient client;
     private final long id;
-    private volatile Response.Listener listener;
-    private volatile HttpExchange last;
+    private volatile List<Response.ResponseListener> listeners;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -48,40 +48,19 @@ public class HttpConversation implements Attributes
         return id;
     }
 
-    public Deque<HttpExchange> exchanges()
+    public Deque<HttpExchange> getExchanges()
     {
         return exchanges;
     }
 
-    public Response.Listener listener()
+    public List<Response.ResponseListener> getResponseListeners()
     {
-        return listener;
+        return listeners;
     }
 
-    public void listener(Response.Listener listener)
+    public void setResponseListeners(List<Response.ResponseListener> listeners)
     {
-        this.listener = listener;
-    }
-
-    /**
-     * @return the exchange that has been identified as the last of this conversation
-     * @see #last(HttpExchange)
-     */
-    public HttpExchange last()
-    {
-        return last;
-    }
-
-    /**
-     * Remembers the given {@code exchange} as the last of this conversation.
-     *
-     * @param exchange the exchange that is the last of this conversation
-     * @see #last()
-     */
-    public void last(HttpExchange exchange)
-    {
-        if (last == null)
-            last = exchange;
+        this.listeners = listeners;
     }
 
     public void complete()
@@ -117,6 +96,12 @@ public class HttpConversation implements Attributes
     public void clearAttributes()
     {
         attributes.clear();
+    }
+
+    public boolean abort(String reason)
+    {
+        HttpExchange exchange = exchanges.peekLast();
+        return exchange != null && exchange.abort(reason);
     }
 
     @Override

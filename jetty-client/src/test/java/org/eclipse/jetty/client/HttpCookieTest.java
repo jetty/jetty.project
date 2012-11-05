@@ -61,7 +61,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         String path = "/path";
         Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Destination destination = client.getDestination(scheme, host, port);
         List<HttpCookie> cookies = client.getCookieStore().findCookies(destination, path);
@@ -98,6 +98,6 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         client.getCookieStore().addCookie(destination, new HttpCookie(name, value, null, path));
 
         Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 }

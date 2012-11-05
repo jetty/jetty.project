@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -67,7 +68,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestSuccess(new Request.SuccessListener()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -75,7 +76,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .onResponseHeaders(new Response.HeadersListener()
                 {
                     @Override
                     public void onHeaders(Response response)
@@ -84,7 +85,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         Assert.assertEquals(1, activeConnections.size());
                         headersLatch.countDown();
                     }
-
+                })
+                .send(new Response.Listener.Empty()
+                {
                     @Override
                     public void onSuccess(Response response)
                     {
@@ -194,7 +197,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.status());
+                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
                         successLatch.countDown();
@@ -267,7 +270,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.status());
+                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
                         successLatch.countDown();
@@ -307,7 +310,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .onRequestFailure(new Request.FailureListener()
                 {
                     @Override
                     public void onFailure(Request request, Throwable failure)
@@ -403,6 +406,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
             Assert.assertEquals(0, activeConnections.size());
 
+            Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
+
             final CountDownLatch latch = new CountDownLatch(1);
             client.newRequest(host, port)
                     .scheme(scheme)
@@ -450,7 +455,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 .send()
                 .get(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         connector.stop();
 

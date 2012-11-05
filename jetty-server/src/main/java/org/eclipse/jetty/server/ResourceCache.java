@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -526,6 +527,14 @@ public class ResourceCache
            
             return _resource.getInputStream();
         }   
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public ReadableByteChannel getReadableByteChannel() throws IOException
+        {
+            return _resource.getReadableByteChannel();
+        }
+
 
         /* ------------------------------------------------------------ */
         @Override

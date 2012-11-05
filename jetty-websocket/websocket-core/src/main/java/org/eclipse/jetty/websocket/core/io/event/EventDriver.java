@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.BaseConnection;
 import org.eclipse.jetty.websocket.core.api.CloseException;
 import org.eclipse.jetty.websocket.core.api.StatusCode;
 import org.eclipse.jetty.websocket.core.api.WebSocketException;
@@ -70,7 +69,7 @@ public abstract class EventDriver implements IncomingFrames
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("incoming({})",e);
+            LOG.debug("incoming(WebSocketException)",e);
         }
 
         if (e instanceof CloseException)
@@ -100,22 +99,16 @@ public abstract class EventDriver implements IncomingFrames
                 {
                     boolean validate = true;
                     CloseInfo close = new CloseInfo(frame,validate);
+
+                    // notify user websocket pojo
                     onClose(close);
 
-                    // Is this close frame a response to a prior close?
-                    if (session.getState() == BaseConnection.State.CLOSING)
-                    {
-                        // Then this is close response handshake (to a prior
-                        // outgoing close frame)
-                        session.disconnect();
-                    }
-                    else
-                    {
-                        // This is the initiator for a close handshake
-                        // Trigger close response handshake.
-                        session.notifyClosing();
-                        session.close(close.getStatusCode(),close.getReason());
-                    }
+                    // respond
+                    session.close(close.getStatusCode(),close.getReason());
+
+                    // process handshake
+                    session.onCloseHandshake(true,close);
+
                     return;
                 }
                 case OpCode.PING:
@@ -187,14 +180,7 @@ public abstract class EventDriver implements IncomingFrames
     protected void terminateConnection(int statusCode, String rawreason)
     {
         String reason = rawreason;
-        if (StringUtil.isNotBlank(reason))
-        {
-            // Trim big exception messages here.
-            if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
-            {
-                reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
-            }
-        }
+        reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
         LOG.debug("terminateConnection({},{})",statusCode,rawreason);
         session.close(statusCode,reason);
     }

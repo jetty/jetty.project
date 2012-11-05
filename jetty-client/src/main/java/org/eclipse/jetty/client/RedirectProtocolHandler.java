@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 
 public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
 {
-    private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirect";
+    private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirects";
 
     private final HttpClient client;
     private final ResponseNotifier notifier;
@@ -40,13 +41,13 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     @Override
     public boolean accept(Request request, Response response)
     {
-        switch (response.status())
+        switch (response.getStatus())
         {
             case 301:
             case 302:
             case 303:
             case 307:
-                return request.followRedirects();
+                return request.isFollowRedirects();
         }
         return false;
     }
@@ -64,14 +65,14 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         {
             Request request = result.getRequest();
             Response response = result.getResponse();
-            String location = response.headers().get("location");
-            int status = response.status();
+            String location = response.getHeaders().get("location");
+            int status = response.getStatus();
             switch (status)
             {
                 case 301:
                 {
-                    if (request.method() == HttpMethod.GET || request.method() == HttpMethod.HEAD)
-                        redirect(result, request.method(), location);
+                    if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
+                        redirect(result, request.getMethod(), location);
                     else
                         fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
                     break;
@@ -86,7 +87,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                 case 307:
                 {
                     // Keep same method
-                    redirect(result, request.method(), location);
+                    redirect(result, request.getMethod(), location);
                     break;
                 }
                 default:
@@ -104,8 +105,8 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
 
     private void redirect(Result result, HttpMethod method, String location)
     {
-        Request request = result.getRequest();
-        HttpConversation conversation = client.getConversation(request.conversation());
+        final Request request = result.getRequest();
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
             redirects = 0;
@@ -115,21 +116,22 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
 
-            Request redirect = client.newRequest(request.conversation(), location);
+            Request redirect = client.copyRequest(request, location);
 
             // Use given method
             redirect.method(method);
 
-            redirect.version(request.version());
+            redirect.onRequestBegin(new Request.BeginListener()
+            {
+                @Override
+                public void onBegin(Request redirect)
+                {
+                    if (request.isAborted())
+                        redirect.abort(null);
+                }
+            });
 
-            // Copy headers
-            for (HttpFields.Field header : request.headers())
-                redirect.header(header.getName(), header.getValue());
-
-            // Copy content
-            redirect.content(request.content());
-
-            redirect.send(new Response.Listener.Empty());
+            redirect.send(null);
         }
         else
         {
@@ -141,10 +143,10 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
     {
         Request request = result.getRequest();
         Response response = result.getResponse();
-        HttpConversation conversation = client.getConversation(request.conversation());
-        Response.Listener listener = conversation.exchanges().peekFirst().listener();
-        // TODO: should we reply all event, or just the failure ?
-        notifier.notifyFailure(listener, response, failure);
-        notifier.notifyComplete(listener, new Result(request, response, failure));
+        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        List<Response.ResponseListener> listeners = conversation.getExchanges().peekFirst().getResponseListeners();
+        // TODO: should we replay all events, or just the failure ?
+        notifier.notifyFailure(listeners, response, failure);
+        notifier.notifyComplete(listeners, new Result(request, response, failure));
     }
 }

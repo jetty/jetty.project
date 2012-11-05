@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.server;
+import java.util.Locale;
+
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.util.LazyList;
@@ -198,7 +200,6 @@ public class CookieCutter
                                 continue;
 
                             case ';':
-                            // TODO case ',':
                                 if (tokenstart>=0)
                                     value = hdr.substring(tokenstart, tokenend+1);
                                 else
@@ -244,7 +245,6 @@ public class CookieCutter
                                 continue;
 
                             case ';':
-                            // TODO case ',':
                                 if (tokenstart>=0)
                                 {
                                     name = hdr.substring(tokenstart, tokenend+1);
@@ -278,7 +278,6 @@ public class CookieCutter
                 // If after processing the current character we have a value and a name, then it is a cookie
                 if (value!=null && name!=null)
                 {
-                    // TODO handle unquoting during parsing!  But quoting is uncommon
                     name=QuotedStringTokenizer.unquote(name);
                     value=QuotedStringTokenizer.unquote(value);
                     
@@ -286,7 +285,7 @@ public class CookieCutter
                     {
                         if (name.startsWith("$"))
                         {
-                            String lowercaseName = name.toLowerCase();
+                            String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                             if ("$path".equals(lowercaseName))
                             {
                                 if (cookie!=null)

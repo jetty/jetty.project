@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -102,52 +103,60 @@ public class HttpConnection extends AbstractConnection implements Connection
     }
 
     @Override
-    public void send(Request request, Response.Listener listener)
+    public void send(Request request, Response.CompleteListener listener)
+    {
+        send(request, Collections.<Response.ResponseListener>singletonList(listener));
+    }
+
+    public void send(Request request, List<Response.ResponseListener> listeners)
     {
         normalizeRequest(request);
 
         // Save the old idle timeout to restore it
         EndPoint endPoint = getEndPoint();
         idleTimeout = endPoint.getIdleTimeout();
-        endPoint.setIdleTimeout(request.idleTimeout());
+        endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.conversation());
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
         setExchange(exchange);
-        conversation.exchanges().offer(exchange);
-        conversation.listener(listener);
+        conversation.getExchanges().offer(exchange);
+
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Schedulable)
+                ((Schedulable)listener).schedule(client.getScheduler());
 
         sender.send(exchange);
     }
 
     private void normalizeRequest(Request request)
     {
-        if (request.method() == null)
+        if (request.getMethod() == null)
             request.method(HttpMethod.GET);
 
-        if (request.version() == null)
+        if (request.getVersion() == null)
             request.version(HttpVersion.HTTP_1_1);
 
-        if (request.agent() == null)
+        if (request.getAgent() == null)
             request.agent(client.getUserAgent());
 
-        if (request.idleTimeout() <= 0)
+        if (request.getIdleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout());
 
-        HttpMethod method = request.method();
-        HttpVersion version = request.version();
-        HttpFields headers = request.headers();
-        ContentProvider content = request.content();
+        HttpMethod method = request.getMethod();
+        HttpVersion version = request.getVersion();
+        HttpFields headers = request.getHeaders();
+        ContentProvider content = request.getContent();
 
         // Make sure the path is there
-        String path = request.path();
+        String path = request.getPath();
         if (path.matches("\\s*"))
         {
             path = "/";
             request.path(path);
         }
 
-        Fields fields = request.params();
+        Fields fields = request.getParams();
         if (!fields.isEmpty())
         {
             StringBuilder params = new StringBuilder();
@@ -167,7 +176,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             }
 
             // Behave as a GET, adding the params to the path, if it's a POST with some content
-            if (method == HttpMethod.POST && request.content() != null)
+            if (method == HttpMethod.POST && request.getContent() != null)
                 method = HttpMethod.GET;
 
             switch (method)
@@ -193,8 +202,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
             {
-                String value = request.host();
-                int port = request.port();
+                String value = request.getHost();
+                int port = request.getPort();
                 if (port > 0)
                     value += ":" + port;
                 headers.put(HttpHeader.HOST, value);
@@ -204,7 +213,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         // Add content headers
         if (content != null)
         {
-            long contentLength = content.length();
+            long contentLength = content.getLength();
             if (contentLength >= 0)
             {
                 if (!headers.containsKey(HttpHeader.CONTENT_LENGTH.asString()))
@@ -218,7 +227,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.path());
+        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.getPath());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {
@@ -233,7 +242,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.getURI());
         if (authnResult != null)
             authnResult.apply(request);
 
@@ -307,13 +316,15 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange existing = this.exchange.getAndSet(null);
         if (existing == exchange)
         {
+            exchange.awaitTermination();
+
             // Restore idle timeout
             getEndPoint().setIdleTimeout(idleTimeout);
 
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
-                HttpFields responseHeaders = exchange.response().headers();
+                HttpFields responseHeaders = exchange.getResponse().getHeaders();
                 Enumeration<String> values = responseHeaders.getValues(HttpHeader.CONNECTION.asString(), ",");
                 if (values != null)
                 {
@@ -348,9 +359,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public void abort(HttpResponse response)
+    public boolean abort(HttpExchange exchange, String reason)
     {
-        receiver.fail(new HttpResponseException("Response aborted", response));
+        // We want the return value to be that of the response
+        // because if the response has already successfully
+        // arrived then we failed to abort the exchange
+        sender.abort(exchange, reason);
+        return receiver.abort(exchange, reason);
     }
 
     public void proceed(boolean proceed)

@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -56,7 +55,7 @@ public class RequestLogHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        HttpChannelState continuation = baseRequest.getAsyncContinuation();
+        HttpChannelState continuation = baseRequest.getHttpChannelState();
         if (!continuation.isInitial())
         {
             baseRequest.setDispatchTime(System.currentTimeMillis());

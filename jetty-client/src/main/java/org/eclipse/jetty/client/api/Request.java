@@ -20,11 +20,12 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.EventListener;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -44,12 +45,12 @@ public interface Request
     /**
      * @return the conversation id
      */
-    long conversation();
+    long getConversationID();
 
     /**
      * @return the scheme of this request, such as "http" or "https"
      */
-    String scheme();
+    String getScheme();
 
     /**
      * @param scheme the scheme of this request, such as "http" or "https"
@@ -60,17 +61,17 @@ public interface Request
     /**
      * @return the host of this request, such as "127.0.0.1" or "google.com"
      */
-    String host();
+    String getHost();
 
     /**
      * @return the port of this request such as 80 or 443
      */
-    int port();
+    int getPort();
 
     /**
      * @return the method of this request, such as GET or POST
      */
-    HttpMethod method();
+    HttpMethod getMethod();
 
     /**
      * @param method the method of this request, such as GET or POST
@@ -81,7 +82,7 @@ public interface Request
     /**
      * @return the path of this request, such as "/"
      */
-    String path();
+    String getPath();
 
     /**
      * @param path the path of this request, such as "/"
@@ -92,12 +93,12 @@ public interface Request
     /**
      * @return the full URI of this request such as "http://host:port/path"
      */
-    String uri();
+    String getURI();
 
     /**
      * @return the HTTP version of this request, such as "HTTP/1.1"
      */
-    HttpVersion version();
+    HttpVersion getVersion();
 
     /**
      * @param version the HTTP version of this request, such as "HTTP/1.1"
@@ -108,7 +109,7 @@ public interface Request
     /**
      * @return the query parameters of this request
      */
-    Fields params();
+    Fields getParams();
 
     /**
      * @param name the name of the query parameter
@@ -120,7 +121,7 @@ public interface Request
     /**
      * @return the headers of this request
      */
-    HttpFields headers();
+    HttpFields getHeaders();
 
     /**
      * @param name the name of the header
@@ -139,12 +140,12 @@ public interface Request
     /**
      * @return the attributes of this request
      */
-    Map<String, Object> attributes();
+    Map<String, Object> getAttributes();
 
     /**
      * @return the content provider of this request
      */
-    ContentProvider content();
+    ContentProvider getContent();
 
     /**
      * @param content the content provider of this request
@@ -175,7 +176,7 @@ public interface Request
     /**
      * @return the user agent for this request
      */
-    String agent();
+    String getAgent();
 
     /**
      * @param agent the user agent for this request
@@ -186,7 +187,7 @@ public interface Request
     /**
      * @return the idle timeout for this request
      */
-    long idleTimeout();
+    long getIdleTimeout();
 
     /**
      * @param timeout the idle timeout for this request
@@ -197,7 +198,7 @@ public interface Request
     /**
      * @return whether this request follows redirects
      */
-    boolean followRedirects();
+    boolean isFollowRedirects();
 
     /**
      * @param follow whether this request follows redirects
@@ -206,15 +207,76 @@ public interface Request
     Request followRedirects(boolean follow);
 
     /**
-     * @return the listener for request events
+     * @param listenerClass the class of the listener, or null for all listeners classes
+     * @return the listeners for request events of the given class
      */
-    Listener listener();
+    <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
     /**
-     * @param listener the listener for request events
+     * @param listener a listener for request events
      * @return this request object
      */
     Request listener(Listener listener);
+
+    /**
+     * @param listener a listener for request queued event
+     * @return this request object
+     */
+    Request onRequestQueued(QueuedListener listener);
+
+    /**
+     * @param listener a listener for request begin event
+     * @return this request object
+     */
+    Request onRequestBegin(BeginListener listener);
+
+    /**
+     * @param listener a listener for request headers event
+     * @return this request object
+     */
+    Request onRequestHeaders(HeadersListener listener);
+
+    /**
+     * @param listener a listener for request success event
+     * @return this request object
+     */
+    Request onRequestSuccess(SuccessListener listener);
+
+    /**
+     * @param listener a listener for request failure event
+     * @return this request object
+     */
+    Request onRequestFailure(FailureListener listener);
+
+    /**
+     * @param listener a listener for response begin event
+     * @return this request object
+     */
+    Request onResponseBegin(Response.BeginListener listener);
+
+    /**
+     * @param listener a listener for response headers event
+     * @return this request object
+     */
+    Request onResponseHeaders(Response.HeadersListener listener);
+
+    /**
+     * @param listener a listener for response content events
+     * @return this request object
+     */
+    Request onResponseContent(Response.ContentListener listener);
+
+    /**
+     * @param listener a listener for response success event
+     * @return this request object
+     */
+    Request onResponseSuccess(Response.SuccessListener listener);
+
+    /**
+     * @param listener a listener for response failure event
+     * @return this request object
+     */
+    Request onResponseFailure(Response.FailureListener listener);
 
     /**
      * Sends this request and returns a {@link Future} that can be used to wait for the
@@ -241,24 +303,26 @@ public interface Request
      *
      * @param listener the listener that receives response events
      */
-    void send(Response.Listener listener);
+    void send(Response.CompleteListener listener);
 
     /**
      * Attempts to abort the send of this request.
      *
-     * @see #aborted()
+     * @param reason the abort reason
+     * @return whether the abort succeeded
      */
-    void abort();
+    boolean abort(String reason);
 
     /**
-     * @return whether {@link #abort()} was called
+     * @return whether {@link #abort(String)} was called
      */
-    boolean aborted();
+    boolean isAborted();
 
-    /**
-     * Listener for request events
-     */
-    public interface Listener
+    public interface RequestListener extends EventListener
+    {
+    }
+
+    public interface QueuedListener extends RequestListener
     {
         /**
          * Callback method invoked when the request is queued, waiting to be sent
@@ -266,7 +330,10 @@ public interface Request
          * @param request the request being queued
          */
         public void onQueued(Request request);
+    }
 
+    public interface BeginListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request begins being processed in order to be sent.
          * This is the last opportunity to modify the request.
@@ -274,7 +341,10 @@ public interface Request
          * @param request the request that begins being processed
          */
         public void onBegin(Request request);
+    }
 
+    public interface HeadersListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
          * The request is now committed, and in transit to the server, and further modifications to the
@@ -282,21 +352,33 @@ public interface Request
          * @param request the request that has been committed
          */
         public void onHeaders(Request request);
+    }
 
+    public interface SuccessListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request has been successfully sent.
          *
          * @param request the request sent
          */
         public void onSuccess(Request request);
+    }
 
+    public interface FailureListener extends RequestListener
+    {
         /**
          * Callback method invoked when the request has failed to be sent
          * @param request the request that failed
          * @param failure the failure
          */
         public void onFailure(Request request, Throwable failure);
+    }
 
+    /**
+     * Listener for all request events
+     */
+    public interface Listener extends QueuedListener, BeginListener, HeadersListener, SuccessListener, FailureListener
+    {
         /**
          * An empty implementation of {@link Listener}
          */
