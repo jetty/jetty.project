@@ -45,6 +45,9 @@ import org.eclipse.jetty.util.log.Logger;
  * <p/>
  * The initParameter "maxBinaryMessagesSize" can be used to set the size in bytes
  * that a websocket may be accept before closing.
+ * <p/>
+ * The initParameter "minVersion" can be used to set the minimum protocol version
+ * accepted. Default is the RFC6455 version (13)
  */
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet implements WebSocketFactory.Acceptor
@@ -76,6 +79,10 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketF
             max = getInitParameter("maxBinaryMessageSize");
             if (max != null)
                 _webSocketFactory.setMaxBinaryMessageSize(Integer.parseInt(max));
+            
+            String min = getInitParameter("minVersion");
+            if (min != null)
+                _webSocketFactory.setMinVersion(Integer.parseInt(min));
         }
         catch (ServletException x)
         {
