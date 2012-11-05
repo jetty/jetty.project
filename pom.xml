@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.0.0-SNAPSHOT</version>
+  <version>9.0.0.M2</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -412,8 +412,7 @@
     <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>tests/test-sessions</module>
-    <module>tests/test-webapps</module>
+    <module>tests</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
