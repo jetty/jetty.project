@@ -24,13 +24,14 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.core.ByteBufferAssert;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture.Write;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,7 +48,7 @@ public class IdentityExtensionTest
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        Extension ext = new IdentityExtension();
+        AbstractExtension ext = new IdentityExtension();
         ext.setNextIncomingFrames(capture);
 
         WebSocketFrame frame = WebSocketFrame.text("hello");

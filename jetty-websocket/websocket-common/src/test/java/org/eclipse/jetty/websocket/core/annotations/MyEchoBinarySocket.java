@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.core.annotations;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Test of constructing a new WebSocket based on a base class

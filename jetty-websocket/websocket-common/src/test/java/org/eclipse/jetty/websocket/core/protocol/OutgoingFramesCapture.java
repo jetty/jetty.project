@@ -22,9 +22,9 @@ import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 import org.junit.Assert;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

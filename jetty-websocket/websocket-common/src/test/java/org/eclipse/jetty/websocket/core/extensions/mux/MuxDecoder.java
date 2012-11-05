@@ -21,8 +21,9 @@ package org.eclipse.jetty.websocket.core.extensions.mux;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxParser;
+import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 
 /**
  * Helpful utility class to parse arbitrary mux events from a physical connection's OutgoingFrames.

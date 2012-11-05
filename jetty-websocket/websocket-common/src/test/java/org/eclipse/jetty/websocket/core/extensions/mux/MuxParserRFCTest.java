@@ -31,12 +31,16 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.extensions.mux.AbstractMuxExtension;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxParser;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxedFrame;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,7 +61,7 @@ public class MuxParserRFCTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Parser parser = new Parser(policy);
         parser.setIncomingFramesHandler(capture);
-        List<? extends Extension> muxList = Collections.singletonList(new DummyMuxExtension());
+        List<? extends AbstractExtension> muxList = Collections.singletonList(new DummyMuxExtension());
         parser.configureFromExtensions(muxList);
         ByteBuffer bbuf = ByteBuffer.wrap(buf);
         parser.parse(bbuf);

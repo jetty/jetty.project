@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.core.protocol;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.junit.Assert;
 import org.junit.Test;
 

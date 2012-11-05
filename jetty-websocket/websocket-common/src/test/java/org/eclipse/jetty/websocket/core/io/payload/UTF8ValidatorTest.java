@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.core.io.payload;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.api.BadPayloadException;
-import org.eclipse.jetty.websocket.core.io.payload.UTF8Validator;
+import org.eclipse.jetty.websocket.api.BadPayloadException;
+import org.eclipse.jetty.websocket.common.io.payload.UTF8Validator;
 import org.junit.Assert;
 import org.junit.Test;
 

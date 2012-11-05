@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.extensions.compress.CompressionMethod;
+import org.eclipse.jetty.websocket.common.extensions.compress.DeflateCompressionMethod;
 import org.junit.Assert;
 import org.junit.Test;
 

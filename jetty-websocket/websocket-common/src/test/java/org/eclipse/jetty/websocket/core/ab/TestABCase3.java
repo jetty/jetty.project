@@ -23,11 +23,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.websocket.core.api.ProtocolException;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
+import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.protocol.UnitGenerator;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

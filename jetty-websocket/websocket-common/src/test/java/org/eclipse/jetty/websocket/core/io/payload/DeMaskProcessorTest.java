@@ -24,10 +24,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.payload.DeMaskProcessor;
 import org.eclipse.jetty.websocket.core.ByteBufferAssert;
-import org.eclipse.jetty.websocket.core.io.payload.DeMaskProcessor;
 import org.eclipse.jetty.websocket.core.protocol.UnitGenerator;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Test;
 
 public class DeMaskProcessorTest

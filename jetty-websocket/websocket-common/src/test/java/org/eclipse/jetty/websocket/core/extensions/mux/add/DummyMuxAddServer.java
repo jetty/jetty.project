@@ -22,17 +22,18 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddServer;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
+import org.eclipse.jetty.websocket.common.io.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.event.EventDriver;
+import org.eclipse.jetty.websocket.common.io.event.EventDriverFactory;
 import org.eclipse.jetty.websocket.core.examples.echo.AdapterEchoSocket;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
-import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
-import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
 
 /**
  * Dummy impl of MuxAddServer

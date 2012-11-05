@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.websocket.core.io.event;
 
-import org.eclipse.jetty.websocket.core.api.StatusCode;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.event.EventDriver;
+import org.eclipse.jetty.websocket.common.io.event.EventDriverFactory;
 import org.eclipse.jetty.websocket.core.examples.AdapterConnectCloseSocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.core.examples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.core.examples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.core.io.LocalWebSocketSession;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;

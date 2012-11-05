@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.core.protocol;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.Parser;
 
 public class UnitParser extends Parser
 {

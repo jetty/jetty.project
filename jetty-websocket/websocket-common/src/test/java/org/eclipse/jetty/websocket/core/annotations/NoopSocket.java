@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.annotations;
 
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * The most basic websocket declaration.

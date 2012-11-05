@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.core.examples.echo;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Example EchoSocket using Annotations.

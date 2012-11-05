@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.io.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.event.EventDriver;
 import org.eclipse.jetty.websocket.core.protocol.OutgoingFramesCapture;
 import org.junit.rules.TestName;
 

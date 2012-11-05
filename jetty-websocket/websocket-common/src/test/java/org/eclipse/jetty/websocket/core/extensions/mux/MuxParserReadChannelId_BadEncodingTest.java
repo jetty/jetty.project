@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

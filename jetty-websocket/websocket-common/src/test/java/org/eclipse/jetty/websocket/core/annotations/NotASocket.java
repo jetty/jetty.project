@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.annotations;
 
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 
 /**
  * (Test Case)

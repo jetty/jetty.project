@@ -13,7 +13,6 @@
     <packaging>pom</packaging>
 
     <modules>
-      <module>javax-websocket-api</module>
       <module>websocket-common</module>
       <module>websocket-api</module>
       <module>websocket-client</module>

@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.core.ab;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.core.protocol.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

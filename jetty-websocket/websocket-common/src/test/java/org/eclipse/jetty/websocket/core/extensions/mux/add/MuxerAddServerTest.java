@@ -20,16 +20,16 @@ package org.eclipse.jetty.websocket.core.extensions.mux.add;
 
 import static org.hamcrest.Matchers.*;
 
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxOp;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRequest;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxDecoder;
 import org.eclipse.jetty.websocket.core.extensions.mux.MuxEncoder;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxOp;
-import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelRequest;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.core.io.LocalWebSocketConnection;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;

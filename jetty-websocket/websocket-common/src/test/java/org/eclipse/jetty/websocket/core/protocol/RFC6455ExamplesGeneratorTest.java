@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.core.protocol;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.ByteBufferAssert;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest

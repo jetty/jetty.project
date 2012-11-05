@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
  * Example EchoSocket using Adapter.

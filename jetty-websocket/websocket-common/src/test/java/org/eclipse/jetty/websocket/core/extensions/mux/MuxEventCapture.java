@@ -24,12 +24,16 @@ import java.util.LinkedList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelRequest;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxAddChannelResponse;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxDropChannel;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxFlowControl;
-import org.eclipse.jetty.websocket.core.extensions.mux.op.MuxNewChannelSlot;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxControlBlock;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxParser;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxedFrame;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRequest;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxDropChannel;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxFlowControl;
+import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxNewChannelSlot;
 import org.junit.Assert;
 
 public class MuxEventCapture implements MuxParser.Listener
