@@ -30,8 +30,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -81,7 +84,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _createSessionIdTable;
     protected String _createSessionTable;
                                             
-    protected String _selectExpiredSessions;
+    protected String _selectBoundedExpiredSessions;
     protected String _deleteOldExpiredSessions;
 
     protected String _insertId;
@@ -95,6 +98,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected  String _updateSessionAccessTime;
     
     protected DatabaseAdaptor _dbAdaptor;
+
+    private String _selectExpiredSessions;
 
     
     /**
@@ -114,16 +119,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         String _dbName;
         boolean _isLower;
         boolean _isUpper;
-
+       
         
         
         public DatabaseAdaptor (DatabaseMetaData dbMeta)
         throws SQLException
         {
-            _dbName = dbMeta.getDatabaseProductName().toLowerCase(); 
+            _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH); 
             LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
-            _isUpper = dbMeta.storesUpperCaseIdentifiers();
+            _isUpper = dbMeta.storesUpperCaseIdentifiers();            
         }
         
         /**
@@ -136,9 +141,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         public String convertIdentifier (String identifier)
         {
             if (_isLower)
-                return identifier.toLowerCase();
+                return identifier.toLowerCase(Locale.ENGLISH);
             if (_isUpper)
-                return identifier.toUpperCase();
+                return identifier.toUpperCase(Locale.ENGLISH);
             
             return identifier;
         }
@@ -455,6 +460,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             inUse = _sessionIds.contains(clusterId);
         }
         
+        
         if (inUse)
             return true; //optimisation - if this session is one we've been managing, we can check locally
 
@@ -514,7 +520,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         try
         {            
             initializeDatabase();
-            prepareTables();        
+            prepareTables();   
+            cleanExpiredSessions();
             super.doStart();
             if (LOG.isDebugEnabled()) 
                 LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
@@ -542,6 +549,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 _timer.cancel();
             _timer=null;
         }
+        _sessionIds.clear();
         super.doStop();
     }
   
@@ -559,31 +567,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         else
             return DriverManager.getConnection(_connectionUrl);
     }
-
     
-    private void initializeDatabase ()
-    throws Exception
-    {
-        if (_datasource != null)
-            return; //already set up
-        
-        if (_jndiName!=null)
-        {
-            InitialContext ic = new InitialContext();
-            _datasource = (DataSource)ic.lookup(_jndiName);
-        }
-        else if ( _driver != null && _connectionUrl != null )
-        {
-            DriverManager.registerDriver(_driver);
-        }
-        else if (_driverClassName != null && _connectionUrl != null)
-        {
-            Class.forName(_driverClassName);
-        }
-        else
-            throw new IllegalStateException("No database configured for sessions");
-    }
     
+   
     
     
     /**
@@ -594,7 +580,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     throws SQLException
     {
         _createSessionIdTable = "create table "+_sessionIdTable+" (id varchar(120), primary key(id))";
-        _selectExpiredSessions = "select * from "+_sessionTable+" where expiryTime >= ? and expiryTime <= ?";
+        _selectBoundedExpiredSessions = "select * from "+_sessionTable+" where expiryTime >= ? and expiryTime <= ?";
+        _selectExpiredSessions = "select * from "+_sessionTable+" where expiryTime >0 and expiryTime <= ?";
         _deleteOldExpiredSessions = "delete from "+_sessionTable+" where expiryTime >0 and expiryTime <= ?";
 
         _insertId = "insert into "+_sessionIdTable+" (id)  values (?)";
@@ -794,7 +781,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection = getConnection();
                 connection.setAutoCommit(true);
                 //"select sessionId from JettySessions where expiryTime > (lastScavengeTime - scanInterval) and expiryTime < lastScavengeTime";
-                PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
+                PreparedStatement statement = connection.prepareStatement(_selectBoundedExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
                 if (LOG.isDebugEnabled()) 
@@ -833,7 +820,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     if (LOG.isDebugEnabled()) LOG.debug("Deleting old expired sessions expired before "+upperBound);
                     statement = connection.prepareStatement(_deleteOldExpiredSessions);
                     statement.setLong(1, upperBound);
-                    statement.executeUpdate();
+                    int rows = statement.executeUpdate();
+                    if (LOG.isDebugEnabled()) LOG.debug("Deleted "+rows+" rows");
                 }
             }
         }
@@ -861,4 +849,121 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
         }
     }
+    
+    /**
+     * Get rid of sessions and sessionids from sessions that have already expired
+     * @throws Exception
+     */
+    private void cleanExpiredSessions ()
+    throws Exception
+    {
+        Connection connection = null;
+        List<String> expiredSessionIds = new ArrayList<String>();
+        try
+        {     
+            connection = getConnection();
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+
+            PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
+            long now = System.currentTimeMillis();
+            if (LOG.isDebugEnabled()) LOG.debug ("Searching for sessions expired before {}", now);
+
+            statement.setLong(1, now);
+            ResultSet result = statement.executeQuery();
+            while (result.next())
+            {
+                String sessionId = result.getString("sessionId");
+                expiredSessionIds.add(sessionId);
+                if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId={}", sessionId); 
+            }
+            
+            Statement sessionsTableStatement = null;
+            Statement sessionIdsTableStatement = null;
+
+            if (!expiredSessionIds.isEmpty())
+            {
+                sessionsTableStatement = connection.createStatement();
+                sessionsTableStatement.executeUpdate(createCleanExpiredSessionsSql("delete from "+_sessionTable+" where sessionId in ", expiredSessionIds));
+                sessionIdsTableStatement = connection.createStatement();
+                sessionIdsTableStatement.executeUpdate(createCleanExpiredSessionsSql("delete from "+_sessionIdTable+" where id in ", expiredSessionIds));
+            }
+            connection.commit();
+
+            synchronized (_sessionIds)
+            {
+                _sessionIds.removeAll(expiredSessionIds); //in case they were in our local cache of session ids
+            }
+        }
+        catch (Exception e)
+        {
+            if (connection != null)
+                connection.rollback();
+            throw e;
+        }
+        finally
+        {
+            try
+            {
+                if (connection != null)
+                    connection.close();
+            }
+            catch (SQLException e)
+            {
+                LOG.warn(e);
+            }
+        }
+    }
+    
+    
+    /**
+     * 
+     * @param sql
+     * @param connection
+     * @param expiredSessionIds
+     * @throws Exception
+     */
+    private String createCleanExpiredSessionsSql (String sql,Collection<String> expiredSessionIds)
+    throws Exception
+    {
+        StringBuffer buff = new StringBuffer();
+        buff.append(sql);
+        buff.append("(");
+        Iterator<String> itor = expiredSessionIds.iterator();
+        while (itor.hasNext())
+        {
+            buff.append("'"+(itor.next())+"'");
+            if (itor.hasNext())
+                buff.append(",");
+        }
+        buff.append(")");
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Cleaning expired sessions with: {}", buff);
+        return buff.toString();
+    }
+    
+    private void initializeDatabase ()
+    throws Exception
+    {
+        if (_datasource != null)
+            return; //already set up
+        
+        if (_jndiName!=null)
+        {
+            InitialContext ic = new InitialContext();
+            _datasource = (DataSource)ic.lookup(_jndiName);
+        }
+        else if ( _driver != null && _connectionUrl != null )
+        {
+            DriverManager.registerDriver(_driver);
+        }
+        else if (_driverClassName != null && _connectionUrl != null)
+        {
+            Class.forName(_driverClassName);
+        }
+        else
+            throw new IllegalStateException("No database configured for sessions");
+    }
+    
+   
 }

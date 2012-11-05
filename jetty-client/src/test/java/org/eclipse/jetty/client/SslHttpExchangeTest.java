@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
+import java.util.Locale;
+
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.SslServerAndClientCreator;
 import org.eclipse.jetty.server.Connector;
@@ -51,7 +53,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     {
         // Use Junit 4.x to flag test as ignored if encountering IBM JVM
         // Will show up in various junit reports as an ignored test as well.
-        Assume.assumeThat(System.getProperty("java.vendor").toLowerCase(),not(containsString("ibm")));
+        Assume.assumeThat(System.getProperty("java.vendor").toLowerCase(Locale.ENGLISH),not(containsString("ibm")));
     }
 
     /* ------------------------------------------------------------ */

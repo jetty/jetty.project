@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
    <pre>
    public static void attemptShutdown(int port, String shutdownCookie) {
         try {
-            URL url = new URL("http://localhost:" + port + "/shutdown?cookie=" + shutdownCookie);
+            URL url = new URL("http://localhost:" + port + "/shutdown?token=" + shutdownCookie);
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
             connection.getResponseCode();

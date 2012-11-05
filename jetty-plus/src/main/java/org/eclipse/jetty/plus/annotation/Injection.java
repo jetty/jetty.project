@@ -21,6 +21,7 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.Locale;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -141,7 +142,7 @@ public class Injection
         _resourceClass = resourceType;
         
         //first look for a javabeans style setter matching the targetName
-        String setter = "set"+target.substring(0,1).toUpperCase()+target.substring(1);
+        String setter = "set"+target.substring(0,1).toUpperCase(Locale.ENGLISH)+target.substring(1);
         try
         {
             LOG.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);

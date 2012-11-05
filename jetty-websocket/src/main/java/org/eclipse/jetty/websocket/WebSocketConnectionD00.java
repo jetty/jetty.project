@@ -123,6 +123,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                         _endp.close();
                         break;
                     }
+                    else if (filled==0)
+                        return this;
                 }
 
                 if (_websocket instanceof OnFrame)

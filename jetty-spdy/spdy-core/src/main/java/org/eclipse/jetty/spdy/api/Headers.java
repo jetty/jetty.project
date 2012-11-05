@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -93,7 +94,7 @@ public class Headers implements Iterable<Headers.Header>
      */
     public Header get(String name)
     {
-        return headers.get(name.trim().toLowerCase());
+        return headers.get(name.trim().toLowerCase(Locale.ENGLISH));
     }
 
     /**
@@ -106,7 +107,7 @@ public class Headers implements Iterable<Headers.Header>
     {
         name = name.trim();
         Header header = new Header(name, value.trim());
-        headers.put(name.toLowerCase(), header);
+        headers.put(name.toLowerCase(Locale.ENGLISH), header);
     }
 
     /**
@@ -117,7 +118,7 @@ public class Headers implements Iterable<Headers.Header>
     public void put(Header header)
     {
         if (header != null)
-            headers.put(header.name().toLowerCase(), header);
+            headers.put(header.name().toLowerCase(Locale.ENGLISH), header);
     }
 
     /**
@@ -130,16 +131,16 @@ public class Headers implements Iterable<Headers.Header>
     public void add(String name, String value)
     {
         name = name.trim();
-        Header header = headers.get(name.toLowerCase());
+        Header header = headers.get(name.toLowerCase(Locale.ENGLISH));
         if (header == null)
         {
             header = new Header(name, value.trim());
-            headers.put(name.toLowerCase(), header);
+            headers.put(name.toLowerCase(Locale.ENGLISH), header);
         }
         else
         {
             header = new Header(header.name(), header.value() + "," + value.trim());
-            headers.put(name.toLowerCase(), header);
+            headers.put(name.toLowerCase(Locale.ENGLISH), header);
         }
     }
 
@@ -152,7 +153,7 @@ public class Headers implements Iterable<Headers.Header>
     public Header remove(String name)
     {
         name = name.trim();
-        return headers.remove(name.toLowerCase());
+        return headers.remove(name.toLowerCase(Locale.ENGLISH));
     }
 
     /**
@@ -229,7 +230,7 @@ public class Headers implements Iterable<Headers.Header>
         @Override
         public int hashCode()
         {
-            int result = name.toLowerCase().hashCode();
+            int result = name.toLowerCase(Locale.ENGLISH).hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
         }

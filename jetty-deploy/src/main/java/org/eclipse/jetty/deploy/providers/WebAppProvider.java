@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.util.FileID;
@@ -59,7 +60,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 return false;
             }
-            String lowername = name.toLowerCase();
+            String lowername = name.toLowerCase(Locale.ENGLISH);
             
             File file = new File(dir,name);
             // is it not a directory and not a war ?
@@ -279,9 +280,9 @@ public class WebAppProvider extends ScanningAppProvider
         {
             context = URIUtil.SLASH;
         }
-        else if (context.toLowerCase().startsWith("root-"))
+        else if (context.toLowerCase(Locale.ENGLISH).startsWith("root-"))
         {
-            int dash=context.toLowerCase().indexOf('-');
+            int dash=context.toLowerCase(Locale.ENGLISH).indexOf('-');
             String virtual = context.substring(dash+1);
             wah.setVirtualHosts(new String[]{virtual});
             context = URIUtil.SLASH;

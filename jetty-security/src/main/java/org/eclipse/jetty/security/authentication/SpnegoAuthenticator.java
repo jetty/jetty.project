@@ -69,7 +69,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
 
         if (!mandatory)
         {
-        	return _deferred;
+            return new DeferredAuthentication(this);
         }
         
         // check to see if we have authorization headers required to continue
@@ -77,7 +77,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             try
             {
-            	 if (_deferred.isDeferred(res))
+            	 if (DeferredAuthentication.isDeferred(res))
             	 {
                      return Authentication.UNAUTHENTICATED;
             	 }

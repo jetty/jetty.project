@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -95,7 +96,7 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
     @Override
     protected void parsedHeader(Buffer name, Buffer value) throws IOException
     {
-        String headerName = name.toString("UTF-8").toLowerCase();
+        String headerName = name.toString("UTF-8").toLowerCase(Locale.ENGLISH);
         String headerValue = value.toString("UTF-8");
         switch (headerName)
         {

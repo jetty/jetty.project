@@ -30,6 +30,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -37,6 +38,7 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +46,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
@@ -152,7 +155,7 @@ public class Main
             {
                 public boolean accept(File dir, String name)
                 {
-                    return name.toLowerCase().endsWith(".ini");
+                    return name.toLowerCase(Locale.ENGLISH).endsWith(".ini");
                 }
             });
             Arrays.sort(inis);
@@ -183,6 +186,15 @@ public class Main
                 String key = Config.getProperty("STOP.KEY",null);
                 stop(port,key);
                 return null;
+            }
+            
+            if ("--stop-wait".equals(arg))
+            {
+                int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
+                String key = Config.getProperty("STOP.KEY",null);
+                int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT", "0"));
+                stop(port,key, true, timeout);
+                return null;  
             }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
@@ -288,7 +300,7 @@ public class Main
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
-                                _config.addActiveOption(opt);
+                                _config.addActiveOption(opt.trim());
                         }
                         else
                         {
@@ -374,7 +386,7 @@ public class Main
                                     return false;
                                 }
 
-                                String name = path.getName().toLowerCase();
+                                String name = path.getName().toLowerCase(Locale.ENGLISH);
                                 return (name.startsWith("jetty") && name.endsWith(".xml"));
                             }
                         });
@@ -648,7 +660,7 @@ public class Main
 
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
-        if (!xmlFilename.toLowerCase().endsWith(".xml"))
+        if (!xmlFilename.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
         {
             // Nothing to resolve.
             return xmlFilename;
@@ -862,7 +874,7 @@ public class Main
 
         if (element.isFile())
         {
-            String name = element.getName().toLowerCase();
+            String name = element.getName().toLowerCase(Locale.ENGLISH);
             if (name.endsWith(".jar"))
             {
                 return JarVersion.getVersion(element);
@@ -1003,6 +1015,12 @@ public class Main
      */
     public void stop(int port, String key)
     {
+        stop (port,key,false, 0);
+    }
+
+    
+    public void stop (int port, String key, boolean wait, int timeout)
+    {
         int _port = port;
         String _key = key;
 
@@ -1020,16 +1038,32 @@ public class Main
             }
 
             Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
+            if (wait && timeout > 0)
+                s.setSoTimeout(timeout*1000);
             try
             {
                 OutputStream out = s.getOutputStream();
                 out.write((_key + "\r\nstop\r\n").getBytes());
                 out.flush();
+
+                if (wait)
+                {
+                    System.err.println("Waiting"+(timeout > 0 ? (" "+timeout+"sec") : "")+" for jetty to stop");
+                    LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
+                    String response=lin.readLine();
+                    if ("Stopped".equals(response))
+                        System.err.println("Stopped");
+                }
             }
             finally
             {
                 s.close();
             }
+        }
+        catch (SocketTimeoutException e)
+        {
+            System.err.println("Timed out waiting for stop confirmation");
+            System.exit(ERR_UNKNOWN);
         }
         catch (ConnectException e)
         {

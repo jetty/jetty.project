@@ -265,7 +265,8 @@ public class JDBCSessionManager extends AbstractSessionManager
         private static final long serialVersionUID = 5208464051134226143L;
         private final SessionData _data;
         private boolean _dirty=false;
-
+       
+        
         /**
          * Session from a request.
          *
@@ -274,7 +275,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         protected Session (HttpServletRequest request)
         {
             super(JDBCSessionManager.this,request);
-            _data = new SessionData(getClusterId(),_jdbcAttributes);
+            _data = new SessionData(getClusterId(),getAttributeMap());
             if (_dftMaxIdleSecs>0)
                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
@@ -284,18 +285,18 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
 
         /**
-          * Session restored in database.
-          * @param data
-          */
-         protected Session (long accessed, SessionData data)
-         {
-             super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
-             _data=data;
-             if (_dftMaxIdleSecs>0)
-                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
-             _jdbcAttributes.putAll(_data.getAttributeMap());
-             _data.setAttributeMap(_jdbcAttributes);
-         }
+         * Session restored in database.
+         * @param data
+         */
+        protected Session (long accessed, SessionData data)
+        {
+            super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
+            _data=data;
+            if (_dftMaxIdleSecs>0)
+                _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
+            addAttributes(_data.getAttributeMap());
+            _data.setAttributeMap(getAttributeMap());
+        }
 
          @Override
         public void setAttribute (String name, Object value)
@@ -539,7 +540,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         //if the session has no expiry, or it is not already expired
                         if (data._expiryTime <= 0 || data._expiryTime > now)
                         {
-                            LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
                             data.setLastNode(getSessionIdManager().getWorkerName());
                             //session last used on a different node, or we don't have it in memory
                             session = new Session(now,data);
@@ -550,18 +551,21 @@ public class JDBCSessionManager extends AbstractSessionManager
                             updateSessionNode(data);
                         }
                         else
-                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session has expired");
+                        {
+                            LOG.debug("getSession ({}): Session has expired", idInCluster);
+                            
+                        }
 
                     }
                     else
-                        if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session not stale "+session._data);
+                       LOG.debug("getSession({}): Session not stale {}", idInCluster,session._data);
                     //session in db shares same id, but is not for this context
                 }
                 else
                 {
                     //No session in db with matching id and context path.
                     session=null;
-                    if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): No session in database matching id="+idInCluster);
+                    LOG.debug("getSession({}): No session in database matching id={}",idInCluster,idInCluster);
                 }
 
                 return session;
@@ -605,6 +609,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         _jdbcSessionIdMgr = (JDBCSessionIdManager)_sessionIdManager;
         
         _sessions = new ConcurrentHashMap<String, AbstractSession>();
+
         super.doStart();
     }
 

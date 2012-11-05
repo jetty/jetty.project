@@ -21,6 +21,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Locale;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -191,11 +192,11 @@ public class FormAuthenticator extends LoginAuthenticator
 
         mandatory|=isJSecurityCheck(uri);
         if (!mandatory)
-            return _deferred;
-        
+            return new DeferredAuthentication(this);
+
         if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
-            return _deferred;
-            
+            return new DeferredAuthentication(this);
+
         HttpSession session = request.getSession(true);
             
         try
@@ -300,9 +301,12 @@ public class FormAuthenticator extends LoginAuthenticator
             }
 
             // if we can't send challenge
-            if (_deferred.isDeferred(response))
-                return Authentication.UNAUTHENTICATED; 
-            
+            if (DeferredAuthentication.isDeferred(response))
+            {
+                LOG.debug("auth deferred {}",session.getId());
+                return Authentication.UNAUTHENTICATED;
+            }
+
             // remember the current URI
             synchronized (session)
             {
@@ -387,7 +391,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public long getDateHeader(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return -1;
             return super.getDateHeader(name);
         }
@@ -395,7 +399,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public String getHeader(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return null;
             return super.getHeader(name);
         }
@@ -409,7 +413,7 @@ public class FormAuthenticator extends LoginAuthenticator
         @Override
         public Enumeration getHeaders(String name)
         {
-            if (name.toLowerCase().startsWith("if-"))
+            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
                 return Collections.enumeration(Collections.EMPTY_LIST);
             return super.getHeaders(name);
         }

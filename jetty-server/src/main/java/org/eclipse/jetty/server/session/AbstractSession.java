@@ -65,8 +65,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     private boolean _newSession;
     private int _requests;
 
-    // TODO remove this.
-    protected final Map<String,Object> _jdbcAttributes=_attributes;
+
     
     /* ------------------------------------------------------------- */
     protected AbstractSession(AbstractSessionManager abstractSessionManager, HttpServletRequest request)
@@ -254,6 +253,18 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             String[] a=new String[_attributes.size()];
             return (String[])_attributes.keySet().toArray(a);
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected  Map<String,Object> getAttributeMap ()
+    {
+        return _attributes;
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void addAttributes(Map<String,Object> map)
+    {
+        _attributes.putAll(map);
     }
 
     /* ------------------------------------------------------------ */

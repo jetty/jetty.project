@@ -121,8 +121,8 @@ public class DigestAuthenticator extends LoginAuthenticator
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
-            return _deferred;
-        
+            return new DeferredAuthentication(this);
+
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -197,7 +197,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             }
 
-            if (!_deferred.isDeferred(response))
+            if (!DeferredAuthentication.isDeferred(response))
             {
                 String domain = request.getContextPath();
                 if (domain == null) 

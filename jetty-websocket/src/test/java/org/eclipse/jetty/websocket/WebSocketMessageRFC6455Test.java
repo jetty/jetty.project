@@ -1337,7 +1337,7 @@ public class WebSocketMessageRFC6455Test
         output.flush();
 
         // Make sure the read times out if there are problems with the implementation
-        socket.setSoTimeout(1000);
+        socket.setSoTimeout(10000);
 
         InputStream input = socket.getInputStream();
 
@@ -1347,7 +1347,7 @@ public class WebSocketMessageRFC6455Test
         skipTo("\r\n\r\n",input);
 
 
-        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertTrue(__serverWebSocket.awaitConnected(10000));
         assertNotNull(__serverWebSocket.connection);
 
         assertEquals(0x81,input.read());
@@ -1355,7 +1355,7 @@ public class WebSocketMessageRFC6455Test
         lookFor("sent on connect",input);
         socket.close();
 
-        assertTrue(__serverWebSocket.awaitDisconnected(500));
+        assertTrue(__serverWebSocket.awaitDisconnected(10000));
 
         try
         {

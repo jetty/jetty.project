@@ -214,6 +214,7 @@ public class WebSocketUpgradeTest
                 return _websocket;
             }
         };
+        _handler.getWebSocketFactory().setMinVersion(-1);
 
         _server.setHandler(_handler);
         _server.start();

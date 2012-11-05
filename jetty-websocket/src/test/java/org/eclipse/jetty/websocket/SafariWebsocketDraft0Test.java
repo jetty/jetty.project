@@ -62,7 +62,9 @@ public class SafariWebsocketDraft0Test
 
         // Serve capture servlet
         servlet = new WebSocketCaptureServlet();
-        context.addServlet(new ServletHolder(servlet),"/");
+        ServletHolder holder = new ServletHolder(servlet);
+        holder.setInitParameter("minVersion","-1");
+        context.addServlet(holder,"/");
 
         // Start Server
         server.start();
