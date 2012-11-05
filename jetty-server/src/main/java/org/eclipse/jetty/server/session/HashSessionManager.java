@@ -513,33 +513,40 @@ public class HashSessionManager extends AbstractSessionManager
     protected synchronized HashedSession restoreSession(String idInCuster)
     {
         File file = new File(_storeDir,idInCuster);
+        FileInputStream in = null;
+        Exception error = null;
         try
         {
             if (file.exists())
             {
-                FileInputStream in = new FileInputStream(file);
+                in = new FileInputStream(file);
                 HashedSession session = restoreSession(in, null);
-                in.close();
                 addSession(session, false);
                 session.didActivate();
-                file.delete();
                 return session;
             }
         }
         catch (Exception e)
         {
-
-            if (isDeleteUnrestorableSessions())
+           error = e;
+        }
+        finally
+        {
+            if (in != null)
+                try {in.close();} catch (Exception x) {__log.ignore(x);}
+            
+            if (error != null)
             {
-                if (file.exists())
+                if (isDeleteUnrestorableSessions() && file.exists())
                 {
                     file.delete();
-                    LOG.warn("Deleting file for unrestorable session "+idInCuster, e);
+                    LOG.warn("Deleting file for unrestorable session "+idInCuster, error);
                 }
+                else
+                    LOG.warn("Problem restoring session "+idInCuster, error);
             }
             else
-                LOG.warn("Problem restoring session "+idInCuster, e);
-
+               file.delete(); //delete successfully restored file
         }
         return null;
     }

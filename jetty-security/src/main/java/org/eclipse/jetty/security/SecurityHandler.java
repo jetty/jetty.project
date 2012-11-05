@@ -70,7 +70,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
     private String _realmName;
     private String _authMethod;
-    private final Map<String,String> _initParameters=new HashMap<>();
+    private final Map<String,String> _initParameters=new HashMap<String,String>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession=true;
@@ -355,6 +355,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (_identityService==null && _realmName!=null)
                 setIdentityService(new DefaultIdentityService());
+
             _discoveredIdentityService = true;
         }
 
@@ -382,6 +383,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     @Override
+    /* ------------------------------------------------------------ */
     protected void doStop() throws Exception
     {
         //if we discovered the services (rather than had them explicitly configured), remove them.
