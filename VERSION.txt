@@ -1,3 +1,5 @@
+jetty-7.6.9-SNAPSHOT
+
 jetty-7.6.8.v20121105 - 05 November 2012
  + 371170 MongoSessionManager LastAccessTimeTest fails
  + 388675 Non utf8 encoded query strings not decoded to parameter map using
