@@ -19,44 +19,20 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 public class ServletWebSocketResponse extends UpgradeResponse
 {
-    private String acceptedProtocol;
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private boolean success = true;
     private HttpServletResponse resp;
 
     public ServletWebSocketResponse(HttpServletResponse resp)
     {
         super();
         this.resp = resp;
-    }
-
-    @Override
-    public void addHeader(String name, String value)
-    {
-        super.addHeader(name,value);
-    }
-
-    @Override
-    public String getAcceptedSubProtocol()
-    {
-        return acceptedProtocol;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return this.extensions;
+        // TODO: copy values from resp
     }
 
     @Override
@@ -71,34 +47,26 @@ public class ServletWebSocketResponse extends UpgradeResponse
         throw new UnsupportedOperationException("Server cannot get Status Reason");
     }
 
-    @Override
-    public boolean isSuccess()
+    public boolean isCommitted()
     {
-        return success;
+        return this.resp.isCommitted();
+    }
+
+    public void sendError(int statusCode, String message) throws IOException
+    {
+        setSuccess(false);
+        this.resp.sendError(statusCode,message);
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        success = false;
+        setSuccess(false);
         resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
     }
 
-    @Override
-    public void setAcceptedSubProtocol(String protocol)
+    public void setStatus(int status)
     {
-        this.acceptedProtocol = protocol;
-    }
-
-    @Override
-    public void setExtensions(List<ExtensionConfig> extensions)
-    {
-        this.extensions = extensions;
-    }
-
-    @Override
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException
-    {
-        throw new UnsupportedOperationException("Server cannot validate its own hash");
+        this.resp.setStatus(status);
     }
 }

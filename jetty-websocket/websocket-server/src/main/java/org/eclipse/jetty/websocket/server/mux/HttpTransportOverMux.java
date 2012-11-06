@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
-import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
 
 /**
  * Take {@link ResponseInfo} objects and convert to bytes for response.

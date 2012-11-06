@@ -26,12 +26,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxChannel;
-import org.eclipse.jetty.websocket.core.extensions.mux.MuxException;
-import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
-import org.eclipse.jetty.websocket.core.extensions.mux.add.MuxAddServer;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
+import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddServer;
 
 /**
  * Handler for incoming MuxAddChannel requests.
@@ -88,7 +88,8 @@ public class MuxAddHandler implements MuxAddServer
 
         HttpMethod method = HttpMethod.fromString(request.getMethod());
         HttpVersion version = HttpVersion.fromString(request.getHttpVersion());
-        httpChannel.startRequest(method,request.getMethod(),request.getRemoteURI(),version);
+        String uri = request.getRequestURI().toASCIIString();
+        httpChannel.startRequest(method,request.getMethod(),uri,version);
 
         for (String headerName : request.getHeaders().keySet())
         {

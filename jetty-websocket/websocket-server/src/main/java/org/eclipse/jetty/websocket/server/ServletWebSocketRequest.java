@@ -36,11 +36,12 @@ public class ServletWebSocketRequest extends UpgradeRequest
 {
     private List<ExtensionConfig> extensions;
     private Map<String, String> cookieMap;
+    private HttpServletRequest req;
 
     public ServletWebSocketRequest(HttpServletRequest request)
     {
         super(request.getRequestURI());
-        // TODO: copy values over
+        this.req = request;
 
         cookieMap = new HashMap<String, String>();
         for (Cookie cookie : request.getCookies())
@@ -68,29 +69,10 @@ public class ServletWebSocketRequest extends UpgradeRequest
             QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
             while (tok.hasMoreTokens())
             {
-                addExtensions(tok.nextToken());
+                ExtensionConfig config = ExtensionConfig.parse(tok.nextToken());
+                addExtensions(config);
             }
         }
-    }
-
-    @Override
-    public void addExtensions(String... extConfigs)
-    {
-        for (String extConfig : extConfigs)
-        {
-            extensions.add(ExtensionConfig.parse(extConfig));
-        }
-    }
-
-    public Map<String, String> getCookieMap()
-    {
-        return cookieMap;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return extensions;
     }
 
     protected String[] parseProtocols(String protocol)
@@ -110,6 +92,11 @@ public class ServletWebSocketRequest extends UpgradeRequest
         String[] protocols = new String[passed.length + 1];
         System.arraycopy(passed,0,protocols,0,passed.length);
         return protocols;
+    }
+
+    public void setAttribute(String name, Object o)
+    {
+        this.req.setAttribute(name,o);
     }
 
     public void setValidExtensions(List<Extension> valid)

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -42,21 +41,21 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.ExtensionRegistry;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.InternalConnection;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
-import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.common.io.IncomingFrames;
+import org.eclipse.jetty.websocket.common.io.InternalConnection;
+import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 
 /**
@@ -215,7 +214,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return this.creator;
     }
 
-    public ExtensionRegistry getExtensionRegistry()
+    public ExtensionFactory getExtensionRegistry()
     {
         return extensionRegistry;
     }
@@ -355,16 +354,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             throw new IllegalStateException("Not a 'WebSocket: Upgrade' request");
         }
-        if (!"HTTP/1.1".equals(request.getProtocol()))
+        if (!"HTTP/1.1".equals(request.getHttpVersion()))
         {
             throw new IllegalStateException("Not a 'HTTP/1.1' request");
         }
 
-        int version = request.getIntHeader("Sec-WebSocket-Version");
+        int version = request.getHeaderInt("Sec-WebSocket-Version");
         if (version < 0)
         {
             // Old pre-RFC version specifications (header not present in RFC-6455)
-            version = request.getIntHeader("Sec-WebSocket-Draft");
+            version = request.getHeaderInt("Sec-WebSocket-Draft");
         }
 
         WebSocketHandshake handshaker = handshakes.get(version);
@@ -409,25 +408,26 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             connection.configureFromExtensions(extensions);
 
-            Iterator<Extension> extIter;
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoing);
-                outgoing = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextIncomingFrames(incoming);
-                incoming = ext;
-            }
+            // FIXME:
+            // Iterator<Extension> extIter;
+            // // Connect outgoings
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextOutgoingFrames(outgoing);
+            // outgoing = ext;
+            // }
+            //
+            // // Connect incomings
+            // Collections.reverse(extensions);
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextIncomingFrames(incoming);
+            // incoming = ext;
+            // }
         }
 
         // configure session for outgoing flows

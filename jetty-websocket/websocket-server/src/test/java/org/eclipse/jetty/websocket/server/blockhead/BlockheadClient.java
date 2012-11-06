@@ -34,9 +34,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,28 +43,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.common.io.IncomingFrames;
+import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
@@ -220,25 +220,26 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             generator.configureFromExtensions(extensions);
             parser.configureFromExtensions(extensions);
 
-            Iterator<Extension> extIter;
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoing);
-                outgoing = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextIncomingFrames(incoming);
-                incoming = ext;
-            }
+            // FIXME
+            // Iterator<Extension> extIter;
+            // // Connect outgoings
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextOutgoingFrames(outgoing);
+            // outgoing = ext;
+            // }
+            //
+            // // Connect incomings
+            // Collections.reverse(extensions);
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextIncomingFrames(incoming);
+            // incoming = ext;
+            // }
         }
 
         // configure parser
@@ -302,13 +303,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void incoming(WebSocketException e)
+    public void incomingError(WebSocketException e)
     {
-        incomingFrames.incoming(e);
+        incomingFrames.incomingError(e);
     }
 
     @Override
-    public void incoming(WebSocketFrame frame)
+    public void incomingFrame(WebSocketFrame frame)
     {
         LOG.debug("incoming({})",frame);
         int count = parseCount.incrementAndGet();
@@ -317,7 +318,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             LOG.info("Client parsed {} frames",count);
         }
         WebSocketFrame copy = new WebSocketFrame(frame);
-        incomingFrames.incoming(copy);
+        incomingFrames.incomingFrame(copy);
     }
 
     public boolean isConnected()
@@ -355,7 +356,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
     {
         ByteBuffer buf = generator.generate(frame);
         if (LOG.isDebugEnabled())
@@ -369,6 +370,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             disconnect();
         }
+
+        return FinishedFuture.INSTANCE;
     }
 
     public int read() throws IOException
@@ -542,8 +545,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     {
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         frame.setMask(clientmask);
-        // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
-        outgoing.output(null,null,frame);
+        // DEBUG frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+        outgoing.outgoingFrame(frame);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

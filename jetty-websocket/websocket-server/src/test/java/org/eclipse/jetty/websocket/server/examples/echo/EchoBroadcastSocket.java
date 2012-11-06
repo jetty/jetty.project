@@ -21,12 +21,11 @@ package org.eclipse.jetty.websocket.server.examples.echo;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket
 public class EchoBroadcastSocket
@@ -42,7 +41,7 @@ public class EchoBroadcastSocket
         {
             try
             {
-                sock.conn.write(null,new FutureCallback<Void>(),buf,offset,len);
+                sock.conn.write(buf,offset,len);
             }
             catch (IOException e)
             {
@@ -72,7 +71,7 @@ public class EchoBroadcastSocket
         {
             try
             {
-                sock.conn.write(null,new FutureCallback<Void>(),text);
+                sock.conn.write(text);
             }
             catch (IOException e)
             {

@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.server.examples;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
  * Example of a basic blocking echo socket.

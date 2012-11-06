@@ -18,21 +18,31 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.net.HttpCookie;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.websocket.HandshakeRequest;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class UpgradeRequest implements HandshakeRequest
 {
     private URI requestURI;
     private List<String> subProtocols = new ArrayList<>();
+    private List<ExtensionConfig> extensions = new ArrayList<>();
+    private List<HttpCookie> cookies = new ArrayList<>();
+    private Map<String, List<String>> headers = new HashMap<>();
     private Object session;
+    private Principal userPrincipal;
+    private String httpVersion;
+    private String method;
+    private String host;
 
     protected UpgradeRequest()
     {
@@ -41,53 +51,121 @@ public class UpgradeRequest implements HandshakeRequest
 
     public UpgradeRequest(String requestURI)
     {
-        this.requestURI = URI.create(requestURI);
+        this(URI.create(requestURI));
     }
 
     public UpgradeRequest(URI requestURI)
     {
-        this.requestURI = requestURI;
+        this();
+        setRequestURI(requestURI);
     }
 
-    public void addExtensions(String... extConfigs)
+    public void addExtensions(ExtensionConfig... configs)
     {
-        // TODO Auto-generated method stub
+        for (ExtensionConfig config : configs)
+        {
+            extensions.add(config);
+        }
+    }
+
+    public void addExtensions(String... configs)
+    {
+        for (String config : configs)
+        {
+            extensions.add(ExtensionConfig.parse(config));
+        }
+    }
+
+    public List<HttpCookie> getCookies()
+    {
+        return cookies;
     }
 
     public List<ExtensionConfig> getExtensions()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return extensions;
     }
 
     public String getHeader(String name)
     {
-        // TODO Auto-generated method stub
-        return null;
+        List<String> values = headers.get(name);
+        // no value list
+        if (values == null)
+        {
+            return null;
+        }
+        int size = values.size();
+        // empty value list
+        if (size <= 0)
+        {
+            return null;
+        }
+        // simple return
+        if (size == 1)
+        {
+            return values.get(0);
+        }
+        // join it with commas
+        boolean needsDelim = false;
+        StringBuilder ret = new StringBuilder();
+        for (String value : values)
+        {
+            if (needsDelim)
+            {
+                ret.append(", ");
+            }
+            QuoteUtil.quoteIfNeeded(ret,value,QuoteUtil.ABNF_REQUIRED_QUOTING);
+            needsDelim = true;
+        }
+        return ret.toString();
+    }
+
+    public int getHeaderInt(String name)
+    {
+        List<String> values = headers.get(name);
+        // no value list
+        if (values == null)
+        {
+            return -1;
+        }
+        int size = values.size();
+        // empty value list
+        if (size <= 0)
+        {
+            return -1;
+        }
+        // simple return
+        if (size == 1)
+        {
+            return Integer.parseInt(values.get(0));
+        }
+        throw new NumberFormatException("Cannot convert multi-value header into int");
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return headers;
+    }
+
+    public List<String> getHeaders(String name)
+    {
+        return headers.get(name);
     }
 
     public String getHost()
     {
-        return getHeader("Host");
+        return host;
     }
 
     public String getHttpVersion()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return httpVersion;
     }
 
     public String getMethod()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return method;
     }
 
     public String getOrigin()
@@ -128,13 +206,19 @@ public class UpgradeRequest implements HandshakeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return userPrincipal;
     }
 
     public boolean hasSubProtocol(String test)
     {
-        return subProtocols.contains(test);
+        for (String protocol : subProtocols)
+        {
+            if (protocol.equalsIgnoreCase(test))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isOrigin(String test)
@@ -145,8 +229,29 @@ public class UpgradeRequest implements HandshakeRequest
     @Override
     public boolean isUserInRole(String role)
     {
-        // TODO Auto-generated method stub
         return false;
+    }
+
+    public void setCookies(List<HttpCookie> cookies)
+    {
+        this.cookies = cookies;
+    }
+
+    public void setHttpVersion(String httpVersion)
+    {
+        this.httpVersion = httpVersion;
+    }
+
+    public void setMethod(String method)
+    {
+        this.method = method;
+    }
+
+    public void setRequestURI(URI uri)
+    {
+        this.requestURI = uri;
+        this.host = this.requestURI.getHost();
+        // TODO: parse parameters
     }
 
     public void setSession(Object session)
@@ -156,11 +261,30 @@ public class UpgradeRequest implements HandshakeRequest
 
     public void setSubProtocols(List<String> subProtocols)
     {
-        this.subProtocols = subProtocols;
+        this.subProtocols.clear();
+        if (subProtocols != null)
+        {
+            this.subProtocols.addAll(subProtocols);
+        }
     }
 
-    public void setSubProtocols(String protocols)
+    /**
+     * Set Sub Protocol request list.
+     * 
+     * @param protocols
+     *            the sub protocols desired
+     */
+    public void setSubProtocols(String... protocols)
     {
-        // TODO Auto-generated method stub
+        this.subProtocols.clear();
+        for (String protocol : protocols)
+        {
+            this.subProtocols.add(protocol);
+        }
+    }
+
+    public void setUserPrincipal(Principal userPrincipal)
+    {
+        this.userPrincipal = userPrincipal;
     }
 }

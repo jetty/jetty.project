@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
  * Abstract WebSocket creator interface.
@@ -28,8 +27,8 @@ import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
  * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
  * WebSocketCreator implementation.
  * <p>
- * This has been moved from the WebSocketServlet to a standalone class managed by the {@link WebSocketServerFactory} due to need of WebSocket {@link Extension}s
- * that require the ability to create new websockets (such as the mux extension)
+ * This has been moved from the WebSocketServlet to a standalone class managed by the WebSocketServerFactory due to need of WebSocket {@link Extension}s that
+ * require the ability to create new websockets (such as the mux extension)
  */
 public interface WebSocketCreator
 {

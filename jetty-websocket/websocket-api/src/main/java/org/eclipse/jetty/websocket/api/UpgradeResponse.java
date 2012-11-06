@@ -19,7 +19,8 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,12 +28,26 @@ import java.util.Set;
 import javax.net.websocket.HandshakeResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class UpgradeResponse implements HandshakeResponse
 {
+    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+    private int statusCode;
+    private String statusReason;
+    private Map<String, List<String>> headers = new HashMap<>();
+    private List<ExtensionConfig> extensions = new ArrayList<>();
+    private boolean success = false;
+
     public void addHeader(String name, String value)
     {
-        // TODO Auto-generated method stub
+        List<String> values = headers.get(name);
+        if (values == null)
+        {
+            values = new ArrayList<>();
+        }
+        values.add(value);
+        headers.put(name,values);
     }
 
     /**
@@ -42,8 +57,7 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public String getAcceptedSubProtocol()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return getHeader(SEC_WEBSOCKET_PROTOCOL);
     }
 
     /**
@@ -53,51 +67,72 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public List<ExtensionConfig> getExtensions()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return extensions;
     }
 
-    public Set<String> getHeaderNamesSet()
+    public String getHeader(String name)
     {
-        // TODO Auto-generated method stub
-        return null;
+        List<String> values = headers.get(name);
+        // no value list
+        if (values == null)
+        {
+            return null;
+        }
+        int size = values.size();
+        // empty value list
+        if (size <= 0)
+        {
+            return null;
+        }
+        // simple return
+        if (size == 1)
+        {
+            return values.get(0);
+        }
+        // join it with commas
+        boolean needsDelim = false;
+        StringBuilder ret = new StringBuilder();
+        for (String value : values)
+        {
+            if (needsDelim)
+            {
+                ret.append(", ");
+            }
+            QuoteUtil.quoteIfNeeded(ret,value,QuoteUtil.ABNF_REQUIRED_QUOTING);
+            needsDelim = true;
+        }
+        return ret.toString();
+    }
+
+    public Set<String> getHeaderNames()
+    {
+        return headers.keySet();
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return headers;
     }
 
-    public String getHeaderValue(String name)
+    public List<String> getHeaders(String name)
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public Iterator<String> getHeaderValues(String name)
-    {
-        // TODO Auto-generated method stub
-        return null;
+        return headers.get(name);
     }
 
     public int getStatusCode()
     {
-        // TODO Auto-generated method stub
-        return -1;
+        return statusCode;
     }
 
     public String getStatusReason()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return statusReason;
     }
 
     public boolean isSuccess()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return success;
     }
 
     /**
@@ -113,6 +148,7 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public void sendForbidden(String message) throws IOException
     {
+
     }
 
     /**
@@ -123,7 +159,7 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public void setAcceptedSubProtocol(String protocol)
     {
-        // TODO Auto-generated method stub
+        setHeader(SEC_WEBSOCKET_PROTOCOL,protocol);
     }
 
     /**
@@ -143,16 +179,32 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public void setExtensions(List<ExtensionConfig> extensions)
     {
-        // TODO Auto-generated method stub
+        this.extensions.clear();
+        if (extensions != null)
+        {
+            this.extensions.addAll(extensions);
+        }
     }
 
     public void setHeader(String name, String value)
     {
-        // TODO Auto-generated method stub
+        List<String> values = new ArrayList<>();
+        values.add(value);
+        headers.put(name,values);
     }
 
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException
+    public void setStatusCode(int statusCode)
     {
-        // TODO Auto-generated method stub
+        this.statusCode = statusCode;
+    }
+
+    public void setStatusReason(String statusReason)
+    {
+        this.statusReason = statusReason;
+    }
+
+    public void setSuccess(boolean success)
+    {
+        this.success = success;
     }
 }

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.mux;
 
-import org.eclipse.jetty.websocket.core.extensions.mux.AbstractMuxExtension;
-import org.eclipse.jetty.websocket.core.extensions.mux.Muxer;
+import org.eclipse.jetty.websocket.common.extensions.mux.AbstractMuxExtension;
+import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
 
 public class MuxClientExtension extends AbstractMuxExtension
 {

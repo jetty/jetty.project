@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;

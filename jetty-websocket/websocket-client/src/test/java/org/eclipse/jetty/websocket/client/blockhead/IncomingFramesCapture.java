@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.client.blockhead;
 
+import static org.hamcrest.Matchers.*;
+
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 
 public class IncomingFramesCapture implements IncomingFrames
 {
@@ -121,14 +120,14 @@ public class IncomingFramesCapture implements IncomingFrames
     }
 
     @Override
-    public void incoming(WebSocketException e)
+    public void incomingError(WebSocketException e)
     {
         LOG.debug(e);
         errors.add(e);
     }
 
     @Override
-    public void incoming(WebSocketFrame frame)
+    public void incomingFrame(WebSocketFrame frame)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);

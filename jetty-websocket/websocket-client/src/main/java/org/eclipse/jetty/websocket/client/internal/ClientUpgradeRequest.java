@@ -18,27 +18,24 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
+import java.net.HttpCookie;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Allowing a generate from a UpgradeRequest
  */
-public class ClientUpgradeRequest implements UpgradeRequest
+public class ClientUpgradeRequest extends UpgradeRequest
 {
     private final static Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
     private static final String HEADER_VALUES_DELIM = "\"\\\n\r\t\f\b%+ ;=";
@@ -62,37 +59,22 @@ public class ClientUpgradeRequest implements UpgradeRequest
     }
 
     private final String key;
-    private List<String> subProtocols;
-    private List<ExtensionConfig> extensions;
-    private Map<String, String> cookies;
-    private Map<String, String> headers;
-    private String httpEndPointName;
-    private String host;
 
     public ClientUpgradeRequest()
     {
-        byte[] bytes = new byte[16];
-        new Random().nextBytes(bytes);
-        this.key = new String(B64Code.encode(bytes));
-        this.subProtocols = new ArrayList<>();
-        this.extensions = new ArrayList<>();
-        this.cookies = new HashMap<>();
-        this.headers = new HashMap<>();
+        super();
+        this.key = genRandomKey();
     }
 
-    @Override
-    public void addExtensions(String... extConfigs)
+    public ClientUpgradeRequest(URI requestURI)
     {
-        for (String extConfig : extConfigs)
-        {
-            extensions.add(ExtensionConfig.parse(extConfig));
-        }
+        super(requestURI);
+        this.key = genRandomKey();
     }
 
-    public String generate(URI uri)
+    public String generate()
     {
-        this.httpEndPointName = uri.toASCIIString();
-        this.host = uri.getHost();
+        URI uri = getRequestURI();
 
         StringBuilder request = new StringBuilder(512);
         request.append("GET ");
@@ -110,7 +92,7 @@ public class ClientUpgradeRequest implements UpgradeRequest
         }
         request.append(" HTTP/1.1\r\n");
 
-        request.append("Host: ").append(this.host);
+        request.append("Host: ").append(uri.getHost());
         if (uri.getPort() > 0)
         {
             request.append(':').append(uri.getPort());
@@ -165,36 +147,33 @@ public class ClientUpgradeRequest implements UpgradeRequest
         }
 
         // Cookies
-        if (!getCookieMap().isEmpty())
+        List<HttpCookie> cookies = getCookies();
+        if ((cookies != null) && (cookies.size() > 0))
         {
             request.append("Cookie: ");
             boolean needDelim = false;
-            for (String cookie : getCookieMap().keySet())
+            for (HttpCookie cookie : cookies)
             {
                 if (needDelim)
                 {
                     request.append("; ");
                 }
-                request.append(QuotedStringTokenizer.quoteIfNeeded(cookie,HEADER_VALUES_DELIM));
-                request.append("=");
-                String val = cookies.get(cookie);
-                request.append(QuotedStringTokenizer.quoteIfNeeded(val,HEADER_VALUES_DELIM));
+                request.append(cookie.toString());
                 needDelim = true;
             }
             request.append("\r\n");
         }
 
         // Other headers
-        for (String key : headers.keySet())
+        for (String key : getHeaders().keySet())
         {
-            String value = headers.get(key);
             if (FORBIDDEN_HEADERS.contains(key.toLowerCase()))
             {
-                LOG.warn("Skipping forbidden header - {}: {}",key,value);
+                LOG.warn("Skipping forbidden header - {}",key);
                 continue; // skip
             }
             request.append(key).append(": ");
-            request.append(QuotedStringTokenizer.quoteIfNeeded(value,HEADER_VALUES_DELIM));
+            request.append(getHeader(key));
             request.append("\r\n");
         }
 
@@ -203,118 +182,15 @@ public class ClientUpgradeRequest implements UpgradeRequest
         return request.toString();
     }
 
-    @Override
-    public Map<String, String> getCookieMap()
+    private final String genRandomKey()
     {
-        return cookies;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return extensions;
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        return headers.get(name);
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getHost()
-    {
-        return this.host;
-    }
-
-    @Override
-    public String getHttpVersion()
-    {
-        // TODO Auto-generated method stub
-        return null;
+        byte[] bytes = new byte[16];
+        new Random().nextBytes(bytes);
+        return new String(B64Code.encode(bytes));
     }
 
     public String getKey()
     {
         return key;
-    }
-
-    @Override
-    public String getMethod()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
-    }
-
-    @Override
-    public Map<String, String[]> getParameterMap()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getQueryString()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getRemoteURI()
-    {
-        return httpEndPointName;
-    }
-
-    @Override
-    public List<String> getSubProtocols()
-    {
-        return subProtocols;
-    }
-
-    @Override
-    public boolean hasSubProtocol(String test)
-    {
-        for (String protocol : subProtocols)
-        {
-            if (protocol.equalsIgnoreCase(test))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
-    }
-
-    @Override
-    public void setSubProtocols(String protocols)
-    {
-        this.subProtocols.clear();
-        if (StringUtil.isBlank(protocols))
-        {
-            return;
-        }
-        for (String protocol : protocols.split("\\s*,\\s*"))
-        {
-            this.subProtocols.add(protocol);
-        }
     }
 }

@@ -18,17 +18,20 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import static org.hamcrest.Matchers.*;
+
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.concurrent.Future;
+
+import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
@@ -39,11 +42,11 @@ public class OutgoingFramesCapture implements OutgoingFrames
         public WebSocketFrame frame;
     }
 
-    private LinkedList<Write<?>> writes = new LinkedList<>();
+    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
 
     public void assertFrameCount(int expectedCount)
     {
-        Assert.assertThat("Captured frame count",writes.size(),is(expectedCount));
+        Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
@@ -58,26 +61,25 @@ public class OutgoingFramesCapture implements OutgoingFrames
 
     public void assertHasNoFrames()
     {
-        Assert.assertThat("Has no frames",writes.size(),is(0));
+        Assert.assertThat("Has no frames",frames.size(),is(0));
     }
 
     public void dump()
     {
-        System.out.printf("Captured %d outgoing writes%n",writes.size());
-        for (int i = 0; i < writes.size(); i++)
+        System.out.printf("Captured %d outgoing writes%n",frames.size());
+        for (int i = 0; i < frames.size(); i++)
         {
-            Write<?> write = writes.get(i);
-            System.out.printf("[%3d] %s | %s | %s%n",i,write.context,write.callback,write.frame);
-            System.out.printf("          %s%n",BufferUtil.toDetailString(write.frame.getPayload()));
+            WebSocketFrame frame = frames.get(i);
+            System.out.printf("[%3d] %s%n",i,frame);
+            System.out.printf("       %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
     public int getFrameCount(byte op)
     {
         int count = 0;
-        for (Write<?> write : writes)
+        for (WebSocketFrame frame : frames)
         {
-            WebSocketFrame frame = write.frame;
             if (frame.getOpCode() == op)
             {
                 count++;
@@ -86,18 +88,15 @@ public class OutgoingFramesCapture implements OutgoingFrames
         return count;
     }
 
-    public LinkedList<Write<?>> getWrites()
+    public LinkedList<WebSocketFrame> getFrames()
     {
-        return writes;
+        return frames;
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
     {
-        Write<C> write = new Write<C>();
-        write.context = context;
-        write.callback = callback;
-        write.frame = frame;
-        writes.add(write);
+        frames.add(frame);
+        return FinishedFuture.INSTANCE;
     }
 }
