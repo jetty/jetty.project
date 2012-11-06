@@ -18,27 +18,17 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.security.Principal;
-import java.util.List;
-import java.util.Map;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 
-public class MuxRequest implements UpgradeRequest
+public class MuxRequest extends UpgradeRequest
 {
     public static final String HEADER_VALUE_DELIM="\"\\\n\r\t\f\b%+ ;=";
 
     public static UpgradeRequest merge(UpgradeRequest baseReq, UpgradeRequest deltaReq)
     {
         MuxRequest req = new MuxRequest(baseReq);
-
-        req.method = overlay(deltaReq.getMethod(),req.getMethod());
 
         // TODO: finish
 
@@ -61,186 +51,13 @@ public class MuxRequest implements UpgradeRequest
         return req;
     }
 
-    private String method;
-    private String httpVersion;
-    private String remoteURI;
-    private String queryString;
-    private List<String> subProtocols;
-    private Map<String, String> cookies;
-    private List<ExtensionConfig> extensions;
-    private Map<String, List<String>> headers;
-    private Map<String, String[]> parameterMap;
     public MuxRequest()
     {
-        // TODO Auto-generated constructor stub
+        super();
     }
+
     public MuxRequest(UpgradeRequest copy)
     {
-        // TODO Auto-generated constructor stub
-    }
-
-    @Override
-    public void addExtensions(String... extConfigs)
-    {
-        for (String extConfig : extConfigs)
-        {
-            extensions.add(RequestedExtensionConfig.parse(extConfig));
-        }
-    }
-
-    @Override
-    public Map<String, String> getCookieMap()
-    {
-        return cookies;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return extensions;
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        List<String> values = headers.get(name);
-        // not set
-        if ((values == null) || (values.isEmpty()))
-        {
-            return null;
-        }
-        // only 1 value (most common scenario)
-        if (values.size() == 1)
-        {
-            return values.get(0);
-        }
-        // merge multiple values together
-        StringBuilder ret = new StringBuilder();
-        boolean delim = false;
-        for (String value : values)
-        {
-            if (delim)
-            {
-                ret.append(", ");
-            }
-            QuotedStringTokenizer.quoteIfNeeded(ret,value,HEADER_VALUE_DELIM);
-            delim = true;
-        }
-        return ret.toString();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        return headers;
-    }
-
-    @Override
-    public String getHost()
-    {
-        return getHeader("Host");
-    }
-
-    @Override
-    public String getHttpVersion()
-    {
-        return httpVersion;
-    }
-
-    @Override
-    public String getMethod()
-    {
-        return method;
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
-    }
-
-    @Override
-    public Map<String, String[]> getParameterMap()
-    {
-        return parameterMap;
-    }
-
-    @Override
-    public String getQueryString()
-    {
-        return queryString;
-    }
-
-    @Override
-    public String getRemoteURI()
-    {
-        return remoteURI;
-    }
-
-    @Override
-    public URI getRequestURI()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Object getSession()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public List<String> getSubProtocols()
-    {
-        return subProtocols;
-    }
-
-    @Override
-    public Principal getUserPrincipal()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public boolean hasSubProtocol(String test)
-    {
-        for (String protocol : subProtocols)
-        {
-            if (protocol.equalsIgnoreCase(test))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
-    }
-
-    @Override
-    public boolean isUserInRole(String role)
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public void setSubProtocols(String protocols)
-    {
-        this.subProtocols.clear();
-        if (StringUtil.isBlank(protocols))
-        {
-            return;
-        }
-        for (String protocol : protocols.split("\\s*,\\s*"))
-        {
-            this.subProtocols.add(protocol);
-        }
+        super();
     }
 }

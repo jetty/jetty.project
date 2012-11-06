@@ -20,27 +20,25 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.websocket.core.api.UpgradeException;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public class ServletWebSocketResponse extends HttpServletResponseWrapper implements UpgradeResponse
+public class ServletWebSocketResponse extends UpgradeResponse
 {
     private String acceptedProtocol;
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private boolean success = true;
+    private HttpServletResponse resp;
 
     public ServletWebSocketResponse(HttpServletResponse resp)
     {
-        super(resp);
+        super();
+        this.resp = resp;
     }
 
     @Override
@@ -59,25 +57,6 @@ public class ServletWebSocketResponse extends HttpServletResponseWrapper impleme
     public List<ExtensionConfig> getExtensions()
     {
         return this.extensions;
-    }
-
-    @Override
-    public Set<String> getHeaderNamesSet()
-    {
-        Collection<String> names = getHeaderNames();
-        return new HashSet<String>(names);
-    }
-
-    @Override
-    public String getHeaderValue(String name)
-    {
-        return super.getHeader(name);
-    }
-
-    @Override
-    public Iterator<String> getHeaderValues(String name)
-    {
-        return super.getHeaders(name).iterator();
     }
 
     @Override
@@ -102,7 +81,7 @@ public class ServletWebSocketResponse extends HttpServletResponseWrapper impleme
     public void sendForbidden(String message) throws IOException
     {
         success = false;
-        sendError(HttpServletResponse.SC_FORBIDDEN,message);
+        resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
     }
 
     @Override

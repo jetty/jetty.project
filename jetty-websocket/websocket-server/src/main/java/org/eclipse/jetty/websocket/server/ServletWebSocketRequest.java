@@ -26,23 +26,30 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public class ServletWebSocketRequest extends HttpServletRequestWrapper implements UpgradeRequest
+public class ServletWebSocketRequest extends UpgradeRequest
 {
-    private List<String> subProtocols = new ArrayList<>();
     private List<ExtensionConfig> extensions;
+    private Map<String, String> cookieMap;
 
     public ServletWebSocketRequest(HttpServletRequest request)
     {
-        super(request);
+        super(request.getRequestURI());
+        // TODO: copy values over
+
+        cookieMap = new HashMap<String, String>();
+        for (Cookie cookie : request.getCookies())
+        {
+            cookieMap.put(cookie.getName(),cookie.getValue());
+        }
 
         Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
+        List<String> subProtocols = new ArrayList<>();
         String protocol = null;
         while ((protocol == null) && (protocols != null) && protocols.hasMoreElements())
         {
@@ -52,6 +59,7 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
                 subProtocols.add(p);
             }
         }
+        setSubProtocols(subProtocols);
 
         extensions = new ArrayList<>();
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
@@ -74,76 +82,15 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
         }
     }
 
-    @Override
     public Map<String, String> getCookieMap()
     {
-        Map<String, String> ret = new HashMap<String, String>();
-        for (Cookie cookie : super.getCookies())
-        {
-            ret.put(cookie.getName(),cookie.getValue());
-        }
-        return ret;
+        return cookieMap;
     }
 
     @Override
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getHost()
-    {
-        return getHeader("Host");
-    }
-
-    @Override
-    public String getHttpVersion()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
-    }
-
-    /**
-     * Get the endpoint of the WebSocket connection.
-     * <p>
-     * Per the <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (RFC 6455)</a>
-     */
-    @Override
-    public String getRemoteURI()
-    {
-        return getRequestURI();
-    }
-
-    @Override
-    public List<String> getSubProtocols()
-    {
-        return subProtocols;
-    }
-
-    @Override
-    public boolean hasSubProtocol(String test)
-    {
-        return subProtocols.contains(test);
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
     }
 
     protected String[] parseProtocols(String protocol)
@@ -163,17 +110,6 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
         String[] protocols = new String[passed.length + 1];
         System.arraycopy(passed,0,protocols,0,passed.length);
         return protocols;
-    }
-
-    /**
-     * Not implemented (not relevant) on server side.
-     * 
-     * @see org.eclipse.jetty.websocket.core.api.UpgradeRequest#setSubProtocols(java.lang.String)
-     */
-    @Override
-    public void setSubProtocols(String protocol)
-    {
-        /* not relevant for server side/servlet work */
     }
 
     public void setValidExtensions(List<Extension> valid)

@@ -21,41 +21,84 @@ package org.eclipse.jetty.websocket.api;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.net.websocket.HandshakeResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public interface UpgradeResponse extends HandshakeResponse
+public class UpgradeResponse implements HandshakeResponse
 {
-    public void addHeader(String name, String value);
+    public void addHeader(String name, String value)
+    {
+        // TODO Auto-generated method stub
+    }
 
     /**
      * Get the accepted WebSocket protocol.
      * 
      * @return the accepted WebSocket protocol.
      */
-    public String getAcceptedSubProtocol();
+    public String getAcceptedSubProtocol()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     /**
      * Get the list of extensions that should be used for the websocket.
      * 
      * @return the list of negotiated extensions to use.
      */
-    public List<ExtensionConfig> getExtensions();
+    public List<ExtensionConfig> getExtensions()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public Set<String> getHeaderNamesSet();
+    public Set<String> getHeaderNamesSet()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getHeaderValue(String name);
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public Iterator<String> getHeaderValues(String name);
+    public String getHeaderValue(String name)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public int getStatusCode();
+    public Iterator<String> getHeaderValues(String name)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getStatusReason();
+    public int getStatusCode()
+    {
+        // TODO Auto-generated method stub
+        return -1;
+    }
 
-    public boolean isSuccess();
+    public String getStatusReason()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public boolean isSuccess()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
     /**
      * Issue a forbidden upgrade response.
@@ -68,7 +111,9 @@ public interface UpgradeResponse extends HandshakeResponse
      *            the short 1 line detail message about the forbidden response
      * @throws IOException
      */
-    public void sendForbidden(String message) throws IOException;
+    public void sendForbidden(String message) throws IOException
+    {
+    }
 
     /**
      * Set the accepted WebSocket Protocol.
@@ -76,7 +121,10 @@ public interface UpgradeResponse extends HandshakeResponse
      * @param protocol
      *            the protocol to list as accepted
      */
-    public void setAcceptedSubProtocol(String protocol);
+    public void setAcceptedSubProtocol(String protocol)
+    {
+        // TODO Auto-generated method stub
+    }
 
     /**
      * Set the list of extensions that are approved for use with this websocket.
@@ -93,9 +141,18 @@ public interface UpgradeResponse extends HandshakeResponse
      * @param extensions
      *            the list of extensions to use.
      */
-    public void setExtensions(List<ExtensionConfig> extensions);
+    public void setExtensions(List<ExtensionConfig> extensions)
+    {
+        // TODO Auto-generated method stub
+    }
 
-    public void setHeader(String name, String value);
+    public void setHeader(String name, String value)
+    {
+        // TODO Auto-generated method stub
+    }
 
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException;
+    public void validateWebSocketHash(String expectedHash) throws UpgradeException
+    {
+        // TODO Auto-generated method stub
+    }
 }

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.net.URI;
+import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,37 +28,139 @@ import javax.net.websocket.HandshakeRequest;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public interface UpgradeRequest extends HandshakeRequest
+public class UpgradeRequest implements HandshakeRequest
 {
-    public void addExtensions(String... extConfigs);
+    private URI requestURI;
+    private List<String> subProtocols = new ArrayList<>();
+    private Object session;
 
-    public Map<String, String> getCookieMap();
+    protected UpgradeRequest()
+    {
+        /* anonymous, no requestURI, upgrade request */
+    }
 
-    public List<ExtensionConfig> getExtensions();
+    public UpgradeRequest(String requestURI)
+    {
+        this.requestURI = URI.create(requestURI);
+    }
 
-    public String getHeader(String name);
+    public UpgradeRequest(URI requestURI)
+    {
+        this.requestURI = requestURI;
+    }
+
+    public void addExtensions(String... extConfigs)
+    {
+        // TODO Auto-generated method stub
+    }
+
+    public List<ExtensionConfig> getExtensions()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public String getHeader(String name)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     @Override
-    public Map<String, List<String>> getHeaders();
+    public Map<String, List<String>> getHeaders()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getHost();
+    public String getHost()
+    {
+        return getHeader("Host");
+    }
 
-    public String getHttpVersion();
+    public String getHttpVersion()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getMethod();
+    public String getMethod()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getOrigin();
+    public String getOrigin()
+    {
+        return getHeader("Origin");
+    }
 
     @Override
-    public String getQueryString();
+    public Map<String, String[]> getParameterMap()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public String getRemoteURI();
+    @Override
+    public String getQueryString()
+    {
+        return requestURI.getQuery();
+    }
 
-    public List<String> getSubProtocols();
+    @Override
+    public URI getRequestURI()
+    {
+        return requestURI;
+    }
 
-    public boolean hasSubProtocol(String test);
+    @Override
+    public Object getSession()
+    {
+        return session;
+    }
 
-    public boolean isOrigin(String test);
+    public List<String> getSubProtocols()
+    {
+        return subProtocols;
+    }
 
-    public void setSubProtocols(String protocols);
+    @Override
+    public Principal getUserPrincipal()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public boolean hasSubProtocol(String test)
+    {
+        return subProtocols.contains(test);
+    }
+
+    public boolean isOrigin(String test)
+    {
+        return test.equalsIgnoreCase(getOrigin());
+    }
+
+    @Override
+    public boolean isUserInRole(String role)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public void setSession(Object session)
+    {
+        this.session = session;
+    }
+
+    public void setSubProtocols(List<String> subProtocols)
+    {
+        this.subProtocols = subProtocols;
+    }
+
+    public void setSubProtocols(String protocols)
+    {
+        // TODO Auto-generated method stub
+    }
 }
