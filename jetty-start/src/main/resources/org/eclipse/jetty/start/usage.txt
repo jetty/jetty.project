@@ -26,9 +26,6 @@ Command Line Options:
                      
   --stop           Send a stop signal to the running Jetty instance.
   
-  --stop-wait      Send a stop signal to the running Jetty instance, waiting for
-                   confirmation that it is stopping.
-  
   --daemon         Start in daemon mode with stderr and stdout 
                    redirected to ${jetty.log}/start.log
   
@@ -99,7 +96,7 @@ Properties:
     STOP.WAIT=[number]
       The time (in seconds) to wait for confirmation that the running Jetty server
       has stopped. If not specified, the stopper will wait indefinitely. Use in 
-      conjunction with the --stop-wait option.
+      conjunction with the --stop option.
       
     DEBUG=true
       Enable debug on the start mechanism and sets the
