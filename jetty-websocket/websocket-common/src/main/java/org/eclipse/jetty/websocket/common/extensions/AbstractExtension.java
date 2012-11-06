@@ -73,6 +73,7 @@ public abstract class AbstractExtension implements Extension
      * 
      * @return true if extension uses RSV1 for its own purposes.
      */
+    @Override
     public boolean isRsv1User()
     {
         return false;
@@ -85,6 +86,7 @@ public abstract class AbstractExtension implements Extension
      * 
      * @return true if extension uses RSV2 for its own purposes.
      */
+    @Override
     public boolean isRsv2User()
     {
         return false;
@@ -97,6 +99,7 @@ public abstract class AbstractExtension implements Extension
      * 
      * @return true if extension uses RSV3 for its own purposes.
      */
+    @Override
     public boolean isRsv3User()
     {
         return false;
@@ -113,6 +116,7 @@ public abstract class AbstractExtension implements Extension
      * @return true if extension will process TEXT Data Frames, false if extension makes no modifications of TEXT Data Frames. If false, the parser/generator is
      *         now free to validate the conformance to spec of TEXT Data Frames.
      */
+    @Override
     public boolean isTextDataDecoder()
     {
         return false;
