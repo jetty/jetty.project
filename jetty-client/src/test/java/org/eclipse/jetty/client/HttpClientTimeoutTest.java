@@ -151,7 +151,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         TimeUnit.MILLISECONDS.sleep(2 * timeout);
 
-        Assert.assertFalse(request.aborted());
+        Assert.assertNull(request.aborted());
     }
 
     @Slow
@@ -208,7 +208,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
             TimeUnit.MILLISECONDS.sleep(2 * timeout);
 
-            Assert.assertFalse(request.aborted());
+            Assert.assertNull(request.aborted());
         }
     }
 

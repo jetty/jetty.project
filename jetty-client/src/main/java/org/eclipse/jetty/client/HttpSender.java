@@ -82,9 +82,10 @@ public class HttpSender
         }
 
         Request request = exchange.getRequest();
-        if (request.aborted())
+        Throwable aborted = request.aborted();
+        if (aborted != null)
         {
-            exchange.abort(null);
+            exchange.abort(aborted);
         }
         else
         {
@@ -400,7 +401,7 @@ public class HttpSender
 
         Result result = completion.getReference();
         boolean notCommitted = current == State.IDLE || current == State.SEND;
-        if (result == null && notCommitted && !request.aborted())
+        if (result == null && notCommitted && request.aborted() == null)
         {
             result = exchange.responseComplete(failure).getReference();
             exchange.terminateResponse();
@@ -418,12 +419,12 @@ public class HttpSender
         return true;
     }
 
-    public boolean abort(HttpExchange exchange, String reason)
+    public boolean abort(HttpExchange exchange, Throwable reason)
     {
         State current = state.get();
         boolean abortable = current == State.IDLE || current == State.SEND ||
                 current == State.COMMIT && contentIterator.hasNext();
-        return abortable && fail(new HttpRequestException(reason == null ? "Request aborted" : reason, exchange.getRequest()));
+        return abortable && fail(reason);
     }
 
     private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)

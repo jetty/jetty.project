@@ -155,6 +155,11 @@ public class HttpConnection extends AbstractConnection implements Connection
             path = "/";
             request.path(path);
         }
+        if (destination.isProxied() && HttpMethod.CONNECT != request.getMethod())
+        {
+            path = request.getURI();
+            request.path(path);
+        }
 
         Fields fields = request.getParams();
         if (!fields.isEmpty())
@@ -359,7 +364,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public boolean abort(HttpExchange exchange, String reason)
+    public boolean abort(HttpExchange exchange, Throwable reason)
     {
         // We want the return value to be that of the response
         // because if the response has already successfully

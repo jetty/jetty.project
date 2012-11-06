@@ -74,7 +74,7 @@ public interface Response
      * @param reason the abort reason
      * @return whether the abort succeeded
      */
-    boolean abort(String reason);
+    boolean abort(Throwable reason);
 
     public interface ResponseListener extends EventListener
     {

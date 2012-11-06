@@ -413,6 +413,7 @@
     <module>jetty-nosql</module>
     <module>tests/test-sessions</module>
     <module>tests/test-webapps</module>
+    <module>jetty-proxy</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
@@ -420,7 +421,6 @@
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
-    <module>jetty-proxy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>

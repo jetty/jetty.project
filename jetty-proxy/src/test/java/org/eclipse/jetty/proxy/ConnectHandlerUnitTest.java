@@ -18,60 +18,44 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.mockito.Mockito.when;
-import static org.mockito.Matchers.*;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
-
-import java.io.IOException;
-
-import org.eclipse.jetty.io.EndPoint;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-
 /* ------------------------------------------------------------ */
 /**
  */
-@RunWith(MockitoJUnitRunner.class)
+//@RunWith(MockitoJUnitRunner.class)
 public class ConnectHandlerUnitTest
 {
-    @Mock
-    private EndPoint endPoint;
-
-    // TODO update for jetty-9
-    @Test
-    @Ignore
-    public void testPartialWritesWithNonFullBuffer() throws IOException
-    {
-    /*
-        ConnectHandler connectHandler = new ConnectHandler();
-        final byte[] bytes = "foo bar".getBytes();
-        Buffer buffer = new ByteArrayBuffer(bytes.length * 2);
-        buffer.put(bytes);
-        when(endPoint.flush(buffer)).thenAnswer(new Answer<Object>()
-        {
-            public Object answer(InvocationOnMock invocation)
-            {
-                Object[] args = invocation.getArguments();
-                Buffer buffer = (Buffer)args[0];
-                int skip = bytes.length/2;
-                buffer.skip(skip);
-                return skip;
-            }
-        });
-        when(endPoint.blockWritable(anyInt())).thenReturn(true);
-        
-        // method to test
-        connectHandler.write(endPoint,buffer,null);
-        
-        assertThat(buffer.length(),is(0));
-    */
-    }
-    
-
+//    @Mock
+//    private EndPoint endPoint;
+//
+//    // TODO update for jetty-9
+//    @Test
+//    @Ignore
+//    public void testPartialWritesWithNonFullBuffer() throws IOException
+//    {
+//    /*
+//        ConnectHandler connectHandler = new ConnectHandler();
+//        final byte[] bytes = "foo bar".getBytes();
+//        Buffer buffer = new ByteArrayBuffer(bytes.length * 2);
+//        buffer.put(bytes);
+//        when(endPoint.flush(buffer)).thenAnswer(new Answer<Object>()
+//        {
+//            public Object answer(InvocationOnMock invocation)
+//            {
+//                Object[] args = invocation.getArguments();
+//                Buffer buffer = (Buffer)args[0];
+//                int skip = bytes.length/2;
+//                buffer.skip(skip);
+//                return skip;
+//            }
+//        });
+//        when(endPoint.blockWritable(anyInt())).thenReturn(true);
+//
+//        // method to test
+//        connectHandler.write(endPoint,buffer,null);
+//
+//        assertThat(buffer.length(),is(0));
+//    */
+//    }
+//
+//
 }

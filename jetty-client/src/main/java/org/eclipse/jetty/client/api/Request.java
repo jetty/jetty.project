@@ -308,15 +308,16 @@ public interface Request
     /**
      * Attempts to abort the send of this request.
      *
-     * @param reason the abort reason
+     * @param reason the abort reason, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(String reason);
+    boolean abort(Throwable reason);
 
     /**
-     * @return whether {@link #abort(String)} was called
+     * @return the abort reason passed to {@link #abort(Throwable)},
+     * or null if this request has not been aborted
      */
-    boolean aborted();
+    Throwable aborted();
 
     public interface RequestListener extends EventListener
     {

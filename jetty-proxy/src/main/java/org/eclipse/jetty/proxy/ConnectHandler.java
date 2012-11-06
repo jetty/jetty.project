@@ -16,68 +16,56 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.HostMap;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * <p>Implementation of a tunneling proxy that supports HTTP CONNECT.</p>
- * <p>To work as CONNECT proxy, objects of this class must be instantiated using the no-arguments
- * constructor, since the remote server information will be present in the CONNECT URI.</p>
+ * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
  */
 public class ConnectHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(ConnectHandler.class);
-    // TODO private final SelectorManager _selectorManager = new Manager();
-    private volatile int _connectTimeout = 5000;
-    private volatile int _writeTimeout = 30000;
-    private volatile ThreadPool _threadPool;
-    private volatile boolean _privateThreadPool;
-    private HostMap<String> _white = new HostMap<String>();
-    private HostMap<String> _black = new HostMap<String>();
+
+    private final Set<String> _whiteList = new HashSet<>();
+    private final Set<String> _blackList = new HashSet<>();
+    private final SelectorManager _selector = new Manager(null, null, 1);
+    private volatile int _connectTimeout = 15000;
+    private volatile int _idleTimeout = 30000;
 
     public ConnectHandler()
     {
         this(null);
     }
 
-    public ConnectHandler(String[] white, String[] black)
-    {
-        this(null, white, black);
-    }
-
     public ConnectHandler(Handler handler)
     {
         setHandler(handler);
-    }
-
-    public ConnectHandler(Handler handler, String[] white, String[] black)
-    {
-        setHandler(handler);
-        set(white, _white);
-        set(black, _black);
     }
 
     /**
@@ -97,79 +85,34 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /**
-     * @return the timeout, in milliseconds, to write data to a peer
+     * @return the idle timeout, in milliseconds
      */
-    public int getWriteTimeout()
+    public int getIdleTimeout()
     {
-        return _writeTimeout;
+        return _idleTimeout;
     }
 
     /**
-     * @param writeTimeout the timeout, in milliseconds, to write data to a peer
+     * @param idleTimeout the idle timeout, in milliseconds
      */
-    public void setWriteTimeout(int writeTimeout)
+    public void setIdleTimeout(int idleTimeout)
     {
-        _writeTimeout = writeTimeout;
-    }
-
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-
-        // TODO server.getContainer().update(this, null, _selectorManager, "selectManager");
-
-        if (_privateThreadPool)
-            server.getContainer().update(this, null, _privateThreadPool, "threadpool", true);
-        else
-            _threadPool = server.getThreadPool();
-    }
-
-    /**
-     * @return the thread pool
-     */
-    public ThreadPool getThreadPool()
-    {
-        return _threadPool;
-    }
-
-    /**
-     * @param threadPool the thread pool
-     */
-    public void setThreadPool(ThreadPool threadPool)
-    {
-        if (getServer() != null)
-            getServer().getContainer().update(this, _privateThreadPool ? _threadPool : null, threadPool, "threadpool", true);
-        _privateThreadPool = threadPool != null;
-        _threadPool = threadPool;
+        _idleTimeout = idleTimeout;
     }
 
     @Override
     protected void doStart() throws Exception
     {
+        _selector.setConnectTimeout(getConnectTimeout());
+        _selector.start();
         super.doStart();
-
-        if (_threadPool == null)
-        {
-            _threadPool = getServer().getThreadPool();
-            _privateThreadPool = false;
-        }
-        if (_threadPool instanceof LifeCycle && !((LifeCycle)_threadPool).isRunning())
-            ((LifeCycle)_threadPool).start();
-
-        // TODO _selectorManager.start();
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        // TODO _selectorManager.stop();
-
-        ThreadPool threadPool = _threadPool;
-        if (_privateThreadPool && _threadPool != null && threadPool instanceof LifeCycle)
-            ((LifeCycle)threadPool).stop();
-
         super.doStop();
+        _selector.stop();
     }
 
     @Override
@@ -196,17 +139,17 @@ public class ConnectHandler extends HandlerWrapper
 
     /**
      * <p>Handles a CONNECT request.</p>
-     * <p>CONNECT requests may have authentication headers such as <code>Proxy-Authorization</code>
+     * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param baseRequest   Jetty-specific http request
+     * @param jettyRequest   Jetty-specific http request
      * @param request       the http request
      * @param response      the http response
      * @param serverAddress the remote server address in the form {@code host:port}
      * @throws ServletException if an application error occurs
      * @throws IOException      if an I/O error occurs
      */
-    protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
+    protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
     {
         boolean proceed = handleAuthentication(request, response, serverAddress);
         if (!proceed)
@@ -225,11 +168,18 @@ public class ConnectHandler extends HandlerWrapper
         {
             LOG.info("ProxyHandler: Forbidden destination " + host);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            baseRequest.setHandled(true);
+            jettyRequest.setHandled(true);
             return;
         }
 
-        SocketChannel channel;
+        SocketChannel channel = SocketChannel.open();
+        channel.socket().setTcpNoDelay(true);
+        channel.configureBlocking(false);
+        channel.connect(new InetSocketAddress(host, port));
+
+//        _selector.connect(channel, );
+
+//        SocketChannel channel;
 
         try
         {
@@ -239,21 +189,21 @@ public class ConnectHandler extends HandlerWrapper
         {
             LOG.info("ConnectHandler: SocketException " + se.getMessage());
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            baseRequest.setHandled(true);
+            jettyRequest.setHandled(true);
             return;
         }
         catch (SocketTimeoutException ste)
         {
             LOG.info("ConnectHandler: SocketTimeoutException" + ste.getMessage());
             response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
-            baseRequest.setHandled(true);
+            jettyRequest.setHandled(true);
             return;
         }
         catch (IOException ioe)
         {
             LOG.info("ConnectHandler: IOException" + ioe.getMessage());
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            baseRequest.setHandled(true);
+            jettyRequest.setHandled(true);
             return;
         }
 
@@ -294,7 +244,7 @@ public class ConnectHandler extends HandlerWrapper
         response.setStatus(HttpServletResponse.SC_OK);
 
         // Prevent close
-        baseRequest.getConnection().getGenerator().setPersistent(true);
+        jettyRequest.getConnection().getGenerator().setPersistent(true);
 
         // Close to force last flush it so that the client receives it
         response.getOutputStream().close();
@@ -359,19 +309,16 @@ public class ConnectHandler extends HandlerWrapper
      * @param host    the host to connect to
      * @param port    the port to connect to
      * @return a {@link SocketChannel} connected to the remote server
-     * @throws IOException if the connection cannot be established
      */
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
-        SocketChannel channel = SocketChannel.open();
-
-        if (channel == null)
-        {
-            throw new IOException("unable to connect to " + host + ":" + port);
-        }
-
+        SocketChannel channel = null;
         try
         {
+            channel = SocketChannel.open();
+            if (channel == null)
+                throw new IOException("Unable to connect to " + host + ":" + port);
+
             // Connect to remote server
             LOG.debug("Establishing connection to {}:{}", host, port);
             channel.socket().setTcpNoDelay(true);
@@ -381,15 +328,16 @@ public class ConnectHandler extends HandlerWrapper
         }
         catch (IOException x)
         {
-            LOG.debug("Failed to establish connection to " + host + ":" + port, x);
             try
             {
-                channel.close();
+                if (channel != null)
+                    channel.close();
             }
             catch (IOException xx)
             {
                 LOG.ignore(xx);
             }
+            LOG.debug("Failed to establish connection to " + host + ":" + port, x);
             throw x;
         }
     }
@@ -398,7 +346,7 @@ public class ConnectHandler extends HandlerWrapper
     {
     }
 
-    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, AsyncConnection connection) throws IOException
+    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
     {
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
@@ -410,7 +358,7 @@ public class ConnectHandler extends HandlerWrapper
     /* TODO
     private void register(SocketChannel channel, ProxyToServerConnection proxyToServer) throws IOException
     {
-        _selectorManager.register(channel, proxyToServer);
+        _selector.register(channel, proxyToServer);
         proxyToServer.waitReady(_connectTimeout);
     }
     */
@@ -456,7 +404,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             if (!endPoint.isBlocking())
             {
-                boolean ready = endPoint.blockWritable(getWriteTimeout());
+                boolean ready = endPoint.blockWritable(getIdleTimeout());
                 if (!ready)
                     throw new IOException("Write timeout");
             }
@@ -472,53 +420,69 @@ public class ConnectHandler extends HandlerWrapper
         return -1;
     }
 
-    /* TODO
+    // TODO
     private class Manager extends SelectorManager
     {
-        @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+        private Manager(Executor executor, Scheduler scheduler, int selectors)
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, key, channel.socket().getSoTimeout());
-            endp.setConnection(selectSet.getSelectorManager().newConnection(channel,endp, key.attachment()));
-            endp.setIdleTimeout(_writeTimeout);
-            return endp;
+            super(executor, scheduler, selectors);
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)attachment;
-            proxyToServer.setTimeStamp(System.currentTimeMillis());
-            proxyToServer.setEndPoint(endpoint);
-            return proxyToServer;
+            return null;
         }
 
         @Override
-        protected void endPointOpened(SelectChannelEndPoint endpoint)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
-            proxyToServer.complete();
+            return null;
         }
-
-        @Override
-        public boolean dispatch(Runnable task)
-        {
-            return _threadPool.dispatch(task);
-        }
-
-        @Override
-        protected void endPointClosed(AsyncEndPoint endpoint)
-        {
-        }
-
-        @Override
-        protected void connectionUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
-        {
-        }
+        //        @Override
+//        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+//        {
+//            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, key, channel.socket().getSoTimeout());
+//            endp.setConnection(selectSet.getSelectorManager().newConnection(channel,endp, key.attachment()));
+//            endp.setIdleTimeout(_idleTimeout);
+//            return endp;
+//        }
+//
+//        @Override
+//        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+//        {
+//            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)attachment;
+//            proxyToServer.setTimeStamp(System.currentTimeMillis());
+//            proxyToServer.setEndPoint(endpoint);
+//            return proxyToServer;
+//        }
+//
+//        @Override
+//        protected void endPointOpened(SelectChannelEndPoint endpoint)
+//        {
+//            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
+//            proxyToServer.complete();
+//        }
+//
+//        @Override
+//        public boolean dispatch(Runnable task)
+//        {
+//            return _threadPool.dispatch(task);
+//        }
+//
+//        @Override
+//        protected void endPointClosed(AsyncEndPoint endpoint)
+//        {
+//        }
+//
+//        @Override
+//        protected void connectionUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
+//        {
+//        }
     }
 
 
-
+/*
     public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
@@ -902,23 +866,23 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /**
-     * Add a whitelist entry to an existing handler configuration
+     * Adds the given {@code host} to the whitelist
      *
-     * @param entry new whitelist entry
+     * @param host the whitelisted host
      */
-    public void addWhite(String entry)
+    public void addWhitelistHost(String host)
     {
-        add(entry, _white);
+        _whiteList.add(host);
     }
 
     /**
-     * Add a blacklist entry to an existing handler configuration
+     * Adds the given {@code host} to the blacklist
      *
-     * @param entry new blacklist entry
+     * @param host the blacklisted host
      */
-    public void addBlack(String entry)
+    public void addBlacklistHost(String host)
     {
-        add(entry, _black);
+        _blackList.add(host);
     }
 
     /**
@@ -928,7 +892,7 @@ public class ConnectHandler extends HandlerWrapper
      */
     public void setWhite(String[] entries)
     {
-        set(entries, _white);
+//        set(entries, _whiteList);
     }
 
     /**
@@ -938,7 +902,7 @@ public class ConnectHandler extends HandlerWrapper
      */
     public void setBlack(String[] entries)
     {
-        set(entries, _black);
+//        set(entries, _blackList);
     }
 
     /**
@@ -988,19 +952,19 @@ public class ConnectHandler extends HandlerWrapper
      */
     public boolean validateDestination(String host)
     {
-        if (_white.size() > 0)
+        if (_whiteList.size() > 0)
         {
-            Object whiteObj = _white.getLazyMatches(host);
-            if (whiteObj == null)
+//            Object whiteObj = _whiteList.getLazyMatches(host);
+//            if (whiteObj == null)
             {
                 return false;
             }
         }
 
-        if (_black.size() > 0)
+        if (_blackList.size() > 0)
         {
-            Object blackObj = _black.getLazyMatches(host);
-            if (blackObj != null)
+//            Object blackObj = _blackList.getLazyMatches(host);
+//            if (blackObj != null)
             {
                 return false;
             }
@@ -1015,9 +979,9 @@ public class ConnectHandler extends HandlerWrapper
         dumpThis(out);
         /* TODO
         if (_privateThreadPool)
-            dump(out, indent, Arrays.asList(_threadPool, _selectorManager), TypeUtil.asList(getHandlers()), getBeans());
+            dump(out, indent, Arrays.asList(_threadPool, _selector), TypeUtil.asList(getHandlers()), getBeans());
         else
-            dump(out, indent, Arrays.asList(_selectorManager), TypeUtil.asList(getHandlers()), getBeans());
+            dump(out, indent, Arrays.asList(_selector), TypeUtil.asList(getHandlers()), getBeans());
             */
     }
 }

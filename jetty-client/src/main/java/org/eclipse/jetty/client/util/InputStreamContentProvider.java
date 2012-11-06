@@ -49,6 +49,13 @@ public class InputStreamContentProvider implements ContentProvider
         return -1;
     }
 
+    protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+    {
+        if (length <= 0)
+            return BufferUtil.EMPTY_BUFFER;
+        return ByteBuffer.wrap(buffer, offset, length);
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
@@ -71,18 +78,18 @@ public class InputStreamContentProvider implements ContentProvider
                     int read = stream.read(buffer);
                     if (read > 0)
                     {
-                        return ByteBuffer.wrap(buffer, 0, read);
+                        return onRead(buffer, 0, read);
                     }
                     else if (read < 0)
                     {
                         if (eof)
                             throw new NoSuchElementException();
                         eof = true;
-                        return BufferUtil.EMPTY_BUFFER;
+                        return onRead(buffer, 0, -1);
                     }
                     else
                     {
-                        return BufferUtil.EMPTY_BUFFER;
+                        return onRead(buffer, 0, 0);
                     }
                 }
                 catch (IOException x)
