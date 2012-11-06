@@ -35,6 +35,12 @@ public interface Frame extends javax.net.websocket.extensions.Frame
 
         public static Type from(byte op)
         {
+            if (op == 0)
+            {
+                // continuation has no type, but is a valid opcode.
+                return null;
+            }
+
             for (Type type : values())
             {
                 if (type.opcode == op)
