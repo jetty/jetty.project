@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 import org.eclipse.jetty.websocket.common.io.payload.CloseReasonValidator;
 import org.eclipse.jetty.websocket.common.io.payload.DeMaskProcessor;
@@ -115,7 +115,7 @@ public class Parser
         }
     }
 
-    public void configureFromExtensions(List<? extends AbstractExtension> exts)
+    public void configureFromExtensions(List<? extends Extension> exts)
     {
         // default
         this.rsv1InUse = false;
@@ -124,7 +124,7 @@ public class Parser
         this.isTextFrameValidated = true;
 
         // configure from list of extensions in use
-        for(AbstractExtension ext: exts)
+        for (Extension ext : exts)
         {
             if (ext.isRsv1User())
             {

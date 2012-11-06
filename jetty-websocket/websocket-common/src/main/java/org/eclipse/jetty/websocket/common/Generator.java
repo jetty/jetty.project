@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
 
 /**
  * Generating a frame in WebSocket land.
@@ -166,7 +166,7 @@ public class Generator
 
     }
 
-    public void configureFromExtensions(List<? extends AbstractExtension> exts)
+    public void configureFromExtensions(List<? extends Extension> exts)
     {
         // default
         this.rsv1InUse = false;
@@ -174,7 +174,7 @@ public class Generator
         this.rsv3InUse = false;
 
         // configure from list of extensions in use
-        for(AbstractExtension ext: exts)
+        for(Extension ext: exts)
         {
             if (ext.isRsv1User())
             {
