@@ -19,28 +19,58 @@
 package org.eclipse.jetty.websocket.api.extensions;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 
-public class ExtensionFactory
+public class ExtensionFactory implements Iterable<Extension>
 {
-    private static ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
-    private static Map<String, Extension> availableExtensions;
+    private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
+    private Map<String, Extension> availableExtensions;
 
-    public static Map<String, Extension> getAvailableExtensions()
+    public ExtensionFactory()
     {
-        synchronized (extensionLoader)
+        availableExtensions = new HashMap<>();
+        for (Extension ext : extensionLoader)
         {
-            if (availableExtensions == null)
-            {
-                availableExtensions = new HashMap<>();
-                for (Extension ext : extensionLoader)
-                {
-                    availableExtensions.put(ext.getName(),ext);
-                }
-            }
-
-            return availableExtensions;
+            availableExtensions.put(ext.getName(),ext);
         }
+    }
+
+    public Map<String, Extension> getAvailableExtensions()
+    {
+        return availableExtensions;
+    }
+
+    public Extension getExtension(String name)
+    {
+        return availableExtensions.get(name);
+    }
+
+    public Set<String> getExtensionNames()
+    {
+        return availableExtensions.keySet();
+    }
+
+    public boolean isAvailable(String name)
+    {
+        return availableExtensions.containsKey(name);
+    }
+
+    @Override
+    public Iterator<Extension> iterator()
+    {
+        return availableExtensions.values().iterator();
+    }
+
+    public void register(String name, Extension extension)
+    {
+        availableExtensions.put(name,extension);
+    }
+
+    public void unregister(String name)
+    {
+        availableExtensions.remove(name);
     }
 }
