@@ -412,8 +412,7 @@
     <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>tests/test-sessions</module>
-    <module>tests/test-webapps</module>
+    <module>tests</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
