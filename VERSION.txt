@@ -1,3 +1,5 @@
+jetty-9.0.0-SNAPSHOT
+
 jetty-9.0.0.M2 - 05 November 2012
  + 371170 MongoSessionManager LastAccessTimeTest fails
  + 391877 org.eclipse.jetty.webapp.FragmentDescriptor incorrectly reporting
