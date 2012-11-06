@@ -21,9 +21,11 @@ package org.eclipse.jetty.websocket.api;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.websocket.HandshakeRequest;
+
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public interface UpgradeRequest
+public interface UpgradeRequest extends HandshakeRequest
 {
     public void addExtensions(String... extConfigs);
 
@@ -33,6 +35,7 @@ public interface UpgradeRequest
 
     public String getHeader(String name);
 
+    @Override
     public Map<String, List<String>> getHeaders();
 
     public String getHost();
@@ -43,8 +46,7 @@ public interface UpgradeRequest
 
     public String getOrigin();
 
-    public Map<String, String[]> getParameterMap();
-
+    @Override
     public String getQueryString();
 
     public String getRemoteURI();

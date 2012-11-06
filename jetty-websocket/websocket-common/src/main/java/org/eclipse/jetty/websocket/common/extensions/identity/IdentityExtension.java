@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common.extensions.identity;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.FrameHandler;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
 public class IdentityExtension extends AbstractExtension
@@ -28,15 +27,15 @@ public class IdentityExtension extends AbstractExtension
     private String id;
 
     @Override
-    public FrameHandler createIncomingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
     {
-        return new IdentityFrameHandler();
+        return new IdentityFrameHandler(incoming);
     }
 
     @Override
-    public FrameHandler createOutgoingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createOutgoingFrameHandler(javax.net.websocket.extensions.FrameHandler outgoing)
     {
-        return new IdentityFrameHandler();
+        return new IdentityFrameHandler(outgoing);
     }
 
     @Override

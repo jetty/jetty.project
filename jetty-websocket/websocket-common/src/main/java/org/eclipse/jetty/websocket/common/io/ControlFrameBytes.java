@@ -20,26 +20,28 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Callback;
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public class ControlFrameBytes<C> extends FrameBytes<C>
+public class ControlFrameBytes extends FrameBytes
 {
     private static final Logger LOG = Log.getLogger(ControlFrameBytes.class);
     private ByteBuffer buffer;
     private ByteBuffer origPayload;
 
-    public ControlFrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    public ControlFrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
     {
-        super(connection,callback,context,frame);
+        super(connection,frame);
     }
 
     @Override
-    public void completed(C context) {
+    public void completed(SendResult context)
+    {
         LOG.debug("completed() - frame: {}",frame);
         connection.getBufferPool().release(buffer);
 

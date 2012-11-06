@@ -23,9 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import javax.net.websocket.HandshakeResponse;
+
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-public interface UpgradeResponse
+public interface UpgradeResponse extends HandshakeResponse
 {
     public void addHeader(String name, String value);
 

@@ -21,28 +21,26 @@ package org.eclipse.jetty.websocket.common.io;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public abstract class FrameBytes<C> implements Callback<C>, Runnable
+public abstract class FrameBytes extends FutureCallback<SendResult> implements Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
     protected final AbstractWebSocketConnection connection;
-    protected final Callback<C> callback;
-    protected final C context;
     protected final WebSocketFrame frame;
     // Task used to timeout the bytes
     protected volatile Scheduler.Task task;
 
-    protected FrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    protected FrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
     {
         this.connection = connection;
-        this.callback = callback;
-        this.context = context;
         this.frame = frame;
     }
 
@@ -56,31 +54,33 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     }
 
     @Override
-    public void completed(C context)
+    public void completed(SendResult v)
     {
+        super.completed(v);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({}) - {}",context,this.getClass().getName());
+            LOG.debug("completed({}) - {}",v,this.getClass().getName());
         }
         cancelTask();
         connection.complete(this);
-        callback.completed(context);
+        frame.notifySendHandler();
     }
 
     @Override
-    public void failed(C context, Throwable x)
+    public void failed(SendResult v, Throwable x)
     {
+        super.failed(v,x);
         if (x instanceof EofException)
         {
             // Abbreviate the EofException
-            LOG.warn("failed(" + context + ") - " + EofException.class);
+            LOG.warn("failed(" + v + ") - " + EofException.class);
         }
         else
         {
-            LOG.warn("failed(" + context + ")",x);
+            LOG.warn("failed(" + v + ")",x);
         }
         cancelTask();
-        callback.failed(context,x);
+        frame.notifySendHandler(x);
     }
 
     public abstract ByteBuffer getByteBuffer();
@@ -90,7 +90,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     {
         // If this occurs we had a timeout!
         connection.close();
-        failed(context, new InterruptedByTimeoutException());
+        failed(null,new InterruptedByTimeoutException());
     }
 
     @Override

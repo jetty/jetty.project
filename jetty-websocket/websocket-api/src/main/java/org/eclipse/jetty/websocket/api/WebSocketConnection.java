@@ -24,6 +24,8 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
+import javax.net.websocket.SendResult;
+
 /**
  * Connection interface for WebSocket protocol <a href="https://tools.ietf.org/html/rfc6455">RFC-6455</a>.
  */
@@ -51,48 +53,34 @@ public interface WebSocketConnection
      * @see StatusCode
      */
     public void close(int statusCode, String reason);
-    
-    /**
-     * Is the connection open.
-     * 
-     * @return true if open
-     */
-    public boolean isOpen();
-    
-    /**
-     * Suspend a the incoming read events on the connection.
-     * 
-     * @return the suspend token suitable for resuming the reading of data on the connection. 
-     */
-    SuspendToken suspend();
-    
-    /**
-     * Get the address of the remote side.
-     * 
-     * @return the remote side address
-     */
-    public InetSocketAddress getRemoteAddress();
-    
+
     /**
      * Get the address of the local side.
      * 
      * @return the local side address
      */
     public InetSocketAddress getLocalAddress();
-    
-    /**
-     * Get the Request URI
-     * 
-     * @return the requested URI
-     */
-    public URI getRequestURI();
-    
+
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
      * 
      * @return the policy in use
      */
     WebSocketPolicy getPolicy();
+
+    /**
+     * Get the address of the remote side.
+     * 
+     * @return the remote side address
+     */
+    public InetSocketAddress getRemoteAddress();
+
+    /**
+     * Get the Request URI
+     * 
+     * @return the requested URI
+     */
+    public URI getRequestURI();
 
     /**
      * Get the SubProtocol in use for this connection.
@@ -102,27 +90,41 @@ public interface WebSocketConnection
     String getSubProtocol();
 
     /**
+     * Is the connection open.
+     * 
+     * @return true if open
+     */
+    public boolean isOpen();
+
+    /**
      * Send a single ping messages.
      * <p>
      * NIO style with callbacks, allows for knowledge of successful ping send.
      * <p>
      * Use @OnWebSocketFrame and monitor Pong frames
      */
-    <C> Future<C> ping(C context, byte payload[]) throws IOException;
+    Future<SendResult> ping(byte payload[]) throws IOException;
+
+    /**
+     * Suspend a the incoming read events on the connection.
+     * 
+     * @return the suspend token suitable for resuming the reading of data on the connection.
+     */
+    SuspendToken suspend();
 
     /**
      * Send a a binary message.
      * <p>
      * NIO style with callbacks, allows for concurrent results of the write operation.
      */
-    <C> Future<C> write(C context, byte buf[], int offset, int len) throws IOException;
+    Future<SendResult> write(byte buf[], int offset, int len) throws IOException;
 
     /**
      * Send a a binary message.
      * <p>
      * NIO style with callbacks, allows for concurrent results of the write operation.
      */
-    <C> Future<C> write(C context, ByteBuffer buffer) throws IOException;
+    Future<SendResult> write(ByteBuffer buffer) throws IOException;
 
     /**
      * Send a series of text messages.
@@ -130,5 +132,5 @@ public interface WebSocketConnection
      * NIO style with callbacks, allows for concurrent results of the entire write operation. (Callback is only called once at the end of processing all of the
      * messages)
      */
-    <C> Future<C> write(C context, String message) throws IOException;
+    Future<SendResult> write(String message) throws IOException;
 }

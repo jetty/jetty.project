@@ -20,14 +20,14 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -87,7 +87,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
         CloseInfo close = new CloseInfo(statusCode,reason);
         try
         {
-            output("<close>",new FutureCallback<>(),close.asFrame());
+            outgoingFrame(close.asFrame());
         }
         catch (IOException e)
         {
@@ -115,6 +115,13 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     }
 
     @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -124,6 +131,13 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     public InetSocketAddress getRemoteAddress()
     {
         return muxer.getRemoteAddress();
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public WebSocketSession getSession()
@@ -147,18 +161,18 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Incoming exceptions from Muxer.
      */
     @Override
-    public void incoming(WebSocketException e)
+    public void incomingError(WebSocketException e)
     {
-        incoming.incoming(e);
+        incoming.incomingError(e);
     }
 
     /**
      * Incoming frames from Muxer
      */
     @Override
-    public void incoming(WebSocketFrame frame)
+    public void incomingFrame(WebSocketFrame frame)
     {
-        incoming.incoming(frame);
+        incoming.incomingFrame(frame);
     }
 
     public boolean isActive()
@@ -235,18 +249,18 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Frames destined for the Muxer
      */
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
     {
-        muxer.output(context,callback,channelId,frame);
+        return muxer.output(channelId,frame);
     }
 
     /**
      * Ping frame destined for the Muxer
      */
     @Override
-    public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
+    public Future<SendResult> ping(byte[] payload) throws IOException
     {
-        output(context,callback,WebSocketFrame.ping().setPayload(payload));
+        return outgoingFrame(WebSocketFrame.ping().setPayload(payload));
     }
 
     @Override
@@ -292,25 +306,26 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
 
         if (extensions != null)
         {
-            Iterator<AbstractExtension> extIter;
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                AbstractExtension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoing);
-                outgoing = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                AbstractExtension ext = extIter.next();
-                ext.setNextIncomingFrames(incoming);
-                incoming = ext;
-            }
+            // FIXME
+            // Iterator<AbstractExtension> extIter;
+            // // Connect outgoings
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // AbstractExtension ext = extIter.next();
+            // ext.setNextOutgoingFrames(outgoing);
+            // outgoing = ext;
+            // }
+            //
+            // // Connect incomings
+            // Collections.reverse(extensions);
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // AbstractExtension ext = extIter.next();
+            // ext.setNextIncomingFrames(incoming);
+            // incoming = ext;
+            // }
         }
 
         // set outgoing
@@ -321,26 +336,26 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
+    public Future<SendResult> write(byte[] buf, int offset, int len) throws IOException
     {
-        output(context,callback,WebSocketFrame.binary().setPayload(buf,offset,len));
+        return outgoingFrame(WebSocketFrame.binary().setPayload(buf,offset,len));
     }
 
     /**
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
+    public Future<SendResult> write(ByteBuffer buffer) throws IOException
     {
-        output(context,callback,WebSocketFrame.binary().setPayload(buffer));
+        return outgoingFrame(WebSocketFrame.binary().setPayload(buffer));
     }
 
     /**
      * Generate a text message, destined for Muxer
      */
     @Override
-    public <C> void write(C context, Callback<C> callback, String message) throws IOException
+    public Future<SendResult> write(String message) throws IOException
     {
-        output(context,callback,WebSocketFrame.text(message));
+        return outgoingFrame(WebSocketFrame.text(message));
     }
 }

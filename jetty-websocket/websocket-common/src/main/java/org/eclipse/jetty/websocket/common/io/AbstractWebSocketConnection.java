@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -41,13 +43,13 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
@@ -101,7 +103,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         enqueClose(statusCode,reason);
     }
 
-    public <C> void complete(FrameBytes<C> frameBytes)
+    public <C> void complete(FrameBytes frameBytes)
     {
         synchronized (queue)
         {
@@ -146,12 +148,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private void enqueClose(int statusCode, String reason)
     {
         CloseInfo close = new CloseInfo(statusCode,reason);
-        output(null,close.asFrame());
+        try
+        {
+            outgoingFrame(close.asFrame());
+        }
+        catch (IOException e)
+        {
+            LOG.info("Unable to enque close frame",e);
+            // TODO: now what?
+            disconnect();
+        }
     }
 
     public void flush()
     {
-        FrameBytes<?> frameBytes = null;
+        FrameBytes frameBytes = null;
         ByteBuffer buffer = null;
         synchronized (queue)
         {
@@ -363,25 +374,29 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Enqueue internal frame from {@link OutgoingFrames} stack for eventual write out on the physical connection.
      */
     @Override
-    public <C> Future<C> output(C context, Frame frame)
+    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({}, {})",context,frame);
+            LOG.debug("output({})",frame);
         }
+
+        Future<SendResult> future = null;
 
         synchronized (queue)
         {
-            FrameBytes<C> bytes = null;
+            FrameBytes bytes = null;
 
             if (frame.getType().isControl())
             {
-                bytes = new ControlFrameBytes<C>(this,context,frame);
+                bytes = new ControlFrameBytes(this,frame);
             }
             else
             {
-                bytes = new DataFrameBytes<C>(this,context,frame);
+                bytes = new DataFrameBytes(this,frame);
             }
+
+            future = bytes;
 
             scheduleTimeout(bytes);
 
@@ -397,7 +412,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 }
             }
         }
+
         flush();
+
+        return future;
     }
 
     private int read(ByteBuffer buffer)
@@ -450,7 +468,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    private <C> void scheduleTimeout(FrameBytes<C> bytes)
+    private void scheduleTimeout(FrameBytes bytes)
     {
         if (policy.getIdleTimeout() > 0)
         {
@@ -490,7 +508,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(ByteBuffer buffer, FrameBytes<C> frameBytes)
+    private <C> void write(ByteBuffer buffer, FrameBytes frameBytes)
     {
         EndPoint endpoint = getEndPoint();
 
@@ -507,11 +525,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            endpoint.write(frameBytes.context,frameBytes,buffer);
+            endpoint.write(null,frameBytes,buffer);
         }
         catch (Throwable t)
         {
-            frameBytes.failed(frameBytes.context,t);
+            frameBytes.failed(null,t);
         }
     }
 }

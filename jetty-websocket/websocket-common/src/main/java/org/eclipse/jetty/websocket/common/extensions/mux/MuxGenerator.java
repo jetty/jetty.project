@@ -20,12 +20,13 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
+
+import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
@@ -55,9 +56,32 @@ public class MuxGenerator
         this.bufferPool = bufferPool;
     }
 
-    public void generate(long channelId, WebSocketFrame frame) throws IOException
+    public Future<SendResult> generate(long channelId, WebSocketFrame frame) throws IOException
     {
-        output(null, new FutureCallback<>(), channelId, frame);
+        ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
+        BufferUtil.flipToFill(muxPayload);
+
+        // start building mux payload
+        writeChannelId(muxPayload,channelId);
+        byte b = (byte)(frame.isFin()?0x80:0x00); // fin
+        b |= (byte)(frame.isRsv1()?0x40:0x00); // rsv1
+        b |= (byte)(frame.isRsv2()?0x20:0x00); // rsv2
+        b |= (byte)(frame.isRsv3()?0x10:0x00); // rsv3
+        b |= (byte)(frame.getOpCode() & 0x0F); // opcode
+        muxPayload.put(b);
+        BufferUtil.put(frame.getPayload(),muxPayload);
+
+        // build muxed frame
+        WebSocketFrame muxFrame = WebSocketFrame.binary();
+        BufferUtil.flipToFlush(muxPayload,0);
+        muxFrame.setPayload(muxPayload);
+        // NOTE: the physical connection will handle masking rules for this frame.
+
+        // release original buffer (no longer needed)
+        bufferPool.release(frame.getPayload());
+
+        // send muxed frame down to the physical connection.
+        return outgoing.outgoingFrame(muxFrame);
     }
 
     public void generate(MuxControlBlock... blocks) throws IOException
@@ -143,40 +167,12 @@ public class MuxGenerator
         BufferUtil.flipToFlush(payload,0);
         WebSocketFrame frame = WebSocketFrame.binary();
         frame.setPayload(payload);
-        outgoing.output(null,new FutureCallback<>(),frame);
+        outgoing.outgoingFrame(frame);
     }
 
     public OutgoingFrames getOutgoing()
     {
         return outgoing;
-    }
-
-    public <C> void output(C context, Callback<C> callback, long channelId, WebSocketFrame frame) throws IOException
-    {
-        ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
-        BufferUtil.flipToFill(muxPayload);
-
-        // start building mux payload
-        writeChannelId(muxPayload,channelId);
-        byte b = (byte)(frame.isFin()?0x80:0x00); // fin
-        b |= (byte)(frame.isRsv1()?0x40:0x00); // rsv1
-        b |= (byte)(frame.isRsv2()?0x20:0x00); // rsv2
-        b |= (byte)(frame.isRsv3()?0x10:0x00); // rsv3
-        b |= (byte)(frame.getOpCode() & 0x0F); // opcode
-        muxPayload.put(b);
-        BufferUtil.put(frame.getPayload(),muxPayload);
-
-        // build muxed frame
-        WebSocketFrame muxFrame = WebSocketFrame.binary();
-        BufferUtil.flipToFlush(muxPayload,0);
-        muxFrame.setPayload(muxPayload);
-        // NOTE: the physical connection will handle masking rules for this frame.
-
-        // release original buffer (no longer needed)
-        bufferPool.release(frame.getPayload());
-
-        // send muxed frame down to the physical connection.
-        outgoing.output(context,callback,muxFrame);
     }
 
     public void setOutgoing(OutgoingFrames outgoing)

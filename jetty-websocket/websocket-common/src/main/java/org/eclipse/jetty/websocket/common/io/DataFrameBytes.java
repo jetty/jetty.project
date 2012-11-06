@@ -20,27 +20,28 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Callback;
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public class DataFrameBytes<C> extends FrameBytes<C>
+public class DataFrameBytes extends FrameBytes
 {
     private static final Logger LOG = Log.getLogger(DataFrameBytes.class);
     private ByteBuffer buffer;
 
-    public DataFrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    public DataFrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
     {
-        super(connection,callback,context,frame);
+        super(connection,frame);
     }
 
     @Override
-    public void completed(C context)
+    public void completed(SendResult result)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({}) - frame.remaining() = {}",context,frame.remaining());
+            LOG.debug("completed({}) - frame.remaining() = {}",result,frame.remaining());
         }
 
         connection.getBufferPool().release(buffer);
@@ -57,7 +58,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
         else
         {
             LOG.debug("Send complete");
-            super.completed(context);
+            super.completed(result);
         }
         connection.flush();
     }
@@ -73,7 +74,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
         }
         catch (Throwable x)
         {
-            failed(context,x);
+            failed(null,x);
             return null;
         }
     }

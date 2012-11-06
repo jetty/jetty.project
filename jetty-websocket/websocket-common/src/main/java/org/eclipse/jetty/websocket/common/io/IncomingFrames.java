@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public interface IncomingFrames
 {
-    public void incoming(WebSocketException e);
+    public void incomingError(WebSocketException e);
 
-    public void incoming(WebSocketFrame frame);
+    public void incomingFrame(WebSocketFrame frame);
 }

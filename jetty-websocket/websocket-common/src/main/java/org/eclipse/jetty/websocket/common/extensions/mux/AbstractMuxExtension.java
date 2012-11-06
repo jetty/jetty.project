@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import org.eclipse.jetty.util.Callback;
+import javax.net.websocket.extensions.FrameHandler;
+
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
 /**
@@ -41,21 +40,15 @@ public abstract class AbstractMuxExtension extends AbstractExtension
     public abstract void configureMuxer(Muxer muxer);
 
     @Override
-    public void incoming(WebSocketException e)
+    public FrameHandler createIncomingFrameHandler(FrameHandler incoming)
     {
-        muxer.incoming(e);
+        return new MuxerIncomingFrameHandler(incoming,muxer);
     }
 
     @Override
-    public void incoming(WebSocketFrame frame)
+    public FrameHandler createOutgoingFrameHandler(FrameHandler outgoing)
     {
-        muxer.incoming(frame);
-    }
-
-    @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws java.io.IOException
-    {
-        nextOutput(context,callback,frame);
+        return new MuxerOutgoingFrameHandler(outgoing,muxer);
     }
 
     @Override
@@ -66,7 +59,7 @@ public abstract class AbstractMuxExtension extends AbstractExtension
         {
             throw new RuntimeException("Cannot reset muxer physical connection once established");
         }
-        this.muxer = new Muxer(connection,this);
+        this.muxer = new Muxer(connection);
         configureMuxer(this.muxer);
     }
 }

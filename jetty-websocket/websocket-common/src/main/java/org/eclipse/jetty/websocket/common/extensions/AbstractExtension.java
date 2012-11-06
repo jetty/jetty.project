@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import java.util.Map;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -51,6 +53,12 @@ public abstract class AbstractExtension implements Extension
     public String getName()
     {
         return config.getName();
+    }
+
+    @Override
+    public Map<String, String> getParameters()
+    {
+        return config.getParameters();
     }
 
     public WebSocketPolicy getPolicy()
@@ -128,5 +136,11 @@ public abstract class AbstractExtension implements Extension
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]",config.getName(),config.getParameterizedName());
     }
 }

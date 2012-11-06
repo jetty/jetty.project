@@ -18,17 +18,24 @@
 
 package org.eclipse.jetty.websocket.common.extensions.identity;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.extensions.FrameHandlerAdapter;
+import javax.net.websocket.extensions.FrameHandler;
+
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
 
 /**
  * FrameHandler that just passes frames through with no modification.
  */
-public class IdentityFrameHandler extends FrameHandlerAdapter
+public class IdentityFrameHandler extends AbstractJettyFrameHandler
 {
-    @Override
-    public void handleFrame(Frame frame)
+    public IdentityFrameHandler(FrameHandler nextHandler)
     {
-        nextHandler(frame);
+        super(nextHandler);
+    }
+
+    @Override
+    public void handleJettyFrame(WebSocketFrame frame)
+    {
+        nextJettyHandler(frame);
     }
 }

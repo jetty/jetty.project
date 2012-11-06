@@ -21,14 +21,14 @@ package org.eclipse.jetty.websocket.common.io;
 import java.util.LinkedList;
 
 @SuppressWarnings("serial")
-public class FrameQueue extends LinkedList<FrameBytes<?>>
+public class FrameQueue extends LinkedList<FrameBytes>
 {
-    public void append(FrameBytes<?> bytes)
+    public void append(FrameBytes bytes)
     {
         addLast(bytes);
     }
 
-    public void prepend(FrameBytes<?> bytes)
+    public void prepend(FrameBytes bytes)
     {
         addFirst(bytes);
     }

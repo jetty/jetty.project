@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 
 public class MuxRequest implements UpgradeRequest
@@ -64,15 +67,13 @@ public class MuxRequest implements UpgradeRequest
     private String queryString;
     private List<String> subProtocols;
     private Map<String, String> cookies;
-    private List<RequestedExtensionConfig> extensions;
+    private List<ExtensionConfig> extensions;
     private Map<String, List<String>> headers;
     private Map<String, String[]> parameterMap;
-
     public MuxRequest()
     {
         // TODO Auto-generated constructor stub
     }
-
     public MuxRequest(UpgradeRequest copy)
     {
         // TODO Auto-generated constructor stub
@@ -94,7 +95,7 @@ public class MuxRequest implements UpgradeRequest
     }
 
     @Override
-    public List<RequestedExtensionConfig> getExtensions()
+    public List<ExtensionConfig> getExtensions()
     {
         return extensions;
     }
@@ -177,9 +178,30 @@ public class MuxRequest implements UpgradeRequest
     }
 
     @Override
+    public URI getRequestURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Object getSession()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public List<String> getSubProtocols()
     {
         return subProtocols;
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
@@ -199,6 +221,13 @@ public class MuxRequest implements UpgradeRequest
     public boolean isOrigin(String test)
     {
         return test.equalsIgnoreCase(getOrigin());
+    }
+
+    @Override
+    public boolean isUserInRole(String role)
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 
     @Override

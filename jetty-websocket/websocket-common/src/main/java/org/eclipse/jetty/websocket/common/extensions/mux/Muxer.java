@@ -23,8 +23,10 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
-import org.eclipse.jetty.util.Callback;
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -78,14 +80,13 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     /** The original response headers, used for delta encoded AddChannelResponse blocks */
     private List<String> physicalResponseHeaders;
 
-    public Muxer(final WebSocketConnection connection, final OutgoingFrames outgoing)
+    public Muxer(final WebSocketConnection connection)
     {
         this.physicalConnection = connection;
         this.policy = connection.getPolicy().clonePolicy();
         this.parser = new MuxParser();
         this.parser.setEvents(this);
         this.generator = new MuxGenerator();
-        this.generator.setOutgoing(outgoing);
     }
 
     public MuxAddClient getAddClient()
@@ -137,19 +138,21 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     }
 
     /**
-     * Incoming exceptions encountered during parsing of mux encapsulated frames.
+     * Incoming parser errors
      */
     @Override
-    public void incoming(WebSocketException e)
+    public void incomingError(WebSocketException e)
     {
-        // TODO Notify Control Channel 0
+        MuxDropChannel.Reason reason = MuxDropChannel.Reason.PHYSICAL_CONNECTION_FAILED;
+        String phrase = String.format("%s: %s", e.getClass().getName(), e.getMessage());
+        mustFailPhysicalConnection(new MuxPhysicalConnectionException(reason,phrase));
     }
 
     /**
      * Incoming mux encapsulated frames.
      */
     @Override
-    public void incoming(WebSocketFrame frame)
+    public void incomingFrame(WebSocketFrame frame)
     {
         parser.parse(frame);
     }
@@ -242,10 +245,13 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
                 }
                 default:
                 {
-                    // TODO: ERROR
-                    break;
+                    throw new MuxPhysicalConnectionException(MuxDropChannel.Reason.BAD_REQUEST,"Unrecognized request encoding");
                 }
             }
+        }
+        catch (MuxPhysicalConnectionException e)
+        {
+            throw e;
         }
         catch (Throwable t)
         {
@@ -315,7 +321,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     public void onMuxedFrame(MuxedFrame frame)
     {
         MuxChannel subchannel = channels.get(frame.getChannelId());
-        subchannel.incoming(frame);
+        subchannel.incomingFrame(frame);
     }
 
     @Override
@@ -327,7 +333,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         }
 
         LOG.warn(e);
-        // TODO: handle other mux exceptions?
+        // TODO: handle other (non physical) mux exceptions how?
     }
 
     /**
@@ -377,13 +383,13 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     /**
      * Outgoing frame, without mux encapsulated payload.
      */
-    public <C> void output(C context, Callback<C> callback, long channelId, WebSocketFrame frame) throws IOException
+    public Future<SendResult> output(long channelId, WebSocketFrame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({}, {}, {}, {})",context,callback,channelId,frame);
+            LOG.debug("output({}, {})",channelId,frame);
         }
-        generator.output(context,callback,channelId,frame);
+        return generator.generate(channelId,frame);
     }
 
     /**
@@ -406,6 +412,11 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     public void setAddServer(MuxAddServer addServer)
     {
         this.addServer = addServer;
+    }
+
+    public void setOutgoingFramesHandler(OutgoingFrames outgoing)
+    {
+        this.generator.setOutgoing(outgoing);
     }
 
     /**

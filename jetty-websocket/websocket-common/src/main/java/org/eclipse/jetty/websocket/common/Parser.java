@@ -186,7 +186,7 @@ public class Parser
         }
         try
         {
-            incomingFramesHandler.incoming(f);
+            incomingFramesHandler.incomingFrame(f);
         }
         catch (WebSocketException e)
         {
@@ -206,7 +206,7 @@ public class Parser
         {
             return;
         }
-        incomingFramesHandler.incoming(e);
+        incomingFramesHandler.incomingError(e);
     }
 
     public synchronized void parse(ByteBuffer buffer)

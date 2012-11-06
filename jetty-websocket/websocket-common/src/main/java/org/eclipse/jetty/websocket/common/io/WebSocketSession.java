@@ -24,8 +24,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -37,7 +38,7 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.event.EventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 public class WebSocketSession implements WebSocketConnection, LogicalConnection, IncomingFrames, OutgoingFrames
 {
@@ -130,25 +131,25 @@ public class WebSocketSession implements WebSocketConnection, LogicalConnection,
     }
 
     @Override
-    public void incoming(WebSocketException e)
+    public void incomingError(WebSocketException e)
     {
         if (baseConnection.isInputClosed())
         {
             return; // input is closed
         }
         // pass on incoming to websocket itself
-        websocket.incoming(e);
+        websocket.incomingError(e);
     }
 
     @Override
-    public void incoming(WebSocketFrame frame)
+    public void incomingFrame(WebSocketFrame frame)
     {
         if (baseConnection.isInputClosed())
         {
             return; // input is closed
         }
         // pass on incoming to websocket itself
-        websocket.incoming(frame);
+        websocket.incomingFrame(frame);
     }
 
     @Override
@@ -188,27 +189,28 @@ public class WebSocketSession implements WebSocketConnection, LogicalConnection,
         websocket.onConnect();
     }
 
-    public <C> Future<C> output(C context, WebSocketFrame frame) throws IOException
+    @Override
+    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({},{}) - {}",context,frame,outgoing);
+            LOG.debug("output({}) - {}",frame,outgoing);
         }
         // forward on to chain
-        return outgoing.output(context,frame);
+        return outgoing.outgoingFrame(frame);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public <C> Future<C> ping(C context, byte[] payload) throws IOException
+    public Future<SendResult> ping(byte[] payload) throws IOException
     {
         // Delegate the application called ping to the OutgoingFrames interface to allow
         // extensions to process the frame appropriately.
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
         frame.setFin(true);
-        output(context,callback,frame);
+        return outgoingFrame(frame);
     }
 
     public void setOutgoing(OutgoingFrames outgoing)
@@ -239,86 +241,55 @@ public class WebSocketSession implements WebSocketConnection, LogicalConnection,
     }
 
     @Override
-    public <C> Future<C> write(C context, byte[] buf, int offset, int len) throws IOException
+    public Future<SendResult> write(byte[] buf, int offset, int len) throws IOException
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public <C> Future<C> write(C context, ByteBuffer buffer) throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
-    {
-        if (baseConnection.isOutputClosed())
-        {
-            return; // output is closed
-        }
+        assertBaseConnectionOpen();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
+            LOG.debug("write(byte[],{},{})",offset,len);
         }
         // Delegate the application called write to the OutgoingFrames interface to allow
         // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buf,offset,len);
         frame.setFin(true);
-        output(context,callback,frame);
+        return outgoingFrame(frame);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
+    public Future<SendResult> write(ByteBuffer buffer) throws IOException
     {
-        if (baseConnection.isOutputClosed())
-        {
-            return; // output is closed
-        }
+        assertBaseConnectionOpen();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("write(context,{},ByteBuffer->{})",callback,BufferUtil.toDetailString(buffer));
+            LOG.debug("write({})",BufferUtil.toDetailString(buffer));
         }
         // Delegate the application called write to the OutgoingFrames interface to allow
         // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
         frame.setFin(true);
-        output(context,callback,frame);
+        return outgoingFrame(frame);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public <C> void write(C context, Callback<C> callback, String message) throws IOException
+    public Future<SendResult> write(String message) throws IOException
     {
-        if (baseConnection.isOutputClosed())
-        {
-            return; // output is closed
-        }
+        assertBaseConnectionOpen();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("write(context,{},message.length:{})",callback,message.length());
+            LOG.debug("write(message.length:{})",message.length());
         }
         // Delegate the application called ping to the OutgoingFrames interface to allow
         // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.text(message);
         frame.setFin(true);
-        output(context,callback,frame);
+        return outgoingFrame(frame);
     }
 
-    @Override
-    public <C> Future<C> write(C context, String message) throws IOException
+    private void assertBaseConnectionOpen() throws IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        if (baseConnection.isOutputClosed())
+        {
+            throw new IOException("Connection is closed");
+        }
     }
 }

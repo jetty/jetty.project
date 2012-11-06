@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 /**
  * An immutable websocket frame.
  */
-public interface Frame
+public interface Frame extends javax.net.websocket.extensions.Frame
 {
     public static enum Type
     {

@@ -21,12 +21,14 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import javax.net.websocket.SendResult;
+
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 /**
  * Interface for dealing with frames outgoing to the network (eventually)
  */
 public interface OutgoingFrames
 {
-    <C> Future<C> output(C context, Frame frame) throws IOException;
+    Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException;
 }

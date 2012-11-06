@@ -18,17 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.FrameHandler;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.common.extensions.FrameHandlerAdapter;
 
 /**
  * Implementation of the <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-05.txt">x-webkit-deflate-frame</a> extension seen out
@@ -36,120 +28,18 @@ import org.eclipse.jetty.websocket.common.extensions.FrameHandlerAdapter;
  */
 public class WebkitDeflateFrameExtension extends AbstractExtension
 {
-    private static class CompressFrameHandler extends FrameHandlerAdapter
-    {
-        private final CompressionMethod method;
-        private final ByteBufferPool bufferPool;
-
-        public CompressFrameHandler(DeflateCompressionMethod method, ByteBufferPool bufferPool)
-        {
-            this.method = method;
-            this.bufferPool = bufferPool;
-        }
-
-        @Override
-        public void handleFrame(Frame frame)
-        {
-            if (frame instanceof Frame.Control)
-            {
-                // skip, cannot compress control frames.
-                nextHandler(frame);
-                return;
-            }
-
-            ByteBuffer data = frame.getPayload();
-            try
-            {
-                // deflate data
-                method.compress().input(data);
-                while (!method.compress().isDone())
-                {
-                    ByteBuffer buf = method.compress().process();
-                    WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
-                    out.setRsv1(true);
-                    if (!method.compress().isDone())
-                    {
-                        out.setFin(false);
-                    }
-
-                    nextHandler(out);
-                }
-
-                // reset on every frame.
-                method.compress().end();
-            }
-            finally
-            {
-                // free original data buffer
-                bufferPool.release(data);
-            }
-        }
-    }
-
-    private static class DecompressFrameHandler extends FrameHandlerAdapter
-    {
-        private final CompressionMethod method;
-        private final ByteBufferPool bufferPool;
-
-        public DecompressFrameHandler(DeflateCompressionMethod method, ByteBufferPool bufferPool)
-        {
-            this.method = method;
-            this.bufferPool = bufferPool;
-
-        }
-
-        @Override
-        public void handleFrame(Frame frame)
-        {
-            if ((frame instanceof Frame.Control) || !frame.isRsv1())
-            {
-                // Cannot modify incoming control frames or ones with RSV1 set.
-                nextHandler(frame);
-                return;
-            }
-
-            LOG.debug("Decompressing Frame: {}",frame);
-
-            ByteBuffer data = frame.getPayload();
-            try
-            {
-                method.decompress().input(data);
-                while (!method.decompress().isDone())
-                {
-                    ByteBuffer uncompressed = method.decompress().process();
-                    WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
-                    if (!method.decompress().isDone())
-                    {
-                        out.setFin(false);
-                    }
-                    nextHandler(out);
-                }
-
-                // reset on every frame.
-                method.decompress().end();
-            }
-            finally
-            {
-                // release original buffer (no longer needed)
-                bufferPool.release(data);
-            }
-        }
-    }
-
-    private static final Logger LOG = Log.getLogger(WebkitDeflateFrameExtension.class);
-
     private DeflateCompressionMethod method;
 
     @Override
-    public FrameHandler createIncomingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
     {
-        return new DecompressFrameHandler(method,getBufferPool());
+        return new DecompressFrameHandler(incoming,method,getBufferPool());
     }
 
     @Override
-    public FrameHandler createOutgoingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createOutgoingFrameHandler(javax.net.websocket.extensions.FrameHandler outgoing)
     {
-        return new CompressFrameHandler(method,getBufferPool());
+        return new CompressFrameHandler(outgoing,method,getBufferPool());
     }
 
     /**

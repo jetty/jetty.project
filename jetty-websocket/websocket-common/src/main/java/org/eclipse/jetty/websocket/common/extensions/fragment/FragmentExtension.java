@@ -18,93 +18,27 @@
 
 package org.eclipse.jetty.websocket.common.extensions.fragment;
 
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.FrameHandler;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.common.extensions.FrameHandlerAdapter;
 
+/**
+ * Fragment Extension
+ */
 public class FragmentExtension extends AbstractExtension
 {
-    /**
-     * Handler to break apart the frames into multiple smaller frames.
-     */
-    private class FragmentHandler extends FrameHandlerAdapter
-    {
-        @Override
-        public void handleFrame(Frame frame)
-        {
-            if (frame instanceof Frame.Control)
-            {
-                // Cannot fragment Control Frames
-                nextHandler(frame);
-                return;
-            }
-
-            int length = frame.getPayloadLength();
-
-            byte opcode = frame.getOpCode(); // original opcode
-            ByteBuffer payload = frame.getPayload().slice();
-            int originalLimit = payload.limit();
-            int currentPosition = payload.position();
-
-            if (maxLength <= 0)
-            {
-                // output original frame
-                nextHandler(frame);
-                return;
-            }
-
-            boolean continuation = false;
-
-            // break apart payload based on maxLength rules
-            while (length > maxLength)
-            {
-                WebSocketFrame frag = new WebSocketFrame(frame);
-                frag.setOpCode(opcode);
-                frag.setFin(false); // always false here
-                frag.setContinuation(continuation);
-                payload.position(currentPosition);
-                payload.limit(Math.min(payload.position() + maxLength,originalLimit));
-                frag.setPayload(payload);
-
-                nextHandler(frag);
-
-                length -= maxLength;
-                opcode = OpCode.CONTINUATION;
-                continuation = true;
-                currentPosition = payload.limit();
-            }
-
-            // write remaining
-            WebSocketFrame frag = new WebSocketFrame(frame);
-            frag.setOpCode(opcode);
-            frag.setFin(frame.isFin()); // use original fin
-            frag.setContinuation(continuation);
-            payload.position(currentPosition);
-            payload.limit(originalLimit);
-            frag.setPayload(payload);
-
-            nextHandler(frag);
-        }
-    }
-
     private int maxLength = -1;
 
     @Override
-    public FrameHandler createIncomingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
     {
-        return new FragmentHandler();
+        return new FragmentHandler(incoming,maxLength);
     }
 
     @Override
-    public FrameHandler createOutgoingFrameHandler()
+    public javax.net.websocket.extensions.FrameHandler createOutgoingFrameHandler(javax.net.websocket.extensions.FrameHandler outgoing)
     {
-        return new FragmentHandler();
+        return new FragmentHandler(outgoing,maxLength);
     }
 
     @Override

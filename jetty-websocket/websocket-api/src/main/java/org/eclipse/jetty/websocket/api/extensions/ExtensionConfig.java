@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -34,6 +35,13 @@ public interface ExtensionConfig
     public String getParameterizedName();
 
     public Set<String> getParameterKeys();
+
+    /**
+     * Return parameters in way similar to how {@link javax.net.websocket.extensions.Extension#getParameters()} works.
+     * 
+     * @return the parameter map
+     */
+    public Map<String, String> getParameters();
 
     public void setParameter(String key, int value);
 

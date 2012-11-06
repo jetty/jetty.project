@@ -100,6 +100,13 @@ public class RequestedExtensionConfig implements ExtensionConfig
         return parameters.keySet();
     }
 
+    @Override
+    public Map<String, String> getParameters()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * Initialize the parameters on this config from the other configuration.
      * @param other the other configuration.

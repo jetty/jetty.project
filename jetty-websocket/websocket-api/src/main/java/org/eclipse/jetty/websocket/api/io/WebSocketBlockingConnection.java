@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
@@ -32,8 +34,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
  */
 public class WebSocketBlockingConnection
 {
-    private static final String CONTEXT_BINARY = "BLOCKING_BINARY";
-    private static final String CONTEXT_TEXT = "BLOCKING_TEXT";
     private final WebSocketConnection conn;
 
     public WebSocketBlockingConnection(WebSocketConnection conn)
@@ -50,8 +50,12 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<String> blocker = conn.write(CONTEXT_BINARY,data,offset,length);
-            blocker.get(); // block till finished
+            Future<SendResult> blocker = conn.write(data,offset,length);
+            SendResult result = blocker.get(); // block till finished
+            if (result.getException() != null)
+            {
+                throw new WebSocketException(result.getException());
+            }
         }
         catch (InterruptedException e)
         {
@@ -72,8 +76,12 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<String> blocker = conn.write(CONTEXT_TEXT,message);
-            blocker.get(); // block till finished
+            Future<SendResult> blocker = conn.write(message);
+            SendResult result = blocker.get(); // block till finished
+            if (result.getException() != null)
+            {
+                throw new WebSocketException(result.getException());
+            }
         }
         catch (InterruptedException e)
         {

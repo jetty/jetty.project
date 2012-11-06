@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 public class MuxResponse implements UpgradeResponse
 {
@@ -43,7 +44,7 @@ public class MuxResponse implements UpgradeResponse
     }
 
     @Override
-    public List<RequestedExtensionConfig> getExtensions()
+    public List<ExtensionConfig> getExtensions()
     {
         // TODO Auto-generated method stub
         return null;
@@ -51,6 +52,13 @@ public class MuxResponse implements UpgradeResponse
 
     @Override
     public Set<String> getHeaderNamesSet()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
     {
         // TODO Auto-generated method stub
         return null;
@@ -106,7 +114,7 @@ public class MuxResponse implements UpgradeResponse
     }
 
     @Override
-    public void setExtensions(List<RequestedExtensionConfig> extensions)
+    public void setExtensions(List<ExtensionConfig> extensions)
     {
         // TODO Auto-generated method stub
 
