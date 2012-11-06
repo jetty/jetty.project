@@ -20,12 +20,13 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.util.List;
 
+import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
 public interface InternalConnection extends LogicalConnection
 {
-    void configureFromExtensions(List<AbstractExtension> extensions);
+    // TODO: find way to remove
+    void configureFromExtensions(List<Extension> extensions);
 
     void setIncoming(IncomingFrames incoming);
 

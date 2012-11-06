@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -97,7 +98,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     }
 
     @Override
-    public void configureFromExtensions(List<AbstractExtension> extensions)
+    public void configureFromExtensions(List<Extension> extensions)
     {
         /* ignore */
     }

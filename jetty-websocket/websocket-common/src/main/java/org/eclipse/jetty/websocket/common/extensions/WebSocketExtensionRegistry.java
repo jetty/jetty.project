@@ -24,9 +24,9 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionRegistry;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 
-public class WebSocketExtensionRegistry extends ExtensionRegistry
+public class WebSocketExtensionRegistry extends ExtensionFactory
 {
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;

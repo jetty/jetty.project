@@ -47,7 +47,7 @@ public class IdentityExtensionTest
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        AbstractExtension ext = new IdentityExtension();
+        Extension ext = new IdentityExtension();
         FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
 
         WebSocketFrame frame = WebSocketFrame.text("hello");

@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
 import org.junit.Assert;
@@ -56,7 +55,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("fragment;maxLength=4");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
@@ -108,7 +107,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("fragment;maxLength=4");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
@@ -143,7 +142,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("fragment;maxLength=20");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
         ext.setConfig(config);
 
         FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
@@ -212,7 +211,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("fragment");
+        ExtensionConfig config = ExtensionConfig.parse("fragment");
         ext.setConfig(config);
 
         FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
@@ -276,7 +275,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("fragment;maxLength=4");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);

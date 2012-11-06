@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,7 +52,7 @@ public class PerMessageCompressionExtensionTest
         PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
-        ExtensionConfig config = RequestedExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -166,7 +165,7 @@ public class PerMessageCompressionExtensionTest
         PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -203,7 +202,7 @@ public class PerMessageCompressionExtensionTest
         PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -258,7 +257,7 @@ public class PerMessageCompressionExtensionTest
         PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         // Setup capture of outgoing frames
@@ -318,7 +317,7 @@ public class PerMessageCompressionExtensionTest
         PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = RequestedExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
         ext.setConfig(config);
 
         // Setup capture of outgoing frames

@@ -43,12 +43,12 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 /**
@@ -67,7 +67,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final FrameQueue queue;
     private final AtomicBoolean suspendToken;
     private WebSocketSession session;
-    private List<RequestedExtensionConfig> extensions;
+    private List<ExtensionConfig> extensions;
     private boolean flushing;
     private boolean isFilling;
     private ConnectionState connectionState;
@@ -217,7 +217,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * 
      * @return the list of negotiated extensions in use.
      */
-    public List<RequestedExtensionConfig> getExtensions()
+    public List<ExtensionConfig> getExtensions()
     {
         return extensions;
     }
@@ -484,7 +484,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * @param extensions
      *            the list of negotiated extensions in use.
      */
-    public void setExtensions(List<RequestedExtensionConfig> extensions)
+    public void setExtensions(List<ExtensionConfig> extensions)
     {
         this.extensions = extensions;
     }

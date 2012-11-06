@@ -41,7 +41,6 @@ import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.RequestedExtensionConfig;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.IncomingFrameHandler;
 import org.eclipse.jetty.websocket.common.io.IncomingFrames;
@@ -58,7 +57,7 @@ public class WebkitDeflateFrameExtensionTest
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
-        ExtensionConfig config = RequestedExtensionConfig.parse("x-webkit-deflate-frame");
+        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -102,7 +101,7 @@ public class WebkitDeflateFrameExtensionTest
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
-        ExtensionConfig config = RequestedExtensionConfig.parse("x-webkit-deflate-frame");
+        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
         ext.setConfig(config);
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
