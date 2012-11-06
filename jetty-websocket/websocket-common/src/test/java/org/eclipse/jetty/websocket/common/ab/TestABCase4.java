@@ -20,11 +20,11 @@ package org.eclipse.jetty.websocket.common.ab;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.LogShush;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -36,19 +36,13 @@ public class TestABCase4
     @BeforeClass
     public static void disableParserStacks()
     {
-        enableStacks(Parser.class,false);
+        LogShush.disableStacks(Parser.class);
     }
 
     @AfterClass
     public static void enableParserStacks()
     {
-        enableStacks(Parser.class,true);
-    }
-
-    private static void enableStacks(Class<?> clazz, boolean enabled)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(!enabled);
+        LogShush.enableStacks(Parser.class);
     }
 
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);

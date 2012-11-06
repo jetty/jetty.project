@@ -33,16 +33,23 @@ import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ParserTest
 {
     private static final Logger LOG = Log.getLogger(ParserTest.class);
+
+    /** Parse, but be quiet about stack traces */
+    private void parseQuietly(UnitParser parser, ByteBuffer buf)
+    {
+        LogShush.disableStacks(Parser.class);
+        try {
+            parser.parse(buf);
+        } finally {
+            LogShush.enableStacks(Parser.class);
+        }
+    }
 
     /**
      * Similar to the server side 5.15 testcase. A normal 2 fragment text text message, followed by another continuation.
@@ -61,7 +68,8 @@ public class ParserTest
         UnitParser parser = new UnitParser();
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(completeBuf);
+
+        parseQuietly(parser,completeBuf);
 
         capture.assertErrorCount(1);
         capture.assertHasFrame(OpCode.TEXT,2);
@@ -82,7 +90,7 @@ public class ParserTest
         UnitParser parser = new UnitParser();
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(completeBuf);
+        parseQuietly(parser,completeBuf);
 
         capture.assertErrorCount(1);
         capture.assertHasFrame(OpCode.TEXT,1); // fragment 1
@@ -109,7 +117,7 @@ public class ParserTest
         UnitParser parser = new UnitParser();
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(completeBuf);
+        parseQuietly(parser,completeBuf);
 
         capture.assertErrorCount(0);
         capture.assertHasFrame(OpCode.TEXT,5);
@@ -217,9 +225,9 @@ public class ParserTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
-        parser.parse(part1);
+        parseQuietly(parser,part1);
         capture.assertErrorCount(0);
-        parser.parse(part2);
+        parseQuietly(parser,part2);
         capture.assertErrorCount(1);
         capture.assertHasErrors(BadPayloadException.class,1);
     }

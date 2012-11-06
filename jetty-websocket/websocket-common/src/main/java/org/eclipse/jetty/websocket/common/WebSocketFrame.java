@@ -91,7 +91,7 @@ public class WebSocketFrame implements Frame
     private boolean rsv1 = false;
     private boolean rsv2 = false;
     private boolean rsv3 = false;
-    private byte opcode = -1;
+    private byte opcode = OpCode.UNDEFINED;
     private boolean masked = false;
     private byte mask[];
     /**
@@ -130,7 +130,7 @@ public class WebSocketFrame implements Frame
     public WebSocketFrame(byte opcode)
     {
         reset();
-        this.opcode = opcode;
+        setOpCode(opcode);
     }
 
     /**
@@ -497,7 +497,15 @@ public class WebSocketFrame implements Frame
     public WebSocketFrame setOpCode(byte op)
     {
         this.opcode = op;
-        this.type = Frame.Type.from(op);
+
+        if (op == OpCode.UNDEFINED)
+        {
+            this.type = null;
+        }
+        else
+        {
+            this.type = Frame.Type.from(op);
+        }
         return this;
     }
 

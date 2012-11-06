@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.identity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.extensions.PassthruFrameHandler;
 
 public class IdentityExtension extends AbstractExtension
 {
@@ -29,13 +30,13 @@ public class IdentityExtension extends AbstractExtension
     @Override
     public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
     {
-        return new IdentityFrameHandler(incoming);
+        return new PassthruFrameHandler(incoming);
     }
 
     @Override
     public javax.net.websocket.extensions.FrameHandler createOutgoingFrameHandler(javax.net.websocket.extensions.FrameHandler outgoing)
     {
-        return new IdentityFrameHandler(outgoing);
+        return new PassthruFrameHandler(outgoing);
     }
 
     @Override

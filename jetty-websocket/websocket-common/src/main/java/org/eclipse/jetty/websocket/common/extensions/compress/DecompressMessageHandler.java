@@ -67,6 +67,7 @@ public class DecompressMessageHandler extends AbstractJettyFrameHandler
                 {
                     out.setFin(false);
                 }
+                out.setRsv1(false); // Unset RSV1 on decompressed frame
                 nextJettyHandler(out);
             }
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.fragment;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.extensions.PassthruFrameHandler;
 
 /**
  * Fragment Extension
@@ -32,7 +33,8 @@ public class FragmentExtension extends AbstractExtension
     @Override
     public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
     {
-        return new FragmentHandler(incoming,maxLength);
+        // pass through handler
+        return new PassthruFrameHandler(incoming);
     }
 
     @Override

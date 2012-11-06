@@ -374,12 +374,11 @@ public class Parser
                     }
 
                     // base framing flags
-                    frame = new WebSocketFrame();
+                    frame = new WebSocketFrame(opcode);
                     frame.setFin(fin);
                     frame.setRsv1(rsv1);
                     frame.setRsv2(rsv2);
                     frame.setRsv3(rsv3);
-                    frame.setOpCode(opcode);
                     frame.setContinuation(isContinuation);
 
                     if (frame.isDataFrame())
