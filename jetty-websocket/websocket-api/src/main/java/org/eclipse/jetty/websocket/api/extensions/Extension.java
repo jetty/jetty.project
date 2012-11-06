@@ -61,4 +61,44 @@ public interface Extension extends javax.net.websocket.extensions.Extension
      */
     @Override
     public String getName();
+
+    /**
+     * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
+     * <p>
+     * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV1.
+     * 
+     * @return true if extension uses RSV1 for its own purposes.
+     */
+    public abstract boolean isRsv1User();
+
+    /**
+     * Used to indicate that the extension makes use of the RSV2 bit of the base websocket framing.
+     * <p>
+     * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV2.
+     * 
+     * @return true if extension uses RSV2 for its own purposes.
+     */
+    public abstract boolean isRsv2User();
+
+    /**
+     * Used to indicate that the extension makes use of the RSV3 bit of the base websocket framing.
+     * <p>
+     * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV3.
+     * 
+     * @return true if extension uses RSV3 for its own purposes.
+     */
+    public abstract boolean isRsv3User();
+
+    /**
+     * Used to indicate that the extension works as a decoder of TEXT Data Frames.
+     * <p>
+     * This is used to adjust validation during parsing/generating, as per spec TEXT Data Frames can only contain UTF8 encoded String data.
+     * <p>
+     * Example: a compression extension will process a compressed set of text data, the parser/generator should no longer be concerned about the validity of the
+     * TEXT Data Frames as this is now the responsibility of the extension.
+     * 
+     * @return true if extension will process TEXT Data Frames, false if extension makes no modifications of TEXT Data Frames. If false, the parser/generator is
+     *         now free to validate the conformance to spec of TEXT Data Frames.
+     */
+    public abstract boolean isTextDataDecoder();
 }
