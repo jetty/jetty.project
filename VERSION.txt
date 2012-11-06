@@ -1,33 +1,4 @@
-jetty-7.6.9-SNAPSHOT
-
-jetty-7.6.8.v20121105 - 05 November 2012
- + 371170 MongoSessionManager LastAccessTimeTest fails
- + 388675 Non utf8 encoded query strings not decoded to parameter map using
-   queryEncoding
- + 389686 Fix reference to org.eclipse.jetty.util.log.stderr.LONG system
-   property in javadoc for StdErrLog
- + 389956 Bad __context set in WebAppContext.start sequence with respect to ENC
-   setup
- + 389965 OPTIONS should allow spaces in comma separated list
- + 390161 Apply DeferredAuthentication fix to jaspi
- + 390560 The method AnnotationParser.getAnnotationHandlers(String) always
-   returns a empty collection.
- + 391483 fix bad javadoc example in shutdown handler
- + 391622 Be lenient on RFC6265 restriction on duplicate cookie names in same
-   response
- + 391623 Add option to --stop to wait for target jetty to stop
- + 392239 Allow no error-code or exception for error-pages
- + 392525 Add option to --stop-wait to specify timeout
- + 392641 JDBC Sessions not scavenged if expired during downtime
- + 392812 MongoSessionIDManager never purges old sessions
- + 393014 Mongodb purgevalid using query for purgeinvalid
- + 393015 Mongodb purge not rescheduled
- + 393075 Jetty WebSocket client cannot connect to Tomcat WebSocket Server
- + 393218 add xsd=application/xml mime mapping to defaults
- + 393363 Use Locale.ENGLISH for all toUpperCase and toLowerCase calls
- + 393368 min websocket version
- + 393383 delay onClose call until closeOut is done
- + 393494 HashSessionManager can't delete unrestorable sessions on Windows
+jetty-7.6.8-SNAPSHOT
 
 jetty-7.6.7.v20120910 - 10 September 2012
  + 388895 Update dependencies for jetty-jndi
