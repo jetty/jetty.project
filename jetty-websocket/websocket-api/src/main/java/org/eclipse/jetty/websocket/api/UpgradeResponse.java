@@ -41,13 +41,14 @@ public class UpgradeResponse implements HandshakeResponse
 
     public void addHeader(String name, String value)
     {
-        List<String> values = headers.get(name);
+        String key = name.toLowerCase();
+        List<String> values = headers.get(key);
         if (values == null)
         {
             values = new ArrayList<>();
         }
         values.add(value);
-        headers.put(name,values);
+        headers.put(key,values);
     }
 
     /**
@@ -72,7 +73,7 @@ public class UpgradeResponse implements HandshakeResponse
 
     public String getHeader(String name)
     {
-        List<String> values = headers.get(name);
+        List<String> values = getHeaders(name);
         // no value list
         if (values == null)
         {
@@ -117,7 +118,7 @@ public class UpgradeResponse implements HandshakeResponse
 
     public List<String> getHeaders(String name)
     {
-        return headers.get(name);
+        return headers.get(name.toLowerCase());
     }
 
     public int getStatusCode()
@@ -190,7 +191,7 @@ public class UpgradeResponse implements HandshakeResponse
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        headers.put(name,values);
+        headers.put(name.toLowerCase(),values);
     }
 
     public void setStatusCode(int statusCode)
