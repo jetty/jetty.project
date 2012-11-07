@@ -139,12 +139,6 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
         return upgradeRequest;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jetty.websocket.client.internal.WebSocketClient#getConnection()
-     */
-    @Override
     public WebSocketConnection getConnection()
     {
         return this.connection;

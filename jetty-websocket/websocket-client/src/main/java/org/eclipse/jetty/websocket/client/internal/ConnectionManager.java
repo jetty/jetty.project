@@ -79,11 +79,10 @@ public class ConnectionManager extends ContainerLifeCycle
 
         return new InetSocketAddress(uri.getHost(),port);
     }
-    private final Queue<WebSocketClient> clients = new ConcurrentLinkedQueue<>();
+    private final Queue<DefaultWebSocketClient> clients = new ConcurrentLinkedQueue<>();
     private final WebSocketClientSelectorManager selector;
 
-    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory,
-            WebSocketPolicy policy)
+    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, WebSocketPolicy policy)
     {
         // TODO: configure connect timeout
         selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
@@ -91,14 +90,14 @@ public class ConnectionManager extends ContainerLifeCycle
         addBean(selector);
     }
 
-    public void addClient(WebSocketClient client)
+    public void addClient(DefaultWebSocketClient client)
     {
         clients.add(client);
     }
 
     private void closeConnections()
     {
-        for (WebSocketClient client : clients)
+        for (DefaultWebSocketClient client : clients)
         {
             if (client.getConnection() != null)
             {
@@ -144,7 +143,7 @@ public class ConnectionManager extends ContainerLifeCycle
         super.doStop();
     }
 
-    public Collection<WebSocketClient> getClients()
+    public Collection<DefaultWebSocketClient> getClients()
     {
         return Collections.unmodifiableCollection(clients);
     }
