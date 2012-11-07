@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.mux;
+package org.eclipse.jetty.websocket.client.internal.mux;
 
 import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddClient;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
