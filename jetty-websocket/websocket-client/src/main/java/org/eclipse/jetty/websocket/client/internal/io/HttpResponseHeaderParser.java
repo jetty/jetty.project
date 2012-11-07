@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8LineParser;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 
 /**
  * Responsible for reading UTF8 Response Header lines and parsing them into a provided UpgradeResponse object.

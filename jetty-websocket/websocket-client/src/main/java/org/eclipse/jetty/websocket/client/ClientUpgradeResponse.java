@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal;
+package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
 

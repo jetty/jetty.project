@@ -16,8 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal;
+package org.eclipse.jetty.websocket.client;
 
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.HashSet;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public class ClientUpgradeRequest extends UpgradeRequest
 {
     private final static Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
-    private static final String HEADER_VALUES_DELIM = "\"\\\n\r\t\f\b%+ ;=";
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -59,6 +59,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
     }
 
     private final String key;
+    private CookieStore cookieStore;
 
     public ClientUpgradeRequest()
     {
@@ -189,8 +190,29 @@ public class ClientUpgradeRequest extends UpgradeRequest
         return new String(B64Code.encode(bytes));
     }
 
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        if (cookieStore != null)
+        {
+            return cookieStore.get(getRequestURI());
+        }
+
+        return super.getCookies();
+    }
+
+    public CookieStore getCookieStore()
+    {
+        return cookieStore;
+    }
+
     public String getKey()
     {
         return key;
+    }
+
+    public void setCookieStore(CookieStore cookieStore)
+    {
+        this.cookieStore = cookieStore;
     }
 }
