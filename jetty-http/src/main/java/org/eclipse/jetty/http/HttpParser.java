@@ -525,7 +525,7 @@ public class HttpParser implements Parser
                                         switch (ho)
                                         {
                                             case HttpHeaders.CONTENT_LENGTH_ORDINAL:
-                                                if (_contentLength != HttpTokens.CHUNKED_CONTENT && _responseStatus!=304 && _responseStatus!=204 && (_responseStatus<100 || _responseStatus>=200))
+                                                if (_contentLength != HttpTokens.CHUNKED_CONTENT )
                                                 {
                                                     try
                                                     {
@@ -596,12 +596,17 @@ public class HttpParser implements Parser
                                 }
                                 _buffer.setMarkIndex(-1);
 
-
                                 // now handle ch
                                 if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                                 {
-                                    // work out the _content demarcation
-                                    if (_contentLength == HttpTokens.UNKNOWN_CONTENT)
+                                    // is it a response that cannot have a body?
+                                    if (_responseStatus > 0  && // response  
+                                       (_responseStatus == 304  || // not-modified response
+                                        _responseStatus == 204 || // no-content response
+                                        _responseStatus < 200)) // 1xx response
+                                        _contentLength=HttpTokens.NO_CONTENT; // ignore any other headers set
+                                    // else if we don't know framing
+                                    else if (_contentLength == HttpTokens.UNKNOWN_CONTENT)
                                     {
                                         if (_responseStatus == 0  // request
                                                 || _responseStatus == 304 // not-modified response
