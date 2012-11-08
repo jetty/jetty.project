@@ -46,7 +46,7 @@
                  </extractArtifact>
               </assembly>
             </package>
-            <package>
+            <!--package>
               <id>jetty-javadoc</id>
               <classifier>javadoc</classifier>
               <assembly>
@@ -61,7 +61,7 @@
                   </includes>
                 </extractArtifact>
               </assembly>
-            </package>
+            </package-->
           </packages>
         </configuration>
       </plugin>
