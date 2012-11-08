@@ -640,7 +640,6 @@ public class HttpParser
                             _header=null;
                             _value=null;
 
-
                             // now handle the ch
                             if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                             {
