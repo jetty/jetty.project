@@ -807,39 +807,42 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 break;
 
             case HttpHeaders.EXPECT_ORDINAL:
-                value = HttpHeaderValues.CACHE.lookup(value);
-                switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                if (_version>=HttpVersions.HTTP_1_1_ORDINAL)
                 {
-                    case HttpHeaderValues.CONTINUE_ORDINAL:
-                        _expect100Continue=_generator instanceof HttpGenerator;
-                        break;
+                    value = HttpHeaderValues.CACHE.lookup(value);
+                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                    {
+                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                            _expect100Continue=_generator instanceof HttpGenerator;
+                            break;
 
-                    case HttpHeaderValues.PROCESSING_ORDINAL:
-                        _expect102Processing=_generator instanceof HttpGenerator;
-                        break;
+                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                            _expect102Processing=_generator instanceof HttpGenerator;
+                            break;
 
-                    default:
-                        String[] values = value.toString().split(",");
-                        for  (int i=0;values!=null && i<values.length;i++)
-                        {
-                            CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
-                            if (cb==null)
-                                _expect=true;
-                            else
+                        default:
+                            String[] values = value.toString().split(",");
+                            for  (int i=0;values!=null && i<values.length;i++)
                             {
-                                switch(cb.getOrdinal())
+                                CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
+                                if (cb==null)
+                                    _expect=true;
+                                else
                                 {
-                                    case HttpHeaderValues.CONTINUE_ORDINAL:
-                                        _expect100Continue=_generator instanceof HttpGenerator;
-                                        break;
-                                    case HttpHeaderValues.PROCESSING_ORDINAL:
-                                        _expect102Processing=_generator instanceof HttpGenerator;
-                                        break;
-                                    default:
-                                        _expect=true;
+                                    switch(cb.getOrdinal())
+                                    {
+                                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                                            _expect100Continue=_generator instanceof HttpGenerator;
+                                            break;
+                                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                                            _expect102Processing=_generator instanceof HttpGenerator;
+                                            break;
+                                        default:
+                                            _expect=true;
+                                    }
                                 }
                             }
-                        }
+                    }
                 }
                 break;
 
