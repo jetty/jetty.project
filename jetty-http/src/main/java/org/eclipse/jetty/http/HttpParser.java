@@ -562,7 +562,7 @@ public class HttpParser
                                     switch (_header)
                                     {
                                         case CONTENT_LENGTH:
-                                            if (_endOfContent != EndOfContent.CHUNKED_CONTENT && _responseStatus!=304 && _responseStatus!=204 && (_responseStatus<100 || _responseStatus>=200))
+                                            if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                                             {
                                                 try
                                                 {
@@ -657,8 +657,15 @@ public class HttpParser
                                     return true;
                                 }
 
-                                // so work out the _content demarcation
-                                if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
+                                // is it a response that cannot have a body?
+                                if (_responseHandler !=null  && // response  
+                                    (_responseStatus == 304  || // not-modified response
+                                    _responseStatus == 204 || // no-content response
+                                    _responseStatus < 200)) // 1xx response
+                                    _endOfContent=EndOfContent.NO_CONTENT; // ignore any other headers set
+                                
+                                // else if we don't know framing
+                                else if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                                 {
                                     if (_responseStatus == 0  // request
                                             || _responseStatus == 304 // not-modified response
