@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cp /opt/jetty/bin/jetty.sh /etc/init.d/jetty
+chmod 755 /etc/init.d/jetty
+chmod 755 /opt/jetty/bin/*.sh
