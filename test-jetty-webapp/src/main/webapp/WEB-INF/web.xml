@@ -94,6 +94,7 @@
   <filter-mapping>
     <filter-name>GzipFilter</filter-name>
     <url-pattern>/dump/gzip/*</url-pattern>
+    <url-pattern>*.txt</url-pattern>
   </filter-mapping>
   
   

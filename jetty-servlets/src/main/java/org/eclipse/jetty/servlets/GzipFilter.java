@@ -106,8 +106,10 @@ public class GzipFilter extends UserAgentFilter
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
     public final static String GZIP="gzip";
+    public final static String ETAG_GZIP="-gzip\"";
     public final static String DEFLATE="deflate";
-    
+    public final static String ETAG_DEFLATE="-deflate\"";
+    public final static String ETAG="o.e.j.s.GzipFilter.ETag";
 
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
@@ -233,6 +235,16 @@ public class GzipFilter extends UserAgentFilter
             {
                 super.doFilter(request,response,chain);
                 return;
+            }
+            
+            // Special handling for etags
+            String etag = request.getHeader("If-None-Match"); 
+            if (etag!=null)
+            {
+                if (etag.endsWith(ETAG_GZIP))
+                    request.setAttribute(ETAG,etag.substring(0,etag.length()-ETAG_GZIP.length())+'"');
+                else if (etag.endsWith(ETAG_DEFLATE))
+                    request.setAttribute(ETAG,etag.substring(0,etag.length()-ETAG_DEFLATE.length())+'"');
             }
             
             CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
@@ -362,9 +374,9 @@ public class GzipFilter extends UserAgentFilter
             wrappedResponse = new CompressedResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(compressionType,request,this)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
@@ -380,9 +392,9 @@ public class GzipFilter extends UserAgentFilter
             wrappedResponse = new CompressedResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(compressionType,request,this)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException

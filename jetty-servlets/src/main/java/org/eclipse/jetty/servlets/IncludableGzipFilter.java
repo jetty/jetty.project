@@ -75,9 +75,9 @@ public class IncludableGzipFilter extends GzipFilter
             wrappedResponse = new IncludableResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(compressionType,request,this)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
@@ -102,9 +102,9 @@ public class IncludableGzipFilter extends GzipFilter
             wrappedResponse = new IncludableResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(compressionType,request,this)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException

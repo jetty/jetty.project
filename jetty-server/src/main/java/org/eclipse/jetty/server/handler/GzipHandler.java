@@ -295,9 +295,9 @@ public class GzipHandler extends HandlerWrapper
             }
             
             @Override
-            protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+            protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
-                return new AbstractCompressedStream("gzip",request,response,contentLength,bufferSize,minCompressSize)
+                return new AbstractCompressedStream("gzip",request,this)
                 {
                     @Override
                     protected DeflaterOutputStream createStream() throws IOException

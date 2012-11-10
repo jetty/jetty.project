@@ -431,7 +431,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 context.setBaseResource(new ResourceCollection(instance_webapp,shared.getBaseResource()));
 
                 // Create the resource cache
-                ResourceCache cache = new ResourceCache(shared.getResourceCache(),instance_webapp,context.getMimeTypes());
+                ResourceCache cache = new ResourceCache(shared.getResourceCache(),instance_webapp,context.getMimeTypes(),false,false);
                 context.setAttribute(ResourceCache.class.getCanonicalName(),cache);
             }
             else
