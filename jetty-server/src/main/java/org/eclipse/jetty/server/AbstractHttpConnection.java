@@ -1111,7 +1111,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (super._generator.isWritten())
                 throw new IllegalStateException("!empty");
 
-            // Convert HTTP content to contentl
+            // Convert HTTP content to content
             if (content instanceof HttpContent)
             {
                 HttpContent httpContent = (HttpContent) content;
@@ -1146,13 +1146,20 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 Buffer lm = httpContent.getLastModified();
                 long lml=httpContent.getResource().lastModified();
                 if (lm != null)
+                {
                     _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm);
+                }
                 else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)
                         _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, lml);
                 }
+                
+                Buffer etag=httpContent.getETag();
+                if (etag!=null)
+                    _responseFields.put(HttpHeaders.ETAG_BUFFER,etag);
 
+                
                 boolean direct=_connector instanceof NIOConnector && ((NIOConnector)_connector).getUseDirectBuffers() && !(_connector instanceof SslConnector);
                 content = direct?httpContent.getDirectBuffer():httpContent.getIndirectBuffer();
                 if (content==null)
@@ -1200,7 +1207,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         resource.release();
                     else
                         in.close();
-
                 }
             }
             else

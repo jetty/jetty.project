@@ -31,6 +31,7 @@ import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -48,7 +49,8 @@ public abstract class Resource implements ResourceFactory
     private static final Logger LOG = Log.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Change the default setting for url connection caches.
      * Subsequent URLConnections will use this default.
@@ -662,6 +664,31 @@ public abstract class Resource implements ResourceFactory
         writeTo(new FileOutputStream(destination),0,-1);
     }
 
+    /* ------------------------------------------------------------ */
+    public String getWeakETag()
+    {
+        try
+        {
+            StringBuilder b = new StringBuilder(32);
+            b.append("W/\"");
+            
+            String name=getName();
+            int length=name.length();
+            long lhash=0;
+            for (int i=0; i<length;i++)
+                lhash=31*lhash+name.charAt(i);
+            
+            B64Code.encode(lastModified()^lhash,b);
+            B64Code.encode(length()^lhash,b);
+            b.append('"');
+            return b.toString();
+        } 
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /** Generate a properly encoded URL from a {@link File} instance.
      * @param file Target file. 

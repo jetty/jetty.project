@@ -374,20 +374,46 @@ public class TypeUtil
     {
         try
         {
-            int bi=0xff&b;
-            int c='0'+(bi/16)%16;
-            if (c>'9')
-                c= 'A'+(c-'0'-10);
-            buf.append((char)c);
-            c='0'+bi%16;
-            if (c>'9')
-                c= 'A'+(c-'0'-10);
-            buf.append((char)c);
+            int d=0xf&((0xF0&b)>>4);
+            buf.append((char)((d>9?('A'-10):'0')+d));
+            d=0xf&b;
+            buf.append((char)((d>9?('A'-10):'0')+d));
         }
         catch(IOException e)
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void toHex(int value,Appendable buf) throws IOException
+    {
+        int d=0xf&((0xF0000000&value)>>28);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x0F000000&value)>>24);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x00F00000&value)>>20);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x000F0000&value)>>16);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x0000F000&value)>>12);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x00000F00&value)>>8);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x000000F0&value)>>4);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&value;
+        buf.append((char)((d>9?('A'-10):'0')+d));
+    
+        Integer.toString(0,36);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public static void toHex(long value,Appendable buf) throws IOException
+    {
+        toHex((int)(value>>32),buf);
+        toHex((int)value,buf);
     }
 
     /* ------------------------------------------------------------ */
