@@ -88,12 +88,23 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile int _lingerTime = -1;
 
 
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     */
     public ServerConnector(
         @Name("server") Server server)
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
 
+    /* ------------------------------------------------------------ */
+    /** Generic Server Connection with default configuration.
+     * <p>Construct a Server Connector with the passed Connection factories.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
@@ -101,6 +112,13 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,factories);
     }
 
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * list of HTTP Connection Factory.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory)
@@ -108,6 +126,13 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
+    /* ------------------------------------------------------------ */
+    /** Generic SSL Server Connection.
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * list of ConnectionFactories, with the first factory being the default protocol for the SslConnectionFactory.
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory,
@@ -116,24 +141,33 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
     }
 
-    /**
-     * @param server    The server this connector will be added to. Must not be null.
-     * @param executor  An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to use the servers scheduler
-     * @param pool      A buffer pool for this connector or null to use a default {@link ByteBufferPool}
-     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
-     * @param factories Zero or more {@link ConnectionFactory} instances.
+    /** Generic Server Connection.
+     * @param server    
+     *          The server this connector will be accept connection for.  
+     * @param executor  
+     *          An executor used to run tasks for handling requests, acceptors and selectors. I
+     *          If null then use the servers executor
+     * @param scheduler 
+     *          A scheduler used to schedule timeouts. If null then use the servers scheduler
+     * @param bufferPool
+     *          A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
+     * @param acceptors 
+     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     * @param selectors
+     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param factories 
+     *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
         @Name("server") Server server,
         @Name("executor") Executor executor,
         @Name("scheduler") Scheduler scheduler,
-        @Name("bufferPool") ByteBufferPool pool,
+        @Name("bufferPool") ByteBufferPool bufferPool,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
     {
-        super(server,executor,scheduler,pool,acceptors,factories);
+        super(server,executor,scheduler,bufferPool,acceptors,factories);
         _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
     }
@@ -298,8 +332,8 @@ public class ServerConnector extends AbstractNetworkConnector
      * @return the linger time
      * @see Socket#getSoLinger()
      */
-    @ManagedAttribute("linger time")
-    public int getLingerTime()
+    @ManagedAttribute("TCP/IP solinger time or -1 to disable")
+    public int getSoLingerTime()
     {
         return _lingerTime;
     }
