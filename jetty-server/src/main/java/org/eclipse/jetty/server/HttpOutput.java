@@ -237,6 +237,10 @@ public class HttpOutput extends ServletOutputStream
                     response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
             }
 
+            String etag=httpContent.getETag();
+            if (etag!=null)
+                response.getHttpFields().put(HttpHeader.ETAG,etag);
+            
             content = httpContent.getDirectBuffer();
             if (content == null)
                 content = httpContent.getIndirectBuffer();

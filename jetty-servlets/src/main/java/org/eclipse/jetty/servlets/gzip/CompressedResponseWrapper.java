@@ -47,15 +47,48 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     private PrintWriter _writer;
     private AbstractCompressedStream _compressedStream;
+    private String _etag;
     private long _contentLength=-1;
     private boolean _noCompression;
 
+    /* ------------------------------------------------------------ */
     public CompressedResponseWrapper(HttpServletRequest request, HttpServletResponse response)
     {
         super(response);
         _request = request;
     }
 
+
+    /* ------------------------------------------------------------ */
+    public long getContentLength()
+    {
+        return _contentLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getBufferSize()
+    {
+        return _bufferSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getMinCompressSize()
+    {
+        return _minCompressSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getETag()
+    {
+        return _etag;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpServletRequest getRequest()
+    {
+        return _request;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setMimeTypes(java.util.Set)
@@ -147,7 +180,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     {
         _contentLength=length;
         if (_compressedStream!=null)
-            _compressedStream.setContentLength(length);
+            _compressedStream.setContentLength();
         else if (_noCompression && _contentLength>=0)
         {
             HttpServletResponse response = (HttpServletResponse)getResponse();
@@ -161,7 +194,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             }
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#addHeader(java.lang.String, java.lang.String)
@@ -173,7 +206,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         {
             _contentLength=Long.parseLong(value);
             if (_compressedStream!=null)
-                _compressedStream.setContentLength(_contentLength);
+                _compressedStream.setContentLength();
         }
         else if ("content-type".equalsIgnoreCase(name))
         {
@@ -187,6 +220,8 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 noCompression();
             }
         }
+        else if ("etag".equalsIgnoreCase(name))
+            _etag=value;
         else
             super.addHeader(name,value);
     }
@@ -324,8 +359,19 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 noCompression();
             }
         }
+        else if ("etag".equalsIgnoreCase(name))
+            _etag=value;
         else
             super.setHeader(name,value);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean containsHeader(String name)
+    {
+        if ("etag".equalsIgnoreCase(name) && _etag!=null)
+            return true;
+        return super.containsHeader(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -343,7 +389,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 return getResponse().getOutputStream();
             }
 
-            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
+            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse());
         }
         else if (_writer!=null)
             throw new IllegalStateException("getWriter() called");
@@ -369,7 +415,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 return getResponse().getWriter();
             }
 
-            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
+            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse());
             _writer=newWriter(_compressedStream,getCharacterEncoding());
         }
         return _writer;
@@ -386,7 +432,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         {
             _contentLength=value;
             if (_compressedStream!=null)
-                _compressedStream.setContentLength(_contentLength);
+                _compressedStream.setContentLength();
         }
         else
             super.setIntHeader(name,value);
@@ -410,6 +456,6 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     /**
      *@return the underlying CompressedStream implementation
      */
-    protected abstract AbstractCompressedStream newCompressedStream(HttpServletRequest _request, HttpServletResponse response, long _contentLength2, int _bufferSize2, int _minCompressedSize2) throws IOException;
+    protected abstract AbstractCompressedStream newCompressedStream(HttpServletRequest _request, HttpServletResponse response) throws IOException;
 
 }

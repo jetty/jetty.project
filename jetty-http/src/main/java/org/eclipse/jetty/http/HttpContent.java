@@ -36,6 +36,7 @@ public interface HttpContent
     String getLastModified();
     ByteBuffer getIndirectBuffer();
     ByteBuffer getDirectBuffer();
+    String getETag();
     Resource getResource();
     long getContentLength();
     InputStream getInputStream() throws IOException;
@@ -50,19 +51,33 @@ public interface HttpContent
         final Resource _resource;
         final String _mimeType;
         final int _maxBuffer;
+        final String _etag;
 
+        /* ------------------------------------------------------------ */
         public ResourceAsHttpContent(final Resource resource, final String mimeType)
         {
-            _resource=resource;
-            _mimeType=mimeType;
-            _maxBuffer=-1;
+            this(resource,mimeType,-1,false);
         }
 
+        /* ------------------------------------------------------------ */
         public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer)
+        {
+            this(resource,mimeType,maxBuffer,false);
+        }
+
+        /* ------------------------------------------------------------ */
+        public ResourceAsHttpContent(final Resource resource, final String mimeType, boolean etag)
+        {
+            this(resource,mimeType,-1,etag);
+        }
+
+        /* ------------------------------------------------------------ */
+        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer, boolean etag)
         {
             _resource=resource;
             _mimeType=mimeType;
             _maxBuffer=maxBuffer;
+            _etag=etag?resource.getWeakETag():null;
         }
 
         /* ------------------------------------------------------------ */
@@ -84,6 +99,13 @@ public interface HttpContent
         public ByteBuffer getDirectBuffer()
         {
             return null;
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getETag()
+        {
+            return _etag;
         }
 
         /* ------------------------------------------------------------ */

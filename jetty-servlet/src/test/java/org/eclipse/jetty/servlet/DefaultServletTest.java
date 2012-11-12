@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -30,12 +32,14 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -495,6 +499,123 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Length: 12", response);
     }
 
+
+    @Test
+    public void testIfModifiedSmall() throws Exception
+    {
+        testIfModified("Hello World");
+    }
+    
+    @Test
+    public void testIfModifiedLarge() throws Exception
+    {
+        testIfModified("Now is the time for all good men to come to the aid of the party");
+    }
+
+    public void testIfModified(String content) throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file = new File(resBase, "file.txt");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        String response = connector.getResponses("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        assertResponseContains("404", response);
+
+        createFile(file, content);
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+
+        assertResponseContains("200", response);
+        assertResponseContains("Last-Modified", response);
+        String last_modified = getHeaderValue("Last-Modified",response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+last_modified+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        assertResponseContains("412", response);
+    }
+
+    @Test
+    public void testIfETagSmall() throws Exception
+    {
+        testIfETag("Hello World");
+    }
+    
+    @Test
+    public void testIfETagLarge() throws Exception
+    {
+        testIfETag("Now is the time for all good men to come to the aid of the party");
+    }
+
+    public void testIfETag(String content) throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file = new File(resBase, "file.txt");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("etags", "true");
+
+        String response;
+
+        createFile(file, content);
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+
+        assertResponseContains("200", response);
+        assertResponseContains("ETag", response);
+        String etag = getHeaderValue("ETag",response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble,"+etag+",wobble\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble, wobble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble,"+etag+",wobble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble\r\n\r\n");
+        assertResponseContains("412", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble, wobble\r\n\r\n");
+        assertResponseContains("412", response);
+        
+    }
+    
     public static class OutputFilter implements Filter
     {
         @Override
@@ -582,5 +703,14 @@ public class DefaultServletTest
         {
             Assert.assertTrue("Deleting: " + file.getName(), file.delete());
         }
+    }
+    
+    private String getHeaderValue(String header, String response)
+    {
+        Pattern pattern=Pattern.compile("[\\r\\n]"+header+"\\s*:\\s*(.*?)\\s*[\\r\\n]");
+        Matcher matcher = pattern.matcher(response);
+        if (matcher.find())
+            return matcher.group(1);
+        return null;
     }
 }
