@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.nio.ByteBuffer;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -37,7 +35,7 @@ public class DataFrameBytes extends FrameBytes
     }
 
     @Override
-    public void completed(SendResult result)
+    public void completed(Void result)
     {
         if (LOG.isDebugEnabled())
         {

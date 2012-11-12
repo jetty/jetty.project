@@ -26,8 +26,8 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(
-        { DeflateCompressionMethodTest.class, PerMessageCompressionExtensionTest.class, FragmentExtensionTest.class, IdentityExtensionTest.class,
-        WebkitDeflateFrameExtensionTest.class })
+        { ExtensionStackTest.class, DeflateCompressionMethodTest.class, PerMessageCompressionExtensionTest.class, FragmentExtensionTest.class,
+            IdentityExtensionTest.class, WebkitDeflateFrameExtensionTest.class })
 public class AllTests
 {
     /* nothing to do here, its all done in the annotations */

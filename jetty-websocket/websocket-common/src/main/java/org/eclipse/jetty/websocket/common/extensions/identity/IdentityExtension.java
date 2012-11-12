@@ -24,14 +24,21 @@ import java.util.concurrent.Future;
 import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
+@ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
 {
     private String id;
+
+    public String getParam(String key)
+    {
+        return getConfig().getParameter(key,"?");
+    }
 
     @Override
     public void incomingError(WebSocketException e)
@@ -60,10 +67,17 @@ public class IdentityExtension extends AbstractExtension
         super.setConfig(config);
         StringBuilder s = new StringBuilder();
         s.append(config.getName());
+        s.append("@").append(Integer.toHexString(hashCode()));
         s.append("[");
+        boolean delim = false;
         for (String param : config.getParameterKeys())
         {
-            s.append(';').append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param,""),";="));
+            if (delim)
+            {
+                s.append(';');
+            }
+            s.append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param,""),";="));
+            delim = true;
         }
         s.append("]");
         id = s.toString();

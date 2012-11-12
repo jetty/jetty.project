@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,14 +46,13 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -79,7 +77,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     private String negotiatedSubprotocol;
     private long timeout;
     private Map<String, String[]> parameterMap = new HashMap<>();
-    private List<ExtensionConfig> extensionConfigs = new ArrayList<>();
     private WebSocketRemoteEndpoint remote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
@@ -137,6 +134,31 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     public void close(int statusCode, String reason)
     {
         connection.close(statusCode,reason);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out,indent);
+        out.append(indent).append(" +- incomingHandler : ");
+        if (incomingHandler instanceof Dumpable)
+        {
+            ((Dumpable)incomingHandler).dump(out,indent + "    ");
+        }
+        else
+        {
+            out.append(incomingHandler.toString()).append('\n');
+        }
+
+        out.append(indent).append(" +- outgoingHandler : ");
+        if (outgoingHandler instanceof Dumpable)
+        {
+            ((Dumpable)outgoingHandler).dump(out,indent + "    ");
+        }
+        else
+        {
+            out.append(outgoingHandler.toString()).append('\n');
+        }
     }
 
     public LogicalConnection getConnection()
@@ -330,44 +352,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
             throw new WebSocketException("Cannot Open WebSocketSession, Already open");
         }
 
-        // Initialize extensions
-        LOG.debug("Extension Configs={}",extensionConfigs);
-        List<Extension> extensions = new ArrayList<>();
-        for (ExtensionConfig config : extensionConfigs)
-        {
-            Extension ext = extensionFactory.newInstance(config);
-            extensions.add(ext);
-            LOG.debug("Adding Extension: {}",ext);
-        }
-
-        // Wire up Extensions
-        if (extensions.size() > 0)
-        {
-            Iterator<Extension> extIter;
-
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoingHandler);
-                outgoingHandler = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextIncomingFrames(incomingHandler);
-                incomingHandler = ext;
-            }
-        }
-
-        addBean(incomingHandler);
-        addBean(outgoingHandler);
-
         // Connect remote
         remote = new WebSocketRemoteEndpoint(connection,outgoingHandler);
 
@@ -422,27 +406,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
         this.maximumMessageSize = length;
     }
 
-    public void setNegotiatedExtensionConfigs(List<ExtensionConfig> extensions)
-    {
-        this.negotiatedExtensions.clear();
-        this.extensionConfigs.clear();
-
-        for (ExtensionConfig config : extensions)
-        {
-            this.extensionConfigs.add(config);
-            this.negotiatedExtensions.add(config.getParameterizedName());
-        }
-    }
-
     public void setNegotiatedExtensions(List<String> negotiatedExtensions)
     {
-        this.negotiatedExtensions = negotiatedExtensions;
-
-        this.extensionConfigs.clear();
-        for (String negotiatedExtension : negotiatedExtensions)
-        {
-            this.extensionConfigs.add(ExtensionConfig.parse(negotiatedExtension));
-        }
+        this.negotiatedExtensions.clear();
+        this.negotiatedExtensions.addAll(negotiatedExtensions);
     }
 
     public void setNegotiatedSubprotocol(String negotiatedSubprotocol)

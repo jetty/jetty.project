@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.common.io;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -30,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 
-public abstract class FrameBytes extends FutureCallback<SendResult> implements Runnable
+public abstract class FrameBytes extends FutureCallback<Void> implements Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
     protected final AbstractWebSocketConnection connection;
@@ -54,7 +52,7 @@ public abstract class FrameBytes extends FutureCallback<SendResult> implements R
     }
 
     @Override
-    public void completed(SendResult v)
+    public void completed(Void v)
     {
         super.completed(v);
         if (LOG.isDebugEnabled())
@@ -67,7 +65,7 @@ public abstract class FrameBytes extends FutureCallback<SendResult> implements R
     }
 
     @Override
-    public void failed(SendResult v, Throwable x)
+    public void failed(Void v, Throwable x)
     {
         super.failed(v,x);
         if (x instanceof EofException)

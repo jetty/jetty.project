@@ -34,8 +34,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +55,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -67,6 +64,7 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
@@ -96,7 +94,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private final Generator generator;
     private final Parser parser;
     private final IncomingFramesCapture incomingFrames;
-    private final WebSocketExtensionFactory extensionRegistry;
+    private final WebSocketExtensionFactory extensionFactory;
 
     private Socket socket;
     private OutputStream out;
@@ -108,7 +106,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
     private AtomicInteger parseCount;
-    private IncomingFrames incoming = this;
     private OutgoingFrames outgoing = this;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
@@ -134,7 +131,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         this.incomingFrames = new IncomingFramesCapture();
 
-        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
     }
 
     public void addExtensions(String xtension)
@@ -211,41 +208,30 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
 
         // collect extensions configured in response header
-        List<Extension> extensions = getExtensions(respHeader);
+        List<ExtensionConfig> configs = getExtensionConfigs(respHeader);
+        ExtensionStack extensionStack = new ExtensionStack(this.extensionFactory);
+        extensionStack.negotiate(configs);
 
         // Start with default routing
-        incoming = this;
-        outgoing = this;
+        extensionStack.setNextIncoming(this);
+        extensionStack.setNextOutgoing(this);
 
-        // Connect extensions
-        if (extensions != null)
+        // Configure Parser / Generator
+        extensionStack.configure(parser);
+        extensionStack.configure(generator);
+
+        // Start Stack
+        try
         {
-            generator.configureFromExtensions(extensions);
-            parser.configureFromExtensions(extensions);
-
-            Iterator<Extension> extIter;
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoing);
-                outgoing = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextIncomingFrames(incoming);
-                incoming = ext;
-            }
+            extensionStack.start();
+        }
+        catch (Exception e)
+        {
+            throw new IOException("Unable to start Extension Stack");
         }
 
         // configure parser
-        parser.setIncomingFramesHandler(incoming);
+        parser.setIncomingFramesHandler(extensionStack);
 
         return respHeader;
     }
@@ -255,14 +241,9 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         out.flush();
     }
 
-    public List<String> getExtensions()
+    private List<ExtensionConfig> getExtensionConfigs(String respHeader)
     {
-        return extensions;
-    }
-
-    private List<Extension> getExtensions(String respHeader)
-    {
-        List<Extension> extensions = new ArrayList<>();
+        List<ExtensionConfig> configs = new ArrayList<>();
 
         Pattern expat = Pattern.compile("Sec-WebSocket-Extensions: (.*)\r",Pattern.CASE_INSENSITIVE);
         Matcher mat = expat.matcher(respHeader);
@@ -273,14 +254,15 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             LOG.debug("Found Extension Response: {}",econf);
 
             ExtensionConfig config = ExtensionConfig.parse(econf);
-            Extension ext = extensionRegistry.newInstance(config);
-            if (ext != null)
-            {
-                extensions.add(ext);
-            }
+            configs.add(config);
 
             offset = mat.end(1);
         }
+        return configs;
+    }
+
+    public List<String> getExtensions()
+    {
         return extensions;
     }
 

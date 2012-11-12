@@ -196,4 +196,10 @@ public class AnnotatedEventDriver extends EventDriver
             events.onText.call(websocket,session,message);
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", this.getClass().getSimpleName(), websocket);
+    }
 }

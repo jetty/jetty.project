@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.nio.ByteBuffer;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -40,7 +38,7 @@ public class ControlFrameBytes extends FrameBytes
     }
 
     @Override
-    public void completed(SendResult context)
+    public void completed(Void context)
     {
         LOG.debug("completed() - frame: {}",frame);
         connection.getBufferPool().release(buffer);

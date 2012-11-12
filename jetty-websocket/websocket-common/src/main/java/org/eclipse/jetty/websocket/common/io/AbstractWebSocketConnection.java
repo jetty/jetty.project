@@ -415,7 +415,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 bytes = new DataFrameBytes(this,frame);
             }
 
-            future = bytes;
+            future = new JavaxWebsocketFuture(bytes);
 
             scheduleTimeout(bytes);
 

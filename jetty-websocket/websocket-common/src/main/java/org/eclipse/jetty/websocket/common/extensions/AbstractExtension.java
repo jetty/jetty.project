@@ -24,6 +24,9 @@ import java.util.concurrent.Future;
 import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -35,7 +38,8 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 
-public abstract class AbstractExtension implements Extension
+@ManagedObject("Abstract Extension")
+public abstract class AbstractExtension extends ContainerLifeCycle implements Extension
 {
     private final Logger log;
     private WebSocketPolicy policy;
@@ -48,6 +52,22 @@ public abstract class AbstractExtension implements Extension
     public AbstractExtension()
     {
         log = Log.getLogger(this.getClass());
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        // incoming
+        dumpWithHeading(out, indent, "incoming", this.nextIncoming);
+        dumpWithHeading(out, indent, "outgoing", this.nextOutgoing);
+    }
+
+    protected void dumpWithHeading(Appendable out, String indent, String heading, Object bean) throws IOException
+    {
+        out.append(indent).append(" +- ");
+        out.append(heading).append(" : ");
+        out.append(bean.toString());
     }
 
     public ByteBufferPool getBufferPool()
@@ -70,6 +90,18 @@ public abstract class AbstractExtension implements Extension
     public String getName()
     {
         return config.getName();
+    }
+
+    @ManagedAttribute(name = "Next Incoming Frame Handler", readonly = true)
+    public IncomingFrames getNextIncoming()
+    {
+        return nextIncoming;
+    }
+
+    @ManagedAttribute(name = "Next Outgoing Frame Handler", readonly = true)
+    public OutgoingFrames getNextOutgoing()
+    {
+        return nextOutgoing;
     }
 
     public WebSocketPolicy getPolicy()
@@ -191,6 +223,6 @@ public abstract class AbstractExtension implements Extension
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",config.getName(),config.getParameterizedName());
+        return String.format("%s[%s]",this.getClass().getSimpleName(),config.getParameterizedName());
     }
 }
