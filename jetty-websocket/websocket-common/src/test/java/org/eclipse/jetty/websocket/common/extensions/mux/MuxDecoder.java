@@ -23,8 +23,8 @@ import java.util.concurrent.Future;
 
 import javax.net.websocket.SendResult;
 
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 
 /**
  * Helpful utility class to parse arbitrary mux events from a physical connection's OutgoingFrames.
@@ -42,7 +42,7 @@ public class MuxDecoder extends MuxEventCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         parser.parse(frame);
         return null; // FIXME: should return completed future.

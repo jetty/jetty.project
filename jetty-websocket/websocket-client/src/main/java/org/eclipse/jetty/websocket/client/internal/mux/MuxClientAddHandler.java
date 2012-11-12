@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.client.internal.mux;
 
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddClient;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 
 public class MuxClientAddHandler implements MuxAddClient
 {

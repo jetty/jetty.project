@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common.io.payload;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class DeMaskProcessor implements PayloadProcessor
 {
@@ -45,7 +45,7 @@ public class DeMaskProcessor implements PayloadProcessor
     }
 
     @Override
-    public void reset(WebSocketFrame frame)
+    public void reset(Frame frame)
     {
         this.isMasked = frame.isMasked();
         if (isMasked)

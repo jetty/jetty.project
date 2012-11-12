@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.util.List;
+import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection
 {
@@ -43,10 +42,15 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void configureFromExtensions(List<Extension> extensions)
+    public InetSocketAddress getLocalAddress()
     {
-        getParser().configureFromExtensions(extensions);
-        getGenerator().configureFromExtensions(extensions);
+        return getEndPoint().getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getEndPoint().getRemoteAddress();
     }
 
     @Override
@@ -68,7 +72,7 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void setIncoming(IncomingFrames incoming)
+    public void setNextIncomingFrames(IncomingFrames incoming)
     {
         getParser().setIncomingFramesHandler(incoming);
     }

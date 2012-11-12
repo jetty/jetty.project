@@ -26,14 +26,13 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.net.websocket.extensions.FrameHandler;
-
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -49,7 +48,7 @@ public class PerMessageCompressionExtensionTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
         // Setup extension
-        PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
+        MessageCompressionExtension ext = new MessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -59,7 +58,7 @@ public class PerMessageCompressionExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
 
         // Receive frame
         String hex = hexStr.replaceAll("\\s*0x","");
@@ -69,7 +68,7 @@ public class PerMessageCompressionExtensionTest
         frame.setPayload(net);
 
         // Send frame into stack
-        incomingHandler.handleFrame(frame);
+        ext.incomingFrame(frame);
 
         // Verify captured frames.
         capture.assertFrameCount(1);
@@ -162,7 +161,7 @@ public class PerMessageCompressionExtensionTest
      */
     @Test
     public void testIncomingPing() {
-        PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
+        MessageCompressionExtension ext = new MessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -172,11 +171,11 @@ public class PerMessageCompressionExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        WebSocketFrame ping = WebSocketFrame.ping().setPayload(payload);
-        incomingHandler.handleFrame(ping);
+        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);
@@ -199,7 +198,7 @@ public class PerMessageCompressionExtensionTest
     @Test
     public void testIncomingUncompressedFrames()
     {
-        PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
+        MessageCompressionExtension ext = new MessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -209,7 +208,8 @@ public class PerMessageCompressionExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
+
         // Quote
         List<String> quote = new ArrayList<>();
         quote.add("No amount of experimentation can ever prove me right;");
@@ -222,7 +222,7 @@ public class PerMessageCompressionExtensionTest
             WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
             frame.setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
-            incomingHandler.handleFrame(frame);
+            ext.incomingFrame(frame);
         }
 
         int len = quote.size();
@@ -254,7 +254,7 @@ public class PerMessageCompressionExtensionTest
     @Test
     public void testOutgoingFrames() throws IOException
     {
-        PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
+        MessageCompressionExtension ext = new MessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -264,7 +264,7 @@ public class PerMessageCompressionExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         // Wire up stack
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -275,8 +275,8 @@ public class PerMessageCompressionExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            WebSocketFrame frame = WebSocketFrame.text(section);
-            outgoingHandler.handleFrame(frame);
+            Frame frame = WebSocketFrame.text(section);
+            ext.outgoingFrame(frame);
         }
 
         int len = quote.size();
@@ -314,7 +314,7 @@ public class PerMessageCompressionExtensionTest
     @Test
     public void testOutgoingPing() throws IOException
     {
-        PerMessageCompressionExtension ext = new PerMessageCompressionExtension();
+        MessageCompressionExtension ext = new MessageCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -324,12 +324,12 @@ public class PerMessageCompressionExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         // Wire up stack
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        WebSocketFrame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = WebSocketFrame.ping().setPayload(payload);
 
-        outgoingHandler.handleFrame(ping);
+        ext.outgoingFrame(ping);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);

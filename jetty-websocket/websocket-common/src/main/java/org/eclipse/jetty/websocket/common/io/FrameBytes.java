@@ -28,17 +28,17 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public abstract class FrameBytes extends FutureCallback<SendResult> implements Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
     protected final AbstractWebSocketConnection connection;
-    protected final WebSocketFrame frame;
+    protected final Frame frame;
     // Task used to timeout the bytes
     protected volatile Scheduler.Task task;
 
-    protected FrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
+    protected FrameBytes(AbstractWebSocketConnection connection, Frame frame)
     {
         this.connection = connection;
         this.frame = frame;
@@ -63,7 +63,7 @@ public abstract class FrameBytes extends FutureCallback<SendResult> implements R
         }
         cancelTask();
         connection.complete(this);
-        frame.notifySendHandler();
+        frame.notifySendSuccess();
     }
 
     @Override
@@ -80,7 +80,7 @@ public abstract class FrameBytes extends FutureCallback<SendResult> implements R
             LOG.warn("failed(" + v + ")",x);
         }
         cancelTask();
-        frame.notifySendHandler(x);
+        frame.notifySendFailed(x);
     }
 
     public abstract ByteBuffer getByteBuffer();

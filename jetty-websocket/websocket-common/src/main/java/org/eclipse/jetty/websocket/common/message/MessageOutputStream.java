@@ -16,17 +16,34 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions;
+package org.eclipse.jetty.websocket.common.message;
 
-import javax.net.websocket.extensions.FrameHandler;
+import java.io.IOException;
+import java.io.OutputStream;
 
-/**
- * FrameHandler that just passes frames through with no modification.
- */
-public class PassthruFrameHandler extends FrameHandler
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
+
+public class MessageOutputStream extends OutputStream
 {
-    public PassthruFrameHandler(FrameHandler nextHandler)
+    private final LogicalConnection connection;
+    private final OutgoingFrames outgoing;
+
+    public MessageOutputStream(LogicalConnection connection, OutgoingFrames outgoing)
     {
-        super(nextHandler);
+        this.connection = connection;
+        this.outgoing = outgoing;
+    }
+
+    public boolean isClosed()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void write(int b) throws IOException
+    {
+        // TODO Auto-generated method stub
     }
 }

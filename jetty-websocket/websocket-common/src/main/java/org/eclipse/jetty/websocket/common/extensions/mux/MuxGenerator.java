@@ -27,13 +27,14 @@ import javax.net.websocket.SendResult;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxDropChannel;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxFlowControl;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxNewChannelSlot;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 
 /**
  * Generate Mux frames destined for the physical connection.
@@ -56,7 +57,7 @@ public class MuxGenerator
         this.bufferPool = bufferPool;
     }
 
-    public Future<SendResult> generate(long channelId, WebSocketFrame frame) throws IOException
+    public Future<SendResult> generate(long channelId, Frame frame) throws IOException
     {
         ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
         BufferUtil.flipToFill(muxPayload);
@@ -67,7 +68,7 @@ public class MuxGenerator
         b |= (byte)(frame.isRsv1()?0x40:0x00); // rsv1
         b |= (byte)(frame.isRsv2()?0x20:0x00); // rsv2
         b |= (byte)(frame.isRsv3()?0x10:0x00); // rsv3
-        b |= (byte)(frame.getOpCode() & 0x0F); // opcode
+        b |= (byte)(frame.getType().getOpCode() & 0x0F); // opcode
         muxPayload.put(b);
         BufferUtil.put(frame.getPayload(),muxPayload);
 

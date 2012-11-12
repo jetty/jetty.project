@@ -26,13 +26,12 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.net.websocket.extensions.FrameHandler;
-
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -58,7 +57,7 @@ public class FragmentExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -69,8 +68,8 @@ public class FragmentExtensionTest
         // Manually create frame and pass into extension
         for (String q : quote)
         {
-            WebSocketFrame frame = WebSocketFrame.text(q);
-            incomingHandler.handleFrame(frame);
+            Frame frame = WebSocketFrame.text(q);
+            ext.incomingFrame(frame);
         }
 
         int len = quote.size();
@@ -110,11 +109,11 @@ public class FragmentExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        WebSocketFrame ping = WebSocketFrame.ping().setPayload(payload);
-        incomingHandler.handleFrame(ping);
+        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);
@@ -145,7 +144,7 @@ public class FragmentExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
         ext.setConfig(config);
 
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -156,8 +155,8 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            WebSocketFrame frame = WebSocketFrame.text(section);
-            outgoingHandler.handleFrame(frame);
+            Frame frame = WebSocketFrame.text(section);
+            ext.outgoingFrame(frame);
         }
 
         // Expected Frames
@@ -214,7 +213,7 @@ public class FragmentExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("fragment");
         ext.setConfig(config);
 
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -225,8 +224,8 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            WebSocketFrame frame = WebSocketFrame.text(section);
-            outgoingHandler.handleFrame(frame);
+            Frame frame = WebSocketFrame.text(section);
+            ext.outgoingFrame(frame);
         }
 
         // Expected Frames
@@ -278,12 +277,12 @@ public class FragmentExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        WebSocketFrame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = WebSocketFrame.ping().setPayload(payload);
 
-        outgoingHandler.handleFrame(ping);
+        ext.outgoingFrame(ping);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);

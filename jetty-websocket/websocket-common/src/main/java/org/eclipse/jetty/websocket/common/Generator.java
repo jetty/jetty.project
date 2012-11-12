@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Generating a frame in WebSocket land.
@@ -103,7 +104,7 @@ public class Generator
         this.validating = validating;
     }
 
-    public void assertFrameValid(WebSocketFrame frame)
+    public void assertFrameValid(Frame frame)
     {
         if (!validating)
         {
@@ -131,7 +132,7 @@ public class Generator
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
-        if (frame.isControlFrame())
+        if (frame.getType().isControl())
         {
             /*
              * RFC 6455 Section 5.5
@@ -153,7 +154,7 @@ public class Generator
              * 
              * close frame payload is specially formatted which is checked in CloseInfo
              */
-            if (frame.getOpCode() == OpCode.CLOSE)
+            if (frame.getType().getOpCode() == OpCode.CLOSE)
             {
 
                 ByteBuffer payload = frame.getPayload();
@@ -192,10 +193,24 @@ public class Generator
     }
 
     /**
+     * generate a byte buffer based on the frame being passed in
+     * 
+     * bufferSize is determined by the length of the payload + 28 for frame overhead
+     * 
+     * @param frame
+     * @return
+     */
+    public ByteBuffer generate(Frame frame)
+    {
+        int bufferSize = frame.getPayloadLength() + OVERHEAD;
+        return generate(bufferSize,frame);
+    }
+
+    /**
      * Generate, into a ByteBuffer, no more than bufferSize of contents from the frame. If the frame exceeds the bufferSize, then multiple calls to
      * {@link #generate(int, WebSocketFrame)} are required to obtain each window of ByteBuffer to complete the frame.
      */
-    public ByteBuffer generate(int windowSize, WebSocketFrame frame)
+    public ByteBuffer generate(int windowSize, Frame frame)
     {
         if (windowSize < OVERHEAD)
         {
@@ -204,22 +219,7 @@ public class Generator
 
         if (LOG.isDebugEnabled())
         {
-            StringBuilder dbg = new StringBuilder();
-            dbg.append(behavior);
-            dbg.append(" Generate.Frame[");
-            dbg.append("opcode=").append(frame.getOpCode());
-            dbg.append(",fin=").append(frame.isFin());
-            dbg.append(",cont=").append(frame.isContinuation());
-            dbg.append(",rsv1=").append(frame.isRsv1());
-            dbg.append(",rsv2=").append(frame.isRsv2());
-            dbg.append(",rsv3=").append(frame.isRsv3());
-            dbg.append(",mask=").append(frame.isMasked());
-            dbg.append(",payloadLength=").append(frame.getPayloadLength());
-            dbg.append(",payloadStart=").append(frame.getPayloadStart());
-            dbg.append(",remaining=").append(frame.remaining());
-            dbg.append(",position=").append(frame.position());
-            dbg.append(']');
-            LOG.debug(dbg.toString());
+            LOG.debug("{} Generate: {}",behavior,frame);
         }
 
         /*
@@ -260,6 +260,7 @@ public class Generator
                 b |= 0x10;
             }
 
+            // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
             byte opcode = frame.getOpCode();
 
             if (frame.isContinuation())
@@ -364,20 +365,6 @@ public class Generator
 
         BufferUtil.flipToFlush(buffer,0);
         return buffer;
-    }
-
-    /**
-     * generate a byte buffer based on the frame being passed in
-     * 
-     * bufferSize is determined by the length of the payload + 28 for frame overhead
-     * 
-     * @param frame
-     * @return
-     */
-    public ByteBuffer generate(WebSocketFrame frame)
-    {
-        int bufferSize = frame.getPayloadLength() + OVERHEAD;
-        return generate(bufferSize,frame);
     }
 
     public boolean isRsv1InUse()

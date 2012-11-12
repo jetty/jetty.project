@@ -58,6 +58,7 @@ public class HandshakeRFC6455 implements WebSocketHandshake
 
         if (request.getExtensions() != null)
         {
+            response.setExtensions(request.getExtensions());
             for (ExtensionConfig ext : request.getExtensions())
             {
                 response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());

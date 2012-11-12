@@ -24,26 +24,26 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-public class ExtensionFactory implements Iterable<Extension>
+public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
 {
     private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
-    private Map<String, Extension> availableExtensions;
+    private Map<String, Class<? extends Extension>> availableExtensions;
 
     public ExtensionFactory()
     {
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
-            availableExtensions.put(ext.getName(),ext);
+            availableExtensions.put(ext.getName(),ext.getClass());
         }
     }
 
-    public Map<String, Extension> getAvailableExtensions()
+    public Map<String, Class<? extends Extension>> getAvailableExtensions()
     {
         return availableExtensions;
     }
 
-    public Extension getExtension(String name)
+    public Class<? extends Extension> getExtension(String name)
     {
         return availableExtensions.get(name);
     }
@@ -59,12 +59,14 @@ public class ExtensionFactory implements Iterable<Extension>
     }
 
     @Override
-    public Iterator<Extension> iterator()
+    public Iterator<Class<? extends Extension>> iterator()
     {
         return availableExtensions.values().iterator();
     }
 
-    public void register(String name, Extension extension)
+    public abstract Extension newInstance(ExtensionConfig config);
+
+    public void register(String name, Class<? extends Extension> extension)
     {
         availableExtensions.put(name,extension);
     }

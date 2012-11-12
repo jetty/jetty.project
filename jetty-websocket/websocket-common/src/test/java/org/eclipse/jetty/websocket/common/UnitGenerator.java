@@ -24,8 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Convenience Generator.
@@ -34,7 +33,7 @@ public class UnitGenerator extends Generator
 {
     public static ByteBuffer generate(List<WebSocketFrame> frames)
     {
-        // Create non-symmetrical mask (shows mask bytes order issues)
+        // Create non-symmetrical mask (helps show mask bytes order issues)
         byte[] MASK =
             { 0x11, 0x22, 0x33, 0x44 };
 
@@ -43,7 +42,7 @@ public class UnitGenerator extends Generator
 
         // Generate into single bytebuffer
         int buflen = 0;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             buflen += f.getPayloadLength() + Generator.OVERHEAD;
         }

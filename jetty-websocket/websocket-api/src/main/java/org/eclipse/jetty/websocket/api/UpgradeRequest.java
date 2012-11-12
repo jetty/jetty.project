@@ -237,6 +237,18 @@ public class UpgradeRequest implements HandshakeRequest
         this.cookies = cookies;
     }
 
+    public void setHeader(String name, List<String> values)
+    {
+        headers.put(name,values);
+    }
+
+    public void setHeader(String name, String value)
+    {
+        List<String> values = new ArrayList<>();
+        values.add(value);
+        setHeader(name,values);
+    }
+
     public void setHttpVersion(String httpVersion)
     {
         this.httpVersion = httpVersion;

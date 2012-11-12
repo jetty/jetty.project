@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -45,8 +46,10 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
                 while (!latch.await(10,TimeUnit.SECONDS))
                 {
                     System.err.println("Ping");
-                    byte data[] = new byte[]
-                    { (byte)1, (byte)2, (byte)3 };
+                    ByteBuffer data = ByteBuffer.allocate(3);
+                    data.put(new byte[]
+                    { (byte)1, (byte)2, (byte)3 });
+                    data.flip();
                     conn.ping(data);
                 }
             }

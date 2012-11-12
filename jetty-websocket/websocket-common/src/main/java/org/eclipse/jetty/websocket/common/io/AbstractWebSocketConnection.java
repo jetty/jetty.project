@@ -44,17 +44,19 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements InternalConnection, SuspendToken
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
@@ -89,6 +91,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
+    }
+
+    @Override
+    public void assertInputOpen() throws IOException
+    {
+        if (isInputClosed())
+        {
+            throw new IOException("Connection input is closed");
+        }
+    }
+
+    @Override
+    public void assertOutputOpen() throws IOException
+    {
+        if (isOutputClosed())
+        {
+            throw new IOException("Connection output is closed");
+        }
     }
 
     @Override
@@ -232,6 +252,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return parser;
     }
 
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
@@ -253,6 +274,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return scheduler;
     }
 
+    @Override
     public WebSocketSession getSession()
     {
         return session;
@@ -370,15 +392,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return true;
     }
 
-    /**
-     * Enqueue internal frame from {@link OutgoingFrames} stack for eventual write out on the physical connection.
-     */
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({})",frame);
+            LOG.debug("outgoingFrame({})",frame);
         }
 
         Future<SendResult> future = null;
@@ -402,7 +421,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
             if (isOpen())
             {
-                if (frame.getOpCode() == OpCode.PING)
+                if (frame.getType().getOpCode() == OpCode.PING)
                 {
                     queue.prepend(bytes);
                 }

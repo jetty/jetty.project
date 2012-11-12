@@ -19,20 +19,20 @@
 package org.eclipse.jetty.websocket.client.internal.io;
 
 import java.io.IOException;
-import java.util.List;
+import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 
 /**
  * Client side WebSocket physical connection.
@@ -53,15 +53,21 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.masker = client.getMasker();
     }
 
-    @Override
-    public void configureFromExtensions(List<Extension> extensions)
-    {
-        /* do nothing */
-    }
-
     public DefaultWebSocketClient getClient()
     {
         return client;
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return getEndPoint().getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getEndPoint().getRemoteAddress();
     }
 
     @Override
@@ -83,14 +89,17 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
-        masker.setMask(frame);
+        if (frame instanceof WebSocketFrame)
+        {
+            masker.setMask((WebSocketFrame)frame);
+        }
         return super.outgoingFrame(frame);
     }
 
     @Override
-    public void setIncoming(IncomingFrames incoming)
+    public void setNextIncomingFrames(IncomingFrames incoming)
     {
         getParser().setIncomingFramesHandler(incoming);
     }

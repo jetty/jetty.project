@@ -16,17 +16,37 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io;
+package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
-/**
- * Interface for dealing with Incoming Frames.
- */
-public interface IncomingFrames
+import javax.net.websocket.SendResult;
+
+public class FinishedFuture extends FutureTask<SendResult> implements Future<SendResult>
 {
-    public void incomingError(WebSocketException e);
+    public static Future<SendResult> INSTANCE;
 
-    public void incomingFrame(WebSocketFrame frame);
+    static
+    {
+        Callable<SendResult> callable = new Callable<SendResult>()
+        {
+            @Override
+            public SendResult call() throws Exception
+            {
+                return new SendResult();
+            }
+        };
+
+        FinishedFuture fut = new FinishedFuture(callable);
+        fut.run();
+
+        INSTANCE = fut;
+    }
+
+    public FinishedFuture(Callable<SendResult> callable)
+    {
+        super(callable);
+    }
 }

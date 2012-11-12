@@ -26,9 +26,12 @@ public interface WebSocketListener
     /**
      * A WebSocket binary frame has been received.
      * 
-     * @param payload the raw payload array received
-     * @param offset the offset in the payload array where the data starts
-     * @param len the length of bytes in the payload
+     * @param payload
+     *            the raw payload array received
+     * @param offset
+     *            the offset in the payload array where the data starts
+     * @param len
+     *            the length of bytes in the payload
      */
     void onWebSocketBinary(byte payload[], int offset, int len);
 

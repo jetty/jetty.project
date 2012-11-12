@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -86,7 +87,7 @@ public class Fuzzer
     public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)
     {
         int buflen = 0;
-        for (WebSocketFrame f : send)
+        for (Frame f : send)
         {
             buflen += f.getPayloadLength() + Generator.OVERHEAD;
         }
@@ -213,7 +214,7 @@ public class Fuzzer
         if ((sendMode == SendMode.BULK) || (sendMode == SendMode.SLOW))
         {
             int buflen = 0;
-            for (WebSocketFrame f : send)
+            for (Frame f : send)
             {
                 buflen += f.getPayloadLength() + Generator.OVERHEAD;
             }

@@ -25,14 +25,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
 import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
-import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddServer;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 
 import examples.echo.AdapterEchoSocket;
 
@@ -79,11 +78,12 @@ public class DummyMuxAddServer implements MuxAddServer
         response.append("\r\n");
 
         EventDriver websocket = this.eventDriverFactory.wrap(echo);
-        WebSocketSession session = new WebSocketSession(websocket,channel,channel.getPolicy(),"echo");
+        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,channel);
+        session.setNegotiatedSubprotocol("echo");
         channel.setSession(session);
         channel.setSubProtocol("echo");
         channel.onOpen();
-        session.onConnect();
+        session.open();
 
         MuxAddChannelResponse addChannelResponse = new MuxAddChannelResponse();
         addChannelResponse.setChannelId(channel.getChannelId());

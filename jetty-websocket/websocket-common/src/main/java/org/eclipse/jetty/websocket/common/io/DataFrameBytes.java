@@ -24,14 +24,14 @@ import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class DataFrameBytes extends FrameBytes
 {
     private static final Logger LOG = Log.getLogger(DataFrameBytes.class);
     private ByteBuffer buffer;
 
-    public DataFrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
+    public DataFrameBytes(AbstractWebSocketConnection connection, Frame frame)
     {
         super(connection,frame);
     }

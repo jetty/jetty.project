@@ -32,10 +32,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddClient;
 import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddServer;
@@ -44,8 +48,6 @@ import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRespons
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxDropChannel;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxFlowControl;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxNewChannelSlot;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 
 /**
  * Muxer responsible for managing sub-channels.
@@ -67,7 +69,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     private Map<Long, MuxChannel> channels = new HashMap<Long, MuxChannel>();
 
     private final WebSocketPolicy policy;
-    private final WebSocketConnection physicalConnection;
+    private final LogicalConnection physicalConnection;
     private InetSocketAddress remoteAddress;
     /** Parsing frames destined for sub-channels */
     private MuxParser parser;
@@ -76,11 +78,11 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     private MuxAddServer addServer;
     private MuxAddClient addClient;
     /** The original request headers, used for delta encoded AddChannelRequest blocks */
-    private List<String> physicalRequestHeaders;
+    private UpgradeRequest physicalRequestHeaders;
     /** The original response headers, used for delta encoded AddChannelResponse blocks */
-    private List<String> physicalResponseHeaders;
+    private UpgradeResponse physicalResponseHeaders;
 
-    public Muxer(final WebSocketConnection connection)
+    public Muxer(final LogicalConnection connection)
     {
         this.physicalConnection = connection;
         this.policy = connection.getPolicy().clonePolicy();
@@ -152,7 +154,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
      * Incoming mux encapsulated frames.
      */
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         parser.parse(frame);
     }
@@ -383,7 +385,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     /**
      * Outgoing frame, without mux encapsulated payload.
      */
-    public Future<SendResult> output(long channelId, WebSocketFrame frame) throws IOException
+    public Future<SendResult> output(long channelId, Frame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {

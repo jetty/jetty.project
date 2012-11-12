@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -146,7 +147,7 @@ public class RFC6455ExamplesParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        WebSocketFrame bin = capture.getFrames().get(0);
+        Frame bin = capture.getFrames().get(0);
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
 
@@ -186,7 +187,7 @@ public class RFC6455ExamplesParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        WebSocketFrame bin = capture.getFrames().get(0);
+        Frame bin = capture.getFrames().get(0);
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
         ByteBuffer data = bin.getPayload();

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux.add;
 
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 
 /**
  * Interface for Mux Client to handle receiving a AddChannelResponse

@@ -46,16 +46,14 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.InternalConnection;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 
 /**
@@ -90,7 +88,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventDriverFactory eventDriverFactory;
-    private final WebSocketExtensionRegistry extensionRegistry;
+    private final WebSocketExtensionFactory extensionFactory;
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
 
@@ -108,7 +106,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.basePolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(basePolicy);
-        this.extensionRegistry = new WebSocketExtensionRegistry(basePolicy,bufferPool);
+        this.extensionFactory = new WebSocketExtensionFactory(basePolicy,bufferPool);
         this.creator = this;
 
         // Create supportedVersions
@@ -166,11 +164,18 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return upgrade(sockreq,sockresp,driver);
     }
 
-    protected void closeConnections()
+    protected void closeAllConnections()
     {
         for (WebSocketSession session : sessions)
         {
-            session.close();
+            try
+            {
+                session.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("CloseAllConnections Close failure",e);
+            }
         }
         sessions.clear();
     }
@@ -205,7 +210,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     protected void doStop() throws Exception
     {
-        closeConnections();
+        closeAllConnections();
         super.doStop();
     }
 
@@ -214,9 +219,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return this.creator;
     }
 
-    public ExtensionFactory getExtensionRegistry()
+    public ExtensionFactory getExtensionFactory()
     {
-        return extensionRegistry;
+        return extensionFactory;
     }
 
     /**
@@ -229,26 +234,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public WebSocketPolicy getPolicy()
     {
         return basePolicy;
-    }
-
-    public List<Extension> initExtensions(List<ExtensionConfig> requested)
-    {
-        List<Extension> extensions = new ArrayList<Extension>();
-
-        for (ExtensionConfig cfg : requested)
-        {
-            Extension extension = extensionRegistry.newInstance(cfg);
-
-            if (extension == null)
-            {
-                continue;
-            }
-
-            LOG.debug("added {}",extension);
-            extensions.add(extension);
-        }
-        LOG.debug("extensions={}",extensions);
-        return extensions;
     }
 
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
@@ -324,7 +309,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             return false;
         }
         boolean ret = sessions.offer(session);
-        session.onConnect();
+        session.open();
         return ret;
     }
 
@@ -379,7 +364,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Create connection
         UpgradeContext context = getActiveUpgradeContext();
-        InternalConnection connection = context.getConnection();
+        LogicalConnection connection = context.getConnection();
 
         if (connection == null)
         {
@@ -394,46 +379,26 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         // Initialize / Negotiate Extensions
-        WebSocketSession session = new WebSocketSession(driver,connection,getPolicy(),response.getAcceptedSubProtocol());
+        WebSocketSession session = new WebSocketSession(request.getRequestURI(),driver,connection);
+        session.setPolicy(getPolicy().clonePolicy());
+        session.setNegotiatedSubprotocol(response.getAcceptedSubProtocol());
+        session.setNegotiatedExtensionConfigs(request.getExtensions());
+        session.setExtensionFactory(extensionFactory);
         connection.setSession(session);
-        List<Extension> extensions = initExtensions(request.getExtensions());
-        request.setValidExtensions(extensions);
 
         // Start with default routing.
         IncomingFrames incoming = session;
         OutgoingFrames outgoing = connection;
 
-        // Connect extensions
-        if (extensions != null)
-        {
-            connection.configureFromExtensions(extensions);
-
-            // FIXME:
-            // Iterator<Extension> extIter;
-            // // Connect outgoings
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextOutgoingFrames(outgoing);
-            // outgoing = ext;
-            // }
-            //
-            // // Connect incomings
-            // Collections.reverse(extensions);
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextIncomingFrames(incoming);
-            // incoming = ext;
-            // }
-        }
+        // if (extensions != null)
+        // {
+        // // FIXME connection.configureFromExtensions(extensions);
+        // }
 
         // configure session for outgoing flows
-        session.setOutgoing(outgoing);
+        session.setOutgoingHandler(outgoing);
         // configure connection for incoming flows
-        connection.setIncoming(incoming);
+        connection.setNextIncomingFrames(incoming);
 
         // Tell jetty about the new connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);

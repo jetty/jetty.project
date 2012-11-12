@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
@@ -320,7 +321,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -354,7 +355,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -388,7 +389,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -422,7 +423,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // .assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -461,7 +462,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -498,7 +499,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -522,7 +523,7 @@ public class TestABCase1_1
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
     }
 }

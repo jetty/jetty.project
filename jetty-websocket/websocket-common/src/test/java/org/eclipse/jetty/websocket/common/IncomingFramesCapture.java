@@ -26,23 +26,16 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.junit.Assert;
 
-public class IncomingFramesCapture extends AbstractJettyFrameHandler implements IncomingFrames
+public class IncomingFramesCapture implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
 
     private LinkedList<WebSocketFrame> frames = new LinkedList<>();
     private LinkedList<WebSocketException> errors = new LinkedList<>();
-
-    public IncomingFramesCapture()
-    {
-        super(null); // End of Chain (don't pass frames to anyone else)
-    }
 
     public void assertErrorCount(int expectedCount)
     {
@@ -84,7 +77,7 @@ public class IncomingFramesCapture extends AbstractJettyFrameHandler implements 
         System.err.printf("Captured %d incoming frames%n",frames.size());
         for (int i = 0; i < frames.size(); i++)
         {
-            WebSocketFrame frame = frames.get(i);
+            Frame frame = frames.get(i);
             System.err.printf("[%3d] %s%n",i,frame);
             System.err.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
@@ -127,12 +120,6 @@ public class IncomingFramesCapture extends AbstractJettyFrameHandler implements 
     }
 
     @Override
-    public void handleJettyFrame(WebSocketFrame frame)
-    {
-        incomingFrame(frame);
-    }
-
-    @Override
     public void incomingError(WebSocketException e)
     {
         LOG.debug(e);
@@ -140,7 +127,7 @@ public class IncomingFramesCapture extends AbstractJettyFrameHandler implements 
     }
 
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);

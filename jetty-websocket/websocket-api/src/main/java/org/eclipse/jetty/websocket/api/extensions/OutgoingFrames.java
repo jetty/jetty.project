@@ -16,19 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io;
+package org.eclipse.jetty.websocket.api.extensions;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.extensions.Extension;
-import org.eclipse.jetty.websocket.common.LogicalConnection;
+import javax.net.websocket.SendResult;
 
-public interface InternalConnection extends LogicalConnection
+/**
+ * Interface for dealing with frames outgoing to the network (eventually)
+ */
+public interface OutgoingFrames
 {
-    // TODO: find way to remove
-    void configureFromExtensions(List<Extension> extensions);
-
-    void setIncoming(IncomingFrames incoming);
-
-    void setSession(WebSocketSession session);
+    Future<SendResult> outgoingFrame(Frame frame) throws IOException;
 }

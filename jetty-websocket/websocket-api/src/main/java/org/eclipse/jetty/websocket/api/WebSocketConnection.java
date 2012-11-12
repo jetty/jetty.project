@@ -39,7 +39,7 @@ public interface WebSocketConnection
      * @see StatusCode
      * @see #close(int, String)
      */
-    public void close();
+    public void close() throws IOException;
 
     /**
      * Send a websocket Close frame, with status code.
@@ -52,7 +52,7 @@ public interface WebSocketConnection
      *            the (optional) reason. (can be null for no reason)
      * @see StatusCode
      */
-    public void close(int statusCode, String reason);
+    public void close(int statusCode, String reason) throws IOException;
 
     /**
      * Get the address of the local side.
@@ -102,8 +102,11 @@ public interface WebSocketConnection
      * NIO style with callbacks, allows for knowledge of successful ping send.
      * <p>
      * Use @OnWebSocketFrame and monitor Pong frames
+     * 
+     * @param the
+     *            ping application data
      */
-    Future<SendResult> ping(byte payload[]) throws IOException;
+    void ping(ByteBuffer buf) throws IOException;
 
     /**
      * Suspend a the incoming read events on the connection.

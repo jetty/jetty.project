@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
@@ -201,7 +202,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -231,7 +232,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -254,7 +255,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
         Assert.assertEquals("PingFrame.payload",0,pActual.getPayloadLength());
     }
@@ -285,7 +286,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
         Assert.assertEquals("PingFrame.payload",message.length(),pActual.getPayloadLength());
     }

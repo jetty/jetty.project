@@ -41,10 +41,11 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -72,7 +73,7 @@ public class WebSocketLoadRFC6455Test
             }
 
             @Override
-            public void incomingFrame(WebSocketFrame frame)
+            public void incomingFrame(Frame frame)
             {
             }
         };

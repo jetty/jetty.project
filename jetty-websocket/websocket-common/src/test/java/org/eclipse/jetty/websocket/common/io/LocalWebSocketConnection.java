@@ -30,10 +30,12 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements WebSocketConnection, LogicalConnection, IncomingFrames
@@ -56,6 +58,16 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     public LocalWebSocketConnection(TestName testname)
     {
         this.id = testname.getMethodName();
+    }
+
+    @Override
+    public void assertInputOpen() throws IOException
+    {
+    }
+
+    @Override
+    public void assertOutputOpen() throws IOException
+    {
     }
 
     @Override
@@ -106,6 +118,12 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
+    public WebSocketSession getSession()
+    {
+        return null;
+    }
+
+    @Override
     public ConnectionState getState()
     {
         return null;
@@ -124,7 +142,7 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         incoming.incomingFrame(frame);
     }
@@ -163,18 +181,23 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         return null;
     }
 
     @Override
-    public Future<SendResult> ping(byte[] payload) throws IOException
+    public void ping(ByteBuffer buf) throws IOException
     {
-        return null;
     }
 
-    public void setIncoming(IncomingFrames incoming)
+    @Override
+    public void resume()
+    {
+    }
+
+    @Override
+    public void setNextIncomingFrames(IncomingFrames incoming)
     {
         this.incoming = incoming;
     }
@@ -182,6 +205,11 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
+    }
+
+    @Override
+    public void setSession(WebSocketSession session)
+    {
     }
 
     @Override

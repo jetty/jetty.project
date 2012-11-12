@@ -34,6 +34,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -57,14 +59,15 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
@@ -93,7 +96,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private final Generator generator;
     private final Parser parser;
     private final IncomingFramesCapture incomingFrames;
-    private final WebSocketExtensionRegistry extensionRegistry;
+    private final WebSocketExtensionFactory extensionRegistry;
 
     private Socket socket;
     private OutputStream out;
@@ -131,7 +134,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         this.incomingFrames = new IncomingFramesCapture();
 
-        this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
+        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
     }
 
     public void addExtensions(String xtension)
@@ -220,26 +223,25 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             generator.configureFromExtensions(extensions);
             parser.configureFromExtensions(extensions);
 
-            // FIXME
-            // Iterator<Extension> extIter;
-            // // Connect outgoings
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextOutgoingFrames(outgoing);
-            // outgoing = ext;
-            // }
-            //
-            // // Connect incomings
-            // Collections.reverse(extensions);
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextIncomingFrames(incoming);
-            // incoming = ext;
-            // }
+            Iterator<Extension> extIter;
+            // Connect outgoings
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+            }
+
+            // Connect incomings
+            Collections.reverse(extensions);
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
         }
 
         // configure parser
@@ -309,7 +311,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         LOG.debug("incoming({})",frame);
         int count = parseCount.incrementAndGet();
@@ -356,7 +358,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         ByteBuffer buf = generator.generate(frame);
         if (LOG.isDebugEnabled())
@@ -366,7 +368,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         BufferUtil.writeTo(buf,out);
         out.flush();
 
-        if (frame.getOpCode() == OpCode.CLOSE)
+        if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             disconnect();
         }

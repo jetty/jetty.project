@@ -8,7 +8,9 @@ import javax.net.websocket.SendResult;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 
 public class FramePipes
 {
@@ -29,7 +31,7 @@ public class FramePipes
         }
 
         @Override
-        public void incomingFrame(WebSocketFrame frame)
+        public void incomingFrame(Frame frame)
         {
             try
             {
@@ -52,7 +54,7 @@ public class FramePipes
         }
 
         @Override
-        public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+        public Future<SendResult> outgoingFrame(Frame frame) throws IOException
         {
             this.incoming.incomingFrame(frame);
 

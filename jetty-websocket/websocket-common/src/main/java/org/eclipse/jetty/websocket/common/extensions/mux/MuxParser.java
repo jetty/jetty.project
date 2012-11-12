@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelRequest;
@@ -67,7 +68,7 @@ public class MuxParser
      * @param frame
      *            the WebSocketFrame to parse for mux payload
      */
-    public synchronized void parse(WebSocketFrame frame)
+    public synchronized void parse(Frame frame)
     {
         if (events == null)
         {
@@ -80,7 +81,7 @@ public class MuxParser
             return; // nothing to parse
         }
 
-        if (frame.getOpCode() != OpCode.BINARY)
+        if (frame.getType().getOpCode() != OpCode.BINARY)
         {
             LOG.debug("Not a binary opcode (base frame), skipping");
             return; // not a binary opcode

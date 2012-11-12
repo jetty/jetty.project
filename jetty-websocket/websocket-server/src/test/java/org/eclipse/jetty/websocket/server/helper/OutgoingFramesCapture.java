@@ -28,9 +28,10 @@ import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 import org.junit.Assert;
 
 public class OutgoingFramesCapture implements OutgoingFrames
@@ -39,7 +40,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     {
         public C context;
         public Callback<C> callback;
-        public WebSocketFrame frame;
+        public Frame frame;
     }
 
     private LinkedList<WebSocketFrame> frames = new LinkedList<>();
@@ -69,7 +70,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         System.out.printf("Captured %d outgoing writes%n",frames.size());
         for (int i = 0; i < frames.size(); i++)
         {
-            WebSocketFrame frame = frames.get(i);
+            Frame frame = frames.get(i);
             System.out.printf("[%3d] %s%n",i,frame);
             System.out.printf("       %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
@@ -94,9 +95,10 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
-        frames.add(frame);
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        frames.add(copy);
         return FinishedFuture.INSTANCE;
     }
 }

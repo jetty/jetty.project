@@ -91,7 +91,7 @@ public class WebSocketFrame implements Frame
     private boolean rsv1 = false;
     private boolean rsv2 = false;
     private boolean rsv3 = false;
-    private byte opcode = OpCode.UNDEFINED;
+    protected byte opcode = OpCode.UNDEFINED;
     private boolean masked = false;
     private byte mask[];
     /**
@@ -141,10 +141,13 @@ public class WebSocketFrame implements Frame
      */
     public WebSocketFrame(Frame frame)
     {
-        if(frame instanceof WebSocketFrame) {
+        if (frame instanceof WebSocketFrame)
+        {
             WebSocketFrame wsf = (WebSocketFrame)frame;
             copy(wsf,wsf.data);
-        } else {
+        }
+        else
+        {
             // Copy manually
             fin = frame.isFin();
             rsv1 = frame.isRsv1();
@@ -320,6 +323,7 @@ public class WebSocketFrame implements Frame
         return payloadLength;
     }
 
+    @Override
     public int getPayloadStart()
     {
         if (data == null)
@@ -329,7 +333,7 @@ public class WebSocketFrame implements Frame
         return payloadStart;
     }
 
-    public SendHandler getSendResult()
+    public SendHandler getSendHandler()
     {
         return sendHandler;
     }
@@ -340,6 +344,7 @@ public class WebSocketFrame implements Frame
         return type;
     }
 
+    @Override
     public boolean hasPayload()
     {
         return ((data != null) && (payloadLength > 0));
@@ -402,18 +407,24 @@ public class WebSocketFrame implements Frame
         return rsv3;
     }
 
-    public void notifySendHandler() {
-        if(sendHandler == null) {
-            return;
-        }
-        sendHandler.setResult(new SendResult(null));
-    }
-
-    public void notifySendHandler(Throwable t) {
-        if(sendHandler == null) {
+    @Override
+    public void notifySendFailed(Throwable t)
+    {
+        if (sendHandler == null)
+        {
             return;
         }
         sendHandler.setResult(new SendResult(t));
+    }
+
+    @Override
+    public void notifySendSuccess()
+    {
+        if (sendHandler == null)
+        {
+            return;
+        }
+        sendHandler.setResult(new SendResult(null));
     }
 
     /**
@@ -439,6 +450,7 @@ public class WebSocketFrame implements Frame
      * 
      * @return the number of bytes remaining in the payload data that has not yet been written out to Network ByteBuffers.
      */
+    @Override
     public int remaining()
     {
         if (data == null)
@@ -463,13 +475,13 @@ public class WebSocketFrame implements Frame
         continuation = false;
     }
 
-    public WebSocketFrame setContinuation(boolean continuation)
+    public Frame setContinuation(boolean continuation)
     {
         this.continuation = continuation;
         return this;
     }
 
-    public WebSocketFrame setContinuationIndex(int continuationIndex)
+    public Frame setContinuationIndex(int continuationIndex)
     {
         this.continuationIndex = continuationIndex;
         return this;
@@ -481,14 +493,14 @@ public class WebSocketFrame implements Frame
         return this;
     }
 
-    public WebSocketFrame setMask(byte[] maskingKey)
+    public Frame setMask(byte[] maskingKey)
     {
         this.mask = maskingKey;
         this.masked = (mask != null);
         return this;
     }
 
-    public WebSocketFrame setMasked(boolean mask)
+    public Frame setMasked(boolean mask)
     {
         this.masked = mask;
         return this;
@@ -640,6 +652,9 @@ public class WebSocketFrame implements Frame
         b.append(rsv3?'1':'.');
         b.append(",masked=").append(masked);
         b.append(",continuation=").append(continuation);
+        b.append(",payloadStart=").append(getPayloadStart());
+        b.append(",remaining=").append(remaining());
+        b.append(",position=").append(position());
         if (sendHandler != null)
         {
             b.append(",sendHandler=").append(sendHandler);

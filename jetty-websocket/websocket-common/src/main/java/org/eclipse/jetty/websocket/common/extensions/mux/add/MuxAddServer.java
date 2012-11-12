@@ -22,10 +22,10 @@ import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxException;
 import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 
 /**
  * Server interface, for dealing with incoming AddChannelRequest / AddChannelResponse flows.

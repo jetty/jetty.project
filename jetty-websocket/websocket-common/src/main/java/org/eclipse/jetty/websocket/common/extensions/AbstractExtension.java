@@ -18,20 +18,37 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import java.util.Map;
+import java.io.IOException;
+import java.util.concurrent.Future;
+
+import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 public abstract class AbstractExtension implements Extension
 {
+    private final Logger log;
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
-    private WebSocketConnection connection;
+    private LogicalConnection connection;
+    private OutgoingFrames nextOutgoing;
+    private IncomingFrames nextIncoming;
+
+    public AbstractExtension()
+    {
+        log = Log.getLogger(this.getClass());
+    }
 
     public ByteBufferPool getBufferPool()
     {
@@ -44,7 +61,7 @@ public abstract class AbstractExtension implements Extension
         return config;
     }
 
-    public WebSocketConnection getConnection()
+    public LogicalConnection getConnection()
     {
         return connection;
     }
@@ -55,15 +72,15 @@ public abstract class AbstractExtension implements Extension
         return config.getName();
     }
 
-    @Override
-    public Map<String, String> getParameters()
-    {
-        return config.getParameters();
-    }
-
     public WebSocketPolicy getPolicy()
     {
         return policy;
+    }
+
+    @Override
+    public void incomingError(WebSocketException e)
+    {
+        nextIncomingError(e);
     }
 
     /**
@@ -122,6 +139,23 @@ public abstract class AbstractExtension implements Extension
         return false;
     }
 
+    protected void nextIncomingError(WebSocketException e)
+    {
+        this.nextIncoming.incomingError(e);
+    }
+
+    protected void nextIncomingFrame(Frame frame)
+    {
+        log.debug("nextIncomingFrame({})",frame);
+        this.nextIncoming.incomingFrame(frame);
+    }
+
+    protected Future<SendResult> nextOutgoingFrame(Frame frame) throws IOException
+    {
+        log.debug("nextOutgoingFrame({})",frame);
+        return this.nextOutgoing.outgoingFrame(frame);
+    }
+
     public void setBufferPool(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
@@ -132,9 +166,21 @@ public abstract class AbstractExtension implements Extension
         this.config = config;
     }
 
-    public void setConnection(WebSocketConnection connection)
+    public void setConnection(LogicalConnection connection)
     {
         this.connection = connection;
+    }
+
+    @Override
+    public void setNextIncomingFrames(IncomingFrames nextIncoming)
+    {
+        this.nextIncoming = nextIncoming;
+    }
+
+    @Override
+    public void setNextOutgoingFrames(OutgoingFrames nextOutgoing)
+    {
+        this.nextOutgoing = nextOutgoing;
     }
 
     public void setPolicy(WebSocketPolicy policy)

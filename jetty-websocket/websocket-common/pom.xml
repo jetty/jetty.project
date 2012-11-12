@@ -20,7 +20,6 @@
       <groupId>org.eclipse.jetty.drafts</groupId>
       <artifactId>javax.net.websocket-api</artifactId>
       <version>0.006.0.EDR-SNAPSHOT</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

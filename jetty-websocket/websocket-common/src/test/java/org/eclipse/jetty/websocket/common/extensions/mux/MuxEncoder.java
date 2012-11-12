@@ -20,12 +20,12 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxControlBlock;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxGenerator;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
 
 /**
  * Helpful utility class to send arbitrary mux events into a physical connection's IncomingFrames.

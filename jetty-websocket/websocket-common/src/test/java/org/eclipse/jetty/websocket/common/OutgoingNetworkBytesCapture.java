@@ -30,21 +30,20 @@ import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
 
 /**
  * Capture outgoing network bytes.
  */
-public class OutgoingNetworkBytesCapture extends AbstractJettyFrameHandler implements OutgoingFrames
+public class OutgoingNetworkBytesCapture implements OutgoingFrames
 {
     private final Generator generator;
     private List<ByteBuffer> captured;
 
     public OutgoingNetworkBytesCapture(Generator generator)
     {
-        super(null); // no sub handling, capture is end of the line.
         this.generator = generator;
         this.captured = new ArrayList<>();
     }
@@ -63,24 +62,11 @@ public class OutgoingNetworkBytesCapture extends AbstractJettyFrameHandler imple
     }
 
     @Override
-    public void handleJettyFrame(WebSocketFrame frame)
-    {
-        try
-        {
-            outgoingFrame(frame);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         ByteBuffer buf = generator.generate(frame);
         captured.add(buf.slice());
 
-        return null; // FIXME: should return completed future.
+        return FinishedFuture.INSTANCE;
     }
 }

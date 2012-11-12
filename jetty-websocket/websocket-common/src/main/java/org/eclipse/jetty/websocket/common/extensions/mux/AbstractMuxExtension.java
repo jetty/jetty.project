@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import javax.net.websocket.extensions.FrameHandler;
+import java.io.IOException;
+import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import javax.net.websocket.SendResult;
+
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
 /**
@@ -40,19 +44,20 @@ public abstract class AbstractMuxExtension extends AbstractExtension
     public abstract void configureMuxer(Muxer muxer);
 
     @Override
-    public FrameHandler createIncomingFrameHandler(FrameHandler incoming)
+    public void incomingFrame(Frame frame)
     {
-        return new MuxerIncomingFrameHandler(incoming,muxer);
+        this.muxer.incomingFrame(frame);
     }
 
     @Override
-    public FrameHandler createOutgoingFrameHandler(FrameHandler outgoing)
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
-        return new MuxerOutgoingFrameHandler(outgoing,muxer);
+        /* do nothing */
+        return null;
     }
 
     @Override
-    public void setConnection(WebSocketConnection connection)
+    public void setConnection(LogicalConnection connection)
     {
         super.setConnection(connection);
         if (muxer != null)

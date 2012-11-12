@@ -26,8 +26,6 @@ import java.util.Collections;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import javax.net.websocket.extensions.FrameHandler;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,6 +33,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
@@ -42,8 +41,6 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.IncomingFrameHandler;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,7 +50,7 @@ public class WebkitDeflateFrameExtensionTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
-        WebkitDeflateFrameExtension ext = new WebkitDeflateFrameExtension();
+        FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
@@ -64,12 +61,11 @@ public class WebkitDeflateFrameExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
-        IncomingFrames incoming = new IncomingFrameHandler(incomingHandler);
+        ext.setNextIncomingFrames(capture);
 
         Parser parser = new Parser(policy);
         parser.configureFromExtensions(Collections.singletonList(ext));
-        parser.setIncomingFramesHandler(incoming);
+        parser.setIncomingFramesHandler(ext);
 
         parser.parse(ByteBuffer.wrap(raw));
 
@@ -97,7 +93,7 @@ public class WebkitDeflateFrameExtensionTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
-        WebkitDeflateFrameExtension ext = new WebkitDeflateFrameExtension();
+        FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
@@ -110,10 +106,10 @@ public class WebkitDeflateFrameExtensionTest
         generator.configureFromExtensions(Collections.singletonList(ext));
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
-        WebSocketFrame frame = WebSocketFrame.text(text);
-        outgoingHandler.handleFrame(frame);
+        Frame frame = WebSocketFrame.text(text);
+        ext.outgoingFrame(frame);
 
         capture.assertBytes(0,expectedHex);
     }

@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import java.net.URI;
+
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketSession extends WebSocketSession
@@ -29,17 +30,12 @@ public class LocalWebSocketSession extends WebSocketSession
     private String id;
     private OutgoingFramesCapture outgoingCapture;
 
-    public LocalWebSocketSession(TestName testname)
-    {
-        this(testname,null);
-        outgoingCapture = new OutgoingFramesCapture();
-        setOutgoing(outgoingCapture);
-    }
-
     public LocalWebSocketSession(TestName testname, EventDriver driver)
     {
-        super(driver,new LocalWebSocketConnection(testname),WebSocketPolicy.newServerPolicy(),"testing");
+        super(URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),driver,new LocalWebSocketConnection(testname));
         this.id = testname.getMethodName();
+        outgoingCapture = new OutgoingFramesCapture();
+        setOutgoingHandler(outgoingCapture);
     }
 
     public OutgoingFramesCapture getOutgoingCapture()

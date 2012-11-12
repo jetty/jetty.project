@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -80,7 +81,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
 
     }
@@ -154,7 +155,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
 
     }
@@ -212,7 +213,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
 
     }
@@ -282,7 +283,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        WebSocketFrame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
 
     }

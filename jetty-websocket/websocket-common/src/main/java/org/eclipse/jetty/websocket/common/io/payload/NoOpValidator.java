@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common.io.payload;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * payload validator does no validation.
@@ -36,7 +36,7 @@ public class NoOpValidator implements PayloadProcessor
     }
 
     @Override
-    public void reset(WebSocketFrame frame)
+    public void reset(Frame frame)
     {
         /* do nothing */
     }

@@ -27,6 +27,7 @@ public interface Frame extends javax.net.websocket.extensions.Frame
 {
     public static enum Type
     {
+        CONTINUATION((byte)0x00),
         TEXT((byte)0x01),
         BINARY((byte)0x02),
         CLOSE((byte)0x08),
@@ -35,12 +36,6 @@ public interface Frame extends javax.net.websocket.extensions.Frame
 
         public static Type from(byte op)
         {
-            if (op == 0)
-            {
-                // continuation has no type, but is a valid opcode.
-                return null;
-            }
-
             for (Type type : values())
             {
                 if (type.opcode == op)
@@ -82,11 +77,17 @@ public interface Frame extends javax.net.websocket.extensions.Frame
 
     public byte[] getMask();
 
+    public byte getOpCode();
+
     public ByteBuffer getPayload();
 
     public int getPayloadLength();
 
+    public int getPayloadStart();
+
     public Type getType();
+
+    public boolean hasPayload();
 
     public boolean isContinuation();
 
@@ -106,4 +107,10 @@ public interface Frame extends javax.net.websocket.extensions.Frame
     public boolean isRsv2();
 
     public boolean isRsv3();
+
+    public void notifySendFailed(Throwable t);
+
+    public void notifySendSuccess();
+
+    public int remaining();
 }

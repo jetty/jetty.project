@@ -24,9 +24,9 @@ import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class ControlFrameBytes extends FrameBytes
 {
@@ -34,7 +34,7 @@ public class ControlFrameBytes extends FrameBytes
     private ByteBuffer buffer;
     private ByteBuffer origPayload;
 
-    public ControlFrameBytes(AbstractWebSocketConnection connection, WebSocketFrame frame)
+    public ControlFrameBytes(AbstractWebSocketConnection connection, Frame frame)
     {
         super(connection,frame);
     }
@@ -47,7 +47,7 @@ public class ControlFrameBytes extends FrameBytes
 
         super.completed(context);
 
-        if (frame.getOpCode() == OpCode.CLOSE)
+        if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             CloseInfo close = new CloseInfo(origPayload,false);
             connection.onCloseHandshake(false,close);

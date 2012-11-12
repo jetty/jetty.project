@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -81,7 +82,7 @@ public class MuxParserRFCTest
         MuxParser parser = new MuxParser();
         MuxEventCapture capture = new MuxEventCapture();
         parser.setEvents(capture);
-        for(WebSocketFrame frame: frames) {
+        for(Frame frame: frames) {
             parser.parse(frame);
         }
         return capture;

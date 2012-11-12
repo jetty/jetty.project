@@ -26,18 +26,13 @@ import java.util.concurrent.Future;
 import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
 
-public class OutgoingFramesCapture extends AbstractJettyFrameHandler implements OutgoingFrames
+public class OutgoingFramesCapture implements OutgoingFrames
 {
     private LinkedList<WebSocketFrame> frames = new LinkedList<>();
-
-    public OutgoingFramesCapture()
-    {
-        super(null); // Do not forward frames anywhere else, capture is the end of the line
-    }
 
     public void assertFrameCount(int expectedCount)
     {
@@ -64,7 +59,7 @@ public class OutgoingFramesCapture extends AbstractJettyFrameHandler implements 
         System.out.printf("Captured %d outgoing writes%n",frames.size());
         for (int i = 0; i < frames.size(); i++)
         {
-            WebSocketFrame frame = frames.get(i);
+            Frame frame = frames.get(i);
             System.out.printf("[%3d] %s%n",i,frame);
             System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
@@ -89,16 +84,11 @@ public class OutgoingFramesCapture extends AbstractJettyFrameHandler implements 
     }
 
     @Override
-    public void handleJettyFrame(WebSocketFrame frame)
+    public Future<SendResult> outgoingFrame(Frame frame)
     {
-        outgoingFrame(frame);
-    }
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        frames.add(copy);
 
-    @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame)
-    {
-        frames.add(frame);
-
-        return null; // FIXME: should return completed future.
+        return FinishedFuture.INSTANCE;
     }
 }

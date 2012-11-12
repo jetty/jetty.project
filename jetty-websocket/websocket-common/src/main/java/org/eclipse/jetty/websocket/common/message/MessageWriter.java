@@ -16,45 +16,50 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.common.message;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import java.io.IOException;
+import java.io.Writer;
+
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 
-public class UpgradeContext
+public class MessageWriter extends Writer
 {
-    private LogicalConnection connection;
-    private UpgradeRequest request;
-    private UpgradeResponse response;
+    private final LogicalConnection connection;
+    private final OutgoingFrames outgoing;
 
-    public LogicalConnection getConnection()
-    {
-        return connection;
-    }
-
-    public UpgradeRequest getRequest()
-    {
-        return request;
-    }
-
-    public UpgradeResponse getResponse()
-    {
-        return response;
-    }
-
-    public void setConnection(LogicalConnection connection)
+    public MessageWriter(LogicalConnection connection, OutgoingFrames outgoing)
     {
         this.connection = connection;
+        this.outgoing = outgoing;
     }
 
-    public void setRequest(UpgradeRequest request)
+    @Override
+    public void close() throws IOException
     {
-        this.request = request;
+        // TODO Auto-generated method stub
+
     }
 
-    public void setResponse(UpgradeResponse response)
+    @Override
+    public void flush() throws IOException
     {
-        this.response = response;
+        // TODO Auto-generated method stub
+
     }
+
+    public boolean isClosed()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
 }

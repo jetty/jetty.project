@@ -16,19 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io;
+package org.eclipse.jetty.websocket.server;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
+import javax.net.websocket.Endpoint;
+import javax.net.websocket.ServerContainer;
+import javax.net.websocket.ServerEndpointConfiguration;
 
-import javax.net.websocket.SendResult;
+import org.eclipse.jetty.websocket.client.JettyClientContainer;
 
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-
-/**
- * Interface for dealing with frames outgoing to the network (eventually)
- */
-public interface OutgoingFrames
+public class JettyServerContainer extends JettyClientContainer implements ServerContainer
 {
-    Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException;
+    @Override
+    public void publishServer(Endpoint endpoint, ServerEndpointConfiguration ilc)
+    {
+        // TODO Auto-generated method stub
+    }
 }

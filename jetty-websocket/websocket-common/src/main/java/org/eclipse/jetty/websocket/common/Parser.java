@@ -29,7 +29,8 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.io.payload.CloseReasonValidator;
 import org.eclipse.jetty.websocket.common.io.payload.DeMaskProcessor;
 import org.eclipse.jetty.websocket.common.io.payload.NoOpValidator;
@@ -59,7 +60,7 @@ public class Parser
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
-    private WebSocketFrame priorDataFrame;
+    private Frame priorDataFrame;
     private byte lastDataOpcode;
     // payload specific
     private ByteBuffer payload;
@@ -170,7 +171,7 @@ public class Parser
         return rsv3InUse;
     }
 
-    protected void notifyFrame(final WebSocketFrame f)
+    protected void notifyFrame(final Frame f)
     {
         if (LOG_FRAMES.isDebugEnabled())
         {

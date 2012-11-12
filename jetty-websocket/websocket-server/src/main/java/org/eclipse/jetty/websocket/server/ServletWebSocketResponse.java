@@ -32,19 +32,24 @@ public class ServletWebSocketResponse extends UpgradeResponse
     {
         super();
         this.resp = resp;
-        // TODO: copy values from resp
+    }
+
+    @Override
+    public void addHeader(String name, String value)
+    {
+        this.resp.addHeader(name,value);
     }
 
     @Override
     public int getStatusCode()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Code");
+        return this.resp.getStatus();
     }
 
     @Override
     public String getStatusReason()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Reason");
+        throw new UnsupportedOperationException("Server cannot get Status Reason Message");
     }
 
     public boolean isCommitted()
@@ -63,6 +68,12 @@ public class ServletWebSocketResponse extends UpgradeResponse
     {
         setSuccess(false);
         resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+        this.resp.setHeader(name,value);
     }
 
     public void setStatus(int status)

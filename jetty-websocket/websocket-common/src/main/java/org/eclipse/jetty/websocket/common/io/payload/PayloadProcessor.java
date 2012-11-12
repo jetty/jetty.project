@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.common.io.payload;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.BadPayloadException;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Process the payload (for demasking, validating, etc..)
@@ -38,5 +38,5 @@ public interface PayloadProcessor
      */
     public void process(ByteBuffer payload);
 
-    public void reset(WebSocketFrame frame);
+    public void reset(Frame frame);
 }

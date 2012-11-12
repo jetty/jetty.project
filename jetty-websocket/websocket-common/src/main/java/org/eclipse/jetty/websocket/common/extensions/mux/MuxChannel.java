@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -35,20 +34,18 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.InternalConnection;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
  */
-public class MuxChannel implements WebSocketConnection, InternalConnection, IncomingFrames, OutgoingFrames, SuspendToken
+public class MuxChannel implements WebSocketConnection, LogicalConnection, IncomingFrames, SuspendToken
 {
     private static final Logger LOG = Log.getLogger(MuxChannel.class);
 
@@ -77,6 +74,20 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     }
 
     @Override
+    public void assertInputOpen() throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void assertOutputOpen() throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
     public void close()
     {
         close(StatusCode.NORMAL,null);
@@ -95,12 +106,6 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
             LOG.warn("Unable to issue Close",e);
             disconnect();
         }
-    }
-
-    @Override
-    public void configureFromExtensions(List<Extension> extensions)
-    {
-        /* ignore */
     }
 
     @Override
@@ -141,6 +146,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
         return null;
     }
 
+    @Override
     public WebSocketSession getSession()
     {
         return session;
@@ -171,7 +177,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Incoming frames from Muxer
      */
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         incoming.incomingFrame(frame);
     }
@@ -250,7 +256,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Frames destined for the Muxer
      */
     @Override
-    public Future<SendResult> outgoingFrame(WebSocketFrame frame) throws IOException
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
     {
         return muxer.output(channelId,frame);
     }
@@ -259,9 +265,9 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
      * Ping frame destined for the Muxer
      */
     @Override
-    public Future<SendResult> ping(byte[] payload) throws IOException
+    public void ping(ByteBuffer buf) throws IOException
     {
-        return outgoingFrame(WebSocketFrame.ping().setPayload(payload));
+        outgoingFrame(WebSocketFrame.ping().setPayload(buf));
     }
 
     @Override
@@ -274,7 +280,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     }
 
     @Override
-    public void setIncoming(IncomingFrames incoming)
+    public void setNextIncomingFrames(IncomingFrames incoming)
     {
         this.incoming = incoming;
     }
@@ -283,7 +289,7 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
     public void setSession(WebSocketSession session)
     {
         this.session = session;
-        session.setOutgoing(this);
+        // session.setOutgoing(this);
     }
 
     public void setSubProtocol(String subProtocol)
@@ -297,40 +303,6 @@ public class MuxChannel implements WebSocketConnection, InternalConnection, Inco
         suspendToken.set(true);
         // TODO: how to suspend reading?
         return this;
-    }
-
-    public void wireUpExtensions(List<AbstractExtension> extensions)
-    {
-        // Start with default routing.
-        incoming = session;
-        OutgoingFrames outgoing = this;
-
-        if (extensions != null)
-        {
-            // FIXME
-            // Iterator<AbstractExtension> extIter;
-            // // Connect outgoings
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // AbstractExtension ext = extIter.next();
-            // ext.setNextOutgoingFrames(outgoing);
-            // outgoing = ext;
-            // }
-            //
-            // // Connect incomings
-            // Collections.reverse(extensions);
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // AbstractExtension ext = extIter.next();
-            // ext.setNextIncomingFrames(incoming);
-            // incoming = ext;
-            // }
-        }
-
-        // set outgoing
-        this.session.setOutgoing(outgoing);
     }
 
     /**

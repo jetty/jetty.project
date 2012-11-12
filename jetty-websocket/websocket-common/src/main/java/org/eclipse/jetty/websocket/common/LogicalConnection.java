@@ -18,14 +18,33 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.common.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 
-public interface LogicalConnection extends OutgoingFrames
+public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
+    /**
+     * Perform a quick check that the connection input is open.
+     * 
+     * @throws IOException
+     *             if the connection input is closed
+     */
+    void assertInputOpen() throws IOException;
+
+    /**
+     * Perform a quick check that the connection output is open.
+     * 
+     * @throws IOException
+     *             if the connection output is closed
+     */
+    void assertOutputOpen() throws IOException;
+
     /**
      * Send a websocket Close frame, without a status code or reason.
      * <p>
@@ -55,11 +74,35 @@ public interface LogicalConnection extends OutgoingFrames
     void disconnect();
 
     /**
-     * Get the remote Address in use for this connection.
+     * Get the local {@link InetSocketAddress} in use for this connection.
+     * <p>
+     * Note: Non-physical connections, like during the Mux extensions, or during unit testing can result in a InetSocketAddress on port 0 and/or on localhost.
      * 
-     * @return the remote address if available. (situations like mux extension and proxying makes this information unreliable)
+     * @return the local address.
+     */
+    InetSocketAddress getLocalAddress();
+
+    /**
+     * The policy that the connection is running under.
+     * @return the policy for the connection
+     */
+    WebSocketPolicy getPolicy();
+
+    /**
+     * Get the remote Address in use for this connection.
+     * <p>
+     * Note: Non-physical connections, like during the Mux extensions, or during unit testing can result in a InetSocketAddress on port 0 and/or on localhost.
+     * 
+     * @return the remote address.
      */
     InetSocketAddress getRemoteAddress();
+
+    /**
+     * Get the Session for this connection
+     * 
+     * @return the Session for this connection
+     */
+    WebSocketSession getSession();
 
     /**
      * Get the WebSocket connection State.
@@ -105,6 +148,24 @@ public interface LogicalConnection extends OutgoingFrames
      *            the close details
      */
     void onCloseHandshake(boolean incoming, CloseInfo close);
+
+    /**
+     * Set where the connection should send the incoming frames to.
+     * <p>
+     * Often this is from the Parser to the start of the extension stack, and eventually on to the session.
+     * 
+     * @param incoming
+     *            the incoming frames handler
+     */
+    void setNextIncomingFrames(IncomingFrames incoming);
+
+    /**
+     * Set the session associated with this connection
+     * 
+     * @param session
+     *            the session
+     */
+    void setSession(WebSocketSession session);
 
     /**
      * Suspend a the incoming read events on the connection.

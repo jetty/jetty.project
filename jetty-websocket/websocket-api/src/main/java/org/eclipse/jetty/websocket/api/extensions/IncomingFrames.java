@@ -16,30 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions.mux;
+package org.eclipse.jetty.websocket.api.extensions;
 
-import javax.net.websocket.extensions.FrameHandler;
-
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 
 /**
- * Process incoming frames and forward them off to the Muxer.
+ * Interface for dealing with Incoming Frames.
  */
-public class MuxerIncomingFrameHandler extends AbstractJettyFrameHandler
+public interface IncomingFrames
 {
-    private final IncomingFrames muxerHandler;
+    public void incomingError(WebSocketException e);
 
-    public MuxerIncomingFrameHandler(FrameHandler nextHandler, Muxer muxer)
-    {
-        super(nextHandler);
-        this.muxerHandler = muxer;
-    }
-
-    @Override
-    public void handleJettyFrame(WebSocketFrame frame)
-    {
-        this.muxerHandler.incomingFrame(frame);
-    }
+    public void incomingFrame(Frame frame);
 }

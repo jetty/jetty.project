@@ -23,11 +23,10 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import javax.net.websocket.extensions.FrameHandler;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -48,10 +47,10 @@ public class IdentityExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         Extension ext = new IdentityExtension();
-        FrameHandler incomingHandler = ext.createIncomingFrameHandler(capture);
+        ext.setNextIncomingFrames(capture);
 
-        WebSocketFrame frame = WebSocketFrame.text("hello");
-        incomingHandler.handleFrame(frame);
+        Frame frame = WebSocketFrame.text("hello");
+        ext.incomingFrame(frame);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -77,10 +76,10 @@ public class IdentityExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         Extension ext = new IdentityExtension();
-        FrameHandler outgoingHandler = ext.createOutgoingFrameHandler(capture);
+        ext.setNextOutgoingFrames(capture);
 
-        WebSocketFrame frame = WebSocketFrame.text("hello");
-        outgoingHandler.handleFrame(frame);
+        Frame frame = WebSocketFrame.text("hello");
+        ext.outgoingFrame(frame);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT,1);

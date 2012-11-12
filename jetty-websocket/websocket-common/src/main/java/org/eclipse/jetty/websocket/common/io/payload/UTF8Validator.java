@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Used to perform validation of UTF8 payload contents (for fast-fail reasons)
@@ -104,7 +104,7 @@ public class UTF8Validator extends Utf8Appendable implements PayloadProcessor
     }
 
     @Override
-    public void reset(WebSocketFrame frame)
+    public void reset(Frame frame)
     {
         /* do nothing */
     }

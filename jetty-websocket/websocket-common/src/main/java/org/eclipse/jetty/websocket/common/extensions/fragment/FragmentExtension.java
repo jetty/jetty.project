@@ -19,9 +19,18 @@
 package org.eclipse.jetty.websocket.common.extensions.fragment;
 
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
+
+import javax.net.websocket.SendResult;
+
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.common.extensions.PassthruFrameHandler;
 
 /**
  * Fragment Extension
@@ -31,16 +40,72 @@ public class FragmentExtension extends AbstractExtension
     private int maxLength = -1;
 
     @Override
-    public javax.net.websocket.extensions.FrameHandler createIncomingFrameHandler(javax.net.websocket.extensions.FrameHandler incoming)
+    public void incomingError(WebSocketException e)
     {
-        // pass through handler
-        return new PassthruFrameHandler(incoming);
+        // Pass thru
+        nextIncomingError(e);
     }
 
     @Override
-    public javax.net.websocket.extensions.FrameHandler createOutgoingFrameHandler(javax.net.websocket.extensions.FrameHandler outgoing)
+    public void incomingFrame(Frame frame)
     {
-        return new FragmentHandler(outgoing,maxLength);
+        // Pass thru
+        nextIncomingFrame(frame);
+    }
+
+    @Override
+    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    {
+        if (frame.getType().isControl())
+        {
+            // Cannot fragment Control Frames
+            return nextOutgoingFrame(frame);
+        }
+
+        int length = frame.getPayloadLength();
+
+        byte opcode = frame.getType().getOpCode(); // original opcode
+        ByteBuffer payload = frame.getPayload().slice();
+        int originalLimit = payload.limit();
+        int currentPosition = payload.position();
+
+        if (maxLength <= 0)
+        {
+            // output original frame
+            return nextOutgoingFrame(frame);
+        }
+
+        boolean continuation = false;
+
+        // break apart payload based on maxLength rules
+        while (length > maxLength)
+        {
+            WebSocketFrame frag = new WebSocketFrame(frame);
+            frag.setOpCode(opcode);
+            frag.setFin(false); // always false here
+            frag.setContinuation(continuation);
+            payload.position(currentPosition);
+            payload.limit(Math.min(payload.position() + maxLength,originalLimit));
+            frag.setPayload(payload);
+
+            nextOutgoingFrame(frag);
+
+            length -= maxLength;
+            opcode = OpCode.CONTINUATION;
+            continuation = true;
+            currentPosition = payload.limit();
+        }
+
+        // write remaining
+        WebSocketFrame frag = new WebSocketFrame(frame);
+        frag.setOpCode(opcode);
+        frag.setFin(frame.isFin()); // use original fin
+        frag.setContinuation(continuation);
+        payload.position(currentPosition);
+        payload.limit(originalLimit);
+        frag.setPayload(payload);
+
+        return nextOutgoingFrame(frag);
     }
 
     @Override

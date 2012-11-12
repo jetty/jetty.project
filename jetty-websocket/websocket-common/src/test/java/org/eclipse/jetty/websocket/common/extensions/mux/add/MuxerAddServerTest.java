@@ -60,7 +60,7 @@ public class MuxerAddServerTest
         muxer.setOutgoingFramesHandler(clientRead);
 
         // Wire up physical connection to forward incoming frames to muxer
-        physical.setIncoming(muxer);
+        physical.setNextIncomingFrames(muxer);
 
         // Client simulator
         // Can inject mux encapsulated frames into physical connection as if from

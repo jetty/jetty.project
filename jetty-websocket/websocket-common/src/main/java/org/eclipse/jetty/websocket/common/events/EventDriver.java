@@ -31,17 +31,16 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.AbstractJettyFrameHandler;
-import org.eclipse.jetty.websocket.common.io.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * EventDriver is the main interface between the User's WebSocket POJO and the internal jetty implementation of WebSocket.
  */
-public abstract class EventDriver extends AbstractJettyFrameHandler implements IncomingFrames
+public abstract class EventDriver implements IncomingFrames
 {
     protected final Logger LOG;
     protected final WebSocketPolicy policy;
@@ -50,7 +49,6 @@ public abstract class EventDriver extends AbstractJettyFrameHandler implements I
 
     public EventDriver(WebSocketPolicy policy, Object websocket)
     {
-        super(null);
         this.policy = policy;
         this.websocket = websocket;
         this.LOG = Log.getLogger(websocket.getClass());
@@ -64,12 +62,6 @@ public abstract class EventDriver extends AbstractJettyFrameHandler implements I
     public WebSocketSession getSession()
     {
         return session;
-    }
-
-    @Override
-    public void handleJettyFrame(WebSocketFrame frame)
-    {
-        incomingFrame(frame);
     }
 
     @Override
@@ -90,7 +82,7 @@ public abstract class EventDriver extends AbstractJettyFrameHandler implements I
     }
 
     @Override
-    public void incomingFrame(WebSocketFrame frame)
+    public void incomingFrame(Frame frame)
     {
         if (LOG.isDebugEnabled())
         {
@@ -101,7 +93,7 @@ public abstract class EventDriver extends AbstractJettyFrameHandler implements I
 
         try
         {
-            switch (frame.getOpCode())
+            switch (frame.getType().getOpCode())
             {
                 case OpCode.CLOSE:
                 {
@@ -115,27 +107,21 @@ public abstract class EventDriver extends AbstractJettyFrameHandler implements I
                     session.close(close.getStatusCode(),close.getReason());
 
                     // process handshake
-                    session.onCloseHandshake(true,close);
+                    session.getConnection().onCloseHandshake(true,close);
 
                     return;
                 }
                 case OpCode.PING:
                 {
-                    WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
+                    ByteBuffer pongBuf = ByteBuffer.allocate(frame.getPayloadLength());
                     if (frame.getPayloadLength() > 0)
                     {
                         // Copy payload
-                        ByteBuffer pongBuf = ByteBuffer.allocate(frame.getPayloadLength());
                         BufferUtil.clearToFill(pongBuf);
                         BufferUtil.put(frame.getPayload(),pongBuf);
                         BufferUtil.flipToFlush(pongBuf,0);
-                        pong.setPayload(pongBuf);
-                        if (LOG.isDebugEnabled())
-                        {
-                            LOG.debug("Pong with {}",BufferUtil.toDetailString(pongBuf));
-                        }
                     }
-                    session.outgoingFrame(pong);
+                    session.getRemote().sendPong(pongBuf);
                     break;
                 }
                 case OpCode.BINARY:

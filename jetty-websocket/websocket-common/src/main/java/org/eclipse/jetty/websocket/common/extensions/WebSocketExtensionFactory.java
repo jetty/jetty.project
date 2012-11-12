@@ -25,23 +25,29 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.extensions.compress.FrameCompressionExtension;
+import org.eclipse.jetty.websocket.common.extensions.compress.MessageCompressionExtension;
+import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 
-public class WebSocketExtensionRegistry extends ExtensionFactory
+public class WebSocketExtensionFactory extends ExtensionFactory
 {
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
 
-    public WebSocketExtensionRegistry(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public WebSocketExtensionFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
+        super();
         this.policy = policy;
         this.bufferPool = bufferPool;
 
-        // FIXME this.registry.put("identity",IdentityExtension.class);
-        // FIXME this.registry.put("fragment",FragmentExtension.class);
-        // FIXME this.registry.put("x-webkit-deflate-frame",WebkitDeflateFrameExtension.class);
-        // FIXME this.registry.put("permessage-compress",PerMessageCompressionExtension.class);
+        register("identity",IdentityExtension.class);
+        register("fragment",FragmentExtension.class);
+        register("x-webkit-deflate-frame",FrameCompressionExtension.class);
+        register("permessage-compress",MessageCompressionExtension.class);
     }
 
+    @Override
     public Extension newInstance(ExtensionConfig config)
     {
         if (config == null)
@@ -55,13 +61,11 @@ public class WebSocketExtensionRegistry extends ExtensionFactory
             return null;
         }
 
-        Extension registeredExt = getExtension(name);
-        if (registeredExt == null)
+        Class<? extends Extension> extClass = getExtension(name);
+        if (extClass == null)
         {
             return null;
         }
-
-        Class<? extends Extension> extClass = registeredExt.getClass();
 
         try
         {

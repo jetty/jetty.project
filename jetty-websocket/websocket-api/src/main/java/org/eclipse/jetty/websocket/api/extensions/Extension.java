@@ -25,28 +25,8 @@ import javax.net.websocket.extensions.FrameHandler;
  * <p>
  * That work is performed by the two {@link FrameHandler} implementations for incoming and outgoing frame handling.
  */
-public interface Extension extends javax.net.websocket.extensions.Extension
+public interface Extension extends IncomingFrames, OutgoingFrames
 {
-    /**
-     * Create an instance of a Incoming {@link FrameHandler} for working with frames destined for the End User WebSocket Object.
-     * 
-     * @param the
-     *            incoming {@link FrameHandler} to wrap
-     * @return the frame handler for incoming frames.
-     */
-    @Override
-    public FrameHandler createIncomingFrameHandler(FrameHandler incoming);
-
-    /**
-     * Create an instance of a Outgoing {@link FrameHandler} for working with frames destined for the Network Bytes Layer.
-     * 
-     * @param the
-     *            outgoing {@link FrameHandler} to wrap
-     * @return the frame handler for outgoing frames.
-     */
-    @Override
-    public FrameHandler createOutgoingFrameHandler(FrameHandler outgoing);
-
     /**
      * The active configuration for this extension.
      * 
@@ -59,7 +39,6 @@ public interface Extension extends javax.net.websocket.extensions.Extension
      * <p>
      * Also known as the <a href="https://tools.ietf.org/html/rfc6455#section-9.1"><code>extension-token</code> per Section 9.1. Negotiating Extensions</a>.
      */
-    @Override
     public String getName();
 
     /**
@@ -101,4 +80,20 @@ public interface Extension extends javax.net.websocket.extensions.Extension
      *         now free to validate the conformance to spec of TEXT Data Frames.
      */
     public abstract boolean isTextDataDecoder();
+
+    /**
+     * Set the next {@link IncomingFrames} to call in the chain.
+     * 
+     * @param nextIncoming
+     *            the next incoming extension
+     */
+    public void setNextIncomingFrames(IncomingFrames nextIncoming);
+
+    /**
+     * Set the next {@link OutgoingFrames} to call in the chain.
+     * 
+     * @param nextOutgoing
+     *            the next outgoing extension
+     */
+    public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 }

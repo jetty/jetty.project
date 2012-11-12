@@ -95,13 +95,20 @@ public class ConnectionManager extends ContainerLifeCycle
         clients.add(client);
     }
 
-    private void closeConnections()
+    private void closeAllConnections()
     {
         for (DefaultWebSocketClient client : clients)
         {
             if (client.getConnection() != null)
             {
-                client.getConnection().close();
+                try
+                {
+                    client.getConnection().close();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("During Close All Connections",e);
+                }
             }
         }
     }
@@ -138,7 +145,7 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        closeConnections();
+        closeAllConnections();
         clients.clear();
         super.doStop();
     }
