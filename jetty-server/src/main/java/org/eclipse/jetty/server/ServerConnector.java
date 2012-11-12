@@ -83,7 +83,7 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
     private volatile int _localPort = -1;
-    private volatile int _acceptQueueSize = 128;
+    private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
