@@ -407,6 +407,7 @@
     <module>jetty-distribution</module>
     <module>jetty-spring</module>
     <module>jetty-client</module>
+    <module>jetty-jaspi</module>
     <module>jetty-osgi</module>
     <module>examples/embedded</module>
     <module>examples/async-rest</module>
@@ -420,7 +421,6 @@
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
-    <module>jetty-jaspi</module>
     <module>jetty-proxy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
@@ -578,9 +578,7 @@
     <profile>
       <id>release</id>
       <modules>
-        <!--
-        <module>jetty-aggregate</module>
-         -->
+        <!-- module>aggregates/jetty-all</module-->
       </modules>
     </profile>
     <profile>
