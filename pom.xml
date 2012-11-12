@@ -578,7 +578,7 @@
     <profile>
       <id>release</id>
       <modules>
-        <!-- module>aggregates/jetty-all</module-->
+        <module>aggregates/jetty-all</module> 
       </modules>
     </profile>
     <profile>
