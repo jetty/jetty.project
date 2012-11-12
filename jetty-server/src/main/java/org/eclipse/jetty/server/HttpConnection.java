@@ -25,12 +25,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -61,7 +62,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private volatile ByteBuffer _chunk = null;
     private BlockingCallback _readBlocker = new BlockingCallback();
     private BlockingCallback _writeBlocker = new BlockingCallback();
-    
+
     // TODO get rid of this
     private final Runnable _channelRunner = new Runnable()
     {
@@ -77,7 +78,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 setCurrentConnection(null);
             }
-            
+
         }
     };
 
@@ -410,7 +411,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
     }
-    
+
     @Override
     public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
     {
@@ -514,6 +515,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
+    public ByteBuffer getRequestBuffer()
+    {
+        return _requestBuffer;
+    }
 
     private class Input extends ByteBufferHttpInput
     {
@@ -543,7 +548,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     // Do we have content ready to parse?
                     if (BufferUtil.isEmpty(_requestBuffer))
-                    {                        
+                    {
                         // If no more input
                         if (getEndPoint().isInputShutdown())
                         {
@@ -642,24 +647,32 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             switch (version)
             {
                 case HTTP_0_9:
+                {
                     persistent = false;
                     break;
-
+                }
                 case HTTP_1_0:
+                {
                     persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                    if (!persistent)
+                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
                     if (persistent)
                         getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
                     break;
-
+                }
                 case HTTP_1_1:
+                {
                     persistent = !getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-
+                    if (!persistent)
+                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
                     if (!persistent)
                         getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-
                     break;
+                }
                 default:
+                {
                     throw new IllegalStateException();
+                }
             }
 
             if (!persistent)
