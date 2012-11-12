@@ -769,7 +769,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
         l.contextInitialized(e);
-        LOG.info("started {}",this);
     }
 
     /* ------------------------------------------------------------ */
