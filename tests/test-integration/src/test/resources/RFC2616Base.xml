@@ -95,7 +95,7 @@
           <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
           <Set name="scanInterval">0</Set>
           <Set name="configurationManager">
-            <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
+            <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
               <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
             </New>
           </Set>

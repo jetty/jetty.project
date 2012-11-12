@@ -746,13 +746,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         super.doStart();
 
-        // Context listeners
+        // Call context listeners
         if (!_contextListeners.isEmpty())
         {
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (ServletContextListener listener:_contextListeners)
                 callContextInitialized(listener, event);
-        }
+        } 
     }
 
     /* ------------------------------------------------------------ */

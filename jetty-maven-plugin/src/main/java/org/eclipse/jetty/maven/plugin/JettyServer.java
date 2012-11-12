@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -33,20 +32,20 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * JettyServer
- *
+ * 
  * Maven jetty plugin version of a wrapper for the Server class.
- *
+ * 
  */
 public class JettyServer extends org.eclipse.jetty.server.Server
 {
     public static int DEFAULT_PORT = 8080;
     public static int DEFAULT_MAX_IDLE_TIME = 30000;
-
+  
 
     private RequestLog requestLog;
     private ContextHandlerCollection contexts;
-
-
+    
+    
     public JettyServer()
     {
         super();
@@ -55,7 +54,7 @@ public class JettyServer extends org.eclipse.jetty.server.Server
         Resource.setDefaultUseCaches(false);
     }
 
-
+   
     public void setRequestLog (RequestLog requestLog)
     {
         this.requestLog = requestLog;
@@ -69,16 +68,16 @@ public class JettyServer extends org.eclipse.jetty.server.Server
         super.doStart();
     }
 
-
+ 
     /**
      * @see org.eclipse.jetty.server.handler.HandlerCollection#addHandler(org.eclipse.jetty.server.Handler)
      */
     public void addWebApplication(WebAppContext webapp) throws Exception
-    {
+    {  
         contexts.addHandler (webapp);
     }
 
-
+    
     /**
      * Set up the handler structure to receive a webapp.
      * Also put in a DefaultHandler so we get a nice page
@@ -86,43 +85,43 @@ public class JettyServer extends org.eclipse.jetty.server.Server
      * context isn't at root.
      * @throws Exception
      */
-    public void configureHandlers () throws Exception
+    public void configureHandlers () throws Exception 
     {
         DefaultHandler defaultHandler = new DefaultHandler();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (this.requestLog != null)
             requestLogHandler.setRequestLog(this.requestLog);
-
+        
         contexts = (ContextHandlerCollection)super.getChildHandlerByClass(ContextHandlerCollection.class);
         if (contexts==null)
-        {
+        {   
             contexts = new ContextHandlerCollection();
             HandlerCollection handlers = (HandlerCollection)super.getChildHandlerByClass(HandlerCollection.class);
             if (handlers==null)
             {
-                handlers = new HandlerCollection();
-                super.setHandler(handlers);
+                handlers = new HandlerCollection();               
+                super.setHandler(handlers);                            
                 handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
             }
             else
             {
                 handlers.addHandler(contexts);
             }
-        }
+        }  
     }
-
-
-
-
-    public Connector createDefaultConnector(Server server, String portnum) throws Exception
+    
+    
+    
+    
+    public Connector createDefaultConnector(String portnum) throws Exception
     {
-        ServerConnector connector = new ServerConnector(server);
+        ServerConnector connector = new ServerConnector(this);
         int port = ((portnum==null||portnum.equals(""))?DEFAULT_PORT:Integer.parseInt(portnum.trim()));
         connector.setPort(port);
-        connector.setIdleTimeout(DEFAULT_MAX_IDLE_TIME);
-
+       // connector.setMaxIdleTime(DEFAULT_MAX_IDLE_TIME);
+        
         return connector;
     }
-
-
+    
+ 
 }

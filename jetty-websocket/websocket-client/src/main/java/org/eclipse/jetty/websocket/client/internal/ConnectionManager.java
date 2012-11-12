@@ -25,6 +25,7 @@ import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -57,7 +58,7 @@ public class ConnectionManager extends ContainerLifeCycle
         }
 
         int port = uri.getPort();
-        String scheme = uri.getScheme().toLowerCase();
+        String scheme = uri.getScheme().toLowerCase(Locale.ENGLISH);
         if ("ws".equals(scheme))
         {
             if (port == (-1))

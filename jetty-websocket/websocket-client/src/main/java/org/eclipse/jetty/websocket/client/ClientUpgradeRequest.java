@@ -182,23 +182,22 @@ public class ClientUpgradeRequest extends UpgradeRequest
         request.append("\r\n");
         return request.toString();
     }
+    
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        if(cookieStore != null) {
+            return cookieStore.get(getRequestURI());
+        }
+        
+        return super.getCookies();
+    }
 
     private final String genRandomKey()
     {
         byte[] bytes = new byte[16];
         new Random().nextBytes(bytes);
         return new String(B64Code.encode(bytes));
-    }
-
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        if (cookieStore != null)
-        {
-            return cookieStore.get(getRequestURI());
-        }
-
-        return super.getCookies();
     }
 
     public CookieStore getCookieStore()

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -67,7 +68,7 @@ public class BrowserSocket
         int idx = message.indexOf(':');
         if (idx > 0)
         {
-            String key = message.substring(0,idx).toLowerCase();
+            String key = message.substring(0,idx).toLowerCase(Locale.ENGLISH);
             String val = message.substring(idx + 1);
             switch (key)
             {

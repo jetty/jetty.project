@@ -50,7 +50,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
-    @ManagedAttribute("Host this connector binds to")
+    @ManagedAttribute("The network interface this connector binds to as an IP address or a hostname.  If null or 0.0.0.0, then bind to all interfaces.")
     public String getHost()
     {
         return _host;
@@ -62,7 +62,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
-    @ManagedAttribute("Port this connector listens on")
+    @ManagedAttribute("Port this connector listens on. If set the 0 a random port is assigned which may be obtained with getLocalPort()")
     public int getPort()
     {
         return _port;

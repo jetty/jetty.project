@@ -1,0 +1,63 @@
+<HTML>
+  <HEAD>
+    <TITLE>JNDI Test WebApp</TITLE>
+    <META http-equiv="Pragma" content="no-cache">
+    <META http-equiv="Cache-Control" content="no-cache,no-store">
+    <style>
+       body {color: #2E2E2E; font-family:sans-serif; font-size:90%;}
+       h1 {font-variant: small-caps; font-size:130%; letter-spacing: 0.1em;}
+       h2 {font-variant: small-caps; font-size:100%; letter-spacing: 0.1em;}
+       h3 {font-size:100%; letter-spacing: 0.1em;}
+    </style>
+  </HEAD>
+<BODY>
+<A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
+
+<p>&nbsp;</p>
+  <a  href="http://localhost:8080/">Home</a>
+<center>
+  <hr/>
+ <span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span>
+</center>
+
+<P>
+<h1>JNDI Test WebApp</h1>
+
+<p>
+This example shows how to configure and lookup resources such as DataSources, a JTA transaction manager and a java.mail.Session in JNDI. 
+</p>
+
+<h2>Preparation</h2>
+<p>
+  <ol>
+    <li>Ensure that you have downloaded and unpacked the test-jndi-webapp-&lt;version&gt;-config.jar, where &lt;version&gt; is replaced by the desired version number. The following files will be created:
+     <pre>
+      lib/jndi/test-mock-resources-&lt;version&gt;.jar (where &lt;version&gt; is replaced by the particular version number)
+      webapps/test-jndi.xml
+     </pre>
+    </li>
+    <li>Edit your $JETTY_HOME/start.ini file and add the following lines:
+      <pre>
+      OPTIONS=plus
+      OPTIONS=jta
+      </pre>
+    </li>
+  </ol>
+</p>
+
+<h2>Execution</h2>
+<p>
+Click <code>Test</code> to check the runtime lookup of the JNDI resources.
+</p>
+<form action="test" method="post">
+      <button type="submit">Test</button>
+</form>
+
+
+<center>
+  <hr/>
+  <a href="http://www.eclipse.org/jetty"><img style="border:0" src="images/small_powered_by.gif"/></a>
+</center>
+
+</BODY>
+</HTML>

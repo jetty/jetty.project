@@ -51,9 +51,19 @@
   <!-- Context params to control Session Cookies                            -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <!--
-    UNCOMMENT TO ACTIVATE <context-param> <param-name>org.eclipse.jetty.servlet.SessionDomain</param-name> <param-value>127.0.0.1</param-value> </context-param> <context-param>
-    <param-name>org.eclipse.jetty.servlet.SessionPath</param-name> <param-value>/</param-value> </context-param> <context-param> <param-name>org.eclipse.jetty.servlet.MaxAge</param-name>
-    <param-value>-1</param-value> </context-param>
+    UNCOMMENT TO ACTIVATE 
+    <context-param> 
+      <param-name>org.eclipse.jetty.servlet.SessionDomain</param-name> 
+      <param-value>127.0.0.1</param-value> 
+    </context-param> 
+    <context-param>
+      <param-name>org.eclipse.jetty.servlet.SessionPath</param-name>
+      <param-value>/</param-value>
+    </context-param>
+    <context-param>
+      <param-name>org.eclipse.jetty.servlet.MaxAge</param-name>
+      <param-value>-1</param-value>
+    </context-param>
   -->
 
   <!-- ==================================================================== -->
@@ -87,16 +97,23 @@
  *
  *  resourceBase      Set to replace the context resource base
  *
- *  resourceCache     If set, this is a context attribute name, which the servlet 
- *                    will use to look for a shared ResourceCache instance. 
- *                        
+ *  resourceCache     If set, this is a context attribute name, which the servlet
+ *                    will use to look for a shared ResourceCache instance.
+ *
  *  relativeResourceBase
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
+ *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
+ *
+ *  stylesheet        Set with the location of an optional stylesheet that will be used
+ *                    to decorate the directory listing html.
+ *
  *  aliases           If True, aliases of resources are allowed (eg. symbolic
  *                    links and caps variations). May bypass security constraints.
+ *                    
+ *  etags             If True, weak etags will be generated and handled.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
  *  maxCachedFileSize The maximum size of a file to cache
@@ -110,6 +127,7 @@
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
+ *
  -->
  
  
@@ -151,6 +169,10 @@
     </init-param>
     <init-param>
       <param-name>gzip</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>etags</param-name>
       <param-value>true</param-value>
     </init-param>
     <init-param>
@@ -300,33 +322,6 @@
     <url-pattern>*.JSPX</url-pattern>
     <url-pattern>*.XSP</url-pattern>
   </servlet-mapping>
-
-  <!-- ==================================================================== -->
-  <!-- Dynamic Servlet Invoker.                                             -->
-  <!-- This servlet invokes anonymous servlets that have not been defined   -->
-  <!-- in the web.xml or by other means. The first element of the pathInfo  -->
-  <!-- of a request passed to the envoker is treated as a servlet name for  -->
-  <!-- an existing servlet, or as a class name of a new servlet.            -->
-  <!-- This servlet is normally mapped to /servlet/*                        -->
-  <!-- This servlet support the following initParams:                       -->
-  <!--                                                                      -->
-  <!--  nonContextServlets       If false, the invoker can only load        -->
-  <!--                           servlets from the contexts classloader.    -->
-  <!--                           This is false by default and setting this  -->
-  <!--                           to true may have security implications.    -->
-  <!--                                                                      -->
-  <!--  verbose                  If true, log dynamic loads                 -->
-  <!--                                                                      -->
-  <!--  *                        All other parameters are copied to the     -->
-  <!--                           each dynamic servlet as init parameters    -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
-  <!--
-    Uncomment for dynamic invocation <servlet> <servlet-name>invoker</servlet-name> <servlet-class>org.eclipse.jetty.servlet.Invoker</servlet-class> <init-param> <param-name>verbose</param-name>
-    <param-value>false</param-value> </init-param> <init-param> <param-name>nonContextServlets</param-name> <param-value>false</param-value> </init-param> <init-param>
-    <param-name>dynamicParam</param-name> <param-value>anyValue</param-value> </init-param> <load-on-startup>0</load-on-startup> </servlet> <servlet-mapping> <servlet-name>invoker</servlet-name>
-    <url-pattern>/servlet/*</url-pattern> </servlet-mapping>
-  -->
-
 
 
   <!-- ==================================================================== -->

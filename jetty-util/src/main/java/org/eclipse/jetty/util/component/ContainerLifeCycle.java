@@ -31,9 +31,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An AggregateLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
+ * An ContainerLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
  * <p>
- * Beans can be added the AggregateLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
+ * Beans can be added the ContainerLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
  * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
  * <p>
  * When a {@link LifeCycle} bean is added with out a managed state being specified, if it is already started, then it is assumed to be an unmanaged bean.
@@ -79,7 +79,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 {
                     case MANAGED:
                         if (!l.isRunning())
-                            l.start();
+                            start(l);
                         break;
                     case AUTO:
                         if (l.isRunning())
@@ -87,7 +87,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         else
                         {
                             manage(b);
-                            l.start();
+                            start(l);
                         }
                         break;
                 }
@@ -97,6 +97,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         super.doStart();
     }
 
+    /**
+     * Starts the given lifecycle.
+     * 
+     * @param l
+     * @throws Exception
+     */
+    protected void start(LifeCycle l) throws Exception
+    {
+        l.start();
+    }
+    
     /**
      * Stops the managed lifecycle beans in the reverse order they were added.
      */

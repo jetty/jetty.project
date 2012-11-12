@@ -35,8 +35,10 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Need to rewrite this")
 public class LoadTest
 {
     @SuppressWarnings("serial")

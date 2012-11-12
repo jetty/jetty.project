@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -93,7 +94,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Field get(String name)
     {
-        return fields.get(name.trim().toLowerCase());
+        return fields.get(name.trim().toLowerCase(Locale.ENGLISH));
     }
 
     /**
@@ -107,7 +108,7 @@ public class Fields implements Iterable<Fields.Field>
         name = name.trim();
         // Preserve the case for the field name
         Field field = new Field(name, value);
-        fields.put(name.toLowerCase(), field);
+        fields.put(name.toLowerCase(Locale.ENGLISH), field);
     }
 
     /**
@@ -118,7 +119,7 @@ public class Fields implements Iterable<Fields.Field>
     public void put(Field field)
     {
         if (field != null)
-            fields.put(field.name().toLowerCase(), field);
+            fields.put(field.name().toLowerCase(Locale.ENGLISH), field);
     }
 
     /**
@@ -131,16 +132,16 @@ public class Fields implements Iterable<Fields.Field>
     public void add(String name, String value)
     {
         name = name.trim();
-        Field field = fields.get(name.toLowerCase());
+        Field field = fields.get(name.toLowerCase(Locale.ENGLISH));
         if (field == null)
         {
             field = new Field(name, value);
-            fields.put(name.toLowerCase(), field);
+            fields.put(name.toLowerCase(Locale.ENGLISH), field);
         }
         else
         {
             field = new Field(field.name(), field.values(), value);
-            fields.put(name.toLowerCase(), field);
+            fields.put(name.toLowerCase(Locale.ENGLISH), field);
         }
     }
 
@@ -153,7 +154,7 @@ public class Fields implements Iterable<Fields.Field>
     public Field remove(String name)
     {
         name = name.trim();
-        return fields.remove(name.toLowerCase());
+        return fields.remove(name.toLowerCase(Locale.ENGLISH));
     }
 
     /**
@@ -234,7 +235,7 @@ public class Fields implements Iterable<Fields.Field>
         @Override
         public int hashCode()
         {
-            int result = name.toLowerCase().hashCode();
+            int result = name.toLowerCase(Locale.ENGLISH).hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
         }

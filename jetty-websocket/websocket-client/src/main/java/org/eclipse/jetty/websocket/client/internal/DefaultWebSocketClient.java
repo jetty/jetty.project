@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client.internal;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
@@ -101,7 +102,7 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
             throw new IllegalArgumentException("WebSocket URI must include a scheme");
         }
 
-        String scheme = websocketUri.getScheme().toLowerCase();
+        String scheme = websocketUri.getScheme().toLowerCase(Locale.ENGLISH);
         if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
         {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");

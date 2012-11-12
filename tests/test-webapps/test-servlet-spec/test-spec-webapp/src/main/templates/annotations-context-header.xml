@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the test-annotations webapp                           -->
+<!-- =============================================================== -->
+
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+      <Arg>
+        <New class="com.acme.MockUserTransaction"/>
+      </Arg>
+    </New>
+
+
+  <!-- =============================================================== -->
+  <!-- Configure the webapp                                            -->
+  <!-- =============================================================== -->
+   <Set name="configurationClasses">
+      <Array type="java.lang.String">
+        <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+        <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+        <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+        <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+        <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+        <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+        <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+        <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+        <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
+      </Array>
+   </Set>
+
+  <Set name="contextPath">/test-spec</Set>
+  <Set name="war"><SystemProperty name="jetty.home"/>/webapps/test-spec.war</Set>
+  <Set name="configurationDiscovered">true</Set>
+
+  <Get name="securityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
+      </New>
+    </Set>
+  </Get>
+

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
@@ -191,7 +192,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             if (exchange != null)
             {
                 exchange.getResponse().getHeaders().add(name, value);
-                switch (name.toLowerCase())
+                switch (name.toLowerCase(Locale.ENGLISH))
                 {
                     case "set-cookie":
                     case "set-cookie2":

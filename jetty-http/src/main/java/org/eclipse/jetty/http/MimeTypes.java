@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -70,7 +71,7 @@ public class MimeTypes
             _string=s;
             _buffer=BufferUtil.toBuffer(s);
             
-            int i=s.toLowerCase().indexOf("charset=");
+            int i=s.toLowerCase(Locale.ENGLISH).indexOf("charset=");
             _charset=(i>0)?Charset.forName(s.substring(i+8)):null;
         }
 

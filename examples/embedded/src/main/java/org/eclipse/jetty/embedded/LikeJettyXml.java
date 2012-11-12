@@ -106,7 +106,7 @@ public class LikeJettyXml
         webapp_provider.setParentLoaderPriority(false);
         webapp_provider.setExtractWars(true);
         webapp_provider.setScanInterval(2);
-        webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
+        //webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         deployer.addAppProvider(webapp_provider);
 
         HashLoginService login = new HashLoginService();

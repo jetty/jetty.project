@@ -43,8 +43,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class LoginServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(SecureModeServlet.class);
-
     /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config) throws ServletException
@@ -63,7 +61,6 @@ public class LoginServlet extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-         
         response.setContentType("text/html");
         ServletOutputStream out = response.getOutputStream();
         out.println("<html>");

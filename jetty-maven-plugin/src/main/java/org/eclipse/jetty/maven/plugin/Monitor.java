@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,7 +41,7 @@ import org.eclipse.jetty.server.Server;
  * by stopping the Server instances. The choice of
  * behaviour is controlled by either passing true
  * (exit jvm) or false (stop Servers) in the constructor.
- *
+ * 
  */
 public class Monitor extends Thread
 {
@@ -51,7 +51,7 @@ public class Monitor extends Thread
     ServerSocket _serverSocket;
     boolean _kill;
 
-    public Monitor(int port, String key, Server[] servers, boolean kill)
+    public Monitor(int port, String key, Server[] servers, boolean kill) 
     throws UnknownHostException, IOException
     {
         if (port <= 0)
@@ -64,7 +64,7 @@ public class Monitor extends Thread
         _kill = kill;
         setDaemon(true);
         setName("StopJettyPluginMonitor");
-        InetSocketAddress address = new InetSocketAddress("127.0.0.1", port);
+        InetSocketAddress address = new InetSocketAddress("127.0.0.1", port);       
         _serverSocket=new ServerSocket();
         _serverSocket.setReuseAddress(true);
         try
@@ -77,7 +77,7 @@ public class Monitor extends Thread
             throw x;
         }
     }
-
+    
     public void run()
     {
         while (_serverSocket != null)
@@ -88,7 +88,7 @@ public class Monitor extends Thread
                 socket = _serverSocket.accept();
                 socket.setSoLinger(false, 0);
                 LineNumberReader lin = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
-
+                
                 String key = lin.readLine();
                 if (!_key.equals(key)) continue;
                 String cmd = lin.readLine();
@@ -97,13 +97,13 @@ public class Monitor extends Thread
                     try{socket.close();}catch (Exception e){e.printStackTrace();}
                     try{socket.close();}catch (Exception e){e.printStackTrace();}
                     try{_serverSocket.close();}catch (Exception e){e.printStackTrace();}
-
+                
                     _serverSocket = null;
-
+                    
                     if (_kill)
                     {
                         System.out.println("Killing Jetty");
-                        System.exit(0);
+                        System.exit(0);     
                     }
                     else
                     {
@@ -111,7 +111,7 @@ public class Monitor extends Thread
                         {
                             try
                             {
-                                System.out.println("Stopping server "+i);
+                                System.out.println("Stopping server "+i);                             
                                 _servers[i].stop();
                             }
                             catch (Exception e)

@@ -88,8 +88,7 @@ public class MuxAddHandler implements MuxAddServer
 
         HttpMethod method = HttpMethod.fromString(request.getMethod());
         HttpVersion version = HttpVersion.fromString(request.getHttpVersion());
-        String uri = request.getRequestURI().toASCIIString();
-        httpChannel.startRequest(method,request.getMethod(),uri,version);
+        httpChannel.startRequest(method,request.getMethod(),request.getRequestURI().toASCIIString(),version);
 
         for (String headerName : request.getHeaders().keySet())
         {

@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.util;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -69,7 +70,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
         if (contentType != null)
         {
             String charset = "charset=";
-            int index = contentType.toLowerCase().indexOf(charset);
+            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
             if (index > 0)
             {
                 String encoding = contentType.substring(index + charset.length());

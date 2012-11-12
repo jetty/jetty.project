@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -323,7 +324,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void send(final Request request, List<Response.ResponseListener> listeners)
     {
-        String scheme = request.getScheme().toLowerCase();
+        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.management.Attribute;
@@ -622,7 +623,7 @@ public class ObjectMBean implements DynamicMBean
             convert = true;
         }
 
-        String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
+        String uName = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
         Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
         LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,readonly,oClass,description);
@@ -862,7 +863,7 @@ public class ObjectMBean implements DynamicMBean
             variableName = variableName.substring(2);
         }
 
-        variableName = variableName.substring(0,1).toLowerCase() + variableName.substring(1);
+        variableName = variableName.substring(0,1).toLowerCase(Locale.ENGLISH) + variableName.substring(1);
 
         return variableName;
     }

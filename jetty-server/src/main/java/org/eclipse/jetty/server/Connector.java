@@ -75,7 +75,7 @@ public interface Connector extends LifeCycle, Graceful
     public List<String> getProtocols();
     
     /**
-     * @return the dle timeout for connections in milliseconds
+     * @return the max idle timeout for connections in milliseconds
      */
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout();

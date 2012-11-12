@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,9 +90,9 @@ public class JSONObjectConvertor implements JSON.Convertor
                 {
                     String name=m.getName();
                     if (name.startsWith("is"))
-                        name=name.substring(2,3).toLowerCase()+name.substring(3);
+                        name=name.substring(2,3).toLowerCase(Locale.ENGLISH)+name.substring(3);
                     else if (name.startsWith("get"))
-                        name=name.substring(3,4).toLowerCase()+name.substring(4);
+                        name=name.substring(3,4).toLowerCase(Locale.ENGLISH)+name.substring(4);
                     else
                         continue;
 

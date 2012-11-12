@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -44,7 +45,7 @@ public class ReferrerPushStrategyUnitTest
     public static final String METHOD = "GET";
 
     // class under test
-    private ReferrerPushStrategy referrerPushStrategy;
+    private ReferrerPushStrategy referrerPushStrategy = new ReferrerPushStrategy();
 
     @Mock
     Stream stream;
@@ -55,7 +56,7 @@ public class ReferrerPushStrategyUnitTest
     @Before
     public void setup()
     {
-        referrerPushStrategy = new ReferrerPushStrategy();
+        referrerPushStrategy.setUserAgentBlacklist(Arrays.asList(".*(?i)firefox/16.*"));
     }
 
     @Test
@@ -67,20 +68,43 @@ public class ReferrerPushStrategyUnitTest
         setMockExpectations();
 
         String referrerUrl = fillPushStrategyCache(requestHeaders);
-        Set<String> pushResources;
 
-        // sleep to pretend that the user manually clicked on a linked resource instead the browser requesting subresources immediately
+        // sleep to pretend that the user manually clicked on a linked resource instead the browser requesting sub
+        // resources immediately
         Thread.sleep(referrerCallTimeout + 1);
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "image2.jpg");
         requestHeaders.put("referer", referrerUrl);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
+        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
         pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
-        // as the image2.jpg request has been a link and not a subresource, we expect that pushResources.size() is still 2
+        // as the image2.jpg request has been a link and not a sub resource, we expect that pushResources.size() is
+        // still 2
         assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
+    }
+
+    @Test
+    public void testUserAgentFilter() throws InterruptedException
+    {
+        Fields requestHeaders = getBaseHeaders(VERSION);
+        setMockExpectations();
+
+        fillPushStrategyCache(requestHeaders);
+
+        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
+        assertThat("pushResources contains two elements image.jpg and style.css as no user-agent header is present",
+                pushResources.size(), is(2));
+
+        requestHeaders.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4");
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
+        assertThat("pushResources contains two elements image.jpg and style.css as chrome is not blacklisted",
+                pushResources.size(), is(2));
+
+        requestHeaders.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20100101 Firefox/16.0");
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
+        assertThat("no resources are returned as we want to filter firefox", pushResources.size(), is(0));
     }
 
     private Fields getBaseHeaders(short version)

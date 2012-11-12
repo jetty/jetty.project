@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -138,7 +139,7 @@ public class CGI extends HttpServlet
         if (!_env.envMap.containsKey("SystemRoot"))
         {
             String os = System.getProperty("os.name");
-            if (os != null && os.toLowerCase().indexOf("windows") != -1)
+            if (os != null && os.toLowerCase(Locale.ENGLISH).indexOf("windows") != -1)
             {
                 _env.set("SystemRoot","C:\\WINDOWS");
             }
@@ -255,7 +256,7 @@ public class CGI extends HttpServlet
         {
             String name = (String)enm.nextElement();
             String value = req.getHeader(name);
-            env.set("HTTP_" + name.toUpperCase().replace('-','_'),value);
+            env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-','_'),value);
         }
 
         // these extra ones were from printenv on www.dev.nomura.co.uk

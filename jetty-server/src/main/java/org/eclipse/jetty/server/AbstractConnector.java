@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -314,7 +315,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            return _factories.get(protocol.toLowerCase());
+            return _factories.get(protocol.toLowerCase(Locale.ENGLISH));
         }
     }
 
@@ -337,7 +338,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             ConnectionFactory old=_factories.remove(factory.getProtocol());
             if (old!=null)
                 removeBean(old);
-            _factories.put(factory.getProtocol().toLowerCase(), factory);
+            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
@@ -348,7 +349,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory factory= _factories.remove(protocol.toLowerCase());
+            ConnectionFactory factory= _factories.remove(protocol.toLowerCase(Locale.ENGLISH));
             removeBean(factory);
             return factory;
         }
@@ -403,7 +404,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        _defaultProtocol = defaultProtocol.toLowerCase();
+        _defaultProtocol = defaultProtocol.toLowerCase(Locale.ENGLISH);
         if (isRunning())
             _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }

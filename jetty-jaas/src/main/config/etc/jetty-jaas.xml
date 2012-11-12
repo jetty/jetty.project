@@ -14,17 +14,4 @@
       <Arg><SystemProperty name="jetty.home" default="." />/etc/login.conf</Arg>
     </Call>
 
-
-    <!-- ======================================================== -->
-    <!-- An example JAAS realm setup                              -->
-    <!-- ======================================================== -->
-    <Call name="addBean">
-      <Arg>
-          <New class="org.eclipse.jetty.jaas.JAASLoginService">
-           <Set name="Name">Test JAAS Realm</Set>
-           <Set name="LoginModuleName">xyz</Set>
-          </New>
-      </Arg>
-    </Call>
-
 </Configure>

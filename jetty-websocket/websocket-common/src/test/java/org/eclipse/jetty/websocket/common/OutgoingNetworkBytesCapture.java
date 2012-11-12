@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Future;
 
 import javax.net.websocket.SendResult;
@@ -52,8 +53,8 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     {
         Assert.assertThat("Capture index does not exist",idx,lessThan(captured.size()));
         ByteBuffer buf = captured.get(idx);
-        String actualHex = TypeUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase();
-        Assert.assertThat("captured[" + idx + "]",actualHex,is(expectedHex.toUpperCase()));
+        String actualHex = TypeUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
+        Assert.assertThat("captured[" + idx + "]",actualHex,is(expectedHex.toUpperCase(Locale.ENGLISH)));
     }
 
     public List<ByteBuffer> getCaptured()

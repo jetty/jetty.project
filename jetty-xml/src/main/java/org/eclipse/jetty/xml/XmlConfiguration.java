@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -67,6 +68,14 @@ import org.xml.sax.SAXException;
  * {@link ConfigurationProcessorFactory} interface to be found by the
  * {@link ServiceLoader} by using the DTD and first tag element in the file.
  * Note that DTD will be null if validation is off.</p>
+ * <p>
+ * The configuration can be parameterised with properties that are looked up via the 
+ * Property XML element and set on the configuration via the map returned from 
+ * {@link #getProperties()}</p>
+ * <p>
+ * The configuration can create and lookup beans by ID.  If multiple configurations are used, then it
+ * is good practise to copy the entries from the {@link #getIdMap()} of a configuration to the next 
+ * configuration so that they can share an ID space for beans.</p>
  */
 public class XmlConfiguration
 {
@@ -202,11 +211,32 @@ public class XmlConfiguration
         _processor.init(_url,config,_idMap, _propertyMap);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the map of ID String to Objects that is used to hold
+     * and lookup any objects by ID.  
+     * <p>
+     * A New, Get or Call XML element may have an
+     * id attribute which will cause the resulting object to be placed into
+     * this map.  A Ref XML element will lookup an object from this map.</p>
+     * <p>
+     * When chaining configuration files, it is good practise to copy the 
+     * ID entries from the ID map to the map of the next configuration, so
+     * that they may share an ID space
+     * </p>
+     *  
+     * @return A modifiable map of ID strings to Objects
+     */
     public Map<String, Object> getIdMap()
     {
         return _idMap;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the map of properties used by the Property XML element
+     * to parameterise configuration. 
+     * @return A modifiable map of properties.
+     */
     public Map<String, String> getProperties()
     {
         return _propertyMap;
@@ -420,7 +450,7 @@ public class XmlConfiguration
         private void set(Object obj, XmlParser.Node node) throws Exception
         {
             String attr = node.getAttribute("name");
-            String name = "set" + attr.substring(0,1).toUpperCase() + attr.substring(1);
+            String name = "set" + attr.substring(0,1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             Object value = value(obj,node);
             Object[] arg =
             { value };
@@ -623,7 +653,7 @@ public class XmlConfiguration
             try
             {
                 // try calling a getXxx method.
-                Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase() + name.substring(1),(java.lang.Class[])null);
+                Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase(Locale.ENGLISH) + name.substring(1),(java.lang.Class[])null);
                 obj = method.invoke(obj,(java.lang.Object[])null);
                 configure(obj,node,0);
             }
@@ -1172,7 +1202,7 @@ public class XmlConfiguration
                     Object[] obj = new Object[args.length];
                     for (int i = 0; i < args.length; i++)
                     {
-                        if (args[i].toLowerCase().endsWith(".properties"))
+                        if (args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
                             properties.load(Resource.newResource(args[i]).getInputStream());
                         }

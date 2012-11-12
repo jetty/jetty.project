@@ -93,9 +93,8 @@
            </execution>
         </executions>
       </plugin>
-<!--
       <plugin>
-        <groupId>org.mortbay.jetty</groupId>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
@@ -126,7 +125,6 @@
           </loginServices>
         </configuration>
       </plugin>
--->
       <!-- uncomment to precompile jsps -->
       <!--
       <plugin>
@@ -161,6 +159,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
@@ -171,6 +170,7 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

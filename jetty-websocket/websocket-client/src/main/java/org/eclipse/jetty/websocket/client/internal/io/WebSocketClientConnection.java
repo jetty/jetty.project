@@ -86,7 +86,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
-    }
+    };
 
     @Override
     public Future<SendResult> outgoingFrame(Frame frame) throws IOException

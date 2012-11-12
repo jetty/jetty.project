@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -39,8 +38,8 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.TagLibConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 /**
@@ -56,6 +55,7 @@ public class JettyWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(JettyWebAppContext.class);
 
+    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
 
@@ -73,6 +73,19 @@ public class JettyWebAppContext extends WebAppContext
      * @deprecated The value of this parameter will be ignored by the plugin. Overlays will always be unpacked.
      */
     private boolean unpackOverlays;
+    
+    /**
+     * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
+     * container classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
+     */
+    private String containerIncludeJarPattern = null;
+    
+    /**
+     * Set the "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern" with a pattern for matching jars on
+     * webapp's classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
+     */
+    private String webInfIncludeJarPattern = null;
+    
 
     /**
      * @deprecated The value of this parameter will be ignored by the plugin. This option will be always disabled. 
@@ -91,14 +104,34 @@ public class JettyWebAppContext extends WebAppContext
                 new MetaInfConfiguration(),
                 new FragmentConfiguration(),
                 envConfig = new EnvConfiguration(),
-                new AnnotationConfiguration(),
                 new org.eclipse.jetty.plus.webapp.PlusConfiguration(),
-                new JettyWebXmlConfiguration(),
-                new TagLibConfiguration()
+                new MavenAnnotationConfiguration(),
+                new JettyWebXmlConfiguration()
         });
         // Turn off copyWebInf option as it is not applicable for plugin.
         super.setCopyWebInf(false);
     }
+    public void setContainerIncludeJarPattern(String pattern)
+    {
+    	containerIncludeJarPattern = pattern;
+    }
+    
+    public String getContainerIncludeJarPattern()
+    {
+        return containerIncludeJarPattern;
+    }
+    
+    
+    public String getWebInfIncludeJarPattern()
+    {
+    	return webInfIncludeJarPattern;
+    }
+    public void setWebInfIncludeJarPattern(String pattern)
+    {
+        webInfIncludeJarPattern = pattern;
+    }
+   
+    
     
     public boolean getUnpackOverlays()
     {
@@ -218,17 +251,21 @@ public class JettyWebAppContext extends WebAppContext
     {
         //Set up the pattern that tells us where the jars are that need scanning for
         //stuff like taglibs so we can tell jasper about it (see TagLibConfiguration)
-        String tmp = (String)getAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern");
-       
-        tmp = addPattern(tmp, ".*/.*jsp-api-[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jsp-[^/]*\\.jar$");  
-        tmp = addPattern(tmp, ".*/.*taglibs[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jstl[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jsf-impl-[^/]*\\.jar$"); // add in 2 most popular jsf impls
-        tmp = addPattern(tmp, ".*/.*javax.faces-[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*myfaces-impl-[^/]*\\.jar$");
 
-        setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", tmp);
+        //Allow user to set up pattern for names of jars from the container classpath
+        //that will be scanned - note that by default NO jars are scanned
+        String tmp = containerIncludeJarPattern;
+        if (tmp==null || "".equals(tmp))
+            tmp = (String)getAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN);           
+        
+        tmp = addPattern(tmp, DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN);
+        setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, tmp);
+        
+        //Allow user to set up pattern of jar names from WEB-INF that will be scanned.
+        //Note that by default ALL jars considered to be in WEB-INF will be scanned - setting
+        //a pattern restricts scanning
+        if (webInfIncludeJarPattern != null)
+            setAttribute(WebInfConfiguration.WEBINF_JAR_PATTERN, webInfIncludeJarPattern);
    
         //Set up the classes dirs that comprises the equivalent of WEB-INF/classes
         if (testClasses != null)
@@ -241,7 +278,6 @@ public class JettyWebAppContext extends WebAppContext
         classpathFiles.addAll(webInfClasses);
         classpathFiles.addAll(webInfJars);
 
-        
         // Initialize map containing all jars in /WEB-INF/lib
         webInfJarMap.clear();
         for (File file : webInfJars)
@@ -255,13 +291,28 @@ public class JettyWebAppContext extends WebAppContext
         if (this.jettyEnvXml != null)
             envConfig.setJettyEnvXml(Resource.toURL(new File(this.jettyEnvXml)));
         
-        //setShutdown(false);
+        // CHECK setShutdown(false);
         super.doStart();
     }
      
     public void doStop () throws Exception
     { 
-        //setShutdown(true);
+        if (classpathFiles != null)
+            classpathFiles.clear();
+        classpathFiles = null;
+        
+        classes = null;
+        testClasses = null;
+        
+        if (webInfJarMap != null)
+            webInfJarMap.clear();
+       
+        webInfClasses.clear();
+        webInfJars.clear();
+        
+        
+        
+        // CHECK setShutdown(true);
         //just wait a little while to ensure no requests are still being processed
         Thread.currentThread().sleep(500L);
         super.doStop();
@@ -344,36 +395,39 @@ public class JettyWebAppContext extends WebAppContext
     @Override
     public Set<String> getResourcePaths(String path)
     {
-        // Try to get regular resource paths
+        // Try to get regular resource paths - this will get appropriate paths from any overlaid wars etc
         Set<String> paths = super.getResourcePaths(path);
-
-        // If no paths are returned check for virtual paths /WEB-INF/classes and /WEB-INF/lib
-        if (paths.isEmpty() && path != null)
+        
+        if (path != null)
         {
-            path = URIUtil.canonicalPath(path);
+            TreeSet<String> allPaths = new TreeSet<String>();
+            allPaths.addAll(paths);
+            
+            //add in the dependency jars as a virtual WEB-INF/lib entry
             if (path.startsWith(WEB_INF_LIB_PREFIX))
             {
-                paths = new TreeSet<String>();
                 for (String fileName : webInfJarMap.keySet())
                 {
                     // Return all jar files from class path
-                    paths.add(WEB_INF_LIB_PREFIX + "/" + fileName);
+                    allPaths.add(WEB_INF_LIB_PREFIX + "/" + fileName);
                 }
             }
             else if (path.startsWith(WEB_INF_CLASSES_PREFIX))
             {
                 int i=0;
                
-                while (paths.isEmpty() && (i < webInfClasses.size()))
+                while (i < webInfClasses.size())
                 {
                     String newPath = path.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
-                    paths = super.getResourcePaths(newPath);
+                    allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }
             }
+            return allPaths;
         }
         return paths;
     }
+    
     
     public String addPattern (String s, String pattern)
     {
