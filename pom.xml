@@ -577,9 +577,7 @@
     <profile>
       <id>release</id>
       <modules>
-        <!--
         <module>jetty-aggregate</module>
-         -->
       </modules>
     </profile>
     <profile>
