@@ -19,22 +19,21 @@
 package org.eclipse.jetty.util;
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 
 
-/* ------------------------------------------------------------ */
 /** Fast B64 Encoder/Decoder as described in RFC 1421.
  * <p>Does not insert or interpret whitespace as described in RFC
  * 1521. If you require this you must pre/post process your data.
  * <p> Note that in a web context the usual case is to not want
  * linebreaks or other white space in the encoded output.
- * 
+ *
  */
 public class B64Code
 {
-    // ------------------------------------------------------------------
-    static final char pad='=';
-    static final char[] rfc1421alphabet=
+    private static final char pad='=';
+    private static final char[] rfc1421alphabet=
             {
                 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
                 'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
@@ -42,8 +41,7 @@ public class B64Code
                 'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
             };
 
-    static final byte[] rfc1421nibbles;
-
+    private static final byte[] rfc1421nibbles;
     static
     {
         rfc1421nibbles=new byte[256];
@@ -54,26 +52,21 @@ public class B64Code
         rfc1421nibbles[(byte)pad]=0;
     }
 
-    // ------------------------------------------------------------------
+    private B64Code()
+    {
+    }
+
     /**
      * Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
      * @param s String to encode.
      * @return String containing the encoded form of the input.
      */
-    static public String encode(String s)
+    public static String encode(String s)
     {
-        try
-        {
-            return encode(s,null);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new IllegalArgumentException(e.toString());
-        }
+        return encode(s,null);
     }
 
-    // ------------------------------------------------------------------
     /**
      * Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
@@ -82,19 +75,16 @@ public class B64Code
      *        the character encoding of the provided input String.
      * @return String containing the encoded form of the input.
      */
-    static public String encode(String s,String charEncoding)
-            throws UnsupportedEncodingException
+    public static String encode(String s,String charEncoding)
     {
         byte[] bytes;
         if (charEncoding==null)
-            bytes=s.getBytes(StringUtil.__ISO_8859_1);
+            bytes=s.getBytes(Charset.forName(StringUtil.__ISO_8859_1));
         else
-            bytes=s.getBytes(charEncoding);
-
+            bytes=s.getBytes(Charset.forName(charEncoding));
         return new String(encode(bytes));
     }
-    
-    // ------------------------------------------------------------------
+
     /**
      * Fast Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
@@ -102,12 +92,11 @@ public class B64Code
      * @param b byte array to encode.
      * @return char array containing the encoded form of the input.
      */
-    static public char[] encode(byte[] b)
+    public static char[] encode(byte[] b)
     {
         return encode(b,false);
     }
-    
-    // ------------------------------------------------------------------
+
     /**
      * Fast Base 64 encode as described in RFC 1421 and RFC2045
      * <p>Does not insert whitespace as described in RFC 1521, unless rfc2045 is passed as true.
@@ -116,7 +105,7 @@ public class B64Code
      * @param rfc2045 If true, break lines at 76 characters with CRLF
      * @return char array containing the encoded form of the input.
      */
-    static public char[] encode(byte[] b, boolean rfc2045)
+    public static char[] encode(byte[] b, boolean rfc2045)
     {
         if (b==null)
             return null;
@@ -139,7 +128,7 @@ public class B64Code
             c[ci++]=rfc1421alphabet[(b0>>>2)&0x3f];
             c[ci++]=rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
             c[ci++]=rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
-            c[ci++]=rfc1421alphabet[b2&077];
+            c[ci++]=rfc1421alphabet[b2&0x3f];
             l+=4;
             if (rfc2045 && l%76==0)
             {
@@ -182,7 +171,6 @@ public class B64Code
         return c;
     }
 
-    // ------------------------------------------------------------------
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
@@ -190,24 +178,22 @@ public class B64Code
      * @param charEncoding String representing the character encoding
      *        used to map the decoded bytes into a String.
      * @return String decoded byte array.
-     * @throws UnsupportedEncodingException if the encoding is not supported
+     * @throws UnsupportedCharsetException if the encoding is not supported
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
-    static public String decode(String encoded,String charEncoding)
-            throws UnsupportedEncodingException
+    public static String decode(String encoded,String charEncoding)
     {
         byte[] decoded=decode(encoded);
         if (charEncoding==null)
             return new String(decoded);
-        return new String(decoded,charEncoding);
+        return new String(decoded,Charset.forName(charEncoding));
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Fast Base 64 decode as described in RFC 1421.
-     * 
-     * <p>Unlike other decode methods, this does not attempt to 
+     *
+     * <p>Unlike other decode methods, this does not attempt to
      * cope with extra whitespace as described in RFC 1521/2045.
      * <p> Avoids creating extra copies of the input/output.
      * <p> Note this code has been flattened for performance.
@@ -216,7 +202,7 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
-    static public byte[] decode(char[] b)
+    public static byte[] decode(char[] b)
     {
         if (b==null)
             return null;
@@ -290,8 +276,7 @@ public class B64Code
 
         return r;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
@@ -300,11 +285,11 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
-    static public byte[] decode(String encoded)
+    public static byte[] decode(String encoded)
     {
         if (encoded==null)
             return null;
-        
+
         int ci=0;
         byte nibbles[] = new byte[4];
         int s=0;
@@ -316,7 +301,7 @@ public class B64Code
 
             if (c==pad)
                 break;
-            
+
             if (Character.isWhitespace(c))
                 continue;
 

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.UnsupportedCharsetException;
-
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -60,15 +57,8 @@ public class BasicAuthentication implements Authentication
     public Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context)
     {
         String encoding = StringUtil.__ISO_8859_1;
-        try
-        {
-            String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
-            return new BasicResult(request.getURI(), value);
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new UnsupportedCharsetException(encoding);
-        }
+        String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
+        return new BasicResult(request.getURI(), value);
     }
 
     private static class BasicResult implements Result
