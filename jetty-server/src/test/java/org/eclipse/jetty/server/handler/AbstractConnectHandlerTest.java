@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.server.handler;
 
 import java.io.BufferedReader;
 import java.io.IOException;

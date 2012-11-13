@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -116,7 +117,6 @@ public class ProxyServlet extends HttpServlet
 
         try
         {
-
             _client = createHttpClient();
 
             // Put the HttpClient in the context to leverage ContextHandler.MANAGED_ATTRIBUTES

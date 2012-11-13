@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -335,12 +334,12 @@ public class ConnectHandler extends HandlerWrapper
 
     protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context, ByteBuffer buffer)
     {
-        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context, this, buffer);
+        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context, buffer);
     }
 
     protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
     {
-        return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), this, connectContext);
+        return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext);
     }
 
     protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
@@ -381,6 +380,7 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
     {
+        LOG.debug("{} writing {} bytes", this, buffer.remaining());
         endPoint.write(null, callback, buffer);
     }
 
@@ -501,6 +501,84 @@ public class ConnectHandler extends HandlerWrapper
         public HttpConnection getHttpConnection()
         {
             return httpConnection;
+        }
+    }
+
+    public class UpstreamConnection extends ProxyConnection
+    {
+        private ConnectContext connectContext;
+
+        public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
+        {
+            super(endPoint, executor, bufferPool, connectContext.getContext());
+            this.connectContext = connectContext;
+        }
+
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            onConnectSuccess(connectContext, this);
+            fillInterested();
+        }
+
+        @Override
+        protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+        {
+            return ConnectHandler.this.read(endPoint, buffer, context);
+        }
+
+        @Override
+        protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
+        {
+            ConnectHandler.this.write(endPoint, buffer, context, callback);
+        }
+    }
+
+    public class DownstreamConnection extends ProxyConnection
+    {
+        private final ByteBuffer buffer;
+
+        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context, ByteBuffer buffer)
+        {
+            super(endPoint, executor, bufferPool, context);
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            final int remaining = buffer.remaining();
+            write(getConnection().getEndPoint(), buffer, getContext(), new Callback<Void>()
+            {
+                @Override
+                public void completed(Void context)
+                {
+                    LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
+                    fillInterested();
+                }
+
+                @Override
+                public void failed(Void context, Throwable x)
+                {
+                    LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
+                    close();
+                    getConnection().close();
+                }
+            });
+        }
+
+        @Override
+        protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+        {
+            return ConnectHandler.this.read(endPoint, buffer, context);
+        }
+
+        @Override
+        protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
+        {
+            ConnectHandler.this.write(endPoint, buffer, context, callback);
         }
     }
 }

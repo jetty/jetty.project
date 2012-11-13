@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,15 +37,13 @@ public abstract class ProxyConnection extends AbstractConnection
     private final ForkInvoker<ByteBuffer> invoker = new ProxyForkInvoker();
     private final ByteBufferPool bufferPool;
     private final ConcurrentMap<String, Object> context;
-    private final ConnectHandler connectHandler;
     private Connection connection;
 
-    protected ProxyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context, ConnectHandler connectHandler)
+    protected ProxyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
     {
         super(endp, executor);
         this.bufferPool = bufferPool;
         this.context = context;
-        this.connectHandler = connectHandler;
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -56,11 +54,6 @@ public abstract class ProxyConnection extends AbstractConnection
     public ConcurrentMap<String, Object> getContext()
     {
         return context;
-    }
-
-    public ConnectHandler getConnectHandler()
-    {
-        return connectHandler;
     }
 
     public Connection getConnection()
@@ -84,11 +77,11 @@ public abstract class ProxyConnection extends AbstractConnection
     {
         try
         {
-            final int filled = connectHandler.read(getEndPoint(), buffer, getContext());
+            final int filled = read(getEndPoint(), buffer, getContext());
             LOG.debug("{} filled {} bytes", this, filled);
             if (filled > 0)
             {
-                write(buffer, new Callback<Void>()
+                write(getConnection().getEndPoint(), buffer, getContext(), new Callback<Void>()
                 {
                     @Override
                     public void completed(Void context)
@@ -127,11 +120,9 @@ public abstract class ProxyConnection extends AbstractConnection
         }
     }
 
-    protected void write(ByteBuffer buffer, Callback<Void> callback)
-    {
-        LOG.debug("{} writing {} bytes", this, buffer.remaining());
-        connectHandler.write(getConnection().getEndPoint(), buffer, context, callback);
-    }
+    protected abstract int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException;
+
+    protected abstract void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback);
 
     @Override
     public String toString()

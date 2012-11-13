@@ -413,7 +413,6 @@
     <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>jetty-proxy</module>
     <module>tests</module>
     <!--module>dists</module-->
 

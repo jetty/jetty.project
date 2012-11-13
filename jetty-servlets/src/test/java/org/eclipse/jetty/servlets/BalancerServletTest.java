@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.servlets;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
