@@ -16,36 +16,41 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.client.api;
 
-import org.eclipse.jetty.server.Handler;
+import java.util.HashSet;
+import java.util.Set;
 
-
-/* ------------------------------------------------------------ */
-/** ProxyHandler.
- * <p>This class has been renamed to ConnectHandler, as it only implements
- * the CONNECT method (and a ProxyServlet must be used for full proxy handling).
- * @deprecated Use {@link ConnectHandler}
- */
-public class ProxyHandler extends ConnectHandler
+public class ProxyConfiguration
 {
-    public ProxyHandler()
+    private final Set<String> excluded = new HashSet<>();
+    private final String host;
+    private final int port;
+
+    public ProxyConfiguration(String host, int port)
     {
-        super();
+        this.host = host;
+        this.port = port;
     }
 
-    public ProxyHandler(Handler handler, String[] white, String[] black)
+    public String getHost()
     {
-        super(handler,white,black);
+        return host;
     }
 
-    public ProxyHandler(Handler handler)
+    public int getPort()
     {
-        super(handler);
+        return port;
     }
 
-    public ProxyHandler(String[] white, String[] black)
+    public boolean matches(String host, int port)
     {
-        super(white,black);
+        String hostPort = host + ":" + port;
+        return !getExcludedHosts().contains(hostPort);
+    }
+
+    public Set<String> getExcludedHosts()
+    {
+        return excluded;
     }
 }

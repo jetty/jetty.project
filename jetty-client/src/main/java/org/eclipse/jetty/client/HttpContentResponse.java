@@ -77,9 +77,9 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public boolean abort(String reason)
+    public boolean abort(Throwable cause)
     {
-        return response.abort(reason);
+        return response.abort(cause);
     }
 
     @Override

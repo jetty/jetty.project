@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.jaspi;
 
 import java.security.Principal;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +138,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     {
         if (_serviceSubject!=null)
             return _serviceSubject;
-        List subjects = server.getBeans(Subject.class);
+        List<Subject> subjects = (List<Subject>)server.getBeans(Subject.class);
         if (subjects.size()>0)
             return (Subject)subjects.get(0);
         return null;

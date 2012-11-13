@@ -24,9 +24,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler
 {
+    private static final Logger LOG = Log.getLogger(TimerScheduler.class);
+
     /*
      * This class uses the Timer class rather than an ScheduledExecutionService because
      * it uses the same algorithm internally and the signature is cheaper to use as there are no
@@ -85,7 +89,14 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
         @Override
         public void run()
         {
-            _task.run();
+            try
+            {
+                _task.run();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while executing task "+_task,x);
+            }
         }
 
         @Override

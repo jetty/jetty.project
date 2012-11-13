@@ -25,65 +25,53 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-/**
- * @version $Revision$ $Date$
- */
-@Ignore
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
-    @BeforeClass
-    public static void init() throws Exception
+    private SslContextFactory sslContextFactory;
+
+    @Before
+    public void prepare() throws Exception
     {
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        connector.setMaxIdleTime(3600000); // TODO remove
-
+        sslContextFactory = new SslContextFactory();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStorePath(keyStorePath);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-
-        startServer(connector, new ServerHandler());
-        startProxy();
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        server = new Server();
+        serverConnector = new ServerConnector(server, sslContextFactory);
+        server.addConnector(serverConnector);
+        server.setHandler(new ServerHandler());
+        server.start();
+        prepareProxy();
     }
 
     @Test
     public void testGETRequest() throws Exception
     {
-        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = newSocket();
-        socket.setSoTimeout(3600000); // TODO remove
-        try
+        try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -92,52 +80,41 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            Response response = readResponse(input);
-            System.err.println(response);
-            assertEquals("200", response.getCode());
+            SimpleHttpResponse response = readResponse(input);
+            Assert.assertEquals("200", response.getCode());
 
             // Be sure the buffered input does not have anything buffered
-            assertFalse(input.ready());
+            Assert.assertFalse(input.ready());
 
             // Upgrade the socket to SSL
-            SSLSocket sslSocket = wrapSocket(socket);
-            try
+            try (SSLSocket sslSocket = wrapSocket(socket))
             {
                 output = sslSocket.getOutputStream();
                 input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
 
                 request =
                         "GET /echo HTTP/1.1\r\n" +
-                        "Host: " + hostPort + "\r\n" +
-                        "\r\n";
+                                "Host: " + hostPort + "\r\n" +
+                                "\r\n";
                 output.write(request.getBytes("UTF-8"));
                 output.flush();
 
                 response = readResponse(input);
-                assertEquals("200", response.getCode());
-                assertEquals("GET /echo", response.getBody());
+                Assert.assertEquals("200", response.getCode());
+                Assert.assertEquals("GET /echo", response.getBody());
             }
-            finally
-            {
-                sslSocket.close();
-            }
-        }
-        finally
-        {
-            socket.close();
         }
     }
 
     @Test
     public void testPOSTRequests() throws Exception
     {
-        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = newSocket();
-        try
+        try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -146,15 +123,14 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            Response response = readResponse(input);
-            assertEquals("200", response.getCode());
+            SimpleHttpResponse response = readResponse(input);
+            Assert.assertEquals("200", response.getCode());
 
             // Be sure the buffered input does not have anything buffered
-            assertFalse(input.ready());
+            Assert.assertFalse(input.ready());
 
             // Upgrade the socket to SSL
-            SSLSocket sslSocket = wrapSocket(socket);
-            try
+            try (SSLSocket sslSocket = wrapSocket(socket))
             {
                 output = sslSocket.getOutputStream();
                 input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
@@ -171,46 +147,21 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                     output.flush();
 
                     response = readResponse(input);
-                    assertEquals("200", response.getCode());
-                    assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getBody());
+                    Assert.assertEquals("200", response.getCode());
+                    Assert.assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getBody());
                 }
             }
-            finally
-            {
-                sslSocket.close();
-            }
-        }
-        finally
-        {
-            socket.close();
         }
     }
 
     private SSLSocket wrapSocket(Socket socket) throws Exception
     {
-        SSLContext sslContext = SSLContext.getInstance("SSLv3");
-        sslContext.init(null, new TrustManager[]{new AlwaysTrustManager()}, new SecureRandom());
+        SSLContext sslContext = sslContextFactory.getSslContext();
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         SSLSocket sslSocket = (SSLSocket)socketFactory.createSocket(socket, socket.getInetAddress().getHostAddress(), socket.getPort(), true);
         sslSocket.setUseClientMode(true);
         sslSocket.startHandshake();
         return sslSocket;
-    }
-
-    private class AlwaysTrustManager implements X509TrustManager
-    {
-        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException
-        {
-        }
-
-        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException
-        {
-        }
-
-        public X509Certificate[] getAcceptedIssuers()
-        {
-            return new X509Certificate[]{};
-        }
     }
 
     private static class ServerHandler extends AbstractHandler
@@ -229,7 +180,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 InputStream input = httpRequest.getInputStream();
-                int read = -1;
+                int read;
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();
