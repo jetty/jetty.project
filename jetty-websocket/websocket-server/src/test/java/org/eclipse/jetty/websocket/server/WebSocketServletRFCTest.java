@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

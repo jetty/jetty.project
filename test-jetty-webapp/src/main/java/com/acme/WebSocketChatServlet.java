@@ -53,9 +53,9 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
@@ -76,7 +76,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void configure(WebSocketServerFactory factory)
+    public void configure(WebSocketServletFactory factory)
     {
         factory.register(ChatWebSocket.class);
         factory.setCreator(this);

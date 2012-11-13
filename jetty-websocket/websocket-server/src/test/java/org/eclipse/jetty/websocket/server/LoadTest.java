@@ -33,6 +33,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -45,7 +47,7 @@ public class LoadTest
     public static class LoadServlet extends WebSocketServlet
     {
         @Override
-        public void configure(WebSocketServerFactory factory)
+        public void configure(WebSocketServletFactory factory)
         {
             factory.register(LoadSocket.class);
         }

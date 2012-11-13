@@ -25,9 +25,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -104,7 +104,7 @@ public class BrowserDebugTool implements WebSocketCreator
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
             @Override
-            public void configure(WebSocketServerFactory factory)
+            public void configure(WebSocketServletFactory factory)
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
                 factory.setCreator(BrowserDebugTool.this);

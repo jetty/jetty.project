@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.examples;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Example servlet for most basic form.
@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.server.WebSocketServlet;
 public class MyEchoServlet extends WebSocketServlet
 {
     @Override
-    public void configure(WebSocketServerFactory factory)
+    public void configure(WebSocketServletFactory factory)
     {
         factory.register(MyEchoSocket.class);
     }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public abstract class WebSocketHandler extends HandlerWrapper
 {
@@ -45,13 +46,13 @@ public abstract class WebSocketHandler extends HandlerWrapper
         }
 
         @Override
-        public void configure(WebSocketServerFactory factory)
+        public void configure(WebSocketServletFactory factory)
         {
             factory.register(websocketPojo);
         }
     }
 
-    private final WebSocketServerFactory webSocketFactory;
+    private final WebSocketServletFactory webSocketFactory;
 
     public WebSocketHandler()
     {
@@ -61,7 +62,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
         addBean(webSocketFactory);
     }
 
-    public abstract void configure(WebSocketServerFactory factory);
+    public abstract void configure(WebSocketServletFactory factory);
 
     public void configurePolicy(WebSocketPolicy policy)
     {
@@ -75,7 +76,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
         configure(webSocketFactory);
     }
 
-    public WebSocketServerFactory getWebSocketFactory()
+    public WebSocketServletFactory getWebSocketFactory()
     {
         return webSocketFactory;
     }

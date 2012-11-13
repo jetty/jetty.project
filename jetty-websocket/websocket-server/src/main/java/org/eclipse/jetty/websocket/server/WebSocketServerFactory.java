@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -54,11 +53,13 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 
@@ -90,6 +91,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final WebSocketExtensionFactory extensionFactory;
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
+
+    public WebSocketServerFactory()
+    {
+        this(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
+    }
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
@@ -127,6 +133,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         supportedVersions = rv.toString();
     }
 
+    @Override
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
@@ -163,6 +170,19 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return upgrade(sockreq,sockresp,driver);
     }
 
+    @Override
+    public void cleanup()
+    {
+        try
+        {
+            this.stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+    }
+
     protected void closeAllConnections()
     {
         for (WebSocketSession session : sessions)
@@ -177,6 +197,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             }
         }
         sessions.clear();
+    }
+
+    @Override
+    public WebSocketServletFactory createFactory(WebSocketPolicy policy)
+    {
+        return new WebSocketServerFactory(policy);
     }
 
     /**
@@ -213,28 +239,31 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         super.doStop();
     }
 
+    @Override
     public WebSocketCreator getCreator()
     {
         return this.creator;
     }
 
+    @Override
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
     }
 
-    /**
-     * Get the base policy in use for WebSockets.
-     * <p>
-     * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
-     * 
-     * @return the base policy
-     */
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return basePolicy;
     }
 
+    @Override
+    public void init() throws Exception
+    {
+        start();
+    }
+
+    @Override
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
     {
         String upgrade = request.getHeader("Upgrade");
@@ -278,14 +307,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return protocols;
     }
 
-    /**
-     * Register a websocket class pojo with the default {@link WebSocketCreator}.
-     * <p>
-     * Note: only required if using the default {@link WebSocketCreator} provided by this factory.
+    /*
+     * (non-Javadoc)
      * 
-     * @param websocketPojo
-     *            the class to instantiate for each incoming websocket upgrade request.
+     * @see org.eclipse.jetty.websocket.server.WebSocketServletFactory#register(java.lang.Class)
      */
+    @Override
     public void register(Class<?> websocketPojo)
     {
         registeredSocketClasses.add(websocketPojo);
@@ -312,6 +339,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return ret;
     }
 
+    @Override
     public void setCreator(WebSocketCreator creator)
     {
         this.creator = creator;
@@ -330,7 +358,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * @param driver
      *            The websocket handler implementation to use
      * @throws IOException
-     *             in case of I/O errors
      */
     public boolean upgrade(ServletWebSocketRequest request, ServletWebSocketResponse response, EventDriver driver) throws IOException
     {

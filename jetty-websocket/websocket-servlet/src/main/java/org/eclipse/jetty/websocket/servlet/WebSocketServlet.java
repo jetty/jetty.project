@@ -16,17 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.ServiceLoader;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -86,22 +85,14 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet
 {
-    private final Logger LOG = Log.getLogger(getClass());
-    private WebSocketServerFactory webSocketFactory;
+    private WebSocketServletFactory factory;
 
-    public abstract void configure(WebSocketServerFactory factory);
+    public abstract void configure(WebSocketServletFactory factory);
 
     @Override
     public void destroy()
     {
-        try
-        {
-            webSocketFactory.stop();
-        }
-        catch (Exception x)
-        {
-            LOG.ignore(x);
-        }
+        factory.cleanup();
     }
 
     /**
@@ -137,11 +128,14 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
-            webSocketFactory = new WebSocketServerFactory(policy);
+            ServiceLoader<WebSocketServletFactory> loader = ServiceLoader.load(WebSocketServletFactory.class);
+            WebSocketServletFactory baseFactory = loader.iterator().next();
 
-            configure(webSocketFactory);
+            factory = baseFactory.createFactory(policy);
 
-            webSocketFactory.start();
+            configure(factory);
+
+            factory.init();
         }
         catch (Exception x)
         {
@@ -155,10 +149,10 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (webSocketFactory.isUpgradeRequest(request,response))
+        if (factory.isUpgradeRequest(request,response))
         {
             // We have an upgrade request
-            if (webSocketFactory.acceptWebSocket(request,response))
+            if (factory.acceptWebSocket(request,response))
             {
                 // We have a socket instance created
                 return;

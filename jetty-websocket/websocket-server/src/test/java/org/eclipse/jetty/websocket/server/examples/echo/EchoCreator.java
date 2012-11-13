@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.server.examples.echo;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 /**
  * Example of setting up a creator to create appropriately via the proposed and negotiated protocols.
