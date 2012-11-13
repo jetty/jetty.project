@@ -282,6 +282,10 @@ public class ProxyServlet extends HttpServlet
         try
         {
             client.start();
+
+            // Content must not be decoded, otherwise the client gets confused
+            client.getContentDecoderFactories().clear();
+
             return client;
         }
         catch (Exception x)

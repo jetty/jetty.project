@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -742,6 +743,34 @@ public class ProxyServletTest
                 .get(5, TimeUnit.SECONDS);
         Assert.assertEquals(302, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
+    public void testGZIPContentIsProxied() throws Exception
+    {
+        final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        prepareProxy(new ProxyServlet());
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                resp.addHeader("Content-Encoding", "gzip");
+                GZIPOutputStream gzipOutputStream = new GZIPOutputStream(resp.getOutputStream());
+                gzipOutputStream.write(content);
+                gzipOutputStream.close();
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .send()
+                .get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        Assert.assertArrayEquals(content, response.getContent());
     }
 
     // TODO: test proxy authentication
