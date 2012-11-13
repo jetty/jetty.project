@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class WebkitDeflateFrameExtensionTest
+public class FrameCompressionExtensionTest
 {
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
@@ -128,6 +128,16 @@ public class WebkitDeflateFrameExtensionTest
         // Captured from Chrome 20.x - "info:" (sent from browser/client)
         byte rawbuf[] = TypeUtil.fromHexString("c187ca4def7f0081a4b47d4fef");
         assertIncoming(rawbuf,"info:");
+    }
+
+    @Test
+    public void testChrome20_TimeTime()
+    {
+        // Captured from Chrome 20.x - "time:" then "time:" once more (sent from browser/client)
+        String time1 = "c1 87 82 46 74 24 a8 8f  b8 69 37 44 74".replaceAll("\\s*","");
+        String time2 = "c1 85 3c fd a1 7f 16 fc  b0 7f 3c".replaceAll("\\s*","");
+        byte rawbuf[] = TypeUtil.fromHexString(time1 + time2);
+        assertIncoming(rawbuf,"time:","time:");
     }
 
     @Test

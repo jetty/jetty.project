@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class PerMessageCompressionExtensionTest
+public class MessageCompressionExtensionTest
 {
     private void assertDraftExample(String hexStr, String expectedStr)
     {

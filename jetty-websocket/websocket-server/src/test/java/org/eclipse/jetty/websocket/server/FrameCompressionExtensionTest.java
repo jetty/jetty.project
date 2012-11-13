@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DeflateExtensionTest
+public class FrameCompressionExtensionTest
 {
     private static SimpleServletServer server;
 
@@ -68,11 +68,20 @@ public class DeflateExtensionTest
 
             String msg = "Hello";
 
-            // Client sends message.
+            // Client sends first message
             client.write(WebSocketFrame.text(msg));
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = capture.getFrames().get(0);
+            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
+
+            // Client sends second message
+            client.clearCaptured();
+            msg = "There";
+            client.write(WebSocketFrame.text(msg));
+
+            capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
+            frame = capture.getFrames().get(0);
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
         }
         finally

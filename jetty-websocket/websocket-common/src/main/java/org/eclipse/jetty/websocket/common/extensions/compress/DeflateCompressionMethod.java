@@ -24,6 +24,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
@@ -125,6 +126,9 @@ public class DeflateCompressionMethod implements CompressionMethod
 
     private static class InflaterProcess implements CompressionMethod.Process
     {
+        /** Tail Bytes per Spec */
+        private static final byte[] TAIL = new byte[]
+                { 0x00, 0x00, (byte)0xFF, (byte)0xFF };
         private final Inflater inflater;
         private int bufferSize = DEFAULT_BUFFER_SIZE;
 
@@ -150,11 +154,16 @@ public class DeflateCompressionMethod implements CompressionMethod
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("inflate: {}",BufferUtil.toDetailString(input));
+                LOG.debug("Input Data: {}",TypeUtil.toHexString(BufferUtil.toArray(input)));
             }
 
-            // Set the data that is compressed to the inflater
-            byte compressed[] = BufferUtil.toArray(input);
-            inflater.setInput(compressed,0,compressed.length);
+            // Set the data that is compressed (+ TAIL) to the inflater
+            int len = input.remaining() + 4;
+            byte raw[] = new byte[len];
+            int inlen = input.remaining();
+            input.slice().get(raw,0,inlen);
+            System.arraycopy(TAIL,0,raw,inlen,TAIL.length);
+            inflater.setInput(raw,0,raw.length);
         }
 
         @Override

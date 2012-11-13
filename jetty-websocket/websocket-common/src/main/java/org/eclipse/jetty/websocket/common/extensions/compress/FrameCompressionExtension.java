@@ -65,7 +65,7 @@ public class FrameCompressionExtension extends AbstractExtension
             }
 
             // reset on every frame.
-            method.decompress().end();
+            // method.decompress().end();
         }
         finally
         {

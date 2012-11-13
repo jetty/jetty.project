@@ -73,6 +73,11 @@ public class IncomingFramesCapture implements IncomingFrames
         Assert.assertThat("Has no errors",errors.size(),is(0));
     }
 
+    public void clear()
+    {
+        frames.clear();
+    }
+
     public void dump()
     {
         System.err.printf("Captured %d incoming frames%n",frames.size());

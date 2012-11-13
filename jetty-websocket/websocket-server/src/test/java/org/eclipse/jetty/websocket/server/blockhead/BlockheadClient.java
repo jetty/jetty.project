@@ -139,6 +139,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         this.extensions.add(xtension);
     }
 
+    public void clearCaptured()
+    {
+        this.incomingFrames.clear();
+    }
+
     public void clearExtensions()
     {
         extensions.clear();

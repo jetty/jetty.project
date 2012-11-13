@@ -26,10 +26,9 @@ import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.extensions.compress.CompressionMethod;
-import org.eclipse.jetty.websocket.common.extensions.compress.DeflateCompressionMethod;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,6 +73,50 @@ public class DeflateCompressionMethodTest
         String actual = BufferUtil.toUTF8String(decompressed);
         Assert.assertThat("Message Size",actual.length(),is(msg.length()));
         Assert.assertEquals("Message Contents",expected,actual);
+    }
+
+    /**
+     * Test decompression with 2 buffers. First buffer is normal, second relies on back buffers created from first.
+     */
+    @Test
+    public void testFollowupBackDistance()
+    {
+        // The Sample (Compressed) Data
+        byte buf1[] = TypeUtil.fromHexString("2aC9Cc4dB50200"); // DEFLATE -> "time:"
+        byte buf2[] = TypeUtil.fromHexString("2a01110000"); // DEFLATE -> "time:"
+
+        // Setup Compression Method
+        CompressionMethod method = new DeflateCompressionMethod();
+
+        // Decompressed Data Holder
+        ByteBuffer decompressed = ByteBuffer.allocate(32);
+        BufferUtil.flipToFill(decompressed);
+
+        // Perform Decompress on Buf 1
+        BufferUtil.clearToFill(decompressed);
+        // IGNORE method.decompress().begin();
+        method.decompress().input(ByteBuffer.wrap(buf1));
+        while (!method.decompress().isDone())
+        {
+            ByteBuffer window = method.decompress().process();
+            BufferUtil.put(window,decompressed);
+        }
+        BufferUtil.flipToFlush(decompressed,0);
+        LOG.debug("decompressed[1]: {}",BufferUtil.toDetailString(decompressed));
+        // IGNORE method.decompress().end();
+
+        // Perform Decompress on Buf 2
+        BufferUtil.clearToFill(decompressed);
+        // IGNORE method.decompress().begin();
+        method.decompress().input(ByteBuffer.wrap(buf2));
+        while (!method.decompress().isDone())
+        {
+            ByteBuffer window = method.decompress().process();
+            BufferUtil.put(window,decompressed);
+        }
+        BufferUtil.flipToFlush(decompressed,0);
+        LOG.debug("decompressed[2]: {}",BufferUtil.toDetailString(decompressed));
+        // IGNORE method.decompress().end();
     }
 
     /**

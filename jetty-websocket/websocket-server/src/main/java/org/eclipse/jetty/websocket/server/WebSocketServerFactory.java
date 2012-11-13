@@ -445,11 +445,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             throw new IOException("Unable to start Extension Stack",e);
         }
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{}",extensionStack.dump());
-        }
-
         // Tell jetty about the new connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
