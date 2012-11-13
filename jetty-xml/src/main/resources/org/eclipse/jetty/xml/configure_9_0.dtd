@@ -120,8 +120,9 @@ A Call with a class attribute is treated as a static call.
 
 <!--
 Arg Element.
-This element defines a positional argument for the Call element.
-The optional type attribute can force the type of the value.
+This element defines a positional or optional named argument for the 
+Call and New elements. The optional type attribute can force the type 
+of the value.
 
 An Arg element can contain value text and/or value elements such as Call,
 New, SystemProperty, etc. If no value type is specified, then white
@@ -136,8 +137,8 @@ specified type.
 <!--
 New Element.
 This element allows the creation of a new object as part of a
-value for elements such as Set, Put, Arg, etc. The class attribute determines
-the type of the new object and the contained Arg elements
+value for elements such as Set, Put, Arg, etc. The class attribute 
+determines the type of the new object and the contained Arg elements
 are used to select the constructor for the new object.
 
 A New element can contain a sequence of Arg elements followed by
