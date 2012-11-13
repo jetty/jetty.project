@@ -124,11 +124,11 @@ public class ProxyServlet extends HttpServlet
 
             String whiteList = config.getInitParameter("whiteList");
             if (whiteList != null)
-                getWhitelistHosts().addAll(parseList(whiteList));
+                getWhiteListHosts().addAll(parseList(whiteList));
 
             String blackList = config.getInitParameter("blackList");
             if (blackList != null)
-                getBlacklistHosts().addAll(parseList(blackList));
+                getBlackListHosts().addAll(parseList(blackList));
         }
         catch (Exception e)
         {
@@ -146,12 +146,12 @@ public class ProxyServlet extends HttpServlet
         this._timeout = timeout;
     }
 
-    public Set<String> getWhitelistHosts()
+    public Set<String> getWhiteListHosts()
     {
         return _whiteList;
     }
 
-    public Set<String> getBlacklistHosts()
+    public Set<String> getBlackListHosts()
     {
         return _blackList;
     }
@@ -313,12 +313,11 @@ public class ProxyServlet extends HttpServlet
     }
 
     /**
-     * Checks the request hostname and path against whitelist and blacklist.
+     * Checks the given {@code host} and {@code port} against whitelist and blacklist.
      *
-     *
-     * @param host host to check
+     * @param host the host to check
      * @param port the port to check
-     * @return true if request is allowed to be proxied
+     * @return true if it is allowed to be proxy to the given host and port
      */
     public boolean validateDestination(String host, int port)
     {

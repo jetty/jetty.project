@@ -536,12 +536,12 @@ public class ProxyServletTest
     }
 
     @Test
-    public void testProxyWhitelist() throws Exception
+    public void testProxyWhiteList() throws Exception
     {
         prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
         int port = serverConnector.getLocalPort();
-        proxyServlet.getWhitelistHosts().add("127.0.0.1:" + port);
+        proxyServlet.getWhiteListHosts().add("127.0.0.1:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -557,12 +557,12 @@ public class ProxyServletTest
     }
 
     @Test
-    public void testProxyBlacklist() throws Exception
+    public void testProxyBlackList() throws Exception
     {
         prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
         int port = serverConnector.getLocalPort();
-        proxyServlet.getBlacklistHosts().add("localhost:" + port);
+        proxyServlet.getBlackListHosts().add("localhost:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -742,6 +742,12 @@ public class ProxyServletTest
                 .get(5, TimeUnit.SECONDS);
         Assert.assertEquals(302, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
+    public void testProxyAuthentication() throws Exception
+    {
+        // TODO:
     }
 
     private static class EmptyHttpServlet extends HttpServlet

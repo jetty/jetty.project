@@ -20,43 +20,56 @@ package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.HostMap;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
  */
 public class ConnectHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(ConnectHandler.class);
+    protected static final Logger LOG = Log.getLogger(ConnectHandler.class);
 
-    private final Set<String> _whiteList = new HashSet<>();
-    private final Set<String> _blackList = new HashSet<>();
-    private final SelectorManager _selector = new Manager(null, null, 1);
-    private volatile int _connectTimeout = 15000;
-    private volatile int _idleTimeout = 30000;
+    private final Set<String> whiteList = new HashSet<>();
+    private final Set<String> blackList = new HashSet<>();
+    private Executor executor;
+    private Scheduler scheduler;
+    private ByteBufferPool bufferPool;
+    private SelectorManager selector;
+    private long connectTimeout = 15000;
+    private long idleTimeout = 30000;
+    private int bufferSize = 4096;
 
     public ConnectHandler()
     {
@@ -68,51 +81,103 @@ public class ConnectHandler extends HandlerWrapper
         setHandler(handler);
     }
 
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public void setExecutor(Executor executor)
+    {
+        this.executor = executor;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public void setScheduler(Scheduler scheduler)
+    {
+        this.scheduler = scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool bufferPool)
+    {
+        this.bufferPool = bufferPool;
+    }
+
     /**
      * @return the timeout, in milliseconds, to connect to the remote server
      */
-    public int getConnectTimeout()
+    public long getConnectTimeout()
     {
-        return _connectTimeout;
+        return connectTimeout;
     }
 
     /**
      * @param connectTimeout the timeout, in milliseconds, to connect to the remote server
      */
-    public void setConnectTimeout(int connectTimeout)
+    public void setConnectTimeout(long connectTimeout)
     {
-        _connectTimeout = connectTimeout;
+        this.connectTimeout = connectTimeout;
     }
 
     /**
      * @return the idle timeout, in milliseconds
      */
-    public int getIdleTimeout()
+    public long getIdleTimeout()
     {
-        return _idleTimeout;
+        return idleTimeout;
     }
 
     /**
      * @param idleTimeout the idle timeout, in milliseconds
      */
-    public void setIdleTimeout(int idleTimeout)
+    public void setIdleTimeout(long idleTimeout)
     {
-        _idleTimeout = idleTimeout;
+        this.idleTimeout = idleTimeout;
+    }
+
+    public int getBufferSize()
+    {
+        return bufferSize;
+    }
+
+    public void setBufferSize(int bufferSize)
+    {
+        this.bufferSize = bufferSize;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        _selector.setConnectTimeout(getConnectTimeout());
-        _selector.start();
+        if (executor == null)
+        {
+            setExecutor(getServer().getThreadPool());
+        }
+        if (scheduler == null)
+        {
+            setScheduler(new TimerScheduler());
+            addBean(getScheduler());
+        }
+        if (bufferPool == null)
+        {
+            setByteBufferPool(new MappedByteBufferPool());
+            addBean(getByteBufferPool());
+        }
+        addBean(selector = newSelectorManager());
+        selector.setConnectTimeout(getConnectTimeout());
         super.doStart();
     }
 
-    @Override
-    protected void doStop() throws Exception
+    protected SelectorManager newSelectorManager()
     {
-        super.doStop();
-        _selector.stop();
+        return new Manager(getExecutor(), getScheduler(), 1);
     }
 
     @Override
@@ -120,15 +185,17 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
-            LOG.debug("CONNECT request for {}", request.getRequestURI());
+            String serverAddress = request.getRequestURI();
+            LOG.debug("CONNECT request for {}", serverAddress);
             try
             {
-                handleConnect(baseRequest, request, response, request.getRequestURI());
+                handleConnect(baseRequest, request, response, serverAddress);
             }
-            catch(Exception e)
+            catch (Exception x)
             {
-                LOG.warn("ConnectHandler "+baseRequest.getUri()+" "+ e);
-                LOG.debug(e);
+                // TODO
+                LOG.warn("ConnectHandler " + baseRequest.getUri() + " " + x);
+                LOG.debug(x);
             }
         }
         else
@@ -142,129 +209,115 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param jettyRequest   Jetty-specific http request
+     * @param jettyRequest  Jetty-specific http request
      * @param request       the http request
      * @param response      the http response
      * @param serverAddress the remote server address in the form {@code host:port}
-     * @throws ServletException if an application error occurs
-     * @throws IOException      if an I/O error occurs
      */
-    protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
+    protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
     {
-        boolean proceed = handleAuthentication(request, response, serverAddress);
-        if (!proceed)
-            return;
-
-        String host = serverAddress;
-        int port = 80;
-        int colon = serverAddress.indexOf(':');
-        if (colon > 0)
-        {
-            host = serverAddress.substring(0, colon);
-            port = Integer.parseInt(serverAddress.substring(colon + 1));
-        }
-
-        if (!validateDestination(host))
-        {
-            LOG.info("ProxyHandler: Forbidden destination " + host);
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            jettyRequest.setHandled(true);
-            return;
-        }
-
-        SocketChannel channel = SocketChannel.open();
-        channel.socket().setTcpNoDelay(true);
-        channel.configureBlocking(false);
-        channel.connect(new InetSocketAddress(host, port));
-
-//        _selector.connect(channel, );
-
-//        SocketChannel channel;
-
+        jettyRequest.setHandled(true);
         try
         {
-            channel = connectToServer(request,host,port);
-        }
-        catch (SocketException se)
-        {
-            LOG.info("ConnectHandler: SocketException " + se.getMessage());
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            jettyRequest.setHandled(true);
-            return;
-        }
-        catch (SocketTimeoutException ste)
-        {
-            LOG.info("ConnectHandler: SocketTimeoutException" + ste.getMessage());
-            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
-            jettyRequest.setHandled(true);
-            return;
-        }
-        catch (IOException ioe)
-        {
-            LOG.info("ConnectHandler: IOException" + ioe.getMessage());
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            jettyRequest.setHandled(true);
-            return;
-        }
-
-        // Transfer unread data from old connection to new connection
-        // We need to copy the data to avoid races:
-        // 1. when this unread data is written and the server replies before the clientToProxy
-        // connection is installed (it is only installed after returning from this method)
-        // 2. when the client sends data before this unread data has been written.
-
-        /* TODO
-        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
-        ByteBuffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
-        ByteBuffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
-        int length = headerBuffer == null ? 0 : headerBuffer.length();
-        length += bodyBuffer == null ? 0 : bodyBuffer.length();
-        IndirectNIOBuffer buffer = null;
-        if (length > 0)
-        {
-            buffer = new IndirectNIOBuffer(length);
-            if (headerBuffer != null)
+            boolean proceed = handleAuthentication(request, response, serverAddress);
+            if (!proceed)
             {
-                buffer.put(headerBuffer);
-                headerBuffer.clear();
+                LOG.debug("Missing proxy authentication");
+                sendConnectResponse(request, response, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
+                return;
             }
-            if (bodyBuffer != null)
+
+            String host = serverAddress;
+            int port = 80;
+            int colon = serverAddress.indexOf(':');
+            if (colon > 0)
             {
-                buffer.put(bodyBuffer);
-                bodyBuffer.clear();
+                host = serverAddress.substring(0, colon);
+                port = Integer.parseInt(serverAddress.substring(colon + 1));
             }
+
+            if (!validateDestination(host, port))
+            {
+                LOG.debug("Destination {}:{} forbidden", host, port);
+                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+
+            SocketChannel channel = SocketChannel.open();
+            channel.socket().setTcpNoDelay(true);
+            channel.configureBlocking(false);
+            InetSocketAddress address = new InetSocketAddress(host, port);
+            channel.connect(address);
+
+            AsyncContext asyncContext = request.startAsync();
+            asyncContext.setTimeout(0);
+
+            LOG.debug("Connecting to {}", address);
+            ConnectContext connectContext = new ConnectContext(request, response, asyncContext, HttpConnection.getCurrentConnection());
+            selector.connect(channel, connectContext);
+        }
+        catch (Exception x)
+        {
+            onConnectFailure(request, response, null, x);
+        }
+    }
+
+    protected void onConnectSuccess(ConnectContext connectContext, UpstreamConnection upstreamConnection)
+    {
+        HttpConnection httpConnection = connectContext.getHttpConnection();
+        ByteBuffer requestBuffer = httpConnection.getRequestBuffer();
+        ByteBuffer buffer = BufferUtil.EMPTY_BUFFER;
+        int remaining = requestBuffer.remaining();
+        if (remaining > 0)
+        {
+            buffer = bufferPool.acquire(remaining, requestBuffer.isDirect());
+            BufferUtil.flipToFill(buffer);
+            buffer.put(requestBuffer);
+            buffer.flip();
         }
 
-        ConcurrentMap<String, Object> context = new ConcurrentHashMap<String, Object>();
+        ConcurrentMap<String, Object> context = connectContext.getContext();
+        HttpServletRequest request = connectContext.getRequest();
         prepareContext(request, context);
 
-        ClientToProxyConnection clientToProxy = prepareConnections(context, channel, buffer);
+        EndPoint downstreamEndPoint = httpConnection.getEndPoint();
+        DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context, buffer);
+        downstreamConnection.setInputBufferSize(getBufferSize());
 
-        // CONNECT expects a 200 response
-        response.setStatus(HttpServletResponse.SC_OK);
+        upstreamConnection.setConnection(downstreamConnection);
+        downstreamConnection.setConnection(upstreamConnection);
+        LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
 
-        // Prevent close
-        jettyRequest.getConnection().getGenerator().setPersistent(true);
+        HttpServletResponse response = connectContext.getResponse();
+        sendConnectResponse(request, response, HttpServletResponse.SC_OK);
 
-        // Close to force last flush it so that the client receives it
-        response.getOutputStream().close();
-
-        upgradeConnection(request, response, clientToProxy);
-        */
+        upgradeConnection(request, response, downstreamConnection);
+        connectContext.getAsyncContext().complete();
     }
 
-    /* TODO
-    private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, ByteBuffer buffer)
+    protected void onConnectFailure(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Throwable failure)
     {
-        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
-        ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer);
-        ClientToProxyConnection clientToProxy = newClientToProxyConnection(context, channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
-        clientToProxy.setConnection(proxyToServer);
-        proxyToServer.setConnection(clientToProxy);
-        return clientToProxy;
-        return null;
+        LOG.debug("CONNECT failed", failure);
+        sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        if (asyncContext != null)
+            asyncContext.complete();
     }
-        */
+
+    private void sendConnectResponse(HttpServletRequest request, HttpServletResponse response, int statusCode)
+    {
+        try
+        {
+            response.setStatus(statusCode);
+            if (statusCode != HttpServletResponse.SC_OK)
+                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+            response.getOutputStream().close();
+            LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
+        }
+        catch (IOException x)
+        {
+            // TODO: nothing we can do, close the connection
+        }
+    }
 
     /**
      * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
@@ -274,94 +327,34 @@ public class ConnectHandler extends HandlerWrapper
      * @param response the HTTP response
      * @param address  the address of the remote server in the form {@code host:port}.
      * @return true to allow to connect to the remote host, false otherwise
-     * @throws ServletException to report a server error to the caller
-     * @throws IOException      to report a server error to the caller
      */
-    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
+    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
     {
         return true;
     }
 
-    /* TODO
-    protected ClientToProxyConnection newClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timeStamp)
+    protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context, ByteBuffer buffer)
     {
-        return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
+        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context, this, buffer);
     }
 
-    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, ByteBuffer buffer)
+    protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
     {
-        return new ProxyToServerConnection(context, buffer);
-    }
-    */
-
-    // may return null
-    private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
-    {
-        SocketChannel channel = connect(request, host, port);
-        channel.configureBlocking(false);
-        return channel;
-    }
-
-    /**
-     * <p>Establishes a connection to the remote server.</p>
-     *
-     * @param request the HTTP request that initiated the tunnel
-     * @param host    the host to connect to
-     * @param port    the port to connect to
-     * @return a {@link SocketChannel} connected to the remote server
-     */
-    protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
-    {
-        SocketChannel channel = null;
-        try
-        {
-            channel = SocketChannel.open();
-            if (channel == null)
-                throw new IOException("Unable to connect to " + host + ":" + port);
-
-            // Connect to remote server
-            LOG.debug("Establishing connection to {}:{}", host, port);
-            channel.socket().setTcpNoDelay(true);
-            channel.socket().connect(new InetSocketAddress(host, port), getConnectTimeout());
-            LOG.debug("Established connection to {}:{}", host, port);
-            return channel;
-        }
-        catch (IOException x)
-        {
-            try
-            {
-                if (channel != null)
-                    channel.close();
-            }
-            catch (IOException xx)
-            {
-                LOG.ignore(xx);
-            }
-            LOG.debug("Failed to establish connection to " + host + ":" + port, x);
-            throw x;
-        }
+        return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), this, connectContext);
     }
 
     protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
     {
     }
 
-    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
+    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection)
     {
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
-        request.setAttribute("org.eclipse.jetty.io.Connection", connection);
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         LOG.debug("Upgraded connection to {}", connection);
     }
-
-    /* TODO
-    private void register(SocketChannel channel, ProxyToServerConnection proxyToServer) throws IOException
-    {
-        _selector.register(channel, proxyToServer);
-        proxyToServer.waitReady(_connectTimeout);
-    }
-    */
 
     /**
      * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
@@ -379,50 +372,67 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /**
-     * <p>Writes (with blocking semantic) the given buffer of data onto the given endPoint.</p>
+     * <p>Writes (with non-blocking semantic) the given buffer of data onto the given endPoint.</p>
      *
      * @param endPoint the endPoint to write to
      * @param buffer   the buffer to write
      * @param context  the context information related to the connection
-     * @throws IOException if the buffer cannot be written
-     * @return the number of bytes written
+     * @param callback the completion callback to invoke
      */
-    protected int write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+    protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
     {
-        /* TODO
-        if (buffer == null)
-            return 0;
-
-        int length = buffer.length();
-        final StringBuilder debug = LOG.isDebugEnabled()?new StringBuilder():null;
-        int flushed = endPoint.flush(buffer);
-        if (debug!=null)
-            debug.append(flushed);
-
-        // Loop until all written
-        while (buffer.length()>0 && !endPoint.isOutputShutdown())
-        {
-            if (!endPoint.isBlocking())
-            {
-                boolean ready = endPoint.blockWritable(getIdleTimeout());
-                if (!ready)
-                    throw new IOException("Write timeout");
-            }
-            flushed = endPoint.flush(buffer);
-            if (debug!=null)
-                debug.append("+").append(flushed);
-        }
-
-        LOG.debug("Written {}/{} bytes {}", debug, length, endPoint);
-        buffer.compact();
-        return length;
-        */
-        return -1;
+        endPoint.write(null, callback, buffer);
     }
 
-    // TODO
-    private class Manager extends SelectorManager
+    public Set<String> getWhiteListHosts()
     {
+        return whiteList;
+    }
+
+    public Set<String> getBlackListHosts()
+    {
+        return blackList;
+    }
+
+    /**
+     * Checks the given {@code host} and {@code port} against whitelist and blacklist.
+     *
+     * @param host the host to check
+     * @param port the port to check
+     * @return true if it is allowed to connect to the given host and port
+     */
+    public boolean validateDestination(String host, int port)
+    {
+        String hostPort = host + ":" + port;
+        if (!whiteList.isEmpty())
+        {
+            if (!whiteList.contains(hostPort))
+            {
+                LOG.debug("Host {}:{} not whitelisted", host, port);
+                return false;
+            }
+        }
+        if (!blackList.isEmpty())
+        {
+            if (blackList.contains(hostPort))
+            {
+                LOG.debug("Host {}:{} blacklisted", host, port);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpThis(out);
+        dump(out, indent, getBeans(), TypeUtil.asList(getHandlers()));
+    }
+
+    protected class Manager extends SelectorManager
+    {
+
         private Manager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
@@ -431,557 +441,66 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return null;
+            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout());
         }
 
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return null;
-        }
-        //        @Override
-//        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
-//        {
-//            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, key, channel.socket().getSoTimeout());
-//            endp.setConnection(selectSet.getSelectorManager().newConnection(channel,endp, key.attachment()));
-//            endp.setIdleTimeout(_idleTimeout);
-//            return endp;
-//        }
-//
-//        @Override
-//        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
-//        {
-//            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)attachment;
-//            proxyToServer.setTimeStamp(System.currentTimeMillis());
-//            proxyToServer.setEndPoint(endpoint);
-//            return proxyToServer;
-//        }
-//
-//        @Override
-//        protected void endPointOpened(SelectChannelEndPoint endpoint)
-//        {
-//            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
-//            proxyToServer.complete();
-//        }
-//
-//        @Override
-//        public boolean dispatch(Runnable task)
-//        {
-//            return _threadPool.dispatch(task);
-//        }
-//
-//        @Override
-//        protected void endPointClosed(AsyncEndPoint endpoint)
-//        {
-//        }
-//
-//        @Override
-//        protected void connectionUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
-//        {
-//        }
-    }
-
-
-/*
-    public class ProxyToServerConnection implements AsyncConnection
-    {
-        private final CountDownLatch _ready = new CountDownLatch(1);
-        private final ByteBuffer _buffer = new IndirectNIOBuffer(4096);
-        private final ConcurrentMap<String, Object> _context;
-        private volatile ByteBuffer _data;
-        private volatile ClientToProxyConnection _toClient;
-        private volatile long _timestamp;
-        private volatile AsyncEndPoint _endPoint;
-
-        public ProxyToServerConnection(ConcurrentMap<String, Object> context, ByteBuffer data)
-        {
-            _context = context;
-            _data = data;
+            ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
+            ConnectContext connectContext = (ConnectContext)attachment;
+            UpstreamConnection connection = newUpstreamConnection(endpoint, connectContext);
+            connection.setInputBufferSize(getBufferSize());
+            return connection;
         }
 
         @Override
-        public String toString()
+        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
-            StringBuilder builder = new StringBuilder("ProxyToServer");
-            builder.append("(:").write(_endPoint.getLocalPort());
-            builder.append("<=>:").write(_endPoint.getRemotePort());
-            return builder.append(")").toString();
-        }
-
-        public AsyncConnection handle() throws IOException
-        {
-            LOG.debug("{}: begin reading from server", this);
-            try
-            {
-                writeData();
-
-                while (true)
-                {
-                    int read = read(_endPoint, _buffer, _context);
-
-                    if (read == -1)
-                    {
-                        LOG.debug("{}: server closed connection {}", this, _endPoint);
-
-                        if (_endPoint.isOutputShutdown() || !_endPoint.isOpen())
-                            closeClient();
-                        else
-                            _toClient.shutdownOutput();
-
-                        break;
-                    }
-
-                    if (read == 0)
-                        break;
-
-                    LOG.debug("{}: read from server {} bytes {}", this, read, _endPoint);
-                    int written = write(_toClient._endPoint, _buffer, _context);
-                    LOG.debug("{}: written to {} {} bytes", this, _toClient, written);
-                }
-                return this;
-            }
-            catch (ClosedChannelException x)
-            {
-                LOG.debug(x);
-                throw x;
-            }
-            catch (IOException x)
-            {
-                LOG.warn(this + ": unexpected exception", x);
-                close();
-                throw x;
-            }
-            catch (RuntimeException x)
-            {
-                LOG.warn(this + ": unexpected exception", x);
-                close();
-                throw x;
-            }
-            finally
-            {
-                LOG.debug("{}: end reading from server", this);
-            }
-        }
-
-        public void onInputShutdown() throws IOException
-        {
-            // TODO
-        }
-
-        private void writeData() throws IOException
-        {
-            // This method is called from handle() and closeServer()
-            // which may happen concurrently (e.g. a client closing
-            // while reading from the server), so needs synchronization
-            synchronized (this)
-            {
-                if (_data != null)
-                {
-                    try
-                    {
-                        int written = write(_endPoint, _data, _context);
-                        LOG.debug("{}: written to server {} bytes", this, written);
-                    }
-                    finally
-                    {
-                        // Attempt once to write the data; if the write fails (for example
-                        // because the connection is already closed), clear the data and
-                        // give up to avoid to continue to write data to a closed connection
-                        _data = null;
-                    }
-                }
-            }
-        }
-
-        public void setConnection(ClientToProxyConnection connection)
-        {
-            _toClient = connection;
-        }
-
-        public long getTimeStamp()
-        {
-            return _timestamp;
-        }
-
-        public void setTimeStamp(long timestamp)
-        {
-            _timestamp = timestamp;
-        }
-
-        public void setEndPoint(AsyncEndPoint endpoint)
-        {
-            _endPoint = endpoint;
-        }
-
-        public boolean isIdle()
-        {
-            return false;
-        }
-
-        public boolean isSuspended()
-        {
-            return false;
-        }
-
-        public void onClose()
-        {
-        }
-
-        public void ready()
-        {
-            _ready.countDown();
-        }
-
-        public void waitReady(long timeout) throws IOException
-        {
-            try
-            {
-                _ready.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            catch (final InterruptedException x)
-            {
-                throw new IOException()
-                {{
-                        initCause(x);
-                    }};
-            }
-        }
-
-        public void closeClient() throws IOException
-        {
-            _toClient.closeClient();
-        }
-
-        public void closeServer() throws IOException
-        {
-            _endPoint.close();
-        }
-
-        public void close()
-        {
-            try
-            {
-                closeClient();
-            }
-            catch (IOException x)
-            {
-                LOG.debug(this + ": unexpected exception closing the client", x);
-            }
-
-            try
-            {
-                closeServer();
-            }
-            catch (IOException x)
-            {
-                LOG.debug(this + ": unexpected exception closing the server", x);
-            }
-        }
-
-        public void shutdownOutput() throws IOException
-        {
-            writeData();
-            _endPoint.shutdownOutput();
-        }
-
-        public void onIdleExpired(long idleForMs)
-        {
-            try
-            {
-                shutdownOutput();
-            }
-            catch(Exception e)
-            {
-                LOG.debug(e);
-                close();
-            }
+            ConnectContext connectContext = (ConnectContext)attachment;
+            onConnectFailure(connectContext.request, connectContext.response, connectContext.asyncContext, ex);
         }
     }
 
-    public class ClientToProxyConnection implements AsyncConnection
+    protected static class ConnectContext
     {
-        private final ByteBuffer _buffer = new IndirectNIOBuffer(4096);
-        private final ConcurrentMap<String, Object> _context;
-        private final SocketChannel _channel;
-        private final EndPoint _endPoint;
-        private final long _timestamp;
-        private volatile ProxyToServerConnection _toServer;
-        private boolean _firstTime = true;
+        private final ConcurrentMap<String, Object> context = new ConcurrentHashMap<>();
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
+        private final AsyncContext asyncContext;
+        private final HttpConnection httpConnection;
 
-        public ClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timestamp)
+        public ConnectContext(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, HttpConnection httpConnection)
         {
-            _context = context;
-            _channel = channel;
-            _endPoint = endPoint;
-            _timestamp = timestamp;
+            this.request = request;
+            this.response = response;
+            this.asyncContext = asyncContext;
+            this.httpConnection = httpConnection;
         }
 
-        @Override
-        public String toString()
+        public ConcurrentMap<String, Object> getContext()
         {
-            StringBuilder builder = new StringBuilder("ClientToProxy");
-            builder.append("(:").write(_endPoint.getLocalPort());
-            builder.append("<=>:").write(_endPoint.getRemotePort());
-            return builder.append(")").toString();
+            return context;
         }
 
-        public AsyncConnection handle() throws IOException
+        public HttpServletRequest getRequest()
         {
-            LOG.debug("{}: begin reading from client", this);
-            try
-            {
-                if (_firstTime)
-                {
-                    _firstTime = false;
-                    register(_channel, _toServer);
-                    LOG.debug("{}: registered channel {} with connection {}", this, _channel, _toServer);
-                }
-
-                while (true)
-                {
-                    int read = read(_endPoint, _buffer, _context);
-
-                    if (read == -1)
-                    {
-                        LOG.debug("{}: client closed connection {}", this, _endPoint);
-
-                        if (_endPoint.isOutputShutdown() || !_endPoint.isOpen())
-                            closeServer();
-                        else
-                            _toServer.shutdownOutput();
-
-                        break;
-                    }
-
-                    if (read == 0)
-                        break;
-
-                    LOG.debug("{}: read from client {} bytes {}", this, read, _endPoint);
-                    int written = write(_toServer._endPoint, _buffer, _context);
-                    LOG.debug("{}: written to {} {} bytes", this, _toServer, written);
-                }
-                return this;
-            }
-            catch (ClosedChannelException x)
-            {
-                LOG.debug(x);
-                closeServer();
-                throw x;
-            }
-            catch (IOException x)
-            {
-                LOG.warn(this + ": unexpected exception", x);
-                close();
-                throw x;
-            }
-            catch (RuntimeException x)
-            {
-                LOG.warn(this + ": unexpected exception", x);
-                close();
-                throw x;
-            }
-            finally
-            {
-                LOG.debug("{}: end reading from client", this);
-            }
+            return request;
         }
 
-        public void onInputShutdown() throws IOException
+        public HttpServletResponse getResponse()
         {
-            // TODO
+            return response;
         }
 
-        public long getTimeStamp()
+        public AsyncContext getAsyncContext()
         {
-            return _timestamp;
+            return asyncContext;
         }
 
-        public boolean isIdle()
+        public HttpConnection getHttpConnection()
         {
-            return false;
+            return httpConnection;
         }
-
-        public boolean isSuspended()
-        {
-            return false;
-        }
-
-        public void onClose()
-        {
-        }
-
-        public void setConnection(ProxyToServerConnection connection)
-        {
-            _toServer = connection;
-        }
-
-        public void closeClient() throws IOException
-        {
-            _endPoint.close();
-        }
-
-        public void closeServer() throws IOException
-        {
-            _toServer.closeServer();
-        }
-
-        public void close()
-        {
-            try
-            {
-                closeClient();
-            }
-            catch (IOException x)
-            {
-                LOG.debug(this + ": unexpected exception closing the client", x);
-            }
-
-            try
-            {
-                closeServer();
-            }
-            catch (IOException x)
-            {
-                LOG.debug(this + ": unexpected exception closing the server", x);
-            }
-        }
-
-        public void shutdownOutput() throws IOException
-        {
-            _endPoint.shutdownOutput();
-        }
-
-        public void onIdleExpired(long idleForMs)
-        {
-            try
-            {
-                shutdownOutput();
-            }
-            catch(Exception e)
-            {
-                LOG.debug(e);
-                close();
-            }
-        }
-    }
-
-    /**
-     * Adds the given {@code host} to the whitelist
-     *
-     * @param host the whitelisted host
-     */
-    public void addWhitelistHost(String host)
-    {
-        _whiteList.add(host);
-    }
-
-    /**
-     * Adds the given {@code host} to the blacklist
-     *
-     * @param host the blacklisted host
-     */
-    public void addBlacklistHost(String host)
-    {
-        _blackList.add(host);
-    }
-
-    /**
-     * Re-initialize the whitelist of existing handler object
-     *
-     * @param entries array of whitelist entries
-     */
-    public void setWhite(String[] entries)
-    {
-//        set(entries, _whiteList);
-    }
-
-    /**
-     * Re-initialize the blacklist of existing handler object
-     *
-     * @param entries array of blacklist entries
-     */
-    public void setBlack(String[] entries)
-    {
-//        set(entries, _blackList);
-    }
-
-    /**
-     * Helper method to process a list of new entries and replace
-     * the content of the specified host map
-     *
-     * @param entries new entries
-     * @param hostMap target host map
-     */
-    protected void set(String[] entries, HostMap<String> hostMap)
-    {
-        hostMap.clear();
-
-        if (entries != null && entries.length > 0)
-        {
-            for (String addrPath : entries)
-            {
-                add(addrPath, hostMap);
-            }
-        }
-    }
-
-    /**
-     * Helper method to process the new entry and add it to
-     * the specified host map.
-     *
-     * @param entry      new entry
-     * @param hostMap target host map
-     */
-    private void add(String entry, HostMap<String> hostMap)
-    {
-        if (entry != null && entry.length() > 0)
-        {
-            entry = entry.trim();
-            if (hostMap.get(entry) == null)
-            {
-                hostMap.put(entry, entry);
-            }
-        }
-    }
-
-    /**
-     * Check the request hostname against white- and blacklist.
-     *
-     * @param host hostname to check
-     * @return true if hostname is allowed to be proxied
-     */
-    public boolean validateDestination(String host)
-    {
-        if (_whiteList.size() > 0)
-        {
-//            Object whiteObj = _whiteList.getLazyMatches(host);
-//            if (whiteObj == null)
-            {
-                return false;
-            }
-        }
-
-        if (_blackList.size() > 0)
-        {
-//            Object blackObj = _blackList.getLazyMatches(host);
-//            if (blackObj != null)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpThis(out);
-        /* TODO
-        if (_privateThreadPool)
-            dump(out, indent, Arrays.asList(_threadPool, _selector), TypeUtil.asList(getHandlers()), getBeans());
-        else
-            dump(out, indent, Arrays.asList(_selector), TypeUtil.asList(getHandlers()), getBeans());
-            */
     }
 }
