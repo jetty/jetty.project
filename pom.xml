@@ -505,6 +505,13 @@
       </dependency>
         -->
 
+      <!-- Draft Deps -->
+      <dependency>
+        <groupId>org.eclipse.jetty.drafts</groupId>
+        <artifactId>javax.websocket-api</artifactId>
+        <version>0.0.006.draft</version>
+      </dependency>
+
       <!-- Old Deps -->
       <dependency>
         <groupId>org.apache.maven</groupId>

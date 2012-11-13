@@ -103,7 +103,10 @@ public class AbstractTestOSGi
 			{
 				diagnoseNonActiveOrNonResolvedBundle(b);
 			}
-			Assert.assertTrue(b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
+			Assert.assertTrue("Bundle: " + b + " (state should be " + 
+			        "ACTIVE[" + Bundle.ACTIVE + "] or RESOLVED[" + Bundle.RESOLVED + "]" + 
+			        ", but was [" + b.getState() + "])", 
+			        (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
 		}
 	}
 
