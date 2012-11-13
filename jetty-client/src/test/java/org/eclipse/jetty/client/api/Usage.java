@@ -191,7 +191,7 @@ public class Usage
         }
         else
         {
-            response.abort(null);
+            response.abort(new Exception());
         }
     }
 

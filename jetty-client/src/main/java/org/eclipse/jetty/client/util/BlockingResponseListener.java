@@ -55,7 +55,7 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         cancelled = true;
-        return request.abort("Cancelled");
+        return request.abort(new CancellationException());
     }
 
     @Override
@@ -83,8 +83,9 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
         boolean expired = !latch.await(timeout, unit);
         if (expired)
         {
-            request.abort("Total timeout elapsed");
-            throw new TimeoutException();
+            TimeoutException reason = new TimeoutException();
+            request.abort(reason);
+            throw reason;
         }
         return getResult();
     }

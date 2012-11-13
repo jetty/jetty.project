@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -63,7 +64,7 @@ public class HttpRequest implements Request
     private long idleTimeout;
     private ContentProvider content;
     private boolean followRedirects;
-    private volatile boolean aborted;
+    private volatile Throwable aborted;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -403,17 +404,17 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public boolean abort(String reason)
+    public boolean abort(Throwable cause)
     {
-        aborted = true;
-        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, reason))
+        aborted = Objects.requireNonNull(cause);
+        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, cause))
             return true;
         HttpConversation conversation = client.getConversation(getConversationID(), false);
-        return conversation != null && conversation.abort(reason);
+        return conversation != null && conversation.abort(cause);
     }
 
     @Override
-    public boolean isAborted()
+    public Throwable getAbortCause()
     {
         return aborted;
     }

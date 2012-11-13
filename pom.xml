@@ -413,6 +413,7 @@
     <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
+    <module>jetty-proxy</module>
     <module>tests</module>
     <!--module>dists</module-->
 
@@ -421,7 +422,6 @@
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
-    <module>jetty-proxy</module>
     <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
@@ -578,7 +578,9 @@
     <profile>
       <id>release</id>
       <modules>
-        <module>aggregates/jetty-all</module> 
+        <!--
+        <module>jetty-aggregate</module>
+         -->
       </modules>
     </profile>
     <profile>

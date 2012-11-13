@@ -16,36 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
-import org.eclipse.jetty.server.Handler;
+import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 
-/* ------------------------------------------------------------ */
-/** ProxyHandler.
- * <p>This class has been renamed to ConnectHandler, as it only implements
- * the CONNECT method (and a ProxyServlet must be used for full proxy handling).
- * @deprecated Use {@link ConnectHandler}
- */
-public class ProxyHandler extends ConnectHandler
+public class UpstreamConnection extends ProxyConnection
 {
-    public ProxyHandler()
+    private ConnectHandler.ConnectContext connectContext;
+
+    public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectHandler connectHandler, ConnectHandler.ConnectContext connectContext)
     {
-        super();
+        super(endPoint, executor, bufferPool, connectContext.getContext(), connectHandler);
+        this.connectContext = connectContext;
     }
 
-    public ProxyHandler(Handler handler, String[] white, String[] black)
+    @Override
+    public void onOpen()
     {
-        super(handler,white,black);
-    }
-
-    public ProxyHandler(Handler handler)
-    {
-        super(handler);
-    }
-
-    public ProxyHandler(String[] white, String[] black)
-    {
-        super(white,black);
+        super.onOpen();
+        getConnectHandler().onConnectSuccess(connectContext, this);
+        fillInterested();
     }
 }

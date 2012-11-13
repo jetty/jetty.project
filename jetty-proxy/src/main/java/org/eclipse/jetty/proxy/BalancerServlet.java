@@ -18,48 +18,255 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.ServletConfig;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
-
-/**
- * 6
- */
 public class BalancerServlet extends ProxyServlet
 {
+    private static final String BALANCER_MEMBER_PREFIX = "balancerMember.";
+    private static final List<String> FORBIDDEN_CONFIG_PARAMETERS;
 
-    private static final class BalancerMember
+    static
     {
+        List<String> params = new LinkedList<>();
+        params.add("hostHeader");
+        params.add("whiteList");
+        params.add("blackList");
+        FORBIDDEN_CONFIG_PARAMETERS = Collections.unmodifiableList(params);
+    }
 
-        private String _name;
+    private static final List<String> REVERSE_PROXY_HEADERS;
 
-        private String _proxyTo;
+    static
+    {
+        List<String> params = new LinkedList<>();
+        params.add("Location");
+        params.add("Content-Location");
+        params.add("URI");
+        REVERSE_PROXY_HEADERS = Collections.unmodifiableList(params);
+    }
 
-        private HttpURI _backendURI;
+    private static final String JSESSIONID = "jsessionid";
+    private static final String JSESSIONID_URL_PREFIX = JSESSIONID + "=";
+
+    private final List<BalancerMember> _balancerMembers = new ArrayList<>();
+    private final AtomicLong counter = new AtomicLong();
+    private boolean _stickySessions;
+    private boolean _proxyPassReverse;
+
+    @Override
+    public void init() throws ServletException
+    {
+        validateConfig();
+        super.init();
+        initStickySessions();
+        initBalancers();
+        initProxyPassReverse();
+    }
+
+    private void validateConfig() throws ServletException
+    {
+        for (String initParameterName : Collections.list(getServletConfig().getInitParameterNames()))
+        {
+            if (FORBIDDEN_CONFIG_PARAMETERS.contains(initParameterName))
+            {
+                throw new UnavailableException(initParameterName + " not supported in " + getClass().getName());
+            }
+        }
+    }
+
+    private void initStickySessions() throws ServletException
+    {
+        _stickySessions = Boolean.parseBoolean(getServletConfig().getInitParameter("stickySessions"));
+    }
+
+    private void initBalancers() throws ServletException
+    {
+        Set<BalancerMember> members = new HashSet<>();
+        for (String balancerName : getBalancerNames())
+        {
+            String memberProxyToParam = BALANCER_MEMBER_PREFIX + balancerName + ".proxyTo";
+            String proxyTo = getServletConfig().getInitParameter(memberProxyToParam);
+            if (proxyTo == null || proxyTo.trim().length() == 0)
+                throw new UnavailableException(memberProxyToParam + " parameter is empty.");
+            members.add(new BalancerMember(balancerName, proxyTo));
+        }
+        _balancerMembers.addAll(members);
+    }
+
+    private void initProxyPassReverse()
+    {
+        _proxyPassReverse = Boolean.parseBoolean(getServletConfig().getInitParameter("proxyPassReverse"));
+    }
+
+    private Set<String> getBalancerNames() throws ServletException
+    {
+        Set<String> names = new HashSet<>();
+        for (String initParameterName : Collections.list(getServletConfig().getInitParameterNames()))
+        {
+            if (!initParameterName.startsWith(BALANCER_MEMBER_PREFIX))
+                continue;
+
+            int endOfNameIndex = initParameterName.lastIndexOf(".");
+            if (endOfNameIndex <= BALANCER_MEMBER_PREFIX.length())
+                throw new UnavailableException(initParameterName + " parameter does not provide a balancer member name");
+
+            names.add(initParameterName.substring(BALANCER_MEMBER_PREFIX.length(), endOfNameIndex));
+        }
+        return names;
+    }
+
+    @Override
+    protected URI rewriteURI(HttpServletRequest request)
+    {
+        BalancerMember balancerMember = selectBalancerMember(request);
+        _log.debug("Selected {}", balancerMember);
+        String path = request.getRequestURI();
+        String query = request.getQueryString();
+        if (query != null)
+            path += "?" + query;
+        return URI.create(balancerMember.getProxyTo() + "/" + path).normalize();
+    }
+
+    private BalancerMember selectBalancerMember(HttpServletRequest request)
+    {
+        if (_stickySessions)
+        {
+            String name = getBalancerMemberNameFromSessionId(request);
+            if (name != null)
+            {
+                BalancerMember balancerMember = findBalancerMemberByName(name);
+                if (balancerMember != null)
+                    return balancerMember;
+            }
+        }
+        int index = (int)(counter.getAndIncrement() % _balancerMembers.size());
+        return _balancerMembers.get(index);
+    }
+
+    private BalancerMember findBalancerMemberByName(String name)
+    {
+        for (BalancerMember balancerMember : _balancerMembers)
+        {
+            if (balancerMember.getName().equals(name))
+                return balancerMember;
+        }
+        return null;
+    }
+
+    private String getBalancerMemberNameFromSessionId(HttpServletRequest request)
+    {
+        String name = getBalancerMemberNameFromSessionCookie(request);
+        if (name == null)
+            name = getBalancerMemberNameFromURL(request);
+        return name;
+    }
+
+    private String getBalancerMemberNameFromSessionCookie(HttpServletRequest request)
+    {
+        for (Cookie cookie : request.getCookies())
+        {
+            if (JSESSIONID.equalsIgnoreCase(cookie.getName()))
+                return extractBalancerMemberNameFromSessionId(cookie.getValue());
+        }
+        return null;
+    }
+
+    private String getBalancerMemberNameFromURL(HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        int idx = requestURI.lastIndexOf(";");
+        if (idx > 0)
+        {
+            String requestURISuffix = requestURI.substring(idx + 1);
+            if (requestURISuffix.startsWith(JSESSIONID_URL_PREFIX))
+                return extractBalancerMemberNameFromSessionId(requestURISuffix.substring(JSESSIONID_URL_PREFIX.length()));
+        }
+        return null;
+    }
+
+    private String extractBalancerMemberNameFromSessionId(String sessionId)
+    {
+        int idx = sessionId.lastIndexOf(".");
+        if (idx > 0)
+        {
+            String sessionIdSuffix = sessionId.substring(idx + 1);
+            return sessionIdSuffix.length() > 0 ? sessionIdSuffix : null;
+        }
+        return null;
+    }
+
+    @Override
+    protected String filterResponseHeader(HttpServletRequest request, String headerName, String headerValue)
+    {
+        if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
+        {
+            URI locationURI = URI.create(headerValue).normalize();
+            if (locationURI.isAbsolute() && isBackendLocation(locationURI))
+            {
+                String newURI = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                String component = locationURI.getRawPath();
+                if (component != null)
+                    newURI += component;
+                component = locationURI.getRawQuery();
+                if (component != null)
+                    newURI += "?" + component;
+                component = locationURI.getRawFragment();
+                if (component != null)
+                    newURI += "#" + component;
+                return URI.create(newURI).normalize().toString();
+            }
+        }
+        return headerValue;
+    }
+
+    private boolean isBackendLocation(URI locationURI)
+    {
+        for (BalancerMember balancerMember : _balancerMembers)
+        {
+            URI backendURI = balancerMember.getBackendURI();
+            if (backendURI.getHost().equals(locationURI.getHost()) &&
+                    backendURI.getScheme().equals(locationURI.getScheme())
+                    && backendURI.getPort() == locationURI.getPort())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean validateDestination(String host, int port)
+    {
+        return true;
+    }
+
+    private static class BalancerMember
+    {
+        private final String _name;
+        private final String _proxyTo;
+        private final URI _backendURI;
 
         public BalancerMember(String name, String proxyTo)
         {
-            super();
             _name = name;
             _proxyTo = proxyTo;
-            _backendURI = new HttpURI(_proxyTo);
+            _backendURI = URI.create(_proxyTo).normalize();
+        }
+
+        public String getName()
+        {
+            return _name;
         }
 
         public String getProxyTo()
@@ -67,7 +274,7 @@ public class BalancerServlet extends ProxyServlet
             return _proxyTo;
         }
 
-        public HttpURI getBackendURI()
+        public URI getBackendURI()
         {
             return _backendURI;
         }
@@ -75,16 +282,13 @@ public class BalancerServlet extends ProxyServlet
         @Override
         public String toString()
         {
-            return "BalancerMember [_name=" + _name + ", _proxyTo=" + _proxyTo + "]";
+            return String.format("%s[name=%s,proxyTo=%s]", getClass().getSimpleName(), _name, _proxyTo);
         }
 
         @Override
         public int hashCode()
         {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((_name == null)?0:_name.hashCode());
-            return result;
+            return _name.hashCode();
         }
 
         @Override
@@ -96,327 +300,8 @@ public class BalancerServlet extends ProxyServlet
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            BalancerMember other = (BalancerMember)obj;
-            if (_name == null)
-            {
-                if (other._name != null)
-                    return false;
-            }
-            else if (!_name.equals(other._name))
-                return false;
-            return true;
-        }
-
-    }
-
-    private static final class RoundRobinIterator implements Iterator<BalancerMember>
-    {
-
-        private BalancerMember[] _balancerMembers;
-
-        private AtomicInteger _index;
-
-        public RoundRobinIterator(Collection<BalancerMember> balancerMembers)
-        {
-            _balancerMembers = (BalancerMember[])balancerMembers.toArray(new BalancerMember[balancerMembers.size()]);
-            _index = new AtomicInteger(-1);
-        }
-
-        public boolean hasNext()
-        {
-            return true;
-        }
-
-        public BalancerMember next()
-        {
-            BalancerMember balancerMember = null;
-            while (balancerMember == null)
-            {
-                int currentIndex = _index.get();
-                int nextIndex = (currentIndex + 1) % _balancerMembers.length;
-                if (_index.compareAndSet(currentIndex,nextIndex))
-                {
-                    balancerMember = _balancerMembers[nextIndex];
-                }
-            }
-            return balancerMember;
-        }
-
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-    }
-
-    private static final String BALANCER_MEMBER_PREFIX = "BalancerMember.";
-
-    private static final List<String> FORBIDDEN_CONFIG_PARAMETERS;
-    static
-    {
-        List<String> params = new LinkedList<String>();
-        params.add("HostHeader");
-        params.add("whiteList");
-        params.add("blackList");
-        FORBIDDEN_CONFIG_PARAMETERS = Collections.unmodifiableList(params);
-    }
-
-    private static final List<String> REVERSE_PROXY_HEADERS;
-    static
-    {
-        List<String> params = new LinkedList<String>();
-        params.add("Location");
-        params.add("Content-Location");
-        params.add("URI");
-        REVERSE_PROXY_HEADERS = Collections.unmodifiableList(params);
-    }
-
-    private static final String JSESSIONID = "jsessionid";
-
-    private static final String JSESSIONID_URL_PREFIX = JSESSIONID + "=";
-
-    private boolean _stickySessions;
-
-    private Set<BalancerMember> _balancerMembers = new HashSet<BalancerMember>();
-
-    private boolean _proxyPassReverse;
-
-    private RoundRobinIterator _roundRobinIterator;
-
-    @Override
-    public void init(ServletConfig config) throws ServletException
-    {
-        validateConfig(config);
-        super.init(config);
-        initStickySessions(config);
-        initBalancers(config);
-        initProxyPassReverse(config);
-        postInit();
-    }
-
-    private void validateConfig(ServletConfig config) throws ServletException
-    {
-        @SuppressWarnings("unchecked")
-        List<String> initParameterNames = Collections.list(config.getInitParameterNames());
-        for (String initParameterName : initParameterNames)
-        {
-            if (FORBIDDEN_CONFIG_PARAMETERS.contains(initParameterName))
-            {
-                throw new UnavailableException(initParameterName + " not supported in " + getClass().getName());
-            }
+            BalancerMember that = (BalancerMember)obj;
+            return _name.equals(that._name);
         }
     }
-
-    private void initStickySessions(ServletConfig config) throws ServletException
-    {
-        _stickySessions = "true".equalsIgnoreCase(config.getInitParameter("StickySessions"));
-    }
-
-    private void initBalancers(ServletConfig config) throws ServletException
-    {
-        Set<String> balancerNames = getBalancerNames(config);
-        for (String balancerName : balancerNames)
-        {
-            String memberProxyToParam = BALANCER_MEMBER_PREFIX + balancerName + ".ProxyTo";
-            String proxyTo = config.getInitParameter(memberProxyToParam);
-            if (proxyTo == null || proxyTo.trim().length() == 0)
-            {
-                throw new UnavailableException(memberProxyToParam + " parameter is empty.");
-            }
-            _balancerMembers.add(new BalancerMember(balancerName,proxyTo));
-        }
-    }
-
-    private void initProxyPassReverse(ServletConfig config)
-    {
-        _proxyPassReverse = "true".equalsIgnoreCase(config.getInitParameter("ProxyPassReverse"));
-    }
-
-    private void postInit()
-    {
-        _roundRobinIterator = new RoundRobinIterator(_balancerMembers);
-    }
-
-    private Set<String> getBalancerNames(ServletConfig config) throws ServletException
-    {
-        Set<String> names = new HashSet<String>();
-        @SuppressWarnings("unchecked")
-        List<String> initParameterNames = Collections.list(config.getInitParameterNames());
-        for (String initParameterName : initParameterNames)
-        {
-            if (!initParameterName.startsWith(BALANCER_MEMBER_PREFIX))
-            {
-                continue;
-            }
-            int endOfNameIndex = initParameterName.lastIndexOf(".");
-            if (endOfNameIndex <= BALANCER_MEMBER_PREFIX.length())
-            {
-                throw new UnavailableException(initParameterName + " parameter does not provide a balancer member name");
-            }
-            names.add(initParameterName.substring(BALANCER_MEMBER_PREFIX.length(),endOfNameIndex));
-        }
-        return names;
-    }
-
-    @Override
-    protected HttpURI proxyHttpURI(HttpServletRequest request, String uri) throws MalformedURLException
-    {
-        BalancerMember balancerMember = selectBalancerMember(request);
-        try
-        {
-            URI dstUri = new URI(balancerMember.getProxyTo() + "/" + uri).normalize();
-            return new HttpURI(dstUri.toString());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new MalformedURLException(e.getMessage());
-        }
-    }
-
-    private BalancerMember selectBalancerMember(HttpServletRequest request)
-    {
-        BalancerMember balancerMember = null;
-        if (_stickySessions)
-        {
-            String name = getBalancerMemberNameFromSessionId(request);
-            if (name != null)
-            {
-                balancerMember = findBalancerMemberByName(name);
-                if (balancerMember != null)
-                {
-                    return balancerMember;
-                }
-            }
-        }
-        return _roundRobinIterator.next();
-    }
-
-    private BalancerMember findBalancerMemberByName(String name)
-    {
-        BalancerMember example = new BalancerMember(name,"");
-        for (BalancerMember balancerMember : _balancerMembers)
-        {
-            if (balancerMember.equals(example))
-            {
-                return balancerMember;
-            }
-        }
-        return null;
-    }
-
-    private String getBalancerMemberNameFromSessionId(HttpServletRequest request)
-    {
-        String name = getBalancerMemberNameFromSessionCookie(request);
-        if (name == null)
-        {
-            name = getBalancerMemberNameFromURL(request);
-        }
-        return name;
-    }
-
-    private String getBalancerMemberNameFromSessionCookie(HttpServletRequest request)
-    {
-        Cookie[] cookies = request.getCookies();
-        String name = null;
-        for (Cookie cookie : cookies)
-        {
-            if (JSESSIONID.equalsIgnoreCase(cookie.getName()))
-            {
-                name = extractBalancerMemberNameFromSessionId(cookie.getValue());
-                break;
-            }
-        }
-        return name;
-    }
-
-    private String getBalancerMemberNameFromURL(HttpServletRequest request)
-    {
-        String name = null;
-        String requestURI = request.getRequestURI();
-        int idx = requestURI.lastIndexOf(";");
-        if (idx != -1)
-        {
-            String requestURISuffix = requestURI.substring(idx);
-            if (requestURISuffix.startsWith(JSESSIONID_URL_PREFIX))
-            {
-                name = extractBalancerMemberNameFromSessionId(requestURISuffix.substring(JSESSIONID_URL_PREFIX.length()));
-            }
-        }
-        return name;
-    }
-
-    private String extractBalancerMemberNameFromSessionId(String sessionId)
-    {
-        String name = null;
-        int idx = sessionId.lastIndexOf(".");
-        if (idx != -1)
-        {
-            String sessionIdSuffix = sessionId.substring(idx + 1);
-            name = (sessionIdSuffix.length() > 0)?sessionIdSuffix:null;
-        }
-        return name;
-    }
-
-    @Override
-    protected String filterResponseHeaderValue(String headerName, String headerValue, HttpServletRequest request)
-    {
-        if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
-        {
-            HttpURI locationURI = new HttpURI(headerValue);
-            if (isAbsoluteLocation(locationURI) && isBackendLocation(locationURI))
-            {
-                Request jettyRequest = (Request)request;
-                URI reverseUri;
-                try
-                {
-                    reverseUri = new URI(jettyRequest.getRootURL().append(locationURI.getCompletePath()).toString()).normalize();
-                    return reverseUri.toURL().toString();
-                }
-                catch (Exception e)
-                {
-                    _log.warn("Not filtering header response",e);
-                    return headerValue;
-                }
-            }
-        }
-        return headerValue;
-    }
-
-    private boolean isBackendLocation(HttpURI locationURI)
-    {
-        for (BalancerMember balancerMember : _balancerMembers)
-        {
-            HttpURI backendURI = balancerMember.getBackendURI();
-            if (backendURI.getHost().equals(locationURI.getHost()) && backendURI.getScheme().equals(locationURI.getScheme())
-                    && backendURI.getPort() == locationURI.getPort())
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isAbsoluteLocation(HttpURI locationURI)
-    {
-        return locationURI.getHost() != null;
-    }
-
-    @Override
-    public String getHostHeader()
-    {
-        throw new UnsupportedOperationException("HostHeader not supported in " + getClass().getName());
-    }
-
-    @Override
-    public void setHostHeader(String hostHeader)
-    {
-        throw new UnsupportedOperationException("HostHeader not supported in " + getClass().getName());
-    }
-
-    @Override
-    public boolean validateDestination(String host, String path)
-    {
-        return true;
-    }
-
 }

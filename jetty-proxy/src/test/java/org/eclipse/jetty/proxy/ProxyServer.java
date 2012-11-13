@@ -19,20 +19,18 @@
 package org.eclipse.jetty.proxy;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.proxy.ConnectHandler;
-import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.proxy.ProxyServlet;
 
 public class ProxyServer
 {
     public static void main(String[] args) throws Exception
     {
         Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector(server);
-        connector.setPort(8888);
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(8080);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -41,16 +39,16 @@ public class ProxyServer
         // Setup proxy servlet
         ServletContextHandler context = new ServletContextHandler(handlers, "/", ServletContextHandler.SESSIONS);
         ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
-        proxyServlet.setInitParameter("whiteList", "google.com, www.eclipse.org, localhost");
-        proxyServlet.setInitParameter("blackList", "google.com/calendar/*, www.eclipse.org/committers/");
+//        proxyServlet.setInitParameter("whiteList", "google.com, www.eclipse.org, localhost");
+//        proxyServlet.setInitParameter("blackList", "google.com/calendar/*, www.eclipse.org/committers/");
         context.addServlet(proxyServlet, "/*");
-        
-        
+
+
         // Setup proxy handler to handle CONNECT methods
-        ConnectHandler proxy = new ConnectHandler();
-        proxy.setWhite(new String[]{"mail.google.com"});
-        proxy.addWhite("www.google.com");
-        handlers.addHandler(proxy);
+//        ConnectHandler proxy = new ConnectHandler();
+//        proxy.setWhite(new String[]{"mail.google.com"});
+//        proxy.addWhitelistHost("www.google.com");
+//        handlers.addHandler(proxy);
 
         server.start();
     }
