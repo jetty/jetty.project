@@ -173,7 +173,9 @@ public class ProxyServlet extends HttpServlet
      */
     protected Logger createLogger()
     {
-        return Log.getLogger(getServletConfig().getServletName());
+        String name = getServletConfig().getServletName();
+        name = name.replace('-', '.');
+        return Log.getLogger(name);
     }
 
     public void destroy()
