@@ -298,6 +298,9 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination provideDestination(String scheme, String host, int port)
     {
+        if (port <= 0)
+            port = "https".equalsIgnoreCase(scheme) ? 443 : 80;
+
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
         if (destination == null)
@@ -329,15 +332,11 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        int port = request.getPort();
-        if (port < 0)
-            port = "https".equals(scheme) ? 443 : 80;
-
         for (Response.ResponseListener listener : listeners)
             if (listener instanceof Schedulable)
                 ((Schedulable)listener).schedule(scheduler);
 
-        HttpDestination destination = provideDestination(scheme, request.getHost(), port);
+        HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
