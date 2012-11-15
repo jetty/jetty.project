@@ -69,7 +69,7 @@ public class HttpTransportOverSPDY implements HttpTransport
 
     @Override
     public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
-    {        
+    {
         // info==null content==null lastContent==false          should not happen
         // info==null content==null lastContent==true           signals no more content - complete
         // info==null content!=null lastContent==false          send data on committed response
@@ -116,21 +116,17 @@ public class HttpTransportOverSPDY implements HttpTransport
             boolean close = !hasContent && lastContent;
             reply(stream, new ReplyInfo(headers, close));
         }
+
         
-        if (stream.isClosed())
+        if ((hasContent || lastContent ) && !stream.isClosed() )
         {
-            callback.failed(context,new EofException());
-        }
-        else if (hasContent)
-        {
+            if (content==null)
+                content=BufferUtil.EMPTY_BUFFER;
             stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
-        }
-        else if (lastContent)
-        {
-            stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
         }
         else
             callback.completed(context);
+
     }
     
     @Override
