@@ -74,7 +74,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         if (nextProtocol == null && engine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING)
         {
             // The client sent the NPN extension, but did not send the NextProtocol
-            // message with the chosen protocol so we need to force the default protocol
+            // message with the chosen protocol so we need to close
             LOG.debug("{} missing next protocol", this);
             close();
         }

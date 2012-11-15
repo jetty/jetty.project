@@ -69,8 +69,17 @@ public class HttpTransportOverSPDY implements HttpTransport
 
     @Override
     public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
-    {
-        boolean hasContent = !BufferUtil.isEmpty(content);
+    {        
+        // info==null content==null lastContent==false          should not happen
+        // info==null content==null lastContent==true           signals no more content - complete
+        // info==null content!=null lastContent==false          send data on committed response
+        // info==null content!=null lastContent==true           send last data on committed response - complete
+        // info!=null content==null lastContent==false          commit
+        // info!=null content==null lastContent==true           commit and complete
+        // info!=null content!=null lastContent==false          commit with content
+        // info!=null content!=null lastContent==true           commit with content and complete
+        
+        boolean hasContent = BufferUtil.hasContent(content);
         
         if (info!=null)
         {
@@ -107,12 +116,21 @@ public class HttpTransportOverSPDY implements HttpTransport
             boolean close = !hasContent && lastContent;
             reply(stream, new ReplyInfo(headers, close));
         }
-
-        if ((hasContent || lastContent ) && !stream.isClosed() )
+        
+        if (stream.isClosed())
+        {
+            callback.failed(context,new EofException());
+        }
+        else if (hasContent)
+        {
             stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        }
+        else if (lastContent)
+        {
+            stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        }
         else
             callback.completed(context);
-
     }
     
     @Override
