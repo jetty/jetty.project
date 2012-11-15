@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server;
 import java.io.IOException;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -69,7 +70,15 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
             if (filled <= 0 || nextProtocol != null)
                 break;
         }
-        
+
+        if (nextProtocol == null && engine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING)
+        {
+            // The client sent the NPN extension, but did not send the NextProtocol
+            // message with the chosen protocol so we need to force the default protocol
+            LOG.debug("{} forcing default protocol", this);
+            unsupported();
+        }
+
         if (nextProtocol != null)
         {
             ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocol);
