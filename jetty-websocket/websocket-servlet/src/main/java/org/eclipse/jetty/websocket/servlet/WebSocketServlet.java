@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.ServiceLoader;
 
 import javax.servlet.ServletException;
@@ -128,8 +129,16 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
-            ServiceLoader<WebSocketServletFactory> loader = ServiceLoader.load(WebSocketServletFactory.class);
-            WebSocketServletFactory baseFactory = loader.iterator().next();
+            WebSocketServletFactory baseFactory ;
+            Iterator<WebSocketServletFactory> factories = ServiceLoader.load(WebSocketServletFactory.class).iterator();
+            
+            if (factories.hasNext())
+                baseFactory=factories.next();
+            else
+            {
+                Class<WebSocketServletFactory> wssf= (Class<WebSocketServletFactory>)getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
+                baseFactory=wssf.newInstance();
+            }
 
             factory = baseFactory.createFactory(policy);
 

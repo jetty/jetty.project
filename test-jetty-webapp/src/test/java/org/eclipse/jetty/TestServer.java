@@ -149,7 +149,7 @@ public class TestServer
         server.setHandler(restart);
 
 
-        // Setup deployers
+        // Setup context
 
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
@@ -165,7 +165,8 @@ public class TestServer
         server.setSendServerVersion(true);
 
         WebAppContext webapp = new WebAppContext();
-        //webapp.setParentLoaderPriority(true);
+        webapp.setParentLoaderPriority(true);
+        webapp.prependServerClass("-org.eclipse.jetty.websocket.server.");
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);
@@ -190,7 +191,6 @@ public class TestServer
 
     private static class RestartHandler extends HandlerWrapper
     {
-
         /* ------------------------------------------------------------ */
         /**
          * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -205,6 +205,7 @@ public class TestServer
 
                 new Thread()
                 {
+                    @Override
                     public void run()
                     {
                         try
@@ -222,7 +223,5 @@ public class TestServer
                 }.start();
             }
         }
-
     }
-
 }
