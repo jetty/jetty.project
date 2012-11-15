@@ -35,9 +35,6 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  * properties into the configured web application. The list of classpath files,
  * the application base directory and web.xml file could be specified in this
  * way.
- *
- * @author Jakub Pawlowicz
- * @author Athena Yao
  */
 public class AntWebXmlConfiguration extends WebXmlConfiguration
 {

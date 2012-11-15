@@ -37,8 +37,6 @@ import org.eclipse.jetty.util.Scanner;
 
 /**
  * Ant task for running a Jetty server.
- *
- * @author Jakub Pawlowicz
  */
 public class JettyRunTask extends Task
 {

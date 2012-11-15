@@ -57,7 +57,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 /**
  * An abstraction layer over Jetty WebAppContext.
  *
- * @author Jakub Pawlowicz
  */
 public class WebApplicationProxyImpl implements WebApplicationProxy
 {

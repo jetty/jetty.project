@@ -28,7 +28,6 @@ import org.eclipse.jetty.ant.utils.TaskLog;
 /**
  * Ant <systemProperties/> tag definition.
  * 
- * @author Jakub Pawlowicz
  */
 public class SystemProperties
 {

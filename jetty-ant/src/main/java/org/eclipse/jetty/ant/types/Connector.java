@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Sabre Holdings.
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,38 +16,42 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant.utils;
+package org.eclipse.jetty.ant.types;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import org.apache.tools.ant.Task;
-
-/**
- * Provides logging functionality for classes without access to the Ant project
- * variable.
- * 
- */
-public class TaskLog
+public class Connector
 {
+    private int port;
+    private int maxIdleTime;
 
-    private static Task task;
-
-    private static SimpleDateFormat format = new SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss.SSS");
-
-    public static void setTask(Task task)
+    public Connector()
     {
-        TaskLog.task = task;
+
     }
 
-    public static void log(String message)
+    public Connector(int port, int maxIdleTime)
     {
-        task.log(message);
+        this.port = port;
+        this.maxIdleTime = maxIdleTime;
     }
 
-    public static void logWithTimestamp(String message)
+    public int getPort()
     {
-        task.log(format.format(new Date()) + ": " + message);
+        return port;
     }
+
+    public void setPort(int port)
+    {
+        this.port = port;
+    }
+
+    public int getMaxIdleTime()
+    {
+        return maxIdleTime;
+    }
+
+    public void setMaxIdleTime(int maxIdleTime)
+    {
+        this.maxIdleTime = maxIdleTime;
+    }
+
 }
