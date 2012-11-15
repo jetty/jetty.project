@@ -123,7 +123,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     public void protocolSelected(String protocol)
     {
         LOG.debug("{} protocol selected {}", this, protocol);
-        nextProtocol = protocol;
+        nextProtocol = protocol != null ? protocol : defaultProtocol;
         NextProtoNego.remove(engine);
     }
 }
