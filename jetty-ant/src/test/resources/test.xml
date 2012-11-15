@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <project name="Jetty-Ant integration test" basedir=".">
   <path id="jetty.plugin.classpath">
-    <fileset dir="../../../target/test-lib" includes="*.jar"/>
+    <fileset dir="target/test-lib" includes="*.jar"/>
   </path>
 	
   <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
