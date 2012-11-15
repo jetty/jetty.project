@@ -75,8 +75,8 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         {
             // The client sent the NPN extension, but did not send the NextProtocol
             // message with the chosen protocol so we need to force the default protocol
-            LOG.debug("{} forcing default protocol", this);
-            unsupported();
+            LOG.debug("{} missing next protocol", this);
+            close();
         }
 
         if (nextProtocol != null)
