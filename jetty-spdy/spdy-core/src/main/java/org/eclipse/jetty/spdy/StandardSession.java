@@ -911,7 +911,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                     queue.remove(i);
                     if (stream != null && stream.isReset())
                     {
-                        frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM));
+                        frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM,
+                                "Stream: " + stream + " is reset!"));
                         return;
                     }
                     break;

@@ -329,7 +329,8 @@ public class StandardStream implements IStream
     {
         if (isClosed() || isReset())
         {
-            callback.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED));
+            callback.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED,
+                    "Stream: " + this + " already closed or reset!"));
             return;
         }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
