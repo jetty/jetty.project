@@ -35,33 +35,57 @@
               <assembly>
                 <extractArtifact>
                   <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
-                  <to>/opt/jetty</to>
+                  <to>/usr/share/jetty9</to>
                   <pattern>/jetty-distribution-${project.version}(.*)</pattern>
                   <replacement>$1</replacement>
                   <excludes>
-                    <include>jetty-distribution-*/contexts/javadoc.xml</include>
                     <exclude>jetty-distribution-*/javadoc</exclude>
                     <exclude>jetty-distribution-*/javadoc/**</exclude>
-                 </excludes>
+                    <exclude>jetty-distribution-*/logs/**</exclude>
+                    <exclude>jetty-distribution-*/bin/**</exclude>
+                    <exclude>jetty-distribution-*/webapps/**</exclude>                  
+                    <exclude>jetty-distribution-*/*.html</exclude>
+                    <exclude>jetty-distribution-*/*.txt</exclude>             
+                  </excludes>
+                 </extractArtifact>
+                 <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/usr/share/doc/jetty9</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <excludes>
+                    <include>jetty-distribution-*/*.html</include>
+                    <include>jetty-distribution-*/*.txt</include> 
+                    <exclude>jetty-distribution-*/**</exclude>           
+                  </excludes>
+                 </extractArtifact>
+                 <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/etc/jetty9</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <excludes>
+                    <include>jetty-distribution-*/etc/**</include>
+                    <exclude>jetty-distribution-*/**</exclude>           
+                  </excludes>
                  </extractArtifact>
               </assembly>
             </package>
-            <!--package>
-              <id>jetty-javadoc</id>
-              <classifier>javadoc</classifier>
+            <package>
+              <id>jetty-test-webapp</id>
+              <classifier>test-webapp</classifier>
               <assembly>
                 <extractArtifact>
                   <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
-                  <to>/opt/jetty</to>
+                  <to>/var/lib/jetty9/webapps</to>
                   <pattern>/jetty-distribution-${project.version}(.*)</pattern>
                   <replacement>$1</replacement>
                   <includes>
-                    <include>jetty-distribution-*/contexts/javadoc.xml</include>
-                    <include>jetty-distribution-*/javadoc/**</include>
+                    <include>jetty-distribution-*/webapps/**</include>
                   </includes>
                 </extractArtifact>
               </assembly>
-            </package-->
+            </package>
           </packages>
         </configuration>
       </plugin>
