@@ -6,7 +6,7 @@
    # If the package has default file it could be sourced, so that
    # the local admin can overwrite the defaults
  
-   [ -f "/etc/default/packagename" ] && . /etc/default/packagename
+   [ -f "/etc/default/jetty9" ] && . /etc/default/jetty9
  
    # Sane defaults:
  
