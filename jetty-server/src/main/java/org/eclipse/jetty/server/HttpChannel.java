@@ -584,6 +584,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 // TODO is it worthwhile sending if we are at EoF?
                 // "application" info failed to commit, commit with a failsafe 500 info
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
+                complete=true;
                 throw e;
             }
             catch (Exception e)
@@ -591,7 +592,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 LOG.warn(e);
                 // "application" info failed to commit, commit with a failsafe 500 info
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
+                complete=true;
                 throw e;
+            }
+            finally
+            {
+                // TODO this indicates the relationship with HttpOutput is not exactly correct
+                if (complete)
+                    _response.getHttpOutput().closed();
             }
         }
         return committed;

@@ -70,6 +70,16 @@ public class HttpTransportOverSPDY implements HttpTransport
     @Override
     public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("send  {} {} {} {} last={}%n",this,stream,info,BufferUtil.toDetailString(content),lastContent);
+
+        if (stream.isClosed() || stream.isReset() )
+        {        
+            callback.failed(context,new EofException("stream closed"));
+            return;
+        }
+        // new Throwable().printStackTrace();
+        
         // info==null content==null lastContent==false          should not happen
         // info==null content==null lastContent==true           signals no more content - complete
         // info==null content!=null lastContent==false          send data on committed response
@@ -114,17 +124,34 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
 
             boolean close = !hasContent && lastContent;
-            reply(stream, new ReplyInfo(headers, close));
+            ReplyInfo reply = new ReplyInfo(headers,close);
+            reply(stream, reply);
         }
 
-        
-        if ((hasContent || lastContent ) && !stream.isClosed() )
+        // Do we have some content to send as well
+        if (hasContent)
         {
-            if (content==null)
-                content=BufferUtil.EMPTY_BUFFER;
-            stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+            // Is the stream still open?
+            if (stream.isClosed()|| stream.isReset())
+                // tell the callback about the EOF 
+                callback.failed(context,new EofException("stream closed")); 
+            else 
+                // send the data and let it call the callback
+                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        }
+        // else do we need to close
+        else if (lastContent)
+        {
+            // Are we closed ?
+            if (stream.isClosed()|| stream.isReset())
+                // already closed by reply, so just tell callback we are complete
+                callback.completed(context); 
+            else
+                // send empty data to close and let the send call the callback
+                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
         }
         else
+            // No data and no close so tell callback we are completed
             callback.completed(context);
 
     }
