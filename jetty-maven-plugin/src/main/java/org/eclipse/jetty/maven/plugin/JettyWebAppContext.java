@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -59,40 +60,40 @@ public class JettyWebAppContext extends WebAppContext
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
 
-    private File classes = null;
-    private File testClasses = null;
-    private final List<File> webInfClasses = new ArrayList<File>();
-    private final List<File> webInfJars = new ArrayList<File>();
-    private final Map<String, File> webInfJarMap = new HashMap<String, File>();
-    private final EnvConfiguration envConfig;
-    private List<File> classpathFiles;  //webInfClasses+testClasses+webInfJars
-    private String jettyEnvXml;
-    private List<Resource> overlays;
+    private File _classes = null;
+    private File _testClasses = null;
+    private final List<File> _webInfClasses = new ArrayList<File>();
+    private final List<File> _webInfJars = new ArrayList<File>();
+    private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
+    private final EnvConfiguration _envConfig;
+    private List<File> _classpathFiles;  //webInfClasses+testClasses+webInfJars
+    private String _jettyEnvXml;
+    private List<Overlay> _overlays;
     
-    /**
-     * @deprecated The value of this parameter will be ignored by the plugin. Overlays will always be unpacked.
-     */
-    private boolean unpackOverlays;
+ 
     
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
      * container classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
      */
-    private String containerIncludeJarPattern = null;
+    private String _containerIncludeJarPattern = null;
     
     /**
      * Set the "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern" with a pattern for matching jars on
      * webapp's classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
      */
-    private String webInfIncludeJarPattern = null;
+    private String _webInfIncludeJarPattern = null;
+  
+
     
-
     /**
-     * @deprecated The value of this parameter will be ignored by the plugin. This option will be always disabled. 
+     * If there is no maven-war-plugin config for ordering of the current project in the
+     * sequence of overlays, use this to control whether the current project is added 
+     * first or last in list of overlaid resources
      */
-    private boolean copyWebInf;
+    private boolean _baseAppFirst = true;
 
-    private boolean baseAppFirst = true;
+  
 
     public JettyWebAppContext ()
     throws Exception
@@ -103,7 +104,7 @@ public class JettyWebAppContext extends WebAppContext
                 new WebXmlConfiguration(),
                 new MetaInfConfiguration(),
                 new FragmentConfiguration(),
-                envConfig = new EnvConfiguration(),
+                _envConfig = new EnvConfiguration(),
                 new org.eclipse.jetty.plus.webapp.PlusConfiguration(),
                 new MavenAnnotationConfiguration(),
                 new JettyWebXmlConfiguration()
@@ -113,114 +114,94 @@ public class JettyWebAppContext extends WebAppContext
     }
     public void setContainerIncludeJarPattern(String pattern)
     {
-    	containerIncludeJarPattern = pattern;
+    	_containerIncludeJarPattern = pattern;
     }
     
     public String getContainerIncludeJarPattern()
     {
-        return containerIncludeJarPattern;
+        return _containerIncludeJarPattern;
     }
     
     
     public String getWebInfIncludeJarPattern()
     {
-    	return webInfIncludeJarPattern;
+    	return _webInfIncludeJarPattern;
     }
     public void setWebInfIncludeJarPattern(String pattern)
     {
-        webInfIncludeJarPattern = pattern;
+        _webInfIncludeJarPattern = pattern;
     }
    
-    
-    
-    public boolean getUnpackOverlays()
-    {
-        return unpackOverlays;
-    }
-
-    public void setUnpackOverlays(boolean unpackOverlays)
-    {
-        this.unpackOverlays = unpackOverlays;
-    }
    
     public List<File> getClassPathFiles()
     {
-        return this.classpathFiles;
+        return this._classpathFiles;
     }
     
-    public void setOverlays (List<Resource> overlays)
-    {
-        this.overlays = overlays;
-    }
-    
-    public List<Resource> getOverlays ()
-    {
-        return this.overlays;
-    }
     
     public void setJettyEnvXml (String jettyEnvXml)
     {
-        this.jettyEnvXml = jettyEnvXml;
+        this._jettyEnvXml = jettyEnvXml;
     }
     
     public String getJettyEnvXml()
     {
-        return this.jettyEnvXml;
+        return this._jettyEnvXml;
     }
 
    
     public void setClasses(File dir)
     {
-        classes = dir;
+        _classes = dir;
     }
     
     public File getClasses()
     {
-        return classes;
+        return _classes;
     }
     
     public void setWebInfLib (List<File> jars)
     {
-        webInfJars.addAll(jars);
+        _webInfJars.addAll(jars);
     }
     
     
     public void setTestClasses (File dir)
     {
-        testClasses = dir;
+        _testClasses = dir;
     }
     
     
     public File getTestClasses ()
     {
-        return testClasses;
+        return _testClasses;
     }
     
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setCopyWebInf(boolean value)
+    /**
+     * Ordered list of wars to overlay on top of the current project. The list
+     * may contain an overlay that represents the current project.
+     * @param overlays
+     */
+    public void setOverlays (List<Overlay> overlays)
     {
-        copyWebInf = value;
+        _overlays = overlays;
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isCopyWebInf()
+    
+    public List<Overlay> getOverlays()
     {
-        return copyWebInf;
+        return _overlays;
     }
 
     /* ------------------------------------------------------------ */
     public void setBaseAppFirst(boolean value)
     {
-        baseAppFirst = value;
+        _baseAppFirst = value;
     }
 
     /* ------------------------------------------------------------ */
     public boolean getBaseAppFirst()
     {
-        return baseAppFirst;
+        return _baseAppFirst;
     }
 
     /* ------------------------------------------------------------ */
@@ -244,7 +225,7 @@ public class JettyWebAppContext extends WebAppContext
 
     public List<File> getWebInfLib()
     {
-        return webInfJars;
+        return _webInfJars;
     }
 
     public void doStart () throws Exception
@@ -254,7 +235,7 @@ public class JettyWebAppContext extends WebAppContext
 
         //Allow user to set up pattern for names of jars from the container classpath
         //that will be scanned - note that by default NO jars are scanned
-        String tmp = containerIncludeJarPattern;
+        String tmp = _containerIncludeJarPattern;
         if (tmp==null || "".equals(tmp))
             tmp = (String)getAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN);           
         
@@ -264,32 +245,32 @@ public class JettyWebAppContext extends WebAppContext
         //Allow user to set up pattern of jar names from WEB-INF that will be scanned.
         //Note that by default ALL jars considered to be in WEB-INF will be scanned - setting
         //a pattern restricts scanning
-        if (webInfIncludeJarPattern != null)
-            setAttribute(WebInfConfiguration.WEBINF_JAR_PATTERN, webInfIncludeJarPattern);
+        if (_webInfIncludeJarPattern != null)
+            setAttribute(WebInfConfiguration.WEBINF_JAR_PATTERN, _webInfIncludeJarPattern);
    
         //Set up the classes dirs that comprises the equivalent of WEB-INF/classes
-        if (testClasses != null)
-            webInfClasses.add(testClasses);
-        if (classes != null)
-            webInfClasses.add(classes);
+        if (_testClasses != null)
+            _webInfClasses.add(_testClasses);
+        if (_classes != null)
+            _webInfClasses.add(_classes);
         
         // Set up the classpath
-        classpathFiles = new ArrayList<File>();
-        classpathFiles.addAll(webInfClasses);
-        classpathFiles.addAll(webInfJars);
+        _classpathFiles = new ArrayList<File>();
+        _classpathFiles.addAll(_webInfClasses);
+        _classpathFiles.addAll(_webInfJars);
 
         // Initialize map containing all jars in /WEB-INF/lib
-        webInfJarMap.clear();
-        for (File file : webInfJars)
+        _webInfJarMap.clear();
+        for (File file : _webInfJars)
         {
             // Return all jar files from class path
             String fileName = file.getName();
             if (fileName.endsWith(".jar"))
-                webInfJarMap.put(fileName, file);
+                _webInfJarMap.put(fileName, file);
         }
 
-        if (this.jettyEnvXml != null)
-            envConfig.setJettyEnvXml(Resource.toURL(new File(this.jettyEnvXml)));
+        if (this._jettyEnvXml != null)
+            _envConfig.setJettyEnvXml(Resource.toURL(new File(this._jettyEnvXml)));
         
         // CHECK setShutdown(false);
         super.doStart();
@@ -297,18 +278,18 @@ public class JettyWebAppContext extends WebAppContext
      
     public void doStop () throws Exception
     { 
-        if (classpathFiles != null)
-            classpathFiles.clear();
-        classpathFiles = null;
+        if (_classpathFiles != null)
+            _classpathFiles.clear();
+        _classpathFiles = null;
         
-        classes = null;
-        testClasses = null;
+        _classes = null;
+        _testClasses = null;
         
-        if (webInfJarMap != null)
-            webInfJarMap.clear();
+        if (_webInfJarMap != null)
+            _webInfJarMap.clear();
        
-        webInfClasses.clear();
-        webInfJars.clear();
+        _webInfClasses.clear();
+        _webInfJars.clear();
         
         
         
@@ -326,7 +307,7 @@ public class JettyWebAppContext extends WebAppContext
         resource = super.getResource(uriInContext);
 
         // If no regular resource exists check for access to /WEB-INF/lib or /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && uriInContext != null && classes != null)
+        if ((resource == null || !resource.exists()) && uriInContext != null && _classes != null)
         {
             String uri = URIUtil.canonicalPath(uriInContext);
             if (uri == null)
@@ -341,19 +322,19 @@ public class JettyWebAppContext extends WebAppContext
                     {
                         //exact match for a WEB-INF/classes, so preferentially return the resource matching the web-inf classes
                         //rather than the test classes
-                        if (classes != null)
-                            return Resource.newResource(classes);
-                        else if (testClasses != null)
-                            return Resource.newResource(testClasses);
+                        if (_classes != null)
+                            return Resource.newResource(_classes);
+                        else if (_testClasses != null)
+                            return Resource.newResource(_testClasses);
                     }
                     else
                     {
                         //try matching                       
                         Resource res = null;
                         int i=0;
-                        while (res == null && (i < webInfClasses.size()))
+                        while (res == null && (i < _webInfClasses.size()))
                         {
-                            String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
+                            String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                             res = Resource.newResource(newPath);
                             if (!res.exists())
                             {
@@ -373,7 +354,7 @@ public class JettyWebAppContext extends WebAppContext
                         jarName = jarName.substring(1);
                     if (jarName.length()==0) 
                         return null;
-                    File jarFile = webInfJarMap.get(jarName);
+                    File jarFile = _webInfJarMap.get(jarName);
                     if (jarFile != null)
                         return Resource.newResource(jarFile.getPath());
 
@@ -406,7 +387,7 @@ public class JettyWebAppContext extends WebAppContext
             //add in the dependency jars as a virtual WEB-INF/lib entry
             if (path.startsWith(WEB_INF_LIB_PREFIX))
             {
-                for (String fileName : webInfJarMap.keySet())
+                for (String fileName : _webInfJarMap.keySet())
                 {
                     // Return all jar files from class path
                     allPaths.add(WEB_INF_LIB_PREFIX + "/" + fileName);
@@ -416,9 +397,9 @@ public class JettyWebAppContext extends WebAppContext
             {
                 int i=0;
                
-                while (i < webInfClasses.size())
+                while (i < _webInfClasses.size())
                 {
-                    String newPath = path.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
+                    String newPath = path.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                     allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }

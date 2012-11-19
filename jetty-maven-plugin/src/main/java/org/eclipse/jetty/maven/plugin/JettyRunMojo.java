@@ -20,10 +20,13 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -32,6 +35,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+
 
 /**
  *  <p>
@@ -66,6 +70,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
     
     
+
     /**
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
@@ -73,7 +78,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * 
      * @parameter alias="useTestClasspath" default-value="false"
      */
-    private boolean useTestScope;
+    protected boolean useTestScope;
     
   
     /**
@@ -83,7 +88,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @parameter expression="${maven.war.webxml}"
      * @readonly
      */
-    private String webXml;
+    protected String webXml;
     
     
     /**
@@ -93,8 +98,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @required
      * 
      */
-    private File classesDirectory;
-    
+    protected File classesDirectory;
     
     
     /**
@@ -103,7 +107,8 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @parameter expression="${project.build.testOutputDirectory}"
      * @required
      */
-    private File testClassesDirectory;
+    protected File testClassesDirectory;
+    
     
     /**
      * Root directory for all html/jsp etc files
@@ -111,14 +116,14 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @parameter expression="${maven.war.src}"
      * 
      */
-    private File webAppSourceDirectory;
+    protected File webAppSourceDirectory;
     
  
     /**
      * List of files or directories to additionally periodically scan for changes. Optional.
      * @parameter
      */
-    private File[] scanTargets;
+    protected File[] scanTargets;
     
     
     /**
@@ -127,15 +132,40 @@ public class JettyRunMojo extends AbstractJettyMojo
      * or in conjunction with &lt;scanTargets&gt;.Optional.
      * @parameter
      */
-    private ScanTargetPattern[] scanTargetPatterns;
+    protected ScanTargetPattern[] scanTargetPatterns;
 
-
-   
     
     /**
      * Extra scan targets as a list
      */
-    private List<File> extraScanTargets;
+    protected List<File> extraScanTargets;
+    
+    
+    /**
+     * maven-war-plugin reference
+     */
+    protected WarPluginInfo warPluginInfo;
+    
+    
+    /**
+     * List of deps that are wars
+     */
+    protected List<Artifact> warArtifacts;
+    
+    
+    
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
+     */
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException
+    {
+        warPluginInfo = new WarPluginInfo(project);
+        super.execute();
+    }
     
     
     
@@ -150,14 +180,14 @@ public class JettyRunMojo extends AbstractJettyMojo
         // check the location of the static content/jsps etc
         try
         {
-            if ((getWebAppSourceDirectory() == null) || !getWebAppSourceDirectory().exists())
+            if ((webAppSourceDirectory == null) || !webAppSourceDirectory.exists())
             {              
                 File defaultWebAppSrcDir = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
-                getLog().info("webAppSourceDirectory"+(getWebAppSourceDirectory()==null?" not set.":" does not exist.")+" Defaulting to "+defaultWebAppSrcDir.getAbsolutePath());  
+                getLog().info("webAppSourceDirectory"+(webAppSourceDirectory == null ? " not set." : " does not exist.")+" Defaulting to "+defaultWebAppSrcDir.getAbsolutePath());  
                 webAppSourceDirectory = defaultWebAppSrcDir;
             }
             else
-                getLog().info( "Webapp source directory = " + getWebAppSourceDirectory().getCanonicalPath());
+                getLog().info( "Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
         }
         catch (IOException e)
         {
@@ -179,12 +209,12 @@ public class JettyRunMojo extends AbstractJettyMojo
         try
         {
             //allow a webapp with no classes in it (just jsps/html)
-            if (getClassesDirectory() != null)
+            if (classesDirectory != null)
             {
-                if (!getClassesDirectory().exists())
-                    getLog().info( "Classes directory "+ getClassesDirectory().getCanonicalPath()+ " does not exist");
+                if (!classesDirectory.exists())
+                    getLog().info( "Classes directory "+ classesDirectory.getCanonicalPath()+ " does not exist");
                 else
-                    getLog().info("Classes = " + getClassesDirectory().getCanonicalPath());
+                    getLog().info("Classes = " + classesDirectory.getCanonicalPath());
             }
             else
                 getLog().info("Classes directory not set");         
@@ -194,17 +224,15 @@ public class JettyRunMojo extends AbstractJettyMojo
             throw new MojoExecutionException("Location of classesDirectory does not exist");
         }
         
-        
-        setExtraScanTargets(new ArrayList<File>());
+        extraScanTargets = new ArrayList<File>();
         if (scanTargets != null)
         {            
             for (int i=0; i< scanTargets.length; i++)
             {
                 getLog().info("Added extra scan target:"+ scanTargets[i]);
-                getExtraScanTargets().add(scanTargets[i]);
+                extraScanTargets.add(scanTargets[i]);
             }            
         }
-        
         
         if (scanTargetPatterns!=null)
         {
@@ -236,11 +264,11 @@ public class JettyRunMojo extends AbstractJettyMojo
                     itor = files.iterator();
                     while (itor.hasNext())
                         getLog().info("Adding extra scan target from pattern: "+itor.next());
-                    List<File> currentTargets = getExtraScanTargets();
+                    List<File> currentTargets = extraScanTargets;
                     if(currentTargets!=null && !currentTargets.isEmpty())
                         currentTargets.addAll(files);
                     else
-                        setExtraScanTargets(files);
+                        extraScanTargets = files;
                 }
                 catch (IOException e)
                 {
@@ -253,7 +281,9 @@ public class JettyRunMojo extends AbstractJettyMojo
    
 
 
-
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
+     */
     public void configureWebApplication() throws Exception
     {
        super.configureWebApplication();
@@ -270,13 +300,61 @@ public class JettyRunMojo extends AbstractJettyMojo
        if (webApp.getBaseResource() == null)
                webApp.setBaseResource(webAppSourceDirectoryResource);
 
-       if (getClassesDirectory() != null)
-           webApp.setClasses (getClassesDirectory());
+       if (classesDirectory != null)
+           webApp.setClasses (classesDirectory);
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
+       
        webApp.setWebInfLib (getDependencyFiles());
 
-        
+       //get copy of a list of war artifacts
+       Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
+
+       //make sure each of the war artifacts is added to the scanner
+       for (Artifact a:getWarArtifacts())
+           extraScanTargets.add(a.getFile());
+
+       //process any overlays and the war type artifacts
+       List<Overlay> overlays = new ArrayList<Overlay>();
+       for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
+       {
+           //overlays can be individually skipped
+           if (config.isSkip())
+               continue;
+
+           //an empty overlay refers to the current project - important for ordering
+           if (config.isCurrentProject())
+           {
+               Overlay overlay = new Overlay(config, null);
+               overlays.add(overlay);
+               continue;
+           }
+
+           //if a war matches an overlay config
+           Artifact a = getArtifactForOverlay(config, getWarArtifacts());
+           if (a != null)
+           {
+               matchedWarArtifacts.add(a);
+               SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/"));
+               r.setIncludes(config.getIncludes());
+               r.setExcludes(config.getExcludes());
+               Overlay overlay = new Overlay(config, r);
+               overlays.add(overlay);
+           }
+       }
+
+       //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
+       for (Artifact a: getWarArtifacts())
+       {
+           if (!matchedWarArtifacts.contains(a))
+           {
+               Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/")));
+               overlays.add(overlay);
+           }
+       }
+
+       webApp.setOverlays(overlays);
+       
         //if we have not already set web.xml location, need to set one up
         if (webApp.getDescriptor() == null)
         {
@@ -311,14 +389,20 @@ public class JettyRunMojo extends AbstractJettyMojo
             }
         }
         getLog().info( "web.xml file = "+webApp.getDescriptor());       
-        getLog().info("Webapp directory = " + getWebAppSourceDirectory().getCanonicalPath());
+        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
     
+    
+
+    
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
+     */
     public void configureScanner ()
     throws MojoExecutionException
     {
         // start the scanner thread (if necessary) on the main webapp
-        final ArrayList<File> scanList = new ArrayList<File>();
+        scanList = new ArrayList<File>();
         if (webApp.getDescriptor() != null)
         {
             try
@@ -375,25 +459,25 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
         
         
-        File jettyWebXmlFile = findJettyWebXmlFile(new File(getWebAppSourceDirectory(),"WEB-INF"));
+        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
         if (jettyWebXmlFile != null)
             scanList.add(jettyWebXmlFile);
-        scanList.addAll(getExtraScanTargets());
-        scanList.add(getProject().getFile());
+        scanList.addAll(extraScanTargets);
+        scanList.add(project.getFile());
         if (webApp.getTestClasses() != null)
             scanList.add(webApp.getTestClasses());
         if (webApp.getClasses() != null)
         scanList.add(webApp.getClasses());
         scanList.addAll(webApp.getWebInfLib());
-        setScanList(scanList);
-        ArrayList<Scanner.BulkListener> listeners = new ArrayList<Scanner.BulkListener>();
-        listeners.add(new Scanner.BulkListener()
+     
+        scannerListeners = new ArrayList<Scanner.BulkListener>();
+        scannerListeners.add(new Scanner.BulkListener()
         {
             public void filesChanged (List changes)
             {
                 try
                 {
-                    boolean reconfigure = changes.contains(getProject().getFile().getCanonicalPath());
+                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
                     restartWebApp(reconfigure);
                 }
                 catch (Exception e)
@@ -402,9 +486,14 @@ public class JettyRunMojo extends AbstractJettyMojo
                 }
             }
         });
-        setScannerListeners(listeners);
     }
 
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
+     */
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("restarting "+webApp);
@@ -424,14 +513,14 @@ public class JettyRunMojo extends AbstractJettyMojo
             scanList.add(new File(webApp.getDescriptor()));
             if (webApp.getJettyEnvXml() != null)
                 scanList.add(new File(webApp.getJettyEnvXml()));
-            scanList.addAll(getExtraScanTargets());
-            scanList.add(getProject().getFile());
+            scanList.addAll(extraScanTargets);
+            scanList.add(project.getFile());
             if (webApp.getTestClasses() != null)
                 scanList.add(webApp.getTestClasses());
             if (webApp.getClasses() != null)
             scanList.add(webApp.getClasses());
             scanList.addAll(webApp.getWebInfLib());
-            getScanner().setScanDirs(scanList);
+            scanner.setScanDirs(scanList);
         }
 
         getLog().debug("Restarting webapp ...");
@@ -439,10 +528,15 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().info("Restart completed at "+new Date().toString());
     }
     
+    
+    
+    
+    /**
+     * @return
+     */
     private List<File> getDependencyFiles ()
     {
         List<File> dependencyFiles = new ArrayList<File>();
-        List<Resource> overlays = new ArrayList<Resource>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();
@@ -450,17 +544,6 @@ public class JettyRunMojo extends AbstractJettyMojo
             // Include runtime and compile time libraries, and possibly test libs too
             if(artifact.getType().equals("war"))
             {
-                try
-                {
-                    Resource r=Resource.newResource("jar:"+Resource.toURL(artifact.getFile()).toString()+"!/");
-                    overlays.add(r);
-                    getLog().info("Adding overlay for war project artifact "+artifact.getId());
-                    getExtraScanTargets().add(artifact.getFile());
-                }
-                catch(Exception e)
-                {
-               	    throw new RuntimeException(e);
-                }
                 continue;
             }
 
@@ -473,136 +556,79 @@ public class JettyRunMojo extends AbstractJettyMojo
             dependencyFiles.add(artifact.getFile());
             getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
         }
-
-        webApp.setOverlays(overlays);
               
         return dependencyFiles; 
     }
     
     
-   
-
-    private List<File> setUpClassPath(File webInfClasses, File testClasses, List<File> webInfJars)
+    
+    
+    /**
+     * @return
+     */
+    private List<Artifact> getWarArtifacts ()
     {
-        List<File> classPathFiles = new ArrayList<File>();   
-        if (webInfClasses != null)
-            classPathFiles.add(webInfClasses);
-        if (testClasses != null)
-            classPathFiles.add(testClasses);
-        classPathFiles.addAll(webInfJars);
-
-        if (getLog().isDebugEnabled())
+        if (warArtifacts != null)
+            return warArtifacts;       
+        
+        warArtifacts = new ArrayList<Artifact>();
+        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
-            for (int i = 0; i < classPathFiles.size(); i++)
+            Artifact artifact = (Artifact) iter.next();            
+            if (artifact.getType().equals("war"))
             {
-                getLog().debug("classpath element: "+ ((File) classPathFiles.get(i)).getName());
+                try
+                {                  
+                    warArtifacts.add(artifact);
+                    getLog().info("Dependent war artifact "+artifact.getId());
+                }
+                catch(Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         }
-        return classPathFiles;
+        return warArtifacts;
     }
-    
-    private List<File> getClassesDirs ()
-    {
-        List<File> classesDirs = new ArrayList<File>();
-        
-        //if using the test classes, make sure they are first
-        //on the list
-        if (useTestScope && (testClassesDirectory != null))
-            classesDirs.add(testClassesDirectory);
-        
-        if (getClassesDirectory() != null)
-            classesDirs.add(getClassesDirectory());
-        
-        return classesDirs;
-    }
-  
-
- 
 
     
-    public void execute() throws MojoExecutionException, MojoFailureException
-    {
-       
-        super.execute();
-    }
-  
-
-    public String getWebXml()
-    {
-        return this.webXml;
-    }
-
-    public void setWebXml(String webXml) {
-        this.webXml = webXml;
-    }
-
-    public File getClassesDirectory()
-    {
-        return this.classesDirectory;
-    }
-
-    public void setClassesDirectory(File classesDirectory) {
-        this.classesDirectory = classesDirectory;
-    }
-
-    public File getWebAppSourceDirectory()
-    {
-        return this.webAppSourceDirectory;
-    }
-
-    public void setWebAppSourceDirectory(File webAppSourceDirectory)
-    {
-        this.webAppSourceDirectory = webAppSourceDirectory;
-    }
-
-    public List<File> getExtraScanTargets()
-    {
-        return this.extraScanTargets;
-    }
-
-    public void setExtraScanTargets(List<File> list)
-    {
-        this.extraScanTargets = list;
-    }
-
-    public boolean isUseTestClasspath()
-    {
-        return useTestScope;
-    }
-
-    public void setUseTestClasspath(boolean useTestClasspath)
-    {
-        this.useTestScope = useTestClasspath;
-    }
-
-    public File getTestClassesDirectory()
-    {
-        return testClassesDirectory;
-    }
-
-    public void setTestClassesDirectory(File testClassesDirectory)
-    {
-        this.testClassesDirectory = testClassesDirectory;
-    }
-
-    public File[] getScanTargets()
-    {
-        return scanTargets;
-    }
-
-    public void setScanTargets(File[] scanTargets)
-    {
-        this.scanTargets = scanTargets;
-    }
-
-    public ScanTargetPattern[] getScanTargetPatterns()
-    {
-        return scanTargetPatterns;
-    }
-
-    public void setScanTargetPatterns(ScanTargetPattern[] scanTargetPatterns)
-    {
-        this.scanTargetPatterns = scanTargetPatterns;
-    }
     
+    /**
+     * @param o
+     * @param warArtifacts
+     * @return
+     */
+    protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
+    {
+        if (o == null || warArtifacts == null || warArtifacts.isEmpty())
+            return null;
+        
+        for (Artifact a:warArtifacts)
+        {
+            if (overlayMatchesArtifact (o, a))
+            {
+               return a;
+            }
+        }
+        
+        return null;
+    }
+
+
+
+    
+    /**
+     * @param o
+     * @param a
+     * @return
+     */
+    protected boolean overlayMatchesArtifact(OverlayConfig o, Artifact a)
+    {
+        if (((o.getGroupId() == null && a.getGroupId() == null) || (o.getGroupId() != null && o.getGroupId().equals(a.getGroupId())))
+        &&  ((o.getArtifactId() == null && a.getArtifactId() == null) || (o.getArtifactId() != null && o.getArtifactId().equals(a.getArtifactId())))
+        &&  ((o.getClassifier() == null) || (o.getClassifier().equals(a.getClassifier()))))
+            return true;
+
+        return false;
+    }
 }

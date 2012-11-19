@@ -1,0 +1,304 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+
+package org.eclipse.jetty.maven.plugin;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
+import edu.emory.mathcs.backport.java.util.Arrays;
+
+/**
+ * OverlayConfig
+ *
+ *
+ */
+public class OverlayConfig
+{
+    private String targetPath;
+    private String groupId;
+    private String artifactId;
+    private String classifier;
+    private List<String> includes;
+    private List<String> excludes;
+    private boolean skip;
+    private boolean filtered;
+    
+    public OverlayConfig() {}
+    
+    public OverlayConfig(String fmt, List<String> defaultIncludes, List<String> defaultExcludes)
+    {
+        if (fmt == null)
+            return;
+        String[] atoms = fmt.split(",");
+        for (int i=0;i<atoms.length;i++)
+        {
+            String s = atoms[i].trim();
+            switch (i)
+            {
+                case 0: 
+                {
+                    if (!"".equals(s))
+                        groupId = s;
+                    break;
+                }
+                case 1:
+                {
+                    if (!"".equals(s))
+                        artifactId = s;
+                    break;
+                }
+                case 2:
+                {
+                    if (!"".equals(s))
+                        classifier = s;
+                    break;
+                }
+                case 3: 
+                { 
+                    if (!"".equals(s))
+                        targetPath = s;
+                    break;
+                }
+                case 4:
+                {
+                    if ("".equals(s))
+                        skip = false;
+                    else
+                        skip = Boolean.valueOf(s);
+                    break;
+                }
+                case 5:
+                {
+                    if ("".equals(s))
+                        filtered = false;
+                    else
+                        filtered = Boolean.valueOf(s);
+                    break;
+                }
+                case 6:
+                {
+                    if ("".equals(s))
+                        break;
+                    String[] incs = s.split(";");
+                    if (incs.length > 0)
+                        includes = Arrays.asList(incs);
+                    break;
+                }
+                case 7:
+                { 
+                    if ("".equals(s))
+                        break;
+                    String[] exs = s.split(";");
+                    if (exs.length > 0)
+                        excludes = Arrays.asList(exs);
+                    break;
+                }
+            }
+        }
+    }
+
+    public OverlayConfig(Xpp3Dom root, List<String> defaultIncludes, List<String> defaultExcludes)
+    {
+        Xpp3Dom node = root.getChild("groupId");
+        setGroupId(node==null?null:node.getValue());
+        
+        node = root.getChild("artifactId");
+        setArtifactId(node==null?null:node.getValue());   
+        
+        node = root.getChild("classifier");
+        setClassifier(node==null?null:node.getValue());
+       
+        node = root.getChild("targetPath");
+        setTargetPath(node==null?null:node.getValue());
+        
+        node = root.getChild("skip");
+        setSkip(node==null?false:Boolean.valueOf(node.getValue()));
+
+        node = root.getChild("filtered");
+        setFiltered(node==null?false:Boolean.valueOf(node.getValue()));
+
+        node = root.getChild("includes");
+        List<String> includes = null;
+        if (node != null && node.getChildCount() > 0)
+        {
+            Xpp3Dom[] list = node.getChildren("include");
+            for (int j=0; list != null && j < list.length;j++)
+            {
+                if (includes == null)
+                    includes = new ArrayList<String>();
+                includes.add(list[j].getValue());
+            }
+        }
+        if (includes == null && defaultIncludes != null)
+        {
+            includes = new ArrayList<String>();
+            includes.addAll(defaultIncludes);
+        }
+        setIncludes(includes);
+        
+       
+        node = root.getChild("excludes");
+        List<String> excludes = null;
+        if (node != null && node.getChildCount() > 0)
+        {
+            Xpp3Dom[] list = node.getChildren("exclude");
+            for (int j=0; list != null && j < list.length;j++)
+            {
+                if (excludes == null)
+                    excludes = new ArrayList<String>();
+                excludes.add(list[j].getValue());
+            }
+        }
+        if (excludes == null && defaultExcludes != null)
+        {
+            excludes = new ArrayList<String>();
+            excludes.addAll(defaultExcludes);
+        }
+        setExcludes(excludes);
+    }
+    
+    public String getTargetPath()
+    {
+        return targetPath;
+    }
+
+    public void setTargetPath(String targetPath)
+    {
+        this.targetPath = targetPath;
+    }
+
+    public String getGroupId()
+    {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId)
+    {
+        this.groupId = groupId;
+    }
+
+    public String getArtifactId()
+    {
+        return artifactId;
+    }
+
+    public void setArtifactId(String artifactId)
+    {
+        this.artifactId = artifactId;
+    }
+
+    public String getClassifier()
+    {
+        return classifier;
+    }
+
+    public void setClassifier(String classifier)
+    {
+        this.classifier = classifier;
+    }
+
+    public List<String> getIncludes()
+    {
+        return includes;
+    }
+
+    public void setIncludes(List<String> includes)
+    {
+        this.includes = includes;
+    }
+
+    public List<String> getExcludes()
+    {
+        return excludes;
+    }
+
+    public void setExcludes(List<String> excludes)
+    {
+        this.excludes = excludes;
+    }
+
+    public boolean isSkip()
+    {
+        return skip;
+    }
+
+    public void setSkip(boolean skip)
+    {
+        this.skip = skip;
+    }
+
+    public boolean isFiltered()
+    {
+        return filtered;
+    }
+
+    public void setFiltered(boolean filtered)
+    {
+        this.filtered = filtered;
+    }
+    
+    public boolean isCurrentProject()
+    {
+        if (this.groupId == null && this.artifactId == null)
+            return true;
+        return false;
+    }
+    
+    public String toString()
+    {
+        StringBuffer strbuff = new StringBuffer();
+        strbuff.append((groupId != null ? groupId : "")+",");
+        strbuff.append((artifactId != null ? artifactId : "")+",");
+        strbuff.append((classifier != null ? classifier : "")+",");
+        strbuff.append((targetPath != null ? targetPath : "")+",");
+        strbuff.append(""+skip+",");
+        strbuff.append(""+filtered+",");
+     
+        if (includes != null)
+        {
+            Iterator<String> itor = includes.iterator();
+            while (itor.hasNext())
+            {
+                strbuff.append(itor.next());
+                if (itor.hasNext())
+                    strbuff.append(";");
+            }
+        }
+        
+        strbuff.append(", ");
+
+        if (excludes != null)
+        {
+            Iterator<String> itor = excludes.iterator();
+            while (itor.hasNext())
+            {
+                strbuff.append(itor.next());
+                if (itor.hasNext())
+                    strbuff.append(";");
+            }
+        }
+  
+        return strbuff.toString();
+    }
+}
+

@@ -67,7 +67,17 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
    
   
    
-
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
+     */
+    public void execute () throws MojoExecutionException, MojoFailureException
+    {
+        super.execute();
+    }
+    
+    
+    
+    
     /**
      * 
      * @see org.mortbay.jetty.plugin.AbstractJettyMojo#checkPomConfiguration()
@@ -77,13 +87,16 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         return;
     }
 
+    
+    
+    
     /**
      * @see org.mortbay.jetty.plugin.AbstractJettyMojo#configureScanner()
      */
     public void configureScanner() throws MojoExecutionException
     {
-        final ArrayList<File> scanList = new ArrayList<File>();
-        scanList.add(getProject().getFile());
+        scanList = new ArrayList<File>();
+        scanList.add(project.getFile());
         File webInfDir = new File(war,"WEB-INF");
         scanList.add(new File(webInfDir, "web.xml"));
         File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
@@ -94,16 +107,15 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
             scanList.add(jettyEnvXmlFile);
         scanList.add(new File(webInfDir, "classes"));
         scanList.add(new File(webInfDir, "lib"));
-        setScanList(scanList);
-        
-        ArrayList<Scanner.BulkListener> listeners = new ArrayList<Scanner.BulkListener>();
-        listeners.add(new Scanner.BulkListener()
+
+        scannerListeners = new ArrayList<Scanner.BulkListener>();
+        scannerListeners.add(new Scanner.BulkListener()
         {
             public void filesChanged(List changes)
             {
                 try
                 {
-                    boolean reconfigure = changes.contains(getProject().getFile().getCanonicalPath());
+                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
                     restartWebApp(reconfigure);
                 }
                 catch (Exception e)
@@ -112,12 +124,14 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
                 }
             }
         });
-        setScannerListeners(listeners);
     }
 
     
     
     
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
+     */
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("Restarting webapp");
@@ -132,9 +146,8 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         if (reconfigureScanner)
         {
             getLog().info("Reconfiguring scanner after change to pom.xml ...");
-            ArrayList<File> scanList = getScanList();
             scanList.clear();
-            scanList.add(getProject().getFile());
+            scanList.add(project.getFile());
             File webInfDir = new File(war,"WEB-INF");
             scanList.add(new File(webInfDir, "web.xml"));
             File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
@@ -145,8 +158,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
                 scanList.add(jettyEnvXmlFile);
             scanList.add(new File(webInfDir, "classes"));
             scanList.add(new File(webInfDir, "lib"));
-            setScanList(scanList);
-            getScanner().setScanDirs(scanList);
+            scanner.setScanDirs(scanList);
         }
 
         getLog().debug("Restarting webapp ...");
@@ -155,19 +167,14 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     }
 
    
+
     
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
+     */
     public void configureWebApplication () throws Exception
     {
         super.configureWebApplication();        
         webApp.setWar(war.getCanonicalPath());
     }
-    
-    public void execute () throws MojoExecutionException, MojoFailureException
-    {
-        super.execute();
-    }
-
-    
-  
-  
 }

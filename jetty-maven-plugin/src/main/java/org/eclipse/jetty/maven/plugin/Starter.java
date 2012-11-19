@@ -20,24 +20,33 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.StringTokenizer;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
+
+
+/**
+ * Starter
+ * 
+ * Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
+ *
+ */
 public class Starter
 { 
     public static final String PORT_SYSPROPERTY = "jetty.port";
@@ -56,7 +65,57 @@ public class Starter
     private String token;
 
     
+    /**
+     * Artifact
+     *
+     * A mock maven Artifact class as the maven jars are not put onto the classpath for the
+     * execution of this class.
+     *
+     */
+    public class Artifact
+    {
+        public String gid;
+        public String aid;
+        public String path;
+        public Resource resource;
+        
+        public Artifact (String csv)
+        {
+            if (csv != null && !"".equals(csv))
+            {
+                String[] atoms = csv.split(",");
+                if (atoms.length >= 3)
+                {
+                    gid = atoms[0].trim();
+                    aid = atoms[1].trim();
+                    path = atoms[2].trim();
+                }
+            }
+        }
+        
+        public Artifact (String gid, String aid, String path)
+        {
+            this.gid = gid;
+            this.aid = aid;
+            this.path = path;
+        }
+        
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Artifact))
+                return false;
+            
+            Artifact ao = (Artifact)o;
+            return (((gid == null && ao.gid == null) || (gid != null && gid.equals(ao.gid)))
+                    &&  ((aid == null && ao.aid == null) || (aid != null && aid.equals(ao.aid))));      
+        }
+    }
     
+    
+    
+    /**
+     * @throws Exception
+     */
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
@@ -115,6 +174,9 @@ public class Starter
     }
     
     
+    /**
+     * @throws Exception
+     */
     public void configureWebApp ()
     throws Exception
     {
@@ -127,39 +189,105 @@ public class Starter
         if (str != null)
             webApp.setContextPath(str);
         
+        
         // - web.xml
         str = (String)props.get("web.xml");
         if (str != null)
-            webApp.setDescriptor(str);
+            webApp.setDescriptor(str); 
+        
         
         // - the tmp directory
         str = (String)props.getProperty("tmp.dir");
         if (str != null)
             webApp.setTempDirectory(new File(str.trim()));
-        
+
+
         // - the base directory
         str = (String)props.getProperty("base.dir");
         if (str != null && !"".equals(str.trim()))
-            webApp.setWar(str);
-
-        // - the multiple comma separated resource dirs
-        str = (String)props.getProperty("res.dirs");
-        if (str != null && !"".equals(str.trim()))
         {
-            ResourceCollection resources = new ResourceCollection(str);
-            webApp.setBaseResource(resources);
+            webApp.setWar(str);      
+            webApp.setBaseResource(Resource.newResource(str));
         }
         
-        // - overlays
-        str = (String)props.getProperty("overlay.files");
+        // - put virtual webapp base resource first on resource path or not
+        str = (String)props.getProperty("base.first");
         if (str != null && !"".equals(str.trim()))
+            webApp.setBaseAppFirst(Boolean.getBoolean(str));
+        
+        
+        //For overlays
+        str = (String)props.getProperty("maven.war.includes");
+        List<String> defaultWarIncludes = fromCSV(str);
+        str = (String)props.getProperty("maven.war.excludes");
+        List<String> defaultWarExcludes = fromCSV(str);
+       
+        //List of war artifacts
+        List<Artifact> wars = new ArrayList<Artifact>();
+        
+        //List of OverlayConfigs
+        TreeMap<String, OverlayConfig> orderedConfigs = new TreeMap<String, OverlayConfig>();
+        Enumeration<String> pnames = (Enumeration<String>)props.propertyNames();
+        while (pnames.hasMoreElements())
         {
-            List<Resource> overlays = new ArrayList<Resource>();
-            String[] names = str.split(",");
-            for (int j=0; names != null && j < names.length; j++)
-                overlays.add(Resource.newResource("jar:"+Resource.toURL(new File(names[j].trim())).toString()+"!/"));
-            webApp.setOverlays(overlays);
+            String n = pnames.nextElement();
+            if (n.startsWith("maven.war.artifact"))
+            {
+                Artifact a = new Artifact((String)props.get(n));
+                a.resource = Resource.newResource("jar:"+Resource.toURL(new File(a.path)).toString()+"!/");
+                wars.add(a);
+            }
+            else if (n.startsWith("maven.war.overlay"))
+            {
+                OverlayConfig c = new OverlayConfig ((String)props.get(n), defaultWarIncludes, defaultWarExcludes);
+                orderedConfigs.put(n,c);
+            }
         }
+        
+    
+        Set<Artifact> matchedWars = new HashSet<Artifact>();
+        
+        //process any overlays and the war type artifacts
+        List<Overlay> overlays = new ArrayList<Overlay>();
+        for (OverlayConfig config:orderedConfigs.values())
+        {
+            //overlays can be individually skipped
+            if (config.isSkip())
+                continue;
+
+            //an empty overlay refers to the current project - important for ordering
+            if (config.isCurrentProject())
+            {
+                Overlay overlay = new Overlay(config, null);
+                overlays.add(overlay);
+                continue;
+            }
+
+            //if a war matches an overlay config
+            Artifact a = getArtifactForOverlayConfig(config, wars);
+            if (a != null)
+            {
+                matchedWars.add(a);
+                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(new File(a.path)).toString()+"!/"));
+                r.setIncludes(config.getIncludes());
+                r.setExcludes(config.getExcludes());
+                Overlay overlay = new Overlay(config, r);
+                overlays.add(overlay);
+            }
+        }
+
+        //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
+        for (Artifact a: wars)
+        {
+            if (!matchedWars.contains(a))
+            {
+                Overlay overlay = new Overlay(null, a.resource);
+                overlays.add(overlay);
+            }
+        }
+
+        webApp.setOverlays(overlays);
+     
 
         // - the equivalent of web-inf classes
         str = (String)props.getProperty("classes.dir");
@@ -188,6 +316,10 @@ public class Starter
         
     }
 
+    /**
+     * @param args
+     * @throws Exception
+     */
     public void getConfiguration (String[] args)
     throws Exception
     {
@@ -235,6 +367,9 @@ public class Starter
     }
 
 
+    /**
+     * @throws Exception
+     */
     public void run() throws Exception
     {
         if (monitor != null)
@@ -245,12 +380,18 @@ public class Starter
     }
 
     
+    /**
+     * @throws Exception
+     */
     public void join () throws Exception
     {
         server.join();
     }
     
     
+    /**
+     * @param e
+     */
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -263,6 +404,9 @@ public class Starter
     }
     
     
+    /**
+     * @throws Exception
+     */
     public void applyJettyXml() throws Exception
     {
         if (jettyXmls == null)
@@ -279,6 +423,10 @@ public class Starter
 
 
 
+    /**
+     * @param handler
+     * @param handlers
+     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -292,6 +440,55 @@ public class Starter
     }
     
     
+    
+    /**
+     * @param c
+     * @param wars
+     * @return
+     */
+    protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
+    {
+        if (wars == null || wars.isEmpty() || c == null)
+            return null;
+        
+        Artifact war = null;
+        Iterator<Artifact> itor = wars.iterator();
+        while(itor.hasNext() && war == null)
+        {
+            Artifact a = itor.next();
+            if (((c.getGroupId() == null && a.gid == null) || (c.getGroupId() != null && c.getGroupId().equals(a.gid)))
+            &&  ((c.getArtifactId() == null && a.aid == null) || (c.getArtifactId() != null && c.getArtifactId().equals(a.aid)))
+            &&  ((c.getClassifier() == null) || (c.getClassifier().equals(a.aid))))
+            {
+                war = a;
+            }
+        }
+        return war;
+    }
+    
+    
+    /**
+     * @param csv
+     * @return
+     */
+    private List<String> fromCSV (String csv)
+    {
+        if (csv == null || "".equals(csv.trim()))
+            return null;
+        String[] atoms = csv.split(",");
+        List<String> list = new ArrayList<String>();
+        for (String a:atoms)
+        {
+            list.add(a.trim());
+        }
+        return list;
+    }
+    
+    
+    
+    /**
+     * @param args
+     */
     public static final void main(String[] args)
     {
        if (args == null)
