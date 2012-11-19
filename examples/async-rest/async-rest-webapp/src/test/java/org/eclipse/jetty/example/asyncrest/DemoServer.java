@@ -33,6 +33,8 @@ public class DemoServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         webapp.setWar(jetty_home+"/target/async-rest/");
+        webapp.setParentLoaderPriority(true);
+        webapp.setServerClasses(new String[]{});
         server.setHandler(webapp);
         
         server.start();

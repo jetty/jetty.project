@@ -1854,19 +1854,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
                 ((WebDescriptor)descriptor).addClassName(className);
 
-                Class<?> listenerClass = context.loadClass(className);
-                if (listenerClass==null)
+                Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
+                listener = newListenerInstance(context,listenerClass);
+                if (!(listener instanceof EventListener))
                 {
-                    throw new RuntimeException("Could not Load EventListener: " + className);
-                }
-                if (!(EventListener.class.isAssignableFrom(listenerClass)))
-                {
-                    throw new RuntimeException("Not an EventListener: " + className);
-                }
-                listener = newListenerInstance(context,(Class<? extends EventListener>)listenerClass);
-                if (listener==null)
-                {
-                    throw new RuntimeException("Could not Load EventListener: " + className);
+                    LOG.warn("Not an EventListener: " + listener);
+                    return;
                 }
                 context.addEventListener(listener);
                 context.getMetaData().setOrigin(className+".listener", descriptor);
@@ -1875,7 +1868,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Could not instantiate listener " + className, e);
+            LOG.warn("Could not instantiate listener " + className, e);
+            return;
         }
     }
 

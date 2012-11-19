@@ -11,9 +11,6 @@ org.eclipse.jetty.servlet.WebApplicationContext object
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Call name="prependServerClass"><Arg>-org.eclipse.jetty.util.</Arg></Call>
   <Call name="prependServerClass"><Arg>-org.eclipse.jetty.servlets.</Arg></Call>
-  <Call name="prependServerClass"><Arg>-org.eclipse.jetty.websocket.</Arg></Call>
-  <Call name="prependServerClass"><Arg>-org.eclipse.jetty.servlets.</Arg></Call>
-  <Call name="prependServerClass"><Arg>-org.eclipse.jetty.servlet.listener.</Arg></Call>
   <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
     <Call name="warn"><Arg>test webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
   </Get>

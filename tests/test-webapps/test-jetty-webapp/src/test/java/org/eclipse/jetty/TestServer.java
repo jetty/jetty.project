@@ -67,7 +67,7 @@ public class TestServer
     {
         ((StdErrLog)Log.getLog()).setSource(false);
 
-        String jetty_root = "../../..";
+        String jetty_root = "..";
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -153,7 +153,7 @@ public class TestServer
 
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_root + "/tests/test-webapps/test-jetty-webapp/src/main/config/etc/realm.properties");
+        login.setConfig(jetty_root + "/test-jetty-webapp/src/main/config/etc/realm.properties");
         server.addBean(login);
 
         File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
@@ -165,8 +165,8 @@ public class TestServer
         server.setSendServerVersion(true);
 
         WebAppContext webapp = new WebAppContext();
-        // webapp.setParentLoaderPriority(true);
-        // webapp.prependServerClass("-org.eclipse.jetty.websocket.server.");
+        webapp.setParentLoaderPriority(true);
+        webapp.prependServerClass("-org.eclipse.jetty.websocket.server.");
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);
