@@ -29,22 +29,18 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.security.Realm;
-import org.eclipse.jetty.client.security.SimpleRealmResolver;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -80,8 +76,7 @@ public class DigestPostTest
         try
         {
             _server = new Server();
-            _server.setConnectors(new Connector[]
-            { new SelectChannelConnector() });
+            _server.setConnectors(new Connector[] { new ServerConnector(_server) });
 
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SECURITY);
             context.setContextPath("/test");
@@ -125,13 +120,13 @@ public class DigestPostTest
     @Test
     public void testServerDirectlyHTTP10() throws Exception
     {
-        Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
+        Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
         byte[] bytes = __message.getBytes("UTF-8");
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
@@ -152,12 +147,12 @@ public class DigestPostTest
         "\" qop=auth nc="+NC+" cnonce=\""+cnonce+"\"";
               
         
-        socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
+        socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "Authorization: "+digest+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
@@ -173,13 +168,13 @@ public class DigestPostTest
     @Test
     public void testServerDirectlyHTTP11() throws Exception
     {
-        Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
+        Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
         byte[] bytes = __message.getBytes("UTF-8");
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.1\r\n"+
-                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
@@ -206,7 +201,7 @@ public class DigestPostTest
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "Authorization: "+digest+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
