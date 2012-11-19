@@ -347,6 +347,7 @@ public class ProxyServlet extends HttpServlet
         return true;
     }
 
+    @Override
     protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         final int requestId = getRequestId(request);
@@ -379,6 +380,9 @@ public class ProxyServlet extends HttpServlet
 
             // Remove hop-by-hop headers
             if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
+            
+            if (_hostHeader!=null && lowerHeaderName.equals("host"))
                 continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
@@ -455,7 +459,7 @@ public class ProxyServlet extends HttpServlet
                     System.lineSeparator(),
                     proxyRequest.getHeaders().toString().trim());
         }
-
+        
         proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
     }
 
