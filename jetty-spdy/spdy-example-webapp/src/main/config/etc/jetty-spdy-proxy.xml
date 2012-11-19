@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
+<!-- ============================================================= -->
+<!-- Configure the Jetty Server instance with an ID "Server"       -->
+<!-- by adding a SPDY connector.                                   -->
+<!-- This configuration must be used in conjunction with jetty.xml -->
+<!-- It should not be used with jetty-https.xml as this connector  -->
+<!-- can provide both HTTPS and SPDY connections                   -->
+<!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+    <!-- =========================================================== -->
+    <!-- Setup the SSL Context factory used to establish all TLS     -->
+    <!-- Connections and session.                                    -->
+    <!--                                                             -->
+    <!-- Consult the javadoc of o.e.j.util.ssl.SslContextFactory     -->
+    <!-- o.e.j.server.HttpConnectionFactory for all configuration    -->
+    <!-- that may be set here.                                       -->
+    <!-- =========================================================== -->
     <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-        <Set name="keyStorePath">src/main/resources/keystore.jks</Set>
-        <Set name="keyStorePassword">storepwd</Set>
-        <Set name="trustStore">src/main/resources/truststore.jks</Set>
-        <Set name="trustStorePassword">storepwd</Set>
-        <Set name="protocol">TLSv1</Set>
+      <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
+      <Set name="KeyStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+      <Set name="KeyManagerPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
+      <Set name="TrustStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
+      <Set name="TrustStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
     </New>
 
     <!--
@@ -16,26 +31,31 @@
     -->
 
     <!--
-    This is the upstream server connector. It speaks non-SSL SPDY/2(HTTP) on port 9090.
+    This is the upstream server connector. It speaks non-SSL SPDY/3(HTTP) on port 9090.
     -->
     <Call name="addConnector">
         <Arg>
-            <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnector">
-                <Arg>
-                    <Ref id="Server"/>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg name="server"><Ref id="Server" /></Arg>
+                <Arg name="factories">
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                        <!-- SPDY/3 Connection factory -->
+                        <Item>
+                          <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
+                            <Arg name="version" type="int">3</Arg>
+                            <Arg name="config"><Ref id="httpConfig" /></Arg>
+                          </New>
+                        </Item>
+                    </Array>
                 </Arg>
                 <Set name="Port">9090</Set>
-                <Set name="defaultConnectionFactory">
-                    <Call name="getConnectionFactory">
-                        <Arg>spdy/2</Arg>
-                    </Call>
-                </Set>
+                <Set name="DefaultProtocol">spdy/3</Set>
             </New>
         </Arg>
     </Call>
 
     <!--
-    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/2(HTTP)
+    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/3(HTTP)
     -->
     <New id="spdyProxyEngine" class="org.eclipse.jetty.spdy.server.proxy.SPDYProxyEngine">
         <Arg>
@@ -48,12 +68,12 @@
     <!--
     The ProxyEngineSelector receives SPDY/x(HTTP) requests from proxy connectors below
     and is configured to process requests for host "localhost".
-    Such requests are converted from SPDY/x(HTTP) to SPDY/2(HTTP) by the configured ProxyEngine
+    Such requests are converted from SPDY/x(HTTP) to SPDY/3(HTTP) by the configured ProxyEngine
     and forwarded to 127.0.0.1:9090, where they are served by the upstream server above.
     -->
     <New id="proxyEngineSelector" class="org.eclipse.jetty.spdy.server.proxy.ProxyEngineSelector">
         <Call name="putProxyEngine">
-            <Arg>spdy/2</Arg>
+            <Arg>spdy/3</Arg>
             <Arg><Ref id="spdyProxyEngine" /></Arg>
         </Call>
         <Set name="proxyServerInfos">
@@ -62,7 +82,7 @@
                     <Item>localhost</Item>
                     <Item>
                         <New class="org.eclipse.jetty.spdy.server.proxy.ProxyEngineSelector$ProxyServerInfo">
-                            <Arg type="String">spdy/2</Arg>
+                            <Arg type="String">spdy/3</Arg>
                             <Arg>127.0.0.1</Arg>
                             <Arg type="int">9090</Arg>
                         </New>
