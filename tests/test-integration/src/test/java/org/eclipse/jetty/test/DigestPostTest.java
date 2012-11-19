@@ -18,18 +18,25 @@
 
 package org.eclipse.jetty.test;
 
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.AuthenticationStore;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DigestAuthentication;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -217,67 +224,59 @@ public class DigestPostTest
     @Test
     public void testServerWithHttpClientStringContent() throws Exception
     {
+        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";        
         HttpClient client = new HttpClient();
-        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        client.setRealmResolver(new SimpleRealmResolver(new TestRealm()));
-        client.start();
 
-        String srvUrl = "http://127.0.0.1:" + _server.getConnectors()[0].getLocalPort() + "/test/";
+        try
+        {
+            AuthenticationStore authStore = client.getAuthenticationStore();
+            authStore.addAuthentication(new DigestAuthentication(srvUrl, "test", "testuser", "password"));
+            client.start();
 
-        ContentExchange ex = new ContentExchange();
-        ex.setMethod(HttpMethods.POST);
-        ex.setURL(srvUrl);
-        ex.setRequestContent(new ByteArrayBuffer(__message,"UTF-8"));
-
-        _received=null;
-        client.send(ex);
-        ex.waitForDone();
-
-        Assert.assertEquals(__message,_received);
-        Assert.assertEquals(200,ex.getResponseStatus());
+            Request request = client.newRequest(srvUrl);
+            request.method(HttpMethod.POST);
+            request.content(new BytesContentProvider(__message.getBytes("UTF8")));
+            _received=null;
+            ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+            Assert.assertEquals(__message,_received);
+            Assert.assertEquals(200,response.getStatus());
+        }
+        finally
+        {
+            client.stop();
+        }
     }
-    
+
     @Test
     public void testServerWithHttpClientStreamContent() throws Exception
     {
+        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";       
         HttpClient client = new HttpClient();
-        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        client.setRealmResolver(new SimpleRealmResolver(new TestRealm()));
-        client.start();
-
-        String srvUrl = "http://127.0.0.1:" + _server.getConnectors()[0].getLocalPort() + "/test/";
-
-        ContentExchange ex = new ContentExchange();
-        ex.setMethod(HttpMethods.POST);
-        ex.setURL(srvUrl);
-        ex.setRequestContentSource(new BufferedInputStream(new FileInputStream("src/test/resources/message.txt")));
-
-        _received=null;
-        client.send(ex);
-        ex.waitForDone();
-
-        String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
-        Assert.assertEquals(sent,_received);
-        Assert.assertEquals(200,ex.getResponseStatus());
-    }
-
-    public static class TestRealm implements Realm
-    {
-        public String getPrincipal()
+        try
         {
-            return "testuser";
+            AuthenticationStore authStore = client.getAuthenticationStore();
+            authStore.addAuthentication(new DigestAuthentication(srvUrl, "test", "testuser", "password"));   
+            client.start();
+
+            String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
+            
+            Request request = client.newRequest(srvUrl);
+            request.method(HttpMethod.POST);
+            request.content(new StringContentProvider(sent));
+            _received=null;
+            ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+           
+            Assert.assertEquals(200,response.getStatus());
+            Assert.assertEquals(sent,_received);
+
         }
-
-        public String getId()
+        finally
         {
-            return "test";
-        }
-
-        public String getCredentials()
-        {
-            return "password";
+            client.stop();
         }
     }
+
+ 
 
     public static class PostServlet extends HttpServlet
     {

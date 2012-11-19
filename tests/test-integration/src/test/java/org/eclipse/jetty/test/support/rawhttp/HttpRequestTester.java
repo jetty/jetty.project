@@ -18,20 +18,18 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.SimpleBuffers;
-import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.io.bio.StringEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
+
 
 /**
  * Assist in Generating Proper Raw HTTP Requests. If you want ultimate control
@@ -162,16 +160,6 @@ public class HttpRequestTester
         fields.addDateField(name,date);
     }
 
-    /**
-     * @param name
-     * @param value
-     * @see org.eclipse.jetty.http.HttpFields#addLongField(java.lang.String,
-     *      long)
-     */
-    public void addLongHeader(String name, long value)
-    {
-        fields.addLongField(name,value);
-    }
 
     /**
      * @param cookie
@@ -185,44 +173,63 @@ public class HttpRequestTester
 
     public String generate() throws IOException
     {
-        charset = defaultCharset;
-        Buffer contentTypeBuffer = fields.get(HttpHeaders.CONTENT_TYPE_BUFFER);
-        if (contentTypeBuffer != null)
+        
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteBuffer header = null;
+        ByteBuffer chunk = null;
+        ByteBuffer content = null;
+        HttpVersion httpVersion = null;
+        if (version == null)
         {
-            String calcCharset = MimeTypes.getCharsetFromContentType(contentTypeBuffer);
-            if (calcCharset != null)
+            httpVersion = HttpVersion.HTTP_1_1;
+        }
+        else
+        {
+            httpVersion = httpVersion.fromString(version);
+        }
+        
+        HttpGenerator.RequestInfo info = new HttpGenerator.RequestInfo(httpVersion,fields,0,method,uri);
+
+        HttpGenerator generator = new HttpGenerator();
+        loop: while(!generator.isEnd())
+        {
+            HttpGenerator.Result result =  generator.generateRequest(info, header, chunk, content, true);
+            switch(result)
             {
-                this.charset = calcCharset;
+                case NEED_HEADER:
+                    header=BufferUtil.allocate(8192);
+                    continue;
+
+                case NEED_CHUNK:
+                    chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                    continue;
+
+                case NEED_INFO:
+                    throw new IllegalStateException();
+
+                case FLUSH:
+                    if (BufferUtil.hasContent(header))
+                    {
+                        out.write(BufferUtil.toArray(header));
+                        BufferUtil.clear(header);
+                    }
+                    if (BufferUtil.hasContent(chunk))
+                    {
+                        out.write(BufferUtil.toArray(chunk));
+                        BufferUtil.clear(chunk);
+                    }
+                    if (BufferUtil.hasContent(content))
+                    {
+                        out.write(BufferUtil.toArray(content));
+                        BufferUtil.clear(content);
+                    }
+                    break;
+
+                case SHUTDOWN_OUT:
+                    break loop;
             }
         }
 
-        Buffer bb = new ByteArrayBuffer(32 * 1024 + (content != null?content.length:0));
-        Buffer sb = new ByteArrayBuffer(4 * 1024);
-        StringEndPoint endp = new StringEndPoint(charset);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-
-        if (method != null)
-        {
-            generator.setRequest(getMethod(),getURI());
-            if (version == null)
-            {
-                generator.setVersion(HttpVersions.HTTP_1_1_ORDINAL);
-            }
-            else
-            {
-                generator.setVersion(HttpVersions.CACHE.getOrdinal(HttpVersions.CACHE.lookup(version)));
-            }
-
-            generator.completeHeader(fields,false);
-
-            if (content != null)
-            {
-                generator.addContent(new View(new ByteArrayBuffer(content)),false);
-            }
-        }
-
-        generator.complete();
-        generator.flushBuffer();
-        return endp.getOutput();
+        return out.toString();
     }
 }
