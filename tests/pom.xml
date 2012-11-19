@@ -45,8 +45,6 @@
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-continuation</module>
-<!--
     <module>test-loginservice</module>
--->
   </modules>
 </project>
