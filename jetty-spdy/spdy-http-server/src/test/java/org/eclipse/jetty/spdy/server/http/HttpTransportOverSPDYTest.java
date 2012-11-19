@@ -15,6 +15,7 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
+
 package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
