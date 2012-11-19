@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.util;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.Schedulable;
@@ -38,14 +39,14 @@ public class TimedResponseListener implements Response.Listener, Schedulable, Ru
     private final long timeout;
     private final TimeUnit unit;
     private final Request request;
-    private final Response.Listener delegate;
+    private final Response.CompleteListener delegate;
 
     public TimedResponseListener(long timeout, TimeUnit unit, Request request)
     {
         this(timeout, unit, request, new Empty());
     }
 
-    public TimedResponseListener(long timeout, TimeUnit unit, Request request, Response.Listener delegate)
+    public TimedResponseListener(long timeout, TimeUnit unit, Request request, Response.CompleteListener delegate)
     {
         this.timeout = timeout;
         this.unit = unit;
@@ -56,31 +57,36 @@ public class TimedResponseListener implements Response.Listener, Schedulable, Ru
     @Override
     public void onBegin(Response response)
     {
-        delegate.onBegin(response);
+        if (delegate instanceof Response.BeginListener)
+            ((Response.BeginListener)delegate).onBegin(response);
     }
 
     @Override
     public void onHeaders(Response response)
     {
-        delegate.onHeaders(response);
+        if (delegate instanceof Response.HeadersListener)
+            ((Response.HeadersListener)delegate).onHeaders(response);
     }
 
     @Override
     public void onContent(Response response, ByteBuffer content)
     {
-        delegate.onContent(response, content);
+        if (delegate instanceof Response.ContentListener)
+            ((Response.ContentListener)delegate).onContent(response, content);
     }
 
     @Override
     public void onSuccess(Response response)
     {
-        delegate.onSuccess(response);
+        if (delegate instanceof Response.SuccessListener)
+            ((Response.SuccessListener)delegate).onSuccess(response);
     }
 
     @Override
     public void onFailure(Response response, Throwable failure)
     {
-        delegate.onFailure(response, failure);
+        if (delegate instanceof Response.FailureListener)
+            ((Response.FailureListener)delegate).onFailure(response, failure);
     }
 
     @Override
@@ -111,7 +117,7 @@ public class TimedResponseListener implements Response.Listener, Schedulable, Ru
     @Override
     public void run()
     {
-        request.abort("Total timeout elapsed");
+        request.abort(new TimeoutException("Total timeout elapsed"));
     }
 
     public boolean cancel()

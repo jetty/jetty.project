@@ -20,11 +20,26 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.IOException;
 
+
+
+
+/**
+ * ConsoleScanner
+ *
+ * Read input from stdin
+ */
 public class ConsoleScanner extends Thread 
 {
     
     private final AbstractJettyMojo mojo;
     
+    
+    
+    
+    
+    /**
+     * @param mojo
+     */
     public ConsoleScanner(AbstractJettyMojo mojo) 
     {
         this.mojo = mojo;
@@ -32,6 +47,12 @@ public class ConsoleScanner extends Thread
         setDaemon(true);
     }
     
+    
+    
+    
+    /** 
+     * @see java.lang.Thread#run()
+     */
     public void run() 
     {  
         try 
@@ -48,6 +69,12 @@ public class ConsoleScanner extends Thread
         }
     }
     
+    
+    
+    
+    /**
+     * 
+     */
     private void getSomeSleep() 
     {
         try 
@@ -60,6 +87,12 @@ public class ConsoleScanner extends Thread
         }
     }
     
+    
+    
+    
+    /**
+     * @throws IOException
+     */
     private void checkSystemInput() throws IOException 
     {     
         while (System.in.available() > 0) {
@@ -73,6 +106,8 @@ public class ConsoleScanner extends Thread
             }
         }
     }
+    
+    
     
     
     /**
@@ -101,6 +136,12 @@ public class ConsoleScanner extends Thread
         }      
     }
     
+    
+    
+    
+    /**
+     * 
+     */
     private void restartWebApp()
     {
         try

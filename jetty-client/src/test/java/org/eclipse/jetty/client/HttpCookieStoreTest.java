@@ -101,6 +101,21 @@ public class HttpCookieStoreTest
     }
 
     @Test
+    public void testCookieStoredWithPathIsRetrievedWithChildPath() throws Exception
+    {
+        CookieStore cookies = new HttpCookieStore();
+        Destination destination = new HttpDestination(client, "http", "localhost", 80);
+        Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/path")));
+
+        List<HttpCookie> result = cookies.findCookies(destination, "/path/child");
+        Assert.assertNotNull(result);
+        Assert.assertEquals(1, result.size());
+        HttpCookie cookie = result.get(0);
+        Assert.assertEquals("a", cookie.getName());
+        Assert.assertEquals("1", cookie.getValue());
+    }
+
+    @Test
     public void testCookieStoredWithParentDomainIsRetrievedWithChildDomain() throws Exception
     {
         CookieStore cookies = new HttpCookieStore();
@@ -116,6 +131,19 @@ public class HttpCookieStoreTest
         List<HttpCookie> result = cookies.findCookies(grandChildDestination, "/path");
         Assert.assertNotNull(result);
         Assert.assertEquals(2, result.size());
+    }
+
+    @Test
+    public void testCookieStoredWithChildDomainIsNotRetrievedWithParentDomain() throws Exception
+    {
+        CookieStore cookies = new HttpCookieStore();
+        Destination childDestination = new HttpDestination(client, "http", "child.localhost.org", 80);
+        Assert.assertTrue(cookies.addCookie(childDestination, new HttpCookie("b", "2", null, "/")));
+
+        Destination parentDestination = new HttpDestination(client, "http", "localhost.org", 80);
+        List<HttpCookie> result = cookies.findCookies(parentDestination, "/path");
+        Assert.assertNotNull(result);
+        Assert.assertEquals(0, result.size());
     }
 
     @Test

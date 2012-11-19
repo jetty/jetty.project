@@ -79,7 +79,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 {
                     case MANAGED:
                         if (!l.isRunning())
-                            l.start();
+                            start(l);
                         break;
                     case AUTO:
                         if (l.isRunning())
@@ -87,7 +87,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         else
                         {
                             manage(b);
-                            l.start();
+                            start(l);
                         }
                         break;
                 }
@@ -97,6 +97,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         super.doStart();
     }
 
+    /**
+     * Starts the given lifecycle.
+     * 
+     * @param l
+     * @throws Exception
+     */
+    protected void start(LifeCycle l) throws Exception
+    {
+        l.start();
+    }
+    
     /**
      * Stops the managed lifecycle beans in the reverse order they were added.
      */

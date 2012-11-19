@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -36,19 +34,17 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.client.internal.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
+import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.UpgradeException;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
-import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * This is the initial connection handling that exists immediately after physical connection is established to destination server.
@@ -72,7 +68,8 @@ public class UpgradeConnection extends AbstractConnection
         public void run()
         {
             URI uri = client.getWebSocketUri();
-            String rawRequest = request.generate(uri);
+            request.setRequestURI(uri);
+            String rawRequest = request.generate();
 
             ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
             getEndPoint().write("REQ",this,buf);
@@ -219,13 +216,17 @@ public class UpgradeConnection extends AbstractConnection
         EventDriver websocket = client.getWebSocket();
         WebSocketPolicy policy = client.getPolicy();
         String acceptedSubProtocol = response.getAcceptedSubProtocol();
-        WebSocketSession session = new WebSocketSession(websocket,connection,policy,acceptedSubProtocol);
+
+        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,connection);
+        session.setPolicy(policy);
+        session.setNegotiatedSubprotocol(acceptedSubProtocol);
+
         connection.setSession(session);
         List<Extension> extensions = client.getFactory().initExtensions(response.getExtensions());
 
         // Start with default routing.
         IncomingFrames incoming = session;
-        OutgoingFrames outgoing = connection;
+        // OutgoingFrames outgoing = connection;
 
         // Connect extensions
         if (extensions != null)
@@ -233,29 +234,30 @@ public class UpgradeConnection extends AbstractConnection
             connection.getParser().configureFromExtensions(extensions);
             connection.getGenerator().configureFromExtensions(extensions);
 
-            Iterator<Extension> extIter;
-            // Connect outgoings
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextOutgoingFrames(outgoing);
-                outgoing = ext;
-            }
-
-            // Connect incomings
-            Collections.reverse(extensions);
-            extIter = extensions.iterator();
-            while (extIter.hasNext())
-            {
-                Extension ext = extIter.next();
-                ext.setNextIncomingFrames(incoming);
-                incoming = ext;
-            }
+            // FIXME
+            // Iterator<Extension> extIter;
+            // // Connect outgoings
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextOutgoingFrames(outgoing);
+            // outgoing = ext;
+            // }
+            //
+            // // Connect incomings
+            // Collections.reverse(extensions);
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextIncomingFrames(incoming);
+            // incoming = ext;
+            // }
         }
 
         // configure session for outgoing flows
-        session.setOutgoing(outgoing);
+        // session.setOutgoing(outgoing);
         // configure connection for incoming flows
         connection.getParser().setIncomingFramesHandler(incoming);
 
@@ -264,7 +266,7 @@ public class UpgradeConnection extends AbstractConnection
         connection.onOpen();
     }
 
-    private void validateResponse(UpgradeResponse response)
+    private void validateResponse(ClientUpgradeResponse response)
     {
         // Check the Accept hash
         String reqKey = request.getKey();
@@ -273,14 +275,16 @@ public class UpgradeConnection extends AbstractConnection
 
         // Parse extensions
         List<ExtensionConfig> extensions = new ArrayList<>();
-        Iterator<String> extIter = response.getHeaderValues("Sec-WebSocket-Extensions");
-        while (extIter.hasNext())
+        List<String> extValues = response.getHeaders("Sec-WebSocket-Extensions");
+        if (extValues != null)
         {
-            String extVal = extIter.next();
-            QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal,",");
-            while (tok.hasMoreTokens())
+            for (String extVal : extValues)
             {
-                extensions.add(ExtensionConfig.parse(tok.nextToken()));
+                QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal,",");
+                while (tok.hasMoreTokens())
+                {
+                    extensions.add(ExtensionConfig.parse(tok.nextToken()));
+                }
             }
         }
         response.setExtensions(extensions);

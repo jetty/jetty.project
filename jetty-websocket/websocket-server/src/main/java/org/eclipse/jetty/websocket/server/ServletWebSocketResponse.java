@@ -19,107 +19,65 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.websocket.core.api.UpgradeException;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
-public class ServletWebSocketResponse extends HttpServletResponseWrapper implements UpgradeResponse
+public class ServletWebSocketResponse extends UpgradeResponse
 {
-    private String acceptedProtocol;
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private boolean success = true;
+    private HttpServletResponse resp;
 
     public ServletWebSocketResponse(HttpServletResponse resp)
     {
-        super(resp);
+        super();
+        this.resp = resp;
     }
 
     @Override
     public void addHeader(String name, String value)
     {
-        super.addHeader(name,value);
-    }
-
-    @Override
-    public String getAcceptedSubProtocol()
-    {
-        return acceptedProtocol;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return this.extensions;
-    }
-
-    @Override
-    public Set<String> getHeaderNamesSet()
-    {
-        Collection<String> names = getHeaderNames();
-        return new HashSet<String>(names);
-    }
-
-    @Override
-    public String getHeaderValue(String name)
-    {
-        return super.getHeader(name);
-    }
-
-    @Override
-    public Iterator<String> getHeaderValues(String name)
-    {
-        return super.getHeaders(name).iterator();
+        this.resp.addHeader(name,value);
     }
 
     @Override
     public int getStatusCode()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Code");
+        return this.resp.getStatus();
     }
 
     @Override
     public String getStatusReason()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Reason");
+        throw new UnsupportedOperationException("Server cannot get Status Reason Message");
     }
 
-    @Override
-    public boolean isSuccess()
+    public boolean isCommitted()
     {
-        return success;
+        return this.resp.isCommitted();
+    }
+
+    public void sendError(int statusCode, String message) throws IOException
+    {
+        setSuccess(false);
+        this.resp.sendError(statusCode,message);
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        success = false;
-        sendError(HttpServletResponse.SC_FORBIDDEN,message);
+        setSuccess(false);
+        resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
     }
 
     @Override
-    public void setAcceptedSubProtocol(String protocol)
+    public void setHeader(String name, String value)
     {
-        this.acceptedProtocol = protocol;
+        this.resp.setHeader(name,value);
     }
 
-    @Override
-    public void setExtensions(List<ExtensionConfig> extensions)
+    public void setStatus(int status)
     {
-        this.extensions = extensions;
-    }
-
-    @Override
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException
-    {
-        throw new UnsupportedOperationException("Server cannot validate its own hash");
+        this.resp.setStatus(status);
     }
 }

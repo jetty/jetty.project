@@ -18,25 +18,39 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection
 {
     private final WebSocketServerFactory factory;
     private boolean connected;
 
-    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy,
-            ByteBufferPool bufferPool, WebSocketServerFactory factory)
+    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool,
+            WebSocketServerFactory factory)
     {
         super(endp,executor,scheduler,policy,bufferPool);
         this.factory = factory;
         this.connected = false;
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return getEndPoint().getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getEndPoint().getRemoteAddress();
     }
 
     @Override
@@ -55,5 +69,11 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
+    }
+
+    @Override
+    public void setNextIncomingFrames(IncomingFrames incoming)
+    {
+        getParser().setIncomingFramesHandler(incoming);
     }
 }

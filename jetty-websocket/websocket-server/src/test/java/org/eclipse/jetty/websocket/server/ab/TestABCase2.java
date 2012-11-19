@@ -23,10 +23,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.api.StatusCode;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
 
 public class TestABCase2 extends AbstractABCase

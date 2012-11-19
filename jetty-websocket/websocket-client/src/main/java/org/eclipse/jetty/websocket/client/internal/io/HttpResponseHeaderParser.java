@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8LineParser;
-import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 
 /**
  * Responsible for reading UTF8 Response Header lines and parsing them into a provided UpgradeResponse object.
@@ -111,6 +111,7 @@ public class HttpResponseHeaderParser
                 {
                     String headerName = header.group(1);
                     String headerValue = header.group(2);
+                    // TODO: need to split header/value if comma delimited
                     response.addHeader(headerName,headerValue);
                 }
                 break;

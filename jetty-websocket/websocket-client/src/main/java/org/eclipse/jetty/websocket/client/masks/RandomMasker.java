@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.client.masks;
 
 import java.util.Random;
 
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class RandomMasker implements Masker
 {

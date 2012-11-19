@@ -44,14 +44,15 @@ public class TomcatServerQuirksTest
      * @throws IOException 
      */
     @Test
-    @Ignore("Bug with Transfer-Encoding")
-    public void testTomcat7_0_32_WithTransferEncoding() throws Exception {
+    public void testTomcat7_0_32_WithTransferEncoding() throws Exception 
+    {
         DummyServer server = new DummyServer();
         int bufferSize = 512;
         QueuedThreadPool threadPool = new QueuedThreadPool();
         WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), bufferSize);
         
-        try {
+        try 
+        {
             server.start();
             
             // Setup Client Factory
@@ -113,7 +114,9 @@ public class TomcatServerQuirksTest
             socket.flush();
 
             Assert.assertTrue(dataLatch.await(1000, TimeUnit.SECONDS));
-        } finally {
+        } 
+        finally 
+        {
             factory.stop();
             threadPool.stop();
             server.stop();

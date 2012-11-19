@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure the Jetty Server instance with an ID "Server"       -->
+<!-- by adding a SPDY connector.                                   -->
+<!-- This configuration must be used in conjunction with jetty.xml -->
+<!-- It should not be used with jetty-https.xml as this connector  -->
+<!-- can provide both HTTPS and SPDY connections                   -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Setup the SSL Context factory used to establish all TLS     -->
+  <!-- Connections and session.                                    -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.util.ssl.SslContextFactory     -->
+  <!-- o.e.j.server.HttpConnectionFactory for all configuration    -->
+  <!-- that may be set here.                                       -->
+  <!-- =========================================================== -->
+  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+    <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
+    <Set name="KeyStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+    <Set name="KeyManagerPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
+    <Set name="TrustStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
+    <Set name="TrustStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+  </New>
+
+  <!-- =========================================================== -->
+  <!-- Enables NPN debugging on System.err                         -->
+  <!-- ===========================================================
+   <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
+  -->
+
+  <!-- =========================================================== -->
+  <!-- Create a TLS specific HttpConfiguration based on the        -->
+  <!-- common HttpConfiguration defined in jetty.xml               -->
+  <!-- Add a SecureRequestCustomizer to extract certificate and    -->
+  <!-- session information                                         -->
+  <!-- =========================================================== -->
+  <New id="tlsHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+    <Arg><Ref id="httpConfig"/></Arg>
+    <Call name="addCustomizer">
+      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
+    </Call>
+  </New>
+
+  <!-- =========================================================== -->
+  <!-- Create a push strategy which can be used by reference by    -->
+  <!-- individual connection factories below.                      -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.spdy.server.http.ReferrerPushStrategy -->
+  <!-- for all configuration that may be set here.                 -->
+  <!-- =========================================================== -->
+  <New id="pushStrategy" class="org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy">
+    <!-- Uncomment to blacklist browsers for this push strategy. If one of the blacklisted Strings occurs in the
+         user-agent header sent by the client, push will be disabled for this browser. This is case insensitive" -->
+    <!--
+    <Set name="UserAgentBlacklist">
+        <Array type="String">
+            <Item>.*(?i)firefox/14.*</Item>
+            <Item>.*(?i)firefox/15.*</Item>
+            <Item>.*(?i)firefox/16.*</Item>
+        </Array>
+    </Set>
+    -->
+
+    <!-- Uncomment to override default file extensions to push -->
+    <!--
+    <Set name="PushRegexps">
+        <Array type="String">
+           <Item>.*\.css</Item>
+           <Item>.*\.js</Item>
+           <Item>.*\.png</Item>
+           <Item>.*\.jpg</Item>
+           <Item>.*\.gif</Item>
+       </Array>
+    </Set>
+    -->
+    <Set name="referrerPushPeriod">5000</Set>
+    <Set name="maxAssociatedResources">32</Set>
+  </New>
+
+  <!-- =========================================================== -->
+  <!-- Add a SPDY/HTTPS Connector.                                 -->
+  <!-- Configure an o.e.j.server.ServerConnector with connection   -->
+  <!-- factories for TLS (aka SSL), NPN, SPDY and HTTP to provide  -->
+  <!-- a connector that can accept HTTPS or SPDY connections.      -->
+  <!--                                                             -->
+  <!-- All accepted TLS connections are initially wired to a NPN   -->
+  <!-- connection, which attempts to use a TLS extension to        -->
+  <!-- negotiation the protocol.     If NPN is not supported by    -->
+  <!-- the client, then the NPN connection is replaced by a HTTP   -->
+  <!-- connection.  If a specific protocol version (eg spdy/3) is  -->
+  <!-- negotiated by NPN, then the appropriate connection factory  -->
+  <!-- is used to create a connection to replace the NPN connection-->
+  <!--                                                             -->
+  <!-- The final result is a SPDY or HTTP connection wired behind  -->
+  <!-- a TLS (aka SSL) connection.                                 -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.server.ServerConnector and the -->
+  <!-- specific connection factory types for all configuration     -->
+  <!-- that may be set here.                                       -->
+  <!-- =========================================================== -->
+  <Call id="sslConnector" name="addConnector">
+    <Arg>
+      <New class="org.eclipse.jetty.server.ServerConnector">
+        <Arg name="server"><Ref id="Server" /></Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+
+            <!-- SSL Connection factory with NPN as next protocol -->
+            <Item>
+              <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                <Arg name="next">npn</Arg>
+                <Arg name="sslContextFactory"><Ref id="sslContextFactory" /></Arg>
+              </New>
+            </Item>
+
+            <!-- NPN Connection factory with HTTP as default protocol -->
+            <Item>
+              <New class="org.eclipse.jetty.spdy.server.NPNServerConnectionFactory">
+                <Arg name="protocols"><Array type="String">
+                    <Item>spdy/3</Item>
+                    <Item>spdy/2</Item>
+                    <Item>http/1.1</Item>
+                </Array></Arg>
+                <Set name="defaultProtocol">http/1.1</Set>
+              </New>
+            </Item>
+
+            <!-- SPDY/3 Connection factory -->
+            <Item>
+              <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
+                <Arg name="version" type="int">3</Arg>
+                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
+                <Arg name="pushStrategy"><Ref id="pushStrategy"/></Arg>
+              </New>
+            </Item>
+
+            <!-- SPDY/2 Connection factory -->
+            <Item>
+              <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
+                <Arg name="version" type="int">2</Arg>
+                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
+              </New>
+            </Item>
+
+            <!-- HTTP Connection factory -->
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+
+        <Set name="host"><Property name="jetty.host" /></Set>
+        <Set name="port"><Property name="jetty.tls.port" default="8443" /></Set>
+        <Set name="idleTimeout">30000</Set>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>

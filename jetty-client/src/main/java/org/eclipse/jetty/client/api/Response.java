@@ -71,10 +71,10 @@ public interface Response
     /**
      * Attempts to abort the receive of this response.
      *
-     * @param reason the abort reason
+     * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(String reason);
+    boolean abort(Throwable cause);
 
     public interface ResponseListener extends EventListener
     {

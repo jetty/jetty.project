@@ -33,35 +33,36 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.websocket.SendResult;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.junit.Assert;
 
 /**
@@ -81,7 +82,7 @@ public class BlockheadServer
         private final Parser parser;
         private final Generator generator;
         private final AtomicInteger parseCount;
-        private final WebSocketExtensionRegistry extensionRegistry;
+        private final WebSocketExtensionFactory extensionRegistry;
 
         /** Set to true to disable timeouts (for debugging reasons) */
         private boolean debug = false;
@@ -100,7 +101,7 @@ public class BlockheadServer
             this.parser = new Parser(policy);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
-            this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
+            this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         }
 
         public void close() throws IOException
@@ -141,7 +142,7 @@ public class BlockheadServer
             LOG.debug("Echo Frames [expecting {}]",expectedFrames);
             IncomingFramesCapture cap = readFrames(expectedFrames,timeoutUnit,timeoutDuration);
             // now echo them back.
-            for (WebSocketFrame frame : cap.getFrames())
+            for (Frame frame : cap.getFrames())
             {
                 write(frame);
             }
@@ -191,13 +192,13 @@ public class BlockheadServer
         }
 
         @Override
-        public void incoming(WebSocketException e)
+        public void incomingError(WebSocketException e)
         {
-            incomingFrames.incoming(e);
+            incomingFrames.incomingError(e);
         }
 
         @Override
-        public void incoming(WebSocketFrame frame)
+        public void incomingFrame(Frame frame)
         {
             LOG.debug("incoming({})",frame);
             int count = parseCount.incrementAndGet();
@@ -206,11 +207,11 @@ public class BlockheadServer
                 LOG.info("Server parsed {} frames",count);
             }
             WebSocketFrame copy = new WebSocketFrame(frame);
-            incomingFrames.incoming(copy);
+            incomingFrames.incomingFrame(copy);
         }
 
         @Override
-        public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+        public Future<SendResult> outgoingFrame(Frame frame) throws IOException
         {
             ByteBuffer buf = generator.generate(frame);
             if (LOG.isDebugEnabled())
@@ -220,10 +221,12 @@ public class BlockheadServer
             BufferUtil.writeTo(buf,out);
             out.flush();
 
-            if (frame.getOpCode() == OpCode.CLOSE)
+            if (frame.getType().getOpCode() == OpCode.CLOSE)
             {
                 disconnect();
             }
+
+            return null; // FIXME: need future for server send?
         }
 
         public int read(ByteBuffer buf) throws IOException
@@ -366,30 +369,31 @@ public class BlockheadServer
             outgoing = this;
 
             // Connect extensions
-            if (!extensions.isEmpty())
-            {
-                generator.configureFromExtensions(extensions);
-
-                Iterator<Extension> extIter;
-                // Connect outgoings
-                extIter = extensions.iterator();
-                while (extIter.hasNext())
-                {
-                    Extension ext = extIter.next();
-                    ext.setNextOutgoingFrames(outgoing);
-                    outgoing = ext;
-                }
-
-                // Connect incomings
-                Collections.reverse(extensions);
-                extIter = extensions.iterator();
-                while (extIter.hasNext())
-                {
-                    Extension ext = extIter.next();
-                    ext.setNextIncomingFrames(incoming);
-                    incoming = ext;
-                }
-            }
+            // FIXME
+            // if (!extensions.isEmpty())
+            // {
+            // generator.configureFromExtensions(extensions);
+            //
+            // Iterator<Extension> extIter;
+            // // Connect outgoings
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextOutgoingFrames(outgoing);
+            // outgoing = ext;
+            // }
+            //
+            // // Connect incomings
+            // Collections.reverse(extensions);
+            // extIter = extensions.iterator();
+            // while (extIter.hasNext())
+            // {
+            // Extension ext = extIter.next();
+            // ext.setNextIncomingFrames(incoming);
+            // incoming = ext;
+            // }
+            // }
 
             // Configure Parser
             parser.setIncomingFramesHandler(incoming);
@@ -410,7 +414,7 @@ public class BlockheadServer
                     {
                         resp.append(", ");
                     }
-                    resp.append(ext.getParameterizedName());
+                    resp.append(ext.getConfig().getParameterizedName());
                     delim = true;
                 }
                 resp.append("\r\n");
@@ -431,15 +435,15 @@ public class BlockheadServer
             getOutputStream().write(buf,offset,length);
         }
 
+        public void write(Frame frame) throws IOException
+        {
+            LOG.debug("write(Frame->{}) to {}",frame,outgoing);
+            outgoing.outgoingFrame(frame);
+        }
+
         public void write(int b) throws IOException
         {
             getOutputStream().write(b);
-        }
-
-        public void write(WebSocketFrame frame) throws IOException
-        {
-            LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.output(null,null,frame);
         }
     }
 

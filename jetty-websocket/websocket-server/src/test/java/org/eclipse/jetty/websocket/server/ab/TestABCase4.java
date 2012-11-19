@@ -22,13 +22,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.api.StatusCode;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
 
 public class TestABCase4 extends AbstractABCase
 {
+    // Allow Fuzzer / Generator to create bad frames for testing frame validation
+    private static class BadFrame extends WebSocketFrame
+    {
+        public BadFrame(byte opcode)
+        {
+            super();
+            super.opcode = opcode;
+            // NOTE: Not setting Frame.Type intentionally
+        }
+    }
+
     /**
      * Send opcode 3 (reserved)
      */
@@ -36,7 +47,7 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_1_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame((byte)3)); // intentionally bad
+        send.add(new BadFrame((byte)3)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -64,7 +75,7 @@ public class TestABCase4 extends AbstractABCase
         byte payload[] = StringUtil.getUtf8Bytes("reserved payload");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame((byte)4).setPayload(payload)); // intentionally bad
+        send.add(new BadFrame((byte)4).setPayload(payload)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -91,7 +102,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)5)); // intentionally bad
+        send.add(new BadFrame((byte)5)); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -120,7 +131,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)6).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)6).setPayload("bad")); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -149,7 +160,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)7).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)7).setPayload("bad")); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -177,7 +188,7 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_2_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame((byte)11)); // intentionally bad
+        send.add(new BadFrame((byte)11)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -203,7 +214,7 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_2_2() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame((byte)12).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)12).setPayload("bad")); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -230,7 +241,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)13)); // intentionally bad
+        send.add(new BadFrame((byte)13)); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -259,7 +270,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)14).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)14).setPayload("bad")); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -288,7 +299,7 @@ public class TestABCase4 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.text("hello"));
-        send.add(new WebSocketFrame((byte)15).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)15).setPayload("bad")); // intentionally bad
         send.add(WebSocketFrame.ping());
 
         List<WebSocketFrame> expect = new ArrayList<>();

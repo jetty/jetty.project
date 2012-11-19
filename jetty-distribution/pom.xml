@@ -133,10 +133,22 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
               <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-websocket-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -344,6 +356,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-client</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

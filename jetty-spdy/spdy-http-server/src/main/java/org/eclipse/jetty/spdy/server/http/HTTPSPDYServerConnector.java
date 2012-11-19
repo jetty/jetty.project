@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spdy.server.http;
 
 import java.util.Collections;
@@ -51,28 +50,27 @@ public class HTTPSPDYServerConnector extends ServerConnector
 
     public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
-        this(server,new HttpConfiguration(),sslContextFactory,pushStrategies);
+        this(server, new HttpConfiguration(), sslContextFactory, pushStrategies);
     }
 
     public HTTPSPDYServerConnector(Server server, short version, HttpConfiguration httpConfiguration, PushStrategy push)
     {
-        super(server,new HTTPSPDYServerConnectionFactory(version,httpConfiguration,push));
-
+        super(server, new HTTPSPDYServerConnectionFactory(version, httpConfiguration, push));
     }
 
     public HTTPSPDYServerConnector(Server server, HttpConfiguration config, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
-        super(server,AbstractConnectionFactory.getFactories(sslContextFactory,
-            sslContextFactory==null
-            ?new ConnectionFactory[] {new HttpConnectionFactory(config)}
-            :new ConnectionFactory[] {new NPNServerConnectionFactory("spdy/3","spdy/2","http/1.1"),
-                new HttpConnectionFactory(config),
-                new HTTPSPDYServerConnectionFactory(SPDY.V3,new HttpConfiguration(),getPushStrategy(SPDY.V3, pushStrategies)),
-                new HTTPSPDYServerConnectionFactory(SPDY.V2,new HttpConfiguration(),getPushStrategy(SPDY.V2, pushStrategies))}));
-        if (getConnectionFactory(NPNServerConnectionFactory.class)!=null)
-            getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol("http/1.1");
+        super(server, AbstractConnectionFactory.getFactories(sslContextFactory,
+                sslContextFactory == null
+                        ? new ConnectionFactory[]{new HttpConnectionFactory(config)}
+                        : new ConnectionFactory[]{new NPNServerConnectionFactory("spdy/3", "spdy/2", "http/1.1"),
+                        new HttpConnectionFactory(config),
+                        new HTTPSPDYServerConnectionFactory(SPDY.V3, config, getPushStrategy(SPDY.V3, pushStrategies)),
+                        new HTTPSPDYServerConnectionFactory(SPDY.V2, config, getPushStrategy(SPDY.V2, pushStrategies))}));
+        NPNServerConnectionFactory npnConnectionFactory = getConnectionFactory(NPNServerConnectionFactory.class);
+        if (npnConnectionFactory != null)
+            npnConnectionFactory.setDefaultProtocol("http/1.1");
     }
-
 
     private static PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {

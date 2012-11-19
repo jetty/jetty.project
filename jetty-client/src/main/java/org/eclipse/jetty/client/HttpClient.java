@@ -20,7 +20,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -127,6 +127,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
+    private volatile ProxyConfiguration proxyConfig;
 
     public HttpClient()
     {
@@ -297,6 +298,9 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination provideDestination(String scheme, String host, int port)
     {
+        if (port <= 0)
+            port = "https".equalsIgnoreCase(scheme) ? 443 : 80;
+
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
         if (destination == null)
@@ -328,15 +332,11 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        int port = request.getPort();
-        if (port < 0)
-            port = "https".equals(scheme) ? 443 : 80;
-
         for (Response.ResponseListener listener : listeners)
             if (listener instanceof Schedulable)
                 ((Schedulable)listener).schedule(scheduler);
 
-        HttpDestination destination = provideDestination(scheme, request.getHost(), port);
+        HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
@@ -351,7 +351,7 @@ public class HttpClient extends ContainerLifeCycle
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(destination.getHost(), destination.getPort()));
+            channel.connect(destination.getConnectAddress());
 
             Future<Connection> result = new ConnectionCallback(destination, callback);
             selectorManager.connect(channel, result);
@@ -594,6 +594,16 @@ public class HttpClient extends ContainerLifeCycle
     public void setDispatchIO(boolean dispatchIO)
     {
         this.dispatchIO = dispatchIO;
+    }
+
+    public ProxyConfiguration getProxyConfiguration()
+    {
+        return proxyConfig;
+    }
+
+    public void setProxyConfiguration(ProxyConfiguration proxyConfig)
+    {
+        this.proxyConfig = proxyConfig;
     }
 
     @Override

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.masks;
 
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public interface Masker
 {

@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Example server using WebSocket and core Jetty Handlers
@@ -99,7 +99,7 @@ public class ExampleEchoServer
         wsHandler = new WebSocketHandler()
         {
             @Override
-            public void configure(WebSocketServerFactory factory)
+            public void configure(WebSocketServletFactory factory)
             {
                 factory.setCreator(new EchoCreator());
             }

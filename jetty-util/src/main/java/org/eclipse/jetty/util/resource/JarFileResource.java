@@ -46,13 +46,13 @@ class JarFileResource extends JarResource
     private boolean _exists;
     
     /* -------------------------------------------------------- */
-    JarFileResource(URL url)
+    protected JarFileResource(URL url)
     {
         super(url);
     }
     
     /* ------------------------------------------------------------ */
-    JarFileResource(URL url, boolean useCaches)
+    protected JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
     }

@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -90,7 +91,7 @@ public class ProxyHTTPSPDYTest
     private SPDYClient.Factory factory;
     private Server server;
     private Server proxy;
-    private SPDYServerConnector proxyConnector;
+    private ServerConnector proxyConnector;
 
     public ProxyHTTPSPDYTest(short version)
     {
@@ -115,7 +116,7 @@ public class ProxyHTTPSPDYTest
         SPDYProxyEngine spdyProxyEngine = new SPDYProxyEngine(factory);
         proxyEngineSelector.putProxyEngine("spdy/" + version, spdyProxyEngine);
         proxyEngineSelector.putProxyServerInfo("localhost", new ProxyEngineSelector.ProxyServerInfo("spdy/" + version, address.getHostName(), address.getPort()));
-        proxyConnector = new HTTPSPDYProxyConnector(server, proxyEngineSelector);
+        proxyConnector = new HTTPSPDYProxyServerConnector(server, proxyEngineSelector);
         proxyConnector.setPort(0);
         proxy.addConnector(proxyConnector);
         proxy.start();

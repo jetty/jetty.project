@@ -22,13 +22,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.protocol.Frame;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Echo back the incoming text or binary as 2 frames of (roughly) equal size.
@@ -39,7 +36,7 @@ public class EchoFragmentSocket
     @OnWebSocketFrame
     public void onFrame(WebSocketConnection conn, Frame frame)
     {
-        if (!OpCode.isDataFrame(frame.getOpCode()))
+        if (frame.getType().isData())
         {
             return;
         }
@@ -54,20 +51,21 @@ public class EchoFragmentSocket
         buf1.limit(half);
         buf2.position(half);
 
-        Callback<Void> nop = new FutureCallback<>();
         try
         {
-            switch (frame.getOpCode())
+            switch (frame.getType())
             {
-                case OpCode.BINARY:
-                    conn.write(null,nop,buf1);
-                    conn.write(null,nop,buf2);
+                case BINARY:
+                    conn.write(buf1);
+                    conn.write(buf2);
                     break;
-                case OpCode.TEXT:
+                case TEXT:
                     // NOTE: This impl is not smart enough to split on a UTF8 boundary
-                    conn.write(null,nop,BufferUtil.toUTF8String(buf1));
-                    conn.write(null,nop,BufferUtil.toUTF8String(buf2));
+                    conn.write(BufferUtil.toUTF8String(buf1));
+                    conn.write(BufferUtil.toUTF8String(buf2));
                     break;
+                default:
+                    throw new IOException("Unexpected frame type: " + frame.getType());
             }
         }
         catch (IOException e)

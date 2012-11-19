@@ -20,13 +20,12 @@ package org.eclipse.jetty.websocket.server.helper;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Simple Echo WebSocket, using async writes of echo
@@ -46,7 +45,7 @@ public class EchoSocket
         // echo the message back.
         try
         {
-            this.conn.write(null,new FutureCallback<Void>(),buf,offset,len);
+            this.conn.write(buf,offset,len);
         }
         catch (IOException e)
         {
@@ -68,7 +67,7 @@ public class EchoSocket
         // echo the message back.
         try
         {
-            this.conn.write(null,new FutureCallback<Void>(),message);
+            this.conn.write(message);
         }
         catch (IOException e)
         {

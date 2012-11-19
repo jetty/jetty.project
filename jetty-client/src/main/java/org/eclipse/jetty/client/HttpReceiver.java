@@ -387,9 +387,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new TimeoutException());
     }
 
-    public boolean abort(HttpExchange exchange, String reason)
+    public boolean abort(HttpExchange exchange, Throwable cause)
     {
-        return fail(new HttpResponseException(reason == null ? "Response aborted" : reason, exchange.getResponse()));
+        return fail(cause);
     }
 
     private boolean updateState(State from, State to)

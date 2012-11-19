@@ -42,13 +42,13 @@ public class JarResource extends URLResource
     protected JarURLConnection _jarConnection;
     
     /* -------------------------------------------------------- */
-    JarResource(URL url)
+    protected JarResource(URL url)
     {
         super(url,null);
     }
 
     /* ------------------------------------------------------------ */
-    JarResource(URL url, boolean useCaches)
+    protected JarResource(URL url, boolean useCaches)
     {
         super(url, null, useCaches);
     }

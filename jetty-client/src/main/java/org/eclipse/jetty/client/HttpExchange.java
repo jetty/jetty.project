@@ -193,10 +193,10 @@ public class HttpExchange
         return new AtomicMarkableReference<>(result, modified);
     }
 
-    public boolean abort(String reason)
+    public boolean abort(Throwable cause)
     {
-        LOG.debug("Aborting {} reason {}", this, reason);
-        boolean aborted = connection.abort(this, reason);
+        LOG.debug("Aborting {} reason {}", this, cause);
+        boolean aborted = connection.abort(this, cause);
         LOG.debug("Aborted {}: {}", this, aborted);
         return aborted;
     }

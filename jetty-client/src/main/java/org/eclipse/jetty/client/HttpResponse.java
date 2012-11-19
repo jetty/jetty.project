@@ -98,9 +98,9 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public boolean abort(String reason)
+    public boolean abort(Throwable cause)
     {
-        return request.abort(reason);
+        return request.abort(cause);
     }
 
     @Override

@@ -98,10 +98,10 @@ public class HttpConversation implements Attributes
         attributes.clear();
     }
 
-    public boolean abort(String reason)
+    public boolean abort(Throwable cause)
     {
         HttpExchange exchange = exchanges.peekLast();
-        return exchange != null && exchange.abort(reason);
+        return exchange != null && exchange.abort(cause);
     }
 
     @Override

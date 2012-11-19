@@ -25,6 +25,18 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
+
+/* ------------------------------------------------------------ */
+/** HTTP Configuration.
+ * <p>This class is a holder of HTTP configuration for use by the 
+ * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
+ * is instantiated and passed to a {@link ConnectionFactory} that can 
+ * create HTTP channels (eg HTTP, AJP or SPDY).</p>
+ * <p>The configuration held by this class is not for the wire protocol,
+ * but for the interpretation and handling of HTTP requests that could
+ * be transported by a variety of protocols.
+ * </p>
+ */
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration
 {
@@ -49,6 +61,10 @@ public class HttpConfiguration
     {
     }
     
+    /* ------------------------------------------------------------ */
+    /** Create a configuration from another.
+     * @param config The configuration to copy.
+     */
     public HttpConfiguration(HttpConfiguration config)
     {
         _customizers.addAll(config._customizers);
@@ -59,11 +75,20 @@ public class HttpConfiguration
         _secureScheme=config._secureScheme;
     }
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * <p>Add a {@link Customizer} that is invoked for every 
+     * request received.</p>
+     * <p>Customiser are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or 
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * @param customizer A request customizer
+     */
     public void addCustomizer(Customizer customizer)
     {
         _customizers.add(customizer);
     }
     
+    /* ------------------------------------------------------------ */
     public List<Customizer> getCustomizers()
     {
         return _customizers;
@@ -107,32 +132,72 @@ public class HttpConfiguration
         return _secureScheme;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Set the {@link Customizer}s that are invoked for every 
+     * request received.</p>
+     * <p>Customisers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or 
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * @param customizers
+     */
     public void setCustomizers(List<Customizer> customizers)
     {
         _customizers.clear();
         _customizers.addAll(customizers);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the size of the buffer into which response content is aggregated
+     * before being sent to the client.  A larger buffer can improve performance by allowing
+     * a content producer to run without blocking, however larger buffers consume more memory and
+     * may induce some latency before a client starts processing the content.
+     * @param responseBufferSize buffer size in bytes.
+     */
     public void setOutputBufferSize(int responseBufferSize)
     {
         _outputBufferSize = responseBufferSize;
     }
     
+    /* ------------------------------------------------------------ */
+    /** Set the maximum size of a request header.
+     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded 
+     * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
+     * attacks.</p>
+     * @param requestHeaderSize Max header size in bytes
+     */
     public void setRequestHeaderSize(int requestHeaderSize)
     {
         _requestHeaderSize = requestHeaderSize;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the maximum size of a response header.
+     * 
+     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection). 
+     * However, larger headers will also consume more memory.</p>
+     * @param responseHeaderSize Response header size in bytes.
+     */
     public void setResponseHeaderSize(int responseHeaderSize)
     {
         _responseHeaderSize = responseHeaderSize;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the TCP/IP port used for CONFIDENTIAL and INTEGRAL 
+     * redirections.
+     * @param confidentialPort
+     */
     public void setSecurePort(int confidentialPort)
     {
         _securePort = confidentialPort;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the  URI scheme used for CONFIDENTIAL and INTEGRAL 
+     * redirections.
+     * @param confidentialScheme A string like"https"
+     */
     public void setSecureScheme(String confidentialScheme)
     {
         _secureScheme = confidentialScheme;

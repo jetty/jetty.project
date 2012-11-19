@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.HttpChannel;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,6 +56,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
+        final Throwable cause = new Exception();
         final AtomicBoolean begin = new AtomicBoolean();
         try
         {
@@ -68,7 +67,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onQueued(Request request)
                         {
-                            request.abort(null);
+                            request.abort(cause);
                         }
 
                         @Override
@@ -82,7 +81,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertSame(cause, x.getCause());
             Assert.assertFalse(begin.get());
         }
     }
@@ -93,6 +92,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
+        final Throwable cause = new Exception();
         final CountDownLatch aborted = new CountDownLatch(1);
         final CountDownLatch headers = new CountDownLatch(1);
         try
@@ -104,7 +104,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onBegin(Request request)
                         {
-                            if (request.abort(null))
+                            if (request.abort(cause))
                                 aborted.countDown();
                         }
 
@@ -119,7 +119,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertSame(cause, x.getCause());
             Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
             Assert.assertFalse(headers.await(1, TimeUnit.SECONDS));
         }
@@ -134,6 +134,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         // A) the request is failed before the response arrived, then we get an ExecutionException
         // B) the request is failed after the response arrived, we get the 200 OK
 
+        final Throwable cause = new Exception();
         final CountDownLatch aborted = new CountDownLatch(1);
         try
         {
@@ -144,7 +145,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onHeaders(Request request)
                         {
-                            if (request.abort(null))
+                            if (request.abort(cause))
                                 aborted.countDown();
                         }
                     })
@@ -154,7 +155,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertSame(cause, x.getCause());
             Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
         }
     }
@@ -181,12 +182,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        // Test can behave in 3 ways:
-        // A) non-SSL, if the request is failed before the response arrived, then we get an ExecutionException
-        // B) non-SSL, if the request is failed after the response arrived, then we get the 500
-        // C) SSL, the server tries to write the 500, but the connection is already closed, the client
-        //    reads -1 with a pending exchange and fails the response with an EOFException
         StdErrLog.getLogger(HttpChannel.class).setHideStacks(true);
+        final Throwable cause = new Exception();
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
@@ -196,7 +193,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         @Override
                         public void onHeaders(Request request)
                         {
-                            request.abort(null);
+                            request.abort(cause);
                         }
                     })
                     .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
@@ -212,24 +209,15 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Throwable cause = x.getCause();
-            if (cause instanceof EOFException)
+            Throwable abort = x.getCause();
+            if (abort instanceof EOFException)
             {
-                // Server closed abruptly, behavior C
+                // Server closed abruptly
+                System.err.println("C");
             }
-            else if (cause instanceof HttpRequestException)
+            else if (abort == cause)
             {
-                // Request failed, behavior B
-                HttpRequestException xx = (HttpRequestException)cause;
-                Request request = xx.getRequest();
-                Assert.assertNotNull(request);
-            }
-            else if (cause instanceof HttpResponseException)
-            {
-                // Response failed, behavior A
-                HttpResponseException xx = (HttpResponseException)cause;
-                Response response = xx.getResponse();
-                Assert.assertNotNull(response);
+                // Expected
             }
             else
             {
@@ -270,7 +258,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         TimeUnit.MILLISECONDS.sleep(delay);
 
-        request.abort(null);
+        Throwable cause = new Exception();
+        request.abort(cause);
 
         try
         {
@@ -278,7 +267,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertSame(cause, x.getCause());
         }
     }
 
@@ -296,6 +285,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
+        final Throwable cause = new Exception();
         client.getProtocolHandlers().clear();
         client.getProtocolHandlers().add(new RedirectProtocolHandler(client)
         {
@@ -304,7 +294,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 // Abort the request after the 3xx response but before issuing the next request
                 if (!result.isFailed())
-                    result.getRequest().abort(null);
+                    result.getRequest().abort(cause);
                 super.onComplete(result);
             }
         });
@@ -320,7 +310,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+            Assert.assertSame(cause, x.getCause());
         }
     }
 }

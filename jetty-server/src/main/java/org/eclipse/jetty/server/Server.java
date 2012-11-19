@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -296,6 +297,14 @@ public class Server extends HandlerWrapper implements Attributes
             dumpStdErr();
 
         mex.ifExceptionThrow();
+    }
+
+    @Override
+    protected void start(LifeCycle l) throws Exception
+    {
+        // start connectors last
+        if (!(l instanceof Connector))
+            super.start(l);
     }
 
     /* ------------------------------------------------------------ */

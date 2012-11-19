@@ -128,6 +128,13 @@
             <contextPath>/test-jndi</contextPath>
           </webAppConfig>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.tests</groupId>
+            <artifactId>test-mock-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

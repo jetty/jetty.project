@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -70,7 +69,26 @@ public class HttpTransportOverSPDY implements HttpTransport
     @Override
     public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
     {
-        boolean hasContent = !BufferUtil.isEmpty(content);
+        if (LOG.isDebugEnabled())
+            LOG.debug("send  {} {} {} {} last={}%n",this,stream,info,BufferUtil.toDetailString(content),lastContent);
+
+        if (stream.isClosed() || stream.isReset() )
+        {        
+            callback.failed(context,new EofException("stream closed"));
+            return;
+        }
+        // new Throwable().printStackTrace();
+        
+        // info==null content==null lastContent==false          should not happen
+        // info==null content==null lastContent==true           signals no more content - complete
+        // info==null content!=null lastContent==false          send data on committed response
+        // info==null content!=null lastContent==true           send last data on committed response - complete
+        // info!=null content==null lastContent==false          reply, commit
+        // info!=null content==null lastContent==true           reply, commit and complete
+        // info!=null content!=null lastContent==false          reply, commit with content
+        // info!=null content!=null lastContent==true           reply, commit with content and complete
+        
+        boolean hasContent = BufferUtil.hasContent(content);
         
         if (info!=null)
         {
@@ -105,16 +123,38 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
 
             boolean close = !hasContent && lastContent;
-            reply(stream, new ReplyInfo(headers, close));
+            ReplyInfo reply = new ReplyInfo(headers,close);
+            reply(stream, reply);
         }
 
-        if ((hasContent || lastContent ) && !stream.isClosed() )
-            stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        // Do we have some content to send as well
+        if (hasContent)
+        {
+            // Is the stream still open?
+            if (stream.isClosed()|| stream.isReset())
+                // tell the callback about the EOF 
+                callback.failed(context,new EofException("stream closed")); 
+            else 
+                // send the data and let it call the callback
+                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        }
+        // else do we need to close
+        else if (lastContent)
+        {
+            // Are we closed ?
+            if (stream.isClosed()|| stream.isReset())
+                // already closed by reply, so just tell callback we are complete
+                callback.completed(context); 
+            else
+                // send empty data to close and let the send call the callback
+                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        }
         else
+            // No data and no close so tell callback we are completed
             callback.completed(context);
 
     }
-    
+
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {

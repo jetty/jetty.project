@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -159,6 +160,19 @@ public class ServletHandler extends ScopedHandler
             initialize();
         
         super.doStart();
+    }
+    
+    
+    /* ----------------------------------------------------------------- */
+    @Override
+    protected void start(LifeCycle l) throws Exception
+    {
+        //Don't start the whole object tree (ie all the servlet and filter Holders) when
+        //this handler starts. They have a slightly special lifecycle, and should only be
+        //started AFTER the handlers have all started (and the ContextHandler has called
+        //the context listeners).
+        if (!(l instanceof Holder))
+            super.start(l);
     }
 
     /* ----------------------------------------------------------------- */
@@ -715,8 +729,22 @@ public class ServletHandler extends ScopedHandler
                     mx.add(e);
                 }
             }
-            mx.ifExceptionThrow();
         }
+
+        //start the servlet and filter holders now
+        for (Holder<?> h: getBeans(Holder.class))
+        {
+            try
+            {
+                h.start();
+            }
+            catch (Exception e)
+            {
+                mx.add(e);
+            }
+        }
+        
+        mx.ifExceptionThrow();
     }
 
     /* ------------------------------------------------------------ */

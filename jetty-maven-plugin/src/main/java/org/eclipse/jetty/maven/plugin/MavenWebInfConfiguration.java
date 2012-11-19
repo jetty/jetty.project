@@ -20,14 +20,14 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLClassLoader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -36,29 +36,43 @@ import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 
+
+
+/**
+ * MavenWebInfConfiguration
+ * 
+ * WebInfConfiguration to take account of overlaid wars expressed as project dependencies and
+ * potentiall configured via the maven-war-plugin.
+ *
+ */
 public class MavenWebInfConfiguration extends WebInfConfiguration
 {
-    private static final Logger LOG = Log.getLogger(MavenWebInfConfiguration.class);
+    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
 
+    
+    protected static int COUNTER = 0; 
     protected Resource _originalResourceBase;
-    protected Resource[]  _unpackedOverlays;
+    protected List<Resource>  _unpackedOverlayResources;
   
     
+    
+    
+    /** 
+     * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
+     */
     public void configure(WebAppContext context) throws Exception
     {
         JettyWebAppContext jwac = (JettyWebAppContext)context;
+        
+        //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null)
         {
             if (LOG.isDebugEnabled()) LOG.debug("Setting up classpath ...");
-
-            //put the classes dir and all dependencies into the classpath
             Iterator itor = jwac.getClassPathFiles().iterator();
             while (itor.hasNext())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(((File)itor.next()).getCanonicalPath());
-
-            //if (LOG.isDebugEnabled())
-                //LOG.debug("Classpath = "+LazyList.array2List(((URLClassLoader)context.getClassLoader()).getURLs()));
         }
+        
         super.configure(context);
         
         // knock out environmental maven and plexus classes from webAppContext
@@ -76,31 +90,45 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         context.setServerClasses( newServerClasses ); 
     }
 
+    
+    
 
+    /** 
+     * @see org.eclipse.jetty.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
+     */
     public void preConfigure(WebAppContext context) throws Exception
     {
         super.preConfigure(context);
 
     }
     
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.webapp.AbstractConfiguration#postConfigure(org.eclipse.jetty.webapp.WebAppContext)
+     */
     public void postConfigure(WebAppContext context) throws Exception
     {
         super.postConfigure(context);
     }
 
 
+    
+    
+    /** 
+     * @see org.eclipse.jetty.webapp.WebInfConfiguration#deconfigure(org.eclipse.jetty.webapp.WebAppContext)
+     */
     public void deconfigure(WebAppContext context) throws Exception
-    {
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
-        
+    {   
         //remove the unpacked wars
-        if (_unpackedOverlays != null && _unpackedOverlays.length>0)
+        if (_unpackedOverlayResources != null && !_unpackedOverlayResources.isEmpty())
         {
             try
             {
-                for (int i=0; i<_unpackedOverlays.length; i++)
+                for (Resource r:_unpackedOverlayResources)
                 {
-                    IO.delete(_unpackedOverlays[i].getFile());
+                    IO.delete(r.getFile());
                 }
             }
             catch (IOException e)
@@ -111,12 +139,11 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         super.deconfigure(context);
         //restore whatever the base resource was before we might have included overlaid wars
         context.setBaseResource(_originalResourceBase);
-  
     }
 
     
     
-  
+
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#unpack(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -126,62 +153,49 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         //Unpack and find base resource as normal
         super.unpack(context);
         
-        
-        //Add in any overlays as a resource collection for the base
+        //Get the base resource for the "virtual" webapp
         _originalResourceBase = context.getBaseResource();
+
         JettyWebAppContext jwac = (JettyWebAppContext)context;
 
-        //Add in any overlaid wars as base resources
+        //determine sequencing of overlays
+        _unpackedOverlayResources = new ArrayList<Resource>();
+
+       
+
         if (jwac.getOverlays() != null && !jwac.getOverlays().isEmpty())
         {
-            Resource[] origResources = null;
-            int origSize = 0;
+            List<Resource> resourceBaseCollection = new ArrayList<Resource>();
 
-            if (jwac.getBaseResource() != null)
+            for (Overlay o:jwac.getOverlays())
             {
-                if (jwac.getBaseResource() instanceof ResourceCollection)
+                //can refer to the current project in list of overlays for ordering purposes
+                if (o.getConfig() != null && o.getConfig().isCurrentProject())
                 {
-                    origResources = ((ResourceCollection)jwac.getBaseResource()).getResources();
-                    origSize = origResources.length;
+                    resourceBaseCollection.add(_originalResourceBase); 
+                    continue;
                 }
-                else
-                {
-                    origResources = new Resource[1];
-                    origResources[0] = jwac.getBaseResource();
-                    origSize = 1;
-                }
-            }
-            
-            int overlaySize = jwac.getOverlays().size();
-            Resource[] newResources = new Resource[origSize + overlaySize];
 
-            int offset = 0;
-            if (origSize > 0)
+                Resource unpacked = unpackOverlay(jwac,o);
+                _unpackedOverlayResources.add(unpacked); //remember the unpacked overlays for later so we can delete the tmp files
+                resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
+            }
+
+            if (!resourceBaseCollection.contains(_originalResourceBase))
             {
                 if (jwac.getBaseAppFirst())
                 {
-                    System.arraycopy(origResources,0,newResources,0,origSize);
-                    offset = origSize;
+                    LOG.info("Adding virtual project first in resource base list");
+                    resourceBaseCollection.add(0, _originalResourceBase);
                 }
                 else
                 {
-                    System.arraycopy(origResources,0,newResources,overlaySize,origSize);
+                    LOG.info("Adding virtual project last in resource base list");
+                    resourceBaseCollection.add(_originalResourceBase);
                 }
             }
-            
-            // Overlays are always unpacked
-            _unpackedOverlays = new Resource[overlaySize];
-            List<Resource> overlays = jwac.getOverlays();
-            for (int idx=0; idx<overlaySize; idx++)
-            { 
-                LOG.info("Unpacking overlay: " + overlays.get(idx));
-                _unpackedOverlays[idx] = unpackOverlay(context, overlays.get(idx));
-                 newResources[idx+offset] = _unpackedOverlays[idx];
 
-                LOG.info("Adding overlay: " + _unpackedOverlays[idx]);
-            }
-            
-            jwac.setBaseResource(new ResourceCollection(newResources));
+            jwac.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
         }
     }
 
@@ -225,25 +239,68 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     
     
 
-    protected  Resource unpackOverlay (WebAppContext context, Resource overlay)
+    protected  Resource unpackOverlay (WebAppContext context, Overlay overlay)
     throws IOException
     {
+        LOG.info("Unpacking overlay: " + overlay);
+        
         //resolve if not already resolved
         resolveTempDirectory(context);
         
+        if (overlay.getResource() == null)
+            return null; //nothing to unpack
    
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
-        String name = overlay.getName();
+        String name = overlay.getResource().getName();
         if (name.endsWith("!/"))
             name = name.substring(0,name.length()-2);
         int i = name.lastIndexOf('/');
         if (i>0)
             name = name.substring(i+1,name.length());
         name = name.replace('.', '_');
-        File dir = new File(context.getTempDirectory(), name);
-        overlay.copyTo(dir);
+        name = name+(++COUNTER); //add some digits to ensure uniqueness
+        File dir = new File(context.getTempDirectory(), name); 
+        
+        //if specified targetPath, unpack to that subdir instead
+        File unpackDir = dir;
+        if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
+            unpackDir = new File (dir, overlay.getConfig().getTargetPath());
+        
+        overlay.getResource().copyTo(unpackDir);
+        //use top level of unpacked content
         Resource unpackedOverlay = Resource.newResource(dir.getCanonicalPath());
+        
+        LOG.info("Unpacked overlay: "+overlay+" to "+unpackedOverlay);
         return  unpackedOverlay;
+    }
+    
+    protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
+    {
+        if (o == null || warArtifacts == null || warArtifacts.isEmpty())
+            return null;
+        
+        for (Artifact a:warArtifacts)
+        {
+            if (overlayMatchesArtifact (o, a))
+            {
+               return a;
+            }
+        }
+        
+        return null;
+    }
+    
+    protected boolean overlayMatchesArtifact(OverlayConfig o, Artifact a)
+    {
+        if ((o.getGroupId() == null && a.getGroupId() == null) || (o.getGroupId() != null && o.getGroupId().equals(a.getGroupId())))
+        {
+            if ((o.getArtifactId() == null && a.getArtifactId() == null) || (o.getArtifactId() != null && o.getArtifactId().equals(a.getArtifactId())))
+            {
+                if ((o.getClassifier() == null) || (o.getClassifier().equals(a.getClassifier())))
+                    return true;
+            }
+        }
+        return false;
     }
 }

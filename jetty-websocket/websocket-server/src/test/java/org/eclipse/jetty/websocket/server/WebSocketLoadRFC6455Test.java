@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.junit.Assert.*;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -36,21 +38,20 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-import org.eclipse.jetty.websocket.core.protocol.Parser;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class WebSocketLoadRFC6455Test
 {
@@ -66,19 +67,13 @@ public class WebSocketLoadRFC6455Test
         private final Parser _parser;
         private final IncomingFrames _handler = new IncomingFrames()
         {
-            /*
-             * public void close(int code,String message) { }
-             *
-             * public void onFrame(byte flags, byte opcode, ByteBuffer buffer) { _response=buffer; }
-             */
-
             @Override
-            public void incoming(WebSocketException e)
+            public void incomingError(WebSocketException e)
             {
             }
 
             @Override
-            public void incoming(WebSocketFrame frame)
+            public void incomingFrame(Frame frame)
             {
             }
         };
@@ -140,7 +135,7 @@ public class WebSocketLoadRFC6455Test
                     // TODO: Send it
                     // TODO: Receive response
 
-                    Assert.assertEquals(message, _response.toString());
+                    Assert.assertEquals(message,_response.toString());
                     latch.countDown();
                 }
             }

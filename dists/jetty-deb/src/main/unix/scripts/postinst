@@ -1,0 +1,20 @@
+#!/bin/bash
+
+LOG_DIR=/var/lib/jetty9/logs
+WEBAPP_DIR=/var/lib/jetty9/webapps
+
+# copy the jetty start script into place
+cp /usr/share/jetty9/bin/jetty.sh /etc/init.d/jetty
+
+# make it generally executable
+chmod 755 /etc/init.d/jetty
+
+# ensure we have a logging directory
+if [ ! -d "$LOG_DIR" ]; then
+  mkdir $LOG_DIR
+fi
+
+# ensure we have a webapps directory
+if [ ! -d "$WEBAPP_DIR" ]; then
+  mkdir $WEBAPP_DIR
+fi

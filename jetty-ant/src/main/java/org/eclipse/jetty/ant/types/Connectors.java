@@ -25,7 +25,6 @@ import java.util.List;
 /**
  * Specifies a jetty configuration <connectors/> element for Ant build file.
  *
- * @author Jakub Pawlowicz
  */
 public class Connectors
 {
@@ -79,35 +78,6 @@ public class Connectors
     public List<Connector> getDefaultConnectors()
     {
         return defaultConnectors;
-    }
-
-    public class Connector
-    {
-    	private int port;
-    	private int maxIdleTime;
-
-    	public Connector(int port, int maxIdleTime)
-    	{
-    		this.port = port;
-    		this.maxIdleTime = maxIdleTime;
-    	}
-
-		public int getPort() {
-			return port;
-		}
-
-		public void setPort(int port) {
-			this.port = port;
-		}
-
-		public int getMaxIdleTime() {
-			return maxIdleTime;
-		}
-
-		public void setMaxIdleTime(int maxIdleTime) {
-			this.maxIdleTime = maxIdleTime;
-		}
-
     }
 
 }

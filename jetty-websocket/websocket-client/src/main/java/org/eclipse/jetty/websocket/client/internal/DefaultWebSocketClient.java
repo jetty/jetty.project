@@ -26,15 +26,17 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * WebSocketClient for working with Upgrade (request and response), and establishing connections to the websocket URI of your choice.
@@ -138,12 +140,6 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
         return upgradeRequest;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jetty.websocket.client.internal.WebSocketClient#getConnection()
-     */
-    @Override
     public WebSocketConnection getConnection()
     {
         return this.connection;

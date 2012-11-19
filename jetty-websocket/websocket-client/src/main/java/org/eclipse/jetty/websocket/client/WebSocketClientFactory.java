@@ -34,16 +34,16 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.ExtensionRegistry;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.event.EventDriver;
-import org.eclipse.jetty.websocket.core.io.event.EventDriverFactory;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 
 public class WebSocketClientFactory extends ContainerLifeCycle
 {
@@ -54,7 +54,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     private final Scheduler scheduler;
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketPolicy policy;
-    private final WebSocketExtensionRegistry extensionRegistry;
+    private final WebSocketExtensionFactory extensionRegistry;
     private SocketAddress bindAddress;
 
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
@@ -98,7 +98,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         }
 
         this.policy = WebSocketPolicy.newClientPolicy();
-        this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
+        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
 
         this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
         addBean(this.connectionManager);
@@ -151,7 +151,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         return executor;
     }
 
-    public ExtensionRegistry getExtensionRegistry()
+    public ExtensionFactory getExtensionFactory()
     {
         return extensionRegistry;
     }
@@ -205,7 +205,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
             LOG.debug("Session Opened: {}",session);
         }
         boolean ret = sessions.offer(session);
-        session.onConnect();
+        session.open();
         return ret;
     }
 
