@@ -1,34 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
-<!-- ============================================================= -->
-<!-- Configure the Jetty Server instance with an ID "Server"       -->
-<!-- by adding a SPDY connector.                                   -->
-<!-- This configuration must be used in conjunction with jetty.xml -->
-<!-- It should not be used with jetty-https.xml as this connector  -->
-<!-- can provide both HTTPS and SPDY connections                   -->
-<!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- =========================================================== -->
-    <!-- Setup the SSL Context factory used to establish all TLS     -->
-    <!-- Connections and session.                                    -->
-    <!--                                                             -->
-    <!-- Consult the javadoc of o.e.j.util.ssl.SslContextFactory     -->
-    <!-- o.e.j.server.HttpConnectionFactory for all configuration    -->
-    <!-- that may be set here.                                       -->
-    <!-- =========================================================== -->
     <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-      <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
-      <Set name="KeyStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
-      <Set name="KeyManagerPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
-      <Set name="TrustStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
-      <Set name="TrustStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+        <Set name="keyStorePath">src/main/resources/keystore.jks</Set>
+        <Set name="keyStorePassword">storepwd</Set>
+        <Set name="trustStorePath">src/main/resources/truststore.jks</Set>
+        <Set name="trustStorePassword">storepwd</Set>
+        <Set name="protocol">TLSv1</Set>
     </New>
 
     <!--
     <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
     -->
+
+    <New id="tlsHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+        <Arg>
+            <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+                <Set name="secureScheme">https</Set>
+                <Set name="securePort">
+                    <Property name="jetty.tls.port" default="8443"/>
+                </Set>
+                <Set name="outputBufferSize">32768</Set>
+                <Set name="requestHeaderSize">8192</Set>
+                <Set name="responseHeaderSize">8192</Set>
+
+                <!-- Uncomment to enable handling of X-Forwarded- style headers
+                <Call name="addCustomizer">
+                    <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+                </Call>
+                -->
+            </New>
+        </Arg>
+        <Call name="addCustomizer">
+            <Arg>
+                <New class="org.eclipse.jetty.server.SecureRequestCustomizer"/>
+            </Arg>
+        </Call>
+    </New>
 
     <!--
     This is the upstream server connector. It speaks non-SSL SPDY/3(HTTP) on port 9090.
@@ -36,26 +46,29 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.server.ServerConnector">
-                <Arg name="server"><Ref id="Server" /></Arg>
+                <Arg name="server">
+                    <Ref id="Server"/>
+                </Arg>
                 <Arg name="factories">
                     <Array type="org.eclipse.jetty.server.ConnectionFactory">
                         <!-- SPDY/3 Connection factory -->
                         <Item>
-                          <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
-                            <Arg name="version" type="int">3</Arg>
-                            <Arg name="config"><Ref id="httpConfig" /></Arg>
-                          </New>
+                            <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
+                                <Arg name="version" type="int">3</Arg>
+                                <Arg name="config">
+                                    <Ref id="tlsHttpConfig"/>
+                                </Arg>
+                            </New>
                         </Item>
                     </Array>
                 </Arg>
-                <Set name="Port">9090</Set>
-                <Set name="DefaultProtocol">spdy/3</Set>
+                <Set name="port">9090</Set>
             </New>
         </Arg>
     </Call>
 
     <!--
-    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/3(HTTP)
+    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/2(HTTP)
     -->
     <New id="spdyProxyEngine" class="org.eclipse.jetty.spdy.server.proxy.SPDYProxyEngine">
         <Arg>
@@ -74,7 +87,9 @@
     <New id="proxyEngineSelector" class="org.eclipse.jetty.spdy.server.proxy.ProxyEngineSelector">
         <Call name="putProxyEngine">
             <Arg>spdy/3</Arg>
-            <Arg><Ref id="spdyProxyEngine" /></Arg>
+            <Arg>
+                <Ref id="spdyProxyEngine"/>
+            </Arg>
         </Call>
         <Set name="proxyServerInfos">
             <Map>
@@ -101,7 +116,7 @@
     -->
     <Call name="addConnector">
         <Arg>
-            <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyConnector">
+            <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyServerConnector">
                 <Arg>
                     <Ref id="Server"/>
                 </Arg>
@@ -114,7 +129,7 @@
     </Call>
     <Call name="addConnector">
         <Arg>
-            <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyConnector">
+            <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyServerConnector">
                 <Arg>
                     <Ref id="Server"/>
                 </Arg>

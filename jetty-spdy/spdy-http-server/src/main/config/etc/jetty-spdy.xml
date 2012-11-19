@@ -27,6 +27,12 @@
   </New>
 
   <!-- =========================================================== -->
+  <!-- Enables NPN debugging on System.err                         -->
+  <!-- ===========================================================
+   <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
+  -->
+
+  <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
   <!-- common HttpConfiguration defined in jetty.xml               -->
   <!-- Add a SecureRequestCustomizer to extract certificate and    -->
