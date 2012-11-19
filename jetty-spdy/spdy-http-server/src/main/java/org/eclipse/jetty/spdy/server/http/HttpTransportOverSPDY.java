@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -84,10 +83,10 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info==null content==null lastContent==true           signals no more content - complete
         // info==null content!=null lastContent==false          send data on committed response
         // info==null content!=null lastContent==true           send last data on committed response - complete
-        // info!=null content==null lastContent==false          commit
-        // info!=null content==null lastContent==true           commit and complete
-        // info!=null content!=null lastContent==false          commit with content
-        // info!=null content!=null lastContent==true           commit with content and complete
+        // info!=null content==null lastContent==false          reply, commit
+        // info!=null content==null lastContent==true           reply, commit and complete
+        // info!=null content!=null lastContent==false          reply, commit with content
+        // info!=null content!=null lastContent==true           reply, commit with content and complete
         
         boolean hasContent = BufferUtil.hasContent(content);
         
@@ -155,7 +154,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             callback.completed(context);
 
     }
-    
+
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
