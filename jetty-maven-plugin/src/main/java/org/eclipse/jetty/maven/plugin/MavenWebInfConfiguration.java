@@ -163,7 +163,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
        
 
-        if (!jwac.getOverlays().isEmpty())
+        if (jwac.getOverlays() != null && !jwac.getOverlays().isEmpty())
         {
             List<Resource> resourceBaseCollection = new ArrayList<Resource>();
 
