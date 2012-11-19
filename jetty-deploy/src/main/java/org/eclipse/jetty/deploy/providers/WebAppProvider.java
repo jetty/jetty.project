@@ -58,6 +58,9 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * be configured by the XML and only the XML is deployed.
  * </ul>
  * 
+ * <p>When deploying XML files, the property deployer.file is set to the file itself and
+ * deployer.dir is set to the directory of the XML file</p>
+ * 
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
@@ -265,6 +268,8 @@ public class WebAppProvider extends ScanningAppProvider
         if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
+            xmlc.getProperties().put("deployer.file",file.getCanonicalPath());
+            xmlc.getProperties().put("deployer.dir",file.getParent());
             
             xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
             if (getConfigurationManager() != null)

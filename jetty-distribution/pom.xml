@@ -99,7 +99,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/webapps-demos</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -109,7 +109,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/webapps-demos</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -473,7 +473,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/webapps-demos</outputDirectory>
                   <destFileName>spdy.war</destFileName>
                 </artifactItem>
               </artifactItems>
