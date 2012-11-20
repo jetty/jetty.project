@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * <p>
  * Configuration Properties:
  * <dl>
- *   <dt>${name|heirarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
+ *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
  *   <dd>
  *   Sets the level that the Logger should log at.<br/>
  *   Names can be a package name, or a fully qualified class name.<br/>

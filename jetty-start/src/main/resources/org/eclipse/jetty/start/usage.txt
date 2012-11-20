@@ -55,10 +55,11 @@ System Properties:
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
       
-    org.eclipse.jetty.util.log.DEBUG=[boolean]
-      Debug logging for the stderr and javautil Loggers. Slf4j
+    [name|hierarchy].LEVEL=[loglevel]
+      Change loglevel for the stderr and javautil Loggers. Slf4j
       and other loggers must be separately configured for debug.
-      (default: false)
+      For example: Dorg.eclipse.jetty.LEVEL=DEBUG
+      (default: INFO)
       
     org.eclipse.jetty.util.log.IGNORED=[boolean]
       Ignored exceptions are logged, independent of DEBUG settings

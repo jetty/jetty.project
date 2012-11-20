@@ -106,7 +106,7 @@ public class Log
                     }
                     finally
                     {
-                        IO.close(in);
+                        safeCloseInputStream(in);
                     }
                 }
 
@@ -131,6 +131,19 @@ public class Log
                 return null;
             }
         });
+    }
+
+    private static void safeCloseInputStream(InputStream in)
+    {
+        try
+        {
+            if (in != null)
+                in.close();
+        }
+        catch (IOException e)
+        {
+            LOG.ignore(e);
+        }
     }
 
     private static Logger LOG;
