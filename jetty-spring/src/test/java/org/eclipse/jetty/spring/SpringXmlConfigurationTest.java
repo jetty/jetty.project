@@ -24,12 +24,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class SpringXmlConfigurationTest
 {
@@ -60,7 +60,7 @@ public class SpringXmlConfigurationTest
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         XmlConfiguration configuration = new XmlConfiguration(url);
 
-        Map<String,String> properties = new HashMap<String,String>();
+        Map<String,String> properties = new HashMap<>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
@@ -74,20 +74,20 @@ public class SpringXmlConfigurationTest
 
         tc=(TestConfiguration)configuration.configure(tc);
 
-        assertEquals("preconfig",tc.getTestString0());
-        assertEquals(42,tc.getTestInt0());
-        assertEquals("SetValue",tc.getTestString1());
-        assertEquals(1,tc.getTestInt1());
+        Assert.assertEquals("preconfig", tc.getTestString0());
+        Assert.assertEquals(42, tc.getTestInt0());
+        Assert.assertEquals("SetValue", tc.getTestString1());
+        Assert.assertEquals(1, tc.getTestInt1());
 
-        assertEquals("nested",tc.getNested().getTestString0());
-        assertEquals("nested",tc.getNested().getTestString1());
-        assertEquals("default",tc.getNested().getNested().getTestString0());
-        assertEquals("deep",tc.getNested().getNested().getTestString1());
+        Assert.assertEquals("nested", tc.getNested().getTestString0());
+        Assert.assertEquals("nested", tc.getNested().getTestString1());
+        Assert.assertEquals("default", tc.getNested().getNested().getTestString0());
+        Assert.assertEquals("deep", tc.getNested().getNested().getTestString1());
 
-        assertEquals("deep",((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
-        assertEquals(2,((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
+        Assert.assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
+        Assert.assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
 
-        assertEquals("xxx",tc.getTestString2());
+        Assert.assertEquals("xxx", tc.getTestString2());
     }
 
     @Test
@@ -98,7 +98,7 @@ public class SpringXmlConfigurationTest
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         XmlConfiguration configuration = new XmlConfiguration(url);
 
-        Map<String,String> properties = new HashMap<String,String>();
+        Map<String,String> properties = new HashMap<>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
@@ -108,20 +108,20 @@ public class SpringXmlConfigurationTest
         configuration.getProperties().putAll(properties);
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-        assertEquals("default",tc.getTestString0());
-        assertEquals(-1,tc.getTestInt0());
-        assertEquals("SetValue",tc.getTestString1());
-        assertEquals(1,tc.getTestInt1());
+        Assert.assertEquals("default", tc.getTestString0());
+        Assert.assertEquals(-1, tc.getTestInt0());
+        Assert.assertEquals("SetValue", tc.getTestString1());
+        Assert.assertEquals(1, tc.getTestInt1());
 
-        assertEquals("nested",tc.getNested().getTestString0());
-        assertEquals("nested",tc.getNested().getTestString1());
-        assertEquals("default",tc.getNested().getNested().getTestString0());
-        assertEquals("deep",tc.getNested().getNested().getTestString1());
+        Assert.assertEquals("nested", tc.getNested().getTestString0());
+        Assert.assertEquals("nested", tc.getNested().getTestString1());
+        Assert.assertEquals("default", tc.getNested().getNested().getTestString0());
+        Assert.assertEquals("deep", tc.getNested().getNested().getTestString1());
 
-        assertEquals("deep",((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
-        assertEquals(2,((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
+        Assert.assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
+        Assert.assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
 
-        assertEquals("xxx",tc.getTestString2());
+        Assert.assertEquals("xxx", tc.getTestString2());
     }
 
     @Test
@@ -133,13 +133,11 @@ public class SpringXmlConfigurationTest
         Server server = (Server)configuration.configure();
 
         server.dumpStdErr();
-
     }
 
     @Test
     public void XmlConfigurationMain() throws Exception
     {
-        XmlConfiguration.main(new String[]{"src/test/resources/org/eclipse/jetty/spring/jetty.xml"});
-
+        XmlConfiguration.main("src/test/resources/org/eclipse/jetty/spring/jetty.xml");
     }
 }
