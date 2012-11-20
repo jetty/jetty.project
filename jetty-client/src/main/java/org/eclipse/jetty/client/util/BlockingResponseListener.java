@@ -40,6 +40,12 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
 
     public BlockingResponseListener(Request request)
     {
+        this(request, 2 * 1024 * 1024);
+    }
+
+    public BlockingResponseListener(Request request, int maxLength)
+    {
+        super(maxLength);
         this.request = request;
     }
 
