@@ -31,7 +31,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
@@ -65,14 +64,14 @@ public class Log
      */
     public static String __logClass;
     /**
-     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     * Legacy flag indicating if {@link Logger#ignore(Throwable)} methods produce any output in the {@link Logger}s
      */
     public static boolean __ignored;
 
     /**
      * Hold loggers only.
      */
-    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<String, Logger>();
+    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
 
 
     static
