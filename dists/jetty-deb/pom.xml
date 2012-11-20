@@ -43,6 +43,7 @@
                     <exclude>jetty-distribution-*/javadoc/**</exclude>
                     <exclude>jetty-distribution-*/logs/**</exclude>
                     <exclude>jetty-distribution-*/bin/**</exclude>
+                    <exclude>jetty-distribution-*/etc/**</exclude>
                     <exclude>jetty-distribution-*/webapps/**</exclude>                  
                     <exclude>jetty-distribution-*/*.html</exclude>
                     <exclude>jetty-distribution-*/*.txt</exclude>             
@@ -66,7 +67,7 @@
                   <replacement>$1</replacement>
                   <excludes>
                     <include>jetty-distribution-*/etc/**</include>
-                    <exclude>jetty-distribution-*/**</exclude>           
+                    <!-- exclude>jetty-distribution-*/**</exclude-->           
                   </excludes>
                  </extractArtifact>
               </assembly>
