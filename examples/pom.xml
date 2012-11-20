@@ -24,7 +24,7 @@
     <version>9.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <groupId>org.eclipse.jetty</groupId>
+  <groupId>org.eclipse.jetty.examples</groupId>
   <artifactId>examples-parent</artifactId>
   <name>Jetty Examples :: Parent</name>
   <packaging>pom</packaging>
@@ -41,6 +41,10 @@
     </plugins>
   </build>
   <modules>
+    <!--
+    -- The async-rest and embedded are examples that have historical locations, 
+    -- new ones should appear nested under o.e.jetty.examples groupId
+    -->
     <module>async-rest</module>
     <module>embedded</module>
   </modules>
