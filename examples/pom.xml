@@ -42,8 +42,8 @@
   </build>
   <modules>
     <!--
-    -- The async-rest and embedded are examples that have historical locations, 
-    -- new ones should appear nested under o.e.jetty.examples groupId
+    - The async-rest and embedded are examples that have historical locations, 
+    - new ones should appear nested under o.e.jetty.examples groupId
     -->
     <module>async-rest</module>
     <module>embedded</module>
