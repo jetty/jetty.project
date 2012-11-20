@@ -58,3 +58,4 @@
        fi
    fi
    ;;
+   configure)

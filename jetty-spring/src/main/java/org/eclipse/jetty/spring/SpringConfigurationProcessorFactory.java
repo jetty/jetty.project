@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spring;
 
 import org.eclipse.jetty.xml.ConfigurationProcessor;
@@ -25,12 +24,12 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * Spring ConfigurationProcessor Factory
- * <p>
+ * <p/>
  * Create a {@link SpringConfigurationProcessor} for XML documents with a "beans" element.
- * The factory is discovered by a {@link ServiceLoader} for {@link ConfigurationProcessorFactory}.
+ * The factory is discovered by a {@link java.util.ServiceLoader} for {@link ConfigurationProcessorFactory}.
+ *
  * @see SpringConfigurationProcessor
  * @see XmlConfiguration
- *
  */
 public class SpringConfigurationProcessorFactory implements ConfigurationProcessorFactory
 {
