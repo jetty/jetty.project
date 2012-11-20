@@ -1,4 +1,23 @@
-jetty-9.0.0-SNAPSHOT
+jetty-9.0.0.M3 - 20 November 2012
+ + 391623 Add option to --stop to wait for target jetty to stop
+ + 392237 Port test-integration to jetty-9
+ + 392492 expect headers only examined for requests>=HTTP/1.1
+ + 392850 ContextLoaderListener not called in 9.0.0.M1 and M2
+ + 393075 1xx, 204, 304 responses ignore headers that suggest content
+ + 393832 start connectors last
+ + 393947 additional tests
+ + 394143 add jetty-all aggregate via release profile
+ + 394144 add jetty-jaspi
+ + 394215 Scheduled tasks throwing exceptions kill java.util.Timer thread.
+ + 394232 add jetty-ant into jetty9
+ + 394357 Make JarResource constructors protected
+ + 394370 Add unit tests for HttpTransportOverSPDY.send()
+ + 394383 add logging of the SSLEngine
+ + 394541 Add continuation jar and websocket jars to test-jetty-webapp
+ + 394545 Add jetty-jaas dependency to jetty-maven-plugin
+ + 394671 Fix setting loglevel on commandline, organize import, fix javadoc
+ + JETTY-846 Support maven-war-plugin configuration for jetty-maven-plugin; fix
+   NPE
 
 jetty-9.0.0.M2 - 06 November 2012
  + 371170 MongoSessionManager LastAccessTimeTest fails
