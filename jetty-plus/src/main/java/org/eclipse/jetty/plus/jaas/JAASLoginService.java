@@ -245,27 +245,32 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            LOG.warn(e);
+            LOG.debug(e);
         }
         catch (IOException e)
         {
-            LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         catch (UnsupportedCallbackException e)
         {
-           LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         catch (InstantiationException e)
         {
-            LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         catch (IllegalAccessException e)
         {
-            LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         catch (ClassNotFoundException e)
         {
-            LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         return null;
     }
