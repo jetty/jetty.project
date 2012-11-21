@@ -209,7 +209,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof RequestParameterCallback)
                             {
-                            	HttpChannel channel = HttpChannel.getCurrentHttpChannel();
+                                HttpChannel channel = HttpChannel.getCurrentHttpChannel();
 
                                 if (channel == null)
                                     return;
@@ -245,29 +245,14 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
             return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
         }
-        catch (LoginException e)
+        catch (LoginException | UnsupportedCallbackException e)
         {
-            LOG.warn(e);
+            LOG.debug(e);
         }
-        catch (IOException e)
+        catch (IOException | InstantiationException | IllegalAccessException | ClassNotFoundException e)
         {
-            LOG.warn(e);
-        }
-        catch (UnsupportedCallbackException e)
-        {
-           LOG.warn(e);
-        }
-        catch (InstantiationException e)
-        {
-            LOG.warn(e);
-        }
-        catch (IllegalAccessException e)
-        {
-            LOG.warn(e);
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.warn(e);
+            LOG.info(e.getMessage());
+            LOG.debug(e);
         }
         return null;
     }
