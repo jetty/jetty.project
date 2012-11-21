@@ -37,6 +37,7 @@ import org.apache.tools.ant.DefaultLogger;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.ProjectHelper;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 public class AntBuild
 {
@@ -63,11 +64,13 @@ public class AntBuild
             Project antProject = new Project();
             try
             {
+                antProject.setBaseDir(MavenTestingUtils.getBasedir());
                 antProject.setUserProperty("ant.file",buildFile.getAbsolutePath());
                 DefaultLogger logger = new DefaultLogger();
 
                 ConsoleParser parser = new ConsoleParser();
-                connList = parser.newPattern(".*([0-9]+\\.[0-9]*\\.[0-9]*\\.[0-9]*):([0-9]*)",1);
+                //connList = parser.newPattern(".*([0-9]+\\.[0-9]*\\.[0-9]*\\.[0-9]*):([0-9]*)",1);
+                connList = parser.newPattern("Jetty AntTask Started",1);
 
                 PipedOutputStream pos = new PipedOutputStream();
                 PipedInputStream pis = new PipedInputStream(pos);
@@ -110,12 +113,6 @@ public class AntBuild
                 Thread.sleep(10);
             }
         }
-        
-        public List<String[]> getConnectionList()
-        {
-            return connList;
-        }
-        
     }
 
     public void start() throws Exception
@@ -129,19 +126,19 @@ public class AntBuild
         abp.waitForStarted();
         
         // once this has returned we should have the connection info we need
-        _host = abp.getConnectionList().get(0)[0];
-        _port = Integer.parseInt(abp.getConnectionList().get(0)[1]);
+        //_host = abp.getConnectionList().get(0)[0];
+        //_port = Integer.parseInt(abp.getConnectionList().get(0)[1]);
         
     }
     
     public int getJettyPort()
     {
-        return _port;
+        return Integer.parseInt(System.getProperty("jetty.ant.server.port"));
     }
     
     public String getJettyHost()
     {
-        return _host;
+        return System.getProperty("jetty.ant.server.host");
     }
     
     

@@ -31,9 +31,9 @@ public class JettyAntTaskTest
     
     
     @Test
-    public void testJettyTask() throws Exception
+    public void testConnectorTask() throws Exception
     {
-        AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("test.xml").getAbsolutePath());
+        AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("connector-test.xml").getAbsolutePath());
       
         build.start();
         
