@@ -117,12 +117,16 @@ public class MultiPartFilter implements Filter
             chain.doFilter(request,response);
             return;
         }
-        
+
         InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
-        
+
         // TODO - handle encodings
-        String boundary="--"+QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+        String contentTypeBoundary = "";
+        if (content_type.indexOf("boundary=") >= 0)
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+
+        String boundary="--"+contentTypeBoundary;
         
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
         
