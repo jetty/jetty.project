@@ -416,10 +416,10 @@
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
-    <module>jetty-monitor</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
     <module>jetty-http-spi</module>
+    <module>jetty-monitor</module>
     -->
   </modules>
   <dependencyManagement>

@@ -57,11 +57,7 @@ public class JavaMonitorTools
             {
                 findDeadlockMethod = ThreadMXBean.class.getMethod("findMonitorDeadlockedThreads");
             }
-            catch (SecurityException e)
-            {
-                e.printStackTrace();
-            }
-            catch (NoSuchMethodException e)
+            catch (SecurityException | NoSuchMethodException e)
             {
                 e.printStackTrace();
             }
@@ -79,8 +75,7 @@ public class JavaMonitorTools
             return null;
         }
 
-        final ThreadInfo[] threads = threadMXBean.getThreadInfo(threadIds,Integer.MAX_VALUE);
-        return threads;
+        return threadMXBean.getThreadInfo(threadIds,Integer.MAX_VALUE);
     }
 
     @ManagedAttribute("detailed report of deadlocked threads")
@@ -137,7 +132,7 @@ public class JavaMonitorTools
      */
     private long lastSampled = 0L;
 
-    private final Map<Thread.State, Integer> states = new HashMap<Thread.State, Integer>();
+    private final Map<Thread.State, Integer> states = new HashMap<>();
 
     public int getThreadsBlocked()
     {

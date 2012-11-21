@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
 import org.eclipse.jetty.http.HttpMethods;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.monitor.triggers.RangeAttrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.RangeInclAttrEventTrigger;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
@@ -88,7 +90,7 @@ public class AttrEventTriggerTest
         System.setProperty("org.eclipse.jetty.util.log.DEBUG","");
         _server = new Server();
 
-        SelectChannelConnector connector = new SelectChannelConnector();
+        ServerConnector connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
         _handler = new TestHandler();
@@ -363,21 +365,9 @@ public class AttrEventTriggerTest
         {
             try
             {
-                ContentExchange getExchange = new ContentExchange();
-                getExchange.setURL(_requestUrl);
-                getExchange.setMethod(HttpMethods.GET);
+                ContentResponse response = _client.GET(_requestUrl).get();
 
-                _client.send(getExchange);
-                int state = getExchange.waitForDone();
-
-                String content = "";
-                int responseStatus = getExchange.getResponseStatus();
-                if (responseStatus == HttpStatus.OK_200)
-                {
-                    content = getExchange.getResponseContent();
-                }
-
-                assertEquals(HttpStatus.OK_200,responseStatus);
+                assertEquals(HttpStatus.OK_200,response.getStatus());
                 Thread.sleep(interval);
             }
             catch (InterruptedException ex)

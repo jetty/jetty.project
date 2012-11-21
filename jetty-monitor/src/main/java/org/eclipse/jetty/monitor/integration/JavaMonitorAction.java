@@ -18,28 +18,24 @@
 
 package org.eclipse.jetty.monitor.integration;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.getProperty;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.monitor.JMXMonitor;
 import org.eclipse.jetty.monitor.jmx.EventNotifier;
 import org.eclipse.jetty.monitor.jmx.EventState;
@@ -47,8 +43,12 @@ import org.eclipse.jetty.monitor.jmx.EventState.TriggerState;
 import org.eclipse.jetty.monitor.jmx.EventTrigger;
 import org.eclipse.jetty.monitor.jmx.MonitorAction;
 import org.eclipse.jetty.monitor.triggers.AggregateEventTrigger;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static java.lang.Integer.parseInt;
+import static java.lang.System.getProperty;
 
 
 /* ------------------------------------------------------------ */
@@ -69,8 +69,8 @@ public class JavaMonitorAction extends MonitorAction
     
     /* ------------------------------------------------------------ */
     /**
-     * @param notifier
-     * @param pollInterval
+     * @param notifier the event notifier
+     * @param pollInterval the poll interval
      * @throws Exception 
      * @throws MalformedObjectNameException 
      */
@@ -84,9 +84,9 @@ public class JavaMonitorAction extends MonitorAction
         _appid = appid;
         
         _client = new HttpClient();
-        _client.setTimeout(60000);
-        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        
+        _client.setConnectTimeout(2000);
+        _client.setIdleTimeout(30000);
+
         try
         {
             _client.start();
@@ -107,16 +107,15 @@ public class JavaMonitorAction extends MonitorAction
     @Override
     public void execute(EventTrigger trigger, EventState<?> state, long timestamp)
     {
-        exec(trigger, state, timestamp);
+        exec(state);
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @param trigger
-     * @param state
-     * @param timestamp
+     * @param state the event state
+     *
      */
-    private <T> void exec(EventTrigger trigger, EventState<T> state, long timestamp)
+    private <T> void exec(EventState<T> state)
     {
         Collection<TriggerState<T>> trs = state.values();
         
@@ -125,15 +124,15 @@ public class JavaMonitorAction extends MonitorAction
         {
             Object value = ts.getValue();
 
-            StringBuffer buffer = new StringBuffer();
-            buffer.append(value == null ? "" : value.toString());
-            buffer.append("|");
-            buffer.append(getClassID(value));
-            buffer.append("||");
-            buffer.append(ts.getDescription());
-            
-            data.setProperty(ts.getID(), buffer.toString());
-            
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(value == null ? "" : value.toString());
+            stringBuilder.append("|");
+            stringBuilder.append(getClassID(value));
+            stringBuilder.append("||");
+            stringBuilder.append(ts.getDescription());
+
+            data.setProperty(ts.getID(), stringBuilder.toString());
+
             try
             {
                 sendData(data);
@@ -147,7 +146,7 @@ public class JavaMonitorAction extends MonitorAction
     
     /* ------------------------------------------------------------ */
     /**
-     * @param data
+     * @param data the properties to send
      * @throws Exception 
      */
     private void sendData(Properties data)
@@ -170,53 +169,37 @@ public class JavaMonitorAction extends MonitorAction
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
-     * @return
+     * @param requestProperties the properties to send
+     * @return the response properties
      * @throws Exception 
      */
-    private Properties sendRequest(Properties request)
-        throws Exception
+    private Properties sendRequest(Properties requestProperties)
+            throws Exception
     {
-        ByteArrayOutputStream reqStream = null;
         ByteArrayInputStream resStream = null;
-        Properties response = null;
-    
-        try {
-            ContentExchange reqEx = new ContentExchange();
-            reqEx.setURL(_url);
-            reqEx.setMethod(HttpMethods.POST);
-            reqEx.addRequestHeader("Connection","close");
-            
-            reqStream = new ByteArrayOutputStream();
-            request.storeToXML(reqStream,null);
-            ByteArrayBuffer reqBuff = new ByteArrayBuffer(reqStream.toByteArray());
+        Properties responseProperties = null;
 
-            reqEx.setRequestContent(reqBuff);
-            _client.send(reqEx);
-        
-            reqEx.waitForDone();
-            
-            if (reqEx.getResponseStatus() == HttpStatus.OK_200)
+        ByteArrayOutputStream reqStream = new ByteArrayOutputStream();
+        requestProperties.storeToXML(reqStream, null);
+        try
+        {
+            ByteBuffer byteBuffer = BufferUtil.toBuffer(reqStream.toByteArray());
+            ContentResponse response = _client.POST(_url).header("Connection",
+                    "close").content(new ByteBufferContentProvider(byteBuffer)).send().get();
+
+            if (response.getStatus() == HttpStatus.OK_200)
             {
-                response = new Properties();
-                resStream = new ByteArrayInputStream(reqEx.getResponseContentBytes());
-                response.loadFromXML(resStream);               
+                responseProperties = new Properties();
+                response.getContentAsString();
+                resStream = new ByteArrayInputStream(response.getContent());
+                responseProperties.loadFromXML(resStream);
             }
         }
         finally
         {
             try
             {
-                if (reqStream != null)
-                    reqStream.close();
-            }
-            catch (IOException ex)
-            {
-                LOG.ignore(ex);
-            }
-            
-            try
-            {
+                reqStream.close();
                 if (resStream != null)
                     resStream.close();
             }
@@ -225,10 +208,9 @@ public class JavaMonitorAction extends MonitorAction
                 LOG.ignore(ex);
             }
         }
-        
-        return response;    
+        return responseProperties;
     }
-    
+
     /* ------------------------------------------------------------ */
     private void parseResponse(Properties response)
     {
@@ -262,15 +244,11 @@ public class JavaMonitorAction extends MonitorAction
                 {
                     queryResults = queryNames(queryString);
                 }
-                catch (IOException e)
+                catch (IOException | MalformedObjectNameException e)
                 {
                     LOG.debug(e);
                 }
-                catch (MalformedObjectNameException e)
-                {
-                    LOG.debug(e);
-                }
-                
+
                 if (queryResults != null)
                 {
                     int idx = 0;
@@ -288,8 +266,8 @@ public class JavaMonitorAction extends MonitorAction
     
     /* ------------------------------------------------------------ */
     /**
-     * @param value
-     * @return
+     * @param value the value
+     * @return the classId
      */
     private int getClassID(final Object value)
     {
@@ -314,7 +292,7 @@ public class JavaMonitorAction extends MonitorAction
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the serverIp
      * @throws Exception 
      */
     private String getServerIP()
@@ -354,9 +332,9 @@ public class JavaMonitorAction extends MonitorAction
     }
     
     /* ------------------------------------------------------------ */
-    public Integer getHttpPort() 
-    {       
-        Collection<ObjectName> connectors = null;
+    public Integer getHttpPort()
+    {
+        Collection<ObjectName> connectors;
         MBeanServerConnection service;
         try
         {
@@ -384,8 +362,8 @@ public class JavaMonitorAction extends MonitorAction
 
     /* ------------------------------------------------------------ */
     /**
-     * @param param
-     * @return
+     * @param param the param
+     * @return object names
      * @throws IOException
      * @throws NullPointerException 
      * @throws MalformedObjectNameException 
