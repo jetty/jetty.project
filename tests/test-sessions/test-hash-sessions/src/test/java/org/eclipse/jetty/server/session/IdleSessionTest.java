@@ -19,12 +19,12 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
-
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -32,11 +32,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.server.session.AbstractSessionExpiryTest.TestServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
@@ -125,18 +124,14 @@ public class IdleSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            ContentExchange exchange1 = new ContentExchange(true);
-            exchange1.setMethod(HttpMethods.GET);
-            exchange1.setURL(url + "?action=init");
-            client.send(exchange1);
-            exchange1.waitForDone();
-            assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
-            String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+            Future<ContentResponse> future = client.GET(url + "?action=init");
+            ContentResponse response = future.get();
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -148,13 +143,11 @@ public class IdleSessionTest
             checkSessionIdled(storeDir);
 
             //make another request to de-idle the session
-            ContentExchange exchange2 = new ContentExchange(true);
-            exchange2.setMethod(HttpMethods.GET);
-            exchange2.setURL(url + "?action=test");
-            exchange2.getRequestFields().add("Cookie", sessionCookie);
-            client.send(exchange2);
-            exchange2.waitForDone();
-            assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
+            Request request = client.newRequest(url + "?action=test");
+            request.getHeaders().add("Cookie", sessionCookie);
+            future = request.send();
+            ContentResponse response2 = future.get();
+            assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
             //check session de-idled
             checkSessionDeIdled(storeDir);
