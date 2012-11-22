@@ -41,8 +41,6 @@ import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -161,7 +159,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     public Future<Connection> newConnection()
     {
         FuturePromise<Connection> result = new FuturePromise<>();
-        newConnection(new CONNECTCallback(result));
+        newConnection(new CONNECTPromise(result));
         return result;
     }
 
@@ -193,10 +191,10 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             {
                 LOG.debug("Creating connection {}/{} for {}", next, maxConnections, this);
 
-                CONNECTCallback connectCallback = new CONNECTCallback(new Callback<Connection>()
+                CONNECTPromise connectPromise = new CONNECTPromise(new Promise<Connection>()
                 {
                     @Override
-                    public void succeeded()
+                    public void succeeded(Connection connection)
                     {
                         process(connection, true);
                     }
@@ -210,13 +208,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                             public void run()
                             {
                                 drain(x);
-                                if (connection != null)
-                                    connection.close();
                             }
                         });
                     }
                 });
-                newConnection(new TCPPromise(next, maxConnections, connectCallback));
+                newConnection(new TCPPromise(next, maxConnections, connectPromise));
                 // Try again the idle connections
                 return idleConnections.poll();
             }
@@ -456,11 +452,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
     }
 
-    private class CONNECTCallback implements Promise<Connection>
+    private class CONNECTPromise implements Promise<Connection>
     {
         private final Promise<Connection> delegate;
 
-        private CONNECTCallback(Promise<Connection> delegate)
+        private CONNECTPromise(Promise<Connection> delegate)
         {
             this.delegate = delegate;
         }
@@ -499,14 +495,20 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     if (result.isFailed())
                     {
                         failed(result.getFailure());
+                        connection.close();
                     }
                     else
                     {
                         Response response = result.getResponse();
                         if (response.getStatus() == 200)
+                        {
                             delegate.succeeded(connection);
+                        }
                         else
+                        {
                             failed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
+                            connection.close();
+                        }
                     }
                 }
             }));
