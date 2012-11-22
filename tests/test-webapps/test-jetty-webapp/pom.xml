@@ -117,6 +117,13 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <version>${project.version}</version>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
         <configuration>
           <stopPort>8087</stopPort>
           <stopKey>foo</stopKey>
