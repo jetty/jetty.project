@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 
-public abstract class FrameBytes extends FutureCallback<Void> implements Runnable
+public abstract class FrameBytes extends FutureCallback implements Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
     protected final AbstractWebSocketConnection connection;
@@ -52,12 +52,12 @@ public abstract class FrameBytes extends FutureCallback<Void> implements Runnabl
     }
 
     @Override
-    public void completed(Void v)
+    public void succeeded()
     {
-        super.completed(v);
+        super.succeeded();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({}) - {}",v,this.getClass().getName());
+            LOG.debug("completed() - {}",this.getClass().getName());
         }
         cancelTask();
         connection.complete(this);
@@ -65,17 +65,17 @@ public abstract class FrameBytes extends FutureCallback<Void> implements Runnabl
     }
 
     @Override
-    public void failed(Void v, Throwable x)
+    public void failed(Throwable x)
     {
-        super.failed(v,x);
+        super.failed(x);
         if (x instanceof EofException)
         {
             // Abbreviate the EofException
-            LOG.warn("failed(" + v + ") - " + EofException.class);
+            LOG.warn("failed() - " + EofException.class);
         }
         else
         {
-            LOG.warn("failed(" + v + ")",x);
+            LOG.warn("failed()",x);
         }
         cancelTask();
         frame.notifySendFailed(x);
@@ -88,7 +88,7 @@ public abstract class FrameBytes extends FutureCallback<Void> implements Runnabl
     {
         // If this occurs we had a timeout!
         connection.close();
-        failed(null,new InterruptedByTimeoutException());
+        failed(new InterruptedByTimeoutException());
     }
 
     @Override

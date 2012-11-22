@@ -342,10 +342,10 @@ public class FilterConnection extends AbstractConnection
     /* ------------------------------------------------------------ */
     public class FilteredEndPoint extends AbstractEndPoint
     {
-        private final Callback<Void> _writeCB = new Callback<Void>()
+        private final Callback _writeCB = new Callback()
         {
             @Override
-            public void completed(Void context)
+            public void succeeded()
             {
                 if (BufferUtil.isEmpty(_outBuffer))
                 {
@@ -356,7 +356,7 @@ public class FilterConnection extends AbstractConnection
             }
 
             @Override
-            public void failed(Void context, Throwable x)
+            public void failed(Throwable x)
             {
                 if (BufferUtil.isEmpty(_outBuffer))
                 {
@@ -392,7 +392,7 @@ public class FilterConnection extends AbstractConnection
                 getWriteFlusher().completeWrite();
             }
             else
-                getEndPoint().write(null,_writeCB,_outBuffer);
+                getEndPoint().write(_writeCB,_outBuffer);
         }
 
         @Override

@@ -39,6 +39,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -199,10 +200,10 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isHalfClosed());
 
                 stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, null,new Callback.Empty<Void>()
+                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Callback.Adapter()
                 {
                     @Override
-                    public void completed(Void context)
+                    public void succeeded()
                     {
                         stream.data(new StringDataInfo(data2, true));
                     }
@@ -278,10 +279,10 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
-                }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream stream)
+                    public void succeeded(Stream stream)
                     {
                         stream.data(new StringDataInfo(serverData, true));
                     }

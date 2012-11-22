@@ -150,6 +150,7 @@ public interface EndPoint extends Closeable
     /**
      * Close any backing stream associated with the endpoint
      */
+    @Override
     void close();
 
     /**
@@ -201,22 +202,20 @@ public interface EndPoint extends Closeable
     /**
      * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
      *
-     * @param context the context to return via the callback
      * @param callback the callback to call when an error occurs or we are readable.
      * @throws ReadPendingException if another read operation is concurrent.
      */
-    <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException;
+    void fillInterested(Callback callback) throws ReadPendingException;
 
     /**
      * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
      * all the data has been flushed or an error occurs.</p>
      *
-     * @param context the context to return via the callback
      * @param callback the callback to call when an error occurs or the write completed.
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
-    <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException;
+    void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
 
     /**
      * @return the {@link Connection} associated with this {@link EndPoint}

@@ -413,16 +413,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
+    public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
         try
         {
             send(info,content,lastContent);
-            callback.completed(context);
+            callback.succeeded();
         }
         catch (IOException e)
         {
-            callback.failed(context,e);
+            callback.failed(e);
         }
     }
 
@@ -430,7 +430,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         try
         {
-            getEndPoint().write(_writeBlocker.getPhase(), _writeBlocker, bytes);
+            getEndPoint().write(_writeBlocker, bytes);
             _writeBlocker.block();
         }
         catch (InterruptedException x)
@@ -557,7 +557,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
 
                         // Wait until we can read
-                        getEndPoint().fillInterested(_readBlocker.getPhase(),_readBlocker);
+                        getEndPoint().fillInterested(_readBlocker);
                         LOG.debug("{} block readable on {}",this,_readBlocker);
                         _readBlocker.block();
 

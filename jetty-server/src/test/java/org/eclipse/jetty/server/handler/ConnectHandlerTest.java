@@ -637,20 +637,6 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 Assert.assertEquals(contextValue, request.getAttribute(contextKey));
                 context.put(contextKey, request.getAttribute(contextKey));
             }
-
-            @Override
-            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
-            {
-                Assert.assertEquals(contextValue, context.get(contextKey));
-                return super.read(endPoint, buffer, context);
-            }
-
-            @Override
-            protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
-            {
-                Assert.assertEquals(contextValue, context.get(contextKey));
-                super.write(endPoint, buffer, context, callback);
-            }
         });
         proxy.start();
 

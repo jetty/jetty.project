@@ -16,22 +16,6 @@
 //  ========================================================================
 //
 
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.eclipse.jetty.util;
 
 import org.eclipse.jetty.util.log.Log;
@@ -39,35 +23,35 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
- * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful 
- * name than EmptyPromise</p>
- *  
  * @param <C> the type of the context object
  */
-public interface Callback
+public interface Promise<C>
 {
     /**
      * <p>Callback invoked when the operation completes.</p>
      *
+     * @param result the context
      * @see #failed(Throwable)
      */
-    public abstract void succeeded();
+    public abstract void succeeded(C result);
 
     /**
      * <p>Callback invoked when the operation fails.</p>
+     *
      * @param x the reason for the operation failure
      */
     public void failed(Throwable x);
+    
 
     /**
-     * <p>Empty implementation of {@link Callback}</p>
+     * <p>Empty implementation of {@link Promise}</p>
      *
      * @param <C> the type of the context object
      */
-    public static class Adapter implements Callback
+    public static class Adapter<C> implements Promise<C>
     {
         @Override
-        public void succeeded()
+        public void succeeded(C result)
         {
         }
 
@@ -77,4 +61,5 @@ public interface Callback
             Log.getLogger(this.getClass()).warn(x);
         }
     }
+
 }

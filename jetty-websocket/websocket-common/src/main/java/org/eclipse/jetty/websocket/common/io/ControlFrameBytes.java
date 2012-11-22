@@ -38,12 +38,12 @@ public class ControlFrameBytes extends FrameBytes
     }
 
     @Override
-    public void completed(Void context)
+    public void succeeded()
     {
         LOG.debug("completed() - frame: {}",frame);
         connection.getBufferPool().release(buffer);
 
-        super.completed(context);
+        super.succeeded();
 
         if (frame.getType().getOpCode() == OpCode.CLOSE)
         {

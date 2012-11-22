@@ -612,7 +612,8 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "\n"
+                    "\n", 
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertFalse(response.indexOf("Connection: close")>0);
@@ -661,7 +662,8 @@ public class RequestTest
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
                     "Connection: Other,,keep-alive\n"+
-                    "\n"
+                    "\n",
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: keep-alive")>0);
@@ -682,7 +684,8 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "\n"
+                    "\n",
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: TE,Other")>0);

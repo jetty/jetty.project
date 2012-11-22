@@ -36,10 +36,9 @@ import org.junit.Assert;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
-    public static class Write<C>
+    public static class Write
     {
-        public C context;
-        public Callback<C> callback;
+        public Callback callback;
         public Frame frame;
     }
 

@@ -544,11 +544,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            endpoint.write(null,frameBytes,buffer);
+            endpoint.write(frameBytes,buffer);
         }
         catch (Throwable t)
         {
-            frameBytes.failed(null,t);
+            frameBytes.failed(t);
         }
     }
 }

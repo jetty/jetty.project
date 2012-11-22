@@ -53,6 +53,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 
 public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler<ByteBuffer>
 {
@@ -187,17 +188,17 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback handler)
         {
             // Not much we can do in HTTP land: just close the connection
             goAway(timeout, unit, handler);
         }
 
         @Override
-        public void goAway(long timeout, TimeUnit unit, Callback<Void> handler)
+        public void goAway(long timeout, TimeUnit unit, Callback handler)
         {
             getEndPoint().close();
-            handler.completed(null);
+            handler.succeeded();
         }
     }
 
@@ -214,21 +215,22 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Callback<Stream> handler)
+        public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> handler)
         {
+            // TODO is this right? comment or imple are wrong??
             // HTTP does not support pushed streams
-            handler.completed(new HTTPPushStream(2, getPriority(), getSession(), this));
+            handler.succeeded(this);
         }
 
         @Override
-        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback handler)
         {
             // TODO
             throw new UnsupportedOperationException("Not Yet Implemented");
         }
 
         @Override
-        public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback handler)
         {
             try
             {
@@ -263,11 +265,11 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 if (replyInfo.isClose())
                     completed();
 
-                handler.completed(null);
+                handler.succeeded();
             }
             catch (IOException x)
             {
-                handler.failed(null, x);
+                handler.failed(x);
             }
         }
 
@@ -287,7 +289,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
+        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback handler)
         {
             try
             {
@@ -299,11 +301,11 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 if (dataInfo.isClose())
                     completed();
 
-                handler.completed(context);
+                handler.succeeded();
             }
             catch (IOException x)
             {
-                handler.failed(context, x);
+                handler.failed(x);
             }
         }
     }
@@ -316,17 +318,17 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> handler)
+        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback handler)
         {
             // Ignore pushed headers
-            handler.completed(null);
+            handler.succeeded();
         }
 
         @Override
-        public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> handler)
+        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback handler)
         {
             // Ignore pushed data
-            handler.completed(context);
+            handler.succeeded();
         }
     }
 }

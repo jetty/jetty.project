@@ -82,7 +82,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+        Future<UpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -109,7 +109,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+        Future<UpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();

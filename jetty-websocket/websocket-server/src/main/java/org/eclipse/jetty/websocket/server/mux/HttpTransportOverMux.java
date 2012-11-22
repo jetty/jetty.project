@@ -56,7 +56,7 @@ public class HttpTransportOverMux implements HttpTransport
     @Override
     public void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent) throws IOException
     {
-        send(info,responseBodyContent,lastContent,streamBlocker.getPhase(),streamBlocker);
+        send(info,responseBodyContent,lastContent,streamBlocker);
         try
         {
             streamBlocker.block();
@@ -72,7 +72,7 @@ public class HttpTransportOverMux implements HttpTransport
     }
 
     @Override
-    public <C> void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent, C context, Callback<C> callback)
+    public void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
     {
         if (lastContent == false)
         {

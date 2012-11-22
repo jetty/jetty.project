@@ -360,12 +360,11 @@ public class ConnectHandler extends HandlerWrapper
      *
      * @param endPoint the endPoint to read from
      * @param buffer   the buffer to read data into
-     * @param context  the context information related to the connection
      * @return the number of bytes read (possibly 0 since the read is non-blocking)
      *         or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
-    protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+    protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
     {
         return endPoint.fill(buffer);
     }
@@ -375,13 +374,12 @@ public class ConnectHandler extends HandlerWrapper
      *
      * @param endPoint the endPoint to write to
      * @param buffer   the buffer to write
-     * @param context  the context information related to the connection
      * @param callback the completion callback to invoke
      */
-    protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
+    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
     {
         LOG.debug("{} writing {} bytes", this, buffer.remaining());
-        endPoint.write(null, callback, buffer);
+        endPoint.write(callback, buffer);
     }
 
     public Set<String> getWhiteListHosts()
@@ -523,15 +521,15 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+        protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
         {
-            return ConnectHandler.this.read(endPoint, buffer, context);
+            return ConnectHandler.this.read(endPoint, buffer);
         }
 
         @Override
-        protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
+        protected void write(EndPoint endPoint, ByteBuffer buffer,Callback callback)
         {
-            ConnectHandler.this.write(endPoint, buffer, context, callback);
+            ConnectHandler.this.write(endPoint, buffer, callback);
         }
     }
 
@@ -550,17 +548,17 @@ public class ConnectHandler extends HandlerWrapper
         {
             super.onOpen();
             final int remaining = buffer.remaining();
-            write(getConnection().getEndPoint(), buffer, getContext(), new Callback<Void>()
+            write(getConnection().getEndPoint(), buffer, new Callback()
             {
                 @Override
-                public void completed(Void context)
+                public void succeeded()
                 {
                     LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
                     fillInterested();
                 }
 
                 @Override
-                public void failed(Void context, Throwable x)
+                public void failed(Throwable x)
                 {
                     LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
                     close();
@@ -570,15 +568,15 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+        protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
         {
-            return ConnectHandler.this.read(endPoint, buffer, context);
+            return ConnectHandler.this.read(endPoint, buffer);
         }
 
         @Override
-        protected void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback)
+        protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
         {
-            ConnectHandler.this.write(endPoint, buffer, context, callback);
+            ConnectHandler.this.write(endPoint, buffer, callback);
         }
     }
 }

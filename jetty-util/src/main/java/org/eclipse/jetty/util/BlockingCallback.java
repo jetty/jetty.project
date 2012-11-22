@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * A Callback for simple reusable conversion of an 
  * asynchronous API to blocking.
  * <p>
- * To avoid late redundant calls to {@link #completed(Integer)} or {@link #failed(Integer, Throwable)} from
+ * To avoid late redundant calls to {@link #succeeded()} or {@link #failed(Throwable)} from
  * interfering with later reuses of this class, the callback context is used to hold pass a phase indicated
  * and only a single callback per phase is allowed.
  * <p>
@@ -41,56 +41,44 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     
  *     public void blockingMethod(Object args) throws Exception
  *     {
- *         asyncMethod(args,cb.getPhase(),cb);
+ *         asyncMethod(args,cb);
  *         cb.block();
  *     }
  *     
- *     public <C>void asyncMethod(Object args, C context, Callback<C> callback)
+ *     public <C>void asyncMethod(Object args, Callback callback)
  *     {
  *         ...
  *     }
  *  }
  */
-public class BlockingCallback implements Callback<Integer>
+public class BlockingCallback implements Callback
 {
     private static Throwable COMPLETED=new Throwable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
     private final Semaphore _semaphone = new Semaphore(0);
     private Throwable _cause;
-    private volatile int _phase;
     
     public BlockingCallback()
     {}
 
     @Override
-    public void completed(Integer phase)
+    public void succeeded()
     {
-        if (phase==null)
-            throw new IllegalStateException("Context must be getPhase()");
-        if (_phase==phase.intValue() && _done.compareAndSet(false,true))
+        if (_done.compareAndSet(false,true))
         {
-            _phase++;
             _cause=COMPLETED;
             _semaphone.release();
         }
     }
 
     @Override
-    public void failed(Integer phase, Throwable cause)
+    public void failed(Throwable cause)
     {
-        if (phase==null)
-            throw new IllegalStateException("Context must be getPhase()");
-        if (_phase==phase.intValue() && _done.compareAndSet(false,true))
+        if (_done.compareAndSet(false,true))
         {
-            _phase++;
             _cause=cause;
             _semaphone.release();
         }
-    }
-    
-    public Integer getPhase()
-    {
-        return new Integer(_phase);
     }
 
     /** Block until the FutureCallback is done or cancelled and 

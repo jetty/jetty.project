@@ -43,6 +43,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -158,14 +160,14 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
     public Future<Connection> newConnection()
     {
-        FutureCallback<Connection> result = new FutureCallback<>();
+        FuturePromise<Connection> result = new FuturePromise<>();
         newConnection(new CONNECTCallback(result));
         return result;
     }
 
-    protected void newConnection(Callback<Connection> callback)
+    protected void newConnection(Promise<Connection> promise)
     {
-        client.newConnection(this, callback);
+        client.newConnection(this, promise);
     }
 
     protected Connection acquire()
@@ -194,13 +196,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 CONNECTCallback connectCallback = new CONNECTCallback(new Callback<Connection>()
                 {
                     @Override
-                    public void completed(Connection connection)
+                    public void succeeded()
                     {
                         process(connection, true);
                     }
 
                     @Override
-                    public void failed(final Connection connection, final Throwable x)
+                    public void failed(final Throwable x)
                     {
                         client.getExecutor().execute(new Runnable()
                         {
@@ -214,7 +216,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                         });
                     }
                 });
-                newConnection(new TCPCallback(next, maxConnections, connectCallback));
+                newConnection(new TCPPromise(next, maxConnections, connectCallback));
                 // Try again the idle connections
                 return idleConnections.poll();
             }
@@ -425,13 +427,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
     }
 
-    private class TCPCallback implements Callback<Connection>
+    private class TCPPromise implements Promise<Connection>
     {
         private final int current;
         private final int max;
-        private final Callback<Connection> delegate;
+        private final Promise<Connection> delegate;
 
-        private TCPCallback(int current, int max, Callback<Connection> delegate)
+        private TCPPromise(int current, int max, Promise<Connection> delegate)
         {
             this.current = current;
             this.max = max;
@@ -439,32 +441,32 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
 
         @Override
-        public void completed(Connection connection)
+        public void succeeded(Connection connection)
         {
             LOG.debug("Created connection {}/{} {} for {}", current, max, connection, HttpDestination.this);
-            delegate.completed(connection);
+            delegate.succeeded(connection);
         }
 
         @Override
-        public void failed(Connection connection, Throwable x)
+        public void failed(Throwable x)
         {
             LOG.debug("Connection failed {} for {}", x, HttpDestination.this);
             connectionCount.decrementAndGet();
-            delegate.failed(connection, x);
+            delegate.failed(x);
         }
     }
 
-    private class CONNECTCallback implements Callback<Connection>
+    private class CONNECTCallback implements Promise<Connection>
     {
-        private final Callback<Connection> delegate;
+        private final Promise<Connection> delegate;
 
-        private CONNECTCallback(Callback<Connection> delegate)
+        private CONNECTCallback(Promise<Connection> delegate)
         {
             this.delegate = delegate;
         }
 
         @Override
-        public void completed(Connection connection)
+        public void succeeded(Connection connection)
         {
             boolean tunnel = isProxied() &&
                     "https".equalsIgnoreCase(getScheme()) &&
@@ -472,13 +474,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             if (tunnel)
                 tunnel(connection);
             else
-                delegate.completed(connection);
+                delegate.succeeded(connection);
         }
 
         @Override
-        public void failed(Connection connection, Throwable x)
+        public void failed(Throwable x)
         {
-            delegate.failed(connection, x);
+            delegate.failed(x);
         }
 
         private void tunnel(final Connection connection)
@@ -496,15 +498,15 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 {
                     if (result.isFailed())
                     {
-                        failed(connection, result.getFailure());
+                        failed(result.getFailure());
                     }
                     else
                     {
                         Response response = result.getResponse();
                         if (response.getStatus() == 200)
-                            delegate.completed(connection);
+                            delegate.succeeded(connection);
                         else
-                            failed(connection, new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
+                            failed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
                     }
                 }
             }));

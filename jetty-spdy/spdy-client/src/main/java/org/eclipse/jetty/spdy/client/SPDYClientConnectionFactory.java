@@ -52,7 +52,7 @@ public class SPDYClientConnectionFactory
         StandardSession session = new StandardSession(client.version, bufferPool, factory.getExecutor(), factory.getScheduler(), connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
         session.setWindowSize(client.getInitialWindowSize());
         parser.addListener(session);
-        sessionPromise.completed(session);
+        sessionPromise.succeeded(session);
         connection.setSession(session);
 
         factory.sessionOpened(session);

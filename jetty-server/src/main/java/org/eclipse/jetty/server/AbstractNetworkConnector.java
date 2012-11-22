@@ -102,10 +102,10 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     
 
     @Override
-    public <C> Future<C> shutdown(C c)
+    public Future<Void> shutdown()
     {
         close();
-        return super.shutdown(c);
+        return super.shutdown();
     }
 
     @Override

@@ -30,11 +30,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -53,13 +55,13 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
  */
 public class UpgradeConnection extends AbstractConnection
 {
-    public class SendUpgradeRequest extends FutureCallback<String> implements Runnable
+    public class SendUpgradeRequest extends FutureCallback implements Runnable
     {
         @Override
-        public void completed(String context)
+        public void succeeded()
         {
             // Writing the request header is complete.
-            super.completed(context);
+            super.succeeded();
             // start the interest in fill
             fillInterested();
         }
@@ -72,7 +74,7 @@ public class UpgradeConnection extends AbstractConnection
             String rawRequest = request.generate();
 
             ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
-            getEndPoint().write("REQ",this,buf);
+            getEndPoint().write(this,buf);
         }
     }
 
@@ -95,7 +97,7 @@ public class UpgradeConnection extends AbstractConnection
         }
         catch (ClassCastException e)
         {
-            client.failed(null,new RuntimeException("Invalid Upgrade Request structure",e));
+            client.failed(new RuntimeException("Invalid Upgrade Request structure",e));
         }
     }
 
@@ -113,9 +115,9 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
-    private void notifyConnect()
+    private void notifyConnect(UpgradeResponse response)
     {
-        client.completed(client.getUpgradeResponse());
+        client.succeeded(response);
     }
 
     @Override
@@ -183,7 +185,7 @@ public class UpgradeConnection extends AbstractConnection
                         // Got a response!
                         client.setUpgradeResponse(resp);
                         validateResponse(resp);
-                        notifyConnect();
+                        notifyConnect(resp);
                         upgradeConnection(resp);
                         return false; // do no more reading
                     }
@@ -193,14 +195,14 @@ public class UpgradeConnection extends AbstractConnection
         catch (IOException e)
         {
             LOG.warn(e);
-            client.failed(null,e);
+            client.failed(e);
             disconnect(false);
             return false;
         }
         catch (UpgradeException e)
         {
             LOG.warn(e);
-            client.failed(null,e);
+            client.failed(e);
             disconnect(false);
             return false;
         }

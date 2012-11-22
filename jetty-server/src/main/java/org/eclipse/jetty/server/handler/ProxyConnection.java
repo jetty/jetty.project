@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class ProxyConnection extends AbstractConnection
 {
     protected static final Logger LOG = ConnectHandler.LOG;
-    private final ForkInvoker<ByteBuffer> invoker = new ProxyForkInvoker();
+    private final ForkInvoker<Void> invoker = new ProxyForkInvoker();
     private final ByteBufferPool bufferPool;
     private final ConcurrentMap<String, Object> context;
     private Connection connection;
@@ -69,30 +69,25 @@ public abstract class ProxyConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), true);
-        fill(buffer);
-    }
-
-    private void fill(final ByteBuffer buffer)
-    {
+        final ByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), true);
         try
         {
-            final int filled = read(getEndPoint(), buffer, getContext());
+            final int filled = read(getEndPoint(), buffer);
             LOG.debug("{} filled {} bytes", this, filled);
             if (filled > 0)
             {
-                write(getConnection().getEndPoint(), buffer, getContext(), new Callback<Void>()
+                write(getConnection().getEndPoint(), buffer, new Callback()
                 {
                     @Override
-                    public void completed(Void context)
+                    public void succeeded()
                     {
                         LOG.debug("{} wrote {} bytes", this, filled);
-                        buffer.clear();
-                        invoker.invoke(buffer);
+                        bufferPool.release(buffer);
+                        invoker.invoke(null);
                     }
 
                     @Override
-                    public void failed(Void context, Throwable x)
+                    public void failed(Throwable x)
                     {
                         LOG.debug(this + " failed to write " + filled + " bytes", x);
                         bufferPool.release(buffer);
@@ -120,9 +115,9 @@ public abstract class ProxyConnection extends AbstractConnection
         }
     }
 
-    protected abstract int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException;
+    protected abstract int read(EndPoint endPoint, ByteBuffer buffer) throws IOException;
 
-    protected abstract void write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context, Callback<Void> callback);
+    protected abstract void write(EndPoint endPoint, ByteBuffer buffer, Callback callback);
 
     @Override
     public String toString()
@@ -133,7 +128,7 @@ public abstract class ProxyConnection extends AbstractConnection
                 getEndPoint().getRemoteAddress().getPort());
     }
 
-    private class ProxyForkInvoker extends ForkInvoker<ByteBuffer>
+    private class ProxyForkInvoker extends ForkInvoker<Void> implements Runnable
     {
         private ProxyForkInvoker()
         {
@@ -141,22 +136,21 @@ public abstract class ProxyConnection extends AbstractConnection
         }
 
         @Override
-        public void fork(final ByteBuffer buffer)
+        public void fork(Void arg)
         {
-            getExecutor().execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    call(buffer);
-                }
-            });
+            getExecutor().execute(this);
+        }
+        
+        @Override
+        public void run()
+        {
+            onFillable();
         }
 
         @Override
-        public void call(ByteBuffer buffer)
+        public void call(Void arg)
         {
-            fill(buffer);
+            onFillable();
         }
     }
 }

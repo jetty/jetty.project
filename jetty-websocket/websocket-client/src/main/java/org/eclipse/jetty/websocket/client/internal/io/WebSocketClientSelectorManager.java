@@ -94,7 +94,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         catch (IOException e)
         {
             LOG.debug(e);
-            client.failed(null,e);
+            client.failed(e);
             // rethrow
             throw e;
         }

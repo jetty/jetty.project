@@ -21,8 +21,10 @@ package org.eclipse.jetty.websocket.client.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -41,7 +43,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 /**
  * WebSocketClient for working with Upgrade (request and response), and establishing connections to the websocket URI of your choice.
  */
-public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> implements WebSocketClient
+public class DefaultWebSocketClient extends FuturePromise<UpgradeResponse> implements WebSocketClient
 {
     private static final Logger LOG = Log.getLogger(DefaultWebSocketClient.class);
 
@@ -72,10 +74,10 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
     }
 
     @Override
-    public void completed(UpgradeResponse context)
+    public void succeeded(UpgradeResponse response)
     {
-        LOG.debug("completed() - {}",context);
-        super.completed(context);
+        LOG.debug("completed() - {}",response);
+        super.succeeded(response);
     }
 
     /*
@@ -84,7 +86,7 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
      * @see org.eclipse.jetty.websocket.client.internal.WebSocketClient#connect(java.net.URI)
      */
     @Override
-    public FutureCallback<UpgradeResponse> connect(URI websocketUri) throws IOException
+    public Future<UpgradeResponse> connect(URI websocketUri) throws IOException
     {
         if (!factory.isStarted())
         {
@@ -111,7 +113,7 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
         this.websocketUri = websocketUri;
 
         // Validate websocket URI
-        FutureCallback<UpgradeResponse> result = null;
+        Future<UpgradeResponse> result = null;
 
         LOG.debug("connect({})",websocketUri);
 
@@ -128,11 +130,11 @@ public class DefaultWebSocketClient extends FutureCallback<UpgradeResponse> impl
     }
 
     @Override
-    public void failed(UpgradeResponse context, Throwable cause)
+    public void failed(Throwable cause)
     {
-        LOG.debug("failed() - {}, {}",context,cause);
+        LOG.debug("failed() - {}",cause);
         LOG.info(cause);
-        super.failed(context,cause);
+        super.failed(cause);
     }
 
     protected ClientUpgradeRequest getClientUpgradeRequest()

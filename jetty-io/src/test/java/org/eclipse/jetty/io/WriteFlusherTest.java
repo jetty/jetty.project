@@ -63,7 +63,6 @@ public class WriteFlusherTest
     private WriteFlusher _flusher;
 
     private final AtomicBoolean _flushIncomplete = new AtomicBoolean(false);
-    private final String _context = "Context";
     private final ExecutorService executor = Executors.newFixedThreadPool(16);
     private ByteArrayEndPoint _endp;
 
@@ -87,12 +86,12 @@ public class WriteFlusherTest
     {
         _endp.setGrowOutput(true);
 
-        FutureCallback<String> callback = new FutureCallback<>();
+        FutureCallback callback = new FutureCallback();
         _flusher.onFail(new IOException("Ignored because no operation in progress"));
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
         assertCallbackIsDone(callback);
         assertFlushIsComplete();
-        assertThat("context and callback.get() are equal", _context, equalTo(callback.get()));
+        assertThat("context and callback.get() are equal",callback.get() , equalTo(null));
         assertThat("string in endpoint matches expected string", "How now brown cow!",
                 equalTo(_endp.takeOutputString()));
         assertTrue(_flusher.isIdle());
@@ -103,11 +102,11 @@ public class WriteFlusherTest
     {
         _endp.setGrowOutput(true);
 
-        FutureCallback<String> callback = new FutureCallback<>();
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        FutureCallback callback = new FutureCallback();
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
         assertCallbackIsDone(callback);
         assertFlushIsComplete();
-        assertThat("context and callback.get() are equal", _context, equalTo(callback.get()));
+        assertThat("context and callback.get() are equal", callback.get(), equalTo(null));
         assertThat("string in endpoint matches expected string", "How now brown cow!",
                 equalTo(_endp.takeOutputString()));
         assertTrue(_flusher.isIdle());
@@ -118,7 +117,7 @@ public class WriteFlusherTest
         assertThat("flush is complete", _flushIncomplete.get(), is(false));
     }
 
-    private void assertCallbackIsDone(FutureCallback<String> callback)
+    private void assertCallbackIsDone(FutureCallback callback)
     {
         assertThat("callback is done", callback.isDone(), is(true));
     }
@@ -128,13 +127,13 @@ public class WriteFlusherTest
     {
         _endp.close();
 
-        FutureCallback<String> callback = new FutureCallback<>();
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        FutureCallback callback = new FutureCallback();
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
         assertCallbackIsDone(callback);
         assertFlushIsComplete();
         try
         {
-            assertEquals(_context, callback.get());
+            assertEquals(callback.get(),null);
             Assert.fail();
         }
         catch (ExecutionException e)
@@ -151,15 +150,15 @@ public class WriteFlusherTest
     @Test
     public void testCompleteBlocking() throws Exception
     {
-        FutureCallback<String> callback = new FutureCallback<>();
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        FutureCallback callback = new FutureCallback();
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
 
         assertTrue(_flushIncomplete.get());
         try
         {
-            assertEquals(_context, callback.get(10, TimeUnit.MILLISECONDS));
+            assertEquals(callback.get(10, TimeUnit.MILLISECONDS),null);
             Assert.fail();
         }
         catch (TimeoutException to)
@@ -170,7 +169,7 @@ public class WriteFlusherTest
         assertEquals("How now br", _endp.takeOutputString());
         _flusher.completeWrite();
         assertCallbackIsDone(callback);
-        assertEquals(_context, callback.get());
+        assertEquals(callback.get(),null);
         assertEquals("own cow!", _endp.takeOutputString());
         assertFlushIsComplete();
         assertTrue(_flusher.isIdle());
@@ -179,8 +178,8 @@ public class WriteFlusherTest
     @Test
     public void testCloseWhileBlocking() throws Exception
     {
-        FutureCallback<String> callback = new FutureCallback<>();
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        FutureCallback callback = new FutureCallback();
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
 
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
@@ -188,7 +187,7 @@ public class WriteFlusherTest
         assertTrue(_flushIncomplete.get());
         try
         {
-            assertEquals(_context, callback.get(10, TimeUnit.MILLISECONDS));
+            assertEquals(callback.get(10, TimeUnit.MILLISECONDS),null);
             Assert.fail();
         }
         catch (TimeoutException to)
@@ -203,7 +202,7 @@ public class WriteFlusherTest
         assertFlushIsComplete();
         try
         {
-            assertEquals(_context, callback.get());
+            assertEquals(callback.get(),null);
             Assert.fail();
         }
         catch (ExecutionException e)
@@ -219,8 +218,8 @@ public class WriteFlusherTest
     @Test
     public void testFailWhileBlocking() throws Exception
     {
-        FutureCallback<String> callback = new FutureCallback<>();
-        _flusher.write(_context, callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        FutureCallback callback = new FutureCallback();
+        _flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
 
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
@@ -228,7 +227,7 @@ public class WriteFlusherTest
         assertTrue(_flushIncomplete.get());
         try
         {
-            assertEquals(_context, callback.get(10, TimeUnit.MILLISECONDS));
+            assertEquals(callback.get(10, TimeUnit.MILLISECONDS),null);
             Assert.fail();
         }
         catch (TimeoutException to)
@@ -243,7 +242,7 @@ public class WriteFlusherTest
         assertFlushIsComplete();
         try
         {
-            assertEquals(_context, callback.get());
+            assertEquals(callback.get(),null);
             Assert.fail();
         }
         catch (ExecutionException e)
@@ -301,7 +300,7 @@ public class WriteFlusherTest
 
 
         ConcurrentFlusher[] flushers = new ConcurrentFlusher[50000];
-        FutureCallback<?>[] futures = new FutureCallback<?>[flushers.length];
+        FutureCallback[] futures = new FutureCallback[flushers.length];
         for (int i = 0; i < flushers.length; i++)
         {
             int size = 5 + random.nextInt(15);
@@ -309,7 +308,7 @@ public class WriteFlusherTest
 
             final ConcurrentFlusher flusher = new ConcurrentFlusher(endp, random, scheduler);
             flushers[i] = flusher;
-            final FutureCallback<String> callback = new FutureCallback<>();
+            final FutureCallback callback = new FutureCallback();
             futures[i] = callback;
             scheduler.schedule(new Runnable()
             {
@@ -320,7 +319,7 @@ public class WriteFlusherTest
                 }
             }
                     , random.nextInt(75) + 1, TimeUnit.MILLISECONDS);
-            flusher.write(_context, callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
+            flusher.write(callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
         }
 
         int completed = 0;
@@ -359,9 +358,9 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(_endPointMock)
         {
             @Override
-            public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
+            public void write(Callback callback, ByteBuffer... buffers)
             {
-                super.write(context, callback, buffers);
+                super.write(callback, buffers);
                 writeCompleteLatch.countDown();
             }
 
@@ -407,17 +406,17 @@ public class WriteFlusherTest
         private boolean completed = false;
 
         @Override
-        public void completed(Object context)
+        public void succeeded()
         {
             completed = true;
-            super.completed(context);
+            super.succeeded();
         }
 
         @Override
-        public void failed(Object context, Throwable cause)
+        public void failed(Throwable cause)
         {
             failed = true;
-            super.failed(context, cause);
+            super.failed(cause);
         }
 
         public boolean isFailed()
@@ -457,7 +456,7 @@ public class WriteFlusherTest
             }
         });
 
-        executor.submit(new Writer(writeFlusher, new FutureCallback<String>()));
+        executor.submit(new Writer(writeFlusher, new FutureCallback()));
         // make sure that we call .get() on the write that executed second by waiting on this latch
         assertThat("Flush has been called once", flushCalledLatch.await(5, TimeUnit.SECONDS), is(true));
         try
@@ -475,12 +474,9 @@ public class WriteFlusherTest
     {
         when(_endPointMock.flush(any(ByteBuffer[].class))).thenAnswer(new Answer<Object>()
         {
-            int called = 0;
-
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable
             {
-                called++;
                 Object[] arguments = invocation.getArguments();
                 ByteBuffer byteBuffer = (ByteBuffer)arguments[0];
                 BufferUtil.flipToFill(byteBuffer); // pretend everything has been written
@@ -492,8 +488,7 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testConcurrentAccessToIncompleteWriteAndOnFail() throws IOException, InterruptedException,
-            ExecutionException, TimeoutException
+    public void testConcurrentAccessToIncompleteWriteAndOnFail() throws Exception
     {
         final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         final CountDownLatch onIncompleteFlushedCalledLatch = new CountDownLatch(1);
@@ -502,6 +497,7 @@ public class WriteFlusherTest
 
         final WriteFlusher writeFlusher = new WriteFlusher(new EndPointMock(writeCalledLatch, failedCalledLatch))
         {
+            @Override
             protected void onIncompleteFlushed()
             {
                 onIncompleteFlushedCalledLatch.countDown();
@@ -578,7 +574,7 @@ public class WriteFlusherTest
         }
     }
 
-    private static class FailedCaller implements Callable
+    private static class FailedCaller implements Callable<FutureCallback>
     {
         private final WriteFlusher writeFlusher;
         private CountDownLatch failedCalledLatch;
@@ -598,12 +594,12 @@ public class WriteFlusherTest
         }
     }
 
-    private class Writer implements Callable
+    private class Writer implements Callable<FutureCallback>
     {
         private final WriteFlusher writeFlusher;
-        private FutureCallback<String> callback;
+        private FutureCallback callback;
 
-        public Writer(WriteFlusher writeFlusher, FutureCallback<String> callback)
+        public Writer(WriteFlusher writeFlusher, FutureCallback callback)
         {
             this.writeFlusher = writeFlusher;
             this.callback = callback;
@@ -612,7 +608,7 @@ public class WriteFlusherTest
         @Override
         public FutureCallback call()
         {
-            writeFlusher.write(_context, callback, BufferUtil.toBuffer("foo"));
+            writeFlusher.write(callback, BufferUtil.toBuffer("foo"));
             return callback;
         }
     }

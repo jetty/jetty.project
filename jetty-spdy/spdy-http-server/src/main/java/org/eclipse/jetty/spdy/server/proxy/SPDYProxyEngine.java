@@ -43,6 +43,7 @@ import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
@@ -169,7 +170,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
-                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Callback.Empty<Void>());
+                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
                     session = existing;
                 }
             }
@@ -202,7 +203,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Empty<Void>());
+        stream.getSession().rst(rstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
     }
 
     private class ProxyStreamFrameListener extends StreamFrameListener.Adapter
@@ -258,16 +259,16 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         {
             final ReplyInfo replyInfo = this.replyInfo;
             this.replyInfo = null;
-            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback<Void>()
+            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
             {
                 @Override
-                public void completed(Void context)
+                public void succeeded()
                 {
                     logger.debug("P -> C {} from {} to {}", replyInfo, stream, clientStream);
                 }
 
                 @Override
-                public void failed(Void context, Throwable x)
+                public void failed(Throwable x)
                 {
                     logger.debug(x);
                     rst(clientStream);
@@ -277,17 +278,17 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
         private void data(final Stream stream, final DataInfo dataInfo)
         {
-            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, null,new Callback<Void>()
+            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
             {
                 @Override
-                public void completed(Void context)
+                public void succeeded()
                 {
                     dataInfo.consume(dataInfo.length());
                     logger.debug("P -> C {} from {} to {}", dataInfo, stream, clientStream);
                 }
 
                 @Override
-                public void failed(Void context, Throwable x)
+                public void failed(Throwable x)
                 {
                     logger.debug(x);
                     rst(clientStream);
@@ -304,7 +305,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
      * is a fast producer and the server a slow consumer, or if the client is a SPDY v2 client (and hence
      * without flow control) while the server is a SPDY v3 server (and hence with flow control).</p>
      */
-    private class StreamHandler implements Callback<Stream>
+    private class StreamHandler implements Promise<Stream>
     {
         private final Queue<DataInfoHandler> queue = new LinkedList<>();
         private final Stream clientStream;
@@ -318,7 +319,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
 
         @Override
-        public void completed(Stream serverStream)
+        public void succeeded(Stream serverStream)
         {
             logger.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
 
@@ -352,7 +353,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
 
         @Override
-        public void failed(Stream serverStream, Throwable x)
+        public void failed(Throwable x)
         {
             logger.debug(x);
             rst(clientStream);
@@ -393,10 +394,10 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         private void flush(Stream serverStream, DataInfoHandler dataInfoHandler)
         {
             logger.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
-            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS, null,dataInfoHandler);
+            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS,dataInfoHandler);
         }
 
-        private class DataInfoHandler implements Callback<Void>
+        private class DataInfoHandler implements Callback
         {
             private final DataInfo dataInfo;
             private boolean flushing;
@@ -407,7 +408,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             }
 
             @Override
-            public void completed(Void context)
+            public void succeeded()
             {
                 Stream serverStream;
                 DataInfoHandler dataInfoHandler;
@@ -434,7 +435,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             }
 
             @Override
-            public void failed(Void context, Throwable x)
+            public void failed(Throwable x)
             {
                 logger.debug(x);
                 rst(clientStream);
@@ -474,7 +475,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 {
                     Session clientSession = clientStream.getSession();
                     RstInfo clientRstInfo = new RstInfo(clientStream.getId(), serverRstInfo.getStreamStatus());
-                    clientSession.rst(clientRstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Empty<Void>());
+                    clientSession.rst(clientRstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
                 }
             }
         }

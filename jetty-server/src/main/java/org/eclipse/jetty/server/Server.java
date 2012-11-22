@@ -321,12 +321,12 @@ public class Server extends HandlerWrapper implements Attributes
 
         // First close the network connectors to stop accepting new connections
         for (Connector connector : _connectors)
-            futures.add(connector.shutdown((Void)null));
+            futures.add(connector.shutdown());
 
         // Then tell the contexts that we are shutting down
         Handler[] contexts = getChildHandlersByClass(Graceful.class);
         for (Handler context : contexts)
-            futures.add(((Graceful)context).shutdown((Void)null));
+            futures.add(((Graceful)context).shutdown());
 
         // Shall we gracefully wait for zero connections?
         long stopTimeout = getStopTimeout();
