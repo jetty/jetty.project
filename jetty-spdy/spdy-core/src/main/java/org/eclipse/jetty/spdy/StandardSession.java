@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -636,7 +637,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
         else
         {
-            control(null, frame, 0, TimeUnit.MILLISECONDS, null);
+            control(null, frame, 0, TimeUnit.MILLISECONDS, new Callback.Adapter());
         }
     }
 
@@ -1110,7 +1111,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 @Override
                 public void run() { callback.succeeded() ; }
             });
-            
+
         }
 
         @Override
@@ -1139,10 +1140,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         protected AbstractFrameBytes(IStream stream, Callback callback)
         {
-            if (callback==null)
-                throw new IllegalStateException();
             this.stream = stream;
-            this.callback = callback;
+            this.callback = Objects.requireNonNull(callback);
         }
 
         @Override

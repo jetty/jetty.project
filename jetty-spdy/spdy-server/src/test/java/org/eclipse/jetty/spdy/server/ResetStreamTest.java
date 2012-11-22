@@ -182,7 +182,7 @@ public class ResetStreamTest extends AbstractTest
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         assertThat("syn is received by server", synLatch.await(5,TimeUnit.SECONDS),is(true));
-        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,null);
+        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,new Callback.Adapter());
         assertThat("stream is reset",rstLatch.await(5,TimeUnit.SECONDS),is(true));
         stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Callback.Adapter()
         {
