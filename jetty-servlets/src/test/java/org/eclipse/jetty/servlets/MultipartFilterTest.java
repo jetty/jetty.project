@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +47,21 @@ public class MultipartFilterTest
     private ServletTester tester;
 
 
+    public static class BoundaryServlet extends TestServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getParameter("fileName"));
+            assertEquals("abc", req.getParameter("fileName"));
+            assertNotNull(req.getParameter("desc"));
+            assertEquals("123", req.getParameter("desc"));
+            assertNotNull(req.getParameter("title"));
+            assertEquals("ttt", req.getParameter("title"));
+            super.doPost(req, resp);
+        }
+    }
+    
     public static class TestServlet extends DumpServlet
     {
 
@@ -246,6 +262,54 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+    
+    
+    @Test
+    public void testNoBoundary() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+
+        request.setHeader("Content-Type","multipart/form-data");
+
+        // generated and parsed test
+        String content = "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileName\"\r\n"+
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+
+        "Content-Transfer-Encoding: 8bit\r\n"+
+        "\r\n"+
+        "abc\r\n"+
+        "--\r\n"+
+        "Content-Disposition: form-data; name=\"desc\"\r\n"+ 
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+ 
+        "Content-Transfer-Encoding: 8bit\r\n"+
+        "\r\n"+
+        "123\r\n"+ 
+        "--\r\n"+ 
+        "Content-Disposition: form-data; name=\"title\"\r\n"+
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+
+        "Content-Transfer-Encoding: 8bit\r\n"+ 
+        "\r\n"+
+        "ttt\r\n"+ 
+        "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Type: application/octet-stream\r\n"+
+        "Content-Transfer-Encoding: binary\r\n"+ 
+        "\r\n"+
+        "000\r\n"+ 
+        "----\r\n";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
 
     /*

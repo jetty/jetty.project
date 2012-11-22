@@ -464,15 +464,23 @@ public class Response implements HttpServletResponse
             {
                 buf = _channel.getRequest().getRootURL();
                 buf.append(URIUtil.encodePath(canonical));
-                if (uri.getQuery() != null)
+                String param=uri.getParam();
+                if (param!=null)
+                {
+                    buf.append(';');
+                    buf.append(param);
+                }
+                String query=uri.getQuery();
+                if (query!=null)
                 {
                     buf.append('?');
-                    buf.append(uri.getQuery());
+                    buf.append(query);
                 }
-                if (uri.getFragment() != null)
+                String fragment=uri.getFragment();
+                if (fragment!=null)
                 {
                     buf.append('#');
-                    buf.append(uri.getFragment());
+                    buf.append(fragment);
                 }
                 location = buf.toString();
             }
