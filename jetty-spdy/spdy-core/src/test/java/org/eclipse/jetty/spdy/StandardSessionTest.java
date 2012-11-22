@@ -29,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.spdy.StandardSession.FrameBytes;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
@@ -65,10 +64,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doAnswer;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
@@ -239,7 +237,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsInSession(pushStream);
         assertThatStreamIsAssociatedWithPushStream(stream,pushStream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null);
+        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,new Callback.Adapter());
         assertThatPushStreamIsClosed(pushStream);
         assertThatPushStreamIsNotInSession(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
@@ -328,7 +326,7 @@ public class StandardSessionTest
         session.addListener(new TestStreamListener(createdListenerCalledLatch,closedListenerCalledLatch));
         IStream stream = createStream();
         IStream pushStream = createPushStream(stream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null);
+        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,new Callback.Adapter());
         assertThat("onStreamCreated listener has been called twice. Once for the stream and once for the pushStream",
                 createdListenerCalledLatch.await(5,TimeUnit.SECONDS),is(true));
         assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);

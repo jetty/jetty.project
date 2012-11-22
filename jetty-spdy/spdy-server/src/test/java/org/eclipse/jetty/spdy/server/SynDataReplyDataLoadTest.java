@@ -178,7 +178,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 @Override
                 public void succeeded(Stream stream)
                 {
-                    stream.data(new StringDataInfo("data_" + stream.getId(), true), 0, TimeUnit.SECONDS, null);
+                    stream.data(new StringDataInfo("data_" + stream.getId(), true), 0, TimeUnit.SECONDS, new Callback.Adapter());
                 }
             });
         }
