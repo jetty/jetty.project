@@ -55,8 +55,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -361,7 +360,7 @@ public class HttpClient extends ContainerLifeCycle
         {
             if (channel != null)
                 close(channel);
-            callback.failed(x);
+            promise.failed(x);
         }
     }
 
@@ -660,7 +659,7 @@ public class HttpClient extends ContainerLifeCycle
                     // TODO: configureConnection, see above
 
                     appEndPoint.setConnection(connection);
-                    callback.callback.succeeded();
+                    callback.promise.succeeded(connection);
 
                     return sslConnection;
                 }
@@ -669,7 +668,7 @@ public class HttpClient extends ContainerLifeCycle
             {
                 HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
                 // TODO: configureConnection, see above
-                callback.callback.succeeded();
+                callback.promise.succeeded(connection);
                 return connection;
             }
         }
@@ -678,19 +677,19 @@ public class HttpClient extends ContainerLifeCycle
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.callback.failed(ex);
+            callback.promise.failed(ex);
         }
     }
 
-    private class ConnectionCallback extends FutureCallback<Connection>
+    private class ConnectionCallback extends FuturePromise<Connection>
     {
         private final HttpDestination destination;
-        private final Callback<Connection> callback;
+        private final Promise<Connection> promise;
 
-        private ConnectionCallback(HttpDestination destination, Callback<Connection> callback)
+        private ConnectionCallback(HttpDestination destination, Promise<Connection> promise)
         {
             this.destination = destination;
-            this.callback = callback;
+            this.promise = promise;
         }
     }
 }
