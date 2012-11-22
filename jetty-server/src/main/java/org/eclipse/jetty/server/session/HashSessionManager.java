@@ -41,7 +41,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** An in-memory implementation of SessionManager.
+/** 
+ * HashSessionManager
+ * 
+ * An in-memory implementation of SessionManager.
  * <p>
  * This manager supports saving sessions to disk, either periodically or at shutdown.
  * Sessions can also have their content idle saved to disk to reduce the memory overheads of large idle sessions.
@@ -78,7 +81,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStart()
      */
     @Override
@@ -111,7 +114,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStop()
      */
     @Override
@@ -253,7 +256,7 @@ public class HashSessionManager extends AbstractSessionManager
      * @param seconds the period in seconds at which a check is made for sessions to be invalidated.
      */
     public void setScavengePeriod(int seconds)
-    {
+    { 
         if (seconds==0)
             seconds=60;
 
@@ -265,6 +268,7 @@ public class HashSessionManager extends AbstractSessionManager
             period=1000;
 
         _scavengePeriodMs=period;
+    
         if (_timer!=null && (period!=old_period || _task==null))
         {
             synchronized (this)
@@ -304,25 +308,36 @@ public class HashSessionManager extends AbstractSessionManager
 
             // For each session
             long now=System.currentTimeMillis();
+          
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
             {
                 HashedSession session=i.next();
-                long idleTime=session.getMaxInactiveInterval()*1000L;
+                long idleTime=session.getMaxInactiveInterval()*1000L; 
                 if (idleTime>0&&session.getAccessed()+idleTime<now)
                 {
                     // Found a stale session, add it to the list
-                    session.timeout();
+                    try
+                    {
+                        session.timeout();
+                    }
+                    catch (Exception e)
+                    {
+                        __log.warn("Problem scavenging sessions", e);
+                    }
                 }
-                else if (_idleSavePeriodMs>0&&session.getAccessed()+_idleSavePeriodMs<now)
+                else if (_idleSavePeriodMs > 0 && session.getAccessed()+_idleSavePeriodMs < now)
                 {
-                    session.idle();
+                    try
+                    {
+                        session.idle();
+                    }
+                    catch (Exception e)
+                    {
+                        __log.warn("Problem idling session "+ session.getId(), e);
+                    }
                 }
             }
-        }
-        catch (Throwable t)
-        {
-            __log.warn("Problem scavenging sessions", t);
-        }
+        }       
         finally
         {
             thread.setContextClassLoader(old_loader);
