@@ -16,11 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy;
+package org.eclipse.jetty.util;
 
-import org.eclipse.jetty.util.FutureCallback;
-
-@Deprecated
-public class Promise<T> extends FutureCallback<T>
+public class PromisingCallback<R> implements Callback
 {
+    private final Promise<R> _promise;
+    private final R _result;
+    
+    public PromisingCallback(Promise<R> promise, R result)
+    {
+        _promise=promise;
+        _result=result;
+    }
+    
+    @Override
+    public void succeeded()
+    {
+        _promise.succeeded(_result);
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        _promise.failed(x);
+    }
+
 }

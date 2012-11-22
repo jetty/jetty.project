@@ -36,6 +36,7 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.Assert;
@@ -75,15 +76,10 @@ public class AsyncTimeoutTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), null, timeout, unit, new Callback<Stream>()
+        session.syn(new SynInfo(true), null, timeout, unit, new Promise.Adapter<Stream>()
         {
             @Override
-            public void completed(Stream stream)
-            {
-            }
-
-            @Override
-            public void failed(Stream stream, Throwable x)
+            public void failed(Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -107,14 +103,14 @@ public class AsyncTimeoutTest
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
-            protected void write(ByteBuffer buffer, Callback<FrameBytes> callback, FrameBytes frameBytes)
+            protected void write(ByteBuffer buffer, Callback callback)
             {
                 try
                 {
                     // Wait if we're writing the data frame (control frame's first byte is 0x80)
                     if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.write(buffer, callback, frameBytes);
+                    super.write(buffer, callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -125,10 +121,10 @@ public class AsyncTimeoutTest
 
         Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, null,new Callback.Empty<Void>()
+        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Adapter()
         {
             @Override
-            public void failed(Void context, Throwable x)
+            public void failed(Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -137,13 +133,12 @@ public class AsyncTimeoutTest
         Assert.assertTrue(failedLatch.await(2 * timeout, unit));
     }
 
-    private static class TestController implements Controller<StandardSession.FrameBytes>
+    private static class TestController implements Controller
     {
         @Override
-        public int write(ByteBuffer buffer, Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
+        public void write(ByteBuffer buffer, Callback callback)
         {
-            callback.completed(context);
-            return buffer.remaining();
+            callback.succeeded();
         }
 
         @Override

@@ -61,6 +61,7 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -244,10 +245,10 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
-                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void failed(Stream stream, Throwable x)
+                    public void failed(Throwable x)
                     {
                         pushStreamFailedLatch.countDown();
                     }

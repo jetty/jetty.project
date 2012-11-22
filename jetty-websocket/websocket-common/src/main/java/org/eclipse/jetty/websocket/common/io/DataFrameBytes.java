@@ -35,11 +35,11 @@ public class DataFrameBytes extends FrameBytes
     }
 
     @Override
-    public void completed(Void result)
+    public void succeeded()
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({}) - frame.remaining() = {}",result,frame.remaining());
+            LOG.debug("completed() - frame.remaining() = {}",frame.remaining());
         }
 
         connection.getBufferPool().release(buffer);
@@ -56,7 +56,7 @@ public class DataFrameBytes extends FrameBytes
         else
         {
             LOG.debug("Send complete");
-            super.completed(result);
+            super.succeeded();
         }
         connection.flush();
     }
@@ -72,7 +72,7 @@ public class DataFrameBytes extends FrameBytes
         }
         catch (Throwable x)
         {
-            failed(null,x);
+            failed(x);
             return null;
         }
     }

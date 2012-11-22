@@ -28,15 +28,14 @@ import org.eclipse.jetty.util.Callback;
 
 /* ------------------------------------------------------------ */
 /** 
- * A Utility class to help implement {@link EndPoint#fillInterested(Object, Callback)}
+ * A Utility class to help implement {@link EndPoint#fillInterested(Callback)}
  * by keeping state and calling the context and callback objects.
  * 
  */
 public abstract class FillInterest
 {
     private final AtomicBoolean _interested = new AtomicBoolean(false);
-    private volatile Callback<Object> _callback;
-    private Object _context;
+    private volatile Callback _callback;
 
     /* ------------------------------------------------------------ */
     protected FillInterest()
@@ -51,12 +50,11 @@ public abstract class FillInterest
      * @param callback
      * @throws ReadPendingException
      */
-    public <C> void register(C context, Callback<C> callback) throws ReadPendingException
+    public <C> void register(Callback callback) throws ReadPendingException
     {
         if (!_interested.compareAndSet(false,true))
             throw new ReadPendingException();
-        _context=context;
-        _callback=(Callback<Object>)callback;
+        _callback=callback;
         try
         {
             if (needsFill())
@@ -75,11 +73,9 @@ public abstract class FillInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback<Object> callback=_callback;
-            Object context=_context;
+            Callback callback=_callback;
             _callback=null;
-            _context=null;
-            callback.completed(context);
+            callback.succeeded();
         }
     }
 
@@ -99,11 +95,9 @@ public abstract class FillInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback<Object> callback=_callback;
-            Object context=_context;
+            Callback callback=_callback;
             _callback=null;
-            _context=null;
-            callback.failed(context,cause);
+            callback.failed(cause);
         }
     }
     
@@ -112,11 +106,9 @@ public abstract class FillInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback<Object> callback=_callback;
-            Object context=_context;
+            Callback callback=_callback;
             _callback=null;
-            _context=null;
-            callback.failed(context,new ClosedChannelException());
+            callback.failed(new ClosedChannelException());
         }
     }
     
@@ -124,7 +116,7 @@ public abstract class FillInterest
     @Override
     public String toString()
     {
-        return String.format("FillInterest@%x{%b,%s,%s}",hashCode(),_interested.get(),_callback,_context);
+        return String.format("FillInterest@%x{%b,%s}",hashCode(),_interested.get(),_callback);
     }
     
     /* ------------------------------------------------------------ */

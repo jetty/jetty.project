@@ -105,7 +105,7 @@ public class SelectorManagerTest
             @Override
             protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
             {
-                ((Callback<Void>)attachment).failed(null, ex);
+                ((Callback)attachment).failed(ex);
             }
         };
         selectorManager.setConnectTimeout(connectTimeout);
@@ -114,10 +114,10 @@ public class SelectorManagerTest
         try
         {
             final CountDownLatch latch = new CountDownLatch(1);
-            selectorManager.connect(client, new Callback.Empty<Void>()
+            selectorManager.connect(client, new Callback.Adapter()
             {
                 @Override
-                public void failed(Void context, Throwable x)
+                public void failed(Throwable x)
                 {
                     latch.countDown();
                 }

@@ -52,6 +52,7 @@ import org.eclipse.jetty.spdy.server.SPDYServerConnector;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -564,10 +565,10 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         pushStream.data(new BytesDataInfo(data, true));
                     }
@@ -617,10 +618,10 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         pushStream.data(new BytesDataInfo(data, true));
                     }

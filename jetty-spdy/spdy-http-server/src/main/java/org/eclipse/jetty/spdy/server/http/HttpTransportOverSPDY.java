@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -67,14 +68,14 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("send  {} {} {} {} last={}%n",this,stream,info,BufferUtil.toDetailString(content),lastContent);
 
         if (stream.isClosed() || stream.isReset() )
         {        
-            callback.failed(context,new EofException("stream closed"));
+            callback.failed(new EofException("stream closed"));
             return;
         }
         // new Throwable().printStackTrace();
@@ -133,10 +134,10 @@ public class HttpTransportOverSPDY implements HttpTransport
             // Is the stream still open?
             if (stream.isClosed()|| stream.isReset())
                 // tell the callback about the EOF 
-                callback.failed(context,new EofException("stream closed")); 
+                callback.failed(new EofException("stream closed")); 
             else 
                 // send the data and let it call the callback
-                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
         }
         // else do we need to close
         else if (lastContent)
@@ -144,21 +145,21 @@ public class HttpTransportOverSPDY implements HttpTransport
             // Are we closed ?
             if (stream.isClosed()|| stream.isReset())
                 // already closed by reply, so just tell callback we are complete
-                callback.completed(context); 
+                callback.succeeded(); 
             else
                 // send empty data to close and let the send call the callback
-                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
         }
         else
             // No data and no close so tell callback we are completed
-            callback.completed(context);
+            callback.succeeded();
 
     }
 
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
-        send(info,content,lastContent,streamBlocker.getPhase(),streamBlocker);
+        send(info,content,lastContent,streamBlocker);
         try
         {
             streamBlocker.block();
@@ -201,10 +202,10 @@ public class HttpTransportOverSPDY implements HttpTransport
                 final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
                 // TODO: handle the timeout better
-                stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(pushStream, pushRequestHeaders);
                         pushChannel.requestStart(pushRequestHeaders, true);

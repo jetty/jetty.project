@@ -56,7 +56,7 @@ public class SslConnectionTest
 
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;
-    private volatile FutureCallback<Void> _writeCallback;
+    private volatile FutureCallback _writeCallback;
     protected ServerSocketChannel _connector;
     final AtomicInteger _dispatches = new AtomicInteger();
     protected QueuedThreadPool _threadPool = new QueuedThreadPool()
@@ -156,7 +156,7 @@ public class SslConnectionTest
                     @Override
                     public void run()
                     {
-                        getEndPoint().write(null,_writeCallback,BufferUtil.toBuffer("Hello Client"));
+                        getEndPoint().write(_writeCallback,BufferUtil.toBuffer("Hello Client"));
                     }
                 });
             }
@@ -191,8 +191,8 @@ public class SslConnectionTest
                     int l=_in.remaining();
                     if (l>0)
                     {
-                        FutureCallback<Void> blockingWrite= new FutureCallback<>();
-                        endp.write(null,blockingWrite,_in);
+                        FutureCallback blockingWrite= new FutureCallback();
+                        endp.write(blockingWrite,_in);
                         blockingWrite.get();
                     }
 
@@ -257,7 +257,7 @@ public class SslConnectionTest
     {
         _testFill=false;
 
-        _writeCallback = new FutureCallback<>();
+        _writeCallback = new FutureCallback();
         Socket client = newClient();
         client.setSoTimeout(10000);
 

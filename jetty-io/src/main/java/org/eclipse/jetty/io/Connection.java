@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
  * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
  * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
- * {@link EndPoint#fillInterested(Object, Callback) set read interest} on the {@link EndPoint},
+ * {@link EndPoint#fillInterested(Callback) set read interest} on the {@link EndPoint},
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */

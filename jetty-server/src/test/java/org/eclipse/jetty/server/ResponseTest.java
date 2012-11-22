@@ -88,7 +88,7 @@ public class ResponseTest
             }
             
             @Override
-            public <C> void send(ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
+            public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
             }
 

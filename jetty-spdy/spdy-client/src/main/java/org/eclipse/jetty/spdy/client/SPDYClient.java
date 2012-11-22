@@ -41,9 +41,9 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
-import org.eclipse.jetty.spdy.Promise;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -316,14 +316,14 @@ public class SPDYClient
                 }
                 catch (RuntimeException x)
                 {
-                    sessionPromise.failed(null,x);
+                    sessionPromise.failed(x);
                     throw x;
                 }
             }
         }
     }
 
-    static class SessionPromise extends Promise<Session>
+    static class SessionPromise extends FuturePromise<Session>
     {
         private final SocketChannel channel;
         final SPDYClient client;

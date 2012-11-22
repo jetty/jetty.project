@@ -45,7 +45,7 @@ public abstract class AbstractConnection implements Connection
     private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
-    private final Callback<Void> _readCallback;
+    private final Callback _readCallback;
     private int _inputBufferSize=2048;
 
     public AbstractConnection(EndPoint endp, Executor executor)
@@ -59,19 +59,19 @@ public abstract class AbstractConnection implements Connection
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endp;
         _executor = executor;
-        _readCallback = new ExecutorCallback<Void>(executor,0)
+        _readCallback = new ExecutorCallback(executor,0)
         {
             @Override
-            public void completed(Void context)
+            public void succeeded()
             {
                 if (executeOnfillable)
-                    super.completed(context);
+                    super.succeeded();
                 else
-                    onCompleted(context);
+                    onCompleted();
             }
             
             @Override
-            protected void onCompleted(Void context)
+            protected void onCompleted()
             {
                 if (_state.compareAndSet(State.INTERESTED,State.FILLING))
                 {
@@ -97,7 +97,7 @@ public abstract class AbstractConnection implements Connection
                                 case FILLING_INTERESTED:
                                     if (_state.compareAndSet(State.FILLING_INTERESTED,State.INTERESTED))
                                     {
-                                        getEndPoint().fillInterested(null, _readCallback);
+                                        getEndPoint().fillInterested(_readCallback);
                                         break loop;
                                     }
                                     break;
@@ -111,7 +111,7 @@ public abstract class AbstractConnection implements Connection
             }
 
             @Override
-            protected void onFailed(Void context, Throwable x)
+            protected void onFailed(Throwable x)
             {
                 onFillInterestedFailed(x);
             }
@@ -162,7 +162,7 @@ public abstract class AbstractConnection implements Connection
                 case IDLE:
                     if (_state.compareAndSet(State.IDLE,State.INTERESTED))
                     {
-                        getEndPoint().fillInterested(null, _readCallback);
+                        getEndPoint().fillInterested(_readCallback);
                         break loop;
                     }
                     break;

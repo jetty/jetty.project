@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.Future;
 
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 public interface WebSocketClient
 {
-    public FutureCallback<UpgradeResponse> connect(URI websocketUri) throws IOException;
+    public Future<UpgradeResponse> connect(URI websocketUri) throws IOException;
 
     public WebSocketClientFactory getFactory();
 

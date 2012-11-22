@@ -154,8 +154,8 @@ public class SelectChannelEndPointTest
                     // If the tests wants to block, then block
                     while (_blockAt > 0 && _endp.isOpen() && _in.remaining() < _blockAt)
                     {
-                        FutureCallback<Void> blockingRead = new FutureCallback<>();
-                        _endp.fillInterested(null, blockingRead);
+                        FutureCallback blockingRead = new FutureCallback();
+                        _endp.fillInterested(blockingRead);
                         blockingRead.get();
                         filled = _endp.fill(_in);
                         progress |= filled > 0;
@@ -172,8 +172,8 @@ public class SelectChannelEndPointTest
                         BufferUtil.clear(_out);
                         for (int i = 0; i < _writeCount; i++)
                         {
-                            FutureCallback<Void> blockingWrite = new FutureCallback<>();
-                            _endp.write(null, blockingWrite, out.asReadOnlyBuffer());
+                            FutureCallback blockingWrite = new FutureCallback();
+                            _endp.write(blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
                         progress = true;
@@ -189,8 +189,8 @@ public class SelectChannelEndPointTest
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
-                    FutureCallback<Void> blockingWrite = new FutureCallback<>();
-                    _endp.write(null, blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
+                    FutureCallback blockingWrite = new FutureCallback();
+                    _endp.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
                     blockingWrite.get();
                     _endp.shutdownOutput();
                 }

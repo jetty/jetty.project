@@ -28,6 +28,7 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -68,10 +69,10 @@ public class PingTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                session.ping(0, TimeUnit.MILLISECONDS, new Callback.Empty<PingInfo>()
+                session.ping(0, TimeUnit.MILLISECONDS, new Promise.Adapter<PingInfo>()
                 {
                     @Override
-                    public void completed(PingInfo pingInfo)
+                    public void succeeded(PingInfo pingInfo)
                     {
                         pingId = pingInfo.getPingId();
                     }

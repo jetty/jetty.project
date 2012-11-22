@@ -201,7 +201,7 @@ public class HttpSender
                             }
 
                             @Override
-                            protected void failed(Throwable x)
+                            protected void onFailed(Throwable x)
                             {
                                 fail(x);
                             }
@@ -215,13 +215,13 @@ public class HttpSender
 
                         write(callback, header, chunk, expect100 ? null : contentInfo.content);
 
-                        if (callback.pending())
+                        if (callback.isPending())
                         {
                             LOG.debug("Write pending for {}", request);
                             return;
                         }
 
-                        if (callback.completed())
+                        if (callback.isSucceeded())
                         {
                             if (!commit(request))
                                 return;
@@ -274,7 +274,7 @@ public class HttpSender
         }
     }
 
-    private void write(Callback<Void> callback, ByteBuffer header, ByteBuffer chunk, ByteBuffer content)
+    private void write(Callback callback, ByteBuffer header, ByteBuffer chunk, ByteBuffer content)
     {
         int mask = 0;
         if (header != null)
@@ -288,28 +288,28 @@ public class HttpSender
         switch (mask)
         {
             case 0:
-                endPoint.write(null, callback, BufferUtil.EMPTY_BUFFER);
+                endPoint.write(callback, BufferUtil.EMPTY_BUFFER);
                 break;
             case 1:
-                endPoint.write(null, callback, header);
+                endPoint.write(callback, header);
                 break;
             case 2:
-                endPoint.write(null, callback, chunk);
+                endPoint.write(callback, chunk);
                 break;
             case 3:
-                endPoint.write(null, callback, header, chunk);
+                endPoint.write(callback, header, chunk);
                 break;
             case 4:
-                endPoint.write(null, callback, content);
+                endPoint.write(callback, content);
                 break;
             case 5:
-                endPoint.write(null, callback, header, content);
+                endPoint.write(callback, header, content);
                 break;
             case 6:
-                endPoint.write(null, callback, chunk, content);
+                endPoint.write(callback, chunk, content);
                 break;
             case 7:
-                endPoint.write(null, callback, header, chunk, content);
+                endPoint.write(callback, header, chunk, content);
                 break;
             default:
                 throw new IllegalStateException();
@@ -448,7 +448,7 @@ public class HttpSender
         IDLE, SEND, COMMIT, FAILURE
     }
 
-    private static abstract class StatefulExecutorCallback implements Callback<Void>, Runnable
+    private static abstract class StatefulExecutorCallback implements Callback, Runnable
     {
         private final AtomicReference<State> state = new AtomicReference<>(State.INCOMPLETE);
         private final Executor executor;
@@ -459,7 +459,7 @@ public class HttpSender
         }
 
         @Override
-        public final void completed(final Void context)
+        public final void succeeded()
         {
             State previous = state.get();
             while (true)
@@ -481,7 +481,7 @@ public class HttpSender
         protected abstract void pendingCompleted();
 
         @Override
-        public final void failed(Void context, final Throwable x)
+        public final void failed(final Throwable x)
         {
             State previous = state.get();
             while (true)
@@ -507,19 +507,19 @@ public class HttpSender
             }
         }
 
-        protected abstract void failed(Throwable x);
+        protected abstract void onFailed(Throwable x);
 
-        public boolean pending()
+        public boolean isPending()
         {
             return state.compareAndSet(State.INCOMPLETE, State.PENDING);
         }
 
-        public boolean completed()
+        public boolean isSucceeded()
         {
             return state.get() == State.COMPLETE;
         }
 
-        public boolean failed()
+        public boolean isFailed()
         {
             return state.get() == State.FAILED;
         }

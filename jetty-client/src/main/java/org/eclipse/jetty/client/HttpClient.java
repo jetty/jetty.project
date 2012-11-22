@@ -58,6 +58,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -340,7 +341,7 @@ public class HttpClient extends ContainerLifeCycle
         destination.send(request, listeners);
     }
 
-    protected void newConnection(HttpDestination destination, Callback<Connection> callback)
+    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
         SocketChannel channel = null;
         try
@@ -353,14 +354,14 @@ public class HttpClient extends ContainerLifeCycle
             channel.configureBlocking(false);
             channel.connect(destination.getConnectAddress());
 
-            Future<Connection> result = new ConnectionCallback(destination, callback);
+            Future<Connection> result = new ConnectionCallback(destination, promise);
             selectorManager.connect(channel, result);
         }
         catch (IOException x)
         {
             if (channel != null)
                 close(channel);
-            callback.failed(null, x);
+            callback.failed(x);
         }
     }
 
@@ -643,7 +644,7 @@ public class HttpClient extends ContainerLifeCycle
                 if (sslContextFactory == null)
                 {
                     IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
-                    callback.failed(null, failure);
+                    callback.failed(failure);
                     throw failure;
                 }
                 else
@@ -659,7 +660,7 @@ public class HttpClient extends ContainerLifeCycle
                     // TODO: configureConnection, see above
 
                     appEndPoint.setConnection(connection);
-                    callback.callback.completed(connection);
+                    callback.callback.succeeded();
 
                     return sslConnection;
                 }
@@ -668,7 +669,7 @@ public class HttpClient extends ContainerLifeCycle
             {
                 HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
                 // TODO: configureConnection, see above
-                callback.callback.completed(connection);
+                callback.callback.succeeded();
                 return connection;
             }
         }
@@ -677,7 +678,7 @@ public class HttpClient extends ContainerLifeCycle
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.callback.failed(null, ex);
+            callback.callback.failed(ex);
         }
     }
 

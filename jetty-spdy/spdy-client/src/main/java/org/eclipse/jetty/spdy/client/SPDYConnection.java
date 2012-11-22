@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SPDYConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
+public class SPDYConnection extends AbstractConnection implements Controller, IdleListener
 {
     private static final Logger LOG = Log.getLogger(SPDYConnection.class);
     private final ByteBufferPool bufferPool;
@@ -116,12 +116,10 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     }
 
     @Override
-    public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
+    public void write(ByteBuffer buffer, final Callback callback)
     {
         EndPoint endPoint = getEndPoint();
-        int remaining = buffer.remaining();
-        endPoint.write(context, callback, buffer);
-        return remaining - buffer.remaining();
+        endPoint.write(callback, buffer);
     }
 
     @Override

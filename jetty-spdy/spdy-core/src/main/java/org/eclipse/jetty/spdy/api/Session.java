@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -92,7 +93,7 @@ public interface Session
      * @param callback  the completion callback that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Callback<Stream> callback);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Promise<Stream> callback);
 
 
     /**
@@ -116,7 +117,7 @@ public interface Session
      * @param callback the completion callback that gets notified of reset's send
      * @see #rst(RstInfo)
      */
-    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
@@ -139,7 +140,7 @@ public interface Session
      * @param callback      the completion callback that gets notified of settings' send
      * @see #settings(SettingsInfo)
      */
-    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
@@ -160,7 +161,7 @@ public interface Session
      * @param callback the completion callback that gets notified of ping's send
      * @see #ping()
      */
-    public void ping(long timeout, TimeUnit unit, Callback<PingInfo> callback);
+    public void ping(long timeout, TimeUnit unit, Promise<PingInfo> callback);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
@@ -181,7 +182,7 @@ public interface Session
      * @param callback the completion callback that gets notified of go away's send
      * @see #goAway()
      */
-    public void goAway(long timeout, TimeUnit unit, Callback<Void> callback);
+    public void goAway(long timeout, TimeUnit unit, Callback callback);
 
     /**
      * @return a snapshot of the streams currently active in this session

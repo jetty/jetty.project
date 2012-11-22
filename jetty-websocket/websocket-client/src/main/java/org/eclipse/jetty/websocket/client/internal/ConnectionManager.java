@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
@@ -114,7 +115,7 @@ public class ConnectionManager extends ContainerLifeCycle
         }
     }
 
-    public FutureCallback<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
+    public Future<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         SocketAddress bindAddress = client.getFactory().getBindAddress();
@@ -137,7 +138,7 @@ public class ConnectionManager extends ContainerLifeCycle
         return client;
     }
 
-    public FutureCallback<UpgradeResponse> connectVirtual(WebSocketClient client)
+    public Future<UpgradeResponse> connectVirtual(WebSocketClient client)
     {
         // TODO Auto-generated method stub
         return null;

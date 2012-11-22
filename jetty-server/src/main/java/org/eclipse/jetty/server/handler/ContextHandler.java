@@ -626,11 +626,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      */
     @Override
-    public <C> Future<C> shutdown(final C c)
+    public Future<Void> shutdown()
     {
         _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
-
-        return new FutureCallback<>(c);
+        return new FutureCallback(true);
     }
 
     /* ------------------------------------------------------------ */

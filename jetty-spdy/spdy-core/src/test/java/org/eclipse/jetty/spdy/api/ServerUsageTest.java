@@ -20,9 +20,12 @@ package org.eclipse.jetty.spdy.api;
 
 import java.util.concurrent.TimeUnit;
 
+import junit.framework.Assert;
+
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -32,7 +35,7 @@ public class ServerUsageTest
     @Test
     public void testServerSynAndReplyWithData() throws Exception
     {
-        new ServerSessionFrameListener.Adapter()
+        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
@@ -54,12 +57,13 @@ public class ServerUsageTest
                 return null;
             }
         };
+        Assert.assertTrue(ssfl!=null);
     }
 
     @Test
     public void testServerInitiatesStreamAndPushesData() throws Exception
     {
-        new ServerSessionFrameListener.Adapter()
+        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onConnect(Session session)
@@ -73,10 +77,10 @@ public class ServerUsageTest
                 //
                 // However, the API may allow to initiate the stream
 
-                session.syn(new SynInfo(false), null, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                session.syn(new SynInfo(false), null, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream stream)
+                    public void succeeded(Stream stream)
                     {
                         // The point here is that we have no idea if the client accepted our stream
                         // So we return a stream, we may be able to send the headers frame, but later
@@ -88,12 +92,13 @@ public class ServerUsageTest
                 });
             }
         };
+        Assert.assertTrue(ssfl!=null);
     }
 
     @Test
     public void testServerPush() throws Exception
     {
-        new ServerSessionFrameListener.Adapter()
+        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
@@ -103,10 +108,10 @@ public class ServerUsageTest
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Fields(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                session.syn(new SynInfo(new Fields(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         pushStream.data(new StringDataInfo("foo", false));
                     }
@@ -114,5 +119,6 @@ public class ServerUsageTest
                 return null;
             }
         };
+        Assert.assertTrue(ssfl!=null);
     }
 }

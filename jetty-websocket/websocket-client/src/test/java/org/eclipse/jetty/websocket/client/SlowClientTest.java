@@ -104,7 +104,7 @@ public class SlowClientTest
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
         // writer.setExchanger(exchanger);
-        writer.setSlowness(50);
+        writer.setSlowness(10);
         writer.start();
         writer.join();
 

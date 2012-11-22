@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
  * schedule a set of accepted connections.  It is the selector thread that will call the
- * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Object, Callback)} or
+ * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Callback)} or
  * {@link EndPoint#write(Object, Callback, java.nio.ByteBuffer...)} methods.  It is expected
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
  * {@link Executor} service any blocking, long running or application tasks.
@@ -242,10 +242,10 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     @Override
-    public <C> Future<C> shutdown(C c)
+    public Future<Void> shutdown()
     {
         // TODO shutdown all the connections
-        return super.shutdown(c);
+        return super.shutdown();
     }
 
     @Override

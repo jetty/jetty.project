@@ -111,16 +111,16 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
+    public void fillInterested(Callback callback) throws IllegalStateException
     {
         notIdle();
-        _fillInterest.register(context, callback);
+        _fillInterest.register(callback);
     }
 
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
+    public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
     {
-        _writeFlusher.write(context, callback, buffers);
+        _writeFlusher.write(callback, buffers);
     }
 
     protected abstract void onIncompleteFlush();

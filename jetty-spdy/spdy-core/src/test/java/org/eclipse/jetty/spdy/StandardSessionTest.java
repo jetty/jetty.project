@@ -47,6 +47,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
@@ -67,12 +68,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
 {
     @Mock
-    private Controller<FrameBytes> controller;
+    private Controller controller;
 
     private ByteBufferPool bufferPool;
     private Executor threadPool;
@@ -102,22 +104,17 @@ public class StandardSessionTest
     @SuppressWarnings("unchecked")
     private void setControllerWriteExpectationToFail(final boolean fail)
     {
-        when(controller.write(any(ByteBuffer.class),any(Callback.class),any(StandardSession.FrameBytes.class))).thenAnswer(new Answer<Integer>()
-        {
-            public Integer answer(InvocationOnMock invocation)
-            {
-                Object[] args = invocation.getArguments();
-
-                Callback<StandardSession.FrameBytes> callback = (Callback<FrameBytes>)args[1];
-                FrameBytes context = (FrameBytes)args[2];
-
-                if (fail)
-                    callback.failed(context,new ClosedChannelException());
-                else
-                    callback.completed(context);
-                return 0;
-            }
-        });
+        doAnswer(new Answer() {
+              public Object answer(InvocationOnMock invocation) {
+                  Object[] args = invocation.getArguments();
+                  Callback callback = (Callback)args[1];
+                  if (fail)
+                      callback.failed(new ClosedChannelException());
+                  else
+                      callback.succeeded();
+                  return null;
+              }})
+          .when(controller).write(any(ByteBuffer.class),any(Callback.class));
     }
 
     @Test
@@ -221,10 +218,10 @@ public class StandardSessionTest
     {
         final CountDownLatch failedLatch = new CountDownLatch(1);
         SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
-        stream.syn(synInfo,5,TimeUnit.SECONDS,new Callback.Empty<Stream>()
+        stream.syn(synInfo,5,TimeUnit.SECONDS,new Promise.Adapter<Stream>()
         {
             @Override
-            public void failed(Stream stream, Throwable x)
+            public void failed(Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -242,7 +239,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsInSession(pushStream);
         assertThatStreamIsAssociatedWithPushStream(stream,pushStream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
+        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null);
         assertThatPushStreamIsClosed(pushStream);
         assertThatPushStreamIsNotInSession(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
@@ -331,7 +328,7 @@ public class StandardSessionTest
         session.addListener(new TestStreamListener(createdListenerCalledLatch,closedListenerCalledLatch));
         IStream stream = createStream();
         IStream pushStream = createPushStream(stream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
+        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null);
         assertThat("onStreamCreated listener has been called twice. Once for the stream and once for the pushStream",
                 createdListenerCalledLatch.await(5,TimeUnit.SECONDS),is(true));
         assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);
@@ -420,21 +417,21 @@ public class StandardSessionTest
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
         IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
         stream.updateWindowSize(8192);
-        Callback.Empty<Void> callback = new Callback.Empty()
+        Callback.Adapter callback = new Callback.Adapter()
         {
             @Override
-            public void failed(Object context, Throwable x)
+            public void failed(Throwable x)
             {
                 failedCalledLatch.countDown();
             }
         };
 
         // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, null,callback);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
         // second data frame should fail without controller.writer() as the connection is expected to be broken after first controller.write() call failed.
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, null,callback);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
 
-        verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class), any(FrameBytes.class));
+        verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class));
         assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 

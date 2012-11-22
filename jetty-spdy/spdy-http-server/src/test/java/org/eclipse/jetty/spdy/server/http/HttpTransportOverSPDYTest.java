@@ -89,11 +89,10 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = true;
-        Object context = null;
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is true", dataInfoCaptor.getValue().isClose(), is(true));
         assertThat("ByteBuffer is empty", dataInfoCaptor.getValue().length(), is(0));
     }
@@ -104,11 +103,11 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
 
         boolean lastContent = true;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is true", dataInfoCaptor.getValue().isClose(), is(true));
         assertThat("ByteBuffer length is 4096", dataInfoCaptor.getValue().length(), is(4096));
     }
@@ -118,11 +117,11 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         boolean lastContent = true;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is true", dataInfoCaptor.getValue().isClose(), is(true));
         assertThat("ByteBuffer is empty", dataInfoCaptor.getValue().length(), is(0));
     }
@@ -132,11 +131,10 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = false;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
-        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), anyObject(),
-                any(Callback.class));
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), any(Callback.class));
     }
 
     @Test
@@ -144,11 +142,11 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is false", dataInfoCaptor.getValue().isClose(), is(false));
         assertThat("ByteBuffer is empty", dataInfoCaptor.getValue().length(), is(4096));
     }
@@ -158,12 +156,11 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         boolean lastContent = false;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(null, content, lastContent, context, callback);
-        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), anyObject(),
-                any(Callback.class));
-        verify(callback, times(1)).completed(context);
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), any(Callback.class));
+        verify(callback, times(1)).succeeded();
     }
 
     @Test
@@ -171,16 +168,16 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = true;
-        Object context = null;
+        
         // when stream.isClosed() is called a 2nd time, the teply has closed the stream already
         when(stream.isClosed()).thenReturn(false).thenReturn(true);
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture());
         assertThat("ReplyInfo close is true", replyInfoCaptor.getValue().isClose(), is(true));
 
-        verify(callback, times(1)).completed(context);
+        verify(callback, times(1)).succeeded();
     }
 
     @Test
@@ -189,16 +186,16 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
 
         boolean lastContent = true;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
 
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture());
         assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
 
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is true", dataInfoCaptor.getValue().isClose(), is(true));
         assertThat("ByteBuffer length is 4096", dataInfoCaptor.getValue().length(), is(4096));
     }
@@ -208,15 +205,14 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = false;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture());
         assertThat("ReplyInfo close is true", replyInfoCaptor.getValue().isClose(), is(false));
 
-        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), anyObject(),
-                any(Callback.class));
+        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), anyLong(), any(TimeUnit.class), any(Callback.class));
     }
 
     @Test
@@ -225,15 +221,15 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
 
         boolean lastContent = false;
-        Object context = null;
+        
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, context, callback);
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture());
         assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
 
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
-        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), anyObject(), any(Callback.class));
+        verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is false", dataInfoCaptor.getValue().isClose(), is(false));
         assertThat("ByteBuffer length is 4096", dataInfoCaptor.getValue().length(), is(4096));
     }
