@@ -38,6 +38,22 @@
     <load-on-startup>5</load-on-startup>
   </servlet>
   
+  <!-- Uncomment to override the setup of the test filter -->
+  <!-- 
+  <filter>
+    <filter-name>TestFilter</filter-name>
+    <filter-class>com.acme.TestFilter</filter-class>
+    <async-support>true</async-support>
+    <init-param>
+      <param-name>remote</param-name>
+      <param-value>false</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+     <filter-name>TestFilter</filter-name>
+     <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  -->
 </web-app>
 
 

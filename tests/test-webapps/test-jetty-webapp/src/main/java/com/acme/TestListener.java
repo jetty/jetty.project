@@ -127,12 +127,15 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
         /* For servlet 3.0 */
         FilterRegistration.Dynamic registration = sce.getServletContext().addFilter("TestFilter",TestFilter.class.getName());
-        registration.setInitParameter("remote", "false");
-        registration.setAsyncSupported(true);
-        registration.addMappingForUrlPatterns(
-            EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
-            true, 
-            new String[]{"/*"});
+        if (registration != null) //otherwise defined in web.xml
+        {
+            registration.setInitParameter("remote", "false");
+            registration.setAsyncSupported(true);
+            registration.addMappingForUrlPatterns(
+                                                  EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
+                                                  true, 
+                                                  new String[]{"/*"});
+        }
     }
 
     @Override
