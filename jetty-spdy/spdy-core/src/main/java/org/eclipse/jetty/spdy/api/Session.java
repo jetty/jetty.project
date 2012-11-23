@@ -90,10 +90,10 @@ public interface Session
      * @param listener the listener to invoke when events happen on the stream just created
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback  the completion callback that gets notified of stream creation
+     * @param promise  the completion callback that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Promise<Stream> callback);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Promise<Stream> promise);
 
 
     /**
@@ -158,10 +158,10 @@ public interface Session
      *
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback the completion callback that gets notified of ping's send
+     * @param promise the completion callback that gets notified of ping's send
      * @see #ping()
      */
-    public void ping(long timeout, TimeUnit unit, Promise<PingInfo> callback);
+    public void ping(long timeout, TimeUnit unit, Promise<PingInfo> promise);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>

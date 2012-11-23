@@ -41,10 +41,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.PromisingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class StandardStream implements IStream
+public class StandardStream extends PromisingCallback<Stream> implements IStream
 {
     private static final Logger LOG = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
@@ -59,8 +60,9 @@ public class StandardStream implements IStream
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
 
-    public StandardStream(int id, byte priority, ISession session, IStream associatedStream)
+    public StandardStream(int id, byte priority, ISession session, IStream associatedStream, Promise<Stream> promise)
     {
+        super(promise);
         this.id = id;
         this.priority = priority;
         this.session = session;

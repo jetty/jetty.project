@@ -66,7 +66,7 @@ public class StandardStreamTest
     @Test
     public void testSyn()
     {
-        Stream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        Stream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null,null);
         Set<Stream> streams = new HashSet<>();
         streams.add(stream);
         when(synStreamFrame.isClose()).thenReturn(false);
@@ -100,7 +100,7 @@ public class StandardStreamTest
     @Test
     public void testSynOnClosedStream()
     {
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null,null);
         stream.updateCloseState(true, true);
         stream.updateCloseState(true, false);
         assertThat("stream expected to be closed", stream.isClosed(), is(true));
@@ -121,7 +121,7 @@ public class StandardStreamTest
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null,null);
         stream.updateWindowSize(8192);
         stream.updateCloseState(synStreamFrame.isClose(), true);
         assertThat("stream is half closed", stream.isHalfClosed(), is(true));

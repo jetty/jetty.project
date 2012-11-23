@@ -211,7 +211,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
         private HTTPStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream);
+            super(id, priority, session, associatedStream,null);
         }
 
         @Override
@@ -314,7 +314,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPPushStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream);
+            super(id, priority, session, associatedStream,null);
         }
 
         @Override

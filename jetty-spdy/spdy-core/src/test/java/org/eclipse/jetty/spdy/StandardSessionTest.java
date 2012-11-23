@@ -413,7 +413,7 @@ public class StandardSessionTest
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null,null);
         stream.updateWindowSize(8192);
         Callback.Adapter callback = new Callback.Adapter()
         {

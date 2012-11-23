@@ -18,10 +18,24 @@
 
 package org.eclipse.jetty.util;
 
+
+/* ------------------------------------------------------------ */
+/** A Callback that can fulfil a Promise.
+ * <p>When this callback is successful, it will call the 
+ * {@link Promise#succeeded(Object)} method of the wrapped Promise,
+ * passing the held result.
+ * @param <R> The type of the result for the promise.
+ */
 public class PromisingCallback<R> implements Callback
 {
     private final Promise<R> _promise;
     private final R _result;
+
+    protected PromisingCallback(Promise<R> promise)
+    {
+        _promise=promise;
+        _result=(R)this;
+    }
     
     public PromisingCallback(Promise<R> promise, R result)
     {
@@ -32,13 +46,15 @@ public class PromisingCallback<R> implements Callback
     @Override
     public void succeeded()
     {
-        _promise.succeeded(_result);
+        if (_promise!=null)
+            _promise.succeeded(_result);
     }
 
     @Override
     public void failed(Throwable x)
     {
-        _promise.failed(x);
+        if (_promise!=null)
+            _promise.failed(x);
     }
 
 }
