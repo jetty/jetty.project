@@ -217,7 +217,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 // Create a new connection, and pass a ProxyPromise to establish a proxy tunnel, if needed.
                 // Differently from the case where the connection is created explicitly by applications, here
                 // we need to do a bit more logging and keep track of the connection count in case of failures.
-                newConnection(new ProxyPromise<Connection>(promise)
+                newConnection(new ProxyPromise(promise)
                 {
                     @Override
                     public void succeeded(Connection connection)
