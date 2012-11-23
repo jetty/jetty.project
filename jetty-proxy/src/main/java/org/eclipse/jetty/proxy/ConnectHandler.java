@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;

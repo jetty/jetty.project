@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -39,6 +39,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;

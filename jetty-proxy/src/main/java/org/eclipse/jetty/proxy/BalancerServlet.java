@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.proxy;
 
 import java.net.URI;
 import java.util.ArrayList;

@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>websocket-client</artifactId>
+            <artifactId>websocket-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

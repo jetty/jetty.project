@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpParser.State;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  *

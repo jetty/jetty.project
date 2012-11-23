@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -47,7 +47,6 @@ import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

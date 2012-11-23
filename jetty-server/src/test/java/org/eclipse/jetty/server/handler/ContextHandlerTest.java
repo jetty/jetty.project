@@ -401,7 +401,8 @@ public class ContextHandlerTest
 
     private File setupTestDirectory() throws IOException
     {
-        File tmpDir = new File( System.getProperty( "basedir" ) + "/target/tmp/ContextHandlerTest" );
+        File tmpDir = new File( System.getProperty( "basedir",".") + "/target/tmp/ContextHandlerTest" );
+        tmpDir=tmpDir.getCanonicalFile();
         if (!tmpDir.exists())
             assertTrue(tmpDir.mkdirs());
         File tmp = File.createTempFile("cht",null, tmpDir );

@@ -403,6 +403,7 @@
     <module>jetty-jaas</module>
     <module>jetty-spring</module>
     <module>jetty-client</module>
+    <module>jetty-proxy</module>
     <module>jetty-jaspi</module>
     <module>jetty-osgi</module>
     <module>jetty-rewrite</module>

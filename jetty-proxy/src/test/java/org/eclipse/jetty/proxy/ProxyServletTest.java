@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.proxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

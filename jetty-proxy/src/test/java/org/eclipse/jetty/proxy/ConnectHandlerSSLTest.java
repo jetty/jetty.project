@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;

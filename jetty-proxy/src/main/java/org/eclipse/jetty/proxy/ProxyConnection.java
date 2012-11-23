@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
