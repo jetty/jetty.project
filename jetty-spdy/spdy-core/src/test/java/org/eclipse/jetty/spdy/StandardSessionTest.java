@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -73,23 +73,20 @@ public class StandardSessionTest
 {
     @Mock
     private Controller controller;
-
-    private ByteBufferPool bufferPool;
-    private Executor threadPool;
+    private ExecutorService threadPool;
     private StandardSession session;
-    private Generator generator;
     private Scheduler scheduler;
     private Fields headers;
 
     @Before
     public void setUp() throws Exception
     {
-        bufferPool = new MappedByteBufferPool();
         threadPool = Executors.newCachedThreadPool();
         scheduler = new TimerScheduler();
         scheduler.start();
-        generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
+        session = new StandardSession(SPDY.V2, bufferPool,threadPool,scheduler,controller,null,1,null, generator,new FlowControlStrategy.None());
         headers = new Fields();
     }
 
@@ -97,6 +94,7 @@ public class StandardSessionTest
     public void after() throws Exception
     {
         scheduler.stop();
+        threadPool.shutdownNow();
     }
 
     @SuppressWarnings("unchecked")
@@ -413,7 +411,7 @@ public class StandardSessionTest
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null,null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
         stream.updateWindowSize(8192);
         Callback.Adapter callback = new Callback.Adapter()
         {
@@ -492,7 +490,7 @@ public class StandardSessionTest
 
     private void assertThatPushStreamIsNotInSession(Stream pushStream)
     {
-        assertThat("pushStream is not in session",session.getStreams().contains(pushStream.getId()),not(true));
+        assertThat("pushStream is not in session",session.getStreams().contains(pushStream),not(true));
     }
 
     private void assertThatPushStreamIsInSession(Stream pushStream)

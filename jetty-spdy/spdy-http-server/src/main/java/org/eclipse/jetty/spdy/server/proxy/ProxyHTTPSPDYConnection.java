@@ -211,15 +211,14 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
         private HTTPStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream,null);
+            super(id, priority, session, associatedStream, null);
         }
 
         @Override
         public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> handler)
         {
-            // TODO is this right? comment or imple are wrong??
             // HTTP does not support pushed streams
-            handler.succeeded(this);
+            handler.succeeded(new HTTPPushStream(2, getPriority(), getSession(), this));
         }
 
         @Override
@@ -314,7 +313,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPPushStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream,null);
+            super(id, priority, session, associatedStream, null);
         }
 
         @Override

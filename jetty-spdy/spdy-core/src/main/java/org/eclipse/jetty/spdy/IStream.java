@@ -24,13 +24,14 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>The internal interface that represents a stream.</p>
  * <p>{@link IStream} contains additional methods used by a SPDY
  * implementation (and not by an application).</p>
  */
-public interface IStream extends Stream
+public interface IStream extends Stream, Callback
 {
     /**
      * <p>Senders of data frames need to know the current window size

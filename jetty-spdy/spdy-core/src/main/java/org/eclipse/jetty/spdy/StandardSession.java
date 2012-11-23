@@ -24,10 +24,8 @@ import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -172,7 +170,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             int streamId = streamIds.getAndAdd(2);
             // TODO: for SPDYv3 we need to support the "slot" argument
             SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
-            StandardStream stream = createStream(synStream, listener, true, promise);
+            IStream stream = createStream(synStream, listener, true, promise);
             generateAndEnqueueControlFrame(stream, synStream, timeout, unit, stream);
         }
         flush();
@@ -235,9 +233,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public void ping(long timeout, TimeUnit unit, Promise<PingInfo> promise)
     {
         int pingId = pingIds.getAndAdd(2);
-        PromisingPingInfoCallback pingInfo = new PromisingPingInfoCallback(pingId,promise);
-        PingFrame frame = new PingFrame(version,pingId);
-        control(null,frame,timeout,unit,pingInfo);
+        PingInfoCallback pingInfo = new PingInfoCallback(pingId, promise);
+        PingFrame frame = new PingFrame(version, pingId);
+        control(null, frame, timeout, unit, pingInfo);
     }
 
     @Override
@@ -456,7 +454,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
     private void onSyn(SynStreamFrame frame)
     {
-        IStream stream = createStream(frame, null, false,null);
+        IStream stream = createStream(frame, null, false, null);
         if (stream != null)
             processSyn(listener, stream, frame);
     }
@@ -475,12 +473,12 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             removeStream(stream);
     }
 
-    private StandardStream createStream(SynStreamFrame frame, StreamFrameListener listener, boolean local,Promise<Stream> promise)
+    private IStream createStream(SynStreamFrame frame, StreamFrameListener listener, boolean local, Promise<Stream> promise)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        StandardStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream,promise);
+        IStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream, promise);
         flowControlStrategy.onNewStream(this, stream);
-        
+
         stream.updateCloseState(frame.isClose(), local);
         stream.setStreamFrameListener(listener);
 
@@ -898,10 +896,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 return;
 
             Set<IStream> stalledStreams = null;
-            Iterator<FrameBytes> iter = queue.iterator();
-            while(iter.hasNext())
+            for (int i = 0; i < queue.size(); ++i)
             {
-                frameBytes=iter.next();
+                frameBytes = queue.get(i);
 
                 IStream stream = frameBytes.getStream();
                 if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
@@ -910,7 +907,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 buffer = frameBytes.getByteBuffer();
                 if (buffer != null)
                 {
-                    iter.remove();
+                    queue.remove(i);
                     if (stream != null && stream.isReset())
                     {
                         frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM,
@@ -924,7 +921,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                     stalledStreams = new HashSet<>();
                 if (stream != null)
                     stalledStreams.add(stream);
-                
+
                 LOG.debug("Flush stalled for {}, {} frame(s) in queue",frameBytes,queue.size());
             }
 
@@ -934,7 +931,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             flushing = true;
             LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
         }
-        write(buffer,frameBytes);
+        write(buffer, frameBytes);
     }
 
     private void append(FrameBytes frameBytes)
@@ -945,18 +942,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             failure = this.failure;
             if (failure == null)
             {
-                ListIterator<FrameBytes> iter = queue.listIterator(queue.size());
-                
-                while(iter.hasPrevious())
+                int index = queue.size();
+                while (index > 0)
                 {
-                    FrameBytes element = iter.previous();
+                    FrameBytes element = queue.get(index - 1);
                     if (element.compareTo(frameBytes) >= 0)
-                    {
-                        iter.next();
                         break;
-                    }
+                    --index;
                 }
-                iter.add(frameBytes);
+                queue.add(index, frameBytes);
             }
         }
 
@@ -972,18 +966,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             failure = this.failure;
             if (failure == null)
             {
-                ListIterator<FrameBytes> iter = queue.listIterator(0);
-                
-                while(iter.hasNext())
+                int index = 0;
+                while (index < queue.size())
                 {
-                    FrameBytes element = iter.next();
+                    FrameBytes element = queue.get(index);
                     if (element.compareTo(frameBytes) <= 0)
-                    {
-                        iter.previous();
                         break;
-                    }
+                    ++index;
                 }
-                iter.add(frameBytes);
+                queue.add(index,frameBytes);
             }
         }
 
@@ -1153,7 +1144,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             close();
             fail(new InterruptedByTimeoutException());
         }
-        
 
         @Override
         public void succeeded()
@@ -1170,9 +1160,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         @Override
         public void failed(Throwable x)
         {
-            // TODO because this is using frameBytes here, then it is not really a Promise.
-            // frameBytes is not a result, but is something known before the operation is attempted!
-
             List<FrameBytes> frameBytesToFail = new ArrayList<>();
             frameBytesToFail.add(this);
 
@@ -1245,7 +1232,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         private DataFrameBytes(IStream stream, Callback handler, DataInfo dataInfo)
         {
-            super(stream,handler);
+            super(stream, handler);
             this.dataInfo = dataInfo;
         }
 
@@ -1323,30 +1310,29 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             close();
         }
     }
-    
-    private static class PromisingPingInfoCallback extends PingInfo implements Callback
+
+    private static class PingInfoCallback extends PingInfo implements Callback
     {
-        public PromisingPingInfoCallback(int pingId,Promise<PingInfo> promise)
+        private final Promise<PingInfo> promise;
+
+        public PingInfoCallback(int pingId, Promise<PingInfo> promise)
         {
             super(pingId);
             this.promise=promise;
         }
 
-        private final Promise<PingInfo> promise;
-
         @Override
         public void succeeded()
         {
-            if (promise!=null)
+            if (promise != null)
                 promise.succeeded(this);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (promise!=null)
+            if (promise != null)
                 promise.failed(x);
         }
-        
     }
 }
