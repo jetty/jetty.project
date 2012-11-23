@@ -36,6 +36,22 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <stopPort>8087</stopPort>
+          <stopKey>foo</stopKey>
+          <scanIntervalSeconds>1</scanIntervalSeconds>
+          <systemProperties>
+            <systemProperty>
+              <name>fooprop</name>
+              <value>222</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
