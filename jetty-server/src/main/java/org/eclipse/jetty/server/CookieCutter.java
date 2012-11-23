@@ -281,8 +281,8 @@ public class CookieCutter
                 if (value!=null && name!=null)
                 {
                     // TODO handle unquoting during parsing!  But quoting is uncommon
-                    name=QuotedStringTokenizer.unquote(name);
-                    value=QuotedStringTokenizer.unquote(value);
+                    name=QuotedStringTokenizer.unquoteOnly(name);
+                    value=QuotedStringTokenizer.unquoteOnly(value);
                     
                     try
                     {
