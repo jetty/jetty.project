@@ -105,8 +105,9 @@ public class JettyBootstrapActivator implements BundleActivator
         DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
 
         // track Bundles and deploy those that represent webapps to one of the known Servers
-        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
-        _webBundleTracker.open();
+        WebBundleTrackerCustomizer customizer = new WebBundleTrackerCustomizer();
+        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, customizer);
+        customizer.setAndOpenWebBundleTracker(_webBundleTracker);
     }
 
     /**

@@ -1,4 +1,6 @@
 jetty-8.1.9-SNAPSHOT
+ + 394294 A web-bundle started before jetty-osgi should be deployed
+   as a webapp when jetty-osgi starts
 
 jetty-8.1.8.v20121106 - 06 November 2012
  + 371170 MongoSessionManager LastAccessTimeTest fails
