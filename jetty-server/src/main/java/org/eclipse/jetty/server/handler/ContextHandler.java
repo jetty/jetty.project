@@ -530,7 +530,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _requestAttributeListeners.clear();
 
         if (eventListeners!=null)
-            for (EventListener listener : _eventListeners)
+            for (EventListener listener : eventListeners)
                 addEventListener(listener);
     }
 
