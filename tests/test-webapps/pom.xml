@@ -41,6 +41,7 @@
   </build>
   <modules>
     <module>test-jetty-webapp</module>
+    <module>test-proxy-webapp</module>
     <module>test-webapp-rfc2616</module>
     <module>test-mock-resources</module>
     <module>test-servlet-spec</module>

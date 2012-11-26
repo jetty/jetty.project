@@ -551,8 +551,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     protected void initJspServlet () throws Exception
     {
-        ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
-
+        ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
+            
         /* Set the webapp's classpath for Jasper */
         ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
@@ -584,7 +584,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             //Register a listener to delete tmp files that are created as a result of this
             //servlet calling Request.getPart() or Request.getParts()
-            ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
+
+            ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
             ch.addEventListener(new Request.MultiPartCleanerListener());
         }
     }
@@ -945,9 +946,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx==null)
-                return getHeldClass().newInstance();
-            return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
+            if (ctx instanceof ServletContextHandler.Context)
+                return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
+            return getHeldClass().newInstance();
         }
         catch (ServletException se)
         {

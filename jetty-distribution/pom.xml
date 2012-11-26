@@ -103,6 +103,16 @@
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>test-proxy-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <destFileName>javadoc-proxy.war</destFileName>
+                </artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty.example-async-rest</groupId>
                   <artifactId>example-async-rest-webapp</artifactId>
                   <version>${project.version}</version>
@@ -345,6 +355,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-proxy-webapp</artifactId>
+      <type>war</type>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -378,6 +394,12 @@
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-proxy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -392,6 +414,38 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-http-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-example-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.example-async-rest</groupId>
+      <artifactId>example-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
     </dependency>
     <!--
     <dependency>
@@ -428,100 +482,4 @@
     </dependency>
     -->
   </dependencies>
-  <profiles>
-    <profile>
-      <!-- Modules that are only for JDK7+ builds -->
-      <id>JDK7-plus-modules</id>
-      <activation>
-        <jdk>[1.7,)</jdk>
-      </activation>
-      <build>
-      <plugins>
-       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-         <execution>
-            <id>copy-lib-spdy-deps</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
-            </configuration>
-          </execution>
-	  <!--
-          <execution>
-            <id>copy-spdy</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.spdy</groupId>
-                  <artifactId>spdy-example-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
-                  <destFileName>spdy.war</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-	  -->
-          <execution>
-            <id>unpack-spdy</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-              <classifier>config</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**</excludes>
-              <outputDirectory>${assembly-directory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-       </plugin>
-      </plugins>
-      </build>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.spdy</groupId>
-          <artifactId>spdy-core</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.spdy</groupId>
-          <artifactId>spdy-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.spdy</groupId>
-          <artifactId>spdy-http-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.spdy</groupId>
-          <artifactId>spdy-example-webapp</artifactId>
-          <version>${project.version}</version>
-          <type>war</type>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.example-async-rest</groupId>
-          <artifactId>example-async-rest-webapp</artifactId>
-          <version>${project.version}</version>
-          <type>war</type>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

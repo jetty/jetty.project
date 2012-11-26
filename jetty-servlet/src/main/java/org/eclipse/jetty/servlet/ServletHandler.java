@@ -19,10 +19,15 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,15 +39,20 @@ import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletSecurityElement;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.UnavailableException;
+import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -61,6 +71,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -94,7 +105,7 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     private ServletContextHandler _contextHandler;
-    private ContextHandler.Context _servletContext;
+    private ServletContext _servletContext;
     private FilterHolder[] _filters=new FilterHolder[0];
     private FilterMapping[] _filterMappings;
     private boolean _filterChainsCached=true;
@@ -128,8 +139,9 @@ public class ServletHandler extends ScopedHandler
     protected synchronized void doStart()
         throws Exception
     {
-        _servletContext=ContextHandler.getCurrentContext();
-        _contextHandler=(ServletContextHandler)(_servletContext==null?null:_servletContext.getContextHandler());
+        ContextHandler.Context context=ContextHandler.getCurrentContext();
+        _servletContext=context==null?new ContextHandler.NoContext():context;
+        _contextHandler=(ServletContextHandler)(context==null?null:context.getContextHandler());
 
         if (_contextHandler!=null)
         {
@@ -1464,4 +1476,6 @@ public class ServletHandler extends ScopedHandler
         if (_contextHandler!=null)
             _contextHandler.destroyFilter(filter);
     }
+
+
 }

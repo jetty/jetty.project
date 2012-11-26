@@ -18,40 +18,28 @@
 
 package org.eclipse.jetty;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.NCSARequestLog;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.PushStrategy;
 import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -59,15 +47,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
 
 @Ignore("Not a test case")
-public class TestServer
+public class TestTransparentProxyServer
 {
-    private static final Logger LOG = Log.getLogger(TestServer.class);
-
     public static void main(String[] args) throws Exception
     {
         ((StdErrLog)Log.getLog()).setSource(false);
 
-        String jetty_root = "..";
+        String jetty_root = "../../..";
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -133,93 +119,24 @@ public class TestServer
         spdyConnector.setIdleTimeout(15000);
         server.addConnector(spdyConnector);
         
-        
-        
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler(), requestLogHandler });
+        { contexts, new DefaultHandler() });
 
-        // Add restart handler to test the ability to save sessions and restart
-        RestartHandler restart = new RestartHandler();
-        restart.setHandler(handlers);
+        server.setHandler(handlers);
 
-        server.setHandler(restart);
-
-
-        // Setup context
-        HashLoginService login = new HashLoginService();
-        login.setName("Test Realm");
-        login.setConfig(jetty_root + "/test-jetty-webapp/src/main/config/etc/realm.properties");
-        server.addBean(login);
-
-        File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
-        NCSARequestLog requestLog = new NCSARequestLog(log.toString());
-        requestLog.setExtended(false);
-        requestLogHandler.setRequestLog(requestLog);
-
-        server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
-
+        // Setup proxy webapp
         WebAppContext webapp = new WebAppContext();
-        webapp.setParentLoaderPriority(true);
-        webapp.setResourceBase("./src/main/webapp");
-        webapp.setAttribute("testAttribute","testValue");
-        File sessiondir=File.createTempFile("sessions",null);
-        if (sessiondir.exists())
-            sessiondir.delete();
-        sessiondir.mkdir();
-        sessiondir.deleteOnExit();
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
-        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
-
+        webapp.setResourceBase("src/main/webapp");
         contexts.addHandler(webapp);
 
-        ContextHandler srcroot = new ContextHandler();
-        srcroot.setResourceBase(".");
-        srcroot.setHandler(new ResourceHandler());
-        srcroot.setContextPath("/src");
-        contexts.addHandler(srcroot);
-
+        // start server
+        server.setStopAtShutdown(true);
+        server.setSendServerVersion(true);
         server.start();
         server.join();
     }
 
-    private static class RestartHandler extends HandlerWrapper
-    {
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-         */
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            super.handle(target,baseRequest,request,response);
-            if (Boolean.valueOf(request.getParameter("restart")))
-            {
-                final Server server=getServer();
-
-                new Thread()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            Thread.sleep(100);
-                            server.stop();
-                            Thread.sleep(100);
-                            server.start();
-                        }
-                        catch(Exception e)
-                        {
-                            LOG.warn(e);
-                        }
-                    }
-                }.start();
-            }
-        }
-    }
 }

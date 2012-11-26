@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
-<!-- ============================================================= -->
-<!-- Configure the Jetty Server instance with an ID "Proxy"       -->
-<!-- by adding a proxy functionalities.                            -->
-<!-- ============================================================= -->
+<!-- ========================================================================== -->
+<!-- Configure the Jetty Server instance with an ID "Proxy"                     -->
+<!-- by adding a proxy functionalities.                                         -->
+<!-- ========================================================================== -->
 <Configure id="Proxy" class="org.eclipse.jetty.server.Server">
 
     <Arg name="threadpool">
@@ -17,7 +17,7 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">
-            <Arg name="server"><Ref id="Server" /></Arg>
+            <Arg name="server"><Ref id="Proxy" /></Arg>
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8888"/></Set>
             <Set name="idleTimeout">300000</Set>
@@ -26,24 +26,21 @@
     </Call>
 
     <Set name="handler">
-        <New class="org.eclipse.jetty.server.handler.ConnectHandler">
+        <New class="org.eclipse.jetty.proxy.ConnectHandler">
             <Set name="handler">
               <New class="org.eclipse.jetty.servlet.ServletHandler">
                 <Call id="proxyHolder" name="addServletWithMapping">
-                  <Arg>org.eclipse.jetty.servlets.ProxyServlet</Arg>
+                  <Arg>org.eclipse.jetty.proxy.ProxyServlet</Arg>
                   <Arg>/</Arg>
+		  <Call name="setInitParameter">
+		      <Arg>maxThreads</Arg>
+		      <Arg>128</Arg>
+		  </Call>
                 </Call>
               </New>
             </Set>
         </New>
     </Set>
-
-    <Ref id="proxyHolder">
-      <Call name="setInitParameter">
-          <Arg>maxThreads</Arg>
-          <Arg>128</Arg>
-      </Call>
-    </Ref>
 
     <Set name="stopAtShutdown">true</Set>
     <Set name="sendServerVersion">true</Set>

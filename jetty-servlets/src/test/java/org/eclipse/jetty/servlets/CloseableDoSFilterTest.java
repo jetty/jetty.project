@@ -38,6 +38,7 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
 
     public static class CloseableDoSFilter2 extends CloseableDoSFilter
     {
+        @Override
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
             try
