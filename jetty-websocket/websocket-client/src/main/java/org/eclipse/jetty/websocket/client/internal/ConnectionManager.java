@@ -32,14 +32,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.internal.io.WebSocketClientSelectorManager;
 
@@ -115,7 +114,7 @@ public class ConnectionManager extends ContainerLifeCycle
         }
     }
 
-    public Future<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
+    public Future<ClientUpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         SocketAddress bindAddress = client.getFactory().getBindAddress();
@@ -138,7 +137,7 @@ public class ConnectionManager extends ContainerLifeCycle
         return client;
     }
 
-    public Future<UpgradeResponse> connectVirtual(WebSocketClient client)
+    public Future<ClientUpgradeResponse> connectVirtual(WebSocketClient client)
     {
         // TODO Auto-generated method stub
         return null;

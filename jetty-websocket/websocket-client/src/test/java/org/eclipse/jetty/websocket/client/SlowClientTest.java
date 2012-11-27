@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.junit.After;
@@ -82,7 +81,7 @@ public class SlowClientTest
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection sconnection = server.accept();
         sconnection.setSoTimeout(60000);

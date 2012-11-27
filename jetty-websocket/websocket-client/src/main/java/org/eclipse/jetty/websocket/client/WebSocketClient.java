@@ -22,15 +22,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 public interface WebSocketClient
 {
-    public Future<UpgradeResponse> connect(URI websocketUri) throws IOException;
+    public Future<ClientUpgradeResponse> connect(URI websocketUri) throws IOException;
 
     public WebSocketClientFactory getFactory();
 
@@ -38,9 +36,9 @@ public interface WebSocketClient
 
     public WebSocketPolicy getPolicy();
 
-    public UpgradeRequest getUpgradeRequest();
+    public ClientUpgradeRequest getUpgradeRequest();
 
-    public UpgradeResponse getUpgradeResponse();
+    public ClientUpgradeResponse getUpgradeResponse();
 
     public EventDriver getWebSocket();
 

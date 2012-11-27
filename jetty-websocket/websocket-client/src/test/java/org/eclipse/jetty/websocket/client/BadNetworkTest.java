@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
@@ -84,7 +83,7 @@ public class BadNetworkTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();
@@ -115,7 +114,7 @@ public class BadNetworkTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();

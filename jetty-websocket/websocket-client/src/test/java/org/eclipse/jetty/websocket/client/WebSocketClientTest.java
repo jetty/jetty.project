@@ -79,7 +79,7 @@ public class WebSocketClientTest
         URI wsUri = server.getWsUri();
         UpgradeRequest request = client.getUpgradeRequest();
         request.setSubProtocols("echo");
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         final ServerConnection srvSock = server.accept();
         srvSock.upgrade();
@@ -106,7 +106,7 @@ public class WebSocketClientTest
     {
         TrackingSocket wsocket = new TrackingSocket();
         WebSocketClient client = factory.newWebSocketClient(wsocket);
-        Future<UpgradeResponse> future = client.connect(server.getWsUri());
+        Future<ClientUpgradeResponse> future = client.connect(server.getWsUri());
 
         // Server
         final ServerConnection srvSock = server.accept();
@@ -142,7 +142,7 @@ public class WebSocketClientTest
             WebSocketClient client = factSmall.newWebSocketClient(wsocket);
 
             URI wsUri = server.getWsUri();
-            Future<UpgradeResponse> future = client.connect(wsUri);
+            Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();

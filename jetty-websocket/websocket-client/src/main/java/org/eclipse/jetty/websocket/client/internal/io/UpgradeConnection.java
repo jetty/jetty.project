@@ -30,13 +30,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -58,15 +56,6 @@ public class UpgradeConnection extends AbstractConnection
     public class SendUpgradeRequest extends FutureCallback implements Runnable
     {
         @Override
-        public void succeeded()
-        {
-            // Writing the request header is complete.
-            super.succeeded();
-            // start the interest in fill
-            fillInterested();
-        }
-
-        @Override
         public void run()
         {
             URI uri = client.getWebSocketUri();
@@ -75,6 +64,15 @@ public class UpgradeConnection extends AbstractConnection
 
             ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
             getEndPoint().write(this,buf);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // Writing the request header is complete.
+            super.succeeded();
+            // start the interest in fill
+            fillInterested();
         }
     }
 
@@ -93,7 +91,7 @@ public class UpgradeConnection extends AbstractConnection
 
         try
         {
-            this.request = (ClientUpgradeRequest)client.getUpgradeRequest();
+            this.request = client.getUpgradeRequest();
         }
         catch (ClassCastException e)
         {
@@ -115,7 +113,7 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
-    private void notifyConnect(UpgradeResponse response)
+    private void notifyConnect(ClientUpgradeResponse response)
     {
         client.succeeded(response);
     }
