@@ -59,6 +59,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -84,6 +85,7 @@ import org.junit.Assert;
  */
 public class BlockheadClient implements IncomingFrames, OutgoingFrames
 {
+    private static final String REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
     private static final int BUFFER_SIZE = 8192;
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
     /** Set to true to disable timeouts (for debugging reasons) */
@@ -211,6 +213,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
         Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
         Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+
+        // Validate the Sec-WebSocket-Accept
+        Pattern patAcceptHeader = Pattern.compile("Sec-WebSocket-Accept: (.*=)",Pattern.CASE_INSENSITIVE);
+        Matcher matAcceptHeader = patAcceptHeader.matcher(respHeader);
+        Assert.assertThat("Response Header Sec-WebSocket-Accept Exists?",matAcceptHeader.find(),is(true));
+
+        String reqKey = REQUEST_HASH_KEY;
+        String expectedHash = AcceptHash.hashKey(reqKey);
+        String acceptKey = matAcceptHeader.group(1);
+
+        Assert.assertThat("Valid Sec-WebSocket-Accept Hash?",acceptKey,is(expectedHash));
 
         // collect extensions configured in response header
         List<ExtensionConfig> configs = getExtensionConfigs(respHeader);
@@ -460,7 +473,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         req.append("\r\n");
         req.append("Upgrade: websocket\r\n");
         req.append("Connection: Upgrade\r\n");
-        req.append("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n");
+        req.append("Sec-WebSocket-Key: ").append(REQUEST_HASH_KEY).append("\r\n");
         req.append("Sec-WebSocket-Origin: ").append(destWebsocketURI.toASCIIString()).append("\r\n");
         if (StringUtil.isNotBlank(protocols))
         {
