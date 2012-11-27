@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.*;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -126,6 +127,45 @@ public class WebSocketClientTest
         wsocket.awaitMessage(1,TimeUnit.MILLISECONDS,500);
 
         wsocket.assertMessage("Hello World");
+    }
+
+    @Test
+    public void testLocalRemoteAddress() throws Exception
+    {
+        WebSocketClientFactory fact = new WebSocketClientFactory();
+        fact.start();
+        try
+        {
+            TrackingSocket wsocket = new TrackingSocket();
+            WebSocketClient client = fact.newWebSocketClient(wsocket);
+
+            URI wsUri = server.getWsUri();
+            Future<ClientUpgradeResponse> future = client.connect(wsUri);
+
+            ServerConnection ssocket = server.accept();
+            ssocket.upgrade();
+
+            future.get(500,TimeUnit.MILLISECONDS);
+
+            Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+
+            InetSocketAddress local = wsocket.getConnection().getLocalAddress();
+            InetSocketAddress remote = wsocket.getConnection().getRemoteAddress();
+
+            Assert.assertThat("Local Socket Address",local,notNullValue());
+            Assert.assertThat("Remote Socket Address",remote,notNullValue());
+
+            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
+            Assert.assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
+            Assert.assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
+
+            Assert.assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
+            Assert.assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
+        }
+        finally
+        {
+            fact.stop();
+        }
     }
 
     @Test
