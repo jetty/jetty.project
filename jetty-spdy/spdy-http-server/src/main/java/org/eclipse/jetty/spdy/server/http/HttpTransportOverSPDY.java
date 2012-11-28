@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -32,10 +34,12 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,6 +60,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final Stream stream;
     private final Fields requestHeaders;
     private final BlockingCallback streamBlocker = new BlockingCallback();
+    private final AtomicBoolean committed = new AtomicBoolean();
 
     public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
@@ -71,9 +76,9 @@ public class HttpTransportOverSPDY implements HttpTransport
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("send  {} {} {} {} last={}%n",this,stream,info,BufferUtil.toDetailString(content),lastContent);
+            LOG.debug("send  {} {} {} {} last={}",this,stream,info,BufferUtil.toDetailString(content),lastContent);
 
-        if (stream.isClosed() || stream.isReset() )
+        if (stream.isClosed() || stream.isReset())
         {        
             callback.failed(new EofException("stream closed"));
             return;
@@ -93,6 +98,11 @@ public class HttpTransportOverSPDY implements HttpTransport
         
         if (info!=null)
         {
+            if(!committed.compareAndSet(false, true)){
+                callback.failed(new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
+                        "Stream already committed!"));
+                return;
+            }
             short version = stream.getSession().getVersion();
             Fields headers = new Fields();
 
@@ -157,20 +167,16 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
     {
         send(info,content,lastContent,streamBlocker);
         try
         {
             streamBlocker.block();
         }
-        catch (IOException e)
+        catch (InterruptedException | TimeoutException | IOException e)
         {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new EofException(e);
+            LOG.debug(e);
         }
     }
 
