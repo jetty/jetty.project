@@ -258,11 +258,6 @@
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.drafts</groupId>
-      <artifactId>javax.websocket-api</artifactId>
-      <scope>runtime</scope>
-    </dependency>
     
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>

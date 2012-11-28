@@ -22,10 +22,9 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
 /**
  * For working with the {@link WebSocketConnection} in a blocking technique.
@@ -50,8 +49,8 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<SendResult> blocker = conn.write(data,offset,length);
-            SendResult result = blocker.get(); // block till finished
+            Future<WriteResult> blocker = conn.write(data,offset,length);
+            WriteResult result = blocker.get(); // block till finished
             if (result.getException() != null)
             {
                 throw new WebSocketException(result.getException());
@@ -76,8 +75,8 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<SendResult> blocker = conn.write(message);
-            SendResult result = blocker.get(); // block till finished
+            Future<WriteResult> blocker = conn.write(message);
+            WriteResult result = blocker.get(); // block till finished
             if (result.getException() != null)
             {
                 throw new WebSocketException(result.getException());

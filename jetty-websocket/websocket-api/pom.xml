@@ -16,10 +16,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.drafts</groupId>
-      <artifactId>javax.websocket-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>

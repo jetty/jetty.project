@@ -24,8 +24,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 /**
  * Connection interface for WebSocket protocol <a href="https://tools.ietf.org/html/rfc6455">RFC-6455</a>.
  */
@@ -116,24 +114,17 @@ public interface WebSocketConnection
     SuspendToken suspend();
 
     /**
-     * Send a a binary message.
-     * <p>
-     * NIO style with callbacks, allows for concurrent results of the write operation.
+     * Send an async binary message.
      */
-    Future<SendResult> write(byte buf[], int offset, int len) throws IOException;
+    Future<WriteResult> write(byte buf[], int offset, int len) throws IOException;
 
     /**
-     * Send a a binary message.
-     * <p>
-     * NIO style with callbacks, allows for concurrent results of the write operation.
+     * Send an async binary message.
      */
-    Future<SendResult> write(ByteBuffer buffer) throws IOException;
+    Future<WriteResult> write(ByteBuffer buffer) throws IOException;
 
     /**
-     * Send a series of text messages.
-     * <p>
-     * NIO style with callbacks, allows for concurrent results of the entire write operation. (Callback is only called once at the end of processing all of the
-     * messages)
+     * Send an async text messages.
      */
-    Future<SendResult> write(String message) throws IOException;
+    Future<WriteResult> write(String message) throws IOException;
 }

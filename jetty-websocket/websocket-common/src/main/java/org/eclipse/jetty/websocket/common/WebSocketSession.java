@@ -23,22 +23,10 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
-
-import javax.net.websocket.ClientContainer;
-import javax.net.websocket.CloseReason;
-import javax.net.websocket.ContainerProvider;
-import javax.net.websocket.Encoder;
-import javax.net.websocket.MessageHandler;
-import javax.net.websocket.RemoteEndpoint;
-import javax.net.websocket.SendResult;
-import javax.net.websocket.Session;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -49,10 +37,14 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -60,14 +52,12 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 @ManagedObject
-public class WebSocketSession extends ContainerLifeCycle implements Session<Object>, WebSocketConnection, IncomingFrames
+public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketConnection, IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
-    private Set<MessageHandler> messageHandlers = new HashSet<>();
-    private List<Encoder> encoders = new ArrayList<>();
     private ExtensionFactory extensionFactory;
     private boolean active = false;
     private long maximumMessageSize;
@@ -113,21 +103,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     }
 
     @Override
-    public void addMessageHandler(MessageHandler listener)
-    {
-        messageHandlers.add(listener);
-    }
-
-    @Override
     public void close() throws IOException
     {
         connection.close();
     }
 
     @Override
-    public void close(CloseReason closeStatus) throws IOException
+    public void close(CloseStatus closeStatus) throws IOException
     {
-        connection.close(closeStatus.getCloseCode().getCode(),closeStatus.getReasonPhrase());
+        connection.close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
@@ -166,21 +150,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
         return connection;
     }
 
-    @Override
-    public ClientContainer getContainer()
-    {
-        return ContainerProvider.getClientContainer();
-    }
-
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
-    }
-
-    @Override
-    public long getInactiveTime()
-    {
-        return inactiveTime;
     }
 
     @ManagedAttribute(readonly = true)
@@ -202,12 +174,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     }
 
     @Override
-    public Set<MessageHandler> getMessageHandlers()
-    {
-        return Collections.unmodifiableSet(messageHandlers);
-    }
-
-    @Override
     public List<String> getNegotiatedExtensions()
     {
         return negotiatedExtensions;
@@ -223,12 +189,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     public OutgoingFrames getOutgoingHandler()
     {
         return outgoingHandler;
-    }
-
-    @Override
-    public Map<String, String[]> getParameterMap()
-    {
-        return parameterMap;
     }
 
     @Override
@@ -250,20 +210,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     }
 
     @Override
-    public RemoteEndpoint<Object> getRemote()
+    public RemoteEndpoint getRemote()
     {
         if (!isOpen())
         {
             throw new WebSocketException("Session has not been opened yet");
         }
         return remote;
-    }
-
-    @Override
-    public RemoteEndpoint<Object> getRemote(Class<Object> c)
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     @Override
@@ -374,25 +327,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
         remote.sendPing(buf);
     }
 
-    @Override
-    public void removeMessageHandler(MessageHandler listener)
-    {
-        messageHandlers.remove(listener);
-    }
-
     public void setActive(boolean active)
     {
         this.active = active;
-    }
-
-    @Override
-    public void setEncoders(List<Encoder> encoders)
-    {
-        this.encoders.clear();
-        if (encoders != null)
-        {
-            encoders.addAll(encoders);
-        }
     }
 
     public void setExtensionFactory(ExtensionFactory extensionFactory)
@@ -458,20 +395,20 @@ public class WebSocketSession extends ContainerLifeCycle implements Session<Obje
     }
 
     @Override
-    public Future<SendResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
     {
-        return remote.sendBytes(ByteBuffer.wrap(buf,offset,len),null);
+        return remote.sendBytesByFuture(ByteBuffer.wrap(buf,offset,len));
     }
 
     @Override
-    public Future<SendResult> write(ByteBuffer buffer) throws IOException
+    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
     {
-        return remote.sendBytes(buffer,null);
+        return remote.sendBytesByFuture(buffer);
     }
 
     @Override
-    public Future<SendResult> write(String message) throws IOException
+    public Future<WriteResult> write(String message) throws IOException
     {
-        return remote.sendString(message,null);
+        return remote.sendStringByFuture(message);
     }
 }

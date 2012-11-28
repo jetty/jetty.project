@@ -23,13 +23,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.net.websocket.SendResult;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
-public class JavaxWebsocketFuture implements Future<SendResult>
+public class WriteResultFuture implements Future<WriteResult>
 {
     private final FrameBytes bytes;
 
-    public JavaxWebsocketFuture(FrameBytes bytes)
+    public WriteResultFuture(FrameBytes bytes)
     {
         this.bytes = bytes;
     }
@@ -41,30 +41,30 @@ public class JavaxWebsocketFuture implements Future<SendResult>
     }
 
     @Override
-    public SendResult get() throws InterruptedException, ExecutionException
+    public WriteResult get() throws InterruptedException, ExecutionException
     {
         try
         {
             bytes.get();
-            return new SendResult();
+            return new WriteResult();
         }
         catch (ExecutionException e)
         {
-            return new SendResult(e.getCause());
+            return new WriteResult(e.getCause());
         }
     }
 
     @Override
-    public SendResult get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+    public WriteResult get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
         try
         {
             bytes.get(timeout,unit);
-            return new SendResult();
+            return new WriteResult();
         }
         catch (ExecutionException e)
         {
-            return new SendResult(e.getCause());
+            return new WriteResult(e.getCause());
         }
     }
 

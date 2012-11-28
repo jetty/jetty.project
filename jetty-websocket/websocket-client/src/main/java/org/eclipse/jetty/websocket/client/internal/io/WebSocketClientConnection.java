@@ -23,9 +23,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
@@ -89,7 +88,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     };
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         if (frame instanceof WebSocketFrame)
         {

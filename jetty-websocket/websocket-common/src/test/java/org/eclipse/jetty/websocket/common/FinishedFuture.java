@@ -22,20 +22,20 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import javax.net.websocket.SendResult;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
-public class FinishedFuture extends FutureTask<SendResult> implements Future<SendResult>
+public class FinishedFuture extends FutureTask<WriteResult> implements Future<WriteResult>
 {
-    public static Future<SendResult> INSTANCE;
+    public static Future<WriteResult> INSTANCE;
 
     static
     {
-        Callable<SendResult> callable = new Callable<SendResult>()
+        Callable<WriteResult> callable = new Callable<WriteResult>()
         {
             @Override
-            public SendResult call() throws Exception
+            public WriteResult call() throws Exception
             {
-                return new SendResult();
+                return new WriteResult();
             }
         };
 
@@ -45,7 +45,7 @@ public class FinishedFuture extends FutureTask<SendResult> implements Future<Sen
         INSTANCE = fut;
     }
 
-    public FinishedFuture(Callable<SendResult> callable)
+    public FinishedFuture(Callable<WriteResult> callable)
     {
         super(callable);
     }

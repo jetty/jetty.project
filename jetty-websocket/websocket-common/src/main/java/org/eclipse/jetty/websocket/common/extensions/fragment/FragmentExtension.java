@@ -23,9 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -54,7 +53,7 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         if (frame.getType().isControl())
         {

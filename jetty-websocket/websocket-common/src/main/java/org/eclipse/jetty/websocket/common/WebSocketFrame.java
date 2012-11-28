@@ -20,9 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
-import javax.net.websocket.SendHandler;
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -107,14 +104,6 @@ public class WebSocketFrame implements Frame
     private Type type;
     private boolean continuation = false;
     private int continuationIndex = 0;
-    /**
-     * Optional operation.
-     * <p>
-     * Hack, should not really be in the WebSocketFrame, send results back to this handler when frame was successfully sent (or not).
-     * <p>
-     * Kept in WebSocketFrame as a result of the [006EDR] of JavaWebSocket API lacking the ability to track this SendHandler through Extensions.
-     */
-    private SendHandler sendHandler;
 
     /**
      * Default constructor
@@ -278,6 +267,7 @@ public class WebSocketFrame implements Frame
         return mask;
     }
 
+    @Override
     public final byte getOpCode()
     {
         return opcode;
@@ -331,11 +321,6 @@ public class WebSocketFrame implements Frame
             return -1;
         }
         return payloadStart;
-    }
-
-    public SendHandler getSendHandler()
-    {
-        return sendHandler;
     }
 
     @Override
@@ -405,26 +390,6 @@ public class WebSocketFrame implements Frame
     public boolean isRsv3()
     {
         return rsv3;
-    }
-
-    @Override
-    public void notifySendFailed(Throwable t)
-    {
-        if (sendHandler == null)
-        {
-            return;
-        }
-        sendHandler.setResult(new SendResult(t));
-    }
-
-    @Override
-    public void notifySendSuccess()
-    {
-        if (sendHandler == null)
-        {
-            return;
-        }
-        sendHandler.setResult(new SendResult(null));
     }
 
     /**
@@ -633,11 +598,6 @@ public class WebSocketFrame implements Frame
         return this;
     }
 
-    public void setSendHandler(SendHandler handler)
-    {
-        this.sendHandler = handler;
-    }
-
     @Override
     public String toString()
     {
@@ -655,10 +615,6 @@ public class WebSocketFrame implements Frame
         b.append(",payloadStart=").append(getPayloadStart());
         b.append(",remaining=").append(remaining());
         b.append(",position=").append(position());
-        if (sendHandler != null)
-        {
-            b.append(",sendHandler=").append(sendHandler);
-        }
         b.append(']');
         return b.toString();
     }

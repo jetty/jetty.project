@@ -21,10 +21,9 @@ package org.eclipse.jetty.websocket.common.extensions;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.FinishedFuture;
@@ -43,7 +42,7 @@ public class DummyOutgoingFrames implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         LOG.debug("outgoingFrame({})",frame);
         return FinishedFuture.INSTANCE;

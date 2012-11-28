@@ -52,19 +52,6 @@ public abstract class FrameBytes extends FutureCallback implements Runnable
     }
 
     @Override
-    public void succeeded()
-    {
-        super.succeeded();
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("completed() - {}",this.getClass().getName());
-        }
-        cancelTask();
-        connection.complete(this);
-        frame.notifySendSuccess();
-    }
-
-    @Override
     public void failed(Throwable x)
     {
         super.failed(x);
@@ -78,7 +65,6 @@ public abstract class FrameBytes extends FutureCallback implements Runnable
             LOG.warn("failed()",x);
         }
         cancelTask();
-        frame.notifySendFailed(x);
     }
 
     public abstract ByteBuffer getByteBuffer();
@@ -89,6 +75,18 @@ public abstract class FrameBytes extends FutureCallback implements Runnable
         // If this occurs we had a timeout!
         connection.close();
         failed(new InterruptedByTimeoutException());
+    }
+
+    @Override
+    public void succeeded()
+    {
+        super.succeeded();
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("completed() - {}",this.getClass().getName());
+        }
+        cancelTask();
+        connection.complete(this);
     }
 
     @Override

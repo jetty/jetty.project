@@ -21,8 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
@@ -50,7 +49,7 @@ public abstract class AbstractMuxExtension extends AbstractExtension
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         /* do nothing */
         return null;

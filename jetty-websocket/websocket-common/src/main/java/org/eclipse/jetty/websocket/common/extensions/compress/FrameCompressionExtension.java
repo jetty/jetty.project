@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -95,7 +94,7 @@ public class FrameCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         if (frame.getType().isControl())
         {
@@ -103,7 +102,7 @@ public class FrameCompressionExtension extends AbstractExtension
             return nextOutgoingFrame(frame);
         }
 
-        Future<SendResult> future = null;
+        Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
         try

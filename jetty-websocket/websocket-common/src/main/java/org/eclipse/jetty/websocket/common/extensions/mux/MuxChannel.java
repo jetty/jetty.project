@@ -25,8 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -34,6 +32,7 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -256,7 +255,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
      * Frames destined for the Muxer
      */
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         return muxer.output(channelId,frame);
     }
@@ -309,7 +308,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public Future<SendResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
     {
         return outgoingFrame(WebSocketFrame.binary().setPayload(buf,offset,len));
     }
@@ -318,7 +317,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public Future<SendResult> write(ByteBuffer buffer) throws IOException
+    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
     {
         return outgoingFrame(WebSocketFrame.binary().setPayload(buffer));
     }
@@ -327,7 +326,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
      * Generate a text message, destined for Muxer
      */
     @Override
-    public Future<SendResult> write(String message) throws IOException
+    public Future<WriteResult> write(String message) throws IOException
     {
         return outgoingFrame(WebSocketFrame.text(message));
     }

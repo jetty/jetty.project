@@ -21,11 +21,10 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -72,7 +71,7 @@ public class FramePipes
         }
 
         @Override
-        public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+        public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
         {
             this.incoming.incomingFrame(frame);
 

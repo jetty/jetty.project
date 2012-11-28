@@ -22,11 +22,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -57,7 +56,7 @@ public class MuxGenerator
         this.bufferPool = bufferPool;
     }
 
-    public Future<SendResult> generate(long channelId, Frame frame) throws IOException
+    public Future<WriteResult> generate(long channelId, Frame frame) throws IOException
     {
         ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
         BufferUtil.flipToFill(muxPayload);

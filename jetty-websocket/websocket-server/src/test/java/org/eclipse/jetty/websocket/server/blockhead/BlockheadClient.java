@@ -43,7 +43,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.websocket.SendResult;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -55,6 +54,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -358,7 +358,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         ByteBuffer buf = generator.generate(frame);
         if (LOG.isDebugEnabled())

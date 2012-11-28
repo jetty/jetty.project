@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.common.extensions;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -31,6 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -182,7 +181,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         this.nextIncoming.incomingFrame(frame);
     }
 
-    protected Future<SendResult> nextOutgoingFrame(Frame frame) throws IOException
+    protected Future<WriteResult> nextOutgoingFrame(Frame frame) throws IOException
     {
         log.debug("nextOutgoingFrame({})",frame);
         return this.nextOutgoing.outgoingFrame(frame);

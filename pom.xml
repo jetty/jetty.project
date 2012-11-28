@@ -156,6 +156,8 @@
                   <!-- allowed combinations -->
                   <includes>
                     <include>org.apache.geronimo.specs:geronimo-atinject_1.0_spec:jar:*</include>
+                    <include>javax.net.websocket:*:*:*</include>
+                    <include>javax.websocket:*:*:*</include>
                     <include>javax.servlet:*:*:*:provided</include>
                     <include>javax.servlet.jsp:*:*:*:provided</include>
                   </includes>
@@ -495,13 +497,6 @@
         <version>3.7.1</version>
       </dependency>
         -->
-
-      <!-- Draft Deps -->
-      <dependency>
-        <groupId>org.eclipse.jetty.drafts</groupId>
-        <artifactId>javax.websocket-api</artifactId>
-        <version>0.0.006.draft</version>
-      </dependency>
 
       <!-- Old Deps -->
       <dependency>

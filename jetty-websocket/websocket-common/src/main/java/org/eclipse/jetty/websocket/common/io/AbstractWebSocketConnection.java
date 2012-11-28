@@ -28,8 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -43,6 +41,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -393,14 +392,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("outgoingFrame({})",frame);
         }
 
-        Future<SendResult> future = null;
+        Future<WriteResult> future = null;
 
         synchronized (queue)
         {
@@ -415,7 +414,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 bytes = new DataFrameBytes(this,frame);
             }
 
-            future = new JavaxWebsocketFuture(bytes);
+            future = new WriteResultFuture(bytes);
 
             scheduleTimeout(bytes);
 

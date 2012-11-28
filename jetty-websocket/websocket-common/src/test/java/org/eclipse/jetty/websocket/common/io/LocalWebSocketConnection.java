@@ -24,12 +24,11 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -181,7 +180,7 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         return null;
     }
@@ -225,19 +224,19 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public Future<SendResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
     {
         return null;
     }
 
     @Override
-    public Future<SendResult> write(ByteBuffer buffer) throws IOException
+    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
     {
         return null;
     }
 
     @Override
-    public Future<SendResult> write(String message) throws IOException
+    public Future<WriteResult> write(String message) throws IOException
     {
         return null;
     }

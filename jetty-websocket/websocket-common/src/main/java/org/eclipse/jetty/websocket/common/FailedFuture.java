@@ -22,37 +22,29 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import javax.net.websocket.SendHandler;
-import javax.net.websocket.SendResult;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
-public class FailedFuture extends FutureTask<SendResult> implements Future<SendResult>
+public class FailedFuture extends FutureTask<WriteResult> implements Future<WriteResult>
 {
-    private static class FailedRunner implements Callable<SendResult>
+    private static class FailedRunner implements Callable<WriteResult>
     {
-        private SendHandler completion;
         private Throwable error;
 
-        public FailedRunner(SendHandler completion, Throwable error)
+        public FailedRunner(Throwable error)
         {
-            this.completion = completion;
             this.error = error;
         }
 
         @Override
-        public SendResult call() throws Exception
+        public WriteResult call() throws Exception
         {
-            SendResult result = new SendResult(this.error);
-            if (completion != null)
-            {
-                completion.setResult(result);
-            }
-            return result;
+            return new WriteResult(this.error);
         }
     }
 
-    public FailedFuture(SendHandler completion, Throwable error)
+    public FailedFuture(Throwable error)
     {
-        super(new FailedRunner(completion,error));
+        super(new FailedRunner(error));
         run();
     }
 }

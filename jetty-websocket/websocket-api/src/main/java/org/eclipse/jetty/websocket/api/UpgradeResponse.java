@@ -25,12 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.net.websocket.HandshakeResponse;
-
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
-public class UpgradeResponse implements HandshakeResponse
+public class UpgradeResponse
 {
     public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
     private int statusCode;
@@ -110,7 +108,6 @@ public class UpgradeResponse implements HandshakeResponse
         return headers.keySet();
     }
 
-    @Override
     public Map<String, List<String>> getHeaders()
     {
         return headers;
@@ -149,7 +146,7 @@ public class UpgradeResponse implements HandshakeResponse
      */
     public void sendForbidden(String message) throws IOException
     {
-
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**

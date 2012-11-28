@@ -20,18 +20,15 @@ package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
 import java.net.URI;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.websocket.HandshakeRequest;
-
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
-public class UpgradeRequest implements HandshakeRequest
+public class UpgradeRequest
 {
     private URI requestURI;
     private List<String> subProtocols = new ArrayList<>();
@@ -39,7 +36,6 @@ public class UpgradeRequest implements HandshakeRequest
     private List<HttpCookie> cookies = new ArrayList<>();
     private Map<String, List<String>> headers = new HashMap<>();
     private Object session;
-    private Principal userPrincipal;
     private String httpVersion;
     private String method;
     private String host;
@@ -142,7 +138,6 @@ public class UpgradeRequest implements HandshakeRequest
         throw new NumberFormatException("Cannot convert multi-value header into int");
     }
 
-    @Override
     public Map<String, List<String>> getHeaders()
     {
         return headers;
@@ -173,26 +168,22 @@ public class UpgradeRequest implements HandshakeRequest
         return getHeader("Origin");
     }
 
-    @Override
     public Map<String, String[]> getParameterMap()
     {
         // TODO Auto-generated method stub
         return null;
     }
 
-    @Override
     public String getQueryString()
     {
         return requestURI.getQuery();
     }
 
-    @Override
     public URI getRequestURI()
     {
         return requestURI;
     }
 
-    @Override
     public Object getSession()
     {
         return session;
@@ -201,12 +192,6 @@ public class UpgradeRequest implements HandshakeRequest
     public List<String> getSubProtocols()
     {
         return subProtocols;
-    }
-
-    @Override
-    public Principal getUserPrincipal()
-    {
-        return userPrincipal;
     }
 
     public boolean hasSubProtocol(String test)
@@ -224,12 +209,6 @@ public class UpgradeRequest implements HandshakeRequest
     public boolean isOrigin(String test)
     {
         return test.equalsIgnoreCase(getOrigin());
-    }
-
-    @Override
-    public boolean isUserInRole(String role)
-    {
-        return false;
     }
 
     public void setCookies(List<HttpCookie> cookies)
@@ -293,10 +272,5 @@ public class UpgradeRequest implements HandshakeRequest
         {
             this.subProtocols.add(protocol);
         }
-    }
-
-    public void setUserPrincipal(Principal userPrincipal)
-    {
-        this.userPrincipal = userPrincipal;
     }
 }

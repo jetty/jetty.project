@@ -21,12 +21,12 @@ package org.eclipse.jetty.websocket.api.extensions;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
 /**
  * Interface for dealing with frames outgoing to the network (eventually)
  */
 public interface OutgoingFrames
 {
-    Future<SendResult> outgoingFrame(Frame frame) throws IOException;
+    Future<WriteResult> outgoingFrame(Frame frame) throws IOException;
 }

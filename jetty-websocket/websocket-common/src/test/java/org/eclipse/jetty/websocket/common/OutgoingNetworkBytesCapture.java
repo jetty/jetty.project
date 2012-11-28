@@ -27,10 +27,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
@@ -63,7 +62,7 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         ByteBuffer buf = generator.generate(frame);
         captured.add(buf.slice());

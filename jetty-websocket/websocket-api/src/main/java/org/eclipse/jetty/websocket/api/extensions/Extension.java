@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
-import javax.net.websocket.extensions.FrameHandler;
-
 /**
  * Interface for WebSocket Extensions.
  * <p>

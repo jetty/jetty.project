@@ -23,9 +23,8 @@ import static org.hamcrest.Matchers.*;
 import java.util.LinkedList;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
@@ -84,7 +83,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame)
+    public Future<WriteResult> outgoingFrame(Frame frame)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);

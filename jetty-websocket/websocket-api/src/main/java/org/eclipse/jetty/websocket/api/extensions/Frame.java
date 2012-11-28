@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 /**
  * An immutable websocket frame.
  */
-public interface Frame extends javax.net.websocket.extensions.Frame
+public interface Frame
 {
     public static enum Type
     {
@@ -107,10 +107,6 @@ public interface Frame extends javax.net.websocket.extensions.Frame
     public boolean isRsv2();
 
     public boolean isRsv3();
-
-    public void notifySendFailed(Throwable t);
-
-    public void notifySendSuccess();
 
     public int remaining();
 }

@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -36,6 +34,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -385,7 +384,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     /**
      * Outgoing frame, without mux encapsulated payload.
      */
-    public Future<SendResult> output(long channelId, Frame frame) throws IOException
+    public Future<WriteResult> output(long channelId, Frame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {

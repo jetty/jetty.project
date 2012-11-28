@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.concurrent.Future;
 
-import javax.net.websocket.SendResult;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -94,7 +93,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<SendResult> outgoingFrame(Frame frame) throws IOException
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);
