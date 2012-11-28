@@ -48,6 +48,8 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
     {
         final CountDownLatch slowServerLatch = new CountDownLatch(1);
         final CountDownLatch fastServerLatch = new CountDownLatch(1);
+        final String fastPath = "/fast";
+        final String slowPath = "/slow";
         Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
@@ -59,11 +61,11 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
                     request.setHandled(true);
                     switch (target)
                     {
-                        case "/slow":
+                        case slowPath:
                             Assert.assertTrue(fastServerLatch.await(10, TimeUnit.SECONDS));
                             slowServerLatch.countDown();
                             break;
-                        case "/fast":
+                        case fastPath:
                             fastServerLatch.countDown();
                             break;
                         default:
@@ -79,11 +81,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
         }), null);
 
         // Perform slow request. This will wait on server side until the fast request wakes it up
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/slow");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders(slowPath);
         final CountDownLatch slowClientLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -97,11 +95,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
         });
 
         // Perform the fast request. This will wake up the slow request
-        headers.clear();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), "/fast");
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        headers = createHeaders(fastPath);
         final CountDownLatch fastClientLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -118,5 +112,15 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(slowServerLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(fastClientLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(slowClientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private Fields createHeaders(String path)
+    {
+        Fields headers = new Fields();
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        return headers;
     }
 }

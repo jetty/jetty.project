@@ -18,15 +18,18 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -45,7 +48,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,6 +81,7 @@ public class HttpTransportOverSPDYTest
     {
         httpTransportOverSPDY = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy,
                 stream, new Fields());
+        when(responseInfo.getStatus()).thenReturn(HttpStatus.OK_200);
         when(stream.getSession()).thenReturn(session);
         when(session.getVersion()).thenReturn(SPDY.V3);
         when(stream.isClosed()).thenReturn(false);
@@ -169,7 +172,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = null;
         boolean lastContent = true;
         
-        // when stream.isClosed() is called a 2nd time, the teply has closed the stream already
+        // when stream.isClosed() is called a 2nd time, the reply has closed the stream already
         when(stream.isClosed()).thenReturn(false).thenReturn(true);
 
         httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
@@ -232,6 +235,23 @@ public class HttpTransportOverSPDYTest
         verify(stream, times(1)).data(dataInfoCaptor.capture(), anyLong(), any(TimeUnit.class), any(Callback.class));
         assertThat("lastContent is false", dataInfoCaptor.getValue().isClose(), is(false));
         assertThat("ByteBuffer length is 4096", dataInfoCaptor.getValue().length(), is(4096));
+    }
+
+    @Test
+    public void testVerifyThatAStreamIsNotCommittedTwice() throws IOException
+    {
+        ByteBuffer content = createRandomByteBuffer();
+        boolean lastContent = false;
+
+        httpTransportOverSPDY.send(responseInfo,content,lastContent, callback);
+        ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
+        verify(stream, times(1)).reply(replyInfoCaptor.capture());
+        assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
+
+        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null,true);
+
+        verify(stream, times(0)).data(any(DataInfo.class));
+        verify(stream, times(1)).data(any(DataInfo.class), anyLong(), any(TimeUnit.class), any(Callback.class));
     }
 
     private ByteBuffer createRandomByteBuffer()
