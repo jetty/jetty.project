@@ -1060,15 +1060,19 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             execute(new Runnable()
             {
                 @Override
-                public void run() { callback.succeeded() ; }
+                public void run()
+                {
+                    callback.succeeded();
+                    flush();
+                }
             });
-
         }
 
         @Override
         public void call(Callback callback)
         {
             callback.succeeded();
+            flush();
         }
     }
 
