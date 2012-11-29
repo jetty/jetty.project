@@ -50,7 +50,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testInvalidUrl() throws Exception
     {
         _rule.setCode("404");
-        _request.setRequestURI("/invalid\u000c/uri.html");
+        _request.setRequestURI("/invalid%0c/uri.html");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -58,12 +58,23 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     }
 
     @Test
+    public void testInvalidUrl2() throws Exception
+    {
+        _rule.setCode("404");
+        _request.setRequestURI("/%00/");
+        
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertEquals(404,_response.getStatus());
+    }
+    
+    @Test
     public void testCharacters() throws Exception
     {
         // space
-        Assert.assertTrue( _rule.isPrintableChar("\u0020".charAt(0)));
+        Assert.assertTrue( _rule.isValidChar("\u0020".charAt(0)));
         // form feed
-        Assert.assertFalse( _rule.isPrintableChar("\u000c".charAt(0)));
+        Assert.assertFalse( _rule.isValidChar("\u000c".charAt(0)));
     }
 }
 

@@ -23,6 +23,8 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.URIUtil;
+
 public class ValidUrlRule extends Rule
 {
     String _code = "400";
@@ -60,11 +62,12 @@ public class ValidUrlRule extends Rule
     @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        String uri = request.getRequestURI();
-
+        // best to decide the request uri and validate that
+        String uri = URIUtil.decodePath(request.getRequestURI());
+        
         for (int i = 0; i < uri.length(); ++i)
         {
-            if (!isPrintableChar(uri.charAt(i)))
+            if (!isValidChar(uri.charAt(i)))
             {
                 int code = Integer.parseInt(_code);
 
@@ -85,7 +88,7 @@ public class ValidUrlRule extends Rule
         return null;
     }
 
-    protected boolean isPrintableChar(char c)
+    protected boolean isValidChar(char c)
     {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
         
