@@ -161,7 +161,8 @@
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
-          <execution>
+
+            <execution>
             <id>copy-orbit-servlet-api-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -179,46 +180,60 @@
                 </artifactItem>
               </artifactItems>
             </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-spdy-deps</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-orbit-lib-annotations-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-orbit-lib-jta-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.transaction</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jta</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
+            </execution>
+            <execution>
+                <id>unpack-spdy</id>
+                <phase>process-resources</phase>
+                <goals>
+                    <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                    <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+                    <classifier>config</classifier>
+                    <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                    <excludes>META-INF/**</excludes>
+                    <outputDirectory>${assembly-directory}</outputDirectory>
+                </configuration>
+            </execution>
+            <execution>
+                <id>copy-lib-spdy-deps</id>
+                <phase>process-resources</phase>
+                <goals>
+                    <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                    <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+                    <includeTypes>jar</includeTypes>
+                    <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
+                </configuration>
+            </execution>
+            <execution>
+                <id>copy-orbit-lib-annotations-deps</id>
+                <phase>generate-resources</phase>
+                <goals>
+                    <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                    <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+                    <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+                    <includeTypes>jar</includeTypes>
+                    <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+                </configuration>
+            </execution>
+            <execution>
+                <id>copy-orbit-lib-jta-deps</id>
+                <phase>generate-resources</phase>
+                <goals>
+                    <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                    <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+                    <includeArtifactIds>javax.transaction</includeArtifactIds>
+                    <includeTypes>jar</includeTypes>
+                    <outputDirectory>${assembly-directory}/lib/jta</outputDirectory>
+                </configuration>
+            </execution>
+            <execution>
             <id>copy-orbit-lib-jndi-deps</id>
             <phase>generate-resources</phase>
             <goals>
