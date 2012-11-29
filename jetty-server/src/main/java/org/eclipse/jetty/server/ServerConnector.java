@@ -92,7 +92,8 @@ public class ServerConnector extends AbstractNetworkConnector
     
     /* ------------------------------------------------------------ */
     /** Set the Server instance to be used with {@link #ServerConnector()}
-     * by callers from this thread.
+     * by callers from this thread. After use, the thread server should be
+     * set to null to avoid leaking the server.
      * @param server The server
      */
     public static void setThreadServer(Server server)
@@ -103,6 +104,7 @@ public class ServerConnector extends AbstractNetworkConnector
     /* ------------------------------------------------------------ */
     /** Set the Server instance to be used with {@link #ServerConnector()}
      * by calling threads that have not called {@link #setThreadServer(Server)}.
+     * After use, the default server should be set to null to avoid leaking the server.
      * @param server The server
      */
     public static void setDefaultServer(Server server)
