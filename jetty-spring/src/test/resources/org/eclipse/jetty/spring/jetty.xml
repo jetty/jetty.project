@@ -15,7 +15,6 @@
       <list>
         <bean id="connector" class="org.eclipse.jetty.server.ServerConnector">
           <constructor-arg type="org.eclipse.jetty.server.Server" ref="server" />
-          <property name="port" value="18687"/>
         </bean>
       </list>
     </property>
