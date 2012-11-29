@@ -48,7 +48,7 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.MultiPartInputStream;
+import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 
 /* ------------------------------------------------------------ */
@@ -141,7 +141,7 @@ public class MultiPartFilter implements Filter
         }
 
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
-        MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(in, content_type, config, tempdir);
         mpis.setDeleteOnExit(_deleteFiles);
         request.setAttribute(MULTIPART, mpis);
         try
@@ -153,7 +153,7 @@ public class MultiPartFilter implements Filter
                 while (itor.hasNext() && params.size() < _maxFormKeys)
                 {
                     Part p = itor.next();
-                    MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                    MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
                     if (mp.getFile() != null)
                     {
                         request.setAttribute(mp.getName(),mp.getFile());
@@ -191,7 +191,7 @@ public class MultiPartFilter implements Filter
         if (!_deleteFiles)
             return;
         
-        MultiPartInputStream mpis = (MultiPartInputStream)request.getAttribute(MULTIPART);
+        MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)request.getAttribute(MULTIPART);
         if (mpis != null)
         {
             try

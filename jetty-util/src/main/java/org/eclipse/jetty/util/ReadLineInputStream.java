@@ -22,6 +22,11 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * ReadLineInputStream
+ *
+ * Read from an input stream, accepting CR/LF, LF or just CR.
+ */
 public class ReadLineInputStream extends BufferedInputStream
 {
     boolean _seenCRLF;

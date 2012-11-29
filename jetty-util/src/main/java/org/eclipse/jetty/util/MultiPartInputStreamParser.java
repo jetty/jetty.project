@@ -47,7 +47,7 @@ import javax.servlet.http.Part;
  *
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
  */
-public class MultiPartInputStream
+public class MultiPartInputStreamParser
 {
     public static final MultipartConfigElement  __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     protected InputStream _in;
@@ -113,10 +113,10 @@ public class MultiPartInputStream
         protected void write (int b)
         throws IOException
         {
-            if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStream.this._config.getMaxFileSize())
+            if (MultiPartInputStreamParser.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStreamParser.this._config.getMaxFileSize())
                 throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
 
-            if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
+            if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
             _out.write(b);
             _size ++;
@@ -125,10 +125,10 @@ public class MultiPartInputStream
         protected void write (byte[] bytes, int offset, int length)
         throws IOException
         {
-            if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStream.this._config.getMaxFileSize())
+            if (MultiPartInputStreamParser.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStreamParser.this._config.getMaxFileSize())
                 throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
 
-            if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
+            if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
 
             _out.write(bytes, offset, length);
@@ -138,7 +138,7 @@ public class MultiPartInputStream
         protected void createFile ()
         throws IOException
         {
-            _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
+            _file = File.createTempFile("MultiPart", "", MultiPartInputStreamParser.this._tmpDir);
             if (_deleteOnExit)
                 _file.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(_file);
@@ -325,9 +325,9 @@ public class MultiPartInputStream
      * @param config MultipartConfigElement
      * @param contextTmpDir javax.servlet.context.tempdir
      */
-    public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
+    public MultiPartInputStreamParser (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        _in = new BufferedInputStream(in);
+        _in = new ReadLineInputStream(in);
        _contentType = contentType;
        _config = config;
        _contextTmpDir = contextTmpDir;
@@ -372,7 +372,7 @@ public class MultiPartInputStream
         {
             try
             {
-                ((MultiPartInputStream.MultiPart)p).cleanUp();
+                ((MultiPartInputStreamParser.MultiPart)p).cleanUp();
             } 
             catch(Exception e)
             {     
@@ -470,8 +470,7 @@ public class MultiPartInputStream
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
-        byte[] bytes=TypeUtil.readLine(_in);
-        String line=bytes==null?null:new String(bytes,"UTF-8");
+        String line = ((ReadLineInputStream)_in).readLine();
         if(line==null || !line.equals(boundary))
         {
             throw new IOException("Missing initial multi part boundary");
@@ -487,19 +486,19 @@ public class MultiPartInputStream
             MultiMap headers = new MultiMap();
             while(true)
             {
-                bytes=TypeUtil.readLine(_in);
-                if(bytes==null)
+                line = ((ReadLineInputStream)_in).readLine();
+                
+                //run out of input:
+                if (line == null)
                     break outer;
-
-                // If blank line, end of part headers
-                if(bytes.length==0)
+                
+                //end of headers:
+                if ("".equals(line))
                     break;
-
-                total += bytes.length;
+           
+                total += line.length();
                 if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
                     throw new IllegalStateException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
-
-                line=new String(bytes,"UTF-8");
 
                 //get content-disposition and content-type
                 int c=line.indexOf(':',0);
@@ -514,7 +513,6 @@ public class MultiPartInputStream
                         contentType = value;
                     if(key.equals("content-transfer-encoding"))
                         contentTransferEncoding=value;
-
                 }
             }
 
@@ -600,7 +598,7 @@ public class MultiPartInputStream
                 boolean cr=false;
                 boolean lf=false;
 
-                // loop for all lines`
+                // loop for all lines
                 while(true)
                 {
                     int b=0;
@@ -615,7 +613,14 @@ public class MultiPartInputStream
                         if(c==13||c==10)
                         {
                             if(c==13)
-                                state=_in.read();
+                            {
+                                _in.mark(1);
+                                int tmp=_in.read();
+                                if (tmp!=10)
+                                    _in.reset();
+                                else
+                                    state=tmp; 
+                            }
                             break;
                         }
                         // look for boundary
