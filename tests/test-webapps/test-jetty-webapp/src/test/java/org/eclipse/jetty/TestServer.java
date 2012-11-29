@@ -152,7 +152,7 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_root + "/test-jetty-webapp/src/main/config/etc/realm.properties");
+        login.setConfig(jetty_root + "/tests/test-webapps/test-jetty-webapp/src/main/config/etc/realm.properties");
         server.addBean(login);
 
         File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
