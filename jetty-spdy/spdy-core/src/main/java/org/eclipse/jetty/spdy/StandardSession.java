@@ -892,7 +892,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         ByteBuffer buffer = null;
         synchronized (queue)
         {
-            LOG.info("Flush "+queue.size()+" -> "+this.lastStreamId);
             if (flushing || queue.isEmpty())
                 return;
             
