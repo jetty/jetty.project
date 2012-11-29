@@ -67,7 +67,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         this.connector = connector;
         this.configuration = configuration;
         this.endPoint = endPoint;
-        this.pushStrategy = pushStrategy;
+        this.pushStrategy = pushStrategy==null?new PushStrategy.None():pushStrategy;
         this.stream = stream;
         this.requestHeaders = requestHeaders;
     }

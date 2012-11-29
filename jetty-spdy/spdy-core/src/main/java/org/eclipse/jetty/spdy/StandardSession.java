@@ -894,7 +894,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (flushing || queue.isEmpty())
                 return;
-
+            
             Set<IStream> stalledStreams = null;
             for (int i = 0; i < queue.size(); ++i)
             {
