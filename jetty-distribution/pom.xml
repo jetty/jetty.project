@@ -258,35 +258,6 @@
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>copy-lib-monitor-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <includeArtifactIds>jetty-monitor</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <excludeTransitive>true</excludeTransitive>
-              <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-javadoc</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <!-- Use already generated javadoc, don't bother regenerating again -->
-              <includeGroupIds>org.eclipse.jetty.aggregate</includeGroupIds>
-              <includeArtifactIds>jetty-all</includeArtifactIds>
-              <includeClassifier>javadoc</includeClassifier>
-              <excludeTransitive>true</excludeTransitive>
-              <outputDirectory>${assembly-directory}/javadoc</outputDirectory>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
