@@ -372,16 +372,26 @@ public class ObjectMBean implements DynamicMBean
                 }
                 else
                 {
-                    if ( r.getClass().isAnnotationPresent(ManagedObject.class))
+                    Class<?> clazz = r.getClass();
+                    
+                    while (clazz != null)
                     {
-                        ObjectName mbean = _mbeanContainer.findMBean(r);
+                        if (clazz.isAnnotationPresent(ManagedObject.class))
+                        {
+                            ObjectName mbean = _mbeanContainer.findMBean(r);
 
-                        if (mbean == null)
-                            return null;
-                        r = mbean;
-                    }
+                            if (mbean != null)
+                            {    
+                                return mbean;
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }                   
+                        clazz = clazz.getSuperclass();
+                    }              
                 }
-
             }
 
             return r;
@@ -617,12 +627,10 @@ public class ObjectMBean implements DynamicMBean
         {
             returnType = returnType.getComponentType();
         }
-
-        if ( returnType.isAnnotationPresent(ManagedObject.class))
-        {
-            convert = true;
-        }
-
+           
+        // Test to see if the returnType or any of its super classes are managed objects
+        convert = isAnnotationPresent(returnType, ManagedObject.class);       
+        
         String uName = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
         Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
@@ -631,7 +639,7 @@ public class ObjectMBean implements DynamicMBean
         Class<?> type = null;
         Method setter = null;
 
-        type = method.getReturnType();
+        type = returnType;//method.getReturnType();
 
 
         // dig out a setter if one exists
@@ -727,7 +735,7 @@ public class ObjectMBean implements DynamicMBean
             }
 
             _attributes.add(name);
-
+            
             return info;
         }
         catch (Exception e)
@@ -867,6 +875,22 @@ public class ObjectMBean implements DynamicMBean
 
         return variableName;
     }
-
-
+    
+    protected boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation)
+    {
+        Class<?> test = clazz;
+        
+        while (test != null )
+        {  
+            if ( test.isAnnotationPresent(annotation))
+            {
+                return true;
+            }
+            else
+            {
+                test = test.getSuperclass();
+            }
+        }
+        return false;
+    }
 }

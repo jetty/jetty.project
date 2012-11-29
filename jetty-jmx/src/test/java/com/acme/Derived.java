@@ -30,6 +30,8 @@ public class Derived extends Base implements Signature
 
     Managed managedInstance = new Managed();
     
+    SuperManaged superManagedInstance = new SuperManaged();
+    
     @ManagedAttribute(value="The full name of something", name="fname", setter="setFullName")
     public String getFullName()
     {
@@ -70,4 +72,10 @@ public class Derived extends Base implements Signature
     }
     
     
+    @ManagedAttribute("sample super managed object")
+    public SuperManaged getSuperManagedInstance()
+    {
+        return superManagedInstance;
+    }
+
 }
