@@ -25,6 +25,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.URIUtil;
 
+/**
+ * This rule can be used to protect against invalid unicode characters in a url making it into applications.
+ *
+ * The logic is as follows.
+ * 
+ * - if decoded uri character is an iso control character return code/reason
+ * - if no UnicodeBlock is found for character return code/reason
+ * - if character is in UnicodeBlock.SPECIALS return code/reason
+ */
 public class ValidUrlRule extends Rule
 {
     String _code = "400";
@@ -81,10 +90,12 @@ public class ValidUrlRule extends Rule
                     response.setStatus(code);
                 }
 
+                // we have matched, return target and consider it is handled
                 return target;
             }
         }
 
+        // we have not matched so return null
         return null;
     }
 

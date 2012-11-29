@@ -58,14 +58,16 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     }
 
     @Test
-    public void testInvalidUrl2() throws Exception
+    public void testInvalidUrlWithReason() throws Exception
     {
-        _rule.setCode("404");
+        _rule.setCode("405");
+        _rule.setReason("foo");
         _request.setRequestURI("/%00/");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(404,_response.getStatus());
+        assertEquals(405,_response.getStatus());
+        assertEquals("foo",_response.getReason());
     }
     
     @Test
