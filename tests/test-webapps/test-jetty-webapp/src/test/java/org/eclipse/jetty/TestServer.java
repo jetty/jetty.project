@@ -67,7 +67,7 @@ public class TestServer
     {
         ((StdErrLog)Log.getLog()).setSource(false);
 
-        String jetty_root = "..";
+        String jetty_root = "../../..";
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
