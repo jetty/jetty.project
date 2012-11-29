@@ -332,7 +332,7 @@ public class MultiPartInputStream
      */
     public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        _in = new BufferedInputStream(in);
+        _in = new ReadLineInputStream(in);
        _contentType = contentType;
        _config = config;
        _contextTmpDir = contextTmpDir;
@@ -475,8 +475,7 @@ public class MultiPartInputStream
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
-        byte[] bytes=TypeUtil.readLine(_in);
-        String line=bytes==null?null:new String(bytes,"UTF-8");
+        String line=((ReadLineInputStream)_in).readLine();
         if(line==null || !line.equals(boundary))
         {
             throw new IOException("Missing initial multi part boundary");
@@ -492,19 +491,19 @@ public class MultiPartInputStream
             MultiMap<String> headers = new MultiMap<String>();
             while(true)
             {
-                bytes=TypeUtil.readLine(_in);
-                if(bytes==null)
+                line=((ReadLineInputStream)_in).readLine();
+                
+                //No more input
+                if(line==null)
                     break outer;
 
                 // If blank line, end of part headers
-                if(bytes.length==0)
+                if("".equals(line))
                     break;
                 
-                total += bytes.length;
+                total += line.length();
                 if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
                     throw new IllegalStateException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
-                
-                line=new String(bytes,"UTF-8");
 
                 //get content-disposition and content-type
                 int c=line.indexOf(':',0);
@@ -605,7 +604,7 @@ public class MultiPartInputStream
                 boolean cr=false;
                 boolean lf=false;
 
-                // loop for all lines`
+                // loop for all lines
                 while(true)
                 {
                     int b=0;
@@ -620,7 +619,14 @@ public class MultiPartInputStream
                         if(c==13||c==10)
                         {
                             if(c==13)
-                                state=_in.read();
+                            {
+                                _in.mark(1);
+                                int tmp=_in.read();
+                                if (tmp!=10)
+                                    _in.reset();
+                                else
+                                    state=tmp;
+                            }
                             break;
                         }
                         // look for boundary

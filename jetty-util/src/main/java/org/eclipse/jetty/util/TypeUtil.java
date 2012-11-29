@@ -480,6 +480,9 @@ public class TypeUtil
 
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated
+     */
     public static byte[] readLine(InputStream in) throws IOException
     {
         byte[] buf = new byte[256];
