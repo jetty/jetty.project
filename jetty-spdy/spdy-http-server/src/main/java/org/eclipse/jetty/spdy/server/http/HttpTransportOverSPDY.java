@@ -79,8 +79,10 @@ public class HttpTransportOverSPDY implements HttpTransport
             LOG.debug("send  {} {} {} {} last={}",this,stream,info,BufferUtil.toDetailString(content),lastContent);
 
         if (stream.isClosed() || stream.isReset())
-        {        
-            callback.failed(new EofException("stream closed"));
+        {
+            EofException exception = new EofException("stream closed");
+            callback.failed(exception);
+            LOG.warn("Committed response twice.", exception);
             return;
         }
         // new Throwable().printStackTrace();
