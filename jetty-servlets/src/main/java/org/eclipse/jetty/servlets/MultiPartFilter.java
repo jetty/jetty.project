@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -118,7 +119,7 @@ public class MultiPartFilter implements Filter
             return;
         }
 
-        InputStream in = new BufferedInputStream(request.getInputStream());
+        InputStream in = new ReadLineInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
 
         // TODO - handle encodings
@@ -144,8 +145,7 @@ public class MultiPartFilter implements Filter
         try
         {
             // Get first boundary
-            byte[] bytes=TypeUtil.readLine(in);
-            String line=bytes==null?null:new String(bytes,"UTF-8");
+            String line=((ReadLineInputStream)in).readLine();
             if(line==null || !line.equals(boundary))
             {
                 throw new IOException("Missing initial multi part boundary");
@@ -164,14 +164,15 @@ public class MultiPartFilter implements Filter
                 while(true)
                 {
                     // read a line
-                    bytes=TypeUtil.readLine(in);
-                    if (bytes==null)
+                    line=((ReadLineInputStream)in).readLine();
+                    
+                    //No more input
+                    if (line==null)
                         break outer;
                     
                     // If blank line, end of part headers
-                    if(bytes.length==0)
+                    if("".equals(line))
                         break;
-                    line=new String(bytes,"UTF-8");
                     
                     // place part header key and value in map
                     int c=line.indexOf(':',0);
@@ -301,7 +302,14 @@ public class MultiPartFilter implements Filter
                             if(c==13||c==10)
                             {
                                 if(c==13)
-                                    state=in.read();
+                                {
+                                    in.mark(1);
+                                    int tmp=in.read();
+                                    if (tmp!=10)
+                                        in.reset();
+                                    else
+                                        state=tmp;
+                                }
                                 break;
                             }
                             // look for boundary
@@ -359,7 +367,7 @@ public class MultiPartFilter implements Filter
                 
                 if (file==null)
                 {
-                    bytes = ((ByteArrayOutputStream)out).toByteArray();
+                    byte[] bytes = ((ByteArrayOutputStream)out).toByteArray();
                     params.add(name,bytes);
                     if (type_content != null)
                         params.add(name+CONTENT_TYPE_SUFFIX, type_content);
