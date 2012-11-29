@@ -118,7 +118,7 @@ public class TestServer
         
         // Spdy Connector
         SPDYServerConnectionFactory.checkNPNAvailable();
-        PushStrategy push = null; /*new ReferrerPushStrategy();*/
+        PushStrategy push = new ReferrerPushStrategy();
         HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
         spdy2.setInputBufferSize(8192);
         spdy2.setInitialWindowSize(32768);

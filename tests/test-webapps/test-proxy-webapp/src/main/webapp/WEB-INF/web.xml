@@ -7,13 +7,12 @@
    version="3.0"> 
 
   <display-name>Transparent Proxy WebApp</display-name>
-  
  
   <servlet>
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
-      <param-name>proxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-9/apidocs</param-value>
+      <param-name>proxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-9/xref</param-value>
     </init-param>
     <init-param>
       <param-name>hostHeader</param-name><param-value>download.eclipse.org</param-value>

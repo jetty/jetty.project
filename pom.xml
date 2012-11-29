@@ -412,6 +412,7 @@
     <module>jetty-nosql</module>
     <module>examples</module>
     <module>tests</module>
+    <module>aggregates/jetty-all</module>
     <module>jetty-distribution</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained

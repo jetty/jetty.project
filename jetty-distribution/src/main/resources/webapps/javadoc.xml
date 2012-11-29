@@ -1,0 +1,22 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.eclipse.org/configure.dtd">
+
+<!--
+Configure a custom context for serving javadoc as static resources 
+-->
+
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Set name="contextPath">/javadoc</Set>
+  <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/javadoc/</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="welcomeFiles">
+        <Array type="String">
+          <Item>index.html</Item>
+        </Array>
+      </Set>
+      <Set name="cacheControl">max-age=3600,public</Set>
+    </New>
+  </Set>
+</Configure>
+

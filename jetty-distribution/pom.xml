@@ -110,7 +110,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}/webapps</outputDirectory>
-                  <destFileName>javadoc-proxy.war</destFileName>
+                  <destFileName>xref-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.example-async-rest</groupId>
@@ -178,6 +178,18 @@
                   <destFileName>servlet-api-3.0.jar</destFileName>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-spdy-deps</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -446,6 +458,13 @@
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.aggregate</groupId>
+      <artifactId>jetty-all</artifactId>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <version>${project.version}</version>
     </dependency>
     <!--
     <dependency>
