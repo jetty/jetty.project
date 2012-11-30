@@ -22,11 +22,6 @@
     <npn-version>1.1.0.v20120525</npn-version>
   </properties>
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit-dep</artifactId>
-      <version>4.10</version>
-    </dependency>
     <!-- Pax Exam Dependencies -->
     <!-- OPS4J Swissbox Dependencies -->
     <dependency>
@@ -235,13 +230,25 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-api</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-common</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-core</artifactId>
+      <artifactId>websocket-servlet</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -317,6 +324,11 @@
       <artifactId>test-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

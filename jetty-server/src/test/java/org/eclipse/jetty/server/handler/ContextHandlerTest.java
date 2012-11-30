@@ -95,7 +95,7 @@ public class ContextHandlerTest
         try
         {
             server.start();
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
 
             assertTrue(handlerA.isHandled());
             assertFalse(handlerB.isHandled());
@@ -105,7 +105,7 @@ public class ContextHandlerTest
             handlerB.reset();
             handlerC.reset();
 
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example2.com\n\n");
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example2.com\n\n");
 
             assertFalse(handlerA.isHandled());
             assertTrue(handlerB.isHandled());
@@ -180,7 +180,7 @@ public class ContextHandlerTest
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
 
         // If we shutdown foo then requests will be 503'd
-        foo.shutdown(null).get();
+        foo.shutdown().get();
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
@@ -401,7 +401,8 @@ public class ContextHandlerTest
 
     private File setupTestDirectory() throws IOException
     {
-        File tmpDir = new File( System.getProperty( "basedir" ) + "/target/tmp/ContextHandlerTest" );
+        File tmpDir = new File( System.getProperty( "basedir",".") + "/target/tmp/ContextHandlerTest" );
+        tmpDir=tmpDir.getCanonicalFile();
         if (!tmpDir.exists())
             assertTrue(tmpDir.mkdirs());
         File tmp = File.createTempFile("cht",null, tmpDir );

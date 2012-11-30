@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +47,21 @@ public class MultipartFilterTest
     private ServletTester tester;
 
 
+    public static class BoundaryServlet extends TestServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getParameter("fileName"));
+            assertEquals(getServletContext().getAttribute("fileName"), req.getParameter("fileName"));
+            assertNotNull(req.getParameter("desc"));
+            assertEquals(getServletContext().getAttribute("desc"), req.getParameter("desc"));
+            assertNotNull(req.getParameter("title"));
+            assertEquals(getServletContext().getAttribute("title"), req.getParameter("title"));
+            super.doPost(req, resp);
+        }
+    }
+    
     public static class TestServlet extends DumpServlet
     {
 
@@ -247,7 +263,210 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
+    
+    
+    @Test
+    public void testNoBoundary() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+
+        request.setHeader("Content-Type","multipart/form-data");
+
+        // generated and parsed test
+        String content = "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileName\"\r\n"+
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+
+        "Content-Transfer-Encoding: 8bit\r\n"+
+        "\r\n"+
+        "abc\r\n"+
+        "--\r\n"+
+        "Content-Disposition: form-data; name=\"desc\"\r\n"+ 
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+ 
+        "Content-Transfer-Encoding: 8bit\r\n"+
+        "\r\n"+
+        "123\r\n"+ 
+        "--\r\n"+ 
+        "Content-Disposition: form-data; name=\"title\"\r\n"+
+        "Content-Type: text/plain; charset=US-ASCII\r\n"+
+        "Content-Transfer-Encoding: 8bit\r\n"+ 
+        "\r\n"+
+        "ttt\r\n"+ 
+        "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Type: application/octet-stream\r\n"+
+        "Content-Transfer-Encoding: binary\r\n"+ 
+        "\r\n"+
+        "000\r\n"+ 
+        "----\r\n";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+    }
+    
+    
+    @Test
+    public void testLFOnlyRequest() throws Exception
+    { 
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        
+        
+        tester.addServlet(BoundaryServlet.class,"/testb");
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testb");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy\n"+
+        "Content-Disposition: form-data; name=\"fileName\"\n"+
+        "Content-Type: text/plain; charset=US-ASCII\n"+
+        "Content-Transfer-Encoding: 8bit\n"+
+        "\n"+
+        "abc\n"+
+        "--XyXyXy\n"+
+        "Content-Disposition: form-data; name=\"desc\"\n"+ 
+        "Content-Type: text/plain; charset=US-ASCII\n"+ 
+        "Content-Transfer-Encoding: 8bit\n"+
+        "\n"+
+        "123\n"+ 
+        "--XyXyXy\n"+ 
+        "Content-Disposition: form-data; name=\"title\"\n"+
+        "Content-Type: text/plain; charset=US-ASCII\n"+
+        "Content-Transfer-Encoding: 8bit\n"+ 
+        "\n"+
+        "ttt\n"+ 
+        "--XyXyXy\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\n"+
+        "Content-Type: application/octet-stream\n"+
+        "Content-Transfer-Encoding: binary\n"+ 
+        "\n"+
+        "000\n"+ 
+        "--XyXyXy--\n";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
+    }
+    
+    
+    @Test
+    public void testCROnlyRequest() throws Exception
+    { 
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        tester.addServlet(BoundaryServlet.class,"/testb");
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testb");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileName\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "abc\r"+
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"desc\"\r"+ 
+        "Content-Type: text/plain; charset=US-ASCII\r"+ 
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "123\r"+ 
+        "--XyXyXy\r"+ 
+        "Content-Disposition: form-data; name=\"title\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+ 
+        "\r"+
+        "ttt\r"+ 
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r"+
+        "Content-Type: application/octet-stream\r"+
+        "Content-Transfer-Encoding: binary\r"+ 
+        "\r"+
+        "000\r"+ 
+        "--XyXyXy--\r";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
+    }
+    
+    
+    @Test
+    public void testCROnlyWithEmbeddedLFRequest() throws Exception
+    { 
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        tester.addServlet(BoundaryServlet.class,"/testb");
+        tester.setAttribute("fileName", "\nabc\n");
+        tester.setAttribute("desc", "\n123\n");
+        tester.setAttribute("title", "\nttt\n");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testb");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileName\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "\nabc\n"+
+        "\r"+
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"desc\"\r"+ 
+        "Content-Type: text/plain; charset=US-ASCII\r"+ 
+        "Content-Transfer-Encoding: 8bit\r"+
+        "\r"+
+        "\n123\n"+ 
+        "\r"+
+        "--XyXyXy\r"+ 
+        "Content-Disposition: form-data; name=\"title\"\r"+
+        "Content-Type: text/plain; charset=US-ASCII\r"+
+        "Content-Transfer-Encoding: 8bit\r"+ 
+        "\r"+
+        "\nttt\n"+ 
+        "\r"+
+        "--XyXyXy\r"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r"+
+        "Content-Type: application/octet-stream\r"+
+        "Content-Transfer-Encoding: binary\r"+ 
+        "\r"+
+        "000\r"+ 
+        "--XyXyXy--\r";
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
+    }
+    
+    
     /*
      * see the testParameterMap test
      *

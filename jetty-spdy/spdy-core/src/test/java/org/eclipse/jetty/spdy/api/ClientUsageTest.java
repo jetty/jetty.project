@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -87,10 +88,10 @@ public class ClientUsageTest
                 // Then issue another similar request
                 stream.getSession().syn(new SynInfo(true), this);
             }
-        }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
         {
             @Override
-            public void completed(Stream stream)
+            public void succeeded(Stream stream)
             {
                 // Differently from JDK 7 AIO, there is no need to
                 // have an explicit parameter for the context since
@@ -142,10 +143,10 @@ public class ClientUsageTest
                 }
 
             }
-        }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
         {
             @Override
-            public void completed(Stream stream)
+            public void succeeded(Stream stream)
             {
                 stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false));
                 stream.data(new StringDataInfo("foo", false));

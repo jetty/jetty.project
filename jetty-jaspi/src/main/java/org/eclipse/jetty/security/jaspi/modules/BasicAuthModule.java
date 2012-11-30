@@ -31,7 +31,7 @@ import javax.security.auth.message.MessagePolicy;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,7 +75,7 @@ public class BasicAuthModule extends BaseAuthModule
     {
         HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
-        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
@@ -87,7 +87,7 @@ public class BasicAuthModule extends BaseAuthModule
             }
 
             if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + realmName + '"');
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + realmName + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.io.File;
+
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
@@ -92,6 +94,12 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
             {
                 XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings.getInputStream());
 
+                Resource resource = Resource.newResource(app.getOriginId());
+                File file = resource.getFile();
+                jettyXmlConfig.getIdMap().put("Server",app.getDeploymentManager().getServer());
+                jettyXmlConfig.getProperties().put("jetty.webapp",file.getCanonicalPath());
+                jettyXmlConfig.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
+                
                 jettyXmlConfig.configure(context);
             }
             else

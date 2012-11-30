@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -28,13 +35,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  *

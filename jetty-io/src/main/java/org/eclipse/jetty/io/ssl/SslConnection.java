@@ -64,11 +64,11 @@ import org.eclipse.jetty.util.log.Logger;
  * methods.  They will never block nor schedule any readInterest or write callbacks.   If a fill/flush cannot progress either because
  * of network congestion or waiting for an SSL handshake message, then the fill/flush will simply return with zero bytes filled/flushed.
  * Specifically, if a flush cannot proceed because it needs to receive a handshake message, then the flush will attempt to fill bytes from the
- * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link EndPoint#fillInterested(Object, Callback)}.
+ * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link EndPoint#fillInterested(Callback)}.
  * <p>
- * It is only the active methods : {@link DecryptedEndPoint#fillInterested(Object, Callback)} and
+ * It is only the active methods : {@link DecryptedEndPoint#fillInterested(Callback)} and
  * {@link DecryptedEndPoint#write(Object, Callback, ByteBuffer...)} that may schedule callbacks by calling the encrypted
- * {@link EndPoint#fillInterested(Object, Callback)} and {@link EndPoint#write(Object, Callback, ByteBuffer...)}
+ * {@link EndPoint#fillInterested(Callback)} and {@link EndPoint#write(Object, Callback, ByteBuffer...)}
  * methods.  For normal data handling, the decrypted fillInterest method will result in an encrypted fillInterest and a decrypted
  * write will result in an encrypted write. However, due to SSL handshaking requirements, it is also possible for a decrypted fill
  * to call the encrypted write and for the decrypted flush to call the encrypted fillInterested methods.
@@ -259,10 +259,10 @@ public class SslConnection extends AbstractConnection
         private boolean _cannotAcceptMoreAppDataToFlush;
         private boolean _underFlown;
 
-        private final Callback<Void> _writeCallback = new Callback<Void>()
+        private final Callback _writeCallback = new Callback()
         {
             @Override
-            public void completed(Void context)
+            public void succeeded()
             {
                 // This means that a write of encrypted data has completed.  Writes are done
                 // only if there is a pending writeflusher or a read needed to write
@@ -287,7 +287,7 @@ public class SslConnection extends AbstractConnection
             }
 
             @Override
-            public void failed(Void context, Throwable x)
+            public void failed(Throwable x)
             {
                 // This means that a write of data has failed.  Writes are done
                 // only if there is an active writeflusher or a read needed to write
@@ -354,7 +354,7 @@ public class SslConnection extends AbstractConnection
                 {
                     // write it
                     _cannotAcceptMoreAppDataToFlush = true;
-                    getEndPoint().write(null, _writeCallback, _encryptedOutput);
+                    getEndPoint().write(_writeCallback, _encryptedOutput);
                 }
                 // TODO: use _fillRequiresFlushToProgress ?
                 else if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP)
@@ -404,7 +404,7 @@ public class SslConnection extends AbstractConnection
                         {
                             // write it
                             _cannotAcceptMoreAppDataToFlush = true;
-                            getEndPoint().write(null, _writeCallback, _encryptedOutput);
+                            getEndPoint().write(_writeCallback, _encryptedOutput);
                         }
                         else
                         {

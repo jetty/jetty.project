@@ -23,10 +23,9 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
 public class ClientWriteThread extends Thread
 {
@@ -71,7 +70,7 @@ public class ClientWriteThread extends Thread
         {
             while (m.get() < messageCount)
             {
-                conn.write(null,new FutureCallback<Void>(),message);
+                conn.write(message);
 
                 if (exchanger != null)
                 {

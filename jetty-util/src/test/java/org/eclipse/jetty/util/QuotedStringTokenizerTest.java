@@ -178,5 +178,16 @@ public class QuotedStringTokenizerTest
         assertEquals("ab\u001ec",QuotedStringTokenizer.unquote("ab\u001ec"));
         assertEquals("ab\u001ec",QuotedStringTokenizer.unquote("\"ab\u001ec\""));
     }
+    
+    
+    @Test
+    public void testUnquoteOnly()
+    {
+        assertEquals("abc",QuotedStringTokenizer.unquoteOnly("abc"));
+        assertEquals("a\"c",QuotedStringTokenizer.unquoteOnly("\"a\\\"c\""));
+        assertEquals("a'c",QuotedStringTokenizer.unquoteOnly("\"a'c\""));
+        assertEquals("a\\n\\r\\t",QuotedStringTokenizer.unquoteOnly("\"a\\\\n\\\\r\\\\t\""));
+        assertEquals("ba\\uXXXXaaa", QuotedStringTokenizer.unquoteOnly("\"ba\\\\uXXXXaaa\""));
+    }
 
 }

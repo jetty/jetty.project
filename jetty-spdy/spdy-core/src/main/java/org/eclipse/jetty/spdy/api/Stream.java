@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -111,7 +112,7 @@ public interface Stream
      * @param callback   the completion callback that gets notified once the pushstream is established
      * @see #syn(SynInfo)
      */
-    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Callback<Stream> callback);
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> callback);
 
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
@@ -135,7 +136,7 @@ public interface Stream
      * @param callback   the completion callback that gets notified of reply sent
      * @see #reply(ReplyInfo)
      */
-    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
@@ -162,7 +163,7 @@ public interface Stream
      * @param callback  the completion callback that gets notified of data sent
      * @see #data(DataInfo)
      */
-    public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> callback);
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
@@ -188,7 +189,7 @@ public interface Stream
      * @param callback     the completion callback that gets notified of headers sent
      * @see #headers(HeadersInfo)
      */
-    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * @return whether this stream is unidirectional or not

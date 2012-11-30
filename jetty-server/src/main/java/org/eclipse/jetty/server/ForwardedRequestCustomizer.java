@@ -27,6 +27,25 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 
+
+/* ------------------------------------------------------------ */
+/** Customize Requests for Proxy Forwarding.
+ * <p>
+ * This customizer looks at at HTTP request for headers that indicate
+ * it has been forwarded by one or more proxies.  Specifically handled are:
+ * <ul>
+ * <li>X-Forwarded-Host</li>
+ * <li>X-Forwarded-Server</li>
+ * <li>X-Forwarded-For</li>
+ * <li>X-Forwarded-Proto</li>
+ * </ul>
+ * <p>If these headers are present, then the {@link Request} object is updated
+ * so that the proxy is not seen as the other end point of the connection on which
+ * the request came</p>
+ * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
+ * suites may be customised</p> 
+ * @see http://en.wikipedia.org/wiki/X-Forwarded-For
+ */
 public class ForwardedRequestCustomizer implements Customizer
 {
     private String _hostHeader;

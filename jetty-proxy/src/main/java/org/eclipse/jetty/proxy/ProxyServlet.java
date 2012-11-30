@@ -19,139 +19,162 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Socket;
+import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map;
-import java.util.StringTokenizer;
-
-import javax.servlet.Servlet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.TimedResponseListener;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.HostMap;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
- * Asynchronous Proxy Servlet.
- *
- * Forward requests to another server either as a standard web proxy (as defined by RFC2616) or as a transparent proxy.
- * <p>
- * This servlet needs the jetty-util and jetty-client classes to be available to the web application.
- * <p>
- * To facilitate JMX monitoring, the "HttpClient" and "ThreadPool" are set as context attributes prefixed with the servlet name.
- * <p>
+ * Asynchronous ProxyServlet.
+ * <p/>
+ * Forwards requests to another server either as a standard web reverse proxy
+ * (as defined by RFC2616) or as a transparent reverse proxy.
+ * <p/>
+ * To facilitate JMX monitoring, the {@link HttpClient} instance is set as context attribute,
+ * prefixed with the servlet's name and exposed by the mechanism provided by
+ * {@link ContextHandler#MANAGED_ATTRIBUTES}.
+ * <p/>
  * The following init parameters may be used to configure the servlet:
  * <ul>
- * <li>name - Name of Proxy servlet (default: "ProxyServlet"
- * <li>maxThreads - maximum threads
- * <li>maxConnections - maximum connections per destination
- * <li>timeout - the period in ms the client will wait for a response from the proxied server
- * <li>idleTimeout - the period in ms a connection to proxied server can be idle for before it is closed
- * <li>requestHeaderSize - the size of the request header buffer (d. 6,144)
- * <li>requestBufferSize - the size of the request buffer (d. 12,288)
- * <li>responseHeaderSize - the size of the response header buffer (d. 6,144)
- * <li>responseBufferSize - the size of the response buffer (d. 32,768)
- * <li>HostHeader - Force the host header to a particular value
- * <li>whiteList - comma-separated list of allowed proxy destinations
- * <li>blackList - comma-separated list of forbidden proxy destinations
+ * <li>hostHeader - forces the host header to a particular value</li>
+ * <li>viaHost - the name to use in the Via header: Via: http/1.1 &lt;viaHost&gt;</li>
+ * <li>whiteList - comma-separated list of allowed proxy hosts</li>
+ * <li>blackList - comma-separated list of forbidden proxy hosts</li>
  * </ul>
+ * <p/>
+ * In addition, see {@link #createHttpClient()} for init parameters used to configure
+ * the {@link HttpClient} instance.
  *
- * @see org.eclipse.jetty.server.handler.ConnectHandler
+ * @see ConnectHandler
  */
-public class ProxyServlet implements Servlet
+public class ProxyServlet extends HttpServlet
 {
-    protected Logger _log;
-    protected HttpClient _client;
-    protected String _hostHeader;
-
-    protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
+    protected static final String ASYNC_CONTEXT = ProxyServlet.class.getName() + ".asyncContext";
+    private static final Set<String> HOP_HEADERS = new HashSet<>();
+    static
     {
-        _DontProxyHeaders.add("proxy-connection");
-        _DontProxyHeaders.add("connection");
-        _DontProxyHeaders.add("keep-alive");
-        _DontProxyHeaders.add("transfer-encoding");
-        _DontProxyHeaders.add("te");
-        _DontProxyHeaders.add("trailer");
-        _DontProxyHeaders.add("proxy-authorization");
-        _DontProxyHeaders.add("proxy-authenticate");
-        _DontProxyHeaders.add("upgrade");
+        HOP_HEADERS.add("proxy-connection");
+        HOP_HEADERS.add("connection");
+        HOP_HEADERS.add("keep-alive");
+        HOP_HEADERS.add("transfer-encoding");
+        HOP_HEADERS.add("te");
+        HOP_HEADERS.add("trailer");
+        HOP_HEADERS.add("proxy-authorization");
+        HOP_HEADERS.add("proxy-authenticate");
+        HOP_HEADERS.add("upgrade");
     }
 
-    protected ServletConfig _config;
-    protected ServletContext _context;
-    protected HostMap<PathMap> _white = new HostMap<PathMap>();
-    protected HostMap<PathMap> _black = new HostMap<PathMap>();
+    private final Set<String> _whiteList = new HashSet<>();
+    private final Set<String> _blackList = new HashSet<>();
 
-    /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.servlet.Servlet#init(javax.servlet.ServletConfig)
-     */
-    public void init(ServletConfig config) throws ServletException
+    protected Logger _log;
+    private String _hostHeader;
+    private String _viaHost;
+    private HttpClient _client;
+    private long _timeout;
+
+    @Override
+    public void init() throws ServletException
     {
-        _config = config;
-        _context = config.getServletContext();
+        _log = createLogger();
 
-        _hostHeader = config.getInitParameter("HostHeader");
+        ServletConfig config = getServletConfig();
+
+        _hostHeader = config.getInitParameter("hostHeader");
+
+        _viaHost = config.getInitParameter("viaHost");
+        if (_viaHost == null)
+            _viaHost = viaHost();
 
         try
         {
-            _log = createLogger(config);
+            _client = createHttpClient();
 
-            _client = createHttpClient(config);
+            // Put the HttpClient in the context to leverage ContextHandler.MANAGED_ATTRIBUTES
+            getServletContext().setAttribute(config.getServletName() + ".HttpClient", _client);
 
-            if (_context != null)
-            {
-                _context.setAttribute(config.getServletName() + ".ThreadPool",_client.getThreadPool());
-                _context.setAttribute(config.getServletName() + ".HttpClient",_client);
-            }
+            String whiteList = config.getInitParameter("whiteList");
+            if (whiteList != null)
+                getWhiteListHosts().addAll(parseList(whiteList));
 
-            String white = config.getInitParameter("whiteList");
-            if (white != null)
-            {
-                parseList(white,_white);
-            }
-            String black = config.getInitParameter("blackList");
-            if (black != null)
-            {
-                parseList(black,_black);
-            }
+            String blackList = config.getInitParameter("blackList");
+            if (blackList != null)
+                getBlackListHosts().addAll(parseList(blackList));
         }
         catch (Exception e)
         {
             throw new ServletException(e);
         }
+    }
+
+    public long getTimeout()
+    {
+        return _timeout;
+    }
+
+    public void setTimeout(long timeout)
+    {
+        this._timeout = timeout;
+    }
+
+    public Set<String> getWhiteListHosts()
+    {
+        return _whiteList;
+    }
+
+    public Set<String> getBlackListHosts()
+    {
+        return _blackList;
+    }
+
+    protected static String viaHost()
+    {
+        try
+        {
+            return InetAddress.getLocalHost().getHostName();
+        }
+        catch (UnknownHostException x)
+        {
+            return "localhost";
+        }
+    }
+
+    /**
+     * @return a logger instance with a name derived from this servlet's name.
+     */
+    protected Logger createLogger()
+    {
+        String name = getServletConfig().getServletName();
+        name = name.replace('-', '.');
+        return Log.getLogger(name);
     }
 
     public void destroy()
@@ -166,737 +189,530 @@ public class ProxyServlet implements Servlet
         }
     }
 
-
     /**
-     * Create and return a logger based on the ServletConfig for use in the
-     * proxy servlet
+     * Creates a {@link HttpClient} instance, configured with init parameters of this servlet.
+     * <p/>
+     * The init parameters used to configure the {@link HttpClient} instance are:
+     * <table>
+     * <thead>
+     * <tr>
+     * <th>init-param</th>
+     * <th>default</th>
+     * <th>description</th>
+     * </tr>
+     * </thead>
+     * <tbody>
+     * <tr>
+     * <td>maxThreads</td>
+     * <td>256</td>
+     * <td>The max number of threads of HttpClient's Executor</td>
+     * </tr>
+     * <tr>
+     * <td>maxConnections</td>
+     * <td>32768</td>
+     * <td>The max number of connection per address, see {@link HttpClient#setMaxConnectionsPerAddress(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>idleTimeout</td>
+     * <td>30000</td>
+     * <td>The idle timeout in milliseconds, see {@link HttpClient#setIdleTimeout(long)}</td>
+     * </tr>
+     * <tr>
+     * <td>timeout</td>
+     * <td>60000</td>
+     * <td>The total timeout in milliseconds, see {@link TimedResponseListener}</td>
+     * </tr>
+     * <tr>
+     * <td>requestBufferSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The request buffer size, see {@link HttpClient#setRequestBufferSize(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>responseBufferSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
+     * </tr>
+     * </tbody>
+     * </table>
      *
-     * @param config
-     * @return Logger
+     * @return a {@link HttpClient} configured from the {@link #getServletConfig() servlet configuration}
+     * @throws ServletException if the {@link HttpClient} cannot be created
      */
-    protected Logger createLogger(ServletConfig config)
+    protected HttpClient createHttpClient() throws ServletException
     {
-        return Log.getLogger("org.eclipse.jetty.servlets." + config.getServletName());
+        ServletConfig config = getServletConfig();
+
+        HttpClient client = newHttpClient();
+        // Redirects must be proxied as is, not followed
+        client.setFollowRedirects(false);
+
+        String value = config.getInitParameter("maxThreads");
+        if (value == null)
+            value = "256";
+        QueuedThreadPool executor = new QueuedThreadPool(Integer.parseInt(value));
+        String servletName = config.getServletName();
+        int dot = servletName.lastIndexOf('.');
+        if (dot >= 0)
+            servletName = servletName.substring(dot + 1);
+        executor.setName(servletName);
+        client.setExecutor(executor);
+
+        value = config.getInitParameter("maxConnections");
+        if (value == null)
+            value = "32768";
+        client.setMaxConnectionsPerAddress(Integer.parseInt(value));
+
+        value = config.getInitParameter("idleTimeout");
+        if (value == null)
+            value = "30000";
+        client.setIdleTimeout(Long.parseLong(value));
+
+        value = config.getInitParameter("timeout");
+        if (value == null)
+            value = "60000";
+        _timeout = Long.parseLong(value);
+
+        value = config.getInitParameter("requestBufferSize");
+        if (value != null)
+            client.setRequestBufferSize(Integer.parseInt(value));
+
+        value = config.getInitParameter("responseBufferSize");
+        if (value != null)
+            client.setResponseBufferSize(Integer.parseInt(value));
+
+        try
+        {
+            client.start();
+
+            // Content must not be decoded, otherwise the client gets confused
+            client.getContentDecoderFactories().clear();
+
+            return client;
+        }
+        catch (Exception x)
+        {
+            throw new ServletException(x);
+        }
     }
 
     /**
-     * Create and return an HttpClientInstance
-     *
-     * @return HttpClient
+     * @return a new HttpClient instance
      */
-    protected HttpClient createHttpClientInstance()
+    protected HttpClient newHttpClient()
     {
         return new HttpClient();
     }
 
-    /**
-     * Create and return an HttpClient based on ServletConfig
-     *
-     * By default this implementation will create an instance of the
-     * HttpClient for use by this proxy servlet.
-     *
-     * @param config
-     * @return HttpClient
-     * @throws Exception
-     */
-    protected HttpClient createHttpClient(ServletConfig config) throws Exception
+    private Set<String> parseList(String list)
     {
-        HttpClient client = createHttpClientInstance();
-        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-
-        String t = config.getInitParameter("maxThreads");
-
-        if (t != null)
+        Set<String> result = new HashSet<>();
+        String[] hosts = list.split(",");
+        for (String host : hosts)
         {
-            client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
+            host = host.trim();
+            if (host.length() == 0)
+                continue;
+            result.add(host);
         }
-        else
-        {
-            client.setThreadPool(new QueuedThreadPool());
-        }
-
-        ((QueuedThreadPool)client.getThreadPool()).setName(config.getServletName());
-
-        t = config.getInitParameter("maxConnections");
-
-        if (t != null)
-        {
-            client.setMaxConnectionsPerAddress(Integer.parseInt(t));
-        }
-
-        t = config.getInitParameter("timeout");
-
-        if ( t != null )
-        {
-            client.setTimeout(Long.parseLong(t));
-        }
-
-        t = config.getInitParameter("idleTimeout");
-
-        if ( t != null )
-        {
-            client.setIdleTimeout(Long.parseLong(t));
-        }
-
-        t = config.getInitParameter("requestHeaderSize");
-
-        if ( t != null )
-        {
-            client.setRequestHeaderSize(Integer.parseInt(t));
-        }
-
-        t = config.getInitParameter("requestBufferSize");
-
-        if ( t != null )
-        {
-            client.setRequestBufferSize(Integer.parseInt(t));
-        }
-
-        t = config.getInitParameter("responseHeaderSize");
-
-        if ( t != null )
-        {
-            client.setResponseHeaderSize(Integer.parseInt(t));
-        }
-
-        t = config.getInitParameter("responseBufferSize");
-
-        if ( t != null )
-        {
-            client.setResponseBufferSize(Integer.parseInt(t));
-        }
-
-        client.start();
-
-        return client;
+        return result;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Helper function to process a parameter value containing a list of new entries and initialize the specified host map.
+     * Checks the given {@code host} and {@code port} against whitelist and blacklist.
      *
-     * @param list
-     *            comma-separated list of new entries
-     * @param hostMap
-     *            target host map
+     * @param host the host to check
+     * @param port the port to check
+     * @return true if it is allowed to be proxy to the given host and port
      */
-    private void parseList(String list, HostMap<PathMap> hostMap)
+    public boolean validateDestination(String host, int port)
     {
-        if (list != null && list.length() > 0)
+        String hostPort = host + ":" + port;
+        if (!_whiteList.isEmpty())
         {
-            int idx;
-            String entry;
-
-            StringTokenizer entries = new StringTokenizer(list,",");
-            while (entries.hasMoreTokens())
+            if (!_whiteList.contains(hostPort))
             {
-                entry = entries.nextToken();
-                idx = entry.indexOf('/');
-
-                String host = idx > 0?entry.substring(0,idx):entry;
-                String path = idx > 0?entry.substring(idx):"/*";
-
-                host = host.trim();
-                PathMap pathMap = hostMap.get(host);
-                if (pathMap == null)
-                {
-                    pathMap = new PathMap(true);
-                    hostMap.put(host,pathMap);
-                }
-                if (path != null)
-                {
-                    pathMap.put(path,path);
-                }
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Check the request hostname and path against white- and blacklist.
-     *
-     * @param host
-     *            hostname to check
-     * @param path
-     *            path to check
-     * @return true if request is allowed to be proxied
-     */
-    public boolean validateDestination(String host, String path)
-    {
-        if (_white.size() > 0)
-        {
-            boolean match = false;
-
-            Object whiteObj = _white.getLazyMatches(host);
-            if (whiteObj != null)
-            {
-                List whiteList = (whiteObj instanceof List)?(List)whiteObj:Collections.singletonList(whiteObj);
-
-                for (Object entry : whiteList)
-                {
-                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
-                    if (match = (pathMap != null && (pathMap.size() == 0 || pathMap.match(path) != null)))
-                        break;
-                }
-            }
-
-            if (!match)
+                _log.debug("Host {}:{} not whitelisted", host, port);
                 return false;
-        }
-
-        if (_black.size() > 0)
-        {
-            Object blackObj = _black.getLazyMatches(host);
-            if (blackObj != null)
-            {
-                List blackList = (blackObj instanceof List)?(List)blackObj:Collections.singletonList(blackObj);
-
-                for (Object entry : blackList)
-                {
-                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
-                    if (pathMap != null && (pathMap.size() == 0 || pathMap.match(path) != null))
-                        return false;
-                }
             }
         }
-
+        if (!_blackList.isEmpty())
+        {
+            if (_blackList.contains(hostPort))
+            {
+                _log.debug("Host {}:{} blacklisted", host, port);
+                return false;
+            }
+        }
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.servlet.Servlet#getServletConfig()
-     */
-    public ServletConfig getServletConfig()
+    @Override
+    protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
-        return _config;
-    }
+        final int requestId = getRequestId(request);
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Get the hostHeader.
-     *
-     * @return the hostHeader
-     */
-    public String getHostHeader()
-    {
-        return _hostHeader;
-    }
+        URI rewrittenURI = rewriteURI(request);
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the hostHeader.
-     *
-     * @param hostHeader
-     *            the hostHeader to set
-     */
-    public void setHostHeader(String hostHeader)
-    {
-        _hostHeader = hostHeader;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.servlet.Servlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
-        final int debug = _log.isDebugEnabled()?req.hashCode():0;
-
-        final HttpServletRequest request = (HttpServletRequest)req;
-        final HttpServletResponse response = (HttpServletResponse)res;
-
-        if ("CONNECT".equalsIgnoreCase(request.getMethod()))
+        if (_log.isDebugEnabled())
         {
-            handleConnect(request,response);
+            StringBuffer uri = request.getRequestURL();
+            if (request.getQueryString() != null)
+                uri.append("?").append(request.getQueryString());
+            _log.debug("{} rewriting: {} -> {}", requestId, uri, rewrittenURI);
         }
-        else
+
+        if (rewrittenURI == null)
         {
-            final InputStream in = request.getInputStream();
-            final OutputStream out = response.getOutputStream();
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
 
-            final Continuation continuation = ContinuationSupport.getContinuation(request);
+        final Request proxyRequest = _client.newRequest(rewrittenURI)
+                .method(HttpMethod.fromString(request.getMethod()))
+                .version(HttpVersion.fromString(request.getProtocol()));
 
-            if (!continuation.isInitial())
-                response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial
-            else
+        // Copy headers
+        for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
+        {
+            String headerName = headerNames.nextElement();
+            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+
+            // Remove hop-by-hop headers
+            if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
+            
+            if (_hostHeader!=null && lowerHeaderName.equals("host"))
+                continue;
+
+            for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
-
-                String uri = request.getRequestURI();
-                if (request.getQueryString() != null)
-                    uri += "?" + request.getQueryString();
-
-                HttpURI url = proxyHttpURI(request,uri);
-
-                if (debug != 0)
-                    _log.debug(debug + " proxy " + uri + "-->" + url);
-
-                if (url == null)
-                {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    return;
-                }
-
-                HttpExchange exchange = new HttpExchange()
-                {
-                    @Override
-                    protected void onRequestCommitted() throws IOException
-                    {
-                    }
-
-                    @Override
-                    protected void onRequestComplete() throws IOException
-                    {
-                    }
-
-                    @Override
-                    protected void onResponseComplete() throws IOException
-                    {
-                        if (debug != 0)
-                            _log.debug(debug + " complete");
-                        continuation.complete();
-                    }
-
-                    @Override
-                    protected void onResponseContent(Buffer content) throws IOException
-                    {
-                        if (debug != 0)
-                            _log.debug(debug + " content" + content.length());
-                        content.writeTo(out);
-                    }
-
-                    @Override
-                    protected void onResponseHeaderComplete() throws IOException
-                    {
-                    }
-
-                    @Override
-                    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
-                    {
-                        if (debug != 0)
-                            _log.debug(debug + " " + version + " " + status + " " + reason);
-
-                        if (reason != null && reason.length() > 0)
-                            response.setStatus(status,reason.toString());
-                        else
-                            response.setStatus(status);
-                    }
-
-                    @Override
-                    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
-                    {
-                        String nameString = name.toString();
-                        String s = nameString.toLowerCase(Locale.ENGLISH);
-                        if (!_DontProxyHeaders.contains(s) || (HttpHeader.CONNECTION.is(name) && HttpHeaderValue.CLOSE.is(value)))
-                        {
-                            if (debug != 0)
-                                _log.debug(debug + " " + name + ": " + value);
-
-                            String filteredHeaderValue = filterResponseHeaderValue(nameString,value.toString(),request);
-                            if (filteredHeaderValue != null && filteredHeaderValue.trim().length() > 0)
-                            {
-                                if (debug != 0)
-                                    _log.debug(debug + " " + name + ": (filtered): " + filteredHeaderValue);
-                                response.addHeader(nameString,filteredHeaderValue);
-                            }
-                        }
-                        else if (debug != 0)
-                            _log.debug(debug + " " + name + "! " + value);
-                    }
-
-                    @Override
-                    protected void onConnectionFailed(Throwable ex)
-                    {
-                        handleOnConnectionFailed(ex,request,response);
-
-                        // it is possible this might trigger before the
-                        // continuation.suspend()
-                        if (!continuation.isInitial())
-                        {
-                            continuation.complete();
-                        }
-                    }
-
-                    @Override
-                    protected void onException(Throwable ex)
-                    {
-                        if (ex instanceof EofException)
-                        {
-                            _log.ignore(ex);
-                            return;
-                        }
-                        handleOnException(ex,request,response);
-
-                        // it is possible this might trigger before the
-                        // continuation.suspend()
-                        if (!continuation.isInitial())
-                        {
-                            continuation.complete();
-                        }
-                    }
-
-                    @Override
-                    protected void onExpire()
-                    {
-                        handleOnExpire(request,response);
-                        continuation.complete();
-                    }
-
-                };
-
-                exchange.setScheme((HttpScheme.HTTPS.is(request.getScheme())?HttpScheme.HTTPS:HttpScheme.HTTP).asString());
-                exchange.setMethod(request.getMethod());
-                exchange.setURL(url.toString());
-                exchange.setVersion(HttpVersion.CACHE.get(request.getProtocol()));
-
-
-                if (debug != 0)
-                    _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
-
-                // check connection header
-                String connectionHdr = request.getHeader("Connection");
-                if (connectionHdr != null)
-                {
-                    connectionHdr = connectionHdr.toLowerCase(Locale.ENGLISH);
-                    if (connectionHdr.indexOf("keep-alive") < 0 && connectionHdr.indexOf("close") < 0)
-                        connectionHdr = null;
-                }
-
-                // force host
-                if (_hostHeader != null)
-                    exchange.setRequestHeader("Host",_hostHeader);
-
-                // copy headers
-                boolean xForwardedFor = false;
-                boolean hasContent = false;
-                long contentLength = -1;
-                Enumeration<?> enm = request.getHeaderNames();
-                while (enm.hasMoreElements())
-                {
-                    // TODO could be better than this!
-                    String hdr = (String)enm.nextElement();
-                    String lhdr = hdr.toLowerCase(Locale.ENGLISH);
-
-                    if (_DontProxyHeaders.contains(lhdr))
-                        continue;
-                    if (connectionHdr != null && connectionHdr.indexOf(lhdr) >= 0)
-                        continue;
-                    if (_hostHeader != null && "host".equals(lhdr))
-                        continue;
-
-                    if ("content-type".equals(lhdr))
-                        hasContent = true;
-                    else if ("content-length".equals(lhdr))
-                    {
-                        contentLength = request.getContentLength();
-                        exchange.setRequestHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(contentLength));
-                        if (contentLength > 0)
-                            hasContent = true;
-                    }
-                    else if ("x-forwarded-for".equals(lhdr))
-                        xForwardedFor = true;
-
-                    Enumeration<?> vals = request.getHeaders(hdr);
-                    while (vals.hasMoreElements())
-                    {
-                        String val = (String)vals.nextElement();
-                        if (val != null)
-                        {
-                            if (debug != 0)
-                                _log.debug(debug + " " + hdr + ": " + val);
-
-                            exchange.setRequestHeader(hdr,val);
-                        }
-                    }
-                }
-
-                // Proxy headers
-                exchange.setRequestHeader("Via","1.1 (jetty)");
-                if (!xForwardedFor)
-                {
-                    exchange.addRequestHeader("X-Forwarded-For",request.getRemoteAddr());
-                    exchange.addRequestHeader("X-Forwarded-Proto",request.getScheme());
-                    exchange.addRequestHeader("X-Forwarded-Host",request.getHeader("Host"));
-                    exchange.addRequestHeader("X-Forwarded-Server",request.getLocalName());
-                }
-
-                if (hasContent)
-                {
-                    exchange.setRequestContentSource(in);
-                }
-
-                customizeExchange(exchange, request);
-
-                /*
-                 * we need to set the timeout on the continuation to take into
-                 * account the timeout of the HttpClient and the HttpExchange
-                 */
-                long ctimeout = (_client.getTimeout() > exchange.getTimeout()) ? _client.getTimeout() : exchange.getTimeout();
-
-                // continuation fudge factor of 1000, underlying components
-                // should fail/expire first from exchange
-                if ( ctimeout == 0 )
-                {
-                    continuation.setTimeout(0);  // ideally never times out
-                }
-                else
-                {
-                    continuation.setTimeout(ctimeout + 1000);
-                }
-
-                customizeContinuation(continuation);
-
-                continuation.suspend(response);
-                _client.send(exchange);
-
+                String headerValue = headerValues.nextElement();
+                if (headerValue != null)
+                    proxyRequest.header(headerName, headerValue);
             }
         }
-    }
 
-    /* ------------------------------------------------------------ */
-    public void handleConnect(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        String uri = request.getRequestURI();
+        // Force the Host header if configured
+        if (_hostHeader != null)
+            proxyRequest.header("Host", _hostHeader);
 
-        String port = "";
-        String host = "";
+        // Add proxy headers
+        proxyRequest.header("Via", "http/1.1 " + _viaHost);
+        proxyRequest.header("X-Forwarded-For", request.getRemoteAddr());
+        proxyRequest.header("X-Forwarded-Proto", request.getScheme());
+        proxyRequest.header("X-Forwarded-Host", request.getHeader("Host"));
+        proxyRequest.header("X-Forwarded-Server", request.getLocalName());
 
-        int c = uri.indexOf(':');
-        if (c >= 0)
+        proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
         {
-            port = uri.substring(c + 1);
-            host = uri.substring(0,c);
-            if (host.indexOf('/') > 0)
-                host = host.substring(host.indexOf('/') + 1);
-        }
+            @Override
+            public long getLength()
+            {
+                return request.getContentLength();
+            }
 
-        // TODO - make this async!
+            @Override
+            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+            {
+                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                return super.onRead(buffer, offset, length);
+            }
+        });
 
-        InetSocketAddress inetAddress = new InetSocketAddress(host,Integer.parseInt(port));
+        final AsyncContext asyncContext = request.startAsync();
+        // We do not timeout the continuation, but the proxy request
+        asyncContext.setTimeout(0);
+        request.setAttribute(ASYNC_CONTEXT, asyncContext);
 
-        // if (isForbidden(HttpMessage.__SSL_SCHEME,addrPort.getHost(),addrPort.getPort(),false))
-        // {
-        // sendForbid(request,response,uri);
-        // }
-        // else
+        customizeProxyRequest(proxyRequest, request);
+
+        if (_log.isDebugEnabled())
         {
-            InputStream in = request.getInputStream();
-            OutputStream out = response.getOutputStream();
+            StringBuilder builder = new StringBuilder(request.getMethod());
+            builder.append(" ").append(request.getRequestURI());
+            String query = request.getQueryString();
+            if (query != null)
+                builder.append("?").append(query);
+            builder.append(" ").append(request.getProtocol()).append("\r\n");
+            for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
+            {
+                String headerName = headerNames.nextElement();
+                builder.append(headerName).append(": ");
+                for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
+                {
+                    String headerValue = headerValues.nextElement();
+                    if (headerValue != null)
+                        builder.append(headerValue);
+                    if (headerValues.hasMoreElements())
+                        builder.append(",");
+                }
+                builder.append("\r\n");
+            }
+            builder.append("\r\n");
 
-            Socket socket = new Socket(inetAddress.getAddress(),inetAddress.getPort());
+            _log.debug("{} proxying to upstream:{}{}{}{}",
+                    requestId,
+                    System.lineSeparator(),
+                    builder,
+                    proxyRequest,
+                    System.lineSeparator(),
+                    proxyRequest.getHeaders().toString().trim());
+        }
+        
+        proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
+    }
 
-            response.setStatus(200);
-            response.setHeader("Connection","close");
-            response.flushBuffer();
-            // TODO prevent real close!
+    protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
+    {
+        for (HttpFields.Field field : proxyResponse.getHeaders())
+        {
+            String headerName = field.getName();
+            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+            if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
 
-            IO.copyThread(socket.getInputStream(),out);
-            IO.copy(in,socket.getOutputStream());
+            String newHeaderValue = filterResponseHeader(request, headerName, field.getValue());
+            if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
+                continue;
+
+            response.addHeader(headerName, newHeaderValue);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    protected HttpURI proxyHttpURI(HttpServletRequest request, String uri) throws MalformedURLException
+    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length) throws IOException
     {
-        return proxyHttpURI(request.getScheme(), request.getServerName(), request.getServerPort(), uri);
+        response.getOutputStream().write(buffer, offset, length);
+        _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
     }
 
-    protected HttpURI proxyHttpURI(String scheme, String serverName, int serverPort, String uri) throws MalformedURLException
+    protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        if (!validateDestination(serverName,uri))
+        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
+        asyncContext.complete();
+        _log.debug("{} proxying successful", getRequestId(request));
+    }
+
+    protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
+    {
+        _log.debug(getRequestId(request) + " proxying failed", failure);
+        if (!response.isCommitted())
+        {
+            if (failure instanceof TimeoutException)
+                response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            else
+                response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+        }
+        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
+        asyncContext.complete();
+    }
+
+    protected int getRequestId(HttpServletRequest request)
+    {
+        return System.identityHashCode(request);
+    }
+
+    protected URI rewriteURI(HttpServletRequest request)
+    {
+        if (!validateDestination(request.getServerName(), request.getServerPort()))
             return null;
 
-        return new HttpURI(scheme + "://" + serverName + ":" + serverPort + uri);
-    }
+        StringBuffer uri = request.getRequestURL();
+        String query = request.getQueryString();
+        if (query != null)
+            uri.append("?").append(query);
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.servlet.Servlet#getServletInfo()
-     */
-    public String getServletInfo()
-    {
-        return "Proxy Servlet";
-    }
-
-
-    /**
-     * Extension point for subclasses to customize an exchange. Useful for setting timeouts etc. The default implementation does nothing.
-     *
-     * @param exchange
-     * @param request
-     */
-    protected void customizeExchange(HttpExchange exchange, HttpServletRequest request)
-    {
-
+        return URI.create(uri.toString());
     }
 
     /**
-     * Extension point for subclasses to customize the Continuation after it's initial creation in the service method. Useful for setting timeouts etc. The
-     * default implementation does nothing.
+     * Extension point for subclasses to customize the proxy request.
+     * The default implementation does nothing.
      *
-     * @param continuation
+     * @param proxyRequest the proxy request to customize
+     * @param request the request to be proxied
      */
-    protected void customizeContinuation(Continuation continuation)
+    protected void customizeProxyRequest(Request proxyRequest, HttpServletRequest request)
     {
-
     }
 
     /**
-     * Extension point for custom handling of an HttpExchange's onConnectionFailed method. The default implementation delegates to
-     * {@link #handleOnException(Throwable, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+     * Extension point for remote server response header filtering.
+     * The default implementation returns the header value as is.
+     * If null is returned, this header won't be forwarded back to the client.
      *
-     * @param ex
-     * @param request
-     * @param response
+     * @param headerName the header name
+     * @param headerValue the header value
+     * @param request the request to proxy
+     * @return filteredHeaderValue the new header value
      */
-    protected void handleOnConnectionFailed(Throwable ex, HttpServletRequest request, HttpServletResponse response)
-    {
-        handleOnException(ex,request,response);
-    }
-
-    /**
-     * Extension point for custom handling of an HttpExchange's onException method. The default implementation sets the response status to
-     * HttpServletResponse.SC_INTERNAL_SERVER_ERROR (503)
-     *
-     * @param ex
-     * @param request
-     * @param response
-     */
-    protected void handleOnException(Throwable ex, HttpServletRequest request, HttpServletResponse response)
-    {
-        if (ex instanceof IOException)
-        {
-            _log.warn(ex.toString());
-            _log.debug(ex);
-        }
-        else
-            _log.warn(ex);
-        
-        if (!response.isCommitted())
-        {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Extension point for custom handling of an HttpExchange's onExpire method. The default implementation sets the response status to
-     * HttpServletResponse.SC_GATEWAY_TIMEOUT (504)
-     *
-     * @param request
-     * @param response
-     */
-    protected void handleOnExpire(HttpServletRequest request, HttpServletResponse response)
-    {
-        if (!response.isCommitted())
-        {
-            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
-        }
-    }
-
-    /**
-     * Extension point for remote server response header filtering. The default implementation returns the header value as is. If null is returned, this header
-     * won't be forwarded back to the client.
-     * 
-     * @param headerName
-     * @param headerValue
-     * @param request
-     * @return filteredHeaderValue
-     */
-    protected String filterResponseHeaderValue(String headerName, String headerValue, HttpServletRequest request)
+    protected String filterResponseHeader(HttpServletRequest request, String headerName, String headerValue)
     {
         return headerValue;
     }
 
     /**
      * Transparent Proxy.
-     * 
-     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. The servlet is configured with init parameters:
+     * <p/>
+     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy.
+     * The servlet is configured with init parameters:
      * <ul>
-     * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
-     * <li>Prefix - a URI prefix that is striped from the start of the forwarded URI.
+     * <li>proxyTo - a URI like http://host:80/context to which the request is proxied.
+     * <li>prefix - a URI prefix that is striped from the start of the forwarded URI.
      * </ul>
-     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context and the Prefix was /foo, then the request would be proxied
-     * to http://host:80/context/bar
-     * 
+     * For example, if a request is received at /foo/bar and the 'proxyTo' parameter is "http://host:80/context"
+     * and the 'prefix' parameter is "/foo", then the request would be proxied to "http://host:80/context/bar".
      */
     public static class Transparent extends ProxyServlet
     {
-        String _prefix;
-        String _proxyTo;
+        private String _proxyTo;
+        private String _prefix;
 
         public Transparent()
         {
         }
 
-        public Transparent(String prefix, String host, int port)
+        public Transparent(String proxyTo, String prefix)
         {
-            this(prefix,"http",host,port,null);
-        }
-
-        public Transparent(String prefix, String schema, String host, int port, String path)
-        {
-            try
-            {
-                if (prefix != null)
-                {
-                    _prefix = new URI(prefix).normalize().toString();
-                }
-                _proxyTo = new URI(schema,null,host,port,path,null,null).normalize().toString();
-            }
-            catch (URISyntaxException ex)
-            {
-                _log.debug("Invalid URI syntax",ex);
-            }
+            _proxyTo = URI.create(proxyTo).normalize().toString();
+            _prefix = URI.create(prefix).normalize().toString();
         }
 
         @Override
-        public void init(ServletConfig config) throws ServletException
+        public void init() throws ServletException
         {
-            super.init(config);
+            super.init();
 
-            String prefix = config.getInitParameter("Prefix");
-            _prefix = prefix == null?_prefix:prefix;
+            ServletConfig config = getServletConfig();
+
+            String prefix = config.getInitParameter("prefix");
+            _prefix = prefix == null ? _prefix : prefix;
 
             // Adjust prefix value to account for context path
-            String contextPath = _context.getContextPath();
-            _prefix = _prefix == null?contextPath:(contextPath + _prefix);
+            String contextPath = getServletContext().getContextPath();
+            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
-            String proxyTo = config.getInitParameter("ProxyTo");
-            _proxyTo = proxyTo == null?_proxyTo:proxyTo;
+            String proxyTo = config.getInitParameter("proxyTo");
+            _proxyTo = proxyTo == null ? _proxyTo : proxyTo;
 
             if (_proxyTo == null)
-                throw new UnavailableException("ProxyTo parameter is requred.");
+                throw new UnavailableException("Init parameter 'proxyTo' is required.");
 
             if (!_prefix.startsWith("/"))
-                throw new UnavailableException("Prefix parameter must start with a '/'.");
+                throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
 
             _log.info(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override
-        protected HttpURI proxyHttpURI(final String scheme, final String serverName, int serverPort, final String uri) throws MalformedURLException
+        protected URI rewriteURI(HttpServletRequest request)
         {
+            String path = request.getRequestURI();
+            if (!path.startsWith(_prefix))
+                return null;
+
+            URI rewrittenURI = URI.create(_proxyTo + path.substring(_prefix.length())).normalize();
+
+            if (!validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
+                return null;
+
+            return rewrittenURI;
+        }
+    }
+
+    private class ProxyResponseListener extends Response.Listener.Empty
+    {
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
+
+        public ProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
+        {
+            this.request = request;
+            this.response = response;
+        }
+
+        @Override
+        public void onBegin(Response proxyResponse)
+        {
+            response.setStatus(proxyResponse.getStatus());
+        }
+
+        @Override
+        public void onHeaders(Response proxyResponse)
+        {
+            onResponseHeaders(request, response, proxyResponse);
+
+            if (_log.isDebugEnabled())
+            {
+                StringBuilder builder = new StringBuilder("\r\n");
+                builder.append(request.getProtocol()).append(" ").append(response.getStatus()).append(" ").append(proxyResponse.getReason()).append("\r\n");
+                for (String headerName : response.getHeaderNames())
+                {
+                    builder.append(headerName).append(": ");
+                    for (Iterator<String> headerValues = response.getHeaders(headerName).iterator(); headerValues.hasNext();)
+                    {
+                        String headerValue = headerValues.next();
+                        if (headerValue != null)
+                            builder.append(headerValue);
+                        if (headerValues.hasNext())
+                            builder.append(",");
+                    }
+                    builder.append("\r\n");
+                }
+                _log.debug("{} proxying to downstream:{}{}{}{}{}",
+                        getRequestId(request),
+                        System.lineSeparator(),
+                        proxyResponse,
+                        System.lineSeparator(),
+                        proxyResponse.getHeaders().toString().trim(),
+                        System.lineSeparator(),
+                        builder);
+            }
+        }
+
+        @Override
+        public void onContent(Response proxyResponse, ByteBuffer content)
+        {
+            byte[] buffer;
+            int offset;
+            int length = content.remaining();
+            if (content.hasArray())
+            {
+                buffer = content.array();
+                offset = content.arrayOffset();
+            }
+            else
+            {
+                buffer = new byte[length];
+                content.get(buffer);
+                offset = 0;
+            }
+
             try
             {
-                if (!uri.startsWith(_prefix))
-                    return null;
-
-                URI dstUri = new URI(_proxyTo + uri.substring(_prefix.length())).normalize();
-
-                if (!validateDestination(dstUri.getHost(),dstUri.getPath()))
-                    return null;
-
-                return new HttpURI(dstUri.toString());
+                onResponseContent(request, response, proxyResponse, buffer, offset, length);
             }
-            catch (URISyntaxException ex)
+            catch (IOException x)
             {
-                throw new MalformedURLException(ex.getMessage());
+                proxyResponse.abort(x);
             }
+        }
+
+        @Override
+        public void onSuccess(Response proxyResponse)
+        {
+            onResponseSuccess(request, response, proxyResponse);
+        }
+
+        @Override
+        public void onFailure(Response proxyResponse, Throwable failure)
+        {
+            onResponseFailure(request, response, proxyResponse, failure);
+        }
+
+        @Override
+        public void onComplete(Result result)
+        {
+            _log.debug("{} proxying complete", getRequestId(request));
         }
     }
 }

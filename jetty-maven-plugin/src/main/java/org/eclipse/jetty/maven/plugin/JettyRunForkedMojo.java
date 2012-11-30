@@ -18,33 +18,24 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
@@ -52,10 +43,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.repository.ComponentDependency;
-import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
 
 
 /**
@@ -104,7 +92,6 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @readonly
      */
     private MavenProject project;
-    
 
     
     /**
@@ -124,6 +111,7 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @readonly
      */
     private String webXml;
+    
     
     /**
      * The target directory
@@ -153,8 +141,7 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @required
      * 
      */
-    private File classesDirectory;
-    
+    private File classesDirectory;    
     
     
     /**
@@ -164,6 +151,7 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @required
      */
     private File testClassesDirectory;
+   
     
     /**
      * Root directory for all html/jsp etc files
@@ -171,17 +159,8 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @parameter expression="${basedir}/src/main/webapp"
      *
      */
-    private File webAppSourceDirectory;
-    
-    
-    /**
-     * Directories that contain static resources
-     * for the webapp. Optional.
-     * 
-     * @parameter
-     */
-    private File[] resourceBases;
-    
+    private File webAppSourceDirectory;   
+
     
     /**
      * If true, the webAppSourceDirectory will be first on the list of 
@@ -201,12 +180,9 @@ public class JettyRunForkedMojo extends AbstractMojo
     private String jettyXml;
     
     /**
-     * The context path for the webapp. Defaults to the
-     * name of the webapp's artifact.
+     * The context path for the webapp. Defaults to / for jetty-9
      *
-     * @parameter expression="/${project.artifactId}"
-     * @required
-     * @readonly
+     * @parameter expression="/"
      */
     private String contextPath;
 
@@ -224,6 +200,7 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     private boolean skip;
 
+    
     /**
      * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt; 
      * -DSTOP.KEY=&lt;stopKey&gt; -jar start.jar --stop
@@ -231,6 +208,7 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @required
      */
     protected int stopPort;
+ 
     
     /**
      * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
@@ -246,7 +224,6 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @parameter
      */
     private String jvmArgs;
-
     
     
     /**
@@ -263,19 +240,33 @@ public class JettyRunForkedMojo extends AbstractMojo
     private PluginDescriptor plugin;
     
     
-    
     /**
      * @parameter expression="true" default-value="true"
      */
     private boolean waitForChild;
 
     
+    /**
+     * The forked jetty instance
+     */
     private Process forkedProcess;
     
-    private Random random;
+    
+    /**
+     * Random number generator
+     */
+    private Random random;    
     
     
     
+    
+    
+    
+    /**
+     * ShutdownThread
+     *
+     *
+     */
     public class ShutdownThread extends Thread
     {
         public ShutdownThread()
@@ -291,6 +282,51 @@ public class JettyRunForkedMojo extends AbstractMojo
             }
         }
     }
+    
+
+    
+    
+    /**
+     * ConsoleStreamer
+     * 
+     * Simple streamer for the console output from a Process
+     */
+    private static class ConsoleStreamer implements Runnable
+    {
+        private String mode;
+        private BufferedReader reader;
+
+        public ConsoleStreamer(String mode, InputStream is)
+        {
+            this.mode = mode;
+            this.reader = new BufferedReader(new InputStreamReader(is));
+        }
+
+
+        public void run()
+        {
+            String line;
+            try
+            {
+                while ((line = reader.readLine()) != (null))
+                {
+                    System.out.println("[" + mode + "] " + line);
+                }
+            }
+            catch (IOException ignore)
+            {
+                /* ignore */
+            }
+            finally
+            {
+                IO.close(reader);
+            }
+        }
+    }
+    
+    
+    
+    
     
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
@@ -310,6 +346,12 @@ public class JettyRunForkedMojo extends AbstractMojo
     }
     
     
+    
+    
+    /**
+     * @return
+     * @throws MojoExecutionException
+     */
     public List<String> getProvidedJars() throws MojoExecutionException
     {  
         //if we are configured to include the provided dependencies on the plugin's classpath
@@ -336,7 +378,13 @@ public class JettyRunForkedMojo extends AbstractMojo
             return null;
     }
     
-    /* ------------------------------------------------------------ */
+   
+    
+    
+    /**
+     * @return
+     * @throws MojoExecutionException
+     */
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
@@ -371,29 +419,10 @@ public class JettyRunForkedMojo extends AbstractMojo
             //sort out base dir of webapp
             if (webAppSourceDirectory != null)
                 props.put("base.dir", webAppSourceDirectory.getAbsolutePath());
-            
+
             //sort out the resource base directories of the webapp
-            StringBuilder builder = new StringBuilder();            
-            if (baseAppFirst)
-            {
-               add((webAppSourceDirectory==null?null:webAppSourceDirectory.getAbsolutePath()), builder);
-               if (resourceBases != null)
-               {
-                   for (File resDir:resourceBases)
-                       add(resDir.getAbsolutePath(), builder);
-               }
-            }
-            else
-            { 
-                if (resourceBases != null)
-                {
-                    for (File resDir:resourceBases)
-                        add(resDir.getAbsolutePath(), builder);
-                }
-                add((webAppSourceDirectory==null?null:webAppSourceDirectory.getAbsolutePath()), builder);
-            }
-            props.put("res.dirs", builder.toString());
-                   
+            StringBuilder builder = new StringBuilder();
+            props.put("base.first", Boolean.toString(baseAppFirst));
 
             //web-inf classes
             List<File> classDirs = getClassesDirs();
@@ -428,18 +457,34 @@ public class JettyRunForkedMojo extends AbstractMojo
             }
             props.put("lib.jars", strbuff.toString());
 
-            //any overlays
-            List<File> overlays = getOverlays();
-            strbuff.setLength(0);
-            for (int i=0; i<overlays.size(); i++)
+            //any war files
+            List<Artifact> warArtifacts = getWarArtifacts(); 
+            for (int i=0; i<warArtifacts.size(); i++)
             {
-                File f = overlays.get(i);
-                strbuff.append(f.getAbsolutePath());
-                if (i < overlays.size()-1)
-                    strbuff.append(",");
+                strbuff.setLength(0);           
+                Artifact a  = warArtifacts.get(i);
+                strbuff.append(a.getGroupId()+",");
+                strbuff.append(a.getArtifactId()+",");
+                strbuff.append(a.getFile().getAbsolutePath());
+                props.put("maven.war.artifact."+i, strbuff.toString());
             }
-            props.put("overlay.files", strbuff.toString());
-
+          
+            
+            //any overlay configuration
+            WarPluginInfo warPlugin = new WarPluginInfo(project);
+            
+            //add in the war plugins default includes and excludes
+            props.put("maven.war.includes", toCSV(warPlugin.getDependentMavenWarIncludes()));
+            props.put("maven.war.excludes", toCSV(warPlugin.getDependentMavenWarExcludes()));
+            
+            
+            List<OverlayConfig> configs = warPlugin.getMavenWarOverlayConfigs();
+            int i=0;
+            for (OverlayConfig c:configs)
+            {
+                props.put("maven.war.overlay."+(i++), c.toString());
+            }
+            
             props.store(new BufferedOutputStream(new FileOutputStream(propsFile)), "properties for forked webapp");
             return propsFile;
         }
@@ -449,15 +494,12 @@ public class JettyRunForkedMojo extends AbstractMojo
         }
     }
     
-    private void add (String string, StringBuilder builder)
-    {
-        if (string == null)
-            return;
-        if (builder.length() > 0)
-            builder.append(",");
-        builder.append(string);
-    }
 
+    
+    
+    /**
+     * @return
+     */
     private List<File> getClassesDirs ()
     {
         List<File> classesDirs = new ArrayList<File>();
@@ -474,24 +516,34 @@ public class JettyRunForkedMojo extends AbstractMojo
     }
   
     
+  
     
-    private List<File> getOverlays()
+    /**
+     * @return
+     * @throws MalformedURLException
+     * @throws IOException
+     */
+    private List<Artifact> getWarArtifacts()
     throws MalformedURLException, IOException
     {
-        List<File> overlays = new ArrayList<File>();
+        List<Artifact> warArtifacts = new ArrayList<Artifact>();
         for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();  
             
             if (artifact.getType().equals("war"))
-                overlays.add(artifact.getFile());
+                warArtifacts.add(artifact);
         }
 
-        return overlays;
+        return warArtifacts;
     }
     
     
     
+    
+    /**
+     * @return
+     */
     private List<File> getDependencyFiles ()
     {
         List<File> dependencyFiles = new ArrayList<File>();
@@ -512,6 +564,13 @@ public class JettyRunForkedMojo extends AbstractMojo
         return dependencyFiles; 
     }
     
+    
+    
+    
+    /**
+     * @param artifact
+     * @return
+     */
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
@@ -531,7 +590,12 @@ public class JettyRunForkedMojo extends AbstractMojo
     
     
     
-    private Set<Artifact>  getExtraJars()
+    
+    /**
+     * @return
+     * @throws Exception
+     */
+    private Set<Artifact> getExtraJars()
     throws Exception
     {
         Set<Artifact> extraJars = new HashSet<Artifact>();
@@ -557,7 +621,11 @@ public class JettyRunForkedMojo extends AbstractMojo
     }
 
     
-    /* ------------------------------------------------------------ */
+
+    
+    /**
+     * @throws MojoExecutionException
+     */
     public void startJettyRunner() throws MojoExecutionException
     {      
         try
@@ -678,7 +746,12 @@ public class JettyRunForkedMojo extends AbstractMojo
     }
     
  
+
     
+    /**
+     * @return
+     * @throws Exception
+     */
     public String getClassPath() throws Exception
     {
         StringBuilder classPath = new StringBuilder();
@@ -720,6 +793,12 @@ public class JettyRunForkedMojo extends AbstractMojo
         return classPath.toString();
     }
 
+    
+
+    
+    /**
+     * @return
+     */
     private String getJavaBin()
     {
         String javaexes[] = new String[]
@@ -738,6 +817,13 @@ public class JettyRunForkedMojo extends AbstractMojo
         return "java";
     }
     
+
+    
+    
+    /**
+     * @param path
+     * @return
+     */
     public static String fileSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -755,6 +841,13 @@ public class JettyRunForkedMojo extends AbstractMojo
         return ret.toString();
     }
 
+
+    
+    
+    /**
+     * @param path
+     * @return
+     */
     public static String pathSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -772,13 +865,24 @@ public class JettyRunForkedMojo extends AbstractMojo
         return ret.toString();
     }
 
+
     
+    
+    /**
+     * @return
+     */
     private String createToken ()
     {
         return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
     }
     
+
     
+    
+    /**
+     * @param mode
+     * @param inputStream
+     */
     private void startPump(String mode, InputStream inputStream)
     {
         ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
@@ -787,42 +891,25 @@ public class JettyRunForkedMojo extends AbstractMojo
         thread.start();
     }
 
-  
 
-
+    
+    
     /**
-     * Simple streamer for the console output from a Process
+     * @param strings
+     * @return
      */
-    private static class ConsoleStreamer implements Runnable
+    private String toCSV (List<String> strings)
     {
-        private String mode;
-        private BufferedReader reader;
-
-        public ConsoleStreamer(String mode, InputStream is)
+        if (strings == null)
+            return "";
+        StringBuffer strbuff = new StringBuffer();
+        Iterator<String> itor = strings.iterator();
+        while (itor.hasNext())
         {
-            this.mode = mode;
-            this.reader = new BufferedReader(new InputStreamReader(is));
+            strbuff.append(itor.next());
+            if (itor.hasNext())
+                strbuff.append(",");
         }
-
-
-        public void run()
-        {
-            String line;
-            try
-            {
-                while ((line = reader.readLine()) != (null))
-                {
-                    System.out.println("[" + mode + "] " + line);
-                }
-            }
-            catch (IOException ignore)
-            {
-                /* ignore */
-            }
-            finally
-            {
-                IO.close(reader);
-            }
-        }
+        return strbuff.toString();
     }
 }

@@ -23,57 +23,52 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.management.RuntimeErrorException;
-
-public class FutureCallback<C> implements Future<C>,Callback<C>
+public class FutureCallback implements Future<Void>,Callback
 {
     private static Throwable COMPLETED=new Throwable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
     private final CountDownLatch _latch=new CountDownLatch(1);
     private Throwable _cause;
-    private C _context;
     
     public FutureCallback()
     {}
 
-    public FutureCallback(C ctx)
+    public FutureCallback(boolean completed)
     {
-        _cause=COMPLETED;
-        _context=ctx;
-        _done.set(true);
-        _latch.countDown();
+        if (completed)
+        {
+            _cause=COMPLETED;
+            _done.set(true);
+            _latch.countDown();
+        }
     }
 
-    public FutureCallback(C ctx, Throwable failed)
+    public FutureCallback(Throwable failed)
     {
-        _context=ctx;
         _cause=failed;
         _done.set(true);
         _latch.countDown();
     }
 
     @Override
-    public void completed(C context)
+    public void succeeded()
     {
         if (_done.compareAndSet(false,true))
         {
-            _context=context;
             _cause=COMPLETED;
             _latch.countDown();
         }
     }
 
     @Override
-    public void failed(C context, Throwable cause)
+    public void failed(Throwable cause)
     {
         if (_done.compareAndSet(false,true))
         {
-            _context=context;
             _cause=cause;
             _latch.countDown();
         }
@@ -84,7 +79,6 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     {
         if (_done.compareAndSet(false,true))
         {
-            _context=null;
             _cause=new CancellationException();
             _latch.countDown();
             return true;
@@ -117,24 +111,24 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     }
 
     @Override
-    public C get() throws InterruptedException, ExecutionException
+    public Void get() throws InterruptedException, ExecutionException
     {
         _latch.await();
         if (_cause==COMPLETED)
-            return _context;
+            return null;
         if (_cause instanceof CancellationException)
             throw (CancellationException) new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
     }
 
     @Override
-    public C get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+    public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
         if (!_latch.await(timeout,unit))
             throw new TimeoutException();
 
         if (_cause==COMPLETED)
-            return _context;
+            return null;
         if (_cause instanceof TimeoutException)
             throw (TimeoutException)_cause;
         if (_cause instanceof CancellationException)
@@ -157,7 +151,7 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     @Override
     public String toString()
     {
-        return String.format("FutureCallback@%x{%b,%b,%s}",hashCode(),_done,_cause==COMPLETED,_context);
+        return String.format("FutureCallback@%x{%b,%b}",hashCode(),_done,_cause==COMPLETED);
     }
     
 }

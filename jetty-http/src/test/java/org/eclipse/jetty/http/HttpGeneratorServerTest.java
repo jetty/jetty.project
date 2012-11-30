@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,6 +27,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Test;
 
 public class HttpGeneratorServerTest
 {

@@ -26,7 +26,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpRequestTester;
 import org.eclipse.jetty.test.support.rawhttp.HttpResponseTester;
@@ -53,7 +53,7 @@ public class DefaultHandlerTest
     public static void setUpServer() throws Exception
     {
         server = new TestableJettyServer();
-        server.setScheme(HttpSchemes.HTTP);
+        server.setScheme(HttpScheme.HTTP.asString());
         server.addConfiguration("DefaultHandler.xml");
 
         server.load();

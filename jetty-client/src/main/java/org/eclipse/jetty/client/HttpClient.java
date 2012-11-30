@@ -20,7 +20,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -55,9 +55,9 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -127,6 +127,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
+    private volatile ProxyConfiguration proxyConfig;
 
     public HttpClient()
     {
@@ -297,6 +298,9 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination provideDestination(String scheme, String host, int port)
     {
+        if (port <= 0)
+            port = "https".equalsIgnoreCase(scheme) ? 443 : 80;
+
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
         if (destination == null)
@@ -328,19 +332,15 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        int port = request.getPort();
-        if (port < 0)
-            port = "https".equals(scheme) ? 443 : 80;
-
         for (Response.ResponseListener listener : listeners)
             if (listener instanceof Schedulable)
                 ((Schedulable)listener).schedule(scheduler);
 
-        HttpDestination destination = provideDestination(scheme, request.getHost(), port);
+        HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
-    protected void newConnection(HttpDestination destination, Callback<Connection> callback)
+    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
         SocketChannel channel = null;
         try
@@ -351,16 +351,16 @@ public class HttpClient extends ContainerLifeCycle
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(destination.getHost(), destination.getPort()));
+            channel.connect(destination.getConnectAddress());
 
-            Future<Connection> result = new ConnectionCallback(destination, callback);
+            Future<Connection> result = new ConnectionCallback(destination, promise);
             selectorManager.connect(channel, result);
         }
         catch (IOException x)
         {
             if (channel != null)
                 close(channel);
-            callback.failed(null, x);
+            promise.failed(x);
         }
     }
 
@@ -596,6 +596,16 @@ public class HttpClient extends ContainerLifeCycle
         this.dispatchIO = dispatchIO;
     }
 
+    public ProxyConfiguration getProxyConfiguration()
+    {
+        return proxyConfig;
+    }
+
+    public void setProxyConfiguration(ProxyConfiguration proxyConfig)
+    {
+        this.proxyConfig = proxyConfig;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -633,7 +643,7 @@ public class HttpClient extends ContainerLifeCycle
                 if (sslContextFactory == null)
                 {
                     IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
-                    callback.failed(null, failure);
+                    callback.failed(failure);
                     throw failure;
                 }
                 else
@@ -649,7 +659,7 @@ public class HttpClient extends ContainerLifeCycle
                     // TODO: configureConnection, see above
 
                     appEndPoint.setConnection(connection);
-                    callback.callback.completed(connection);
+                    callback.promise.succeeded(connection);
 
                     return sslConnection;
                 }
@@ -658,7 +668,7 @@ public class HttpClient extends ContainerLifeCycle
             {
                 HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
                 // TODO: configureConnection, see above
-                callback.callback.completed(connection);
+                callback.promise.succeeded(connection);
                 return connection;
             }
         }
@@ -667,19 +677,19 @@ public class HttpClient extends ContainerLifeCycle
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.callback.failed(null, ex);
+            callback.promise.failed(ex);
         }
     }
 
-    private class ConnectionCallback extends FutureCallback<Connection>
+    private class ConnectionCallback extends FuturePromise<Connection>
     {
         private final HttpDestination destination;
-        private final Callback<Connection> callback;
+        private final Promise<Connection> promise;
 
-        private ConnectionCallback(HttpDestination destination, Callback<Connection> callback)
+        private ConnectionCallback(HttpDestination destination, Promise<Connection> promise)
         {
             this.destination = destination;
-            this.callback = callback;
+            this.promise = promise;
         }
     }
 }

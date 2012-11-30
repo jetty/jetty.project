@@ -226,16 +226,24 @@ public class ClasspathPattern
         if (_entries != null)
         {
             name = name.replace('/','.');
-            name = name.replaceFirst("^[.]+","");
-            name = name.replaceAll("\\$.*$","");
-            
+
+            int startIndex = 0;
+
+            while(startIndex < name.length() && name.charAt(startIndex) == '.') {
+                startIndex++;
+            }
+
+            int dollar = name.indexOf("$");
+
+            int endIndex =  dollar != -1 ? dollar : name.length();
+
             for (Entry entry : _entries)
             {
                 if (entry != null)
                 {               
                     if (entry.partial)
                     {
-                        if (name.startsWith(entry.classpath))
+                        if (name.regionMatches(startIndex, entry.classpath, 0, entry.classpath.length()))
                         {
                             result = entry.result;
                             break;
@@ -243,7 +251,9 @@ public class ClasspathPattern
                     }
                     else
                     {
-                        if (name.equals(entry.classpath))
+                        int regionLength = endIndex-startIndex;
+                        if (regionLength == entry.classpath.length()
+                                && name.regionMatches(startIndex, entry.classpath, 0, regionLength))
                         {
                             result = entry.result;
                             break;

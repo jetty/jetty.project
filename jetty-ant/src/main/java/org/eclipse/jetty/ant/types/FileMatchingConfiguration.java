@@ -31,7 +31,6 @@ import org.apache.tools.ant.DirectoryScanner;
  * file. It is used to group application classes, libraries, and scannedTargets
  * elements.
  * 
- * @author Jakub Pawlowicz
  */
 public class FileMatchingConfiguration
 {

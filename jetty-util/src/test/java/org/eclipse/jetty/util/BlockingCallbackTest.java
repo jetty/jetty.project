@@ -82,7 +82,7 @@ public class BlockingCallbackTest
     public void testDone() throws Exception
     {
         BlockingCallback fcb= _factory.newBlockingCallback();
-        fcb.completed(fcb.getPhase());
+        fcb.succeeded();
         long start=System.currentTimeMillis();
         fcb.block();
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L));     
@@ -101,7 +101,7 @@ public class BlockingCallbackTest
             {
                 latch.countDown();
                 try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                fcb.completed(fcb.getPhase());
+                fcb.succeeded();
             }
         }).start();
         
@@ -117,7 +117,7 @@ public class BlockingCallbackTest
     {
         BlockingCallback fcb= _factory.newBlockingCallback();
         Exception ex=new Exception("FAILED");
-        fcb.failed(fcb.getPhase(),ex);
+        fcb.failed(ex);
         
         long start=System.currentTimeMillis();
         try
@@ -146,7 +146,7 @@ public class BlockingCallbackTest
             {
                 latch.countDown();
                 try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                fcb.failed(fcb.getPhase(),ex);
+                fcb.failed(ex);
             }
         }).start();
         

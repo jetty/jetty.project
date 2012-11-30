@@ -5,72 +5,57 @@
 <!-- Configure the Jetty Server with Spring                          -->
 <!-- This file is the similar to jetty.xml, but written in spring    -->
 <!-- XmlBeanFactory format.                                          -->
-<!--                                                                 -->
-<!-- This file may be run with:                                      -->
-<!--   java -jar start.jar OPTIONS=Server,spring \                   -->
-<!--   start.class=org.eclipse.jetty.spring.Main \                   -->
-<!--   etc/jetty-spring.xml                                          -->
-<!--                                                                 -->
-<!-- The spring and commons-logging jars may need to be added        -->
-<!-- to the classpath                                                -->
 <!-- =============================================================== -->
 
 <beans>
 
   <bean id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
 
-  <bean id="Server" name="Main" class="org.eclipse.jetty.spring.Server" init-method="start" destroy-method="stop">
-  
-    <property name="threadPool">  
-      <bean id="ThreadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+  <bean id="server" name="Main" class="org.eclipse.jetty.server.Server" init-method="start" destroy-method="stop">
+    <constructor-arg>
+      <bean id="threadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <property name="minThreads" value="10"/>
         <property name="maxThreads" value="50"/>
       </bean>
-    </property>
-    
+    </constructor-arg>
+
     <property name="connectors">
       <list>
-        <bean id="Connector" class="org.eclipse.jetty.server.ServerConnector">
+        <bean id="connector" class="org.eclipse.jetty.server.ServerConnector">
+          <constructor-arg ref="server"/>
           <property name="port" value="8080"/>
         </bean>
       </list>
     </property>
-    
+
     <property name="handler">
       <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
         <property name="handlers">
           <list>
-	     <ref bean="contexts"/>
-             <bean id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+            <ref bean="contexts"/>
+            <bean id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
           </list>
         </property>
       </bean>
     </property>
-    
+
     <property name="beans">
       <list>
-        <bean id="ContextDeployer" class="org.eclipse.jetty.deploy.ContextDeployer">
+        <bean id="deploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
           <property name="contexts" ref="contexts"/>
-          <property name="directory" value="contexts"/>
-          <property name="scanInterval" value="5"/>
+          <property name="appProviders">
+            <list>
+              <bean id="webAppProvider" class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+                <property name="monitoredDirName" value="webapps"/>
+                <property name="scanInterval" value="1"/>
+                <property name="extractWars" value="true"/>
+              </bean>
+            </list>
+          </property>
         </bean>
-
-        <bean id="WebAppDeployer" class="org.eclipse.jetty.deploy.WebAppDeployer">
-          <property name="contexts" ref="contexts"/>
-          <property name="webAppDir" value="webapps"/>
-          <property name="extract" value="true"/>
-          <property name="defaultsDescriptor" value="etc/webdefault.xml"/>
-        </bean>
-
-        <bean class="org.eclipse.jetty.security.HashLoginService">
-          <property name="name" value="Test Realm"/>
-          <property name="config" value="etc/realm.properties"/>
-          <property name="refreshInterval" value="0"/>
-        </bean>
-        
       </list>
     </property>
-    
+
   </bean>
 
 </beans>

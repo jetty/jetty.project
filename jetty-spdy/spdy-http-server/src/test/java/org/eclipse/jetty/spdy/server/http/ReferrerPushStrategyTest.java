@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server.http;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -33,21 +34,34 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 {
+    private final int referrerPushPeriod = 1000;
     private final String mainResource = "/index.html";
     private final String cssResource = "/style.css";
+    private InetSocketAddress serverAddress;
+    private ReferrerPushStrategy pushStrategy;
+    private ConnectionFactory defaultFactory;
+    private Fields mainRequestHeaders;
+    private Fields associatedCSSRequestHeaders;
+    private Fields associatedJSRequestHeaders;
 
     public ReferrerPushStrategyTest(short version)
     {
@@ -57,82 +71,106 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     @Override
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
-        HTTPSPDYServerConnector connector =
-            new HTTPSPDYServerConnector(server,version,new HttpConfiguration(),new ReferrerPushStrategy());
-        return connector;
+        return new HTTPSPDYServerConnector(server, version, new HttpConfiguration(), new ReferrerPushStrategy());
+    }
+
+    @Before
+    public void setUp() throws Exception
+    {
+        serverAddress = createServer();
+        pushStrategy = new ReferrerPushStrategy();
+        pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
+        defaultFactory = new HTTPSPDYServerConnectionFactory(version, new HttpConfiguration(), pushStrategy);
+        connector.addConnectionFactory(defaultFactory);
+        if (connector.getConnectionFactory(NPNServerConnectionFactory.class) != null)
+            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
+        else
+            connector.setDefaultProtocol(defaultFactory.getProtocol());
+        mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
+        associatedCSSRequestHeaders = createHeaders(cssResource);
+        associatedJSRequestHeaders = createHeaders("/application.js");
     }
 
     @Test
     public void testPushHeadersAreValid() throws Exception
     {
-        InetSocketAddress address = createServer();
+        sendMainRequestAndCSSRequest();
+        run2ndClientRequests(true, true);
+    }
 
-        ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
-        int referrerPushPeriod = 1000;
-        pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
-        connector.addConnectionFactory(defaultFactory);
-        if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
-            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
-        else
-            connector.setDefaultProtocol(defaultFactory.getProtocol());
+    @Test
+    public void testClientResetsPushStreams() throws Exception
+    {
+        sendMainRequestAndCSSRequest();
+        final CountDownLatch pushDataLatch = new CountDownLatch(1);
+        final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
+        Session session = startClient(version, serverAddress, new SessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
 
-        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
+                assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
+                assertThat("URI header ends with css", synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
+                        .value().endsWith
+                                ("" +
+                                        ".css"),
+                        is(true));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
+                return new StreamFrameListener.Adapter()
+                {
 
-        Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
-        Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        dataInfo.consume(dataInfo.length());
+                        pushDataLatch.countDown();
+                    }
+                };
+            }
+        });
+        // Send main request. That should initiate the push syn's which get reset by the client
+        sendRequest(session, mainRequestHeaders);
 
-        // Sleep for pushPeriod This should prevent application.js from being mapped as pushResource
-        Thread.sleep(referrerPushPeriod + 1);
+        assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
+        assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
 
-        sendJSRequest(session1);
+        sendRequest(session, associatedCSSRequestHeaders);
+    }
 
-        run2ndClientRequests(address, mainRequestHeaders, true);
+    @Test
+    public void testUserAgentBlackList() throws Exception
+    {
+        pushStrategy.setUserAgentBlacklist(Arrays.asList(".*(?i)firefox/16.*"));
+        sendMainRequestAndCSSRequest();
+        run2ndClientRequests(false, false);
     }
 
     @Test
     public void testReferrerPushPeriod() throws Exception
     {
-        InetSocketAddress address = createServer();
-
-        ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
-        int referrerPushPeriod = 1000;
-        pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
-        connector.addConnectionFactory(defaultFactory);
-        if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
-            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
-        else
-            connector.setDefaultProtocol(defaultFactory.getProtocol());
-
-        Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
-        Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
+        Session session = sendMainRequestAndCSSRequest();
 
         // Sleep for pushPeriod This should prevent application.js from being mapped as pushResource
-        Thread.sleep(referrerPushPeriod+1);
+        Thread.sleep(referrerPushPeriod + 1);
+        sendRequest(session, associatedJSRequestHeaders);
 
-        sendJSRequest(session1);
-
-        run2ndClientRequests(address, mainRequestHeaders, false);
+        run2ndClientRequests(false, true);
     }
 
     @Test
     public void testMaxAssociatedResources() throws Exception
     {
-        InetSocketAddress address = createServer();
-
-        ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpConfiguration(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
         connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
-        Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
-        Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
+        Session session = sendMainRequestAndCSSRequest();
 
-        sendJSRequest(session1);
+        sendRequest(session, associatedJSRequestHeaders);
 
-        run2ndClientRequests(address, mainRequestHeaders, false);
+        run2ndClientRequests(false, true);
     }
 
     private InetSocketAddress createServer() throws Exception
@@ -155,76 +193,62 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         });
     }
 
-    private Session sendMainRequestAndCSSRequest(InetSocketAddress address, Fields mainRequestHeaders) throws Exception
+    private Session sendMainRequestAndCSSRequest() throws Exception
     {
-        Session session1 = startClient(version, address, null);
+        Session session = startClient(version, serverAddress, null);
 
-        final CountDownLatch mainResourceLatch = new CountDownLatch(1);
-        session1.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                dataInfo.consume(dataInfo.length());
-                if (dataInfo.isClose())
-                    mainResourceLatch.countDown();
-            }
-        });
-        Assert.assertTrue(mainResourceLatch.await(5, TimeUnit.SECONDS));
+        sendRequest(session, mainRequestHeaders);
+        sendRequest(session, associatedCSSRequestHeaders);
 
-        final CountDownLatch associatedResourceLatch1 = new CountDownLatch(1);
-        Fields associatedRequestHeaders1 = createHeaders(cssResource);
-        session1.syn(new SynInfo(associatedRequestHeaders1, true), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                dataInfo.consume(dataInfo.length());
-                if (dataInfo.isClose())
-                    associatedResourceLatch1.countDown();
-            }
-        });
-        Assert.assertTrue(associatedResourceLatch1.await(5, TimeUnit.SECONDS));
-        return session1;
+        return session;
     }
 
-
-    private void sendJSRequest(Session session1) throws InterruptedException
+    private void sendRequest(Session session, Fields requestHeaders) throws InterruptedException
     {
-        final CountDownLatch associatedResourceLatch2 = new CountDownLatch(1);
-        String jsResource = "/application.js";
-        Fields associatedRequestHeaders2 = createHeaders(jsResource);
-        session1.syn(new SynInfo(associatedRequestHeaders2, true), new StreamFrameListener.Adapter()
+        final CountDownLatch dataReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch received200OKLatch = new CountDownLatch(1);
+        session.syn(new SynInfo(requestHeaders, true), new StreamFrameListener.Adapter()
         {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                if ("200 OK".equals(replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value()))
+                    received200OKLatch.countDown();
+                super.onReply(stream, replyInfo);
+            }
+
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 dataInfo.consume(dataInfo.length());
                 if (dataInfo.isClose())
-                    associatedResourceLatch2.countDown();
+                    dataReceivedLatch.countDown();
             }
         });
-        Assert.assertTrue(associatedResourceLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(received200OKLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataReceivedLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private void run2ndClientRequests(InetSocketAddress address, Fields mainRequestHeaders, final boolean validateHeaders) throws Exception
+    private void run2ndClientRequests(final boolean validateHeaders,
+                                      boolean expectPushResource) throws Exception
     {
-        // Create another client, and perform the same request for the main resource,
-        // we expect the css being pushed, but not the js
-
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
-        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, serverAddress, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                if(validateHeaders)
+                if (validateHeaders)
                     validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
 
-                Assert.assertTrue(stream.isUnidirectional());
-                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith(".css"));
+                assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
+                assertThat("URI header ends with css", synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
+                        .value().endsWith
+                                ("" +
+                                        ".css"),
+                        is(true));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -243,7 +267,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertFalse(replyInfo.isClose());
+                assertThat("replyInfo.isClose() is false", replyInfo.isClose(), is(false));
                 mainStreamLatch.countDown();
             }
 
@@ -256,10 +280,13 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             }
         });
 
-        Assert.assertTrue("Main request reply and/or data not received", mainStreamLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue("Pushed data not received", pushDataLatch.await(5, TimeUnit.SECONDS));
-        if(validateHeaders)
-            Assert.assertTrue("Push syn headers not valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS));
+        assertThat("Main request reply and/or data received", mainStreamLatch.await(5, TimeUnit.SECONDS), is(true));
+        if (expectPushResource)
+            assertThat("Pushed data received", pushDataLatch.await(5, TimeUnit.SECONDS), is(true));
+        else
+            assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
+        if (validateHeaders)
+            assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -296,19 +323,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         });
         Assert.assertTrue(mainResourceLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch associatedResourceLatch = new CountDownLatch(1);
-        Fields associatedRequestHeaders = createHeaders(cssResource);
-        session1.syn(new SynInfo(associatedRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                dataInfo.consume(dataInfo.length());
-                if (dataInfo.isClose())
-                    associatedResourceLatch.countDown();
-            }
-        });
-        Assert.assertTrue(associatedResourceLatch.await(5, TimeUnit.SECONDS));
+        sendRequest(session1, createHeaders(cssResource));
 
         // Create another client, and perform the same request for the main resource, we expect the css being pushed
 
@@ -758,7 +773,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         });
 
         Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertFalse("We don't expect data to be pushed as the main request contained an if-modified-since header",pushDataLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse("We don't expect data to be pushed as the main request contained an if-modified-since header", pushDataLatch.await(1, TimeUnit.SECONDS));
     }
 
     private void validateHeaders(Fields headers, CountDownLatch pushSynHeadersValid)
@@ -805,12 +820,14 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
     private Fields createHeadersWithoutReferrer(String resource)
     {
-        Fields associatedRequestHeaders = new Fields();
-        associatedRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        associatedRequestHeaders.put(HTTPSPDYHeader.URI.name(version), resource);
-        associatedRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        associatedRequestHeaders.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        associatedRequestHeaders.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
-        return associatedRequestHeaders;
+        Fields requestHeaders = new Fields();
+        requestHeaders.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) " +
+                "Gecko/20100101 Firefox/16.0");
+        requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        requestHeaders.put(HTTPSPDYHeader.URI.name(version), resource);
+        requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        requestHeaders.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        requestHeaders.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        return requestHeaders;
     }
 }

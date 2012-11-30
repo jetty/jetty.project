@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+   metadata-complete="false"
+   version="3.0"> 
+
+  <display-name>Transparent Proxy WebApp</display-name>
+ 
+  <servlet>
+    <servlet-name>TransparentProxy</servlet-name>
+    <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
+    <init-param>
+      <param-name>proxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-9/xref</param-value>
+    </init-param>
+    <init-param>
+      <param-name>hostHeader</param-name><param-value>download.eclipse.org</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>TransparentProxy</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+  
+</web-app>
+
+

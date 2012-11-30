@@ -23,15 +23,13 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.After;
 import org.junit.Assert;
@@ -40,12 +38,6 @@ import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
-    // Fire and Forget callback
-    public static Callback<Void> fnf()
-    {
-        return new FutureCallback<Void>();
-    }
-
     private Server _server;
     private int _port;
     private QueuedThreadPool _threadPool;
@@ -102,7 +94,7 @@ public class WebSocketOverSSLTest
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
         _server = new Server();
-        ServerConnector connector = new ServerConnector(_server, sslContextFactory);
+        ServerConnector connector = new ServerConnector(_server,sslContextFactory);
         _server.addConnector(connector);
         _server.setHandler(new WebSocketHandler.Simple(websocket.getClass()));
         _server.start();
@@ -130,7 +122,7 @@ public class WebSocketOverSSLTest
         String message = new String(chars);
         for (int i = 0; i < count; ++i)
         {
-            _connection.write(null,fnf(),message);
+            _connection.write(message);
         }
 
         Assert.assertTrue(clientLatch.await(20,TimeUnit.SECONDS));
@@ -162,7 +154,7 @@ public class WebSocketOverSSLTest
                 try
                 {
                     Assert.assertEquals(message,message);
-                    connection.write(null,fnf(),message);
+                    connection.write(message);
                     serverLatch.countDown();
                 }
                 catch (IOException x)
@@ -181,7 +173,7 @@ public class WebSocketOverSSLTest
                 clientLatch.countDown();
             }
         });
-        _connection.write(null,fnf(),message);
+        _connection.write(message);
 
         Assert.assertTrue(serverLatch.await(5,TimeUnit.SECONDS));
         Assert.assertTrue(clientLatch.await(5,TimeUnit.SECONDS));

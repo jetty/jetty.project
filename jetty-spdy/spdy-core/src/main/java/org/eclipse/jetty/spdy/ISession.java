@@ -34,9 +34,9 @@ public interface ISession extends Session
      */
     public void flush();
 
-    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback<C> callback, C context);
+    public void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback);
 
-    public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback<C> callback, C context);
+    public void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback);
 
     /**
      * <p>Gracefully shuts down this session.</p>

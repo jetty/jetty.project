@@ -1,0 +1,103 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.dist</groupId>
+    <artifactId>dist-parent</artifactId>
+    <version>9.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-deb</artifactId>
+  <name>Jetty :: Unix Distributions :: Debian</name>
+  <packaging>deb</packaging>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.mortbay.jetty.toolchain</groupId>
+        <artifactId>unix-maven-plugin</artifactId>
+        <version>1.0-alpha-6.1</version>
+        <extensions>true</extensions>
+        <configuration>
+          <contact>Jetty Project</contact>
+          <contactEmail>jetty-dev@eclipse.org</contactEmail>
+          <name>Core Jetty ${project.version} Distribution</name>
+          <description>Jetty provides an Web server and javax.servlet
+            container, plus support for Web Sockets, OSGi, JMX, JNDI,
+            JASPI, AJP and many other integrations. These components are
+            open source and available for commercial use and
+            distribution.</description>
+          <deb>
+            <useFakeroot>false</useFakeroot>
+            <priority>optional</priority>
+            <section>java</section>
+          </deb>
+           <packages>
+            <package>
+              <id>jetty-server</id>
+              <assembly>
+                <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/usr/share/jetty9</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <excludes>
+                    <exclude>jetty-distribution-*/javadoc</exclude>
+                    <exclude>jetty-distribution-*/javadoc/**</exclude>
+                    <exclude>jetty-distribution-*/logs/**</exclude>
+                    <exclude>jetty-distribution-*/bin/**</exclude>
+                    <exclude>jetty-distribution-*/etc/**</exclude>
+                    <exclude>jetty-distribution-*/webapps/**</exclude>                  
+                    <exclude>jetty-distribution-*/*.html</exclude>
+                    <exclude>jetty-distribution-*/*.txt</exclude>             
+                  </excludes>
+                 </extractArtifact>
+                 <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/usr/share/doc/jetty9</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <excludes>
+                    <include>jetty-distribution-*/*.html</include>
+                    <include>jetty-distribution-*/*.txt</include> 
+                    <exclude>jetty-distribution-*/**</exclude>           
+                  </excludes>
+                 </extractArtifact>
+                 <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/etc/jetty9</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <excludes>
+                    <include>jetty-distribution-*/etc/**</include>
+                    <!-- exclude>jetty-distribution-*/**</exclude-->           
+                  </excludes>
+                 </extractArtifact>
+              </assembly>
+            </package>
+            <package>
+              <id>jetty-test-webapp</id>
+              <classifier>test-webapp</classifier>
+              <assembly>
+                <extractArtifact>
+                  <artifact>org.eclipse.jetty:jetty-distribution:zip</artifact>
+                  <to>/var/lib/jetty9/webapps</to>
+                  <pattern>/jetty-distribution-${project.version}(.*)</pattern>
+                  <replacement>$1</replacement>
+                  <includes>
+                    <include>jetty-distribution-*/webapps/**</include>
+                  </includes>
+                </extractArtifact>
+              </assembly>
+            </package>
+          </packages>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-distribution</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+  </dependencies>
+</project>

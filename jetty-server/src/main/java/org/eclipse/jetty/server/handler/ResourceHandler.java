@@ -66,6 +66,7 @@ public class ResourceHandler extends HandlerWrapper
     String _cacheControl;
     boolean _aliases;
     boolean _directory;
+    boolean _etags;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
@@ -123,6 +124,24 @@ public class ResourceHandler extends HandlerWrapper
     public void setDirectoriesListed(boolean directory)
     {
         _directory = directory;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if ETag processing is done
+     */
+    public boolean isEtags()
+    {
+        return _etags;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param etags True if ETag processing is done
+     */
+    public void setEtags(boolean etags)
+    {
+        _etags = etags;
     }
 
     /* ------------------------------------------------------------ */
@@ -417,6 +436,21 @@ public class ResourceHandler extends HandlerWrapper
 
         // set some headers
         long last_modified=resource.lastModified();
+        String etag=null;
+        if (_etags)
+        {
+            // simple handling of only a single etag
+            String ifnm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+            etag=resource.getWeakETag();
+            if (ifnm!=null && resource!=null && ifnm.equals(etag))
+            {
+                response.setStatus(HttpStatus.NOT_MODIFIED_304);
+                baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+                return;
+            }
+        }
+        
+        
         if (last_modified>0)
         {
             long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
@@ -434,6 +468,9 @@ public class ResourceHandler extends HandlerWrapper
         // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
         response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
+        if (_etags)
+            baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+        
         if(skipContentBody)
             return;
         // Send the content

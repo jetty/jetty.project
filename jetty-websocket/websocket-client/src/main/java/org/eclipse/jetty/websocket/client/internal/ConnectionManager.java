@@ -29,18 +29,18 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.internal.io.WebSocketClientSelectorManager;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
 
 /**
  * Internal Connection/Client Manager used to track active clients, their physical vs virtual connection information, and provide some means to create new
@@ -80,11 +80,10 @@ public class ConnectionManager extends ContainerLifeCycle
 
         return new InetSocketAddress(uri.getHost(),port);
     }
-    private final Queue<WebSocketClient> clients = new ConcurrentLinkedQueue<>();
+    private final Queue<DefaultWebSocketClient> clients = new ConcurrentLinkedQueue<>();
     private final WebSocketClientSelectorManager selector;
 
-    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory,
-            WebSocketPolicy policy)
+    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, WebSocketPolicy policy)
     {
         // TODO: configure connect timeout
         selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
@@ -92,23 +91,30 @@ public class ConnectionManager extends ContainerLifeCycle
         addBean(selector);
     }
 
-    public void addClient(WebSocketClient client)
+    public void addClient(DefaultWebSocketClient client)
     {
         clients.add(client);
     }
 
-    private void closeConnections()
+    private void closeAllConnections()
     {
-        for (WebSocketClient client : clients)
+        for (DefaultWebSocketClient client : clients)
         {
             if (client.getConnection() != null)
             {
-                client.getConnection().close();
+                try
+                {
+                    client.getConnection().close();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("During Close All Connections",e);
+                }
             }
         }
     }
 
-    public FutureCallback<UpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
+    public Future<ClientUpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         SocketAddress bindAddress = client.getFactory().getBindAddress();
@@ -131,7 +137,7 @@ public class ConnectionManager extends ContainerLifeCycle
         return client;
     }
 
-    public FutureCallback<UpgradeResponse> connectVirtual(WebSocketClient client)
+    public Future<ClientUpgradeResponse> connectVirtual(WebSocketClient client)
     {
         // TODO Auto-generated method stub
         return null;
@@ -140,12 +146,12 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        closeConnections();
+        closeAllConnections();
         clients.clear();
         super.doStop();
     }
 
-    public Collection<WebSocketClient> getClients()
+    public Collection<DefaultWebSocketClient> getClients()
     {
         return Collections.unmodifiableCollection(clients);
     }

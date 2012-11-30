@@ -20,16 +20,16 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.Executor;
 
-public abstract class ExecutorCallback<C> implements Callback<C>
+public abstract class ExecutorCallback implements Callback
 {
-    private final ForkInvoker<C> _invoker;
+    private final ForkInvoker<Void> _invoker;
     private final Executor _executor;
     private final Runnable _onComplete=new Runnable()
     {
         @Override
         public void run()
         {
-            onCompleted(null);
+            onCompleted();
         }
     };
 
@@ -47,39 +47,27 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     }
 
     @Override
-    public void completed(final C context)
+    public void succeeded()
     {
         // Should we execute?
         if (_invoker==null)
         {
-            if (context==null)
-                _executor.execute(_onComplete);
-            else
-            {
-                _executor.execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        onCompleted(context);
-                    }
-                });
-            }
+            _executor.execute(_onComplete);
         } 
         else if (alwaysDispatchCompletion())
         {
-            _invoker.fork(context);
+            _invoker.fork(null);
         }
         else
         {
-            _invoker.invoke(context);
+            _invoker.invoke(null);
         }
     }
 
-    protected abstract void onCompleted(C context);
+    protected abstract void onCompleted();
 
     @Override
-    public void failed(final C context, final Throwable x)
+    public void failed(final Throwable x)
     {
         // Always execute failure
         Runnable runnable = new Runnable()
@@ -87,13 +75,13 @@ public abstract class ExecutorCallback<C> implements Callback<C>
             @Override
             public void run()
             {
-                onFailed(context, x);
+                onFailed(x);
             }
 
             @Override
             public String toString()
             {
-                return String.format("ExecutorCallback@%x{%s,%s}", hashCode(), context, x);
+                return String.format("ExecutorCallback@%x{%s}", hashCode(), x);
             }
         };
 
@@ -103,7 +91,7 @@ public abstract class ExecutorCallback<C> implements Callback<C>
             _executor.execute(runnable);
     }
 
-    protected void onFailed(C context, Throwable x)
+    protected void onFailed(Throwable x)
     {
     }
 
@@ -118,7 +106,7 @@ public abstract class ExecutorCallback<C> implements Callback<C>
         return String.format("%s@%x", getClass(), hashCode());
     }
 
-    private class ExecutorCallbackInvoker extends ForkInvoker<C> implements Runnable
+    private class ExecutorCallbackInvoker extends ForkInvoker<Void> implements Runnable
     {
         private ExecutorCallbackInvoker(int maxInvocations)
         {
@@ -126,34 +114,21 @@ public abstract class ExecutorCallback<C> implements Callback<C>
         }
 
         @Override
-        public void fork(final C context)
+        public void fork(Void arg)
         {
-            _executor.execute(context == null ? this : new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    call(context);
-                }
-
-                @Override
-                public String toString()
-                {
-                    return String.format("ExecutorCallback@%x{%s}", hashCode(), context);
-                }
-            });
+            _executor.execute(this);
         }
 
         @Override
-        public void call(C context)
+        public void call(Void arg)
         {
-            onCompleted(context);
+            onCompleted();
         }
 
         @Override
         public void run()
         {
-            call(null);
+            onCompleted();
         }
     }
 }

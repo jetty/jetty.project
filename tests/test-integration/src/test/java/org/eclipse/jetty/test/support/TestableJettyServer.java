@@ -32,8 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.Assert;
@@ -49,7 +50,7 @@ public class TestableJettyServer
     private final Map<String,String> _properties = new HashMap<String, String>();
     private Server _server;
     private int _serverPort;
-    private String _scheme = HttpSchemes.HTTP;
+    private String _scheme = HttpScheme.HTTP.asString();
 
     /* Popular Directories */
     private File baseDir;
@@ -154,7 +155,7 @@ public class TestableJettyServer
         Assert.assertEquals("Server load count",1,serverCount);
 
         this._server = foundServer;
-        this._server.setGracefulShutdown(10);
+        this._server.setStopTimeout(1000);
         
     }
 
@@ -179,7 +180,7 @@ public class TestableJettyServer
         Connector connectors[] = _server.getConnectors();
         for (int i = 0; i < connectors.length; i++)
         {
-            Connector connector = connectors[i];
+            NetworkConnector connector = (NetworkConnector)connectors[i];
             if (connector.getLocalPort() > 0)
             {
                 this._serverPort = connector.getLocalPort();

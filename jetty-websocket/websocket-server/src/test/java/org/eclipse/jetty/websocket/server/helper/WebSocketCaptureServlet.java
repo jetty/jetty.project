@@ -19,25 +19,26 @@
 package org.eclipse.jetty.websocket.server.helper;
 
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class WebSocketCaptureServlet extends WebSocketServlet
 {
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    public void configure(WebSocketServletFactory factory)
     {
-        resp.sendError(404);
+        factory.register(CaptureSocket.class);
     }
 
     @Override
-    public void configure(WebSocketServerFactory factory)
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        factory.register(CaptureSocket.class);
+        resp.sendError(404);
     }
 }

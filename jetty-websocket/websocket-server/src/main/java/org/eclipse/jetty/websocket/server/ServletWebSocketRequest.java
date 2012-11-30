@@ -21,28 +21,55 @@ package org.eclipse.jetty.websocket.server;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.websocket.core.api.Extension;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
-public class ServletWebSocketRequest extends HttpServletRequestWrapper implements UpgradeRequest
+public class ServletWebSocketRequest extends UpgradeRequest
 {
-    private List<String> subProtocols = new ArrayList<>();
-    private List<ExtensionConfig> extensions;
+    private Map<String, String> cookieMap;
+    private HttpServletRequest req;
 
     public ServletWebSocketRequest(HttpServletRequest request)
     {
-        super(request);
+        super(request.getRequestURI());
+        this.req = request;
 
+        // Copy Request Line Details
+        setMethod(request.getMethod());
+        setHttpVersion(request.getProtocol());
+
+        // Copy Cookies
+        cookieMap = new HashMap<String, String>();
+        for (Cookie cookie : request.getCookies())
+        {
+            cookieMap.put(cookie.getName(),cookie.getValue());
+        }
+
+        // Copy Headers
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements())
+        {
+            String name = headerNames.nextElement();
+            Enumeration<String> valuesEnum = request.getHeaders(name);
+            List<String> values = new ArrayList<>();
+            while (valuesEnum.hasMoreElements())
+            {
+                values.add(valuesEnum.nextElement());
+            }
+            setHeader(name,values);
+        }
+
+        // Parse Sub Protocols
         Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
+        List<String> subProtocols = new ArrayList<>();
         String protocol = null;
         while ((protocol == null) && (protocols != null) && protocols.hasMoreElements())
         {
@@ -52,84 +79,20 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
                 subProtocols.add(p);
             }
         }
+        setSubProtocols(subProtocols);
 
-        extensions = new ArrayList<>();
+        // Parse Extension Configurations
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
         while (e.hasMoreElements())
         {
-            QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
-            while (tok.hasMoreTokens())
+            Iterator<String> extTokenIter = QuoteUtil.splitAt(e.nextElement(),",");
+            while (extTokenIter.hasNext())
             {
-                addExtensions(tok.nextToken());
+                String extToken = extTokenIter.next();
+                ExtensionConfig config = ExtensionConfig.parse(extToken);
+                addExtensions(config);
             }
         }
-    }
-
-    @Override
-    public void addExtensions(String... extConfigs)
-    {
-        for (String extConfig : extConfigs)
-        {
-            extensions.add(ExtensionConfig.parse(extConfig));
-        }
-    }
-
-    @Override
-    public Map<String, String> getCookieMap()
-    {
-        Map<String, String> ret = new HashMap<String, String>();
-        for (Cookie cookie : super.getCookies())
-        {
-            ret.put(cookie.getName(),cookie.getValue());
-        }
-        return ret;
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return extensions;
-    }
-
-    @Override
-    public String getHost()
-    {
-        return getHeader("Host");
-    }
-
-    /**
-     * Get the endpoint of the WebSocket connection.
-     * <p>
-     * Per the <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (RFC 6455)</a>
-     */
-    @Override
-    public String getHttpEndPointName()
-    {
-        return getRequestURI();
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
-    }
-
-    @Override
-    public List<String> getSubProtocols()
-    {
-        return subProtocols;
-    }
-
-    @Override
-    public boolean hasSubProtocol(String test)
-    {
-        return subProtocols.contains(test);
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
     }
 
     protected String[] parseProtocols(String protocol)
@@ -151,31 +114,8 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
         return protocols;
     }
 
-    /**
-     * Not implemented (not relevant) on server side.
-     * 
-     * @see org.eclipse.jetty.websocket.core.api.UpgradeRequest#setSubProtocols(java.lang.String)
-     */
-    @Override
-    public void setSubProtocols(String protocol)
+    public void setAttribute(String name, Object o)
     {
-        /* not relevant for server side/servlet work */
-    }
-
-    public void setValidExtensions(List<Extension> valid)
-    {
-        if (this.extensions != null)
-        {
-            this.extensions.clear();
-        }
-        else
-        {
-            this.extensions = new ArrayList<>();
-        }
-
-        for (Extension ext : valid)
-        {
-            extensions.add(ext.getConfig());
-        }
+        this.req.setAttribute(name,o);
     }
 }

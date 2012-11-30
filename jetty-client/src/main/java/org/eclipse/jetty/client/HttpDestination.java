@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +28,21 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.client.util.TimedResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -48,25 +55,28 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final HttpClient client;
     private final String scheme;
-    private final String host;
-    private final int port;
+    private final InetSocketAddress address;
     private final Queue<RequestContext> requests;
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
+    private final InetSocketAddress proxyAddress;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
     {
         this.client = client;
         this.scheme = scheme;
-        this.host = host;
-        this.port = port;
+        this.address = new InetSocketAddress(host, port);
         this.requests = new ArrayBlockingQueue<>(client.getMaxQueueSizePerAddress());
         this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier(client);
+
+        ProxyConfiguration proxyConfig = client.getProxyConfiguration();
+        proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
+                new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()) : null;
     }
 
     protected BlockingQueue<Connection> getIdleConnections()
@@ -88,23 +98,33 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public String getHost()
     {
-        return host;
+        return address.getHostString();
     }
 
     @Override
     public int getPort()
     {
-        return port;
+        return address.getPort();
+    }
+
+    public InetSocketAddress getConnectAddress()
+    {
+        return isProxied() ? proxyAddress : address;
+    }
+
+    public boolean isProxied()
+    {
+        return proxyAddress != null;
     }
 
     public void send(Request request, List<Response.ResponseListener> listeners)
     {
         if (!scheme.equals(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
-        if (!host.equals(request.getHost()))
+        if (!getHost().equals(request.getHost()))
             throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
         int port = request.getPort();
-        if (port >= 0 && this.port != port)
+        if (port >= 0 && getPort() != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
 
         RequestContext requestContext = new RequestContext(request, listeners);
@@ -138,14 +158,14 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
     public Future<Connection> newConnection()
     {
-        FutureCallback<Connection> result = new FutureCallback<>();
-        newConnection(result);
+        FuturePromise<Connection> result = new FuturePromise<>();
+        newConnection(new ProxyPromise(result));
         return result;
     }
 
-    protected void newConnection(Callback<Connection> callback)
+    protected void newConnection(Promise<Connection> promise)
     {
-        client.newConnection(this, callback);
+        client.newConnection(this, promise);
     }
 
     protected Connection acquire()
@@ -170,20 +190,19 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             if (connectionCount.compareAndSet(current, next))
             {
                 LOG.debug("Creating connection {}/{} for {}", next, maxConnections, this);
-                newConnection(new Callback<Connection>()
+
+                // This is the promise that is being called when a connection (eventually proxied) succeeds or fails.
+                Promise<Connection> promise = new Promise<Connection>()
                 {
                     @Override
-                    public void completed(Connection connection)
+                    public void succeeded(Connection connection)
                     {
-                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
                         process(connection, true);
                     }
 
                     @Override
-                    public void failed(Connection connection, final Throwable x)
+                    public void failed(final Throwable x)
                     {
-                        LOG.debug("Connection failed {} for {}", x, HttpDestination.this);
-                        connectionCount.decrementAndGet();
                         client.getExecutor().execute(new Runnable()
                         {
                             @Override
@@ -193,7 +212,29 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                             }
                         });
                     }
+                };
+
+                // Create a new connection, and pass a ProxyPromise to establish a proxy tunnel, if needed.
+                // Differently from the case where the connection is created explicitly by applications, here
+                // we need to do a bit more logging and keep track of the connection count in case of failures.
+                newConnection(new ProxyPromise(promise)
+                {
+                    @Override
+                    public void succeeded(Connection connection)
+                    {
+                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
+                        super.succeeded(connection);
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        LOG.debug("Connection failed {} for {}", x, HttpDestination.this);
+                        connectionCount.decrementAndGet();
+                        super.failed(x);
+                    }
                 });
+
                 // Try again the idle connections
                 return idleConnections.poll();
             }
@@ -248,9 +289,10 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         {
             final Request request = requestContext.request;
             final List<Response.ResponseListener> listeners = requestContext.listeners;
-            if (request.isAborted())
+            Throwable cause = request.getAbortCause();
+            if (cause != null)
             {
-                abort(request, listeners, "Aborted");
+                abort(request, listeners, cause);
                 LOG.debug("Aborted {} before processing", request);
             }
             else
@@ -300,10 +342,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
     public void remove(Connection connection)
     {
-        LOG.debug("{} removed", connection);
-        connectionCount.decrementAndGet();
-        activeConnections.remove(connection);
-        idleConnections.remove(connection);
+        boolean removed = activeConnections.remove(connection);
+        removed |= idleConnections.remove(connection);
+        if (removed)
+        {
+            LOG.debug("{} removed", connection);
+            connectionCount.decrementAndGet();
+        }
 
         // We need to execute queued requests even if this connection failed.
         // We may create a connection that is not needed, but it will eventually
@@ -334,7 +379,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         LOG.debug("Closed {}", this);
     }
 
-    public boolean abort(Request request, String reason)
+    public boolean abort(Request request, Throwable cause)
     {
         for (RequestContext requestContext : requests)
         {
@@ -343,7 +388,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 if (requests.remove(requestContext))
                 {
                     // We were able to remove the pair, so it won't be processed
-                    abort(request, requestContext.listeners, reason);
+                    abort(request, requestContext.listeners, cause);
                     LOG.debug("Aborted {} while queued", request);
                     return true;
                 }
@@ -352,13 +397,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return false;
     }
 
-    private void abort(Request request, List<Response.ResponseListener> listeners, String reason)
+    private void abort(Request request, List<Response.ResponseListener> listeners, Throwable cause)
     {
         HttpResponse response = new HttpResponse(request, listeners);
-        HttpResponseException responseFailure = new HttpResponseException(reason, response);
-        responseNotifier.notifyFailure(listeners, response, responseFailure);
-        HttpRequestException requestFailure = new HttpRequestException(reason, request);
-        responseNotifier.notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+        responseNotifier.notifyFailure(listeners, response, cause);
+        responseNotifier.notifyComplete(listeners, new Result(request, cause, response, cause));
     }
 
     @Override
@@ -382,7 +425,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s(%s://%s:%d)", HttpDestination.class.getSimpleName(), getScheme(), getHost(), getPort());
+        return String.format("%s(%s://%s:%d)%s",
+                HttpDestination.class.getSimpleName(),
+                getScheme(),
+                getHost(),
+                getPort(),
+                proxyAddress == null ? "" : " via " + proxyAddress.getHostString() + ":" + proxyAddress.getPort());
     }
 
     private static class RequestContext
@@ -394,6 +442,75 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         {
             this.request = request;
             this.listeners = listeners;
+        }
+    }
+
+    /**
+     * Decides whether to establish a proxy tunnel using HTTP CONNECT.
+     * It is implemented as a promise because it needs to establish the tunnel
+     * when the TCP connection is succeeded, and needs to notify another
+     * promise when the tunnel is established (or failed).
+     */
+    private class ProxyPromise implements Promise<Connection>
+    {
+        private final Promise<Connection> delegate;
+
+        private ProxyPromise(Promise<Connection> delegate)
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void succeeded(Connection connection)
+        {
+            boolean tunnel = isProxied() &&
+                    "https".equalsIgnoreCase(getScheme()) &&
+                    client.getSslContextFactory() != null;
+            if (tunnel)
+                tunnel(connection);
+            else
+                delegate.succeeded(connection);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            delegate.failed(x);
+        }
+
+        private void tunnel(final Connection connection)
+        {
+            String target = address.getHostString() + ":" + address.getPort();
+            Request connect = client.newRequest(proxyAddress.getHostString(), proxyAddress.getPort())
+                    .scheme(HttpScheme.HTTP.asString())
+                    .method(HttpMethod.CONNECT)
+                    .path(target)
+                    .header(HttpHeader.HOST.asString(), target);
+            connection.send(connect, new TimedResponseListener(client.getConnectTimeout(), TimeUnit.MILLISECONDS, connect, new Response.CompleteListener()
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    if (result.isFailed())
+                    {
+                        failed(result.getFailure());
+                        connection.close();
+                    }
+                    else
+                    {
+                        Response response = result.getResponse();
+                        if (response.getStatus() == 200)
+                        {
+                            delegate.succeeded(connection);
+                        }
+                        else
+                        {
+                            failed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
+                            connection.close();
+                        }
+                    }
+                }
+            }));
         }
     }
 }

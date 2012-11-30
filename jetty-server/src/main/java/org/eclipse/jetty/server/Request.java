@@ -75,7 +75,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.MultiPartInputStream;
+import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -135,7 +135,7 @@ public class Request implements HttpServletRequest
         public void requestDestroyed(ServletRequestEvent sre)
         {
             //Clean up any tmp files created by MultiPartInputStream
-            MultiPartInputStream mpis = (MultiPartInputStream)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
+            MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
             if (mpis != null)
             {
                 ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(__MULTIPART_CONTEXT);
@@ -204,7 +204,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private long _dispatchTime;
     private HttpURI _uri;
-    private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
+    private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
 
     /* ------------------------------------------------------------ */
     public Request(HttpChannel<?> channel, HttpInput<?> input)
@@ -2011,7 +2011,7 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(),
+            _multiPartInputStream = new MultiPartInputStreamParser(getInputStream(),
                                                              getContentType(),config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
@@ -2019,7 +2019,7 @@ public class Request implements HttpServletRequest
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
-                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
                 if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
                 {
                     //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
@@ -2050,7 +2050,7 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
             
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(),
+            _multiPartInputStream = new MultiPartInputStreamParser(getInputStream(),
                                                              getContentType(), config, 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
             
@@ -2059,7 +2059,7 @@ public class Request implements HttpServletRequest
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
-                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
                 if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
                 {
                     //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
@@ -2084,11 +2084,11 @@ public class Request implements HttpServletRequest
         {
             _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
             if (_authentication == null)
-                throw new ServletException();
+                throw new ServletException("Authentication failed for "+username+" in "+_authentication);
         }
         else
         {
-            throw new ServletException("Authenticated as "+_authentication);
+            throw new ServletException("Already authenticated as "+_authentication);
         }
     }
 

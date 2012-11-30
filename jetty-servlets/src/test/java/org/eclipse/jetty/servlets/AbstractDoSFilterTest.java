@@ -33,13 +33,17 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -321,7 +325,8 @@ public abstract class AbstractDoSFilterTest
         // was expired, and stopped before reaching the end of the requests
         int responseLines = count(responses, "Line:");
         assertTrue(responses.contains("DoSFilter: timeout"));
-        assertTrue(responseLines > 0 && responseLines < numRequests);
+        assertThat(responseLines,greaterThan(0));
+        assertThat(responseLines,Matchers.lessThan(numRequests));
     }
 
     public static class TestServlet extends HttpServlet implements Servlet

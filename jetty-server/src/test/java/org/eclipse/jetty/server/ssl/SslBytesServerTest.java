@@ -585,7 +585,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Hello
         TLSRecord record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
+            proxy.flushToServer(5, b);
 
         // Server Hello + Certificate + Server Done
         record = proxy.readFromServer();
@@ -594,17 +594,17 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Key Exchange
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
+            proxy.flushToServer(5,b);
 
         // Change Cipher Spec
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
+            proxy.flushToServer(5, b);
 
         // Client Done
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
+            proxy.flushToServer(5, b);
 
         // Change Cipher Spec
         record = proxy.readFromServer();
@@ -614,7 +614,7 @@ public class SslBytesServerTest extends SslBytesTest
         record = proxy.readFromServer();
         proxy.flushToClient(record);
 
-        Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
+        Assert.assertNull(handshake.get(1, TimeUnit.SECONDS));
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
@@ -634,8 +634,8 @@ public class SslBytesServerTest extends SslBytesTest
         // Application data
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
-        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+            proxy.flushToServer(5, b);
+        Assert.assertNull(request.get(1, TimeUnit.SECONDS));
 
         // Application data
         record = proxy.readFromServer();
@@ -665,7 +665,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Close Alert
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(50, b);
+            proxy.flushToServer(5, b);
         // Socket close
         record = proxy.readFromClient();
         Assert.assertNull(String.valueOf(record), record);

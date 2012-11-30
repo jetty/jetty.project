@@ -71,7 +71,7 @@ public class ContextHandlerCollectionTest
         try
         {
             server.start();
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
 
             assertTrue(handlerA.isHandled());
             assertFalse(handlerB.isHandled());
@@ -81,7 +81,7 @@ public class ContextHandlerCollectionTest
             handlerB.reset();
             handlerC.reset();
 
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example2.com\n\n");
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example2.com\n\n");
 
             assertFalse(handlerA.isHandled());
             assertTrue(handlerB.isHandled());
@@ -149,7 +149,7 @@ public class ContextHandlerCollectionTest
 
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else

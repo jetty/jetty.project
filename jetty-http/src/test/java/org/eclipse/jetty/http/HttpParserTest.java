@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpParser.State;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -470,6 +469,25 @@ public class HttpParserTest
         assertTrue(_messageCompleted);
     }
 
+    @Test
+    public void testResponse101WithTransferEncoding() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "HTTP/1.1 101 switching protocols\015\012"
+                        + "Transfer-Encoding: chunked\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("101", _uriOrStatus);
+        assertEquals("switching protocols", _versionOrReason);
+        assertEquals(null,_content);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }
+    
     @Test
     public void testSeekEOF() throws Exception
     {

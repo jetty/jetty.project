@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.ant.types.Connectors.Connector;
+import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.utils.ServerProxy;
 import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.ant.utils.WebApplicationProxy;
@@ -47,8 +47,6 @@ import org.xml.sax.SAXException;
 /**
  * A proxy class for interaction with Jetty server object. Used to have some
  * level of abstraction over standard Jetty classes.
- *
- * @author Jakub Pawlowicz
  */
 public class ServerProxyImpl implements ServerProxy
 {
@@ -128,7 +126,10 @@ public class ServerProxyImpl implements ServerProxy
             jc.setPort(jettyConnector.getPort());
             jc.setIdleTimeout(jettyConnector.getMaxIdleTime());
             
+            
             server.addConnector(jc);
+            
+
         }
 
         // Configures login services
@@ -217,7 +218,23 @@ public class ServerProxyImpl implements ServerProxy
         try
         {
             server.start();
+            
+            System.setProperty("jetty.ant.server.port","" + ((ServerConnector)server.getConnectors()[0]).getLocalPort());
+            
+            String host = ((ServerConnector)server.getConnectors()[0]).getHost();
+            
+            if (host == null)
+            {
+                System.setProperty("jetty.ant.server.host", "localhost");
+            }
+            else
+            {
+                System.setProperty("jetty.ant.server.host", host);
+            }
+            
             startScanners();
+            TaskLog.log("Jetty AntTask Started");
+
             server.join();
 
         }

@@ -43,6 +43,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -172,12 +173,12 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                                 latch.countDown();
                             }
                         }
-                    }, 0, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+                    }, 0, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
             {
                 @Override
-                public void completed(Stream stream)
+                public void succeeded(Stream stream)
                 {
-                    stream.data(new StringDataInfo("data_" + stream.getId(), true), 0, TimeUnit.SECONDS, null,null);
+                    stream.data(new StringDataInfo("data_" + stream.getId(), true), 0, TimeUnit.SECONDS, new Callback.Adapter());
                 }
             });
         }

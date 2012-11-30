@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -33,15 +34,18 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -56,24 +60,51 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final Stream stream;
     private final Fields requestHeaders;
     private final BlockingCallback streamBlocker = new BlockingCallback();
+    private final AtomicBoolean committed = new AtomicBoolean();
 
     public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
         this.connector = connector;
         this.configuration = configuration;
         this.endPoint = endPoint;
-        this.pushStrategy = pushStrategy;
+        this.pushStrategy = pushStrategy==null?new PushStrategy.None():pushStrategy;
         this.stream = stream;
         this.requestHeaders = requestHeaders;
     }
 
     @Override
-    public <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback)
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        boolean hasContent = !BufferUtil.isEmpty(content);
+        if (LOG.isDebugEnabled())
+            LOG.debug("send  {} {} {} {} last={}",this,stream,info,BufferUtil.toDetailString(content),lastContent);
+
+        if (stream.isClosed() || stream.isReset())
+        {
+            EofException exception = new EofException("stream closed");
+            callback.failed(exception);
+            LOG.warn("Committed response twice.", exception);
+            return;
+        }
+        // new Throwable().printStackTrace();
+        
+        // info==null content==null lastContent==false          should not happen
+        // info==null content==null lastContent==true           signals no more content - complete
+        // info==null content!=null lastContent==false          send data on committed response
+        // info==null content!=null lastContent==true           send last data on committed response - complete
+        // info!=null content==null lastContent==false          reply, commit
+        // info!=null content==null lastContent==true           reply, commit and complete
+        // info!=null content!=null lastContent==false          reply, commit with content
+        // info!=null content!=null lastContent==true           reply, commit with content and complete
+        
+        boolean hasContent = BufferUtil.hasContent(content);
         
         if (info!=null)
         {
+            if(!committed.compareAndSet(false, true)){
+                callback.failed(new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
+                        "Stream already committed!"));
+                return;
+            }
             short version = stream.getSession().getVersion();
             Fields headers = new Fields();
 
@@ -105,31 +136,49 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
 
             boolean close = !hasContent && lastContent;
-            reply(stream, new ReplyInfo(headers, close));
+            ReplyInfo reply = new ReplyInfo(headers,close);
+            reply(stream, reply);
         }
 
-        if ((hasContent || lastContent ) && !stream.isClosed() )
-            stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,context,callback);
+        // Do we have some content to send as well
+        if (hasContent)
+        {
+            // Is the stream still open?
+            if (stream.isClosed()|| stream.isReset())
+                // tell the callback about the EOF 
+                callback.failed(new EofException("stream closed")); 
+            else 
+                // send the data and let it call the callback
+                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
+        }
+        // else do we need to close
+        else if (lastContent)
+        {
+            // Are we closed ?
+            if (stream.isClosed()|| stream.isReset())
+                // already closed by reply, so just tell callback we are complete
+                callback.succeeded(); 
+            else
+                // send empty data to close and let the send call the callback
+                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
+        }
         else
-            callback.completed(context);
+            // No data and no close so tell callback we are completed
+            callback.succeeded();
 
     }
-    
+
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
     {
-        send(info,content,lastContent,streamBlocker.getPhase(),streamBlocker);
+        send(info,content,lastContent,streamBlocker);
         try
         {
             streamBlocker.block();
         }
-        catch (IOException e)
+        catch (InterruptedException | TimeoutException | IOException e)
         {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new EofException(e);
+            LOG.debug(e);
         }
     }
 
@@ -161,10 +210,10 @@ public class HttpTransportOverSPDY implements HttpTransport
                 final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
                 // TODO: handle the timeout better
-                stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(pushStream, pushRequestHeaders);
                         pushChannel.requestStart(pushRequestHeaders, true);

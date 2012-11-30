@@ -27,7 +27,6 @@ import org.apache.tools.ant.Task;
  * Provides logging functionality for classes without access to the Ant project
  * variable.
  * 
- * @author Jakub Pawlowicz
  */
 public class TaskLog
 {

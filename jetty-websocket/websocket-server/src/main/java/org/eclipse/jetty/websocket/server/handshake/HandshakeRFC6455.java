@@ -19,10 +19,11 @@
 package org.eclipse.jetty.websocket.server.handshake;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.protocol.AcceptHash;
-import org.eclipse.jetty.websocket.core.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;
@@ -57,6 +58,7 @@ public class HandshakeRFC6455 implements WebSocketHandshake
 
         if (request.getExtensions() != null)
         {
+            response.setExtensions(request.getExtensions());
             for (ExtensionConfig ext : request.getExtensions())
             {
                 response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());

@@ -33,6 +33,7 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
@@ -65,14 +66,14 @@ public class StandardStreamTest
     @Test
     public void testSyn()
     {
-        Stream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        Stream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
         Set<Stream> streams = new HashSet<>();
         streams.add(stream);
         when(synStreamFrame.isClose()).thenReturn(false);
         SynInfo synInfo = new SynInfo(false);
         when(session.getStreams()).thenReturn(streams);
         stream.syn(synInfo);
-        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(), synInfo)), any(StreamFrameListener.class), anyLong(), any(TimeUnit.class), any(Callback.class));
+        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(), synInfo)), any(StreamFrameListener.class), anyLong(), any(TimeUnit.class), any(Promise.class));
     }
 
     private class PushSynInfoMatcher extends ArgumentMatcher<PushSynInfo>
@@ -99,15 +100,15 @@ public class StandardStreamTest
     @Test
     public void testSynOnClosedStream()
     {
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
         stream.updateCloseState(true, true);
         stream.updateCloseState(true, false);
         assertThat("stream expected to be closed", stream.isClosed(), is(true));
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.syn(new SynInfo(false), 1, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+        stream.syn(new SynInfo(false), 1, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
         {
             @Override
-            public void failed(Stream stream, Throwable x)
+            public void failed(Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -120,11 +121,11 @@ public class StandardStreamTest
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
         stream.updateWindowSize(8192);
         stream.updateCloseState(synStreamFrame.isClose(), true);
         assertThat("stream is half closed", stream.isHalfClosed(), is(true));
         stream.data(new StringDataInfo("data on half closed stream", true));
-        verify(session, never()).data(any(IStream.class), any(DataInfo.class), anyInt(), any(TimeUnit.class), any(Callback.class), any(void.class));
+        verify(session, never()).data(any(IStream.class), any(DataInfo.class), anyInt(), any(TimeUnit.class), any(Callback.class));
     }
 }

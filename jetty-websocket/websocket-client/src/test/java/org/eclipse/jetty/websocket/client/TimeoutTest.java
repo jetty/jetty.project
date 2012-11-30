@@ -25,10 +25,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.core.api.StatusCode;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -87,7 +86,7 @@ public class TimeoutTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();

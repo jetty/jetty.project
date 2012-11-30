@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-parent</artifactId>
+        <version>9.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>websocket-servlet</artifactId>
+    <name>Jetty :: Websocket :: Servlet Interface</name>
+
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+         <groupId>javax.servlet</groupId>
+         <artifactId>javax.servlet-api</artifactId>
+         <version>3.1-b01</version>
+        </dependency>
+
+<!--
+        <dependency>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
+            <scope>provided</scope>
+        </dependency>
+-->
+        <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-test-helper</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

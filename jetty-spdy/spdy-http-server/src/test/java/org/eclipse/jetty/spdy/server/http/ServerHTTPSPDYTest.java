@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -58,7 +60,6 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         super(version);
     }
 
-    @Test
     public void testSimpleGET() throws Exception
     {
         final String path = "/foo";
@@ -78,12 +79,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -122,12 +118,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version), uri);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("GET", uri);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -163,12 +154,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "HEAD");
-        headers.put(HTTPSPDYHeader.URI.name(version), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("HEAD", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -213,12 +199,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -259,12 +240,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -308,12 +284,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -354,7 +325,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -400,7 +371,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -451,7 +422,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -506,7 +477,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -559,7 +530,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -612,7 +583,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -670,7 +641,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -723,7 +694,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -760,7 +731,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -792,18 +763,20 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
     @Test
     public void testGETWithException() throws Exception
     {
+        StdErrLog log = StdErrLog.getLogger(HttpChannel.class);
+        log.setHideStacks(true);
+
         Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
                     throws IOException, ServletException
             {
-                // TODO suppress stack from test log
                 throw new NullPointerException("thrown_explicitly_by_the_test");
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch latch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -830,6 +803,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         });
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        log.setHideStacks(false);
     }
 
     @Test
@@ -855,7 +830,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -937,7 +912,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -993,7 +968,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("GET");
+        Fields headers = createHeaders("GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         final AtomicInteger contentLength = new AtomicInteger();
@@ -1057,7 +1032,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1100,7 +1075,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -1145,7 +1120,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1213,7 +1188,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1281,7 +1256,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(2);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1322,7 +1297,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }), null);
 
-        Fields headers = createHeaders("POST");
+        Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1341,14 +1316,15 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private Fields createHeaders(String httpMethod)
+    private Fields createHeaders(String httpMethod, String path)
     {
         Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.METHOD.name(version), httpMethod);
-        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
         headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
         headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         return headers;
     }
+
 }

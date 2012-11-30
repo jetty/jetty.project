@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Servlet with bigger message policy sizes, with registered simple echo socket.
@@ -31,7 +31,7 @@ public class ABServlet extends WebSocketServlet
     private static final int MBYTE = KBYTE * KBYTE;
 
     @Override
-    public void configure(WebSocketServerFactory factory)
+    public void configure(WebSocketServletFactory factory)
     {
         // Test cases 9.x uses BIG frame sizes, let policy handle them.
         int bigFrameSize = 20 * MBYTE;

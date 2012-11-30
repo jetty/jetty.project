@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.thread;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +46,7 @@ public class SchedulerTest
 {
     private static final BenchmarkHelper benchmark = new BenchmarkHelper();
     private static final Executor executor = Executors.newFixedThreadPool(256);
-    
+
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
@@ -58,27 +59,27 @@ public class SchedulerTest
         };
         return Arrays.asList(data);
     }
-    
+
     // Scheduler _scheduler=new SimpleScheduler();
     Scheduler _scheduler;
-    
+
     public SchedulerTest(Scheduler scheduler)
     {
         _scheduler=scheduler;
     }
-    
+
     @Before
     public void before() throws Exception
     {
         _scheduler.start();
     }
-    
+
     @After
     public void after() throws Exception
     {
         _scheduler.stop();
     }
-    
+
     @Test
     public void testExecution() throws Exception
     {
@@ -92,14 +93,14 @@ public class SchedulerTest
                 executed.set(System.currentTimeMillis());
             }
         },3000,TimeUnit.MILLISECONDS);
-        
+
         Thread.sleep(4000);
         Assert.assertFalse(task.cancel());
         Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
         Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
-        
+
     }
-    
+
     @Test
     public void testTwoExecution() throws Exception
     {
@@ -113,12 +114,12 @@ public class SchedulerTest
                 executed.set(System.currentTimeMillis());
             }
         },3000,TimeUnit.MILLISECONDS);
-        
+
         Thread.sleep(4000);
         Assert.assertFalse(task.cancel());
         Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
         Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
-        
+
         final AtomicLong executed1 = new AtomicLong();
         long expected1=System.currentTimeMillis()+3000;
         Scheduler.Task task1=_scheduler.schedule(new Runnable()
@@ -129,13 +130,13 @@ public class SchedulerTest
                 executed1.set(System.currentTimeMillis());
             }
         },3000,TimeUnit.MILLISECONDS);
-        
+
         Thread.sleep(4000);
         Assert.assertFalse(task1.cancel());
         Assert.assertThat(executed1.get(),Matchers.greaterThanOrEqualTo(expected1));
         Assert.assertThat(expected1-executed1.get(),Matchers.lessThan(1000L));
     }
-    
+
     @Test
     public void testQuickCancel() throws Exception
     {
@@ -148,13 +149,13 @@ public class SchedulerTest
                 executed.set(System.currentTimeMillis());
             }
         },2000,TimeUnit.MILLISECONDS);
-        
+
         Thread.sleep(100);
         Assert.assertTrue(task.cancel());
         Thread.sleep(2500);
         Assert.assertEquals(0,executed.get());
     }
-    
+
     @Test
     public void testLongCancel() throws Exception
     {
@@ -167,11 +168,41 @@ public class SchedulerTest
                 executed.set(System.currentTimeMillis());
             }
         },2000,TimeUnit.MILLISECONDS);
-        
+
         Thread.sleep(1600);
         Assert.assertTrue(task.cancel());
         Thread.sleep(1000);
         Assert.assertEquals(0,executed.get());
+    }
+
+    @Test
+    public void testTaskThrowsException() throws Exception
+    {
+        long delay = 500;
+        Scheduler.Task task=_scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                throw new RuntimeException();
+            }
+        }, delay, TimeUnit.MILLISECONDS);
+
+        TimeUnit.MILLISECONDS.sleep(2 * delay);
+
+        // Check whether after a task throwing an exception, the scheduler is still working
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        _scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                latch.countDown();
+            }
+        }, delay, TimeUnit.MILLISECONDS);
+
+        Assert.assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -180,7 +211,7 @@ public class SchedulerTest
     {
         schedule(100,5000,3800,200);
     }
-    
+
     @Test
     @Slow
     @Ignore
@@ -192,16 +223,16 @@ public class SchedulerTest
         schedule(2000,30000,2000,50);
         benchmark.stopStatistics();
     }
-    
+
     private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception
     {
         final Random random = new Random(1);
-        Thread[] test = new Thread[threads]; 
-        
+        Thread[] test = new Thread[threads];
+
         final AtomicInteger schedules = new AtomicInteger();
         final SampleStatistic executions = new SampleStatistic();
         final SampleStatistic cancellations = new SampleStatistic();
-        
+
         for (int i=test.length;i-->0;)
         {
             test[i]=new Thread()
@@ -220,7 +251,7 @@ public class SchedulerTest
                             final long expected=now+delay;
                             int cancel=random.nextInt(interval);
                             final boolean expected_to_execute;
-                            
+
                             last=now+2*interval>end;
                             if (cancel==0 || last)
                             {
@@ -236,15 +267,15 @@ public class SchedulerTest
                                 @Override
                                 public void run()
                                 {
-                                    long lateness=System.currentTimeMillis()-expected;                                   
+                                    long lateness=System.currentTimeMillis()-expected;
                                     if (expected_to_execute)
                                         executions.set(lateness);
                                     else
                                         executions.set(6666);
-                                        
+
                                 }
                             },delay,TimeUnit.MILLISECONDS);
-                            
+
                             Thread.sleep(cancel);
                             now = System.currentTimeMillis();
                             if (task.cancel())
@@ -255,7 +286,7 @@ public class SchedulerTest
                                 else
                                     cancellations.set(0);
                             }
-                            else 
+                            else
                             {
                                 if (!expected_to_execute)
                                 {
@@ -270,17 +301,17 @@ public class SchedulerTest
                     {
                         e.printStackTrace();
                     }
-                    
+
                 }
             };
         }
-        
+
         for (Thread thread : test)
             thread.start();
-        
+
         for (Thread thread : test)
             thread.join();
-        
+
         // System.err.println(schedules);
         // System.err.println(executions);
         // System.err.println(cancellations);
@@ -292,17 +323,17 @@ public class SchedulerTest
         // All executed or cancelled
         // Not that SimpleScheduler can execute and cancel an event!
         Assert.assertThat(0L+schedules.get(),Matchers.lessThanOrEqualTo(executions.getCount()+cancellations.getCount()));
-        
+
         // No really late executions
         Assert.assertThat(executions.getMax(),Matchers.lessThan(500L));
 
         // Executions on average are close to the expected time
         Assert.assertThat(executions.getMean(),Matchers.lessThan(500.0));
-        
+
         // No cancellations long after expected executions
         Assert.assertThat(cancellations.getMax(),Matchers.lessThan(500L));
     }
-    
-    
-    
+
+
+
 }

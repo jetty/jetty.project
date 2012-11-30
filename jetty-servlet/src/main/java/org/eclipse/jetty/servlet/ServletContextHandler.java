@@ -257,7 +257,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void startContext() throws Exception
     {
-    	// OK to Initialize servlet handler now
+    	
     	if (_servletHandler != null)
     	{
     	    for (int i=_decorators.size()-1;i>=0; i--)
@@ -270,11 +270,13 @@ public class ServletContextHandler extends ContextHandler
     	            for (ServletHolder holder:_servletHandler.getServlets())
     	                decorator.decorateServletHolder(holder);
     	    }
-
-    	    _servletHandler.initialize();
     	}
     	
         super.startContext();
+
+        // OK to Initialize servlet handler now that all relevant object trees have been started
+        if (_servletHandler != null)
+            _servletHandler.initialize();
     }
 
     /* ------------------------------------------------------------ */

@@ -369,20 +369,46 @@ public class TypeUtil
     {
         try
         {
-            int bi=0xff&b;
-            int c='0'+(bi/16)%16;
-            if (c>'9')
-                c= 'A'+(c-'0'-10);
-            buf.append((char)c);
-            c='0'+bi%16;
-            if (c>'9')
-                c= 'A'+(c-'0'-10);
-            buf.append((char)c);
+            int d=0xf&((0xF0&b)>>4);
+            buf.append((char)((d>9?('A'-10):'0')+d));
+            d=0xf&b;
+            buf.append((char)((d>9?('A'-10):'0')+d));
         }
         catch(IOException e)
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void toHex(int value,Appendable buf) throws IOException
+    {
+        int d=0xf&((0xF0000000&value)>>28);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x0F000000&value)>>24);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x00F00000&value)>>20);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x000F0000&value)>>16);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x0000F000&value)>>12);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x00000F00&value)>>8);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&((0x000000F0&value)>>4);
+        buf.append((char)((d>9?('A'-10):'0')+d));
+        d=0xf&value;
+        buf.append((char)((d>9?('A'-10):'0')+d));
+    
+        Integer.toString(0,36);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public static void toHex(long value,Appendable buf) throws IOException
+    {
+        toHex((int)(value>>32),buf);
+        toHex((int)value,buf);
     }
 
     /* ------------------------------------------------------------ */
@@ -447,57 +473,6 @@ public class TypeUtil
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    public static byte[] readLine(InputStream in) throws IOException
-    {
-        byte[] buf = new byte[256];
-
-        int i=0;
-        int loops=0;
-        int ch=0;
-
-        while (true)
-        {
-            ch=in.read();
-            if (ch<0)
-                break;
-            loops++;
-
-            // skip a leading LF's
-            if (loops==1 && ch==LF)
-                continue;
-
-            if (ch==CR || ch==LF)
-                break;
-
-            if (i>=buf.length)
-            {
-                byte[] old_buf=buf;
-                buf=new byte[old_buf.length+256];
-                System.arraycopy(old_buf, 0, buf, 0, old_buf.length);
-            }
-            buf[i++]=(byte)ch;
-        }
-
-        if (ch==-1 && i==0)
-            return null;
-
-        // skip a trailing LF if it exists
-        if (ch==CR && in.available()>=1 && in.markSupported())
-        {
-            in.mark(1);
-            ch=in.read();
-            if (ch!=LF)
-                in.reset();
-        }
-
-        byte[] old_buf=buf;
-        buf=new byte[i];
-        System.arraycopy(old_buf, 0, buf, 0, i);
-
-        return buf;
-    }
 
     public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
        throws InvocationTargetException, NoSuchMethodException

@@ -25,5 +25,5 @@ import java.util.concurrent.Future;
  */
 public interface Graceful
 {
-    public <C> Future<C> shutdown(C c);
+    public Future<Void> shutdown();
 }

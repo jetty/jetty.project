@@ -23,10 +23,27 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
 /**
- * <p>Factory for {@link Connection}s.</p>
+ * <p>A Factory to create {@link Connection} instances for {@link Connector}s.</p>
+ * <p>A Connection factory is responsible for instantiating and configuring a {@link Connection} instance
+ * to handle an {@link EndPoint} accepted by a {@link Connector}.</p>
+ * <p>
+ * A ConnectionFactory has a protocol name that represents the protocol of the Connections
+ * created.  Example of protocol names include:<dl>
+ * <dt>http</dt><dd>Creates a HTTP connection that can handle multiple versions of HTTP from 0.9 to 1.1</dd>
+ * <dt>spdy/2</dt><dd>Creates a HTTP connection that handles a specific version of the SPDY protocol</dd>
+ * <dt>SSL-XYZ</dt><dd>Create an SSL connection chained to a connection obtained from a connection factory 
+ * with a protocol "XYZ".</dd>
+ * <dt>SSL-http</dt><dd>Create an SSL connection chained to a HTTP connection (aka https)</dd>
+ * <dt>SSL-npn</dt><dd>Create an SSL connection chained to a NPN connection, that uses a negotiation with
+ * the client to determine the next protocol.</dd>
+ * </dl>
  */
 public interface ConnectionFactory
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A string representing the protocol name.
+     */
     public String getProtocol();
     
     /**

@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.spdy.server.SPDYServerConnector;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -90,7 +92,7 @@ public class ProxyHTTPSPDYTest
     private SPDYClient.Factory factory;
     private Server server;
     private Server proxy;
-    private SPDYServerConnector proxyConnector;
+    private ServerConnector proxyConnector;
 
     public ProxyHTTPSPDYTest(short version)
     {
@@ -115,7 +117,7 @@ public class ProxyHTTPSPDYTest
         SPDYProxyEngine spdyProxyEngine = new SPDYProxyEngine(factory);
         proxyEngineSelector.putProxyEngine("spdy/" + version, spdyProxyEngine);
         proxyEngineSelector.putProxyServerInfo("localhost", new ProxyEngineSelector.ProxyServerInfo("spdy/" + version, address.getHostName(), address.getPort()));
-        proxyConnector = new HTTPSPDYProxyConnector(server, proxyEngineSelector);
+        proxyConnector = new HTTPSPDYProxyServerConnector(server, proxyEngineSelector);
         proxyConnector.setPort(0);
         proxy.addConnector(proxyConnector);
         proxy.start();
@@ -563,10 +565,10 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         pushStream.data(new BytesDataInfo(data, true));
                     }
@@ -616,10 +618,10 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
+                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
                 {
                     @Override
-                    public void completed(Stream pushStream)
+                    public void succeeded(Stream pushStream)
                     {
                         pushStream.data(new BytesDataInfo(data, true));
                     }

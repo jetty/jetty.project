@@ -32,7 +32,7 @@ import javax.security.auth.message.MessagePolicy;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.B64Code;
@@ -87,7 +87,7 @@ public class DigestAuthModule extends BaseAuthModule
     {
         HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
-        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
@@ -155,7 +155,7 @@ public class DigestAuthModule extends BaseAuthModule
             if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
             String domain = request.getContextPath();
             if (domain == null) domain = "/";
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + realmName
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName
                                                              + "\", domain=\""
                                                              + domain
                                                              + "\", nonce=\""

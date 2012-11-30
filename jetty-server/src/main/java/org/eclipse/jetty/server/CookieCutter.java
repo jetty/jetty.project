@@ -278,8 +278,8 @@ public class CookieCutter
                 // If after processing the current character we have a value and a name, then it is a cookie
                 if (value!=null && name!=null)
                 {
-                    name=QuotedStringTokenizer.unquote(name);
-                    value=QuotedStringTokenizer.unquote(value);
+                    name=QuotedStringTokenizer.unquoteOnly(name);
+                    value=QuotedStringTokenizer.unquoteOnly(value);
                     
                     try
                     {

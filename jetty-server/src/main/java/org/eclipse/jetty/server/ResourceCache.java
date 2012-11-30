@@ -56,24 +56,18 @@ public class ResourceCache
     private final ResourceFactory _factory;
     private final ResourceCache _parent;
     private final MimeTypes _mimeTypes;
+    private final boolean _etagSupported;
 
     private boolean  _useFileMappedBuffer=true;
     private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
-
-    /* ------------------------------------------------------------ */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer)
-    {
-        this(parent,factory,mimeTypes);
-        setUseFileMappedBuffer(useFileMappedBuffer);
-    }
     
     /* ------------------------------------------------------------ */
     /** Constructor.
      * @param mimeTypes Mimetype to use for meta data
      */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes)
+    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,Content>();
@@ -81,6 +75,7 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
         _parent=parent;
+        _etagSupported=etags;
     }
 
     /* ------------------------------------------------------------ */
@@ -247,7 +242,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
+        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
         
     }
     
@@ -375,6 +370,7 @@ public class ResourceCache
         final long _lastModified;
         final ByteBuffer _lastModifiedBytes;
         final ByteBuffer _contentType;
+        final String _etag;
         
         volatile long _lastAccessed;
         AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
@@ -395,6 +391,8 @@ public class ResourceCache
             _cachedSize.addAndGet(_length);
             _cachedFiles.incrementAndGet();
             _lastAccessed=System.currentTimeMillis();
+            
+            _etag=ResourceCache.this._etagSupported?resource.getWeakETag():null;
         }
 
 
@@ -422,11 +420,18 @@ public class ResourceCache
         {
             return _resource;
         }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getETag()
+        {
+            return _etag;
+        }
         
         /* ------------------------------------------------------------ */
         boolean isValid()
         {
-            if (_lastModified==_resource.lastModified())
+            if (_lastModified==_resource.lastModified() && _length==_resource.length())
             {
                 _lastAccessed=System.currentTimeMillis();
                 return true;

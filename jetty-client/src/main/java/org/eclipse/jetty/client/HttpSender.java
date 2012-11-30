@@ -82,9 +82,10 @@ public class HttpSender
         }
 
         Request request = exchange.getRequest();
-        if (request.isAborted())
+        Throwable cause = request.getAbortCause();
+        if (cause != null)
         {
-            exchange.abort(null);
+            exchange.abort(cause);
         }
         else
         {
@@ -181,9 +182,9 @@ public class HttpSender
                         StatefulExecutorCallback callback = new StatefulExecutorCallback(client.getExecutor())
                         {
                             @Override
-                            protected void pendingCompleted()
+                            protected void onSucceeded()
                             {
-                                LOG.debug("Write completed for {}", request);
+                                LOG.debug("Write succeeded for {}", request);
 
                                 if (!commit(request))
                                     return;
@@ -200,7 +201,7 @@ public class HttpSender
                             }
 
                             @Override
-                            protected void failed(Throwable x)
+                            protected void onFailed(Throwable x)
                             {
                                 fail(x);
                             }
@@ -214,13 +215,13 @@ public class HttpSender
 
                         write(callback, header, chunk, expect100 ? null : contentInfo.content);
 
-                        if (callback.pending())
+                        if (callback.process())
                         {
                             LOG.debug("Write pending for {}", request);
                             return;
                         }
 
-                        if (callback.completed())
+                        if (callback.isSucceeded())
                         {
                             if (!commit(request))
                                 return;
@@ -273,7 +274,7 @@ public class HttpSender
         }
     }
 
-    private void write(Callback<Void> callback, ByteBuffer header, ByteBuffer chunk, ByteBuffer content)
+    private void write(Callback callback, ByteBuffer header, ByteBuffer chunk, ByteBuffer content)
     {
         int mask = 0;
         if (header != null)
@@ -287,28 +288,28 @@ public class HttpSender
         switch (mask)
         {
             case 0:
-                endPoint.write(null, callback, BufferUtil.EMPTY_BUFFER);
+                endPoint.write(callback, BufferUtil.EMPTY_BUFFER);
                 break;
             case 1:
-                endPoint.write(null, callback, header);
+                endPoint.write(callback, header);
                 break;
             case 2:
-                endPoint.write(null, callback, chunk);
+                endPoint.write(callback, chunk);
                 break;
             case 3:
-                endPoint.write(null, callback, header, chunk);
+                endPoint.write(callback, header, chunk);
                 break;
             case 4:
-                endPoint.write(null, callback, content);
+                endPoint.write(callback, content);
                 break;
             case 5:
-                endPoint.write(null, callback, header, content);
+                endPoint.write(callback, header, content);
                 break;
             case 6:
-                endPoint.write(null, callback, chunk, content);
+                endPoint.write(callback, chunk, content);
                 break;
             case 7:
-                endPoint.write(null, callback, header, chunk, content);
+                endPoint.write(callback, header, chunk, content);
                 break;
             default:
                 throw new IllegalStateException();
@@ -400,7 +401,7 @@ public class HttpSender
 
         Result result = completion.getReference();
         boolean notCommitted = current == State.IDLE || current == State.SEND;
-        if (result == null && notCommitted && !request.isAborted())
+        if (result == null && notCommitted && request.getAbortCause() == null)
         {
             result = exchange.responseComplete(failure).getReference();
             exchange.terminateResponse();
@@ -418,12 +419,12 @@ public class HttpSender
         return true;
     }
 
-    public boolean abort(HttpExchange exchange, String reason)
+    public boolean abort(HttpExchange exchange, Throwable cause)
     {
         State current = state.get();
         boolean abortable = current == State.IDLE || current == State.SEND ||
                 current == State.COMMIT && contentIterator.hasNext();
-        return abortable && fail(new HttpRequestException(reason == null ? "Request aborted" : reason, exchange.getRequest()));
+        return abortable && fail(cause);
     }
 
     private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)
@@ -447,7 +448,7 @@ public class HttpSender
         IDLE, SEND, COMMIT, FAILURE
     }
 
-    private static abstract class StatefulExecutorCallback implements Callback<Void>, Runnable
+    private static abstract class StatefulExecutorCallback implements Callback, Runnable
     {
         private final AtomicReference<State> state = new AtomicReference<>(State.INCOMPLETE);
         private final Executor executor;
@@ -458,12 +459,12 @@ public class HttpSender
         }
 
         @Override
-        public final void completed(final Void context)
+        public final void succeeded()
         {
             State previous = state.get();
             while (true)
             {
-                if (state.compareAndSet(previous, State.COMPLETE))
+                if (state.compareAndSet(previous, State.SUCCEEDED))
                     break;
                 previous = state.get();
             }
@@ -474,13 +475,13 @@ public class HttpSender
         @Override
         public final void run()
         {
-            pendingCompleted();
+            onSucceeded();
         }
 
-        protected abstract void pendingCompleted();
+        protected abstract void onSucceeded();
 
         @Override
-        public final void failed(Void context, final Throwable x)
+        public final void failed(final Throwable x)
         {
             State previous = state.get();
             while (true)
@@ -496,36 +497,36 @@ public class HttpSender
                     @Override
                     public void run()
                     {
-                        failed(x);
+                        onFailed(x);
                     }
                 });
             }
             else
             {
-                failed(x);
+                onFailed(x);
             }
         }
 
-        protected abstract void failed(Throwable x);
+        protected abstract void onFailed(Throwable x);
 
-        public boolean pending()
+        public boolean process()
         {
             return state.compareAndSet(State.INCOMPLETE, State.PENDING);
         }
 
-        public boolean completed()
+        public boolean isSucceeded()
         {
-            return state.get() == State.COMPLETE;
+            return state.get() == State.SUCCEEDED;
         }
 
-        public boolean failed()
+        public boolean isFailed()
         {
             return state.get() == State.FAILED;
         }
 
         private enum State
         {
-            INCOMPLETE, PENDING, COMPLETE, FAILED
+            INCOMPLETE, PENDING, SUCCEEDED, FAILED
         }
     }
 

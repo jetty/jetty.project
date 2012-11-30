@@ -31,7 +31,6 @@ import org.apache.tools.ant.types.FileSet;
 /**
  * Ant's WebApp object definition.
  *
- * @author Jakub Pawlowicz
  */
 public class WebApp
 {

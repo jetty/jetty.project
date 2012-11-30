@@ -265,8 +265,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         if (_servletHandler!=null)
         {
-            ContextHandler.Context context=(ContextHandler.Context)_servletHandler.getServletContext();
-            if (context!=null && context.getContextHandler().isStarted())
+            ServletContext context=_servletHandler.getServletContext();
+            if ((context instanceof ContextHandler.Context) && ((ContextHandler.Context)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }

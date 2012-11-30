@@ -64,7 +64,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
         HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         if (length > maxLength)
-            response.abort("Buffering capacity exceeded");
+            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
 
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         if (contentType != null)

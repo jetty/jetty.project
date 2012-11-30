@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -25,22 +27,21 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.api.StatusCode;
-import org.eclipse.jetty.websocket.core.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.core.protocol.Generator;
-import org.eclipse.jetty.websocket.core.protocol.OpCode;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -103,7 +104,7 @@ public class WebSocketServletRFCTest
 
             // Read frame echo'd back (hopefully a single binary frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame binmsg = capture.getFrames().get(0);
+            Frame binmsg = capture.getFrames().get(0);
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -226,7 +227,7 @@ public class WebSocketServletRFCTest
 
             // Read frame (hopefully close frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame cf = capture.getFrames().get(0);
+            Frame cf = capture.getFrames().get(0);
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }

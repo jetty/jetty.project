@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -27,12 +29,9 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Testing Socket used on client side WebSocket testing.

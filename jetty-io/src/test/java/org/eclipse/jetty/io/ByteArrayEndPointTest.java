@@ -157,45 +157,45 @@ public class ByteArrayEndPointTest
         endp.setInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
-        FutureCallback<String> fcb = new FutureCallback<>();
+        FutureCallback fcb = new FutureCallback();
 
-        endp.fillInterested("CTX", fcb);
+        endp.fillInterested(fcb);
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals(10, endp.fill(buffer));
         assertEquals("test input", BufferUtil.toString(buffer));
 
-        fcb = new FutureCallback<>();
-        endp.fillInterested("CTX", fcb);
+        fcb = new FutureCallback();
+        endp.fillInterested(fcb);
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
         endp.setInput(" more");
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals(5, endp.fill(buffer));
         assertEquals("test input more", BufferUtil.toString(buffer));
 
-        fcb = new FutureCallback<>();
-        endp.fillInterested("CTX", fcb);
+        fcb = new FutureCallback();
+        endp.fillInterested(fcb);
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
         endp.setInput((ByteBuffer)null);
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals(-1, endp.fill(buffer));
 
-        fcb = new FutureCallback<>();
-        endp.fillInterested("CTX", fcb);
+        fcb = new FutureCallback();
+        endp.fillInterested(fcb);
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals(-1, endp.fill(buffer));
 
         endp.close();
 
-        fcb = new FutureCallback<>();
-        endp.fillInterested("CTX", fcb);
+        fcb = new FutureCallback();
+        endp.fillInterested(fcb);
         assertTrue(fcb.isDone());
         try
         {
@@ -218,21 +218,21 @@ public class ByteArrayEndPointTest
         ByteBuffer data = BufferUtil.toBuffer("Data.");
         ByteBuffer more = BufferUtil.toBuffer(" Some more.");
 
-        FutureCallback<String> fcb = new FutureCallback<>();
-        endp.write("CTX", fcb, data);
+        FutureCallback fcb = new FutureCallback();
+        endp.write( fcb, data);
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals("Data.", endp.getOutputString());
 
-        fcb = new FutureCallback<>();
-        endp.write("CTX", fcb, more);
+        fcb = new FutureCallback();
+        endp.write(fcb, more);
         assertFalse(fcb.isDone());
 
         assertEquals("Data. Some", endp.getOutputString());
         assertEquals("Data. Some", endp.takeOutputString());
 
         assertTrue(fcb.isDone());
-        assertEquals("CTX", fcb.get());
+        assertEquals(null, fcb.get());
         assertEquals(" more.", endp.getOutputString());
     }
 
@@ -253,17 +253,17 @@ public class ByteArrayEndPointTest
 
         // normal read
         ByteBuffer buffer = BufferUtil.allocate(1024);
-        FutureCallback<Void> fcb = new FutureCallback<>();
+        FutureCallback fcb = new FutureCallback();
 
-        endp.fillInterested(null, fcb);
+        endp.fillInterested(fcb);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(4, endp.fill(buffer));
         assertEquals("test", BufferUtil.toString(buffer));
 
         // read timeout
-        fcb = new FutureCallback<>();
-        endp.fillInterested(null, fcb);
+        fcb = new FutureCallback();
+        endp.fillInterested(fcb);
         long start = System.currentTimeMillis();
         try
         {
@@ -285,8 +285,8 @@ public class ByteArrayEndPointTest
         Thread.sleep(idleTimeout / 2);
 
         // write timeout
-        fcb = new FutureCallback<>();
-        endp.write(null, fcb, BufferUtil.toBuffer("This is too long"));
+        fcb = new FutureCallback();
+        endp.write(fcb, BufferUtil.toBuffer("This is too long"));
         start = System.currentTimeMillis();
         try
         {

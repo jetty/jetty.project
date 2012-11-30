@@ -264,9 +264,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    public <C> Future<C> shutdown(C c)
+    public Future<Void> shutdown()
     {
-        return new FutureCallback<C>(c);
+        return new FutureCallback(true);
     }
 
     @Override

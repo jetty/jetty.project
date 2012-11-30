@@ -29,13 +29,12 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.Controller;
 import org.eclipse.jetty.spdy.ISession;
 import org.eclipse.jetty.spdy.IdleListener;
-import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SPDYConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
+public class SPDYConnection extends AbstractConnection implements Controller, IdleListener
 {
     private static final Logger LOG = Log.getLogger(SPDYConnection.class);
     private final ByteBufferPool bufferPool;
@@ -52,7 +51,11 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
 
     public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,int bufferSize)
     {
-        // TODO explain why we are passing false here
+        // Since SPDY is multiplexed, onFillable() must never block
+        // while calling application code. In fact, onFillable()
+        // always dispatches to a new thread when calling application
+        // code, so here we can safely pass false as last parameter,
+        // and avoid to dispatch to onFillable().
         super(endPoint, executor, false);
         this.bufferPool = bufferPool;
         this.parser = parser;
@@ -116,12 +119,10 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     }
 
     @Override
-    public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
+    public void write(ByteBuffer buffer, final Callback callback)
     {
         EndPoint endPoint = getEndPoint();
-        int remaining = buffer.remaining();
-        endPoint.write(context, callback, buffer);
-        return remaining - buffer.remaining();
+        endPoint.write(callback, buffer);
     }
 
     @Override

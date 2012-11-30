@@ -41,23 +41,27 @@ public class HttpCookieStore implements CookieStore
 
         String host = destination.getHost();
         int port = destination.getPort();
-        String key = host + ":" + port + path;
+        String key = host + ":" + port;
 
-        // First lookup: direct hit
-        Queue<HttpCookie> cookies = allCookies.get(key);
+        // Root path lookup
+        Queue<HttpCookie> cookies = allCookies.get(key + "/");
         if (cookies != null)
             accumulateCookies(destination, cookies, result);
 
-        // Second lookup: root path
-        if (!"/".equals(path))
+        // Path lookup
+        String[] split = path.split("/");
+        for (int i = 1; i < split.length; i++)
         {
-            key = host + ":" + port + "/";
+            String segment = split[i];
+            key += "/" + segment;
             cookies = allCookies.get(key);
             if (cookies != null)
                 accumulateCookies(destination, cookies, result);
+            if (segment.length() > 0)
+                key += "/";
         }
 
-        // Third lookup: parent domains
+        // Domain lookup
         int domains = host.split("\\.").length - 1;
         for (int i = 2; i <= domains; ++i)
         {

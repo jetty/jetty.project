@@ -50,7 +50,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiPartInputStream;
+import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -204,7 +204,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiPartInputStream m = (MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
                 ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
                 assertNotNull (m);
                 assertNotNull (c);
@@ -612,7 +612,8 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "\n"
+                    "\n", 
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertFalse(response.indexOf("Connection: close")>0);
@@ -661,7 +662,8 @@ public class RequestTest
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
                     "Connection: Other,,keep-alive\n"+
-                    "\n"
+                    "\n",
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: keep-alive")>0);
@@ -682,7 +684,8 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "\n"
+                    "\n",
+                    200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: TE,Other")>0);

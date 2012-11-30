@@ -70,10 +70,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
     private String _realmName;
     private String _authMethod;
-    private final Map<String,String> _initParameters=new HashMap<>();
+    private final Map<String,String> _initParameters=new HashMap<String,String>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession=true;
+    private boolean _discoveredIdentityService = false;
+    private boolean _discoveredLoginService = false;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -338,7 +340,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         // many different ways these can be constructed and injected.
 
         if (_loginService==null)
+        {
             setLoginService(findLoginService());
+            _discoveredLoginService = true;
+        }
 
         if (_identityService==null)
         {
@@ -350,6 +355,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (_identityService==null && _realmName!=null)
                 setIdentityService(new DefaultIdentityService());
+
+            _discoveredIdentityService = true;
         }
 
         if (_loginService!=null)
@@ -373,6 +380,27 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
 
         super.doStart();
+    }
+
+    @Override
+    /* ------------------------------------------------------------ */
+    protected void doStop() throws Exception
+    {
+        //if we discovered the services (rather than had them explicitly configured), remove them.
+        if (_discoveredIdentityService)
+        {
+            removeBean(_identityService);
+            _identityService = null;
+            
+        }
+        
+        if (_discoveredLoginService)
+        {
+            removeBean(_loginService);
+            _loginService = null;
+        }
+        
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */

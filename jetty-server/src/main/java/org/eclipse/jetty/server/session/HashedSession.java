@@ -108,6 +108,7 @@ public class HashedSession extends AbstractSession
 
     /* ------------------------------------------------------------ */
     synchronized void save(boolean reactivate)
+    throws Exception
     {
         // Only idle the session if not already idled and no previous save/idle has failed
         if (!isIdled() && !_saveFailed)
@@ -205,7 +206,7 @@ public class HashedSession extends AbstractSession
             access(System.currentTimeMillis());
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Deidling " + super.getId());
+                LOG.debug("De-idling " + super.getId());
 
             FileInputStream fis = null;
 
@@ -227,7 +228,7 @@ public class HashedSession extends AbstractSession
             }
             catch (Exception e)
             {
-                LOG.warn("Problem deidling session " + super.getId(), e);
+                LOG.warn("Problem de-idling session " + super.getId(), e);
                 IO.close(fis);
                 invalidate();
             }
@@ -243,8 +244,10 @@ public class HashedSession extends AbstractSession
      * it to an idled state.
      */
     public synchronized void idle()
+    throws Exception
     {
         save(false);
+        _idled = true;
     }
 
     /* ------------------------------------------------------------ */

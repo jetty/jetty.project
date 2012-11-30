@@ -111,7 +111,7 @@ public class CheckReverseProxyHeadersTest
         try
         {
             server.start();
-            connector.getResponses("GET / HTTP/1.1\n" + headers + "\n\n");
+            connector.getResponses("GET / HTTP/1.1\r\n" +"Connection: close\r\n" + headers + "\r\n\r\n");
 
             Error error = validationHandler.getError();
 

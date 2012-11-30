@@ -117,7 +117,7 @@ abstract public class WriteFlusher
         return updated;
     }
 
-    private void fail(PendingState<?> pending)
+    private void fail(PendingState pending)
     {
         State current = _state.get();
         if (current.getType()==StateType.FAILED)
@@ -237,17 +237,15 @@ abstract public class WriteFlusher
      *
      * @param <C>
      */
-    private class PendingState<C> extends State
+    private class PendingState extends State
     {
-        private final C _context;
-        private final Callback<C> _callback;
+        private final Callback _callback;
         private final ByteBuffer[] _buffers;
 
-        private PendingState(ByteBuffer[] buffers, C context, Callback<C> callback)
+        private PendingState(ByteBuffer[] buffers, Callback callback)
         {
             super(StateType.PENDING);
             _buffers = buffers;
-            _context = context;
             _callback = callback;
         }
 
@@ -259,13 +257,13 @@ abstract public class WriteFlusher
         protected void fail(Throwable cause)
         {
             if (_callback!=null)
-                _callback.failed(_context, cause);
+                _callback.failed(cause);
         }
 
         protected void complete()
         {
             if (_callback!=null)
-                _callback.completed(_context);
+                _callback.succeeded();
         }
     }
 
@@ -289,7 +287,7 @@ abstract public class WriteFlusher
      * @param buffers the buffers to flush to the endpoint
      * @param <C> type of the context
      */
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
         if (DEBUG)
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
@@ -308,11 +306,11 @@ abstract public class WriteFlusher
             {
                 if (!flushed||BufferUtil.hasContent(b))
                 {
-                    PendingState<?> pending=new PendingState<>(buffers, context, callback);
+                    PendingState pending=new PendingState(buffers, callback);
                     if (updateState(__WRITING,pending))
                         onIncompleteFlushed();
                     else
-                        fail(new PendingState<>(buffers, context, callback));
+                        fail(new PendingState(buffers, callback));
                     return;
                 }
             }
@@ -321,7 +319,7 @@ abstract public class WriteFlusher
             if (!updateState(__WRITING,__IDLE))
                 ignoreFail();
             if (callback!=null)
-                callback.completed(context);
+                callback.succeeded();
         }
         catch (IOException e)
         {
@@ -330,10 +328,10 @@ abstract public class WriteFlusher
             if (updateState(__WRITING,__IDLE))
             {
                 if (callback!=null)
-                    callback.failed(context, e);
+                    callback.failed(e);
             }
             else
-                fail(new PendingState<>(buffers, context, callback));
+                fail(new PendingState(buffers, callback));
         }
     }
 
@@ -356,7 +354,7 @@ abstract public class WriteFlusher
         if (previous.getType()!=StateType.PENDING)
             return; // failure already handled.
 
-        PendingState<?> pending = (PendingState<?>)previous;
+        PendingState pending = (PendingState)previous;
         if (!updateState(pending,__COMPLETING))
             return; // failure already handled.
 
@@ -413,7 +411,7 @@ abstract public class WriteFlusher
                     return;
 
                 case PENDING:
-                    PendingState<?> pending = (PendingState<?>)current;
+                    PendingState pending = (PendingState)current;
                     if (updateState(pending,__IDLE))
                     {
                         pending.fail(cause);

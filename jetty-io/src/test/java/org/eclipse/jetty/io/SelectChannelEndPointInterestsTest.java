@@ -136,7 +136,7 @@ public class SelectChannelEndPointInterestsTest
                         connection.fillInterested();
 
                         ByteBuffer output = ByteBuffer.allocate(size.get());
-                        endPoint.write(null, new Callback.Empty<>(), output);
+                        endPoint.write(new Callback.Adapter(), output);
 
                         latch1.countDown();
                     }

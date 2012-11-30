@@ -21,38 +21,19 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public abstract class AbstractEndPoint implements EndPoint
+public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
     private final long _created=System.currentTimeMillis();
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
-
-    private final Scheduler _scheduler;
-    private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
-    private final Runnable _idleTask = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            long idleLeft=checkIdleTimeout();
-            if (idleLeft>=0)
-                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : getIdleTimeout());
-        }
-    };
-
-
-    private volatile long _idleTimeout;
-    private volatile long _idleTimestamp=System.currentTimeMillis();
     private volatile Connection _connection;
 
     private final FillInterest _fillInterest = new FillInterest()
@@ -74,28 +55,15 @@ public abstract class AbstractEndPoint implements EndPoint
 
     protected AbstractEndPoint(Scheduler scheduler,InetSocketAddress local,InetSocketAddress remote)
     {
+        super(scheduler);
         _local=local;
         _remote=remote;
-        _scheduler=scheduler;
     }
 
     @Override
     public long getCreatedTimeStamp()
     {
         return _created;
-    }
-
-
-    @Override
-    public long getIdleTimeout()
-    {
-        return _idleTimeout;
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        _idleTimeout = idleTimeout;
     }
 
     @Override
@@ -109,17 +77,7 @@ public abstract class AbstractEndPoint implements EndPoint
     {
         return _remote;
     }
-
-    public long getIdleTimestamp()
-    {
-        return _idleTimestamp;
-    }
-
-    protected void notIdle()
-    {
-        _idleTimestamp=System.currentTimeMillis();
-    }
-
+    
     @Override
     public Connection getConnection()
     {
@@ -145,18 +103,24 @@ public abstract class AbstractEndPoint implements EndPoint
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }
-
+    
     @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
+    public void close()
     {
-        notIdle();
-        _fillInterest.register(context, callback);
+        super.close();
     }
 
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
+    public void fillInterested(Callback callback) throws IllegalStateException
     {
-        _writeFlusher.write(context, callback, buffers);
+        notIdle();
+        _fillInterest.register(callback);
+    }
+
+    @Override
+    public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
+    {
+        _writeFlusher.write(callback, buffers);
     }
 
     protected abstract void onIncompleteFlush();
@@ -173,56 +137,23 @@ public abstract class AbstractEndPoint implements EndPoint
         return _writeFlusher;
     }
 
-    protected void scheduleIdleTimeout(long delay)
+    @Override
+    protected void onIdleExpired(TimeoutException timeout)
     {
-        Scheduler.Task newTimeout = null;
-        if (isOpen() && delay > 0 && _scheduler!=null)
-            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
-        Scheduler.Task oldTimeout = _timeout.getAndSet(newTimeout);
-        if (oldTimeout != null)
-            oldTimeout.cancel();
-    }
-
-    protected long checkIdleTimeout()
-    {
-        if (isOpen())
+        if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
         {
-            long idleTimestamp = getIdleTimestamp();
-            long idleTimeout = getIdleTimeout();
-            long idleElapsed = System.currentTimeMillis() - idleTimestamp;
-            long idleLeft = idleTimeout - idleElapsed;
-
-            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
-
-            if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
-            {
-                if (idleTimestamp != 0 && idleTimeout > 0)
-                {
-                    if (idleLeft <= 0)
-                    {
-                        LOG.debug("{} idle timeout expired", this);
-
-                        boolean output_shutdown=isOutputShutdown();
-                        TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                        _fillInterest.onFail(timeout);
-                        _writeFlusher.onFail(timeout);
-
-                        if (output_shutdown)
-                            close();
-                        notIdle();
-                    }
-                }
-            }
-
-            return idleLeft>=0?idleLeft:0;
+            boolean output_shutdown=isOutputShutdown();
+            _fillInterest.onFail(timeout);
+            _writeFlusher.onFail(timeout);
+            if (output_shutdown)
+                close();
         }
-        return -1;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s,to=%d}{%s}",
+        return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s,it=%d}{%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
@@ -232,7 +163,7 @@ public abstract class AbstractEndPoint implements EndPoint
                 isOutputShutdown(),
                 _fillInterest,
                 _writeFlusher,
-                _idleTimeout,
+                getIdleTimeout(),
                 getConnection());
     }
 }

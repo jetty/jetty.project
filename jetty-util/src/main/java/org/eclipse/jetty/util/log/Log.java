@@ -31,7 +31,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
@@ -65,14 +64,14 @@ public class Log
      */
     public static String __logClass;
     /**
-     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     * Legacy flag indicating if {@link Logger#ignore(Throwable)} methods produce any output in the {@link Logger}s
      */
     public static boolean __ignored;
 
     /**
      * Hold loggers only.
      */
-    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<String, Logger>();
+    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
 
 
     static
@@ -90,7 +89,7 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
+                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties",true);
                 if (testProps != null)
                 {
                     InputStream in = null;
@@ -106,7 +105,7 @@ public class Log
                     }
                     finally
                     {
-                        IO.close(in);
+                        safeCloseInputStream(in);
                     }
                 }
 
@@ -131,6 +130,19 @@ public class Log
                 return null;
             }
         });
+    }
+
+    private static void safeCloseInputStream(InputStream in)
+    {
+        try
+        {
+            if (in != null)
+                in.close();
+        }
+        catch (IOException e)
+        {
+            LOG.ignore(e);
+        }
     }
 
     private static Logger LOG;
@@ -229,7 +241,7 @@ public class Log
     public static void setLogToParent(String name)
     {
         ClassLoader loader = Log.class.getClassLoader();
-        if (loader.getParent()!=null)
+        if (loader!=null && loader.getParent()!=null)
         {
             try
             {

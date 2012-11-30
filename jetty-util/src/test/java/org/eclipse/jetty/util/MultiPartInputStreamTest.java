@@ -35,13 +35,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.Collection;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.MultiPartInputStream.MultiPart;
+import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
+import org.hamcrest.core.IsNot;
 import org.junit.Test;
 
 /**
@@ -73,7 +76,7 @@ public class MultiPartInputStreamTest
         "\r\n--" + boundary + "-\r\n\r\n";
         
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()), 
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()), 
                                                              "multipart/form-data, boundary="+boundary,
                                                              config,
                                                              _tmpDir);
@@ -89,13 +92,73 @@ public class MultiPartInputStreamTest
         }
     }
 
+    
+    public void testNoBoundaryRequest()
+    throws Exception
+    {
+        String str = "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileName\"\r\n"+
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+
+            "Content-Transfer-Encoding: 8bit\r\n"+
+            "\r\n"+
+            "abc\r\n"+
+            "--\r\n"+
+            "Content-Disposition: form-data; name=\"desc\"\r\n"+ 
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+ 
+            "Content-Transfer-Encoding: 8bit\r\n"+
+            "\r\n"+
+            "123\r\n"+ 
+            "--\r\n"+ 
+            "Content-Disposition: form-data; name=\"title\"\r\n"+
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+
+            "Content-Transfer-Encoding: 8bit\r\n"+ 
+            "\r\n"+
+            "ttt\r\n"+ 
+            "--\r\n"+
+            "Content-Disposition: form-data; name=\"datafile5239138112980980385.txt\"; filename=\"datafile5239138112980980385.txt\"\r\n"+
+            "Content-Type: application/octet-stream; charset=ISO-8859-1\r\n"+
+            "Content-Transfer-Encoding: binary\r\n"+ 
+            "\r\n"+
+            "000\r\n"+ 
+            "----\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                             "multipart/form-data",
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(4));
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Part fileName = mpis.getPart("fileName");
+        assertThat(fileName, notNullValue());
+        assertThat(fileName.getSize(), is(3L));
+        IO.copy(fileName.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("abc"));
+       
+        baos = new ByteArrayOutputStream();
+        Part desc = mpis.getPart("desc");
+        assertThat(desc, notNullValue());
+        assertThat(desc.getSize(), is(3L));
+        IO.copy(desc.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("123"));
+        
+        baos = new ByteArrayOutputStream();
+        Part title = mpis.getPart("title");
+        assertThat(title, notNullValue());
+        assertThat(title.getSize(), is(3L));
+        IO.copy(title.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("ttt"));  
+    }
 
     @Test
     public void testNonMultiPartRequest()
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                              "Content-type: text/plain",
                                                              config,
                                                             _tmpDir);
@@ -108,7 +171,7 @@ public class MultiPartInputStreamTest
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                              _contentType,
                                                              config,
                                                              _tmpDir);
@@ -122,7 +185,7 @@ public class MultiPartInputStreamTest
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
                                                              _tmpDir);
@@ -144,7 +207,7 @@ public class MultiPartInputStreamTest
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
                                                              _tmpDir);
@@ -165,7 +228,7 @@ public class MultiPartInputStreamTest
     public void testPartFileNotDeleted () throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
                 _contentType,
                 config,
                 _tmpDir);
@@ -173,7 +236,7 @@ public class MultiPartInputStreamTest
         Collection<Part> parts = mpis.getParts();
         
         MultiPart part = (MultiPart)mpis.getPart("stuff");
-        File stuff = ((MultiPartInputStream.MultiPart)part).getFile();
+        File stuff = ((MultiPartInputStreamParser.MultiPart)part).getFile();
         assertThat(stuff,notNullValue()); // longer than 100 bytes, should already be a tmp file
         part.write("tptfd.txt");
         File tptfd = new File (_dirname+File.separator+"tptfd.txt");
@@ -184,26 +247,135 @@ public class MultiPartInputStreamTest
         tptfd.deleteOnExit(); //clean up test
     }
     
-    
+    @Test
     public void testPartTmpFileDeletion () throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
-                _contentType,
-                config,
-                _tmpDir);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
-        
+
         MultiPart part = (MultiPart)mpis.getPart("stuff");
-        File stuff = ((MultiPartInputStream.MultiPart)part).getFile();
+        File stuff = ((MultiPartInputStreamParser.MultiPart)part).getFile();
         assertThat(stuff,notNullValue()); // longer than 100 bytes, should already be a tmp file
         assertThat (stuff.exists(), is(true));
         part.cleanUp();
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
     }
     
+    @Test
+    public void testLFOnlyRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\n"+
+                "content-disposition: form-data; name=\"field1\"\n"+
+                "\n"+
+                "Joe Blow\n"+ 
+                "--AaB03x\n"+
+                "content-disposition: form-data; name=\"field2\"\n"+
+                "\n"+
+                "Other\n"+        
+                "--AaB03x--\n";
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());      
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+                
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other"));
+    }
     
+    @Test
+    public void testCROnlyRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\r"+
+        "content-disposition: form-data; name=\"field1\"\r"+
+        "\r"+
+        "Joe Blow\r"+ 
+        "--AaB03x\r"+
+        "content-disposition: form-data; name=\"field2\"\r"+
+        "\r"+
+        "Other\r"+        
+        "--AaB03x--\r";
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+        
+        assertThat(parts.size(), is(2));
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+        
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other"));
+    }
+
+    @Test
+    public void testCRandLFMixRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\r"+
+                "content-disposition: form-data; name=\"field1\"\r"+
+                "\r"+
+                "\nJoe Blow\n"+ 
+                "\r"+
+                "--AaB03x\r"+
+                "content-disposition: form-data; name=\"field2\"\r"+
+                "\r"+
+                "Other\r"+        
+                "--AaB03x--\r";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());      
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("\nJoe Blow\n"));
+        
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other")); 
+    }
+
     public void testMulti ()
     throws Exception
     {
@@ -219,7 +391,7 @@ public class MultiPartInputStreamTest
     private void testMulti(String filename) throws IOException, ServletException
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
                 _contentType,
                 config,
                 _tmpDir);
@@ -235,9 +407,9 @@ public class MultiPartInputStreamTest
         assertEquals("Joe Blow", new String(os.toByteArray()));
         assertEquals(8, field1.getSize());
 
-        assertNotNull(((MultiPartInputStream.MultiPart)field1).getBytes());//in internal buffer
+        assertNotNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes());//in internal buffer
         field1.write("field1.txt");
-        assertNull(((MultiPartInputStream.MultiPart)field1).getBytes());//no longer in internal buffer
+        assertNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes());//no longer in internal buffer
         File f = new File (_dirname+File.separator+"field1.txt");
         assertTrue(f.exists());
         field1.write("another_field1.txt"); //write after having already written
@@ -256,9 +428,9 @@ public class MultiPartInputStreamTest
         assertThat(stuff.getHeader("content-disposition"),is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(),is(2));
         assertThat(stuff.getSize(),is(51L));
-        File tmpfile = ((MultiPartInputStream.MultiPart)stuff).getFile();
+        File tmpfile = ((MultiPartInputStreamParser.MultiPart)stuff).getFile();
         assertThat(tmpfile,notNullValue()); // longer than 100 bytes, should already be a tmp file
-        assertThat(((MultiPartInputStream.MultiPart)stuff).getBytes(),nullValue()); //not in an internal buffer
+        assertThat(((MultiPartInputStreamParser.MultiPart)stuff).getBytes(),nullValue()); //not in an internal buffer
         assertThat(tmpfile.exists(),is(true));
         assertThat(tmpfile.getName(),is(not("stuff with space.txt")));
         stuff.write(filename);
@@ -293,7 +465,7 @@ public class MultiPartInputStreamTest
         "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(sameNames.getBytes()),
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(sameNames.getBytes()),
                                                              _contentType,
                                                              config,
                                                              _tmpDir);

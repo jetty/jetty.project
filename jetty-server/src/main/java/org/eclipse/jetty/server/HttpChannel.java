@@ -420,39 +420,42 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             switch (header)
             {
                 case EXPECT:
-                    HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                    switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
+                    if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
                     {
-                        case CONTINUE:
-                            _expect100Continue = true;
-                            break;
+                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
+                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
+                        {
+                            case CONTINUE:
+                                _expect100Continue = true;
+                                break;
 
-                        case PROCESSING:
-                            _expect102Processing = true;
-                            break;
+                            case PROCESSING:
+                                _expect102Processing = true;
+                                break;
 
-                        default:
-                            String[] values = value.split(",");
-                            for (int i = 0; values != null && i < values.length; i++)
-                            {
-                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                if (expect == null)
-                                    _expect = true;
-                                else
+                            default:
+                                String[] values = value.split(",");
+                                for (int i = 0; values != null && i < values.length; i++)
                                 {
-                                    switch (expect)
+                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
+                                    if (expect == null)
+                                        _expect = true;
+                                    else
                                     {
-                                        case CONTINUE:
-                                            _expect100Continue = true;
-                                            break;
-                                        case PROCESSING:
-                                            _expect102Processing = true;
-                                            break;
-                                        default:
-                                            _expect = true;
+                                        switch (expect)
+                                        {
+                                            case CONTINUE:
+                                                _expect100Continue = true;
+                                                break;
+                                            case PROCESSING:
+                                                _expect102Processing = true;
+                                                break;
+                                            default:
+                                                _expect = true;
+                                        }
                                     }
                                 }
-                            }
+                        }
                     }
                     break;
 
@@ -581,6 +584,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 // TODO is it worthwhile sending if we are at EoF?
                 // "application" info failed to commit, commit with a failsafe 500 info
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
+                complete=true;
                 throw e;
             }
             catch (Exception e)
@@ -588,7 +592,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 LOG.warn(e);
                 // "application" info failed to commit, commit with a failsafe 500 info
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
+                complete=true;
                 throw e;
+            }
+            finally
+            {
+                // TODO this indicates the relationship with HttpOutput is not exactly correct
+                if (complete)
+                    _response.getHttpOutput().closed();
             }
         }
         return committed;

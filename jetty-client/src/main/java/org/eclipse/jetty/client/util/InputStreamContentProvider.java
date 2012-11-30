@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -49,46 +48,64 @@ public class InputStreamContentProvider implements ContentProvider
         return -1;
     }
 
+    protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+    {
+        if (length <= 0)
+            return BufferUtil.EMPTY_BUFFER;
+        return ByteBuffer.wrap(buffer, offset, length);
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
         return new Iterator<ByteBuffer>()
         {
-            private final byte[] buffer = new byte[bufferSize];
-            public boolean eof;
+            private final byte[] bytes = new byte[bufferSize];
+            private Exception failure;
+            private ByteBuffer buffer;
 
             @Override
             public boolean hasNext()
             {
-                return !eof;
+                try
+                {
+                    int read = stream.read(bytes);
+                    if (read > 0)
+                    {
+                        buffer = onRead(bytes, 0, read);
+                        return true;
+                    }
+                    else if (read < 0)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        buffer = BufferUtil.EMPTY_BUFFER;
+                        return true;
+                    }
+                }
+                catch (Exception x)
+                {
+                    if (failure == null)
+                    {
+                        failure = x;
+                        return true;
+                    }
+                    return false;
+                }
             }
 
             @Override
             public ByteBuffer next()
             {
-                try
-                {
-                    int read = stream.read(buffer);
-                    if (read > 0)
-                    {
-                        return ByteBuffer.wrap(buffer, 0, read);
-                    }
-                    else if (read < 0)
-                    {
-                        if (eof)
-                            throw new NoSuchElementException();
-                        eof = true;
-                        return BufferUtil.EMPTY_BUFFER;
-                    }
-                    else
-                    {
-                        return BufferUtil.EMPTY_BUFFER;
-                    }
-                }
-                catch (IOException x)
-                {
-                    throw (NoSuchElementException)new NoSuchElementException().initCause(x);
-                }
+                ByteBuffer result = buffer;
+                buffer = null;
+                if (failure != null)
+                    throw (NoSuchElementException)new NoSuchElementException().initCause(failure);
+                if (result == null)
+                    throw new NoSuchElementException();
+                return result;
             }
 
             @Override

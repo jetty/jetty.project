@@ -27,6 +27,7 @@ import java.util.Locale;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -57,7 +58,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * <li>If a WAR file and a matching XML exist (eg foo.war and foo.xml) then the WAR is assumed to
  * be configured by the XML and only the XML is deployed.
  * </ul>
- * 
+ * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and 
+ * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
@@ -267,6 +269,9 @@ public class WebAppProvider extends ScanningAppProvider
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
             
             xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
+            xmlc.getProperties().put("jetty.webapp",file.getCanonicalPath());
+            xmlc.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
+            
             if (getConfigurationManager() != null)
                 xmlc.getProperties().putAll(getConfigurationManager().getProperties());
             return (ContextHandler)xmlc.configure();

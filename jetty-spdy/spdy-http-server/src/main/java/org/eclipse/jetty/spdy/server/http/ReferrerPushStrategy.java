@@ -33,32 +33,25 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.</p>
- * <p>A typical request for a main resource such as <tt>index.html</tt> is immediately
- * followed by a number of requests for associated resources. Associated resource requests
- * will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which is
- * used to link the associated resource to the main resource.</p>
- * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
- * HTTP header that points to <tt>index.html</tt>; therefore a proper value for {@link #getReferrerPushPeriod()}
- * has to be set. If the referrerPushPeriod for a main resource has elapsed, no more
- * associated resources will be added for that main resource.</p>
- * <p>This class distinguishes associated main resources by their URL path suffix and content
- * type.
- * CSS stylesheets, images and JavaScript files have recognizable URL path suffixes that
- * are classified as associated resources. The suffix regexs can be configured by constructor argument</p>
- * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS
- * stylesheet as referrer. This implementation will push also the CSS image.</p>
- * <p>The push metadata built by this implementation is limited by the number of pages
- * of the application itself, and by the
- * {@link #getMaxAssociatedResources() max associated resources} parameter.
- * This parameter limits the number of associated resources per each main resource, so
- * that if a main resource has hundreds of associated resources, only up to the number
- * specified by this parameter will be pushed.</p>
+ * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.</p> <p>A typical request for a main
+ * resource such as <tt>index.html</tt> is immediately followed by a number of requests for associated resources.
+ * Associated resource requests will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which is
+ * used to link the associated resource to the main resource.</p> <p>However, also following a hyperlink generates a
+ * HTTP request with a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>; therefore a proper value for
+ * {@link #setReferrerPushPeriod(int)} has to be set. If the referrerPushPeriod for a main resource has elapsed,
+ * no more associated resources will be added for that main resource.</p> <p>This class distinguishes associated main
+ * resources by their URL path suffix and content type. CSS stylesheets, images and JavaScript files have
+ * recognizable URL path suffixes that are classified as associated resources. The suffix regexs can be configured by
+ * constructor argument</p>
+ * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS stylesheet as referrer. This
+ * implementation will push also the CSS image.</p> <p>The push metadata built by this implementation is limited by the
+ * number of pages of the application itself, and by the {@link #setMaxAssociatedResources(int)} max associated resources}
+ * parameter. This parameter limits the number of associated resources per each main resource, so that if a main
+ * resource has hundreds of associated resources, only up to the number specified by this parameter will be pushed.</p>
  */
 public class ReferrerPushStrategy implements PushStrategy
 {
@@ -67,42 +60,56 @@ public class ReferrerPushStrategy implements PushStrategy
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
     private final Set<Pattern> allowedPushOrigins = new HashSet<>();
+    private final Set<Pattern> userAgentBlacklist = new HashSet<>();
     private volatile int maxAssociatedResources = 32;
     private volatile int referrerPushPeriod = 5000;
 
     public ReferrerPushStrategy()
     {
-        this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpeg", ".*\\.jpg", ".*\\.gif", ".*\\.ico"));
-    }
+        List<String> defaultPushRegexps = Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpeg", ".*\\.jpg",
+                ".*\\.gif", ".*\\.ico");
+        addPushRegexps(defaultPushRegexps);
 
-    public ReferrerPushStrategy(@Name("pushPatterns") List<String> pushRegexps)
-    {
-        this(pushRegexps, Arrays.asList(
+        List<String> defaultPushContentTypes = Arrays.asList(
                 "text/css",
                 "text/javascript", "application/javascript", "application/x-javascript",
                 "image/png", "image/x-png",
                 "image/jpeg",
                 "image/gif",
-                "image/x-icon", "image/vnd.microsoft.icon"));
+                "image/x-icon", "image/vnd.microsoft.icon");
+        this.pushContentTypes.addAll(defaultPushContentTypes);
     }
 
-    public ReferrerPushStrategy(List<String> pushRegexps, List<String> pushContentTypes)
+    public void setPushRegexps(List<String> pushRegexps)
     {
-        this(pushRegexps, pushContentTypes, Collections.<String>emptyList());
+        pushRegexps.clear();
+        addPushRegexps(pushRegexps);
     }
 
-    public ReferrerPushStrategy(List<String> pushRegexps, List<String> pushContentTypes, List<String> allowedPushOrigins)
+    private void addPushRegexps(List<String> pushRegexps)
     {
         for (String pushRegexp : pushRegexps)
             this.pushRegexps.add(Pattern.compile(pushRegexp));
-        this.pushContentTypes.addAll(pushContentTypes);
+    }
+
+    public void setPushContentTypes(List<String> pushContentTypes)
+    {
+        pushContentTypes.clear();
+        pushContentTypes.addAll(pushContentTypes);
+    }
+
+    public void setAllowedPushOrigins(List<String> allowedPushOrigins)
+    {
+        allowedPushOrigins.clear();
         for (String allowedPushOrigin : allowedPushOrigins)
             this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
     }
 
-    public int getMaxAssociatedResources()
+    public void setUserAgentBlacklist(List<String> userAgentPatterns)
     {
-        return maxAssociatedResources;
+        userAgentBlacklist.clear();
+        for (String userAgentPattern : userAgentPatterns)
+            userAgentBlacklist.add(Pattern.compile(userAgentPattern));
     }
 
     public void setMaxAssociatedResources(int maxAssociatedResources)
@@ -110,14 +117,39 @@ public class ReferrerPushStrategy implements PushStrategy
         this.maxAssociatedResources = maxAssociatedResources;
     }
 
-    public int getReferrerPushPeriod()
-    {
-        return referrerPushPeriod;
-    }
-
     public void setReferrerPushPeriod(int referrerPushPeriod)
     {
         this.referrerPushPeriod = referrerPushPeriod;
+    }
+
+    public Set<Pattern> getPushRegexps()
+    {
+        return pushRegexps;
+    }
+
+    public Set<String> getPushContentTypes()
+    {
+        return pushContentTypes;
+    }
+
+    public Set<Pattern> getAllowedPushOrigins()
+    {
+        return allowedPushOrigins;
+    }
+
+    public Set<Pattern> getUserAgentBlacklist()
+    {
+        return userAgentBlacklist;
+    }
+
+    public int getMaxAssociatedResources()
+    {
+        return maxAssociatedResources;
+    }
+
+    public int getReferrerPushPeriod()
+    {
+        return referrerPushPeriod;
     }
 
     @Override
@@ -125,7 +157,8 @@ public class ReferrerPushStrategy implements PushStrategy
     {
         Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
-        if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
+        if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD
+                .name(version)).value()) && !isUserAgentBlacklisted(requestHeaders))
         {
             String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
             String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
@@ -195,6 +228,16 @@ public class ReferrerPushStrategy implements PushStrategy
     private boolean isMainResource(String url, Fields responseHeaders)
     {
         return !isPushResource(url, responseHeaders);
+    }
+
+    public boolean isUserAgentBlacklisted(Fields headers)
+    {
+        Fields.Field userAgentHeader = headers.get("user-agent");
+        if (userAgentHeader != null)
+            for (Pattern userAgentPattern : userAgentBlacklist)
+                if (userAgentPattern.matcher(userAgentHeader.value()).matches())
+                    return true;
+        return false;
     }
 
     private boolean isPushResource(String url, Fields responseHeaders)
@@ -276,10 +319,8 @@ public class ReferrerPushStrategy implements PushStrategy
         private boolean isPushOriginAllowed(String origin)
         {
             for (Pattern allowedPushOrigin : allowedPushOrigins)
-            {
                 if (allowedPushOrigin.matcher(origin).matches())
                     return true;
-            }
             return false;
         }
     }

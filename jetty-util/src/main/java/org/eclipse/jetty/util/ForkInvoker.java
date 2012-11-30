@@ -19,11 +19,11 @@
 package org.eclipse.jetty.util;
 
 /**
- * Utility class that splits calls to {@link #invoke(T)} into calls to {@link #fork(T)} or {@link #call(T)}
- * depending on the max number of reentrant calls to {@link #invoke(T)}.
+ * Utility class that splits calls to {@link #invoke(Object)} into calls to {@link #fork(Object)} or {@link #call(Object)}
+ * depending on the max number of reentrant calls to {@link #invoke(Object)}.
  * <p/>
  * This class prevents {@link StackOverflowError}s in case of methods that end up invoking themselves,
- * such is common for {@link Callback#completed(Object)}.
+ * such is common for {@link Callback#succeeded()}.
  * <p/>
  * Typical use case is:
  * <pre>
@@ -48,7 +48,6 @@ package org.eclipse.jetty.util;
  * }
  * </pre>
  *
- * @param <T> the generic type of this class
  */
 public abstract class ForkInvoker<T>
 {
@@ -63,12 +62,12 @@ public abstract class ForkInvoker<T>
     private final int _maxInvocations;
 
     /**
-     * Creates an instance with the given max number of reentrant calls to {@link #invoke(T)}
+     * Creates an instance with the given max number of reentrant calls to {@link #invoke(Object)}
      * <p/>
      * If {@code maxInvocations} is zero or negative, it is interpreted
      * as if the max number of reentrant calls is infinite.
      *
-     * @param maxInvocations the max number of reentrant calls to {@link #invoke(T)}
+     * @param maxInvocations the max number of reentrant calls to {@link #invoke(Object)}
      */
     public ForkInvoker(int maxInvocations)
     {
@@ -76,22 +75,22 @@ public abstract class ForkInvoker<T>
     }
 
     /**
-     * Invokes either {@link #fork(T)} or {@link #call(T)}.
-     * If {@link #condition()} returns true, {@link #fork(T)} is invoked.
+     * Invokes either {@link #fork(Object)} or {@link #call(Object)}.
+     * If {@link #condition()} returns true, {@link #fork(Object)} is invoked.
      * Otherwise, if the max number of reentrant calls is positive and the
-     * actual number of reentrant invocations exceeds it, {@link #fork(T)} is invoked.
-     * Otherwise, {@link #call(T)} is invoked.
+     * actual number of reentrant invocations exceeds it, {@link #fork(Object)} is invoked.
+     * Otherwise, {@link #call(Object)} is invoked.
+     * @param arg TODO
      *
-     * @param context the invocation context
-     * @return true if {@link #fork(T)} has been called, false otherwise
+     * @return true if {@link #fork(Object)} has been called, false otherwise
      */
-    public boolean invoke(T context)
+    public boolean invoke(T arg)
     {
         boolean countInvocations = _maxInvocations > 0;
         int invocations = __invocations.get();
         if (condition() || countInvocations && invocations > _maxInvocations)
         {
-            fork(context);
+            fork(arg);
             return true;
         }
         else
@@ -100,7 +99,7 @@ public abstract class ForkInvoker<T>
                 __invocations.set(invocations + 1);
             try
             {
-                call(context);
+                call(arg);
                 return false;
             }
             finally
@@ -113,9 +112,9 @@ public abstract class ForkInvoker<T>
 
     /**
      * Subclasses should override this method returning true if they want
-     * {@link #invoke(T)} to call {@link #fork(T)}.
+     * {@link #invoke(Object)} to call {@link #fork(Object)}.
      *
-     * @return true if {@link #invoke(T)} should call {@link #fork(T)}, false otherwise
+     * @return true if {@link #invoke(Object)} should call {@link #fork(Object)}, false otherwise
      */
     protected boolean condition()
     {
@@ -124,15 +123,13 @@ public abstract class ForkInvoker<T>
 
     /**
      * Executes the forked invocation
-     *
-     * @param context the invocation context
+     * @param arg TODO
      */
-    public abstract void fork(T context);
+    public abstract void fork(T arg);
 
     /**
      * Executes the direct, non-forked, invocation
-     *
-     * @param context the invocation context
+     * @param arg TODO
      */
-    public abstract void call(T context);
+    public abstract void call(T arg);
 }

@@ -27,7 +27,6 @@ import org.eclipse.jetty.security.LoginService;
 /**
  * Specifies a jetty configuration <loginServices/> element for Ant build file.
  *
- * @author Jakub Pawlowicz
  */
 public class LoginServices
 {

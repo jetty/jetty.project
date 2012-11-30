@@ -34,45 +34,47 @@
 
 package org.eclipse.jetty.util;
 
+import org.eclipse.jetty.util.log.Log;
+
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
+ * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful 
+ * name than EmptyPromise</p>
+ *  
  * @param <C> the type of the context object
  */
-public interface Callback<C>
+public interface Callback
 {
     /**
      * <p>Callback invoked when the operation completes.</p>
      *
-     * @param context the context
-     * @see #failed(Object, Throwable)
+     * @see #failed(Throwable)
      */
-    public abstract void completed(C context);
+    public abstract void succeeded();
 
     /**
      * <p>Callback invoked when the operation fails.</p>
-     *
-     * @param context the context
      * @param x the reason for the operation failure
      */
-    public void failed(C context, Throwable x);
+    public void failed(Throwable x);
 
     /**
      * <p>Empty implementation of {@link Callback}</p>
      *
      * @param <C> the type of the context object
      */
-    public static class Empty<C> implements Callback<C>
+    public static class Adapter implements Callback
     {
         @Override
-        public void completed(C context)
+        public void succeeded()
         {
         }
 
         @Override
-        public void failed(C context, Throwable x)
+        public void failed(Throwable x)
         {
-            throw new RuntimeException(x);
+            Log.getLogger(this.getClass()).warn(x);
         }
     }
 }

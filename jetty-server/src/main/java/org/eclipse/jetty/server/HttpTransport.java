@@ -28,7 +28,7 @@ public interface HttpTransport
 {
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException;
 
-    <C> void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, C context, Callback<C> callback);
+    void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback);
     
     void completed();
 }

@@ -27,6 +27,7 @@ import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.List;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
 
 import org.apache.tools.ant.AntClassLoader;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
@@ -57,7 +58,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 /**
  * An abstraction layer over Jetty WebAppContext.
  *
- * @author Jakub Pawlowicz
  */
 public class WebApplicationProxyImpl implements WebApplicationProxy
 {
@@ -142,7 +142,7 @@ public class WebApplicationProxyImpl implements WebApplicationProxy
         {
             //super.initJspServlet();
 
-            ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
+            ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
 
             /* Set the webapp's classpath for Jasper */
             ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());

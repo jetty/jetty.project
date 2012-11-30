@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 
 import org.eclipse.jetty.http.HttpGenerator.RequestInfo;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -102,7 +101,7 @@ public class HttpTester
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new RuntimeException(e);
             }
         }
 
@@ -115,7 +114,7 @@ public class HttpTester
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new RuntimeException(e);
             }
         }
         @Override
@@ -153,7 +152,7 @@ public class HttpTester
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new RuntimeException(e);
             }
             return false;
         }
@@ -161,7 +160,7 @@ public class HttpTester
         @Override
         public void badMessage(int status, String reason)
         {
-            throw new RuntimeIOException(reason);
+            throw new RuntimeException(reason);
         }
 
         public ByteBuffer generate()
@@ -224,7 +223,7 @@ public class HttpTester
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new RuntimeException(e);
             }
 
         }

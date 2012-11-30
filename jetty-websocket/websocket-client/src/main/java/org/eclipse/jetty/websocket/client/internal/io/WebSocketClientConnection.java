@@ -18,15 +18,20 @@
 
 package org.eclipse.jetty.websocket.client.internal.io;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
-import org.eclipse.jetty.websocket.core.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.core.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
  * Client side WebSocket physical connection.
@@ -53,11 +58,23 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return getEndPoint().getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getEndPoint().getRemoteAddress();
+    }
+
+    @Override
     public void onClose()
     {
         super.onClose();
         factory.sessionClosed(getSession());
-    };
+    }
 
     @Override
     public void onOpen()
@@ -68,12 +85,21 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
+    };
+
+    @Override
+    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    {
+        if (frame instanceof WebSocketFrame)
+        {
+            masker.setMask((WebSocketFrame)frame);
+        }
+        return super.outgoingFrame(frame);
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public void setNextIncomingFrames(IncomingFrames incoming)
     {
-        masker.setMask(frame);
-        super.output(context,callback,frame);
+        getParser().setIncomingFramesHandler(incoming);
     }
 }

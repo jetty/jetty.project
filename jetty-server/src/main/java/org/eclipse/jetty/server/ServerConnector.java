@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
  * schedule a set of accepted connections.  It is the selector thread that will call the
- * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Object, Callback)} or
+ * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Callback)} or
  * {@link EndPoint#write(Object, Callback, java.nio.ByteBuffer...)} methods.  It is expected
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
  * {@link Executor} service any blocking, long running or application tasks.
@@ -83,17 +83,79 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
     private volatile int _localPort = -1;
-    private volatile int _acceptQueueSize = 128;
+    private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
+    private static  ThreadLocal<Server> _threadServer= new ThreadLocal<>();
+    private static Server _defaultServer;
+    
+    /* ------------------------------------------------------------ */
+    /** Set the Server instance to be used with {@link #ServerConnector()}
+     * by callers from this thread. After use, the thread server should be
+     * set to null to avoid leaking the server.
+     * @param server The server
+     */
+    public static void setThreadServer(Server server)
+    {
+        _threadServer.set(server);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set the Server instance to be used with {@link #ServerConnector()}
+     * by calling threads that have not called {@link #setThreadServer(Server)}.
+     * After use, the default server should be set to null to avoid leaking the server.
+     * @param server The server
+     */
+    public static void setDefaultServer(Server server)
+    {
+        _defaultServer=server;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A server set for this thread by {@link #setThreadServer(Server)} or 
+     * if that is not set, then the server set by {@link #setDefaultServer(Server)}
+     */
+    protected static Server getThreadOrDefaultServer()
+    {
+        Server server=_threadServer.get();
+        if (server==null)
+            server=_defaultServer;
+        if (server==null)
+            throw new IllegalStateException("setDefaultServer or setThreadServer must be called before constructor ServerConnector()");
+        return server;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Construct a ServerConnector using the thread or default server instance.
+     * <p>This constructor can be used by callers that do not have a reference
+     * to a Server instance.  Either {@link #setDefaultServer(Server)} or {@link #setThreadServer(Server)}
+     * must be called prior to the constructor, which is equivalent to 
+     * calling {@link #ServerConnector(Server)} with the server return from
+     * {@link #getThreadOrDefaultServer()}
+     */
+    public ServerConnector()
+    {
+        this(getThreadOrDefaultServer());
+    }
 
-    public ServerConnector(
-        @Name("server") Server server)
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     */
+    public ServerConnector(@Name("server") Server server)
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
 
+    /* ------------------------------------------------------------ */
+    /** Generic Server Connection with default configuration.
+     * <p>Construct a Server Connector with the passed Connection factories.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
@@ -101,6 +163,13 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,factories);
     }
 
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * list of HTTP Connection Factory.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory)
@@ -108,6 +177,13 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
+    /* ------------------------------------------------------------ */
+    /** Generic SSL Server Connection.
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * list of ConnectionFactories, with the first factory being the default protocol for the SslConnectionFactory.
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
     public ServerConnector(
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory,
@@ -116,24 +192,33 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
     }
 
-    /**
-     * @param server    The server this connector will be added to. Must not be null.
-     * @param executor  An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to use the servers scheduler
-     * @param pool      A buffer pool for this connector or null to use a default {@link ByteBufferPool}
-     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
-     * @param factories Zero or more {@link ConnectionFactory} instances.
+    /** Generic Server Connection.
+     * @param server    
+     *          The server this connector will be accept connection for.  
+     * @param executor  
+     *          An executor used to run tasks for handling requests, acceptors and selectors. I
+     *          If null then use the servers executor
+     * @param scheduler 
+     *          A scheduler used to schedule timeouts. If null then use the servers scheduler
+     * @param bufferPool
+     *          A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
+     * @param acceptors 
+     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     * @param selectors
+     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param factories 
+     *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
         @Name("server") Server server,
         @Name("executor") Executor executor,
         @Name("scheduler") Scheduler scheduler,
-        @Name("bufferPool") ByteBufferPool pool,
+        @Name("bufferPool") ByteBufferPool bufferPool,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
     {
-        super(server,executor,scheduler,pool,acceptors,factories);
+        super(server,executor,scheduler,bufferPool,acceptors,factories);
         _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
     }
@@ -208,10 +293,10 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     @Override
-    public <C> Future<C> shutdown(C c)
+    public Future<Void> shutdown()
     {
         // TODO shutdown all the connections
-        return super.shutdown(c);
+        return super.shutdown();
     }
 
     @Override
@@ -298,8 +383,8 @@ public class ServerConnector extends AbstractNetworkConnector
      * @return the linger time
      * @see Socket#getSoLinger()
      */
-    @ManagedAttribute("linger time")
-    public int getLingerTime()
+    @ManagedAttribute("TCP/IP solinger time or -1 to disable")
+    public int getSoLingerTime()
     {
         return _lingerTime;
     }

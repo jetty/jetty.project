@@ -22,9 +22,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 
-public interface Controller<T>
+public interface Controller
 {
-    public int write(ByteBuffer buffer, Callback<T> callback, T context);
+    public void write(ByteBuffer buffer, Callback callback);
 
     public void close(boolean onlyOutput);
 }

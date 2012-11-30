@@ -158,16 +158,10 @@
                   <!-- allowed combinations -->
                   <includes>
                     <include>org.apache.geronimo.specs:geronimo-atinject_1.0_spec:jar:*</include>
-<!--
+                    <include>javax.net.websocket:*:*:*</include>
+                    <include>javax.websocket:*:*:*</include>
                     <include>javax.servlet:*:*:*:provided</include>
--->
                     <include>javax.servlet.jsp:*:*:*:provided</include>
-                    <include>javax.servlet</include>
-<!--
-                    <include>org.apache.geronimo.specs</include>
-                    <include>javax.mail</include>
-                    <include>javax.activation</include>
--->
                   </includes>
                   <searchTransitive>true</searchTransitive>
                   <message>This dependency is banned, use the ORBIT provided dependency instead.</message>
@@ -387,7 +381,7 @@
     </repository>
   </repositories>
   <modules>
-    <!--module>jetty-ant</module-->
+    <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
@@ -402,41 +396,33 @@
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>
-    <module>test-continuation</module>
-    <module>test-jetty-webapp</module>
     <module>jetty-maven-plugin</module>
     <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
-    <module>jetty-plugins</module>
     <module>jetty-plus</module>
     <module>jetty-annotations</module>
     <module>jetty-jndi</module>
     <module>jetty-jsp</module>
     <module>jetty-jaas</module>
-    <module>jetty-distribution</module>
     <module>jetty-spring</module>
     <module>jetty-client</module>
+    <module>jetty-proxy</module>
+    <module>jetty-jaspi</module>
     <module>jetty-osgi</module>
-    <module>examples/embedded</module>
-    <module>examples/async-rest</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>tests/test-sessions</module>
-    <module>tests/test-webapps</module>
+    <module>examples</module>
+    <module>tests</module>
+    <module>aggregates/jetty-all</module>
+    <module>jetty-distribution</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
 
     <module>jetty-runner</module>
     <module>jetty-rhttp</module>
-    <module>jetty-jaspi</module>
-    <module>jetty-proxy</module>
-    <module>jetty-monitor</module>
-    <module>jetty-nested</module>
-    <module>jetty-overlay-deployer</module>
     <module>jetty-http-spi</module>
-    <module>test-jetty-nested</module>
     -->
   </modules>
   <dependencyManagement>
@@ -593,9 +579,7 @@
     <profile>
       <id>release</id>
       <modules>
-        <!--
         <module>jetty-aggregate</module>
-         -->
       </modules>
     </profile>
     <profile>

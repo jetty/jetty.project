@@ -43,8 +43,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Set name="pattern">/rewrite/</Set>
-            <Set name="replacement">/rewrite/info.html</Set>
+            <Set name="pattern">/test/rewrite/</Set>
+            <Set name="replacement">/test/rewrite/info.html</Set>
           </New>
         </Arg>
       </Call>
@@ -53,8 +53,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Set name="pattern">/some/old/context</Set>
-            <Set name="replacement">/rewritten/newcontext</Set>
+            <Set name="pattern">/test/some/old/context</Set>
+            <Set name="replacement">/test/rewritten/newcontext</Set>
           </New>
         </Arg>
       </Call>
@@ -63,8 +63,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Set name="pattern">/rewrite/for/*</Set>
-            <Set name="replacement">/rewritten/</Set>
+            <Set name="pattern">/test/rewrite/for/*</Set>
+            <Set name="replacement">/test/rewritten/</Set>
           </New>
         </Arg>
       </Call>
@@ -94,8 +94,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
-            <Set name="pattern">/redirect/*</Set>
-            <Set name="location">/redirected</Set>
+            <Set name="pattern">/test/redirect/*</Set>
+            <Set name="location">/test/redirected</Set>
           </New>
         </Arg>
       </Call>

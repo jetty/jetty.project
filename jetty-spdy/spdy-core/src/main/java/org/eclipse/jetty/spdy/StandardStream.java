@@ -39,6 +39,8 @@ import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -50,6 +52,7 @@ public class StandardStream implements IStream
     private final byte priority;
     private final ISession session;
     private final IStream associatedStream;
+    private final Promise<Stream> promise;
     private final AtomicInteger windowSize = new AtomicInteger();
     private final Set<Stream> pushedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
     private volatile StreamFrameListener listener;
@@ -57,12 +60,13 @@ public class StandardStream implements IStream
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
 
-    public StandardStream(int id, byte priority, ISession session, IStream associatedStream)
+    public StandardStream(int id, byte priority, ISession session, IStream associatedStream, Promise<Stream> promise)
     {
         this.id = id;
         this.priority = priority;
         this.session = session;
         this.associatedStream = associatedStream;
+        this.promise = promise;
     }
 
     @Override
@@ -249,6 +253,20 @@ public class StandardStream implements IStream
         session.flush();
     }
 
+    @Override
+    public void succeeded()
+    {
+        if (promise != null)
+            promise.succeeded(this);
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (promise != null)
+            promise.failed(x);
+    }
+
     private void notifyOnReply(ReplyInfo replyInfo)
     {
         final StreamFrameListener listener = this.listener;
@@ -319,52 +337,53 @@ public class StandardStream implements IStream
     @Override
     public Future<Stream> syn(SynInfo synInfo)
     {
-        Promise<Stream> result = new Promise<>();
+        FuturePromise<Stream> result = new FuturePromise<>();
         syn(synInfo,0,TimeUnit.MILLISECONDS,result);
         return result;
     }
 
     @Override
-    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Callback<Stream> callback)
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> promise)
     {
         if (isClosed() || isReset())
         {
-            callback.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED));
+            promise.failed(new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED,
+                    "Stream: " + this + " already closed or reset!"));
             return;
         }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
-        session.syn(pushSynInfo, null, timeout, unit, callback);
+        session.syn(pushSynInfo, null, timeout, unit, promise);
     }
 
     @Override
     public Future<Void> reply(ReplyInfo replyInfo)
     {
-        Promise<Void> result = new Promise<>();
-        reply(replyInfo,0,TimeUnit.MILLISECONDS,result);
+        FutureCallback result = new FutureCallback();
+        reply(replyInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback<Void> callback)
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback callback)
     {
         if (isUnidirectional())
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-        session.control(this, frame, timeout, unit, callback, null);
+        session.control(this, frame, timeout, unit, callback);
     }
 
     @Override
     public Future<Void> data(DataInfo dataInfo)
     {
-        FutureCallback<Void> fcb = new FutureCallback<>();
-        data(dataInfo,0,TimeUnit.MILLISECONDS,null,fcb);
-        return fcb;
+        FutureCallback result = new FutureCallback();
+        data(dataInfo, 0, TimeUnit.MILLISECONDS, result);
+        return result;
     }
 
     @Override
-    public <C> void data(DataInfo dataInfo, long timeout, TimeUnit unit, C context, Callback<C> callback)
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback)
     {
         if (!canSend())
         {
@@ -379,19 +398,19 @@ public class StandardStream implements IStream
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, timeout, unit, callback, context);
+        session.data(this, dataInfo, timeout, unit, callback);
     }
 
     @Override
     public Future<Void> headers(HeadersInfo headersInfo)
     {
-        FutureCallback<Void> fcb = new FutureCallback<>();
-        headers(headersInfo,0,TimeUnit.MILLISECONDS,fcb);
-        return fcb;
+        FutureCallback result = new FutureCallback();
+        headers(headersInfo, 0, TimeUnit.MILLISECONDS, result);
+        return result;
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> callback)
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback callback)
     {
         if (!canSend())
         {
@@ -406,7 +425,7 @@ public class StandardStream implements IStream
 
         updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-        session.control(this, frame, timeout, unit, callback, null);
+        session.control(this, frame, timeout, unit, callback);
     }
 
     @Override

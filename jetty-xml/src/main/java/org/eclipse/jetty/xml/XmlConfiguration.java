@@ -68,6 +68,14 @@ import org.xml.sax.SAXException;
  * {@link ConfigurationProcessorFactory} interface to be found by the
  * {@link ServiceLoader} by using the DTD and first tag element in the file.
  * Note that DTD will be null if validation is off.</p>
+ * <p>
+ * The configuration can be parameterised with properties that are looked up via the 
+ * Property XML element and set on the configuration via the map returned from 
+ * {@link #getProperties()}</p>
+ * <p>
+ * The configuration can create and lookup beans by ID.  If multiple configurations are used, then it
+ * is good practise to copy the entries from the {@link #getIdMap()} of a configuration to the next 
+ * configuration so that they can share an ID space for beans.</p>
  */
 public class XmlConfiguration
 {
@@ -87,32 +95,25 @@ public class XmlConfiguration
     private synchronized static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
-        try
-        {
-            URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
-            URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
-            URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
-            parser.redirectEntity("configure.dtd",config90);
-            parser.redirectEntity("configure_1_0.dtd",config60);
-            parser.redirectEntity("configure_1_1.dtd",config60);
-            parser.redirectEntity("configure_1_2.dtd",config60);
-            parser.redirectEntity("configure_1_3.dtd",config60);
-            parser.redirectEntity("configure_6_0.dtd",config60);
-            parser.redirectEntity("configure_7_6.dtd",config76);
-            parser.redirectEntity("configure_9_0.dtd",config90);
+        URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
+        URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
+        URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
+        parser.redirectEntity("configure.dtd",config90);
+        parser.redirectEntity("configure_1_0.dtd",config60);
+        parser.redirectEntity("configure_1_1.dtd",config60);
+        parser.redirectEntity("configure_1_2.dtd",config60);
+        parser.redirectEntity("configure_1_3.dtd",config60);
+        parser.redirectEntity("configure_6_0.dtd",config60);
+        parser.redirectEntity("configure_7_6.dtd",config76);
+        parser.redirectEntity("configure_9_0.dtd",config90);
 
-            parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
-            parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
-            parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
+        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
+        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
 
-            parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
-            parser.redirectEntity("-//Jetty//Configure//EN",config90);
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.warn(e.toString());
-            LOG.debug(e);
-        }
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
+        parser.redirectEntity("-//Jetty//Configure//EN",config90);
+
         return parser;
     }
 
@@ -203,11 +204,32 @@ public class XmlConfiguration
         _processor.init(_url,config,_idMap, _propertyMap);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the map of ID String to Objects that is used to hold
+     * and lookup any objects by ID.  
+     * <p>
+     * A New, Get or Call XML element may have an
+     * id attribute which will cause the resulting object to be placed into
+     * this map.  A Ref XML element will lookup an object from this map.</p>
+     * <p>
+     * When chaining configuration files, it is good practise to copy the 
+     * ID entries from the ID map to the map of the next configuration, so
+     * that they may share an ID space
+     * </p>
+     *  
+     * @return A modifiable map of ID strings to Objects
+     */
     public Map<String, Object> getIdMap()
     {
         return _idMap;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the map of properties used by the Property XML element
+     * to parameterise configuration. 
+     * @return A modifiable map of properties.
+     */
     public Map<String, String> getProperties()
     {
         return _propertyMap;

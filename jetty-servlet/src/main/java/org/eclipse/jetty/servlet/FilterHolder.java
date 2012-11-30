@@ -27,6 +27,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -100,7 +101,10 @@ public class FilterHolder extends Holder<Filter>
         {
             try
             {
-                _filter=((ServletContextHandler.Context)_servletHandler.getServletContext()).createFilter(getHeldClass());
+                ServletContext context=_servletHandler.getServletContext();
+                _filter=(context instanceof ServletContextHandler.Context)
+                    ?((ServletContextHandler.Context)context).createFilter(getHeldClass())
+                    :getHeldClass().newInstance();
             }
             catch (ServletException se)
             {

@@ -27,7 +27,7 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,7 +79,7 @@ public class HttpResponseHeaderParserTest
         Assert.assertThat("Response.statusCode",response.getStatusCode(),is(200));
         Assert.assertThat("Response.statusReason",response.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",response.getHeaderValue("age"),is("518097"));
+        Assert.assertThat("Response.header[age]",response.getHeader("age"),is("518097"));
     }
 
     @Test
@@ -139,6 +139,6 @@ public class HttpResponseHeaderParserTest
         Assert.assertThat("Response.statusCode",response.getStatusCode(),is(200));
         Assert.assertThat("Response.statusReason",response.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",response.getHeaderValue("age"),is("518097"));
+        Assert.assertThat("Response.header[age]",response.getHeader("age"),is("518097"));
     }
 }

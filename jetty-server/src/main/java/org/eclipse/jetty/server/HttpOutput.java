@@ -85,6 +85,19 @@ public class HttpOutput extends ServletOutputStream
     {
         _closed = false;
     }
+    
+    /** Called by the HttpChannel if the output was closed 
+     * externally (eg by a 500 exception handling).
+     */
+    void closed() 
+    {
+        _closed = true;
+        if (_aggregate != null)
+        {
+            _channel.getConnector().getByteBufferPool().release(_aggregate);
+            _aggregate = null;
+        }
+    }
 
     @Override
     public void close() 
@@ -240,6 +253,10 @@ public class HttpOutput extends ServletOutputStream
                     response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
             }
 
+            String etag=httpContent.getETag();
+            if (etag!=null)
+                response.getHttpFields().put(HttpHeader.ETAG,etag);
+            
             content = httpContent.getDirectBuffer();
             if (content == null)
                 content = httpContent.getIndirectBuffer();
@@ -258,7 +275,8 @@ public class HttpOutput extends ServletOutputStream
         // Process content.
         if (content instanceof ByteBuffer)
         {
-            _channel.write((ByteBuffer)content, true); // TODO: we have written all content ?
+            _channel.write((ByteBuffer)content, true);
+            _closed=true;
         }
         else if (content instanceof ReadableByteChannel)
         {
@@ -300,7 +318,6 @@ public class HttpOutput extends ServletOutputStream
                     buffer.limit(len);
                     _channel.write(buffer,false);
                 }
-                _channel.write(BufferUtil.EMPTY_BUFFER,true);
             }
             finally
             {

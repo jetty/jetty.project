@@ -27,10 +27,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.core.api.UpgradeException;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -82,7 +81,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -109,7 +108,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -136,7 +135,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         // Intentionally not accept incoming socket.
         // server.accept();
@@ -162,7 +161,7 @@ public class ClientConnectTest
 
         // Intentionally bad port
         URI wsUri = new URI("ws://127.0.0.1:1");
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         // The attempt to get upgrade response future should throw error
         try
@@ -184,7 +183,7 @@ public class ClientConnectTest
         WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<UpgradeResponse> future = client.connect(wsUri);
+        Future<ClientUpgradeResponse> future = client.connect(wsUri);
 
         ServerConnection ssocket = server.accept();
         Assert.assertNotNull(ssocket);
