@@ -299,16 +299,7 @@ public abstract class Resource implements ResourceFactory
         URL url=Resource.class.getResource(name);
         
         if (url==null)
-        {
-            try
-            {
-                url=Loader.getResource(Resource.class,name,checkParents);
-            }
-            catch(ClassNotFoundException e)
-            {
-                url=ClassLoader.getSystemResource(name);
-            }
-        }
+            url=Loader.getResource(Resource.class,name,checkParents);
         if (url==null)
             return null;
         return newResource(url,useCaches);

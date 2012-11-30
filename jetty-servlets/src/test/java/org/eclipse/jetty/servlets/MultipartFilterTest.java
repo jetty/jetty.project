@@ -272,7 +272,9 @@ public class MultipartFilterTest
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
-        // test GET
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -311,7 +313,8 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
-
+    
+    
     @Test
     public void testLFOnlyRequest() throws Exception
     { 

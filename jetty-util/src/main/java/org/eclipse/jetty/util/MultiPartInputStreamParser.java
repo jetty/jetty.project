@@ -470,7 +470,7 @@ public class MultiPartInputStreamParser
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
-        String line = ((ReadLineInputStream)_in).readLine();
+        String line=((ReadLineInputStream)_in).readLine();
         if(line==null || !line.equals(boundary))
         {
             throw new IOException("Missing initial multi part boundary");
@@ -486,14 +486,14 @@ public class MultiPartInputStreamParser
             MultiMap headers = new MultiMap();
             while(true)
             {
-                line = ((ReadLineInputStream)_in).readLine();
+                line=((ReadLineInputStream)_in).readLine();
                 
-                //run out of input:
-                if (line == null)
+                //No more input
+                if(line==null)
                     break outer;
                 
                 //end of headers:
-                if ("".equals(line))
+                if("".equals(line))
                     break;
            
                 total += line.length();
@@ -619,7 +619,7 @@ public class MultiPartInputStreamParser
                                 if (tmp!=10)
                                     _in.reset();
                                 else
-                                    state=tmp; 
+                                    state=tmp;
                             }
                             break;
                         }

@@ -376,7 +376,6 @@ public class MultiPartInputStreamTest
         assertThat(baos.toString("UTF-8"), is("Other")); 
     }
 
-
     public void testMulti ()
     throws Exception
     {

@@ -95,32 +95,25 @@ public class XmlConfiguration
     private synchronized static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
-        try
-        {
-            URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
-            URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
-            URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
-            parser.redirectEntity("configure.dtd",config90);
-            parser.redirectEntity("configure_1_0.dtd",config60);
-            parser.redirectEntity("configure_1_1.dtd",config60);
-            parser.redirectEntity("configure_1_2.dtd",config60);
-            parser.redirectEntity("configure_1_3.dtd",config60);
-            parser.redirectEntity("configure_6_0.dtd",config60);
-            parser.redirectEntity("configure_7_6.dtd",config76);
-            parser.redirectEntity("configure_9_0.dtd",config90);
+        URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
+        URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
+        URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
+        parser.redirectEntity("configure.dtd",config90);
+        parser.redirectEntity("configure_1_0.dtd",config60);
+        parser.redirectEntity("configure_1_1.dtd",config60);
+        parser.redirectEntity("configure_1_2.dtd",config60);
+        parser.redirectEntity("configure_1_3.dtd",config60);
+        parser.redirectEntity("configure_6_0.dtd",config60);
+        parser.redirectEntity("configure_7_6.dtd",config76);
+        parser.redirectEntity("configure_9_0.dtd",config90);
 
-            parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
-            parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
-            parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
+        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
+        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
 
-            parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
-            parser.redirectEntity("-//Jetty//Configure//EN",config90);
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.warn(e.toString());
-            LOG.debug(e);
-        }
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
+        parser.redirectEntity("-//Jetty//Configure//EN",config90);
+
         return parser;
     }
 
