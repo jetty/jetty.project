@@ -85,11 +85,19 @@ public class Result
     }
 
     /**
+     * @return whether both the request and the response succeeded
+     */
+    public boolean isSucceeded()
+    {
+        return getFailure() == null;
+    }
+
+    /**
      * @return whether either the response or the request failed
      */
     public boolean isFailed()
     {
-        return getFailure() != null;
+        return !isSucceeded();
     }
 
     /**

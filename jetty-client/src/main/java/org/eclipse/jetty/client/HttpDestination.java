@@ -68,9 +68,9 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         this.client = client;
         this.scheme = scheme;
         this.address = new InetSocketAddress(host, port);
-        this.requests = new ArrayBlockingQueue<>(client.getMaxQueueSizePerAddress());
-        this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
-        this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
+        this.requests = new ArrayBlockingQueue<>(client.getMaxRequestsQueuedPerDestination());
+        this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerDestination());
+        this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerDestination());
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier(client);
 
@@ -147,7 +147,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             }
             else
             {
-                throw new RejectedExecutionException("Max requests per address " + client.getMaxQueueSizePerAddress() + " exceeded");
+                throw new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded");
             }
         }
         else
@@ -174,7 +174,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         if (result != null)
             return result;
 
-        final int maxConnections = client.getMaxConnectionsPerAddress();
+        final int maxConnections = client.getMaxConnectionsPerDestination();
         while (true)
         {
             int current = connectionCount.get();

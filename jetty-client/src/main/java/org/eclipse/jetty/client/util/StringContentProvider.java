@@ -20,6 +20,14 @@ package org.eclipse.jetty.client.util;
 
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.client.api.ContentProvider;
+
+/**
+ * A {@link ContentProvider} for strings.
+ * <p />
+ * It is possible to specify, at the constructor, an encoding used to convert
+ * the string into bytes, by default UTF-8.
+ */
 public class StringContentProvider extends BytesContentProvider
 {
     public StringContentProvider(String content)

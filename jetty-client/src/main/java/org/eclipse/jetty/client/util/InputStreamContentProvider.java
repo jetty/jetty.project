@@ -26,6 +26,22 @@ import java.util.NoSuchElementException;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 
+/**
+ * A {@link ContentProvider} for an {@link InputStream}.
+ * <p />
+ * The input stream is read once and therefore fully consumed.
+ * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
+ * because the stream has been consumed on the first invocation.
+ * <p />
+ * It is possible to specify, at the constructor, a buffer size used to read content from the
+ * stream, by default 4096 bytes.
+ * <p />
+ * However, it is possible for subclasses to override {@link #onRead(byte[], int, int)} to copy
+ * the content read from the stream to another location (for example a file), and be able to
+ * support multiple invocations of {@link #iterator()}, returning the iterator provided by this
+ * class on the first invocation, and an iterator on the bytes copied to the other location
+ * for subsequent invocations.
+ */
 public class InputStreamContentProvider implements ContentProvider
 {
     private final InputStream stream;
@@ -48,6 +64,20 @@ public class InputStreamContentProvider implements ContentProvider
         return -1;
     }
 
+    /**
+     * Callback method invoked just after having read from the stream,
+     * but before returning the iteration element (a {@link ByteBuffer}
+     * to the caller.
+     * <p />
+     * Subclasses may override this method to copy the content read from
+     * the stream to another location (a file, or in memory if the content
+     * is known to fit).
+     *
+     * @param buffer the byte array containing the bytes read
+     * @param offset the offset from where bytes should be read
+     * @param length the length of the bytes read
+     * @return a {@link ByteBuffer} wrapping the byte array
+     */
     protected ByteBuffer onRead(byte[] buffer, int offset, int length)
     {
         if (length <= 0)

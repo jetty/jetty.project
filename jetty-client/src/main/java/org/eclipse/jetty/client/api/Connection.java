@@ -20,11 +20,11 @@ package org.eclipse.jetty.client.api;
 
 /**
  * {@link Connection} represent a connection to a {@link Destination} and allow applications to send
- * requests via {@link #send(Request, Response.Listener)}.
+ * requests via {@link #send(Request, Response.CompleteListener)}.
  * <p />
  * {@link Connection}s are normally pooled by {@link Destination}s, but unpooled {@link Connection}s
  * may be created by applications that want to do their own connection management via
- * {@link Destination#newConnection()}.
+ * {@link Destination#newConnection()} and {@link Connection#close()}.
  */
 public interface Connection extends AutoCloseable
 {

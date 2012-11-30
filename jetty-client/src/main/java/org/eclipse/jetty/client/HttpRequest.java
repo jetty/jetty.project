@@ -337,6 +337,14 @@ public class HttpRequest implements Request
     @Override
     public Request content(ContentProvider content)
     {
+        return content(content, null);
+    }
+
+    @Override
+    public Request content(ContentProvider content, String contentType)
+    {
+        if (contentType != null)
+            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
         this.content = content;
         return this;
     }
@@ -354,12 +362,6 @@ public class HttpRequest implements Request
             header(HttpHeader.CONTENT_TYPE.asString(), contentType);
         return content(new PathContentProvider(file));
     }
-
-//    @Override
-//    public Request decoder(ContentDecoder decoder)
-//    {
-//        return this;
-//    }
 
     @Override
     public boolean isFollowRedirects()

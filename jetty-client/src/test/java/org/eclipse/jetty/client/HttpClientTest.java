@@ -283,7 +283,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        client.setMaxConnectionsPerAddress(1);
+        client.setMaxConnectionsPerDestination(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
@@ -343,7 +343,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        client.setMaxConnectionsPerAddress(1);
+        client.setMaxConnectionsPerDestination(1);
         final long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 

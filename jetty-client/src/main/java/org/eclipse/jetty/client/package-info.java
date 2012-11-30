@@ -17,11 +17,11 @@
 //
 
 /**
- * This package provides APIs, utility classes and implementation class of an asynchronous HTTP client
+ * This package provides APIs, utility classes and an implementation of an asynchronous HTTP client.
  * <p />
  * The core class is {@link HttpClient}, which acts as a central configuration object (for example
- * for {@link HttpClient#setIdleTimeout(long) idle timeouts}, {@link HttpClient#setMaxConnectionsPerAddress(int)
- * max connections per domain}, etc.) and as a factory for {@link Request} objects.
+ * for {@link HttpClient#setIdleTimeout(long) idle timeouts}, {@link HttpClient#setMaxConnectionsPerDestination(int)
+ * max connections per destination}, etc.) and as a factory for {@link Request} objects.
  * <p />
  * The HTTP protocol is based on the request/response paradigm, a unit that in this implementation is called
  * <em>exchange</em> and is represented by {@link HttpExchange}.
@@ -36,7 +36,7 @@
  * <p />
  * When a request is sent, its exchange is associated to a connection, either taken from an idle queue or created
  * anew, and when both the request and response are completed, the exchange is disassociated from the connection.
- * A conversation may span multiple connections on different destinations, and therefore are maintained at the
+ * Conversations may span multiple connections on different destinations, and therefore are maintained at the
  * {@link HttpClient} level.
  * <p />
  * Applications may decide to send the request and wait for the response in a blocking way, using

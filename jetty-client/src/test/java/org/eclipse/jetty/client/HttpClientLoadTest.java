@@ -64,8 +64,8 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
     {
         start(new LoadHandler());
 
-        client.setMaxConnectionsPerAddress(32768);
-        client.setMaxQueueSizePerAddress(1024 * 1024);
+        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setDispatchIO(false);
 
         Random random = new Random();

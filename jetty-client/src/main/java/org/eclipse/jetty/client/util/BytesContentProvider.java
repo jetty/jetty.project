@@ -24,6 +24,9 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
+/**
+ * A {@link ContentProvider} for byte arrays.
+ */
 public class BytesContentProvider implements ContentProvider
 {
     private final byte[][] bytes;

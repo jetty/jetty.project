@@ -592,7 +592,7 @@ public class ProxyServletTest
             }
         });
         int port = serverConnector.getLocalPort();
-        client.getProxyConfiguration().getExcludedHosts().add("127.0.0.1:" + port);
+        client.getProxyConfiguration().getExcludedOrigins().add("127.0.0.1:" + port);
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)

@@ -90,7 +90,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new TimeoutHandler(3 * timeout));
 
         // Only one connection so requests get queued
-        client.setMaxConnectionsPerAddress(1);
+        client.setMaxConnectionsPerDestination(1);
 
         // The first request has a long timeout
         final CountDownLatch firstLatch = new CountDownLatch(1);

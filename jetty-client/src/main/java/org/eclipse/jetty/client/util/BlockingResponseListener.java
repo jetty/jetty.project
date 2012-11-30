@@ -30,6 +30,19 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 
+/**
+ * A {@link BufferingResponseListener} that is also a {@link Future}, to allow applications
+ * to block (indefinitely or for a timeout) until {@link #onComplete(Result)} is called,
+ * or to {@link #cancel(boolean) abort} the request/response conversation.
+ * <p />
+ * Typical usage is:
+ * <pre>
+ * Request request = httpClient.newRequest(...)...;
+ * BlockingResponseListener listener = new BlockingResponseListener(request);
+ * request.send(listener); // Asynchronous send
+ * ContentResponse response = listener.get(5, TimeUnit.SECONDS); // Timed block
+ * </pre>
+ */
 public class BlockingResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
     private final CountDownLatch latch = new CountDownLatch(1);

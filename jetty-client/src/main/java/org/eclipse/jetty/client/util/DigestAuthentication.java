@@ -32,13 +32,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.TypeUtil;
 
+/**
+ * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
+ * <p />
+ * Applications should create objects of this class and add them to the
+ * {@link AuthenticationStore} retrieved from the {@link HttpClient}
+ * via {@link HttpClient#getAuthenticationStore()}.
+ */
 public class DigestAuthentication implements Authentication
 {
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
@@ -48,6 +57,12 @@ public class DigestAuthentication implements Authentication
     private final String user;
     private final String password;
 
+    /**
+     * @param uri the URI to match for the authentication
+     * @param realm the realm to match for the authentication
+     * @param user the user that wants to authenticate
+     * @param password the password of the user
+     */
     public DigestAuthentication(String uri, String realm, String user, String password)
     {
         this.uri = uri;

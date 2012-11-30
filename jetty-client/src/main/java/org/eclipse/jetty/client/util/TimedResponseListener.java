@@ -31,6 +31,34 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * Implementation of {@link Response.Listener} that allows to specify a timeout for asynchronous
+ * operations.
+ * <p />
+ * {@link TimedResponseListener} may be used to decorate a delegate {@link Response.CompleteListener}
+ * provided by the application. Events are forwarded by {@link TimedResponseListener} to the delegate
+ * listener.
+ * Alternatively, {@link TimedResponseListener} may be subclassed to override callbacks that are
+ * interesting to the application, typically {@link #onComplete(Result)}.
+ * <p />
+ * If the timeout specified at the constructor elapses, the request is {@link Request#abort(Throwable) aborted}
+ * with a {@link TimeoutException}.
+ * <p />
+ * Typical usage is:
+ * <pre>
+ * Request request = httpClient.newRequest(...)...;
+ * TimedResponseListener listener = new TimedResponseListener(5, TimeUnit.SECONDS, request, new Response.CompleteListener()
+ * {
+ *     public void onComplete(Result result)
+ *     {
+ *         // Invoked when request/response completes or when timeout elapses
+ *
+ *         // Your logic here
+ *     }
+ * });
+ * request.send(listener); // Asynchronous send
+ * </pre>
+ */
 public class TimedResponseListener implements Response.Listener, Schedulable, Runnable
 {
     private static final Logger LOG = Log.getLogger(TimedResponseListener.class);

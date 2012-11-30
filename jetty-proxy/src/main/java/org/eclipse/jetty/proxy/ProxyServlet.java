@@ -210,7 +210,7 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>maxConnections</td>
      * <td>32768</td>
-     * <td>The max number of connection per address, see {@link HttpClient#setMaxConnectionsPerAddress(int)}</td>
+     * <td>The max number of connections per destination, see {@link HttpClient#setMaxConnectionsPerDestination(int)}</td>
      * </tr>
      * <tr>
      * <td>idleTimeout</td>
@@ -260,7 +260,7 @@ public class ProxyServlet extends HttpServlet
         value = config.getInitParameter("maxConnections");
         if (value == null)
             value = "32768";
-        client.setMaxConnectionsPerAddress(Integer.parseInt(value));
+        client.setMaxConnectionsPerDestination(Integer.parseInt(value));
 
         value = config.getInitParameter("idleTimeout");
         if (value == null)
@@ -380,7 +380,7 @@ public class ProxyServlet extends HttpServlet
             // Remove hop-by-hop headers
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
-            
+
             if (_hostHeader!=null && lowerHeaderName.equals("host"))
                 continue;
 
@@ -458,7 +458,7 @@ public class ProxyServlet extends HttpServlet
                     System.lineSeparator(),
                     proxyRequest.getHeaders().toString().trim());
         }
-        
+
         proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
     }
 

@@ -154,6 +154,12 @@ public interface Request
     Request content(ContentProvider content);
 
     /**
+     * @param content the content provider of this request
+     * @return this request object
+     */
+    Request content(ContentProvider content, String contentType);
+
+    /**
      * Shortcut method to specify a file as a content for this request, with the default content type of
      * "application/octect-stream".
      *
@@ -319,10 +325,16 @@ public interface Request
      */
     Throwable getAbortCause();
 
+    /**
+     * Common, empty, super-interface for request listeners.
+     */
     public interface RequestListener extends EventListener
     {
     }
 
+    /**
+     * Listener for the request queued event.
+     */
     public interface QueuedListener extends RequestListener
     {
         /**
@@ -333,6 +345,9 @@ public interface Request
         public void onQueued(Request request);
     }
 
+    /**
+     * Listener for the request begin event.
+     */
     public interface BeginListener extends RequestListener
     {
         /**
@@ -344,6 +359,9 @@ public interface Request
         public void onBegin(Request request);
     }
 
+    /**
+     * Listener for the request committed event.
+     */
     public interface HeadersListener extends RequestListener
     {
         /**
@@ -355,6 +373,9 @@ public interface Request
         public void onHeaders(Request request);
     }
 
+    /**
+     * Listener for the request succeeded event.
+     */
     public interface SuccessListener extends RequestListener
     {
         /**
@@ -365,6 +386,9 @@ public interface Request
         public void onSuccess(Request request);
     }
 
+    /**
+     * Listener for the request failed event.
+     */
     public interface FailureListener extends RequestListener
     {
         /**
@@ -376,7 +400,7 @@ public interface Request
     }
 
     /**
-     * Listener for all request events
+     * Listener for all request events.
      */
     public interface Listener extends QueuedListener, BeginListener, HeadersListener, SuccessListener, FailureListener
     {

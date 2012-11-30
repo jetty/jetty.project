@@ -89,10 +89,10 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Asynchronously
  * HttpClient client = new HttpClient();
- * client.newRequest("http://localhost:8080").send(new Response.Listener.Empty()
+ * client.newRequest("http://localhost:8080").send(new Response.CompleteListener()
  * {
  *     &#64;Override
- *     public void onSuccess(Response response)
+ *     public void onComplete(Result result)
  *     {
  *         ...
  *     }
@@ -117,8 +117,8 @@ public class HttpClient extends ContainerLifeCycle
     private volatile SelectorManager selectorManager;
     private volatile String agent = "Jetty/" + Jetty.VERSION;
     private volatile boolean followRedirects = true;
-    private volatile int maxConnectionsPerAddress = 8;
-    private volatile int maxQueueSizePerAddress = 1024;
+    private volatile int maxConnectionsPerDestination = 8;
+    private volatile int maxRequestsQueuedPerDestination = 1024;
     private volatile int requestBufferSize = 4096;
     private volatile int responseBufferSize = 4096;
     private volatile int maxRedirects = 8;
@@ -129,16 +129,33 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean dispatchIO = true;
     private volatile ProxyConfiguration proxyConfig;
 
+    /**
+     * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
+     * (that is, requests with the "http" scheme only, and not "https").
+     *
+     * @see #HttpClient(SslContextFactory) to perform requests to TLS destinations.
+     */
     public HttpClient()
     {
         this(null);
     }
 
+    /**
+     * Creates a {@link HttpClient} instance that can perform requests to non-TLS and TLS destinations
+     * (that is, both requests with the "http" scheme and with the "https" scheme).
+     *
+     * @param sslContextFactory the {@link SslContextFactory} that manages TLS encryption
+     * @see #getSslContextFactory()
+     */
     public HttpClient(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
     }
 
+    /**
+     * @return the {@link SslContextFactory} that manages TLS encryption
+     * @see #HttpClient(SslContextFactory)
+     */
     public SslContextFactory getSslContextFactory()
     {
         return sslContextFactory;
@@ -214,56 +231,114 @@ public class HttpClient extends ContainerLifeCycle
         LOG.info("Stopped {}", this);
     }
 
+    /**
+     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     */
     public List<Request.Listener> getRequestListeners()
     {
         return requestListeners;
     }
 
+    /**
+     * @return the cookie store associated with this instance
+     */
     public CookieStore getCookieStore()
     {
         return cookieStore;
     }
 
+    /**
+     * @return the authentication store associated with this instance
+     */
     public AuthenticationStore getAuthenticationStore()
     {
         return authenticationStore;
     }
 
+    /**
+     * @return a set of {@link ContentDecoder.Factory} that can be used to add and remove content decoder factories
+     */
     public Set<ContentDecoder.Factory> getContentDecoderFactories()
     {
         return decoderFactories;
     }
 
+    /**
+     * Performs a GET request to the specified URI.
+     *
+     * @param uri the URI to GET
+     * @return a future for a {@link ContentResponse}
+     * @see #GET(URI)
+     */
     public Future<ContentResponse> GET(String uri)
     {
         return GET(URI.create(uri));
     }
 
+    /**
+     * Performs a GET request to the specified URI.
+     *
+     * @param uri the URI to GET
+     * @return a future for a {@link ContentResponse}
+     * @see #newRequest(URI)
+     */
     public Future<ContentResponse> GET(URI uri)
     {
         return newRequest(uri).send();
     }
 
+    /**
+     * Creates a POST request to the specified URI.
+     *
+     * @param uri the URI to POST to
+     * @return the POST request
+     * @see #POST(URI)
+     */
     public Request POST(String uri)
     {
         return POST(URI.create(uri));
     }
 
+    /**
+     * Creates a POST request to the specified URI.
+     *
+     * @param uri the URI to POST to
+     * @return the POST request
+     */
     public Request POST(URI uri)
     {
         return newRequest(uri).method(HttpMethod.POST);
     }
 
+    /**
+     * Creates a new request with the "http" scheme and the specified host and port
+     *
+     * @param host the request host
+     * @param port the request port
+     * @return the request just created
+     */
     public Request newRequest(String host, int port)
     {
         return newRequest(URI.create(address("http", host, port)));
     }
 
+    /**
+     * Creates a new request with the specified URI.
+     *
+     * @param uri the URI to request
+     * @return the request just created
+     */
     public Request newRequest(String uri)
     {
         return newRequest(URI.create(uri));
     }
 
+    /**
+     * Creates a new request with the specified URI.
+     *
+     * @param uri the URI to request
+     * @return the request just created
+     */
     public Request newRequest(URI uri)
     {
         return new HttpRequest(this, uri);
@@ -291,6 +366,19 @@ public class HttpClient extends ContainerLifeCycle
         return scheme + "://" + host + ":" + port;
     }
 
+    /**
+     * Returns a {@link Destination} for the given scheme, host and port.
+     * Applications may use {@link Destination}s to create {@link Connection}s
+     * that will be outside {@link HttpClient}'s pooling mechanism, to explicitly
+     * control the connection lifecycle (in particular their termination with
+     * {@link Connection#close()}).
+     *
+     * @param scheme the destination scheme
+     * @param host the destination host
+     * @param port the destination port
+     * @return the destination
+     * @see #getDestinations()
+     */
     public Destination getDestination(String scheme, String host, int port)
     {
         return provideDestination(scheme, host, port);
@@ -321,6 +409,9 @@ public class HttpClient extends ContainerLifeCycle
         return destination;
     }
 
+    /**
+     * @return the list of destinations known to this {@link HttpClient}.
+     */
     public List<Destination> getDestinations()
     {
         return new ArrayList<Destination>(destinations.values());
@@ -417,31 +508,50 @@ public class HttpClient extends ContainerLifeCycle
         return null;
     }
 
+    /**
+     * @return the {@link ByteBufferPool} of this {@link HttpClient}
+     */
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
     }
 
+    /**
+     * @param byteBufferPool the {@link ByteBufferPool} of this {@link HttpClient}
+     */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
     }
 
+    /**
+     * @return the max time a connection can take to connect to destinations
+     */
     public long getConnectTimeout()
     {
         return connectTimeout;
     }
 
+    /**
+     * @param connectTimeout the max time a connection can take to connect to destinations
+     * @see java.net.Socket#connect(SocketAddress, int)
+     */
     public void setConnectTimeout(long connectTimeout)
     {
         this.connectTimeout = connectTimeout;
     }
 
+    /**
+     * @return the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     */
     public long getIdleTimeout()
     {
         return idleTimeout;
     }
 
+    /**
+     * @param idleTimeout the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     */
     public void setIdleTimeout(long idleTimeout)
     {
         this.idleTimeout = idleTimeout;
@@ -459,112 +569,196 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param bindAddress the address to bind socket channels to
      * @see #getBindAddress()
+     * @see SocketChannel#bind(SocketAddress)
      */
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
     }
 
+    /**
+     * @return the "User-Agent" HTTP header string of this {@link HttpClient}
+     */
     public String getUserAgent()
     {
         return agent;
     }
 
+    /**
+     * @param agent the "User-Agent" HTTP header string of this {@link HttpClient}
+     */
     public void setUserAgent(String agent)
     {
         this.agent = agent;
     }
 
+    /**
+     * @return whether this {@link HttpClient} follows HTTP redirects
+     * @see Request#isFollowRedirects()
+     */
     public boolean isFollowRedirects()
     {
         return followRedirects;
     }
 
+    /**
+     * @param follow whether this {@link HttpClient} follows HTTP redirects
+     * @see #setMaxRedirects(int)
+     */
     public void setFollowRedirects(boolean follow)
     {
         this.followRedirects = follow;
     }
 
+    /**
+     * @return the {@link Executor} of this {@link HttpClient}
+     */
     public Executor getExecutor()
     {
         return executor;
     }
 
+    /**
+     * @param executor the {@link Executor} of this {@link HttpClient}
+     */
     public void setExecutor(Executor executor)
     {
         this.executor = executor;
     }
 
+    /**
+     * @return the {@link Scheduler} of this {@link HttpClient}
+     */
     public Scheduler getScheduler()
     {
         return scheduler;
     }
 
+    /**
+     * @param scheduler the {@link Scheduler} of this {@link HttpClient}
+     */
     public void setScheduler(Scheduler scheduler)
     {
         this.scheduler = scheduler;
     }
 
-    public SelectorManager getSelectorManager()
+    protected SelectorManager getSelectorManager()
     {
         return selectorManager;
     }
 
-    public int getMaxConnectionsPerAddress()
+    /**
+     * @return the max number of connections that this {@link HttpClient} opens to {@link Destination}s
+     */
+    public int getMaxConnectionsPerDestination()
     {
-        return maxConnectionsPerAddress;
+        return maxConnectionsPerDestination;
     }
 
-    public void setMaxConnectionsPerAddress(int maxConnectionsPerAddress)
+    /**
+     * Sets the max number of connections to open to each destinations.
+     * <p />
+     * RFC 2616 suggests that 2 connections should be opened per each destination,
+     * but browsers commonly open 6.
+     * If this {@link HttpClient} is used for load testing, it is common to have only one destination
+     * (the server to load test), and it is recommended to set this value to a high value (at least as
+     * much as the threads present in the {@link #getExecutor() executor}).
+     *
+     * @param maxConnectionsPerDestination the max number of connections that this {@link HttpClient} opens to {@link Destination}s
+     */
+    public void setMaxConnectionsPerDestination(int maxConnectionsPerDestination)
     {
-        this.maxConnectionsPerAddress = maxConnectionsPerAddress;
+        this.maxConnectionsPerDestination = maxConnectionsPerDestination;
     }
 
-    public int getMaxQueueSizePerAddress()
+    /**
+     * @return the max number of requests that may be queued to a {@link Destination}.
+     */
+    public int getMaxRequestsQueuedPerDestination()
     {
-        return maxQueueSizePerAddress;
+        return maxRequestsQueuedPerDestination;
     }
 
-    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
+    /**
+     * Sets the max number of requests that may be queued to a destination.
+     * <p />
+     * If this {@link HttpClient} performs a high rate of requests to a destination,
+     * and all the connections managed by that destination are busy with other requests,
+     * then new requests will be queued up in the destination.
+     * This parameter controls how many requests can be queued before starting to reject them.
+     * If this {@link HttpClient} is used for load testing, it is common to have this parameter
+     * set to a high value, although this may impact latency (requests sit in the queue for a long
+     * time before being sent).
+     *
+     * @param maxRequestsQueuedPerDestination the max number of requests that may be queued to a {@link Destination}.
+     */
+    public void setMaxRequestsQueuedPerDestination(int maxRequestsQueuedPerDestination)
     {
-        this.maxQueueSizePerAddress = maxQueueSizePerAddress;
+        this.maxRequestsQueuedPerDestination = maxRequestsQueuedPerDestination;
     }
 
+    /**
+     * @return the size of the buffer used to write requests
+     */
     public int getRequestBufferSize()
     {
         return requestBufferSize;
     }
 
+    /**
+     * @param requestBufferSize the size of the buffer used to write requests
+     */
     public void setRequestBufferSize(int requestBufferSize)
     {
         this.requestBufferSize = requestBufferSize;
     }
 
+    /**
+     * @return the size of the buffer used to read responses
+     */
     public int getResponseBufferSize()
     {
         return responseBufferSize;
     }
 
+    /**
+     * @param responseBufferSize the size of the buffer used to read responses
+     */
     public void setResponseBufferSize(int responseBufferSize)
     {
         this.responseBufferSize = responseBufferSize;
     }
 
+    /**
+     * @return the max number of HTTP redirects that are followed
+     * @see #setMaxRedirects(int)
+     */
     public int getMaxRedirects()
     {
         return maxRedirects;
     }
 
+    /**
+     * @param maxRedirects the max number of HTTP redirects that are followed
+     * @see #setFollowRedirects(boolean)
+     */
     public void setMaxRedirects(int maxRedirects)
     {
         this.maxRedirects = maxRedirects;
     }
 
+    /**
+     * @return whether TCP_NODELAY is enabled
+     */
     public boolean isTCPNoDelay()
     {
         return tcpNoDelay;
     }
 
+    /**
+     * @param tcpNoDelay whether TCP_NODELAY is enabled
+     * @see java.net.Socket#setTcpNoDelay(boolean)
+     */
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;
@@ -585,22 +779,29 @@ public class HttpClient extends ContainerLifeCycle
      * This implementation never blocks on I/O operation, but invokes application callbacks that may
      * take time to execute or block on other I/O.
      * If application callbacks are known to take time or block on I/O, then parameter {@code dispatchIO}
-     * must be set to true.
+     * should be set to true.
      * If application callbacks are known to be quick and never block on I/O, then parameter {@code dispatchIO}
      * may be set to false.
      *
-     * @param dispatchIO true to dispatch I/O operations in a different thread, false to execute them in the selector thread
+     * @param dispatchIO true to dispatch I/O operations in a different thread,
+     *                   false to execute them in the selector thread
      */
     public void setDispatchIO(boolean dispatchIO)
     {
         this.dispatchIO = dispatchIO;
     }
 
+    /**
+     * @return the forward proxy configuration
+     */
     public ProxyConfiguration getProxyConfiguration()
     {
         return proxyConfig;
     }
 
+    /**
+     * @param proxyConfig the forward proxy configuration
+     */
     public void setProxyConfiguration(ProxyConfiguration proxyConfig)
     {
         this.proxyConfig = proxyConfig;

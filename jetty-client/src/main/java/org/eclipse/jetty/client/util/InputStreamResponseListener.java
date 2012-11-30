@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -30,21 +31,54 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * Implementation of {@link Response.Listener} that produces an {@link InputStream}
+ * that allows applications to read the response content.
+ * <p />
+ * Typical usage is:
+ * <pre>
+ * InputStreamResponseListener listener = new InputStreamResponseListener();
+ * client.newRequest(...).send(listener);
+ *
+ * // Wait for the response headers to arrive
+ * Response response = listener.get(5, TimeUnit.SECONDS);
+ * if (response.getStatus() == 200)
+ * {
+ *     // Obtain the input stream on the response content
+ *     try (InputStream input = listener.getInputStream())
+ *     {
+ *         // Read the response content
+ *     }
+ * }
+ * </pre>
+ * <p />
+ * The {@link HttpClient} implementation (the producer) will feed the input stream
+ * asynchronously while the application (the consumer) is reading from it.
+ * Chunks of content are maintained in a queue, and it is possible to specify a
+ * maximum buffer size for the bytes held in the queue, by default 16384 bytes.
+ * <p />
+ * If the consumer is faster than the producer, then the consumer will block
+ * with the typical {@link InputStream#read()} semantic.
+ * If the consumer is slower than the producer, then the producer will block
+ * until the client consumes.
+ */
 public class InputStreamResponseListener extends Response.Listener.Empty
 {
-    public static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
+    private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
     private static final byte[] EOF = new byte[0];
+    private static final byte[] CLOSE = new byte[0];
     private static final byte[] FAILURE = new byte[0];
     private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<>();
     private final AtomicLong length = new AtomicLong();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
-    private final long capacity;
+    private final long maxBufferSize;
     private Response response;
     private Result result;
     private volatile Throwable failure;
@@ -54,9 +88,9 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         this(16 * 1024L);
     }
 
-    public InputStreamResponseListener(long capacity)
+    public InputStreamResponseListener(long maxBufferSize)
     {
-        this.capacity = capacity;
+        this.maxBufferSize = maxBufferSize;
     }
 
     @Override
@@ -72,17 +106,17 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         int remaining = content.remaining();
         byte[] bytes = new byte[remaining];
         content.get(bytes);
-        LOG.debug("Queued {}/{} bytes", bytes, bytes.length);
+        LOG.debug("Queuing {}/{} bytes", bytes, bytes.length);
         queue.offer(bytes);
 
         long newLength = length.addAndGet(remaining);
-        while (newLength >= capacity)
+        while (newLength >= maxBufferSize)
         {
-            LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, capacity);
+            LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
             if (!await())
                 break;
             newLength = length.get();
-            LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, capacity);
+            LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
         }
     }
 
@@ -90,16 +124,16 @@ public class InputStreamResponseListener extends Response.Listener.Empty
     public void onFailure(Response response, Throwable failure)
     {
         this.failure = failure;
+        LOG.debug("Queuing failure {} {}", FAILURE, failure);
         queue.offer(FAILURE);
-        LOG.debug("Queued failure {} {}", FAILURE, failure);
         responseLatch.countDown();
     }
 
     @Override
     public void onSuccess(Response response)
     {
+        LOG.debug("Queuing end of content {}{}", EOF, "");
         queue.offer(EOF);
-        LOG.debug("Queued end of content {}{}", EOF, "");
     }
 
     @Override
@@ -166,7 +200,24 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         {
             while (true)
             {
-                if (bytes != null)
+                if (bytes == EOF)
+                {
+                    // Mark the fact that we saw -1,
+                    // so that in the close case we don't throw
+                    index = -1;
+                    return -1;
+                }
+                else if (bytes == FAILURE)
+                {
+                    throw failure();
+                }
+                else if (bytes == CLOSE)
+                {
+                    if (index < 0)
+                        return -1;
+                    throw new AsynchronousCloseException();
+                }
+                else if (bytes != null)
                 {
                     if (index < bytes.length)
                         return bytes[index++];
@@ -174,21 +225,21 @@ public class InputStreamResponseListener extends Response.Listener.Empty
                     bytes = null;
                     index = 0;
                 }
-
-                bytes = take();
-                LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
-                if (bytes == EOF)
-                    return -1;
-                if (bytes == FAILURE)
+                else
                 {
-                    if (failure instanceof IOException)
-                        throw (IOException)failure;
-                    else
-                        throw new IOException(failure);
+                    bytes = take();
+                    LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
+                    signal();
                 }
-
-                signal();
             }
+        }
+
+        private IOException failure()
+        {
+            if (failure instanceof IOException)
+                return (IOException)failure;
+            else
+                return new IOException(failure);
         }
 
         private byte[] take() throws IOException
@@ -201,6 +252,14 @@ public class InputStreamResponseListener extends Response.Listener.Empty
             {
                 throw new InterruptedIOException();
             }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            LOG.debug("Queuing close {}{}", CLOSE, "");
+            queue.offer(CLOSE);
+            super.close();
         }
     }
 }

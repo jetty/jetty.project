@@ -76,10 +76,16 @@ public interface Response
      */
     boolean abort(Throwable cause);
 
+    /**
+     * Common, empty, super-interface for response listeners
+     */
     public interface ResponseListener extends EventListener
     {
     }
 
+    /**
+     * Listener for the response begin event.
+     */
     public interface BeginListener extends ResponseListener
     {
         /**
@@ -93,6 +99,9 @@ public interface Response
         public void onBegin(Response response);
     }
 
+    /**
+     * Listener for the response headers event.
+     */
     public interface HeadersListener extends ResponseListener
     {
         /**
@@ -103,6 +112,9 @@ public interface Response
         public void onHeaders(Response response);
     }
 
+    /**
+     * Listener for the response content events.
+     */
     public interface ContentListener extends ResponseListener
     {
         /**
@@ -116,6 +128,9 @@ public interface Response
         public void onContent(Response response, ByteBuffer content);
     }
 
+    /**
+     * Listener for the response succeeded event.
+     */
     public interface SuccessListener extends ResponseListener
     {
         /**
@@ -126,6 +141,9 @@ public interface Response
         public void onSuccess(Response response);
     }
 
+    /**
+     * Listener for the response failure event.
+     */
     public interface FailureListener extends ResponseListener
     {
         /**
@@ -137,6 +155,9 @@ public interface Response
         public void onFailure(Response response, Throwable failure);
     }
 
+    /**
+     * Listener for the request and response completed event.
+     */
     public interface CompleteListener extends ResponseListener
     {
         /**
@@ -157,7 +178,7 @@ public interface Response
     }
 
     /**
-     * Listener for response events
+     * Listener for all response events.
      */
     public interface Listener extends BeginListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {

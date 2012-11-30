@@ -86,7 +86,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         HttpClient httpClient = new HttpClient();
         // Simulate browsers, that open 6 connection per origin
-        httpClient.setMaxConnectionsPerAddress(6);
+        httpClient.setMaxConnectionsPerDestination(6);
         httpClient.start();
         benchmarkHTTP(httpClient);
         httpClient.stop();

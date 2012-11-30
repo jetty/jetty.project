@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.client.util;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
@@ -26,6 +28,13 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * Implementation of the HTTP "Basic" authentication defined in RFC 2617.
+ * <p />
+ * Applications should create objects of this class and add them to the
+ * {@link AuthenticationStore} retrieved from the {@link HttpClient}
+ * via {@link HttpClient#getAuthenticationStore()}.
+ */
 public class BasicAuthentication implements Authentication
 {
     private final String uri;
@@ -33,6 +42,12 @@ public class BasicAuthentication implements Authentication
     private final String user;
     private final String password;
 
+    /**
+     * @param uri the URI to match for the authentication
+     * @param realm the realm to match for the authentication
+     * @param user the user that wants to authenticate
+     * @param password the password of the user
+     */
     public BasicAuthentication(String uri, String realm, String user, String password)
     {
         this.uri = uri;
