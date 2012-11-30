@@ -82,11 +82,10 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             EofException exception = new EofException("stream closed");
             callback.failed(exception);
-            LOG.warn("Committed response twice.", exception);
             return;
         }
         // new Throwable().printStackTrace();
-        
+
         // info==null content==null lastContent==false          should not happen
         // info==null content==null lastContent==true           signals no more content - complete
         // info==null content!=null lastContent==false          send data on committed response
@@ -95,14 +94,16 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content==null lastContent==true           reply, commit and complete
         // info!=null content!=null lastContent==false          reply, commit with content
         // info!=null content!=null lastContent==true           reply, commit with content and complete
-        
+
         boolean hasContent = BufferUtil.hasContent(content);
-        
+
         if (info!=null)
         {
             if(!committed.compareAndSet(false, true)){
-                callback.failed(new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
-                        "Stream already committed!"));
+                StreamException exception = new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
+                        "Stream already committed!");
+                callback.failed(exception);
+                LOG.warn("Committed response twice.", exception);
                 return;
             }
             short version = stream.getSession().getVersion();

@@ -97,7 +97,7 @@ public interface Stream
      *
      * @param synInfo the metadata to send on stream creation
      * @return a future containing the stream once it got established
-     * @see #syn(SynInfo, long, TimeUnit, Callback)
+     * @see #syn(SynInfo, long, TimeUnit, Promise)
      */
     public Future<Stream> syn(SynInfo synInfo);
 
@@ -159,7 +159,6 @@ public interface Stream
      * @param dataInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param context  the context passed to the callback
      * @param callback  the completion callback that gets notified of data sent
      * @see #data(DataInfo)
      */
