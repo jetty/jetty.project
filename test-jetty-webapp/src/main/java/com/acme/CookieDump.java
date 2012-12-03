@@ -19,6 +19,7 @@
 package com.acme;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -121,4 +122,21 @@ public class CookieDump extends HttpServlet
         return string;
     }
     
+    @Override
+    public void destroy()
+    {
+        // For testing --stop with STOP.WAIT handling of the jetty-start behavior.
+        if (Boolean.getBoolean("test.slow.destroy"))
+        {
+            try
+            {
+                TimeUnit.SECONDS.sleep(10);
+            }
+            catch (InterruptedException e)
+            {
+                // ignore
+            }
+        }
+        super.destroy();
+    }
 }
