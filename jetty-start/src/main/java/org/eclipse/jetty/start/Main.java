@@ -1040,11 +1040,15 @@ public class Main
 
                 if (timeout > 0)
                 {
-                    System.err.println("Waiting"+(timeout > 0 ? (" "+timeout+"sec") : "")+" for jetty to stop");
+                    System.err.printf("Waiting %,d seconds for jetty to stop%n", timeout);
                     LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
-                    String response=lin.readLine();
-                    if ("Stopped".equals(response))
-                        System.err.println("Stopped");
+                    String response;
+                    while ((response = lin.readLine()) != null)
+                    {
+                        Config.debug("Received \"" + response + "\"");
+                        if ("Stopped".equals(response))
+                            System.err.println("Server reports itself as Stopped");
+                    }
                 }
             }
             finally

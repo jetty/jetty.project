@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.start;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.InetAddress;
@@ -114,6 +113,7 @@ public class Monitor extends Thread
                 Config.debug("command=" + cmd);
                 if ("stop".equals(cmd))
                 {
+                    Config.debug("Child Process: " + _process);
                     if (_process!=null)
                     {
                         //if we have a child process, wait for it to finish before we stop
@@ -121,7 +121,6 @@ public class Monitor extends Thread
                         {
                             _process.destroy();
                             _process.waitFor();
-
                         }
                         catch (InterruptedException e)
                         {
