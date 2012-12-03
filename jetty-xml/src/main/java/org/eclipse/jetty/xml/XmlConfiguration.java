@@ -763,10 +763,13 @@ public class XmlConfiguration
             {
                 Object o = node.get(i);
 
-                XmlParser.Node argNode = (XmlParser.Node)o;
                 if (o instanceof String)
+                {
                     continue;
-
+                }
+                
+                XmlParser.Node argNode = (XmlParser.Node)o;
+                
                 String namedAttribute = argNode.getAttribute("name");
                 Object value=value(obj,(XmlParser.Node)o);
                 if (namedAttribute != null)
