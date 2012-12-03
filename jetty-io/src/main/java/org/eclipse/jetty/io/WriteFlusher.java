@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * A Utility class to help implement {@link EndPoint#write(Object, Callback, ByteBuffer...)} by calling
+ * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
  * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
  * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been written after a call to
  * flush and should organise for the {@link #completeWrite()} method to be called when a subsequent call to flush
@@ -234,8 +234,6 @@ abstract public class WriteFlusher
     /**
      * In PendingState not all buffers could be written in one go. Then write() will switch to PendingState() and
      * preserve the state by creating a new PendingState object with the given parameters.
-     *
-     * @param <C>
      */
     private class PendingState extends State
     {
@@ -282,10 +280,8 @@ abstract public class WriteFlusher
      *
      * If all buffers have been written it calls callback.complete().
      *
-     * @param context context to pass to the callback
      * @param callback the callback to call on either failed or complete
      * @param buffers the buffers to flush to the endpoint
-     * @param <C> type of the context
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
