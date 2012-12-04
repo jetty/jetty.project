@@ -40,14 +40,35 @@
           <name>Linux</name>
         </os>
       </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>libsetuid_linux</artifactId>
-          <version>${project.version}</version>
-          <type>so</type>
-        </dependency>
-      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.setuid</groupId>
+                      <artifactId>libsetuid-linux</artifactId>
+                      <version>${project.version}</version>
+                      <type>so</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>target/native</outputDirectory>
+                      <!--destFileName>libsetuid.so</destFileName-->
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>env-mac</id>
