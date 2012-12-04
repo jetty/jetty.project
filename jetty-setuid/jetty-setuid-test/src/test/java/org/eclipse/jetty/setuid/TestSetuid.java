@@ -34,10 +34,14 @@ public class TestSetuid extends TestCase
     
         try
         {      
-					// TODO use the dependency plugin to grab the proper lib and put it into place, no relative goop           
-            File lib = MavenTestingUtils.getTargetFile("native/libsetuid.so");
+            /* This is a test of the -VERSION based loading mechanism, the 
+             * jetty.lib logic in SetUID looks in a directory of jetty.lib
+             * and tries to load the file ending in the VERISON.so which is
+             * the mechanism used by default in jetty-distro now
+             */
+            File lib = new File(MavenTestingUtils.getTargetDir(), "native");
             String libPath = lib.getCanonicalPath();
-            System.setProperty("jetty.libsetuid.path", libPath);   
+            System.setProperty("jetty.lib", libPath);   
             
             
             try

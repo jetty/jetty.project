@@ -6,17 +6,15 @@
     <version>9.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>libsetuid_osx</artifactId>
-  <name>Jetty :: SetUID OSX Native</name>
+  <artifactId>libsetuid-linux</artifactId>
+  <name>Jetty :: SetUID Linux Native</name>
   <packaging>so</packaging>
   <properties>
-    <native-source-dir>target/generated</native-source-dir>
-    <jetty-setuid-linkerStartOption>-lc -ldl -dynamiclib -undefined
-      dynamic_lookup -single_module</jetty-setuid-linkerStartOption>
-    <jetty-setuid-linkerEndOption>target/libsetuid_osx.so</jetty-setuid-linkerEndOption>
+    <native-source-dir>target/native</native-source-dir>
+    <jetty-setuid-linkerStartOption>-shared -lc -ldl-shared -lc -ldl</jetty-setuid-linkerStartOption>
+    <jetty-setuid-linkerEndOption>target/libsetuid-linux.so</jetty-setuid-linkerEndOption>
   </properties>
   <build>
-    <finalName>libsetuid_osx</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -41,13 +39,34 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-jni-implementation</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy failonerror="false"
+                  file="${native-source-dir}/org_eclipse_jetty_setuid_SetUID.c"
+                  todir="target/generated" />
+
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>native-maven-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
           <javahOS>mac</javahOS>
-          <jdkIncludePath>/System/Library/Frameworks/JavaVM.framework/Headers</jdkIncludePath>
+          <jdkIncludePath>${java.home}/include</jdkIncludePath>
           <compilerStartOptions>
             <compilerStartOption>-fPIC -O</compilerStartOption>
           </compilerStartOptions>
@@ -55,16 +74,18 @@
             <source>
               <directory>target/generated</directory>
               <fileNames>
+
                 <fileName>org_eclipse_jetty_setuid_SetUID.c</fileName>
               </fileNames>
             </source>
           </sources>
           <linkerStartOptions>
+
             <linkerStartOption>${jetty-setuid-linkerStartOption}</linkerStartOption>
           </linkerStartOptions>
           <linkerEndOptions>
             <linkerEndOptions>-o
-              ${project.build.directory}/libsetuid_osx.so</linkerEndOptions>
+              ${project.build.directory}/libsetuid-linux.so</linkerEndOptions>
           </linkerEndOptions>
         </configuration>
         <executions>
@@ -73,14 +94,17 @@
             <phase>generate-sources</phase>
             <configuration>
               <classNames>
+
                 <className>org.eclipse.jetty.setuid.SetUID</className>
               </classNames>
+
               <outputDirectory>target/generated</outputDirectory>
             </configuration>
             <goals>
               <goal>javah</goal>
             </goals>
           </execution>
+
           <execution>
             <id>compile</id>
             <phase>compile</phase>
@@ -90,18 +114,21 @@
           </execution>
         </executions>
       </plugin>
+
+
+
     </plugins>
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.setuid</groupId>
-      <artifactId>jetty-setuid-java</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.setuid</groupId>
+      <artifactId>jetty-setuid-java</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 

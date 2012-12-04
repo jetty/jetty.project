@@ -23,7 +23,7 @@
                 </os>
             </activation>
             <modules>
-                <module>jetty-setuid-linux</module>
+                <module>libsetuid-linux</module>
             </modules>
         </profile>
         <profile>
@@ -34,7 +34,7 @@
                 </os>
             </activation>
             <modules>         
-                <module>jetty-setuid-osx</module>
+                <module>libsetuid-osx</module>
             </modules>          
         </profile>
 

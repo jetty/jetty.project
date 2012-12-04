@@ -415,6 +415,7 @@
     <module>aggregates/jetty-all</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
+    <module>jetty-setuid</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>tests</module>
