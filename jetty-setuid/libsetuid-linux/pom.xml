@@ -11,7 +11,7 @@
   <packaging>so</packaging>
   <properties>
     <native-source-dir>target/native</native-source-dir>
-    <jetty-setuid-linkerStartOption>-shared -lc -ldl-shared -lc -ldl</jetty-setuid-linkerStartOption>
+    <jetty-setuid-linkerStartOption>-shared -lc -ldl</jetty-setuid-linkerStartOption>
     <jetty-setuid-linkerEndOption>target/libsetuid-linux.so</jetty-setuid-linkerEndOption>
   </properties>
   <build>
