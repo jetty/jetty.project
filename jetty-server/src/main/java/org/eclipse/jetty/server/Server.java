@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Enumeration;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -260,11 +261,14 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
-        if (getStopAtShutdown())
+        if (getStopAtShutdown()) {
             ShutdownThread.register(this);
+            ShutdownMonitor.getInstance(); // initialize
+        }
 
         LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);
+        
         MultiException mex=new MultiException();
 
         if (_threadPool==null)
