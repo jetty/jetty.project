@@ -44,8 +44,7 @@
         <artifactId>native-maven-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
-          <javahOS>mac</javahOS>
-          <jdkIncludePath>${java.home}/include</jdkIncludePath>
+          <javahOS>linux</javahOS>
           <compilerStartOptions>
             <compilerStartOption>-fPIC -O</compilerStartOption>
           </compilerStartOptions>
