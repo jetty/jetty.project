@@ -69,6 +69,14 @@
           </plugin>
         </plugins>
       </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>libsetuid-linux</artifactId>
+          <version>${project.version}</version>
+          <type>so</type>
+        </dependency>
+      </dependencies>
     </profile>
     <profile>
       <id>env-mac</id>
@@ -106,14 +114,14 @@
           </plugin>
         </plugins>
       </build>
-      <!-- dependencies>
+      <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.setuid</groupId>
           <artifactId>libsetuid-osx</artifactId>
           <version>${project.version}</version>
           <type>so</type>
         </dependency>
-      </dependencies-->
+      </dependencies>
     </profile>
   </profiles>
 </project>
