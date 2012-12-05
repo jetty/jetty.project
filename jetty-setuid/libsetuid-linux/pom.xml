@@ -10,7 +10,7 @@
   <name>Jetty :: SetUID Linux Native</name>
   <packaging>so</packaging>
   <properties>
-    <native-source-dir>target/native</native-source-dir>
+    <native-source-dir>target/generated</native-source-dir>
     <jetty-setuid-linkerStartOption>-shared -lc -ldl</jetty-setuid-linkerStartOption>
     <jetty-setuid-linkerEndOption>target/libsetuid-linux.so</jetty-setuid-linkerEndOption>
   </properties>
