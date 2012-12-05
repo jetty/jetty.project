@@ -108,6 +108,11 @@
       <artifactId>jetty-setuid-java</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.setuid</groupId>
+      <artifactId>jetty-setuid-native</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
 </project>
