@@ -552,6 +552,19 @@
           </plugin>
         </plugins>
       </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>jetty-setuid-java</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>libsetuid-linux</artifactId>
+          <version>${project.version}</version>
+          <classifier>so</classifier>
+        </dependency>
+      </dependencies>
     </profile>
     <profile>
       <id>env-mac</id>
@@ -614,8 +627,21 @@
               </execution>
             </executions>
           </plugin>
-        </plugins>
+        </plugins>     
       </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>jetty-setuid-java</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.setuid</groupId>
+          <artifactId>libsetuid-osx</artifactId>
+          <version>${project.version}</version>
+          <classifier>so</classifier>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>
