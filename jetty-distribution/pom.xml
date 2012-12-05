@@ -562,7 +562,7 @@
           <groupId>org.eclipse.jetty.setuid</groupId>
           <artifactId>libsetuid-linux</artifactId>
           <version>${project.version}</version>
-          <classifier>so</classifier>
+          <type>so</type>
         </dependency>
       </dependencies>
     </profile>
@@ -639,7 +639,7 @@
           <groupId>org.eclipse.jetty.setuid</groupId>
           <artifactId>libsetuid-osx</artifactId>
           <version>${project.version}</version>
-          <classifier>so</classifier>
+          <type>so</type>
         </dependency>
       </dependencies>
     </profile>
