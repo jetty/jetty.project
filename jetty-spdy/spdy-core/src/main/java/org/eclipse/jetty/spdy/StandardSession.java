@@ -910,7 +910,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                     queue.remove(i);
                     if (stream != null && stream.isReset())
                     {
-                        frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM,
+                        frameBytes.fail(new StreamException(stream.getId(), StreamStatus.INVALID_STREAM,
                                 "Stream: " + stream + " is reset!"));
                         return;
                     }
@@ -942,15 +942,22 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             failure = this.failure;
             if (failure == null)
             {
-                int index = queue.size();
-                while (index > 0)
+                // Frames containing headers must be send in the order the headers have been generated. We don't need
+                // to do this check in StandardSession.prepend() as no frames containing headers will be prepended.
+                if (frameBytes instanceof ControlFrameBytes)
+                    queue.addLast(frameBytes);
+                else
                 {
-                    FrameBytes element = queue.get(index - 1);
-                    if (element.compareTo(frameBytes) >= 0)
-                        break;
-                    --index;
+                    int index = queue.size();
+                    while (index > 0)
+                    {
+                        FrameBytes element = queue.get(index - 1);
+                        if (element.compareTo(frameBytes) >= 0)
+                            break;
+                        --index;
+                    }
+                    queue.add(index, frameBytes);
                 }
-                queue.add(index, frameBytes);
             }
         }
 
