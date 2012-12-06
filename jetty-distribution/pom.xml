@@ -161,6 +161,7 @@
                   <type>so</type>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
+                   <destFileName>libsetuid-linux.so</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
