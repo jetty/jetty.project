@@ -514,8 +514,8 @@ public class HttpFieldsTest
 
         for (int i=0;i<7;i++)
         {
-            assertFalse(""+i,header.getField(""+i).contains("xyz"));
-            assertEquals(""+i,i>=4,header.getField(""+i).contains("def"));
+            assertFalse(""+i,header.contains(""+i,"xyz"));
+            assertEquals(""+i,i>=4,header.contains(""+i,"def"));
         }
     }
 }

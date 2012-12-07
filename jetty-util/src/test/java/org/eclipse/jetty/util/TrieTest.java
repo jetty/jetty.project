@@ -1,0 +1,113 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.util;
+
+
+import java.nio.ByteBuffer;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+public class TrieTest
+{
+    Trie<Integer> trie = new Trie<>();
+    
+    @Before
+    public void before()
+    {
+        trie.put("hello",1);
+        trie.put("He",2);
+        trie.put("HELL",3);
+        trie.put("wibble",4);
+        trie.put("Wobble",5);
+        trie.put("foo-bar",6);
+        trie.put("foo+bar",7);
+        trie.put("HELL4",8);
+        
+    }
+    
+    @Test
+    public void testGetString() throws Exception
+    {
+        Assert.assertEquals(1,trie.get("hello").intValue());
+        Assert.assertEquals(2,trie.get("He").intValue());
+        Assert.assertEquals(3,trie.get("HELL").intValue());
+        Assert.assertEquals(4,trie.get("wibble").intValue());
+        Assert.assertEquals(5,trie.get("Wobble").intValue());
+        Assert.assertEquals(6,trie.get("foo-bar").intValue());
+        Assert.assertEquals(7,trie.get("foo+bar").intValue());
+        
+        Assert.assertEquals(1,trie.get("Hello").intValue());
+        Assert.assertEquals(2,trie.get("HE").intValue());
+        Assert.assertEquals(3,trie.get("heLL").intValue());
+        Assert.assertEquals(4,trie.get("Wibble").intValue());
+        Assert.assertEquals(5,trie.get("wobble").intValue());
+        Assert.assertEquals(6,trie.get("Foo-bar").intValue());
+        Assert.assertEquals(7,trie.get("FOO+bar").intValue());
+
+        Assert.assertEquals(null,trie.get("Help"));
+        Assert.assertEquals(null,trie.get("Blah"));
+    }
+
+    @Test
+    public void testGetBuffer() throws Exception
+    {
+        Assert.assertEquals(1,trie.get(BufferUtil.toBuffer("xhellox"),1,5).intValue());
+        Assert.assertEquals(2,trie.get(BufferUtil.toBuffer("xhellox"),1,2).intValue());
+        Assert.assertEquals(3,trie.get(BufferUtil.toBuffer("xhellox"),1,4).intValue());
+        Assert.assertEquals(4,trie.get(BufferUtil.toBuffer("wibble"),0,6).intValue());
+        Assert.assertEquals(5,trie.get(BufferUtil.toBuffer("xWobble"),1,6).intValue());
+        Assert.assertEquals(6,trie.get(BufferUtil.toBuffer("xfoo-barx"),1,7).intValue());
+        Assert.assertEquals(7,trie.get(BufferUtil.toBuffer("xfoo+barx"),1,7).intValue());
+        
+        Assert.assertEquals(1,trie.get(BufferUtil.toBuffer("xhellox"),1,5).intValue());
+        Assert.assertEquals(2,trie.get(BufferUtil.toBuffer("xHELLox"),1,2).intValue());
+        Assert.assertEquals(3,trie.get(BufferUtil.toBuffer("xhellox"),1,4).intValue());
+        Assert.assertEquals(4,trie.get(BufferUtil.toBuffer("Wibble"),0,6).intValue());
+        Assert.assertEquals(5,trie.get(BufferUtil.toBuffer("xwobble"),1,6).intValue());
+        Assert.assertEquals(6,trie.get(BufferUtil.toBuffer("xFOO-barx"),1,7).intValue());
+        Assert.assertEquals(7,trie.get(BufferUtil.toBuffer("xFOO+barx"),1,7).intValue());
+        
+        Assert.assertEquals(null,trie.get(BufferUtil.toBuffer("xHelpx"),1,4));
+        Assert.assertEquals(null,trie.get(BufferUtil.toBuffer("xBlahx"),1,4));
+    }
+    
+
+    @Test
+    public void testGetBest() throws Exception
+    {
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xhelloxxxx"),1,10).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xhelxoxxxx"),1,10).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xhellxxxxx"),1,10).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-barxx"),1,10).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xhell4xxxx"),1,10).intValue()); 
+        
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xHELLOxxxx"),1,10).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xHELxoxxxx"),1,10).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xHELLxxxxx"),1,10).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-BARxx"),1,10).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xHELL4xxxx"),1,10).intValue());  
+        
+        ByteBuffer buffer = (ByteBuffer)BufferUtil.toBuffer("xhelloxxxxxxx").position(2);
+        Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
+    }
+    
+    
+}

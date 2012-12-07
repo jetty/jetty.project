@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
@@ -128,7 +129,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             {
                 for (int i = 0; i < fields.size(); ++i)
                 {
-                    HttpFields.Field field = fields.getField(i);
+                    HttpField field = fields.getField(i);
                     String name = field.getName();
                     String value = field.getValue();
                     headers.put(name, value);

@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.Trie;
 
 
 /**
@@ -44,7 +44,7 @@ public enum HttpHeaderValue
     UNKNOWN("::UNKNOWN::");
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpHeaderValue> CACHE= new StringMap<HttpHeaderValue>(true);
+    public final static Trie<HttpHeaderValue> CACHE= new Trie<HttpHeaderValue>();
     static
     {
         for (HttpHeaderValue value : HttpHeaderValue.values())

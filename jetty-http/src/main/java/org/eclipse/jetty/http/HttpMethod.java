@@ -20,8 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Trie;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -109,11 +109,11 @@ public enum HttpMethod
     {
         if (buffer.hasArray())
             return lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.arrayOffset()+buffer.limit());
-        return null;
+        return CACHE.getBest(buffer,0,buffer.remaining());
     }
     
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpMethod> CACHE= new StringMap<HttpMethod>(true);
+    public final static Trie<HttpMethod> CACHE= new Trie<HttpMethod>();
     static
     {
         for (HttpMethod method : HttpMethod.values())

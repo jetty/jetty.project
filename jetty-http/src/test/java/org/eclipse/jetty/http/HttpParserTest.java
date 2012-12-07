@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
@@ -153,12 +154,15 @@ public class HttpParserTest
                         "Host: localhost\015\012" +
                         "Header1: value1\015\012" +
                         "Header 2  :   value 2a  \015\012" +
-                        "                    value 2b  \015\012" +
+                        "    value 2b  \015\012" +
                         "Header3: \015\012" +
                         "Header4 \015\012" +
                         "  value4\015\012" +
                         "Server5 : notServer\015\012" +
                         "Host Header: notHost\015\012" +
+                        "Connection: close\015\012" +
+                        "Accept-Encoding: gzip, deflated\015\012" +
+                        "Accept: unknown\015\012" +
                 "\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
@@ -181,7 +185,13 @@ public class HttpParserTest
         assertEquals("notServer", _val[5]);
         assertEquals("Host Header", _hdr[6]);
         assertEquals("notHost", _val[6]);
-        assertEquals(6, _h);
+        assertEquals("Connection", _hdr[7]);
+        assertEquals("close", _val[7]);
+        assertEquals("Accept-Encoding", _hdr[8]);
+        assertEquals("gzip, deflated", _val[8]);
+        assertEquals("Accept", _hdr[9]);
+        assertEquals("unknown", _val[9]);
+        assertEquals(9, _h);
     }
 
     @Test
@@ -736,8 +746,8 @@ public class HttpParserTest
         {
             request=true;
             _h= -1;
-            _hdr= new String[9];
-            _val= new String[9];
+            _hdr= new String[10];
+            _val= new String[10];
             _methodOrVersion= method;
             _uriOrStatus= uri;
             _versionOrReason= version==null?null:version.asString();

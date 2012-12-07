@@ -46,6 +46,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -350,7 +351,7 @@ public class HttpClient extends ContainerLifeCycle
         newRequest.method(oldRequest.getMethod())
                 .version(oldRequest.getVersion())
                 .content(oldRequest.getContent());
-        for (HttpFields.Field header : oldRequest.getHeaders())
+        for (HttpField header : oldRequest.getHeaders())
         {
             // We have a new URI, so skip the host header if present
             if (HttpHeader.HOST == header.getHeader())

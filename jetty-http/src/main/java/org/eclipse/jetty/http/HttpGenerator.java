@@ -542,7 +542,7 @@ public class HttpGenerator
 
         // default field values
         boolean has_server = false;
-        HttpFields.Field transfer_encoding=null;
+        HttpField transfer_encoding=null;
         boolean keep_alive=false;
         boolean close=false;
         boolean content_type=false;
@@ -551,11 +551,11 @@ public class HttpGenerator
         // Generate fields
         if (_info.getHttpFields() != null)
         {
-            for (HttpFields.Field field : _info.getHttpFields())
+            for (HttpField field : _info.getHttpFields())
             {
-                HttpHeader name = field.getHeader();
+                HttpHeader h = field.getHeader();
 
-                switch (name==null?HttpHeader.UNKNOWN:name)
+                switch (h==null?HttpHeader.UNKNOWN:h)
                 {
                     case CONTENT_LENGTH:
                         // handle specially below
@@ -666,11 +666,11 @@ public class HttpGenerator
                     }
 
                     default:
-                        if (name==null)
+                        if (h==null)
                             field.putTo(header);
                         else
                         {
-                            header.put(name.getBytesColonSpace());
+                            header.put(h.getBytesColonSpace());
                             field.putValueTo(header);
                             header.put(CRLF);
                         }

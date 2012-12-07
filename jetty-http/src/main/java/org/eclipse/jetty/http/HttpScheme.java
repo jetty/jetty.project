@@ -21,7 +21,7 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.Trie;
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -34,7 +34,7 @@ public enum HttpScheme
     WSS("wss");
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpScheme> CACHE= new StringMap<HttpScheme>(true);
+    public final static Trie<HttpScheme> CACHE= new Trie<HttpScheme>();
     static
     {
         for (HttpScheme version : HttpScheme.values())

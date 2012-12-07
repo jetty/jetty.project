@@ -92,7 +92,7 @@ public class MuxAddHandler implements MuxAddServer
 
         for (String headerName : request.getHeaders().keySet())
         {
-            HttpHeader header = HttpHeader.lookAheadGet(headerName.getBytes(),0,headerName.length());
+            HttpHeader header = HttpHeader.CACHE.getBest(headerName.getBytes(),0,headerName.length());
             for (String value : request.getHeaders().get(headerName))
             {
                 httpChannel.parsedHeader(header,headerName,value);

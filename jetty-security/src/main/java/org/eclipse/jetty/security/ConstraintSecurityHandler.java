@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -479,7 +480,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
         if (mappings == null)
         {
-            mappings = new StringMap<>();
+            mappings = new HashMap<String,RoleInfo>();
             _constraintMap.put(mapping.getPathSpec(),mappings);
         }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
