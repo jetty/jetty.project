@@ -60,12 +60,12 @@ public class HttpField
             CACHE.put(field);
             CONTENT_TYPE.put(type,field);
             
-            for (String charset : new String[]{"UTF-8","iso-8859-1"})
+            for (String charset : new String[]{"UTF-8","ISO-8859-1"})
             {
                 String type_charset=type+"; charset="+charset;
                 field=new HttpField(HttpHeader.CONTENT_TYPE,type_charset);
                 CACHE.put(field);
-                CACHE.put(HttpHeader.CONTENT_TYPE.asString()+": "+type+";charset="+charset,field);
+                CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
                 CONTENT_TYPE.put(type_charset,field);
                 CONTENT_TYPE.put(type+";charset="+charset,field);
             }
@@ -225,6 +225,14 @@ public class HttpField
 
     public boolean isSame(HttpField field)
     {
-        return field!=null && (_header==field.getHeader() || _name.equalsIgnoreCase(field.getName()));
+        if (field==null)
+            return false;
+        if (field==this)
+            return true;
+        if (_header!=null && _header==field.getHeader())
+            return true;
+        if (_name.equalsIgnoreCase(field.getName()))
+            return true;
+        return false;
     }
 }

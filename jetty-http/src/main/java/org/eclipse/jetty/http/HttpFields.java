@@ -538,10 +538,14 @@ public class HttpFields implements Iterable<HttpField>
                 if (put)
                     _fields.remove(i);
                 else
+                {
                     _fields.set(i,field);
+                    put=true;
+                }
             }
         }
-        _fields.add(field);
+        if (!put)
+            _fields.add(field);
     }
     
     /**

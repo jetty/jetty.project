@@ -686,7 +686,7 @@ public class Response implements HttpServletResponse
                     encoding = StringUtil.__ISO_8859_1;
                 setCharacterEncoding(encoding);
             }
-
+            
             if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
             {
                 _writer = new PrintWriter(new Iso88591HttpWriter(_out));

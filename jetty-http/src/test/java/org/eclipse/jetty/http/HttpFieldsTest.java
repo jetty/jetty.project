@@ -182,6 +182,7 @@ public class HttpFieldsTest
         }
         assertEquals(3, matches);
 
+
         e = header.getValues("name1");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1");

@@ -147,7 +147,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHeaderParse() throws Exception
+    public void testHeaderParseCRLF() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
                 "GET / HTTP/1.0\015\012" +
@@ -164,6 +164,54 @@ public class HttpParserTest
                         "Accept-Encoding: gzip, deflated\015\012" +
                         "Accept: unknown\015\012" +
                 "\015\012");
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
+        assertEquals("Header 2", _hdr[2]);
+        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header3", _hdr[3]);
+        assertEquals(null, _val[3]);
+        assertEquals("Header4", _hdr[4]);
+        assertEquals("value4", _val[4]);
+        assertEquals("Server5", _hdr[5]);
+        assertEquals("notServer", _val[5]);
+        assertEquals("Host Header", _hdr[6]);
+        assertEquals("notHost", _val[6]);
+        assertEquals("Connection", _hdr[7]);
+        assertEquals("close", _val[7]);
+        assertEquals("Accept-Encoding", _hdr[8]);
+        assertEquals("gzip, deflated", _val[8]);
+        assertEquals("Accept", _hdr[9]);
+        assertEquals("unknown", _val[9]);
+        assertEquals(9, _h);
+    }
+
+    @Test
+    public void testHeaderParseLF() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\n" +
+                        "Host: localhost\n" +
+                        "Header1: value1\n" +
+                        "Header 2  :   value 2a  \n" +
+                        "    value 2b  \n" +
+                        "Header3: \n" +
+                        "Header4 \n" +
+                        "  value4\n" +
+                        "Server5 : notServer\n" +
+                        "Host Header: notHost\n" +
+                        "Connection: close\n" +
+                        "Accept-Encoding: gzip, deflated\n" +
+                        "Accept: unknown\n" +
+                "\n");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
         parseAll(parser,buffer);
