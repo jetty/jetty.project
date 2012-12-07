@@ -80,17 +80,18 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>{@link HttpClient} also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
  * <p>Typical usage:</p>
  * <pre>
+ * HttpClient httpClient = new HttpClient();
+ * httpClient.start();
+ *
  * // One liner:
- * new HttpClient().GET("http://localhost:8080/").get().status();
+ * httpClient.GET("http://localhost:8080/").get().status();
  *
  * // Building a request with a timeout
- * HttpClient client = new HttpClient();
- * Response response = client.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
+ * Response response = httpClient.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
  * int status = response.status();
  *
  * // Asynchronously
- * HttpClient client = new HttpClient();
- * client.newRequest("http://localhost:8080").send(new Response.CompleteListener()
+ * httpClient.newRequest("http://localhost:8080").send(new Response.CompleteListener()
  * {
  *     &#64;Override
  *     public void onComplete(Result result)
@@ -108,17 +109,17 @@ public class HttpClient extends ContainerLifeCycle
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final List<ProtocolHandler> handlers = new CopyOnWriteArrayList<>();
     private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
-    private final CookieStore cookieStore = new HttpCookieStore();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private final Set<ContentDecoder.Factory> decoderFactories = Collections.newSetFromMap(new ConcurrentHashMap<ContentDecoder.Factory, Boolean>());
     private final SslContextFactory sslContextFactory;
+    private volatile CookieStore cookieStore = new HttpCookieStore();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
     private volatile SelectorManager selectorManager;
     private volatile String agent = "Jetty/" + Jetty.VERSION;
     private volatile boolean followRedirects = true;
-    private volatile int maxConnectionsPerDestination = 8;
+    private volatile int maxConnectionsPerDestination = 64;
     private volatile int maxRequestsQueuedPerDestination = 1024;
     private volatile int requestBufferSize = 4096;
     private volatile int responseBufferSize = 4096;
@@ -246,6 +247,14 @@ public class HttpClient extends ContainerLifeCycle
     public CookieStore getCookieStore()
     {
         return cookieStore;
+    }
+
+    /**
+     * @param cookieStore the cookie store associated with this instance
+     */
+    public void setCookieStore(CookieStore cookieStore)
+    {
+        this.cookieStore = cookieStore;
     }
 
     /**

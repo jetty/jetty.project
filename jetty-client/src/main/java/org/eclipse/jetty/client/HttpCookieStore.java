@@ -49,6 +49,8 @@ public class HttpCookieStore implements CookieStore
             accumulateCookies(destination, cookies, result);
 
         // Path lookup
+        if (path == null)
+            path = "/";
         String[] split = path.split("/");
         for (int i = 1; i < split.length; i++)
         {
@@ -128,6 +130,17 @@ public class HttpCookieStore implements CookieStore
         }
         cookies.add(cookie);
         return true;
+    }
+
+    @Override
+    public boolean removeCookie(Destination destination, HttpCookie cookie)
+    {
+        for (Queue<HttpCookie> cookies : allCookies.values())
+        {
+            if (cookies.remove(cookie))
+                return true;
+        }
+        return false;
     }
 
     @Override

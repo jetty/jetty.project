@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -52,7 +53,45 @@ public interface CookieStore
     boolean addCookie(Destination destination, HttpCookie cookie);
 
     /**
+     * Removes the given cookie from this store for the given destination.
+     *
+     * @param destination the destination the cookie belongs to
+     * @param cookie the cookie to remove
+     * @return whether the cookie has been removed or not
+     */
+    boolean removeCookie(Destination destination, HttpCookie cookie);
+
+    /**
      * Removes all the cookies from this store.
      */
     void clear();
+
+    /**
+     * A {@link CookieStore} that is always empty
+     */
+    public static class Empty implements CookieStore
+    {
+        @Override
+        public List<HttpCookie> findCookies(Destination destination, String path)
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean addCookie(Destination destination, HttpCookie cookie)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean removeCookie(Destination destination, HttpCookie cookie)
+        {
+            return false;
+        }
+
+        @Override
+        public void clear()
+        {
+        }
+    }
 }
