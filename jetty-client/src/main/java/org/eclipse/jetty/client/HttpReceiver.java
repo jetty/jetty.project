@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
@@ -183,7 +184,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     }
 
     @Override
-    public boolean parsedHeader(HttpHeader header, String name, String value)
+    public boolean parsedHeader(HttpField field)
     {
         if (updateState(State.RECEIVE, State.RECEIVE))
         {
@@ -191,15 +192,16 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                exchange.getResponse().getHeaders().add(name, value);
-                switch (name.toLowerCase(Locale.ENGLISH))
+                exchange.getResponse().getHeaders().add(field);
+                if (field.getHeader()!=null)
+                switch (field.getHeader())
                 {
-                    case "set-cookie":
-                    case "set-cookie2":
+                    case SET_COOKIE:
+                    case SET_COOKIE2:
                     {
                         CookieStore cookieStore = connection.getHttpClient().getCookieStore();
                         HttpDestination destination = connection.getDestination();
-                        List<HttpCookie> cookies = HttpCookieParser.parseCookies(value);
+                        List<HttpCookie> cookies = HttpCookieParser.parseCookies(field.getValue());
                         for (HttpCookie cookie : cookies)
                             cookieStore.addCookie(destination, cookie);
                         break;

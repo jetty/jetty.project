@@ -63,6 +63,7 @@ public class HttpParser
     private final RequestHandler<ByteBuffer> _requestHandler;
     private final ResponseHandler<ByteBuffer> _responseHandler;
     private final int _maxHeaderBytes;
+    private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
     private HttpHeaderValue _value;
@@ -646,7 +647,8 @@ public class HttpParser
                                 if (_header!=null && handleKnownHeaders(buffer))
                                     return true;
 
-                                return_from_parse|=_handler.parsedHeader(_header, _headerString, _valueString);
+                                return_from_parse|=_handler.parsedHeader(_field!=null?_field:new HttpField(_header,_headerString,_valueString));
+                                _field=null;
                             }
                             _headerString=_valueString=null;
                             _header=null;
@@ -717,18 +719,19 @@ public class HttpParser
                                 if (buffer.remaining()>6 && buffer.hasArray())
                                 {
                                     // Try a look ahead for the known header name and value.
-                                    HttpField field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
-                                    if (field!=null)
+                                    _field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
+                                    if (_field!=null)
                                     {
-                                        _header=field.getHeader();
-                                        _headerString=field.getName();
-                                        _valueString=field.getValue();
+                                        _header=_field.getHeader();
+                                        _headerString=_field.getName();
+                                        _valueString=_field.getValue();
                                         if (_valueString==null)
                                         {
                                             setState(State.HEADER_VALUE);
                                             buffer.position(buffer.position()+_headerString.length()+1);
                                             _string.setLength(0);
                                             _length=0;
+                                            _field=null;
                                         }
                                         else
                                         {
@@ -915,6 +918,7 @@ public class HttpParser
                                 _string.append(_valueString);
                                 _length=_valueString.length();
                                 _valueString=null;
+                                _field=null;
                             }
                             _string.append((char)ch);
                             setState(State.HEADER_VALUE);
@@ -926,6 +930,7 @@ public class HttpParser
                                 _string.append(_valueString);
                                 _length=_valueString.length();
                                 _valueString=null;
+                                _field=null;
                             }
                             _string.append((char)ch);
                             _length++;
@@ -1312,12 +1317,10 @@ public class HttpParser
 
         /**
          * This is the method called by parser when a HTTP Header name and value is found
-         * @param header The HttpHeader value if there is a match
-         * @param name The String value of the header name
-         * @param value The String value of the header
+         * @param field TODO
          * @return
          */
-        public boolean parsedHeader(HttpHeader header, String name, String value);
+        public boolean parsedHeader(HttpField field);
 
         public boolean earlyEOF();
 
@@ -1333,7 +1336,7 @@ public class HttpParser
 
         /**
          * This is the method called by the parser after it has parsed the host header (and checked it's format). This is
-         * called after the {@link HttpHandler#parsedHeader(HttpHeader, String, String) methods and before
+         * called after the {@link HttpHandler#parsedHeader(HttpField) methods and before
          * HttpHandler#headerComplete();
          */
         public abstract boolean parsedHostHeader(String host,int port);

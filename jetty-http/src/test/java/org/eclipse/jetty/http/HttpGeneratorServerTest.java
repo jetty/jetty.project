@@ -70,10 +70,10 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        public boolean parsedHeader(HttpField field)
         {
-            _hdr.add(name);
-            _val.add(value);
+            _hdr.add(field.getName());
+            _val.add(field.getValue());
             return false;
         }
 

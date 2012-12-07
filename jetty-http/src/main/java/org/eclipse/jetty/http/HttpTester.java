@@ -118,9 +118,9 @@ public class HttpTester
             }
         }
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        public boolean parsedHeader(HttpField field)
         {
-            put(name,value);
+            put(field.getName(),field.getValue());
             return false;
         }
 

@@ -928,6 +928,11 @@ public class HttpFields implements Iterable<HttpField>
         _fields.clear();
     }
 
+    public void add(HttpField field)
+    {
+        _fields.add(field);
+    }
+    
     /**
      * Add fields from another HttpFields instance. Single valued fields are replaced, while all
      * others are added.

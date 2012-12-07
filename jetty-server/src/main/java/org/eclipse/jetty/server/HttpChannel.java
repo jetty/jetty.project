@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -411,8 +412,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean parsedHeader(HttpHeader header, String name, String value)
+    public boolean parsedHeader(HttpField field)
     {
+        HttpHeader header=field.getHeader();
+        String value=field.getValue();
         if (value == null)
             value = "";
         if (header != null)
@@ -467,8 +470,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     break;
             }
         }
-        if (name != null)
-            _request.getHttpFields().add(name, value);
+        
+        if (field.getName()!=null)
+            _request.getHttpFields().add(field);
         return false;
     }
 

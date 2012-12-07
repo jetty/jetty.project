@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -92,17 +93,12 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean parsedHeader(HttpHeader header, String headerName, String headerValue)
+    public boolean parsedHeader(HttpField field)
     {
-        switch (headerName.toLowerCase(Locale.ENGLISH))
-        {
-            case "host":
-                headers.put(HTTPSPDYHeader.HOST.name(version), headerValue);
-                break;
-            default:
-                headers.put(headerName, headerValue);
-                break;
-        }
+        if (field.getHeader()==HttpHeader.HOST)
+            headers.put(HTTPSPDYHeader.HOST.name(version), field.getValue());
+        else
+            headers.put(field.getName(), field.getValue());
         return false;
     }
 

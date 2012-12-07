@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -213,7 +214,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                     // Spec says headers must be single valued
                     String value = header.value();
                     LOG.debug("HTTP > {}: {}", name, value);
-                    parsedHeader(httpHeader, name, value);
+                    parsedHeader(new HttpField(name,value));
                     break;
                 }
             }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server.mux;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -95,7 +96,7 @@ public class MuxAddHandler implements MuxAddServer
             HttpHeader header = HttpHeader.CACHE.getBest(headerName.getBytes(),0,headerName.length());
             for (String value : request.getHeaders().get(headerName))
             {
-                httpChannel.parsedHeader(header,headerName,value);
+                httpChannel.parsedHeader(new HttpField(header,value));
             }
         }
 

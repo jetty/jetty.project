@@ -759,11 +759,11 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        public boolean parsedHeader(HttpField field)
         {
             //System.err.println("header "+name+": "+value);
-            _hdr[++_h]= name;
-            _val[_h]= value;
+            _hdr[++_h]= field.getName();
+            _val[_h]= field.getValue();
             return false;
         }
 
