@@ -19,6 +19,8 @@
 
 package org.eclipse.jetty.ant.utils;
 
+import org.eclipse.jetty.ant.AntWebAppContext;
+
 public interface ServerProxy
 {
 
@@ -28,13 +30,14 @@ public interface ServerProxy
      * @param webApp a WebApplicationProxy object.
      * @param scanIntervalSeconds
      */
-    public void addWebApplication(WebApplicationProxy webApp, int scanIntervalSeconds);
+    public void addWebApplication(AntWebAppContext awc);
 
     /**
      * Starts this server.
      */
     public void start();
-
+    
+    
     public Object getProxiedObject();
 
 }

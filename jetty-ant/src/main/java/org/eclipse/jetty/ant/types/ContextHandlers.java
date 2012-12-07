@@ -31,14 +31,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 public class ContextHandlers
 {
 
-    private List contextHandlers = new ArrayList();
+    private List<ContextHandler> contextHandlers = new ArrayList<ContextHandler>();
 
     public void add(ContextHandler handler)
     {
         contextHandlers.add(handler);
     }
 
-    public List getContextHandlers()
+    public List<ContextHandler> getContextHandlers()
     {
         return contextHandlers;
     }

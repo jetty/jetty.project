@@ -117,7 +117,8 @@ public class TagLibConfiguration extends AbstractConfiguration
                         loader = getClass().getClassLoader();
                     else
                         loader = loader.getParent();
-                    Class<?> clazz = loader.loadClass("org.apache.jasper.compiler.TldLocationsCache");
+                    //Choose a class that should be present if tlds are in use
+                    Class<?> clazz = loader.loadClass("org.apache.jasper.compiler.TagFileProcessor");
                     assert clazz!=null;
                     Collection<Resource> tld_resources = (Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
 

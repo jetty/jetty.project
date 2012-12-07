@@ -26,7 +26,7 @@
            classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
  
   <target name="jetty.run">
-    <jetty tempDirectory="jetty-temp">
+    <jetty.run tempDirectory="jetty-temp">
       <loginServices>
         <hashLoginService name="Test Realm" config="realm.properties"/>
       </loginServices>
@@ -38,6 +38,6 @@
           <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/.*jsp-api-[^/]*\.jar$|.*/.*jsp-[^/]*\.jar$|.*/.*taglibs[^/]*\.jar$"/>
         </attributes>
       </webApp>
-    </jetty>
+    </jetty.run>
   </target>
 </project>

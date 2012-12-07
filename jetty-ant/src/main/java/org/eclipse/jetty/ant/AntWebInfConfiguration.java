@@ -29,8 +29,10 @@ import java.util.regex.Pattern;
 import org.apache.tools.ant.AntClassLoader;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 public class AntWebInfConfiguration extends WebInfConfiguration
 {
@@ -98,7 +100,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
                 }
                 else if (loader instanceof AntClassLoader)
                 {
-                    AntClassLoader antLoader = (AntClassLoader)loader;                   
+                    AntClassLoader antLoader = (AntClassLoader)loader;     
                     String[] paths = antLoader.getClasspath().split(new String(new char[]{File.pathSeparatorChar}));
                     if (paths != null)
                     {
@@ -142,5 +144,29 @@ public class AntWebInfConfiguration extends WebInfConfiguration
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
     }
     
-    
+
+    /**
+     * Adds classpath files into web application classloader, and
+     * sets web.xml and base directory for the configured web application.
+     *
+     * @see WebXmlConfiguration#configure(WebAppContext)
+     */
+    public void configure(WebAppContext context) throws Exception
+    {
+        if (context instanceof AntWebAppContext)
+        {
+            List<File> classPathFiles = ((AntWebAppContext)context).getClassPathFiles();
+            if (classPathFiles != null)
+            {
+                for (File cpFile:classPathFiles)
+                {
+                    if (cpFile.exists())
+                    {
+                        ((WebAppClassLoader) context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
+                    }
+                }
+            }
+        }
+        super.configure(context);
+    }
 }

@@ -24,14 +24,14 @@ import java.util.List;
 public class Attributes
 {
 
-    List _attributes = new ArrayList();
+    List<Attribute> _attributes = new ArrayList<Attribute>();
     
     public void addAttribute(Attribute attr )
     {
         _attributes.add(attr);
     }
     
-    public List getAttributes()
+    public List<Attribute> getAttributes()
     {
         return _attributes;
     }

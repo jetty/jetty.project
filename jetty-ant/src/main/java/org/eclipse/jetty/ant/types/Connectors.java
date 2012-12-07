@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 
+ * Connectors
+ * 
  * Specifies a jetty configuration <connectors/> element for Ant build file.
  *
  */

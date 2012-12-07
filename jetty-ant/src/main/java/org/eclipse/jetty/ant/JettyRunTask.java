@@ -26,14 +26,15 @@ import java.util.List;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Property;
+import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.Connectors;
+import org.eclipse.jetty.ant.types.ContextHandlers;
 import org.eclipse.jetty.ant.types.LoginServices;
 import org.eclipse.jetty.ant.types.SystemProperties;
-import org.eclipse.jetty.ant.types.WebApp;
-import org.eclipse.jetty.ant.utils.ServerProxy;
 import org.eclipse.jetty.ant.utils.TaskLog;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * Ant task for running a Jetty server.
@@ -41,11 +42,14 @@ import org.eclipse.jetty.util.Scanner;
 public class JettyRunTask extends Task
 {
 
+    private int scanIntervalSeconds; 
+    
+    
     /** Temporary files directory. */
     private File tempDirectory;
 
     /** List of web applications to be deployed. */
-    private List webapps = new ArrayList();
+    private List<AntWebAppContext> webapps = new ArrayList<AntWebAppContext>();
 
     /** Location of jetty.xml file. */
     private File jettyXml;
@@ -61,9 +65,21 @@ public class JettyRunTask extends Task
 
     /** List of system properties to be set. */
     private SystemProperties systemProperties;
+    
+    /** List of other contexts to deploy */
+    private ContextHandlers contextHandlers;
 
+ 
     /** Port Jetty will use for the default connector */
     private int jettyPort = 8080;
+    
+    private int stopPort;
+    
+    private String stopKey;
+
+    private boolean daemon;
+    
+  
 
 
     public JettyRunTask()
@@ -75,10 +91,12 @@ public class JettyRunTask extends Task
      * Creates a new <code>WebApp</code> Ant object.
      *
      */
-    public void addWebApp(WebApp webapp)
+    public void addWebApp(AntWebAppContext webapp)
     {
-        webapps.add(webapp);
+       webapps.add(webapp);
     }
+    
+    
 
     /**
      * Adds a new Ant's connector tag object if it have not been created yet.
@@ -86,61 +104,73 @@ public class JettyRunTask extends Task
     public void addConnectors(Connectors connectors)
     {
         if (this.connectors != null)
-        {
             throw new BuildException("Only one <connectors> tag is allowed!");
-        }
-
         this.connectors = connectors;
     }
 
-    /**
-     * @deprecated
-     */
-    public void addUserRealms(Object o)
-    {
-        TaskLog.log("User realms are deprecated.");
-    }
 
+    /**
+     * @param services
+     */
     public void addLoginServices(LoginServices services)
     {        
         if (this.loginServices != null )
-        {
-            throw new BuildException("Only one <loginServices> tag is allowed!");
-        }
-        
+            throw new BuildException("Only one <loginServices> tag is allowed!");       
         this.loginServices = services;  
     }
 
     public void addSystemProperties(SystemProperties systemProperties)
     {
         if (this.systemProperties != null)
-        {
             throw new BuildException("Only one <systemProperties> tag is allowed!");
-        }
-
         this.systemProperties = systemProperties;
     }
+    
+    /**
+     * @param handlers
+     */
+    public void addContextHandlers (ContextHandlers handlers)
+    {
+        if (this.contextHandlers != null)
+            throw new BuildException("Only one <contextHandlers> tag is allowed!");
+        this.contextHandlers = handlers;
+    }
 
+    /**
+     * @return
+     */
     public File getTempDirectory()
     {
         return tempDirectory;
     }
 
+    /**
+     * @param tempDirectory
+     */
     public void setTempDirectory(File tempDirectory)
     {
         this.tempDirectory = tempDirectory;
     }
 
+    /**
+     * @return
+     */
     public File getJettyXml()
     {
         return jettyXml;
     }
 
+    /**
+     * @param jettyXml
+     */
     public void setJettyXml(File jettyXml)
     {
         this.jettyXml = jettyXml;
     }
 
+    /**
+     * @param className
+     */
     public void setRequestLog(String className)
     {
         try
@@ -161,6 +191,9 @@ public class JettyRunTask extends Task
         }
     }
 
+    /**
+     * @return
+     */
     public String getRequestLog()
     {
         if (requestLog != null)
@@ -191,42 +224,34 @@ public class JettyRunTask extends Task
     {
 
         TaskLog.log("Configuring Jetty for project: " + getProject().getName());
-        WebApplicationProxyImpl.setBaseTempDirectory(tempDirectory);
+        
         setSystemProperties();
 
-        List connectorsList = null;
+        List<Connector> connectorsList = null;
 
         if (connectors != null)
-        {
             connectorsList = connectors.getConnectors();
-        }
         else
-        {
             connectorsList = new Connectors(jettyPort,30000).getDefaultConnectors();
-        }
 
-        List loginServicesList = (loginServices != null?loginServices.getLoginServices():new ArrayList());
-        ServerProxy server = new ServerProxyImpl(connectorsList,loginServicesList,requestLog,jettyXml);
+        List<LoginService> loginServicesList = (loginServices != null?loginServices.getLoginServices():new ArrayList<LoginService>());
+        ServerProxyImpl server = new ServerProxyImpl();
+        server.setConnectors(connectorsList);
+        server.setLoginServices(loginServicesList);
+        server.setRequestLog(requestLog);
+        server.setJettyXml(jettyXml);
+        server.setDaemon(daemon);
+        server.setStopPort(stopPort);
+        server.setStopKey(stopKey);
+        server.setContextHandlers(contextHandlers);
+        server.setTempDirectory(tempDirectory);
+        server.setScanIntervalSecs(scanIntervalSeconds);
 
         try
         {
-            Iterator iterator = webapps.iterator();
-            while (iterator.hasNext())
+            for (WebAppContext webapp: webapps)
             {
-                WebApp webAppConfiguration = (WebApp)iterator.next();
-                WebApplicationProxyImpl webApp = new WebApplicationProxyImpl(webAppConfiguration.getName());
-                webApp.setSourceDirectory(webAppConfiguration.getWarFile());
-                webApp.setContextPath(webAppConfiguration.getContextPath());
-                webApp.setWebXml(webAppConfiguration.getWebXmlFile());
-                webApp.setJettyEnvXml(webAppConfiguration.getJettyEnvXml());
-                webApp.setClassPathFiles(webAppConfiguration.getClassPathFiles());
-                webApp.setLibrariesConfiguration(webAppConfiguration.getLibrariesConfiguration());
-                webApp.setExtraScanTargetsConfiguration(webAppConfiguration.getScanTargetsConfiguration());
-                webApp.setContextHandlers(webAppConfiguration.getContextHandlers());
-                webApp.setAttributes(webAppConfiguration.getAttributes());
-                webApp.setWebDefaultXmlFile(webAppConfiguration.getWebDefaultXmlFile());
-
-                server.addWebApplication(webApp,webAppConfiguration.getScanIntervalSeconds());
+                server.addWebApplication((AntWebAppContext)webapp);
             }
         }
         catch (Exception e)
@@ -237,77 +262,64 @@ public class JettyRunTask extends Task
         server.start();
     }
 
-    /**
-     * Starts a new thread which scans project files and automatically reloads a
-     * container on any changes.
-     *
-     * @param scanIntervalSeconds
-     *
-     * @param webapp
-     * @param appContext
-     */
-    static void startScanner(final WebApplicationProxyImpl webApp, int scanIntervalSeconds) throws Exception
+    public int getStopPort()
     {
-        List scanList = new ArrayList();
-        scanList.add(webApp.getWebXmlFile());
-        scanList.addAll(webApp.getLibraries());
-        scanList.addAll(webApp.getExtraScanTargets());
-
-        Scanner.Listener changeListener = new Scanner.BulkListener()
-        {
-
-            public void filesChanged(List changedFiles)
-            {
-                if (hasAnyFileChanged(changedFiles))
-                {
-                    try
-                    {
-                        webApp.stop();
-                        webApp.applyConfiguration();
-                        webApp.start();
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            /**
-             * Checks if any file in this particular application has changed.
-             * This is not that easy, because some applications may use the same
-             * class'es directory.
-             *
-             * @param changedFiles list of changed files.
-             * @return true if any of passed files has changed, false otherwise.
-             */
-            private boolean hasAnyFileChanged(List changedFiles)
-            {
-                Iterator changes = changedFiles.iterator();
-                while (changes.hasNext())
-                {
-                    String className = (String) changes.next();
-                    if (webApp.isFileScanned(className))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        };
-
-        TaskLog.log("Web application '" + webApp.getName() + "': starting scanner at interval of "
-                + scanIntervalSeconds + " seconds.");
-
-        Scanner scanner = new Scanner();
-        scanner.setScanInterval(scanIntervalSeconds);
-        scanner.addListener(changeListener);
-        scanner.setScanDirs(scanList);
-        scanner.setReportExistingFilesOnStartup(false);
-        scanner.start();
+        return stopPort;
     }
 
+    public void setStopPort(int stopPort)
+    {
+        this.stopPort = stopPort;
+        TaskLog.log("stopPort="+stopPort);
+    }
+
+    public String getStopKey()
+    {
+        return stopKey;
+    }
+
+    public void setStopKey(String stopKey)
+    {
+        this.stopKey = stopKey;
+        TaskLog.log("stopKey="+stopKey);
+    }
+
+    /**
+     * @return the daemon
+     */
+    public boolean isDaemon()
+    {
+        return daemon;
+    }
+
+    /**
+     * @param daemon the daemon to set
+     */
+    public void setDaemon(boolean daemon)
+    {
+        this.daemon = daemon;
+        TaskLog.log("Daemon="+daemon);
+    }
+
+    /**
+     * @return
+     */
+    public int getScanIntervalSeconds()
+    {
+        return scanIntervalSeconds;
+    }
+
+    /**
+     * @param secs
+     */
+    public void setScanIntervalSeconds(int secs)
+    {
+        scanIntervalSeconds = secs;
+        TaskLog.log("scanIntervalSecs="+secs);
+    }
+    
+
+    
     /**
      * Sets the system properties.
      */
@@ -323,4 +335,5 @@ public class JettyRunTask extends Task
             }
         }
     }
+
 }
