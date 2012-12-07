@@ -759,7 +759,7 @@ public class BufferUtil
         if (buffer.hasArray())
             buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
         else
-            buf.append("?");
+            buf.append(Integer.toHexString(buf.hashCode()));
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");
