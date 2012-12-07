@@ -527,7 +527,23 @@ public class HttpFields implements Iterable<HttpField>
         };
     }
 
-
+    public void put(HttpField field)
+    {
+        boolean put=false;
+        for (int i=_fields.size();i-->0;)
+        {
+            HttpField f=_fields.get(i);
+            if (f.isSame(field))
+            {
+                if (put)
+                    _fields.remove(i);
+                else
+                    _fields.set(i,field);
+            }
+        }
+        _fields.add(field);
+    }
+    
     /**
      * Set a field.
      *
@@ -536,13 +552,10 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(String name, String value)
     {
-        remove(name);
         if (value == null)
-            return;
-
-        // new value;
-        HttpField field = new HttpField(name, value);
-        _fields.add(field);
+            remove(name);
+        else
+            put(new HttpField(name, value));
     }
 
     public void put(HttpHeader header, HttpHeaderValue value)
@@ -558,13 +571,10 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(HttpHeader header, String value)
     {
-        remove(header);
         if (value == null)
-            return;
-
-        // new value;
-        HttpField field = new HttpField(header, value);
-        _fields.add(field);
+            remove(header);
+        else
+            put(new HttpField(header, value));
     }
 
     /**
@@ -627,12 +637,11 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void remove(HttpHeader name)
     {
-        Iterator<HttpField> i=_fields.iterator();
-        while (i.hasNext())
+        for (int i=_fields.size();i-->0;)
         {
-            HttpField f=i.next();
+            HttpField f=_fields.get(i);
             if (f.getHeader()==name)
-                i.remove();
+                _fields.remove(i);
         }
     }
 
@@ -643,12 +652,11 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void remove(String name)
     {
-        Iterator<HttpField> i=_fields.iterator();
-        while (i.hasNext())
+        for (int i=_fields.size();i-->0;)
         {
-            HttpField f=i.next();
+            HttpField f=_fields.get(i);
             if (f.getName().equalsIgnoreCase(name))
-                i.remove();
+                _fields.remove(i);
         }
     }
 
@@ -932,6 +940,8 @@ public class HttpFields implements Iterable<HttpField>
     {
         _fields.add(field);
     }
+
+    
     
     /**
      * Add fields from another HttpFields instance. Single valued fields are replaced, while all

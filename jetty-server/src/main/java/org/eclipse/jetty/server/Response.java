@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -784,7 +785,11 @@ public class Response implements HttpServletResponse
                     if (_contentType != null)
                     {
                         _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                        HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                        if (field!=null)
+                            _fields.put(field);
+                        else
+                            _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                     }
                 }
             }
@@ -795,7 +800,11 @@ public class Response implements HttpServletResponse
                 if (_contentType != null)
                 {
                     _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
-                    _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                    HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                    if (field!=null)
+                        _fields.put(field);
+                    else
+                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
         }
@@ -849,7 +858,11 @@ public class Response implements HttpServletResponse
                 _characterEncoding = charset;
             }
 
-            _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+            HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+            if (field!=null)
+                _fields.put(field);
+            else
+                _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
         }
     }
 

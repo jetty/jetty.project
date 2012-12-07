@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.util.Trie;
 public class HttpField
 {
     public final static Trie<HttpField> CACHE = new Trie<>();
+    public final static Trie<HttpField> CONTENT_TYPE = new Trie<>();
     
     static
     {
@@ -43,25 +46,37 @@ public class HttpField
         CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
         CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"no-cache"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH,"0"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,"text/plain; charset=utf-8"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,"application/x-www-form-urlencoded; charset=UTF-8"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
         CACHE.put(new HttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
         
+        // TODO more user agents
+        CACHE.put(new HttpField(HttpHeader.USER_AGENT,"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/17.0 Firefox/17.0"));
+        
+        // Content types
+        for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/x-www-form-urlencoded"})
+        {
+            HttpField field=new HttpField(HttpHeader.CONTENT_TYPE,type);
+            CACHE.put(field);
+            CONTENT_TYPE.put(type,field);
+            
+            for (String charset : new String[]{"UTF-8","iso-8859-1"})
+            {
+                String type_charset=type+"; charset="+charset;
+                field=new HttpField(HttpHeader.CONTENT_TYPE,type_charset);
+                CACHE.put(field);
+                CACHE.put(HttpHeader.CONTENT_TYPE.asString()+": "+type+";charset="+charset,field);
+                CONTENT_TYPE.put(type_charset,field);
+                CONTENT_TYPE.put(type+";charset="+charset,field);
+            }
+        }
         
         // Add headers with null values so HttpParser can avoid looking up name again for unknown values
-        CACHE.put(new HttpField(HttpHeader.CONNECTION,(String)null));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,(String)null));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,(String)null));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT,(String)null));
-        CACHE.put(new HttpField(HttpHeader.PRAGMA,(String)null));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,(String)null));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH,(String)null));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,(String)null));
-        CACHE.put(new HttpField(HttpHeader.EXPIRES,(String)null));
-        
-        // TODO add common user agents
+        Set<HttpHeader> headers = new HashSet<>();
+        for (String key:CACHE.keySet())
+            headers.add(CACHE.get(key).getHeader());
+        for (HttpHeader h:headers)
+            CACHE.put(new HttpField(h,(String)null));
     }
 
     private final static byte[] __colon_space = new byte[] {':',' '};
@@ -79,24 +94,18 @@ public class HttpField
     
     public HttpField(HttpHeader header, String value)
     {
-        _header = header;
-        _name = _header.asString();
-        _value = value;
+        this(header,header.asString(),value);
     }
  
     
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {
-        _header = header;
-        _name = _header.asString();
-        _value = value.asString();
+        this(header,header.asString(),value.asString());
     }
     
     public HttpField(String name, String value)
     {
-        _header = HttpHeader.CACHE.get(name);
-        _name = name;
-        _value = value;
+        this(HttpHeader.CACHE.get(name),name,value);
     }
 
     public HttpHeader getHeader()
@@ -207,11 +216,15 @@ public class HttpField
         buffer.put(toSanitisedValue(_value));
     }
 
-
     @Override
     public String toString()
     {
         String v=getValue();
         return getName() + ": " + (v==null?"":v.toString());
+    }
+
+    public boolean isSame(HttpField field)
+    {
+        return field!=null && (_header==field.getHeader() || _name.equalsIgnoreCase(field.getName()));
     }
 }
