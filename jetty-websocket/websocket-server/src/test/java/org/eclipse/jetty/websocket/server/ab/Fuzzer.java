@@ -98,7 +98,7 @@ public class Fuzzer
         // Generate frames
         for (WebSocketFrame f : send)
         {
-            f.setMask(MASK); // make sure we have mask set
+            setClientMask(f);
             BufferUtil.put(generator.generate(f),buf);
         }
         BufferUtil.flipToFlush(buf,0);
@@ -122,12 +122,13 @@ public class Fuzzer
 
     public void expect(List<WebSocketFrame> expect) throws IOException, TimeoutException
     {
-        expect(expect,TimeUnit.SECONDS,5);
+        expect(expect,TimeUnit.SECONDS,10);
     }
 
     public void expect(List<WebSocketFrame> expect, TimeUnit unit, int duration) throws IOException, TimeoutException
     {
         int expectedCount = expect.size();
+        LOG.debug("expect() {} frame(s)",expect.size());
 
         // Read frames
         IncomingFramesCapture capture = client.readFrames(expect.size(),unit,duration);
@@ -172,10 +173,9 @@ public class Fuzzer
         // TODO Should test for no more frames. success if connection closed.
     }
 
-    public void expectServerClose() throws IOException
+    public void expectServerClose() throws IOException, InterruptedException
     {
-        int val = client.read();
-        Assert.assertThat("Should have detected EOF",val,is(-1));
+        Assert.assertThat("Should have disconnected",client.awaitDisconnect(2,TimeUnit.SECONDS),is(true));
     }
 
     public SendMode getSendMode()
@@ -225,7 +225,7 @@ public class Fuzzer
             // Generate frames
             for (WebSocketFrame f : send)
             {
-                f.setMask(MASK); // make sure we have mask set
+                setClientMask(f);
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("payload: {}",BufferUtil.toDetailString(f.getPayload()));
@@ -283,6 +283,33 @@ public class Fuzzer
             // before it has a chance to finish writing out the
             // remaining frame octets
             Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
+        }
+    }
+
+    public void sendExpectingIOException(ByteBuffer part3)
+    {
+        try
+        {
+            send(part3);
+            Assert.fail("Expected a IOException on this send");
+        }
+        catch (IOException ignore)
+        {
+            // Send, but expect the send to fail with a IOException.
+            // Usually, this is a SocketException("Socket Closed") condition.
+        }
+    }
+
+    private void setClientMask(WebSocketFrame f)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            f.setMask(new byte[]
+            { 0x00, 0x00, 0x00, 0x00 });
+        }
+        else
+        {
+            f.setMask(MASK); // make sure we have mask set
         }
     }
 

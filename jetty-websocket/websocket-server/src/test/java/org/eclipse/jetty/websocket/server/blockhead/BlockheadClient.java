@@ -35,6 +35,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,12 +62,14 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
@@ -109,6 +112,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private int timeout = 1000;
     private AtomicInteger parseCount;
     private OutgoingFrames outgoing = this;
+    private boolean eof = false;
+    private ExtensionStack extensionStack;
+    private IOState ioState;
+    private CountDownLatch disconnectedLatch = new CountDownLatch(1);
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -134,11 +141,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         this.incomingFrames = new IncomingFramesCapture();
 
         this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
+        this.ioState = new IOState();
     }
 
     public void addExtensions(String xtension)
     {
         this.extensions.add(xtension);
+    }
+
+    public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException
+    {
+        return disconnectedLatch.await(timeout,unit);
     }
 
     public void clearCaptured()
@@ -162,9 +175,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         try
         {
             CloseInfo close = new CloseInfo(statusCode,message);
-            WebSocketFrame frame = close.asFrame();
-            LOG.debug("Issuing: {}",frame);
-            write(frame);
+
+            if (ioState.onCloseHandshake(false,close))
+            {
+                this.disconnect();
+            }
+            else
+            {
+                WebSocketFrame frame = close.asFrame();
+                LOG.debug("Issuing: {}",frame);
+                write(frame);
+            }
         }
         catch (IOException e)
         {
@@ -188,6 +209,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         LOG.debug("disconnect");
         IO.close(in);
         IO.close(out);
+        disconnectedLatch.countDown();
         if (socket != null)
         {
             try
@@ -227,7 +249,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         // collect extensions configured in response header
         List<ExtensionConfig> configs = getExtensionConfigs(respHeader);
-        ExtensionStack extensionStack = new ExtensionStack(this.extensionFactory);
+        extensionStack = new ExtensionStack(this.extensionFactory);
         extensionStack.negotiate(configs);
 
         // Start with default routing
@@ -250,6 +272,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         // configure parser
         parser.setIncomingFramesHandler(extensionStack);
+        ioState.setState(ConnectionState.OPEN);
 
         return respHeader;
     }
@@ -289,6 +312,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return destHttpURI;
     }
 
+    public IOState getIOState()
+    {
+        return ioState;
+    }
+
     public String getProtocols()
     {
         return protocols;
@@ -304,12 +332,18 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return destWebsocketURI;
     }
 
+    /**
+     * Errors received (after extensions)
+     */
     @Override
     public void incomingError(WebSocketException e)
     {
         incomingFrames.incomingError(e);
     }
 
+    /**
+     * Frames received (after extensions)
+     */
     @Override
     public void incomingFrame(Frame frame)
     {
@@ -319,6 +353,20 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             LOG.info("Client parsed {} frames",count);
         }
+
+        if (frame.getType() == Frame.Type.CLOSE)
+        {
+            CloseInfo close = new CloseInfo(frame);
+            if (ioState.onCloseHandshake(true,close))
+            {
+                this.disconnect();
+            }
+            else
+            {
+                close(close.getStatusCode(),close.getReason());
+            }
+        }
+
         WebSocketFrame copy = new WebSocketFrame(frame);
         incomingFrames.incomingFrame(copy);
     }
@@ -368,6 +416,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         BufferUtil.writeTo(buf,out);
         out.flush();
 
+        bufferPool.release(buf);
+
         if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             disconnect();
@@ -383,6 +433,14 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public int read(ByteBuffer buf) throws IOException
     {
+        if (eof)
+        {
+            throw new EOFException("Hit EOF");
+        }
+        if (ioState.isInputClosed())
+        {
+            return 0;
+        }
         int len = 0;
         int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
@@ -390,7 +448,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             b = in.read();
             if (b == (-1))
             {
-                throw new EOFException("Hit EOF");
+                eof = true;
             }
             buf.put((byte)b);
             len++;

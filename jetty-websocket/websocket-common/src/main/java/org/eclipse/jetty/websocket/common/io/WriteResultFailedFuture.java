@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.common.io;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -24,7 +24,7 @@ import java.util.concurrent.FutureTask;
 
 import org.eclipse.jetty.websocket.api.WriteResult;
 
-public class FailedFuture extends FutureTask<WriteResult> implements Future<WriteResult>
+public class WriteResultFailedFuture extends FutureTask<WriteResult> implements Future<WriteResult>
 {
     private static class FailedRunner implements Callable<WriteResult>
     {
@@ -42,7 +42,7 @@ public class FailedFuture extends FutureTask<WriteResult> implements Future<Writ
         }
     }
 
-    public FailedFuture(Throwable error)
+    public WriteResultFailedFuture(Throwable error)
     {
         super(new FailedRunner(error));
         run();

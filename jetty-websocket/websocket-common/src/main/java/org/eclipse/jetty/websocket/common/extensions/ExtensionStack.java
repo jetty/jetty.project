@@ -187,6 +187,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         return nextOutgoing;
     }
 
+    public boolean hasNegotiatedExtensions()
+    {
+        return (this.extensions != null) && (this.extensions.size() > 0);
+    }
+
     @Override
     public void incomingError(WebSocketException e)
     {

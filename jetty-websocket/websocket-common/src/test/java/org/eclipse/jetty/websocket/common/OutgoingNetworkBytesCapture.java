@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.WriteResultFinishedFuture;
 import org.junit.Assert;
 
 /**
@@ -67,6 +68,6 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
         ByteBuffer buf = generator.generate(frame);
         captured.add(buf.slice());
 
-        return FinishedFuture.INSTANCE;
+        return WriteResultFinishedFuture.INSTANCE;
     }
 }

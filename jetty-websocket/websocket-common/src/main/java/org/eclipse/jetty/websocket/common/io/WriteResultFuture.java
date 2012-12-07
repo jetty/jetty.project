@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection.FrameBytes;
 
 public class WriteResultFuture implements Future<WriteResult>
 {

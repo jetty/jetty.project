@@ -19,19 +19,21 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
-import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WriteResult;
 
 public class ClientWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ClientWriteThread.class);
     private final WebSocketConnection conn;
-    private Exchanger<String> exchanger;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
@@ -39,11 +41,6 @@ public class ClientWriteThread extends Thread
     public ClientWriteThread(WebSocketConnection conn)
     {
         this.conn = conn;
-    }
-
-    public Exchanger<String> getExchanger()
-    {
-        return exchanger;
     }
 
     public String getMessage()
@@ -68,15 +65,12 @@ public class ClientWriteThread extends Thread
 
         try
         {
+            LOG.debug("Writing {} messages to connection {}",messageCount);
+            LOG.debug("Artificial Slowness {} ms",slowness);
+            Future<WriteResult> lastMessage = null;
             while (m.get() < messageCount)
             {
-                conn.write(message);
-
-                if (exchanger != null)
-                {
-                    // synchronized on exchange
-                    exchanger.exchange(message);
-                }
+                lastMessage = conn.write(message + "/" + m.get() + "/");
 
                 m.incrementAndGet();
 
@@ -85,16 +79,13 @@ public class ClientWriteThread extends Thread
                     TimeUnit.MILLISECONDS.sleep(slowness);
                 }
             }
+            // block on write of last message
+            lastMessage.get(2,TimeUnit.MINUTES); // block on write
         }
-        catch (InterruptedException | IOException e)
+        catch (InterruptedException | IOException | ExecutionException | TimeoutException e)
         {
             LOG.warn(e);
         }
-    }
-
-    public void setExchanger(Exchanger<String> exchanger)
-    {
-        this.exchanger = exchanger;
     }
 
     public void setMessage(String message)

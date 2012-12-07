@@ -124,7 +124,7 @@ public class WebSocketClientTest
         // Verify connect
         future.get(500,TimeUnit.MILLISECONDS);
         wsocket.assertWasOpened();
-        wsocket.awaitMessage(1,TimeUnit.MILLISECONDS,500);
+        wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
 
         wsocket.assertMessage("Hello World");
     }

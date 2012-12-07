@@ -61,7 +61,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private ExtensionFactory extensionFactory;
     private boolean active = false;
     private long maximumMessageSize;
-    private long inactiveTime;
     private List<String> negotiatedExtensions = new ArrayList<>();
     private String protocolVersion;
     private String negotiatedSubprotocol;

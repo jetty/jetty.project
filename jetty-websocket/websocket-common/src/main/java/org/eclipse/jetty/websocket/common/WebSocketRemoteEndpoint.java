@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.WriteResultFailedFuture;
 
 /**
  * Endpoint for Writing messages to the Remote websocket.
@@ -70,7 +71,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         catch (IOException e)
         {
-            return new FailedFuture(e);
+            return new WriteResultFailedFuture(e);
         }
     }
 

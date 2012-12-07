@@ -192,14 +192,12 @@ public class UpgradeConnection extends AbstractConnection
         }
         catch (IOException e)
         {
-            LOG.warn(e);
             client.failed(e);
             disconnect(false);
             return false;
         }
         catch (UpgradeException e)
         {
-            LOG.warn(e);
             client.failed(e);
             disconnect(false);
             return false;

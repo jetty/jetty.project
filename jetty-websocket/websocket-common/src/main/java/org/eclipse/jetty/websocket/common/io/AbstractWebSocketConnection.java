@@ -25,14 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ForkInvoker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -40,6 +44,7 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -57,15 +62,252 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection
 {
+    private abstract class AbstractFrameBytes extends FutureCallback implements FrameBytes
+    {
+        protected final Logger LOG;
+        protected final Frame frame;
+
+        public AbstractFrameBytes(Frame frame)
+        {
+            this.frame = frame;
+            this.LOG = Log.getLogger(this.getClass());
+        }
+
+        @Override
+        public void complete()
+        {
+            if (!isDone())
+            {
+                AbstractWebSocketConnection.this.complete(this);
+            }
+        }
+
+        @Override
+        public void fail(Throwable t)
+        {
+            failed(t);
+            flush();
+        }
+
+        /**
+         * Entry point for EndPoint.write failure
+         */
+        @Override
+        public void failed(Throwable x)
+        {
+            // Log failure
+            if (x instanceof EofException)
+            {
+                // Abbreviate the EofException
+                LOG.warn("failed() - " + EofException.class);
+            }
+            else
+            {
+                LOG.warn("failed()",x);
+            }
+            flushing = false;
+            queue.fail(x);
+            super.failed(x);
+        }
+
+        /**
+         * Entry point for EndPoint.write success
+         */
+        @Override
+        public void succeeded()
+        {
+            super.succeeded();
+            synchronized (queue)
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Completed Write of {} ({} frame(s) in queue)",this,queue.size());
+                }
+                flushing = false;
+            }
+            complete();
+        }
+
+        @Override
+        public String toString()
+        {
+            return frame.toString();
+        }
+    }
+
+    private class ControlFrameBytes extends AbstractFrameBytes
+    {
+        private ByteBuffer buffer;
+        private ByteBuffer origPayload;
+
+        public ControlFrameBytes(Frame frame)
+        {
+            super(frame);
+        }
+
+        @Override
+        public void complete()
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("complete() - frame: {}",frame);
+            }
+
+            if (buffer != null)
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Releasing Buffer: {}",BufferUtil.toDetailString(buffer));
+                }
+
+                getBufferPool().release(buffer);
+                buffer = null;
+            }
+
+            super.complete();
+
+            if (frame.getType().getOpCode() == OpCode.CLOSE)
+            {
+                CloseInfo close = new CloseInfo(origPayload,false);
+                onCloseHandshake(false,close);
+            }
+
+            getBufferPool().release(origPayload);
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            if (buffer == null)
+            {
+                if (frame.hasPayload())
+                {
+                    int len = frame.getPayload().remaining();
+                    origPayload = getBufferPool().acquire(len,false);
+                    BufferUtil.put(frame.getPayload(),origPayload);
+                }
+                buffer = getGenerator().generate(frame);
+
+            }
+            return buffer;
+        }
+    }
+
+    private class DataFrameBytes extends AbstractFrameBytes
+    {
+        private ByteBuffer buffer;
+
+        public DataFrameBytes(Frame frame)
+        {
+            super(frame);
+        }
+
+        @Override
+        public void complete()
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("complete() - frame.remaining() = {}",frame.remaining());
+            }
+
+            if (buffer != null)
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Releasing Buffer: {}",BufferUtil.toDetailString(buffer));
+                }
+
+                getBufferPool().release(buffer);
+                buffer = null;
+            }
+
+            if (frame.remaining() > 0)
+            {
+                LOG.debug("More to send");
+                // We have written a partial frame per windowing size.
+                // We need to keep the correct ordering of frames, to avoid that another
+                // Data frame for the same stream is written before this one is finished.
+                queue.prepend(this);
+                flush();
+            }
+            else
+            {
+                LOG.debug("Send complete");
+                super.complete();
+            }
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            try
+            {
+                int windowSize = getInputBufferSize();
+                buffer = getGenerator().generate(windowSize,frame);
+                return buffer;
+            }
+            catch (Throwable x)
+            {
+                fail(x);
+                return null;
+            }
+        }
+    }
+
+    private class FlushInvoker extends ForkInvoker<Callback>
+    {
+        private FlushInvoker()
+        {
+            super(4);
+        }
+
+        @Override
+        public void call(Callback callback)
+        {
+            callback.succeeded();
+            flush();
+        }
+
+        @Override
+        public void fork(final Callback callback)
+        {
+            execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    callback.succeeded();
+                    flush();
+                }
+            });
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x",FlushInvoker.class.getSimpleName(),hashCode());
+        }
+    }
+
+    public interface FrameBytes extends Callback, Future<Void>
+    {
+        public abstract void complete();
+
+        public abstract void fail(Throwable t);
+
+        public abstract ByteBuffer getByteBuffer();
+    }
+
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
 
+    private final ForkInvoker<Callback> invoker = new FlushInvoker();
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
-    private final FrameQueue queue;
+    private final FrameQueue queue = new FrameQueue();
     private final AtomicBoolean suspendToken;
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
@@ -84,7 +326,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.parser = new Parser(policy);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
-        this.queue = new FrameQueue();
         this.suspendToken = new AtomicBoolean(false);
         this.connectionState = ConnectionState.CONNECTING;
 
@@ -122,15 +363,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         enqueClose(statusCode,reason);
     }
 
-    public <C> void complete(FrameBytes frameBytes)
+    public void complete(final Callback callback)
     {
-        synchronized (queue)
+        if (connectionState != ConnectionState.CLOSED)
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Completed Write of {} ({} frame(s) in queue)",frameBytes,queue.size());
-            }
-            flushing = false;
+            invoker.invoke(callback);
         }
     }
 
@@ -179,25 +416,47 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    private void execute(Runnable task)
+    {
+        try
+        {
+            getExecutor().execute(task);
+        }
+        catch (RejectedExecutionException e)
+        {
+            LOG.debug("Job not dispatched: {}",task);
+        }
+    }
+
     public void flush()
     {
         FrameBytes frameBytes = null;
         ByteBuffer buffer = null;
+
         synchronized (queue)
         {
+            if (queue.isFailed())
+            {
+                LOG.debug(".flush() - queue is in failed state");
+                return;
+            }
 
-            LOG.debug(".flush() - flushing={} - queue.size = {}",flushing,queue.size());
             if (flushing || queue.isEmpty())
             {
                 return;
+            }
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug(".flush() - flushing={} - queue.size = {}",flushing,queue.size());
             }
 
             frameBytes = queue.pop();
 
             if (!isOpen())
             {
-                // No longer have an open connection, drop the frame.
-                queue.clear();
+                // No longer have an open connection, drop them all.
+                queue.fail(new WebSocketException("Connection closed"));
                 return;
             }
 
@@ -216,12 +475,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             {
                 LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
-
-            if (connectionState != ConnectionState.CLOSED)
-            {
-                write(buffer,frameBytes);
-            }
         }
+
+        write(buffer,frameBytes);
     }
 
     public ByteBufferPool getBufferPool()
@@ -255,11 +511,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
-    }
-
-    public FrameQueue getQueue()
-    {
-        return queue;
     }
 
     @Override
@@ -350,7 +601,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onFillable()
     {
-        LOG.debug("{} onFillable()",policy.getBehavior());
+        // LOG.debug("{} onFillable()",policy.getBehavior());
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
@@ -401,22 +652,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         Future<WriteResult> future = null;
 
-        synchronized (queue)
+        synchronized (this)
         {
             FrameBytes bytes = null;
 
             if (frame.getType().isControl())
             {
-                bytes = new ControlFrameBytes(this,frame);
+                bytes = new ControlFrameBytes(frame);
             }
             else
             {
-                bytes = new DataFrameBytes(this,frame);
+                bytes = new DataFrameBytes(frame);
             }
 
             future = new WriteResultFuture(bytes);
-
-            scheduleTimeout(bytes);
 
             if (isOpen())
             {
@@ -486,14 +735,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    private void scheduleTimeout(FrameBytes bytes)
-    {
-        if (policy.getIdleTimeout() > 0)
-        {
-            bytes.task = scheduler.schedule(bytes,policy.getIdleTimeout(),TimeUnit.MILLISECONDS);
-        }
-    }
-
     /**
      * Get the list of extensions in use.
      * <p>
@@ -532,12 +773,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         if (LOG_FRAMES.isDebugEnabled())
         {
-            LOG_FRAMES.debug("{} Writing {} frame bytes of {}",policy.getBehavior(),buffer.remaining(),frameBytes);
+            LOG_FRAMES.debug("{} Writing {} of {} ",policy.getBehavior(),BufferUtil.toDetailString(buffer),frameBytes);
         }
 
-        if (connectionState == ConnectionState.CLOSED)
+        if (!isOpen())
         {
             // connection is closed, STOP WRITING, geez.
+            frameBytes.failed(new WebSocketException("Connection closed"));
             return;
         }
 

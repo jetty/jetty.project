@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.WriteResultFinishedFuture;
 import org.junit.Assert;
 
 public class OutgoingFramesCapture implements OutgoingFrames
@@ -88,6 +89,6 @@ public class OutgoingFramesCapture implements OutgoingFrames
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);
 
-        return FinishedFuture.INSTANCE;
+        return WriteResultFinishedFuture.INSTANCE;
     }
 }

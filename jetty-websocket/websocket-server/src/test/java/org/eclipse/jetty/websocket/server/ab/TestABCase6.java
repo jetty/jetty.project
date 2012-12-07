@@ -396,7 +396,7 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.expect(expect);
 
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(part3); // the rest (shouldn't work)
+            fuzzer.sendExpectingIOException(part3); // the rest (shouldn't work)
         }
         finally
         {

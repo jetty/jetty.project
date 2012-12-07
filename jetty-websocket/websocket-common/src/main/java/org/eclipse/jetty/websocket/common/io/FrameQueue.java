@@ -20,16 +20,72 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.util.LinkedList;
 
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection.FrameBytes;
+
+/**
+ * Queue for outgoing frames.
+ */
 @SuppressWarnings("serial")
 public class FrameQueue extends LinkedList<FrameBytes>
 {
+    private Throwable failure;
+
     public void append(FrameBytes bytes)
     {
-        addLast(bytes);
+        synchronized (this)
+        {
+            if (isFailed())
+            {
+                // no changes when failed
+                bytes.failed(failure);
+                return;
+            }
+            addLast(bytes);
+        }
+    }
+
+    public synchronized void fail(Throwable t)
+    {
+        synchronized (this)
+        {
+            if (isFailed())
+            {
+                // already failed.
+                return;
+            }
+
+            failure = t;
+
+            for (FrameBytes fb : this)
+            {
+                fb.failed(failure);
+            }
+
+            clear();
+        }
+    }
+
+    public Throwable getFailure()
+    {
+        return failure;
+    }
+
+    public boolean isFailed()
+    {
+        return (failure != null);
     }
 
     public void prepend(FrameBytes bytes)
     {
-        addFirst(bytes);
+        synchronized (this)
+        {
+            if (isFailed())
+            {
+                // no changes when failed
+                bytes.failed(failure);
+                return;
+            }
+            addFirst(bytes);
+        }
     }
 }

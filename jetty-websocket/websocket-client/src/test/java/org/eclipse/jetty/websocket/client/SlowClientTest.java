@@ -74,9 +74,7 @@ public class SlowClientTest
     @Slow
     public void testClientSlowToSend() throws Exception
     {
-        // final Exchanger<String> exchanger = new Exchanger<String>();
         TrackingSocket tsocket = new TrackingSocket();
-        // tsocket.messageExchanger = exchanger;
         WebSocketClient client = factory.newWebSocketClient(tsocket);
         client.getPolicy().setIdleTimeout(60000);
 
@@ -102,7 +100,6 @@ public class SlowClientTest
         ClientWriteThread writer = new ClientWriteThread(tsocket.getConnection());
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
-        // writer.setExchanger(exchanger);
         writer.setSlowness(10);
         writer.start();
         writer.join();
@@ -113,7 +110,7 @@ public class SlowClientTest
         // Close
         tsocket.getConnection().close(StatusCode.NORMAL,"Done");
 
-        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
+        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(3,TimeUnit.MINUTES));
         tsocket.assertCloseCode(StatusCode.NORMAL);
 
         reader.cancel(); // stop reading

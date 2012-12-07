@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Parser;
 
 public class UnitParser extends Parser
 {
@@ -30,12 +29,35 @@ public class UnitParser extends Parser
         super(WebSocketPolicy.newServerPolicy());
     }
 
+    public UnitParser(WebSocketPolicy policy)
+    {
+        super(policy);
+    }
+
     private void parsePartial(ByteBuffer buf, int numBytes)
     {
         int len = Math.min(numBytes,buf.remaining());
         byte arr[] = new byte[len];
         buf.get(arr,0,len);
         this.parse(ByteBuffer.wrap(arr));
+    }
+
+    /**
+     * Parse a buffer, but do so in a quiet fashion, squelching stacktraces if encountered.
+     * <p>
+     * Use if you know the parse will cause an exception and just don't wnat to make the test console all noisy.
+     */
+    public void parseQuietly(ByteBuffer buf)
+    {
+        try
+        {
+            LogShush.disableStacks(Parser.class);
+            parse(buf);
+        }
+        finally
+        {
+            LogShush.enableStacks(Parser.class);
+        }
     }
 
     public void parseSlowly(ByteBuffer buf, int segmentSize)

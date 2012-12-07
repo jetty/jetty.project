@@ -118,7 +118,6 @@ public class DefaultWebSocketClient extends FuturePromise<ClientUpgradeResponse>
     public void failed(Throwable cause)
     {
         LOG.debug("failed() - {}",cause);
-        LOG.info(cause);
         super.failed(cause);
     }
 

@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,10 +75,9 @@ public class SlowServerTest
     @Slow
     public void testServerSlowToRead() throws Exception
     {
-        // final Exchanger<String> exchanger = new Exchanger<String>();
         TrackingSocket tsocket = new TrackingSocket();
-        // tsocket.messageExchanger = exchanger;
         WebSocketClient client = factory.newWebSocketClient(tsocket);
+        client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
@@ -103,7 +103,6 @@ public class SlowServerTest
         ClientWriteThread writer = new ClientWriteThread(tsocket.getConnection());
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
-        // writer.setExchanger(exchanger);
         writer.setSlowness(-1); // disable slowness
         writer.start();
         writer.join();
@@ -129,6 +128,7 @@ public class SlowServerTest
         TrackingSocket tsocket = new TrackingSocket();
         // tsocket.messageExchanger = exchanger;
         WebSocketClient client = factory.newWebSocketClient(tsocket);
+        client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();

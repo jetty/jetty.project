@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -26,16 +28,8 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 
 public class TextPayloadParserTest
 {
@@ -59,10 +53,10 @@ public class TextPayloadParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
-        Parser parser = new Parser(policy);
+        UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(buf);
+        parser.parseQuietly(buf);
 
         capture.assertHasErrors(MessageTooLargeException.class,1);
         capture.assertHasNoFrames();

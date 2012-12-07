@@ -174,6 +174,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
+        LOG.debug("Waiting for message");
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
 }
