@@ -88,7 +88,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
     {
         long newLength = buffer.length + content.remaining();
         if (newLength > maxLength)
-            throw new IllegalStateException("Buffering capacity exceeded");
+            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
 
         byte[] newBuffer = new byte[(int)newLength];
         System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
