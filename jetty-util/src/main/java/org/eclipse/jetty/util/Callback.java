@@ -41,8 +41,6 @@ import org.eclipse.jetty.util.log.Log;
  *
  * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful 
  * name than EmptyPromise</p>
- *  
- * @param <C> the type of the context object
  */
 public interface Callback
 {
@@ -61,8 +59,6 @@ public interface Callback
 
     /**
      * <p>Empty implementation of {@link Callback}</p>
-     *
-     * @param <C> the type of the context object
      */
     public static class Adapter implements Callback
     {
