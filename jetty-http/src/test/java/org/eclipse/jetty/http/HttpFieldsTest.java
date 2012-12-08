@@ -138,14 +138,11 @@ public class HttpFieldsTest
         BufferUtil.flipToFill(buffer);
         header.putTo(buffer);
         BufferUtil.flipToFlush(buffer,0);
-        String out = BufferUtil.toString(buffer);
+        String out = BufferUtil.toString(buffer).toLowerCase();
 
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
-
-
-
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase()));
     }
 
     @Test

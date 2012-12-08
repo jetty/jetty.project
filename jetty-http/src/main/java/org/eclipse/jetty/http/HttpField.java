@@ -37,35 +37,35 @@ public class HttpField
     
     static
     {
-        CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE));
-        CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
-        CACHE.put(new HttpField(HttpHeader.PRAGMA,"no-cache"));
-        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
-        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"no-cache"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH,"0"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
-        CACHE.put(new HttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
+        CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE));
+        CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+        CACHE.put(new CachedHttpField(HttpHeader.PRAGMA,"no-cache"));
+        CACHE.put(new CachedHttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
+        CACHE.put(new CachedHttpField(HttpHeader.CACHE_CONTROL,"no-cache"));
+        CACHE.put(new CachedHttpField(HttpHeader.CONTENT_LENGTH,"0"));
+        CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
+        CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
+        CACHE.put(new CachedHttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
         
         // TODO more user agents
-        CACHE.put(new HttpField(HttpHeader.USER_AGENT,"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/17.0 Firefox/17.0"));
+        CACHE.put(new CachedHttpField(HttpHeader.USER_AGENT,"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/17.0 Firefox/17.0"));
         
         // Content types
         for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/x-www-form-urlencoded"})
         {
-            HttpField field=new HttpField(HttpHeader.CONTENT_TYPE,type);
+            HttpField field=new CachedHttpField(HttpHeader.CONTENT_TYPE,type);
             CACHE.put(field);
             CONTENT_TYPE.put(type,field);
             
             for (String charset : new String[]{"UTF-8","ISO-8859-1"})
             {
                 String type_charset=type+"; charset="+charset;
-                field=new HttpField(HttpHeader.CONTENT_TYPE,type_charset);
+                field=new CachedHttpField(HttpHeader.CONTENT_TYPE,type_charset);
                 CACHE.put(field);
-                CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
+                CACHE.put(new CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
                 CONTENT_TYPE.put(type_charset,field);
                 CONTENT_TYPE.put(type+";charset="+charset,field);
             }
@@ -152,7 +152,7 @@ public class HttpField
         return StringUtil.toLong(_value);
     }
     
-    private byte[] toSanitisedName(String s)
+    private static byte[] toSanitisedName(String s)
     {
         byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
         for (int i=bytes.length;i-->0;)
@@ -168,7 +168,7 @@ public class HttpField
         return bytes;
     }
 
-    private byte[] toSanitisedValue(String s)
+    private static byte[] toSanitisedValue(String s)
     {
         byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
         for (int i=bytes.length;i-->0;)
@@ -185,21 +185,10 @@ public class HttpField
 
     public void putTo(ByteBuffer bufferInFillMode)
     {
-        HttpHeader header = HttpHeader.CACHE.get(_name);
-        if (header!=null)
+        if (_header!=null)
         {
-            bufferInFillMode.put(header.getBytesColonSpace());
-
-            if (HttpHeaderValue.hasKnownValues(header))
-            {
-                HttpHeaderValue value=HttpHeaderValue.CACHE.get(_value);
-                if (value!=null)
-                    bufferInFillMode.put(value.toBuffer());
-                else
-                    bufferInFillMode.put(toSanitisedValue(_value));
-            }
-            else
-                bufferInFillMode.put(toSanitisedValue(_value));
+            bufferInFillMode.put(_header.getBytesColonSpace());
+            bufferInFillMode.put(toSanitisedValue(_value));
         }
         else
         {
@@ -234,5 +223,30 @@ public class HttpField
         if (_name.equalsIgnoreCase(field.getName()))
             return true;
         return false;
+    }
+    
+    private static class CachedHttpField extends HttpField
+    {
+        final byte[] _bytes;
+        CachedHttpField(HttpHeader header, String value)
+        {
+            super(header,value);
+            _bytes=new byte[header.asString().length()+2+value.length()+2];
+            System.arraycopy(header.getBytesColonSpace(),0,_bytes,0,header.asString().length()+2);
+            System.arraycopy(toSanitisedValue(value),0,_bytes,header.asString().length()+2,value.length());
+            _bytes[_bytes.length-2]='\r';
+            _bytes[_bytes.length-1]='\n';
+        }
+
+        CachedHttpField(HttpHeader header, HttpHeaderValue value)
+        {
+            this(header,value.asString());
+        }
+        
+        @Override
+        public void putTo(ByteBuffer bufferInFillMode)
+        {
+            bufferInFillMode.put(_bytes);
+        }
     }
 }
