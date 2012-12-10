@@ -94,13 +94,12 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException
     {
-        int startCount = messageQueue.size();
         long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
         long now = System.currentTimeMillis();
         long expireOn = now + msDur;
-        LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
+        LOG.debug("Await Message.. Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
-        while (messageQueue.size() < (startCount + expectedMessageCount))
+        while (messageQueue.size() < expectedMessageCount)
         {
             try
             {
@@ -116,6 +115,11 @@ public class TrackingSocket extends WebSocketAdapter
                         messageQueue.size()));
             }
         }
+    }
+
+    public void clear()
+    {
+        messageQueue.clear();
     }
 
     @Override

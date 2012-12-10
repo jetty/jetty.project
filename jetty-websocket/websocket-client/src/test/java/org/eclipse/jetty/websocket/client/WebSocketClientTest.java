@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -104,7 +103,6 @@ public class WebSocketClientTest
     }
 
     @Test
-    @Ignore("Causing sporadic issues")
     public void testBasicEcho_FromServer() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
