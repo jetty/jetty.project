@@ -929,7 +929,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 return;
 
             flushing = true;
-            LOG.warn("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
+            LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
         }
         write(buffer, frameBytes);
     }
