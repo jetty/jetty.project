@@ -37,6 +37,8 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -240,6 +242,7 @@ public class HttpTransportOverSPDYTest
     @Test
     public void testVerifyThatAStreamIsNotCommittedTwice() throws IOException
     {
+        ((StdErrLog)Log.getLogger(HttpTransportOverSPDY.class)).setHideStacks(true);
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
 
@@ -252,6 +255,8 @@ public class HttpTransportOverSPDYTest
 
         verify(stream, times(0)).data(any(DataInfo.class));
         verify(stream, times(1)).data(any(DataInfo.class), anyLong(), any(TimeUnit.class), any(Callback.class));
+
+        ((StdErrLog)Log.getLogger(HttpTransportOverSPDY.class)).setHideStacks(false);
     }
 
     private ByteBuffer createRandomByteBuffer()
