@@ -62,7 +62,6 @@ public class TestTransparentProxyServer
         // Setup server
         Server server = new Server(threadPool);
         server.manage(threadPool);
-        server.setSendDateHeader(true);
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -75,6 +74,8 @@ public class TestTransparentProxyServer
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());
+        config.setSendDateHeader(true);
+        config.setSendServerVersion(true);
         
         
         // Http Connector
@@ -134,7 +135,6 @@ public class TestTransparentProxyServer
 
         // start server
         server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
         server.start();
         server.join();
     }

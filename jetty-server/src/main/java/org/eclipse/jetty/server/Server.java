@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -43,6 +46,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -73,11 +77,10 @@ public class Server extends HandlerWrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
-    private boolean _sendServerVersion = true; //send Server: header
-    private boolean _sendDateHeader = false; //send Date: header
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private HttpField _dateField;
 
 
     /* ------------------------------------------------------------ */
@@ -257,6 +260,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
 
+    /* ------------------------------------------------------------ */
+    public HttpField getDateField()
+    {
+        return _dateField;
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -296,6 +304,25 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpAfterStart())
             dumpStdErr();
 
+        
+        // use DateCache timer for Date field reformat
+        final HttpFields.DateGenerator date = new HttpFields.DateGenerator();
+        long now=System.currentTimeMillis();
+        long tick=1000*((now/1000)+1)-now;
+        _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+        DateCache.getTimer().scheduleAtFixedRate(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                long now=System.currentTimeMillis();
+                _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+                if (!isRunning())
+                    this.cancel();
+            }
+        },tick,1000);
+        
+        
         mex.ifExceptionThrow();
     }
 
@@ -492,32 +519,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         updateBean(_sessionIdManager,sessionIdManager);
         _sessionIdManager=sessionIdManager;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setSendServerVersion (boolean sendServerVersion)
-    {
-        _sendServerVersion = sendServerVersion;
-    }
-
-    /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, include the server version in HTTP headers")
-    public boolean getSendServerVersion()
-    {
-        return _sendServerVersion;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setSendDateHeader(boolean sendDateHeader)
-    {
-        _sendDateHeader = sendDateHeader;
-    }
-
-    /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, include the date in HTTP headers")
-    public boolean getSendDateHeader()
-    {
-        return _sendDateHeader;
     }
 
     /* ------------------------------------------------------------ */

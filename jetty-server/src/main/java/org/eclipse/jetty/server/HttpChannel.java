@@ -494,13 +494,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 break;
 
             case HTTP_1_0:
-                if (getServer().getSendDateHeader())
-                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+                if (_configuration.getSendDateHeader())
+                    _response.getHttpFields().put(_connector.getServer().getDateField());
                 break;
 
             case HTTP_1_1:
-                if (getServer().getSendDateHeader())
-                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+                if (_configuration.getSendDateHeader())
+                    _response.getHttpFields().put(_connector.getServer().getDateField());
 
                 if (_expect)
                 {

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -63,7 +64,7 @@ public interface Connector extends LifeCycle, Graceful
     public ConnectionFactory getConnectionFactory(String nextProtocol);
     
 
-    public <T extends ConnectionFactory> T getConnectionFactory(Class<T> factoryType);
+    public <T> T getConnectionFactory(Class<T> factoryType);
     
     /**
      * @return the default {@link ConnectionFactory} associated with the default protocol name
@@ -84,5 +85,6 @@ public interface Connector extends LifeCycle, Graceful
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
     public Object getTransport();
+    
 
 }

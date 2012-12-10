@@ -46,6 +46,9 @@ public class HttpConfiguration
     private int _responseHeaderSize=8*1024;
     private int _securePort;
     private String _secureScheme = HttpScheme.HTTPS.asString();
+    private boolean _sendServerVersion = true; //send Server: header
+    private boolean _sendDateHeader = false; //send Date: header
+    
 
     public interface Customizer
     {
@@ -73,6 +76,8 @@ public class HttpConfiguration
         _responseHeaderSize=config._responseHeaderSize;
         _securePort=config._securePort;
         _secureScheme=config._secureScheme;
+        _sendDateHeader=config._sendDateHeader;
+        _sendServerVersion=config._sendServerVersion;
     }
     
     /* ------------------------------------------------------------ */
@@ -130,6 +135,28 @@ public class HttpConfiguration
     public String getSecureScheme()
     {
         return _secureScheme;
+    }
+
+    public void setSendServerVersion (boolean sendServerVersion)
+    {
+        _sendServerVersion = sendServerVersion;
+    }
+
+    @ManagedAttribute("if true, include the server version in HTTP headers")
+    public boolean getSendServerVersion()
+    {
+        return _sendServerVersion;
+    }
+
+    public void setSendDateHeader(boolean sendDateHeader)
+    {
+        _sendDateHeader = sendDateHeader;
+    }
+
+    @ManagedAttribute("if true, include the date in HTTP headers")
+    public boolean getSendDateHeader()
+    {
+        return _sendDateHeader;
     }
     
     /* ------------------------------------------------------------ */

@@ -76,8 +76,7 @@ public class HttpFields implements Iterable<HttpField>
     private static final String[] MONTHS =
         { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
 
-
-    private static class DateGenerator
+    public static class DateGenerator
     {
         private final StringBuilder buf = new StringBuilder(32);
         private final GregorianCalendar gc = new GregorianCalendar(__GMT);

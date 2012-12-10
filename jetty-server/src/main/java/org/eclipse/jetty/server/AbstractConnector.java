@@ -320,7 +320,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    public <T extends ConnectionFactory> T getConnectionFactory(Class<T> factoryType)
+    public <T> T getConnectionFactory(Class<T> factoryType)
     {
         synchronized (_factories)
         {

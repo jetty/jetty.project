@@ -72,6 +72,7 @@ public class SpdyServer
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());
+        config.setSendServerVersion(true);
         
         
         // Http Connector
@@ -160,7 +161,6 @@ public class SpdyServer
         requestLogHandler.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
 
         server.start();
         server.dumpStdErr();

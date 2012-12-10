@@ -33,6 +33,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -64,9 +65,9 @@ public class DefaultServletTest
     public void init() throws Exception
     {
         server = new Server();
-        server.setSendServerVersion(false);
 
         connector = new LocalConnector(server);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         context = new ServletContextHandler();
         context.setContextPath("/context");

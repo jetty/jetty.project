@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -71,8 +72,8 @@ public class DispatcherTest
     public void init() throws Exception
     {
         _server = new Server();
-        _server.setSendServerVersion(false);
         _connector = new LocalConnector(_server);
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         _contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();

@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -53,9 +54,9 @@ public class DefaultServletRangesTest
     public void init() throws Exception
     {
         server = new Server();
-        server.setSendServerVersion(false);
 
-        connector = new LocalConnector(server);
+        connector = new LocalConnector(server); 
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         context = new ServletContextHandler();
         context.setContextPath("/context");

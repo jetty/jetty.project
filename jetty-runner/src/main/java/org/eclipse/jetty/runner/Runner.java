@@ -449,7 +449,6 @@ public class Runner
         if (_server==null)
             usage("No Contexts defined");
         _server.setStopAtShutdown(true);
-        _server.setSendServerVersion(true);
 
         switch ((stopPort > 0 ? 1 : 0) + (stopKey != null ? 2 : 0))
         {

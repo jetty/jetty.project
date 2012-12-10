@@ -76,7 +76,6 @@ public class TestServer
         // Setup server
         Server server = new Server(threadPool);
         server.manage(threadPool);
-        server.setSendDateHeader(true);
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -89,6 +88,8 @@ public class TestServer
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());
+        config.setSendDateHeader(true);
+        config.setSendServerVersion(true);
         
         
         // Http Connector
@@ -161,7 +162,6 @@ public class TestServer
         requestLogHandler.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
 
         WebAppContext webapp = new WebAppContext();
         webapp.setParentLoaderPriority(true);

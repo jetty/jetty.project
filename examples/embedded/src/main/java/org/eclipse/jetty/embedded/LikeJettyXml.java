@@ -60,6 +60,7 @@ public class LikeJettyXml
         // Setup Connectors
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setSecurePort(8443);
+        http.getHttpConfiguration().setSendServerVersion(true);
         ServerConnector connector = new ServerConnector(server,http);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
@@ -119,7 +120,6 @@ public class LikeJettyXml
         requestLogHandler.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
 
         server.start();
         server.join();

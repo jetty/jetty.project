@@ -274,8 +274,6 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="sendServerVersion">true</Set>
-    <Set name="sendDateHeader">true</Set>
     <Set name="stopTimeout">1000</Set>
 
 </Configure>

@@ -225,10 +225,14 @@ public class HttpField
         return false;
     }
     
-    private static class CachedHttpField extends HttpField
+    
+    /* ------------------------------------------------------------ */
+    /** A HTTP Field optimised to be reused.
+     */
+    public static class CachedHttpField extends HttpField
     {
         final byte[] _bytes;
-        CachedHttpField(HttpHeader header, String value)
+        public CachedHttpField(HttpHeader header, String value)
         {
             super(header,value);
             _bytes=new byte[header.asString().length()+2+value.length()+2];
