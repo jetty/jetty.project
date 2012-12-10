@@ -446,7 +446,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
+        request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
