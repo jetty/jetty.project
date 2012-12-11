@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import static org.hamcrest.Matchers.*;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,11 +35,13 @@ public class WebSocketClientFactoryTest
     public void testNewSocket()
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
+        factory.setMasker(new ZeroMasker());
         WebSocketClient client = factory.newWebSocketClient(new TrackingSocket());
 
         Assert.assertThat("Client",client,notNullValue());
         Assert.assertThat("Client.factory",client.getFactory(),is(factory));
         Assert.assertThat("Client.policy",client.getPolicy(),is(factory.getPolicy()));
+        Assert.assertThat("Client.masker", client.getMasker(), notNullValue());
         Assert.assertThat("Client.upgradeRequest",client.getUpgradeRequest(),notNullValue());
         Assert.assertThat("Client.upgradeResponse",client.getUpgradeResponse(),nullValue());
     }

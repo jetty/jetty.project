@@ -40,6 +40,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
+import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -56,6 +57,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
     private SocketAddress bindAddress;
+    private Masker masker;
 
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private ConnectionManager connectionManager;
@@ -165,7 +167,21 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     {
         return scheduler;
     }
+    
+    /**
+     * 
+     * @return the masker or null if none is set
+     */
+    public Masker getMasker()
+    {
+        return masker;
+    }
 
+    public void setMasker(Masker masker)
+    {
+        this.masker = masker;
+    }
+    
     public List<Extension> initExtensions(List<ExtensionConfig> requested)
     {
         List<Extension> extensions = new ArrayList<Extension>();
@@ -190,7 +206,9 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     {
         LOG.debug("Creating new WebSocket for {}",websocketPojo);
         EventDriver websocket = eventDriverFactory.wrap(websocketPojo);
-        return new DefaultWebSocketClient(this,websocket);
+        DefaultWebSocketClient client = new DefaultWebSocketClient(this,websocket);
+        client.setMasker(masker);
+        return client;
     }
 
     public boolean sessionClosed(WebSocketSession session)
