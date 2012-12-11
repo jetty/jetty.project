@@ -62,6 +62,11 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
         this.request = request;
     }
 
+    public Request getRequest()
+    {
+        return request;
+    }
+
     @Override
     public void onComplete(Result result)
     {
