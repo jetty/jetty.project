@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class MappedByteBufferPoolTest
@@ -83,23 +82,31 @@ public class MappedByteBufferPoolTest
     }
     
     /**
-     * In a scenario where BufferPool is being used, but some edges cases that use ByteBuffer.allocate()
-     * and then later that buffer is released via the BufferPool, that non acquired buffer can contaminate
-     * the buffer pool.
+     * In a scenario where MappedByteBufferPool is being used improperly, such as releasing a buffer that wasn't created/acquired by the MappedByteBufferPool,
+     * an assertion is tested for.
      */
     @Test
-    public void testReleaseTiny() throws Exception
+    public void testReleaseAssertion() throws Exception
     {
-        MappedByteBufferPool bufferPool = new MappedByteBufferPool();
+        int factor = 1024;
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor);
 
-        // Release a few small non-pool buffers
-        bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("Hello")));
-        bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("There")));
-        
-        // acquire small pool
-        ByteBuffer small = bufferPool.acquire(35, false);
-        assertThat(small.capacity(), greaterThanOrEqualTo(35));
-        small.limit(35);
-        bufferPool.release(small);
+        try
+        {
+            // Release a few small non-pool buffers
+            bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("Hello")));
+
+            /* NOTES: 
+             * 
+             * 1) This test will pass on command line maven build, as its surefire setup uses "-ea" already.
+             * 2) In Eclipse, goto the "Run Configuration" for this test case.
+             *    Select the "Arguments" tab, and make sure "-ea" is present in the text box titled "VM arguments"
+             */
+            fail("Expected java.lang.AssertionError, do you have '-ea' JVM command line option enabled?");
+        }
+        catch (java.lang.AssertionError e)
+        {
+            // Expected path.
+        }
     }
 }

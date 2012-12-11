@@ -25,12 +25,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class MappedByteBufferPool implements ByteBufferPool
 {
-    private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
     private final ConcurrentMap<Integer, Queue<ByteBuffer>> directBuffers = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, Queue<ByteBuffer>> heapBuffers = new ConcurrentHashMap<>();
     private final int factor;
@@ -63,25 +60,18 @@ public class MappedByteBufferPool implements ByteBufferPool
         }
 
         BufferUtil.clear(result);
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("acquire({}, {}) -> {}", size, direct, BufferUtil.toDetailString(result));
-        }
         return result;
     }
 
     @Override
     public void release(ByteBuffer buffer)
     {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("release({})", BufferUtil.toDetailString(buffer));
-        }
-        
         if (buffer == null)
             return; // nothing to do
         
-        if (buffer.capacity() < factor)
-            return; // don't bother keeping track of this buffer (it obviously didn't come from this bytebuffer pool
-
+        // validate that this buffer is from this pool
+        assert((buffer.capacity() % factor) == 0);
+        
         int bucket = bucketFor(buffer.capacity());
         ConcurrentMap<Integer, Queue<ByteBuffer>> buffers = buffersFor(buffer.isDirect());
 
