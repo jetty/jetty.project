@@ -20,6 +20,9 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
@@ -41,13 +44,11 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -112,7 +113,8 @@ public class HttpClient extends ContainerLifeCycle
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private final Set<ContentDecoder.Factory> decoderFactories = Collections.newSetFromMap(new ConcurrentHashMap<ContentDecoder.Factory, Boolean>());
     private final SslContextFactory sslContextFactory;
-    private volatile CookieStore cookieStore = new HttpCookieStore();
+    private volatile CookieManager cookieManager;
+    private volatile CookieStore cookieStore;
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
@@ -201,6 +203,9 @@ public class HttpClient extends ContainerLifeCycle
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 
+        cookieManager = new CookieManager(cookieStore, CookiePolicy.ACCEPT_ALL);
+        cookieStore = cookieManager.getCookieStore();
+
         super.doStart();
 
         LOG.info("Started {}", this);
@@ -216,17 +221,19 @@ public class HttpClient extends ContainerLifeCycle
     {
         LOG.debug("Stopping {}", this);
 
+        cookieStore.removeAll();
+        cookieStore = null;
+        decoderFactories.clear();
+        handlers.clear();
+
         for (HttpDestination destination : destinations.values())
             destination.close();
-
         destinations.clear();
+
         conversations.clear();
-        handlers.clear();
         requestListeners.clear();
-        cookieStore.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
-        decoderFactories.clear();
 
         super.doStop();
 
@@ -255,6 +262,17 @@ public class HttpClient extends ContainerLifeCycle
     public void setCookieStore(CookieStore cookieStore)
     {
         this.cookieStore = cookieStore;
+    }
+
+    /**
+     * Keep this method package-private because its interface is so ugly
+     * that we really don't want to expose it more than strictly needed.
+     *
+     * @return the cookie manager
+     */
+    CookieManager getCookieManager()
+    {
+        return cookieManager;
     }
 
     /**

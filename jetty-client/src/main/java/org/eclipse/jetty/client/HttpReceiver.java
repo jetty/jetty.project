@@ -19,20 +19,21 @@
 package org.eclipse.jetty.client;
 
 import java.io.EOFException;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
@@ -193,27 +194,40 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             if (exchange != null)
             {
                 exchange.getResponse().getHeaders().add(field);
-                if (field.getHeader()!=null)
-                switch (field.getHeader())
+                HttpHeader fieldHeader = field.getHeader();
+                if (fieldHeader != null)
                 {
-                    case SET_COOKIE:
-                    case SET_COOKIE2:
+                    switch (fieldHeader)
                     {
-                        CookieStore cookieStore = connection.getHttpClient().getCookieStore();
-                        HttpDestination destination = connection.getDestination();
-                        List<HttpCookie> cookies = HttpCookieParser.parseCookies(field.getValue());
-                        for (HttpCookie cookie : cookies)
-                            cookieStore.addCookie(destination, cookie);
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        case SET_COOKIE:
+                        case SET_COOKIE2:
+                        {
+                            storeCookie(exchange.getRequest().getURI(), field);
+                            break;
+                        }
+                        default:
+                        {
+                            break;
+                        }
                     }
                 }
             }
         }
         return false;
+    }
+
+    private void storeCookie(String uri, HttpField field)
+    {
+        try
+        {
+            Map<String, List<String>> header = new HashMap<>(1);
+            header.put(field.getHeader().asString(), Collections.singletonList(field.getValue()));
+            connection.getHttpClient().getCookieManager().put(URI.create(uri), header);
+        }
+        catch (IOException x)
+        {
+            LOG.debug(x);
+        }
     }
 
     @Override

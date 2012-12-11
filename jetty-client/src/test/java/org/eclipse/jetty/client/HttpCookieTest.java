@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -26,9 +28,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -60,11 +60,11 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";
-        Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
+        String uri = scheme + "://" + host + ":" + port + path;
+        Response response = client.GET(uri).get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response.getStatus());
 
-        Destination destination = client.getDestination(scheme, host, port);
-        List<HttpCookie> cookies = client.getCookieStore().findCookies(destination, path);
+        List<HttpCookie> cookies = client.getCookieStore().get(URI.create(uri));
         Assert.assertNotNull(cookies);
         Assert.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
@@ -94,8 +94,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";
-        Destination destination = client.getDestination(scheme, host, port);
-        client.getCookieStore().addCookie(destination, new HttpCookie(name, value, null, path));
+        String uri = scheme + "://" + host + ":" + port;
+        HttpCookie cookie = new HttpCookie(name, value);
+        client.getCookieStore().add(URI.create(uri), cookie);
 
         Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response.getStatus());

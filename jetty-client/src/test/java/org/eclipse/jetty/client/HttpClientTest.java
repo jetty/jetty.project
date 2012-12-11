@@ -20,6 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -46,7 +48,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -86,14 +87,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         Assert.assertNotNull(connection);
 
-        client.getCookieStore().addCookie(destination, new HttpCookie("foo", "bar", null, path));
+        String uri = destination.getScheme() + "://" + destination.getHost() + ":" + destination.getPort();
+        client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
 
         client.stop();
 
         Assert.assertEquals(0, client.getDestinations().size());
         Assert.assertEquals(0, destination.getIdleConnections().size());
         Assert.assertEquals(0, destination.getActiveConnections().size());
-        Assert.assertEquals(0, client.getCookieStore().findCookies(destination, path).size());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 

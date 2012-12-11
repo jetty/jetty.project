@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Collections;
@@ -34,7 +36,6 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -232,7 +233,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.getPath());
+        List<HttpCookie> cookies = client.getCookieStore().get(URI.create(request.getURI()));
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {

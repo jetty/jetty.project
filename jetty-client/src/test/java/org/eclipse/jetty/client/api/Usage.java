@@ -20,6 +20,8 @@ package org.eclipse.jetty.client.api;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -31,7 +33,6 @@ import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BlockingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.junit.Assert;
@@ -181,7 +182,7 @@ public class Usage
         client.start();
 
         // Set a cookie to be sent in requests that match the cookie's domain
-        client.getCookieStore().addCookie(client.getDestination("http", "host", 8080), new HttpCookie("name", "value"));
+        client.getCookieStore().add(URI.create("http://host:8080/path"), new HttpCookie("name", "value"));
 
         // Send a request for the cookie's domain
         Response response = client.newRequest("host", 8080).send().get();
