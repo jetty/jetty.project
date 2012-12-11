@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.StringUtil;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class MappedByteBufferPoolTest
 {
@@ -81,5 +80,26 @@ public class MappedByteBufferPoolTest
         bufferPool.clear();
 
         assertTrue(buffers.isEmpty());
+    }
+    
+    /**
+     * In a scenario where BufferPool is being used, but some edges cases that use ByteBuffer.allocate()
+     * and then later that buffer is released via the BufferPool, that non acquired buffer can contaminate
+     * the buffer pool.
+     */
+    @Test
+    public void testReleaseTiny() throws Exception
+    {
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool();
+
+        // Release a few small non-pool buffers
+        bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("Hello")));
+        bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("There")));
+        
+        // acquire small pool
+        ByteBuffer small = bufferPool.acquire(35, false);
+        assertThat(small.capacity(), greaterThanOrEqualTo(35));
+        small.limit(35);
+        bufferPool.release(small);
     }
 }
