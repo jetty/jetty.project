@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +27,8 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertTrue;
 
 @RunWith(AdvancedRunner.class)
 public class QueuedThreadPoolTest
@@ -75,7 +75,7 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(5);
         tp.setMaxThreads(10);
-        tp.setMaxIdleTimeMs(1000);
+        tp.setIdleTimeout(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
         tp.start();
@@ -174,7 +174,7 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(2);
         tp.setMaxThreads(10);
-        tp.setMaxIdleTimeMs(400);
+        tp.setIdleTimeout(400);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
         tp.start();
