@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -203,7 +204,7 @@ public class HttpClient extends ContainerLifeCycle
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 
-        cookieManager = new CookieManager(cookieStore, CookiePolicy.ACCEPT_ALL);
+        cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();
 
         super.doStart();
@@ -214,6 +215,11 @@ public class HttpClient extends ContainerLifeCycle
     protected SelectorManager newSelectorManager()
     {
         return new ClientSelectorManager(getExecutor(), getScheduler());
+    }
+
+    private CookieManager newCookieManager()
+    {
+        return new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
@@ -261,7 +267,8 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setCookieStore(CookieStore cookieStore)
     {
-        this.cookieStore = cookieStore;
+        this.cookieStore = Objects.requireNonNull(cookieStore);
+        this.cookieManager = newCookieManager();
     }
 
     /**
