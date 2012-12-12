@@ -29,10 +29,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -479,15 +477,8 @@ public class ServletHandler extends ScopedHandler
             }
             else if (th instanceof ServletException)
             {
-                LOG.debug(th);
+                LOG.warn(th);
                 Throwable cause=((ServletException)th).getRootCause();
-                if (cause!=null)
-                    th=cause;
-            }
-            else if (th instanceof RuntimeIOException)
-            {
-                LOG.debug(th);
-                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
                 if (cause!=null)
                     th=cause;
             }
