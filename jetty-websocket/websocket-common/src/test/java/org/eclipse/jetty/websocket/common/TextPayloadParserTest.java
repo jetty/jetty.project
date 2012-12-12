@@ -91,7 +91,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setBufferSize(100000);
         policy.setMaxPayloadSize(100000);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
@@ -126,7 +126,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
@@ -163,7 +163,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
@@ -190,7 +190,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
@@ -216,7 +216,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);

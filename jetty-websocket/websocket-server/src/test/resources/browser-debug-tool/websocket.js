@@ -70,6 +70,7 @@ var wstool = {
         $('info').disabled = !enabled;
         $('time').disabled = !enabled;
         $('hello').disabled = !enabled;
+        $('there').disabled = !enabled;
     },
     
     _onopen : function() {

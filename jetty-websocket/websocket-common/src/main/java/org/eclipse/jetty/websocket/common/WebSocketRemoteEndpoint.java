@@ -66,7 +66,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     {
         try
         {
-            connection.assertOutputOpen();
+            connection.getIOState().assertOutputOpen();
             return outgoing.outgoingFrame(frame);
         }
         catch (IOException e)
@@ -78,7 +78,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        connection.assertOutputOpen();
+        connection.getIOState().assertOutputOpen();
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendBytes({})",BufferUtil.toDetailString(data));

@@ -13,6 +13,7 @@
       <input id="info" class="button" type="submit" name="info" value="info" disabled="disabled"/>
       <input id="time" class="button" type="submit" name="time" value="time" disabled="disabled"/>
       <input id="hello" class="button" type="submit" name="hello" value="hello" disabled="disabled"/>
+      <input id="there" class="button" type="submit" name="there" value="there" disabled="disabled"/>
     </div>
     <script type="text/javascript">
     $("connect").onclick = function(event) { wstool.connect(); return false; }
@@ -20,6 +21,7 @@
     $("info").onclick = function(event) {wstool.write("info:"); return false; }
     $("time").onclick = function(event) {wstool.write("time:"); return false; }
     $("hello").onclick = function(event) {wstool.write("Hello"); return false; }
+    $("there").onclick = function(event) {wstool.write("There"); return false; }
     </script>
   </body>
 </html>

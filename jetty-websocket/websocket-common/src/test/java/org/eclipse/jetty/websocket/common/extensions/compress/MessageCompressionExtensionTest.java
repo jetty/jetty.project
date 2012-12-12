@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.compress.CompressionMethod.Process;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -272,6 +273,17 @@ public class MessageCompressionExtensionTest
         quote.add("a single experiment can prove me wrong.");
         quote.add("-- Albert Einstein");
 
+        // Expected compressed parts
+        List<ByteBuffer> expectedBuffers = new ArrayList<>();
+        CompressionMethod method = new DeflateCompressionMethod();
+        for(String part: quote) {
+            Process process = method.compress();
+            process.begin();
+            process.input(BufferUtil.toBuffer(part,StringUtil.__UTF8_CHARSET));
+            expectedBuffers.add(process.process());
+            process.end();
+        }
+
         // Write quote as separate frames
         for (String section : quote)
         {
@@ -298,13 +310,12 @@ public class MessageCompressionExtensionTest
             Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 
             // Validate Payload
-            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StringUtil.__UTF8_CHARSET);
+            ByteBuffer expected = expectedBuffers.get(i);
             // Decompress payload
             ByteBuffer compressed = actual.getPayload().slice();
-            // ByteBuffer uncompressed = ext.inflate(compressed);
 
-            // Assert.assertThat(prefix + ".payloadLength",uncompressed.remaining(),is(expected.remaining()));
-            // ByteBufferAssert.assertEquals(prefix + ".payload",expected,uncompressed);
+            Assert.assertThat(prefix + ".payloadLength",compressed.remaining(),is(expected.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expected,compressed);
         }
     }
 

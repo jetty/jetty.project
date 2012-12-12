@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +54,9 @@ public class Parser
         PAYLOAD
     }
 
-    private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
+    private static final Logger LOG = Log.getLogger(Parser.class);
+    private final WebSocketPolicy policy;
+    private final ByteBufferPool bufferPool;
 
     // State specific
     private State state = State.START;
@@ -77,12 +80,11 @@ public class Parser
     /** Is there an extension that processes invalid UTF8 text messages (such as compressed content) */
     private boolean isTextFrameValidated = true;
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
     private IncomingFrames incomingFramesHandler;
-    private WebSocketPolicy policy;
 
-    public Parser(WebSocketPolicy wspolicy)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
     {
+        this.bufferPool = bufferPool;
         this.policy = wspolicy;
     }
 
@@ -173,10 +175,6 @@ public class Parser
 
     protected void notifyFrame(final Frame f)
     {
-        if (LOG_FRAMES.isDebugEnabled())
-        {
-            LOG_FRAMES.debug("{} Read Frame: {}",policy.getBehavior(),f);
-        }
         if (LOG.isDebugEnabled())
         {
             LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
@@ -544,7 +542,7 @@ public class Parser
             {
                 getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
-                payload = ByteBuffer.allocate(payloadLength);
+                payload = bufferPool.acquire(payloadLength,false);
                 BufferUtil.clearToFill(payload);
             }
 

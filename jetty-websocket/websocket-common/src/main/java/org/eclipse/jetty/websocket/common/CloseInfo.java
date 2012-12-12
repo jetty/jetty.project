@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -129,7 +128,7 @@ public class CloseInfo
         this.reason = reason;
     }
 
-    public ByteBuffer asByteBuffer()
+    private byte[] asByteBuffer()
     {
         if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
         {
@@ -137,14 +136,23 @@ public class CloseInfo
             return null;
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD);
-        buf.putChar((char)statusCode);
+        int len = 2; // status code
+        byte utf[] = null;
         if (StringUtil.isNotBlank(reason))
         {
-            byte utf[] = StringUtil.getUtf8Bytes(reason);
-            buf.put(utf,0,utf.length);
+            utf = StringUtil.getUtf8Bytes(reason);
+            len += utf.length;
         }
-        BufferUtil.flipToFlush(buf,0);
+
+        byte buf[] = new byte[len];
+        buf[0] = (byte)((statusCode >>> 8) & 0xFF);
+        buf[1] = (byte)((statusCode >>> 0) & 0xFF);
+
+        if (utf != null)
+        {
+            System.arraycopy(utf,0,buf,2,utf.length);
+        }
+
         return buf;
     }
 

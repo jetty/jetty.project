@@ -40,6 +40,7 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.IOState;
 
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
@@ -53,7 +54,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     private final AtomicBoolean inputClosed;
     private final AtomicBoolean outputClosed;
     private final AtomicBoolean suspendToken;
-    private ConnectionState connectionState;
+    private IOState ioState;
     private WebSocketPolicy policy;
     private WebSocketSession session;
     private IncomingFrames incoming;
@@ -66,24 +67,11 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         this.policy = muxer.getPolicy().clonePolicy();
 
         this.suspendToken = new AtomicBoolean(false);
-        this.connectionState = ConnectionState.CONNECTING;
+        this.ioState = new IOState();
+        ioState.setState(ConnectionState.CONNECTING);
 
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
-    }
-
-    @Override
-    public void assertInputOpen() throws IOException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void assertOutputOpen() throws IOException
-    {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -110,13 +98,20 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     @Override
     public void disconnect()
     {
-        this.connectionState = ConnectionState.CLOSED;
+        this.ioState.setState(ConnectionState.CLOSED);
         // TODO: disconnect the virtual end-point?
     }
 
     public long getChannelId()
     {
         return channelId;
+    }
+
+    @Override
+    public IOState getIOState()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
@@ -152,12 +147,6 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     }
 
     @Override
-    public ConnectionState getState()
-    {
-        return this.connectionState;
-    }
-
-    @Override
     public String getSubProtocol()
     {
         return this.subProtocol;
@@ -183,25 +172,13 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
 
     public boolean isActive()
     {
-        return (getState() != ConnectionState.CLOSED);
-    }
-
-    @Override
-    public boolean isInputClosed()
-    {
-        return inputClosed.get();
+        return (ioState.isOpen());
     }
 
     @Override
     public boolean isOpen()
     {
         return isActive() && muxer.isOpen();
-    }
-
-    @Override
-    public boolean isOutputClosed()
-    {
-        return outputClosed.get();
     }
 
     @Override
@@ -212,43 +189,12 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
 
     public void onClose()
     {
-        this.connectionState = ConnectionState.CLOSED;
-    }
-
-    @Override
-    public void onCloseHandshake(boolean incoming, CloseInfo close)
-    {
-        boolean in = inputClosed.get();
-        boolean out = outputClosed.get();
-        if (incoming)
-        {
-            in = true;
-            this.inputClosed.set(true);
-        }
-        else
-        {
-            out = true;
-            this.outputClosed.set(true);
-        }
-
-        LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
-
-        if (in && out)
-        {
-            LOG.debug("Close Handshake satisfied, disconnecting");
-            this.disconnect();
-        }
-
-        if (close.isHarsh())
-        {
-            LOG.debug("Close status code was harsh, disconnecting");
-            this.disconnect();
-        }
+        this.ioState.setState(ConnectionState.CLOSED);
     }
 
     public void onOpen()
     {
-        this.connectionState = ConnectionState.OPEN;
+        this.ioState.setState(ConnectionState.OPEN);
     }
 
     /**

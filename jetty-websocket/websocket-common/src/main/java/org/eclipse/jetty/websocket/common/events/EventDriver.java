@@ -107,21 +107,18 @@ public abstract class EventDriver implements IncomingFrames
                     session.close(close.getStatusCode(),close.getReason());
 
                     // process handshake
-                    session.getConnection().onCloseHandshake(true,close);
+                    session.getConnection().getIOState().onCloseHandshake(true,close);
 
                     return;
                 }
                 case OpCode.PING:
                 {
-                    ByteBuffer pongBuf = ByteBuffer.allocate(frame.getPayloadLength());
-                    if (frame.getPayloadLength() > 0)
+                    byte pongBuf[] = new byte[0];
+                    if (frame.hasPayload())
                     {
-                        // Copy payload
-                        BufferUtil.clearToFill(pongBuf);
-                        BufferUtil.put(frame.getPayload(),pongBuf);
-                        BufferUtil.flipToFlush(pongBuf,0);
+                        pongBuf = BufferUtil.toArray(frame.getPayload());
                     }
-                    session.getRemote().sendPong(pongBuf);
+                    session.getRemote().sendPong(ByteBuffer.wrap(pongBuf));
                     break;
                 }
                 case OpCode.BINARY:

@@ -169,7 +169,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             if (frame.getType().getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo close = new CloseInfo(origPayload,false);
-                onCloseHandshake(false,close);
+                if (ioState.onCloseHandshake(false,close))
+                {
+                    disconnect();
+                }
             }
 
             getBufferPool().release(origPayload);
@@ -228,13 +231,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 // We need to keep the correct ordering of frames, to avoid that another
                 // Data frame for the same stream is written before this one is finished.
                 queue.prepend(this);
-                flush();
             }
             else
             {
                 LOG.debug("Send complete");
                 super.complete();
             }
+            flush();
         }
 
         @Override
@@ -313,9 +316,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private List<ExtensionConfig> extensions;
     private boolean flushing;
     private boolean isFilling;
-    private ConnectionState connectionState;
-    private final AtomicBoolean inputClosed;
-    private final AtomicBoolean outputClosed;
+    private IOState ioState;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -323,32 +324,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
-        this.parser = new Parser(policy);
+        this.parser = new Parser(policy,bufferPool);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.suspendToken = new AtomicBoolean(false);
-        this.connectionState = ConnectionState.CONNECTING;
-
-        this.inputClosed = new AtomicBoolean(false);
-        this.outputClosed = new AtomicBoolean(false);
-    }
-
-    @Override
-    public void assertInputOpen() throws IOException
-    {
-        if (isInputClosed())
-        {
-            throw new IOException("Connection input is closed");
-        }
-    }
-
-    @Override
-    public void assertOutputOpen() throws IOException
-    {
-        if (isOutputClosed())
-        {
-            throw new IOException("Connection output is closed");
-        }
+        this.ioState = new IOState();
+        this.ioState.setState(ConnectionState.CONNECTING);
     }
 
     @Override
@@ -365,7 +346,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public void complete(final Callback callback)
     {
-        if (connectionState != ConnectionState.CLOSED)
+        if (ioState.isOpen())
         {
             invoker.invoke(callback);
         }
@@ -379,7 +360,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public void disconnect(boolean onlyOutput)
     {
-        connectionState = ConnectionState.CLOSED;
+        ioState.setState(ConnectionState.CLOSED);
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -502,6 +483,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return generator;
     }
 
+    @Override
+    public IOState getIOState()
+    {
+        return ioState;
+    }
+
     public Parser getParser()
     {
         return parser;
@@ -531,27 +518,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public ConnectionState getState()
-    {
-        return connectionState;
-    }
-
-    @Override
-    public boolean isInputClosed()
-    {
-        return inputClosed.get();
-    }
-
-    @Override
     public boolean isOpen()
     {
-        return (getState() != ConnectionState.CLOSED) && getEndPoint().isOpen();
-    }
-
-    @Override
-    public boolean isOutputClosed()
-    {
-        return outputClosed.get();
+        return getIOState().isOpen() && getEndPoint().isOpen();
     }
 
     @Override
@@ -564,38 +533,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onClose()
     {
         super.onClose();
-        this.connectionState = ConnectionState.CLOSED;
-    }
-
-    @Override
-    public void onCloseHandshake(boolean incoming, CloseInfo close)
-    {
-        boolean in = inputClosed.get();
-        boolean out = outputClosed.get();
-        if (incoming)
-        {
-            in = true;
-            this.inputClosed.set(true);
-        }
-        else
-        {
-            out = true;
-            this.outputClosed.set(true);
-        }
-
-        LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
-
-        if (in && out)
-        {
-            LOG.debug("Close Handshake satisfied, disconnecting");
-            this.disconnect(false);
-        }
-
-        if (close.isHarsh())
-        {
-            LOG.debug("Close status code was harsh, disconnecting");
-            this.disconnect(false);
-        }
+        this.getIOState().setState(ConnectionState.CLOSED);
     }
 
     @Override
@@ -629,7 +567,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         super.onOpen();
-        this.connectionState = ConnectionState.OPEN;
+        this.ioState.setState(ConnectionState.OPEN);
         LOG.debug("fillInterested");
         fillInterested();
     }

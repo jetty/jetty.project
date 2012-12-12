@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -106,6 +107,7 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         addBean(this.connectionManager);
 
         this.eventDriverFactory = new EventDriverFactory(policy);
+        this.masker = new RandomMasker();
     }
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
@@ -158,16 +160,6 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         return extensionRegistry;
     }
 
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
-    }
-
-    public Scheduler getScheduler()
-    {
-        return scheduler;
-    }
-    
     /**
      * 
      * @return the masker or null if none is set
@@ -177,11 +169,16 @@ public class WebSocketClientFactory extends ContainerLifeCycle
         return masker;
     }
 
-    public void setMasker(Masker masker)
+    public WebSocketPolicy getPolicy()
     {
-        this.masker = masker;
+        return policy;
     }
-    
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
     public List<Extension> initExtensions(List<ExtensionConfig> requested)
     {
         List<Extension> extensions = new ArrayList<Extension>();
@@ -235,5 +232,10 @@ public class WebSocketClientFactory extends ContainerLifeCycle
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
+    }
+
+    public void setMasker(Masker masker)
+    {
+        this.masker = masker;
     }
 }

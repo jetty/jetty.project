@@ -98,7 +98,7 @@ public class BlockheadServer
             this.incomingFrames = new IncomingFramesCapture();
             this.policy = WebSocketPolicy.newServerPolicy();
             this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
-            this.parser = new Parser(policy);
+            this.parser = new Parser(policy,bufferPool);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
             this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);

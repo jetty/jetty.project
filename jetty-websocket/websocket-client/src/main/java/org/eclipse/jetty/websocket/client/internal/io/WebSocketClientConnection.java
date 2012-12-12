@@ -50,6 +50,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.factory = client.getFactory();
         this.connected = false;
         this.masker = client.getMasker();
+        assert (this.masker != null);
     }
 
     public DefaultWebSocketClient getClient()

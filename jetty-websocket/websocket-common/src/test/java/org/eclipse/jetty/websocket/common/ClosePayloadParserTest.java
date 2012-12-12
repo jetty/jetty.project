@@ -18,19 +18,16 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class ClosePayloadParserTest
 {
@@ -53,7 +50,7 @@ public class ClosePayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);

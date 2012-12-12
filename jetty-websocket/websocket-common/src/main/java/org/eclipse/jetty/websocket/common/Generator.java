@@ -232,6 +232,7 @@ public class Generator
         // limit the buffer to the window size.
         int newlimit = Math.min(buffer.position() + windowSize,buffer.limit());
         buffer.limit(newlimit);
+        LOG.debug("Buffer limited: {}",buffer);
 
         if (frame.remaining() == frame.getPayloadLength())
         {

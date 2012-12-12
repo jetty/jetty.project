@@ -226,11 +226,13 @@ public class Fuzzer
             for (WebSocketFrame f : send)
             {
                 setClientMask(f);
+                ByteBuffer rawbytes = generator.generate(f);
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("payload: {}",BufferUtil.toDetailString(f.getPayload()));
+                    LOG.debug("frame: {}",f);
+                    LOG.debug("bytes: {}",BufferUtil.toDetailString(rawbytes));
                 }
-                BufferUtil.put(generator.generate(f),buf);
+                BufferUtil.put(rawbytes,buf);
             }
             BufferUtil.flipToFlush(buf,0);
 

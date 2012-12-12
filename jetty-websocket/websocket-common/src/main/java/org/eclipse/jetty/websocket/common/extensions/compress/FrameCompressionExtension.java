@@ -48,29 +48,21 @@ public class FrameCompressionExtension extends AbstractExtension
         }
 
         ByteBuffer data = frame.getPayload();
-        try
+        method.decompress().input(data);
+        while (!method.decompress().isDone())
         {
-            method.decompress().input(data);
-            while (!method.decompress().isDone())
+            ByteBuffer uncompressed = method.decompress().process();
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
+            if (!method.decompress().isDone())
             {
-                ByteBuffer uncompressed = method.decompress().process();
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
-                if (!method.decompress().isDone())
-                {
-                    out.setFin(false);
-                }
-                out.setRsv1(false); // Unset RSV1 on decompressed frame
-                nextIncomingFrame(out);
+                out.setFin(false);
             }
+            out.setRsv1(false); // Unset RSV1 on decompressed frame
+            nextIncomingFrame(out);
+        }
 
-            // reset on every frame.
-            // method.decompress().end();
-        }
-        finally
-        {
-            // release original buffer (no longer needed)
-            getBufferPool().release(data);
-        }
+        // reset on every frame.
+        // method.decompress().end();
     }
 
     /**
@@ -105,31 +97,24 @@ public class FrameCompressionExtension extends AbstractExtension
         Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
-        try
-        {
-            // deflate data
-            method.compress().input(data);
-            while (!method.compress().isDone())
-            {
-                ByteBuffer buf = method.compress().process();
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
-                out.setRsv1(true);
-                if (!method.compress().isDone())
-                {
-                    out.setFin(false);
-                }
 
-                future = nextOutgoingFrame(out);
+        // deflate data
+        method.compress().input(data);
+        while (!method.compress().isDone())
+        {
+            ByteBuffer buf = method.compress().process();
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
+            out.setRsv1(true);
+            if (!method.compress().isDone())
+            {
+                out.setFin(false);
             }
 
-            // reset on every frame.
-            method.compress().end();
+            future = nextOutgoingFrame(out);
         }
-        finally
-        {
-            // free original data buffer
-            getBufferPool().release(data);
-        }
+
+        // reset on every frame.
+        method.compress().end();
 
         return future;
     }

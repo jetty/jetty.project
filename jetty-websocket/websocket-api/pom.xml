@@ -15,6 +15,10 @@
     </properties>
 
   <dependencies>
+    <!-- NOTE: It is important that this websocket-api module NOT depend on any other jetty modules,
+               for WebAppClassloader isolation reasons
+               - Joakim
+      -->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>

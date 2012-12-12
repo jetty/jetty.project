@@ -73,7 +73,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -147,7 +147,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -205,7 +205,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -275,7 +275,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);

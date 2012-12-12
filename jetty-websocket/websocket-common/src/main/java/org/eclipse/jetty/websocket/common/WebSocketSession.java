@@ -251,7 +251,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public void incomingError(WebSocketException e)
     {
-        if (connection.isInputClosed())
+        if (connection.getIOState().isInputClosed())
         {
             return; // input is closed
         }
@@ -265,7 +265,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public void incomingFrame(Frame frame)
     {
-        if (connection.isInputClosed())
+        if (connection.getIOState().isInputClosed())
         {
             return; // input is closed
         }

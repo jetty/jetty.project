@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -26,25 +25,10 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.IOState;
 
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
-    /**
-     * Perform a quick check that the connection input is open.
-     * 
-     * @throws IOException
-     *             if the connection input is closed
-     */
-    void assertInputOpen() throws IOException;
-
-    /**
-     * Perform a quick check that the connection output is open.
-     * 
-     * @throws IOException
-     *             if the connection output is closed
-     */
-    void assertOutputOpen() throws IOException;
-
     /**
      * Send a websocket Close frame, without a status code or reason.
      * <p>
@@ -72,6 +56,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Terminate the connection (no close frame sent)
      */
     void disconnect();
+
+    /**
+     * Get the IOState of the connection.
+     * 
+     * @return the IOState of the connection.
+     */
+    IOState getIOState();
 
     /**
      * Get the local {@link InetSocketAddress} in use for this connection.
@@ -105,32 +96,11 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     WebSocketSession getSession();
 
     /**
-     * Get the WebSocket connection State.
+     * Test if logical connection is still open
      * 
-     * @return the connection state.
+     *  @return true if connection is open
      */
-    ConnectionState getState();
-
-    /**
-     * Test if input is closed (as a result of receiving a close frame)
-     * 
-     * @return true if input is closed.
-     */
-    boolean isInputClosed();
-
-    /**
-     * Simple test to see if connection is open (and not closed)
-     * 
-     * @return true if connection still open
-     */
-    boolean isOpen();
-
-    /**
-     * Test if output is closed (as a result of sending a close frame)
-     * 
-     * @return true if output is closed.
-     */
-    boolean isOutputClosed();
+    public boolean isOpen();
 
     /**
      * Tests if the connection is actively reading.
@@ -138,16 +108,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return true if connection is actively attempting to read.
      */
     boolean isReading();
-
-    /**
-     * A close handshake frame has been detected
-     * 
-     * @param incoming
-     *            true if part of an incoming frame, false if part of an outgoing frame.
-     * @param close
-     *            the close details
-     */
-    void onCloseHandshake(boolean incoming, CloseInfo close);
 
     /**
      * Set where the connection should send the incoming frames to.

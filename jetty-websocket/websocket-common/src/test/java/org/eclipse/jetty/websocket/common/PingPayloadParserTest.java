@@ -18,18 +18,15 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class PingPayloadParserTest
 {
@@ -43,7 +40,7 @@ public class PingPayloadParserTest
         BufferUtil.flipToFlush(buf,0);
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);

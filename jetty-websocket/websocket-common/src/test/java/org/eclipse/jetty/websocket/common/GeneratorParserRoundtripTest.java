@@ -27,10 +27,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,7 +38,7 @@ public class GeneratorParserRoundtripTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
-        Parser parser = new Parser(policy);
+        Parser parser = new Parser(policy,bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
@@ -78,7 +74,7 @@ public class GeneratorParserRoundtripTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
-        Parser parser = new Parser(policy);
+        Parser parser = new Parser(policy,bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 

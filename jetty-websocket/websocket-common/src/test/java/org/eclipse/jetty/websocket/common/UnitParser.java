@@ -20,18 +20,25 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 public class UnitParser extends Parser
 {
     public UnitParser()
     {
-        super(WebSocketPolicy.newServerPolicy());
+        this(WebSocketPolicy.newServerPolicy());
+    }
+
+    public UnitParser(ByteBufferPool bufferPool, WebSocketPolicy policy)
+    {
+        super(policy, bufferPool);
     }
 
     public UnitParser(WebSocketPolicy policy)
     {
-        super(policy);
+        this(new MappedByteBufferPool(), policy);
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)

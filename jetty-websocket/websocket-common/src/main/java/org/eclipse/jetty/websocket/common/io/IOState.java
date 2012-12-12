@@ -94,6 +94,15 @@ public class IOState
         return outputClosed.get();
     }
 
+    /**
+     * Test for if connection should disconnect or response on a close handshake.
+     * 
+     * @param incoming
+     *            true if incoming close
+     * @param close
+     *            the close details.
+     * @return true if connection should be disconnected now, or false if response to close should be issued.
+     */
     public boolean onCloseHandshake(boolean incoming, CloseInfo close)
     {
         boolean in = inputClosed.get();

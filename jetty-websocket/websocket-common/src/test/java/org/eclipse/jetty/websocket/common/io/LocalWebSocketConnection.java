@@ -31,8 +31,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.junit.rules.TestName;
@@ -60,16 +58,6 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public void assertInputOpen() throws IOException
-    {
-    }
-
-    @Override
-    public void assertOutputOpen() throws IOException
-    {
-    }
-
-    @Override
     public void close()
     {
         open = false;
@@ -90,6 +78,13 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     public IncomingFrames getIncoming()
     {
         return incoming;
+    }
+
+    @Override
+    public IOState getIOState()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
@@ -123,12 +118,6 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public ConnectionState getState()
-    {
-        return null;
-    }
-
-    @Override
     public String getSubProtocol()
     {
         return null;
@@ -147,32 +136,15 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public boolean isInputClosed()
-    {
-        return false;
-    }
-
-    @Override
     public boolean isOpen()
     {
         return open;
     }
 
     @Override
-    public boolean isOutputClosed()
-    {
-        return false;
-    }
-
-    @Override
     public boolean isReading()
     {
         return false;
-    }
-
-    @Override
-    public void onCloseHandshake(boolean incoming, CloseInfo close)
-    {
     }
 
     public void onOpen() {
