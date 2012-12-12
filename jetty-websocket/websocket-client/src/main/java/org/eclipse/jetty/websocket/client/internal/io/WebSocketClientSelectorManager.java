@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -58,6 +57,11 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
+    public void setSslContextFactory(SslContextFactory sslContextFactory)
+    {
+        this.sslContextFactory = sslContextFactory;
+    }
+
     @Override
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
@@ -71,6 +75,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
             if ("wss".equalsIgnoreCase(scheme))
             {
                 // Encrypted "wss://"
+                SslContextFactory sslContextFactory = getSslContextFactory();
                 if (sslContextFactory != null)
                 {
                     SSLEngine engine = newSSLEngine(sslContextFactory,channel);
@@ -127,8 +132,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return connection;
     }
 
-    public void setSslContextFactory(SslContextFactory sslContextFactory)
+    @Override
+    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
-        this.sslContextFactory = sslContextFactory;
+        DefaultWebSocketClient client = (DefaultWebSocketClient)attachment;
+        client.failed(ex);
     }
 }
