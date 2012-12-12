@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -187,7 +186,6 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         for (Fields.Field header : headers)
         {
             String name = header.name();
-            HttpHeader httpHeader = HttpHeader.CACHE.get(name);
 
             // Skip special SPDY headers, unless it's the "host" header
             HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(stream.getSession().getVersion(), name);

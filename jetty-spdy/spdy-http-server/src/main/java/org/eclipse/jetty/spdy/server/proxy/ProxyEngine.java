@@ -74,7 +74,7 @@ public abstract class ProxyEngine
     protected void addRequestProxyHeaders(Stream stream, Fields headers)
     {
         addViaHeader(headers);
-        InetSocketAddress address = (InetSocketAddress)stream.getSession().getAttribute("org.eclipse.jetty.spdy.remoteAddress");
+        InetSocketAddress address = stream.getSession().getRemoteAddress();
         if (address != null)
             headers.add("X-Forwarded-For", address.getHostName());
     }

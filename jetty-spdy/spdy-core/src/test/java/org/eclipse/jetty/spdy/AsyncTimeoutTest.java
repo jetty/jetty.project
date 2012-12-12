@@ -58,7 +58,8 @@ public class AsyncTimeoutTest
         Scheduler scheduler = new TimerScheduler();
         scheduler.start(); // TODO need to use jetty lifecycles better here
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
+                null, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -100,7 +101,8 @@ public class AsyncTimeoutTest
         Scheduler scheduler = new TimerScheduler();
         scheduler.start();
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
+                null, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             protected void write(ByteBuffer buffer, Callback callback)

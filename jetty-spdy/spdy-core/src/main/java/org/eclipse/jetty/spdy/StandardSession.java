@@ -19,6 +19,7 @@
 package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -95,6 +97,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     private final Scheduler scheduler;
     private final short version;
     private final Controller controller;
+    private final EndPoint endPoint;
     private final IdleListener idleListener;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
@@ -108,16 +111,16 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     private Throwable failure;
 
     public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, Scheduler scheduler,
-            Controller controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener,
-            Generator generator, FlowControlStrategy flowControlStrategy)
+                           Controller controller, EndPoint endPoint, IdleListener idleListener, int initialStreamId,
+                           SessionFrameListener listener, Generator generator, FlowControlStrategy flowControlStrategy)
     {
         // TODO this should probably be an aggregate lifecycle
-
         this.version = version;
         this.bufferPool = bufferPool;
         this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.controller = controller;
+        this.endPoint = endPoint;
         this.idleListener = idleListener;
         this.streamIds = new AtomicInteger(initialStreamId);
         this.pingIds = new AtomicInteger(initialStreamId);
@@ -210,7 +213,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public Future<Void> settings(SettingsInfo settingsInfo)
     {
         FutureCallback result = new FutureCallback();
-        settings(settingsInfo,0,TimeUnit.MILLISECONDS,result);
+        settings(settingsInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
@@ -301,6 +304,18 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public Object removeAttribute(String key)
     {
         return attributes.remove(key);
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return endPoint.getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return endPoint.getRemoteAddress();
     }
 
     @Override
@@ -822,7 +837,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback)
     {
-        generateAndEnqueueControlFrame(stream,frame,timeout,unit,callback);
+        generateAndEnqueueControlFrame(stream, frame, timeout, unit, callback);
         flush();
     }
 

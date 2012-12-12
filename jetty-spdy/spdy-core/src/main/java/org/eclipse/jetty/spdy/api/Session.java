@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import java.net.InetSocketAddress;
 import java.util.EventListener;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -77,7 +78,7 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Callback)
+     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Promise)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
@@ -147,7 +148,7 @@ public interface Session
      * <p>Callers may use the returned future to wait for the ping to be sent.</p>
      *
      * @return a future for the metadata sent
-     * @see #ping(long, TimeUnit, Callback)
+     * @see #ping(long, TimeUnit, Promise)
      */
     public Future<PingInfo> ping();
 
@@ -218,6 +219,16 @@ public interface Session
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
+
+    /**
+     * @return the local address of the underlying endpoint
+     */
+    public InetSocketAddress getLocalAddress();
+
+    /**
+     * @return the remote address of the underlying endpoint
+     */
+    public InetSocketAddress getRemoteAddress();
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

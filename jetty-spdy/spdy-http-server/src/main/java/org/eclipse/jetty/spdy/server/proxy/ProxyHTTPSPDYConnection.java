@@ -71,7 +71,6 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
-        this.session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddress()); // TODO: make this available through API
     }
 
     @Override
@@ -180,7 +179,8 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPSession(short version, Connector connector)
         {
-            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null, null, 1, proxyEngineSelector, null, null);
+            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null,
+                    getEndPoint(), null, 1, proxyEngineSelector, null, null);
         }
 
         @Override
