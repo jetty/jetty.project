@@ -92,7 +92,8 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         if (frame instanceof WebSocketFrame)
         {
-            masker.setMask((WebSocketFrame)frame);
+            if (masker != null)
+                masker.setMask((WebSocketFrame)frame);
         }
         return super.outgoingFrame(frame);
     }
