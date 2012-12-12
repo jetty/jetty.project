@@ -55,6 +55,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final HttpClient client;
     private final String scheme;
+    private final String host;
     private final InetSocketAddress address;
     private final Queue<RequestContext> requests;
     private final BlockingQueue<Connection> idleConnections;
@@ -67,6 +68,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     {
         this.client = client;
         this.scheme = scheme;
+        this.host = host;
         this.address = new InetSocketAddress(host, port);
         this.requests = new ArrayBlockingQueue<>(client.getMaxRequestsQueuedPerDestination());
         this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerDestination());
@@ -98,7 +100,9 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public String getHost()
     {
-        return address.getHostString();
+        // InetSocketAddress.getHostString() transforms the host string
+        // in case of IPv6 addresses, so we return the original host string
+        return host;
     }
 
     @Override
