@@ -36,11 +36,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+<<<<<<< HEAD
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
+=======
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+>>>>>>> b1a7779... 393220 remove dead code from ServletHandler and log ServletExceptions in warn instead of debug
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -485,22 +490,12 @@ public class ServletHandler extends ScopedHandler
             }
             else if (th instanceof ServletException)
             {
-                LOG.debug(th);
+                LOG.warn(th);
                 Throwable cause=((ServletException)th).getRootCause();
                 if (cause!=null)
                     th=cause;
             }
-            else if (th instanceof RuntimeIOException)
-            {
-                LOG.debug(th);
-                Throwable cause= th.getCause();
-                if (cause!=null)
-                    th=cause;
-            }
-
             // handle or log exception
-            else if (th instanceof RuntimeIOException)
-                throw (RuntimeIOException)th;
             else if (th instanceof EofException)
                 throw (EofException)th;
 
