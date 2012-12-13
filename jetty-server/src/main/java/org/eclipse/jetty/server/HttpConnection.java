@@ -66,24 +66,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private BlockingCallback _readBlocker = new BlockingCallback();
     private BlockingCallback _writeBlocker = new BlockingCallback();
 
-    // TODO get rid of this
-    private final Runnable _channelRunner = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                setCurrentConnection(HttpConnection.this);
-                _channel.run();
-            }
-            finally
-            {
-                setCurrentConnection(null);
-            }
-
-        }
-    };
 
     public static HttpConnection getCurrentConnection()
     {
@@ -102,10 +84,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
-        // Tell AbstractConnector executeOnFillable==false because we are guaranteeing that onfillable
-        // will never block nor take an excessive amount of CPU.  ie it is OK for the selector thread to
-        // be used.  In this case the thread that calls onfillable will be asked to do some IO and parsing.
-        super(endPoint, connector.getExecutor(),false);
+        // Tell AbstractConnector executeOnFillable==true because we want the same thread that
+        // does the HTTP parsing to handle the request so its cache is hot
+        super(endPoint, connector.getExecutor(),true);
 
         _config = config;
         _connector = connector;
@@ -280,7 +261,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    getExecutor().execute(_channelRunner);
+                    try
+                    {
+                        setCurrentConnection(HttpConnection.this);
+                        _channel.run();
+                    }
+                    finally
+                    {
+                        setCurrentConnection(null);
+                    }
                     return;
                 }
             }

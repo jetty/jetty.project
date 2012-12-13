@@ -103,7 +103,9 @@ public class SslConnection extends AbstractConnection
     
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        super(endPoint, executor);
+        // This connection does not execute calls to onfillable, so they will be called by the selector thread.
+        // onfillable does not block and will only wakeup another thread to do the actual reading and handling.
+        super(endPoint, executor, !EXECUTE_ONFILLABLE);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();

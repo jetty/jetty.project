@@ -318,7 +318,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super(endp,executor);
+        super(endp,executor,EXECUTE_ONFILLABLE); // TODO review if this is best.  Specially with MUX
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);

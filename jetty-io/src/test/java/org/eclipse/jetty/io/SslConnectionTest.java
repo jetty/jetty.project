@@ -246,7 +246,7 @@ public class SslConnectionTest
         len=5;
         while(len>0)
             len-=client.getInputStream().read(buffer);
-        Assert.assertEquals(1, _dispatches.get());
+        Assert.assertEquals(0, _dispatches.get());
 
         client.close();
     }

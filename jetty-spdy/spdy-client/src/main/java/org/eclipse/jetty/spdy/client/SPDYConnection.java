@@ -56,7 +56,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         // always dispatches to a new thread when calling application
         // code, so here we can safely pass false as last parameter,
         // and avoid to dispatch to onFillable().
-        super(endPoint, executor, false);
+        super(endPoint, executor, !EXECUTE_ONFILLABLE);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
