@@ -346,7 +346,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 case NEED_HEADER:
                 {
-                    header = _bufferPool.acquire(_config.getResponseHeaderSize(), false);
+                    if (lastContent && content!=null && BufferUtil.space(content)>_config.getResponseHeaderSize() && content.hasArray() )
+                    {
+                        // use spare space in content buffer for header buffer
+                        int p=content.position();
+                        int l=content.limit();
+                        content.position(l);
+                        content.limit(l+_config.getResponseHeaderSize());
+                        header=content.slice();
+                        header.limit(0);
+                        content.position(p);
+                        content.limit(l);
+                    }
+                    else
+                        header = _bufferPool.acquire(_config.getResponseHeaderSize(), false);
                     continue;
                 }
                 case NEED_CHUNK:
@@ -373,6 +386,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             blockingWrite(header, content);
                         else
                             blockingWrite(header);
+
                     }
                     else if (BufferUtil.hasContent(chunk))
                     {
@@ -395,7 +409,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 case DONE:
                 {
                     if (header!=null)
-                        _bufferPool.release(header);
+                    {
+                        // don't release header in spare content buffer
+                        if (!lastContent || content==null || content.array()!=header.array())
+                            _bufferPool.release(header);
+                    }
                     if (chunk!=null)
                         _bufferPool.release(chunk);
                     break out;
