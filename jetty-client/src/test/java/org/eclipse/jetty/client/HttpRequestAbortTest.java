@@ -94,7 +94,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         final Throwable cause = new Exception();
         final CountDownLatch aborted = new CountDownLatch(1);
-        final CountDownLatch headers = new CountDownLatch(1);
+        final CountDownLatch committed = new CountDownLatch(1);
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
@@ -109,9 +109,9 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                         }
 
                         @Override
-                        public void onHeaders(Request request)
+                        public void onCommit(Request request)
                         {
-                            headers.countDown();
+                            committed.countDown();
                         }
                     })
                     .send().get(5, TimeUnit.SECONDS);
@@ -121,12 +121,51 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             Assert.assertSame(cause, x.getCause());
             Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
-            Assert.assertFalse(headers.await(1, TimeUnit.SECONDS));
+            Assert.assertFalse(committed.await(1, TimeUnit.SECONDS));
+        }
+    }
+
+    @Slow
+    @Test
+    public void testAbortOnHeaders() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final Throwable cause = new Exception();
+        final CountDownLatch aborted = new CountDownLatch(1);
+        final CountDownLatch committed = new CountDownLatch(1);
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .listener(new Request.Listener.Empty()
+                    {
+                        @Override
+                        public void onHeaders(Request request)
+                        {
+                            if (request.abort(cause))
+                                aborted.countDown();
+                        }
+
+                        @Override
+                        public void onCommit(Request request)
+                        {
+                            committed.countDown();
+                        }
+                    })
+                    .send().get(5, TimeUnit.SECONDS);
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertSame(cause, x.getCause());
+            Assert.assertTrue(aborted.await(5, TimeUnit.SECONDS));
+            Assert.assertFalse(committed.await(1, TimeUnit.SECONDS));
         }
     }
 
     @Test
-    public void testAbortOnHeaders() throws Exception
+    public void testAbortOnCommit() throws Exception
     {
         start(new EmptyServerHandler());
 
@@ -140,10 +179,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .onRequestHeaders(new Request.HeadersListener()
+                    .onRequestCommit(new Request.CommitListener()
                     {
                         @Override
-                        public void onHeaders(Request request)
+                        public void onCommit(Request request)
                         {
                             if (request.abort(cause))
                                 aborted.countDown();
@@ -161,7 +200,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testAbortOnHeadersWithContent() throws Exception
+    public void testAbortOnCommitWithContent() throws Exception
     {
         final AtomicReference<IOException> failure = new AtomicReference<>();
         start(new AbstractHandler()
@@ -188,10 +227,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .onRequestHeaders(new Request.HeadersListener()
+                    .onRequestCommit(new Request.CommitListener()
                     {
                         @Override
-                        public void onHeaders(Request request)
+                        public void onCommit(Request request)
                         {
                             request.abort(cause);
                         }

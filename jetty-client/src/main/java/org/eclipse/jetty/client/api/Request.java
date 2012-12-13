@@ -244,6 +244,12 @@ public interface Request
     Request onRequestHeaders(HeadersListener listener);
 
     /**
+     * @param listener a listener for request commit event
+     * @return this request object
+     */
+    Request onRequestCommit(CommitListener listener);
+
+    /**
      * @param listener a listener for request success event
      * @return this request object
      */
@@ -367,9 +373,23 @@ public interface Request
     }
 
     /**
-     * Listener for the request committed event.
+     * Listener for the request headers event.
      */
     public interface HeadersListener extends RequestListener
+    {
+        /**
+         * Callback method invoked when the request headers (and perhaps small content) are ready to be sent.
+         * The request has been converted into bytes, but not yet sent to the server, and further modifications
+         * to the request may have no effect.
+         * @param request the request that is about to be committed
+         */
+        public void onHeaders(Request request);
+    }
+
+    /**
+     * Listener for the request committed event.
+     */
+    public interface CommitListener extends RequestListener
     {
         /**
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
@@ -377,7 +397,7 @@ public interface Request
          * request may have no effect.
          * @param request the request that has been committed
          */
-        public void onHeaders(Request request);
+        public void onCommit(Request request);
     }
 
     /**
@@ -409,7 +429,7 @@ public interface Request
     /**
      * Listener for all request events.
      */
-    public interface Listener extends QueuedListener, BeginListener, HeadersListener, SuccessListener, FailureListener
+    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, SuccessListener, FailureListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -428,6 +448,11 @@ public interface Request
 
             @Override
             public void onHeaders(Request request)
+            {
+            }
+
+            @Override
+            public void onCommit(Request request)
             {
             }
 

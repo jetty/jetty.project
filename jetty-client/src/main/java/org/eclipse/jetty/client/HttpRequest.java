@@ -280,6 +280,13 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onRequestCommit(CommitListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
     public Request onRequestSuccess(SuccessListener listener)
     {
         this.requestListeners.add(listener);

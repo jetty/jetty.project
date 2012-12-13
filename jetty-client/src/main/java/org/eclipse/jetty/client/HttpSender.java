@@ -64,7 +64,7 @@ public class HttpSender
 
     public void send(HttpExchange exchange)
     {
-        if (!updateState(State.IDLE, State.SEND))
+        if (!updateState(State.IDLE, State.BEGIN))
             throw new IllegalStateException();
 
         // Arrange the listeners, so that if there is a request failure the proper listeners are notified
@@ -170,13 +170,35 @@ public class HttpSender
                     }
                     case FLUSH:
                     {
-                        switch (state.get())
+                        out: while (true)
                         {
-                            case SEND:
-                            case COMMIT:
-                                break;
-                            default:
-                                return;
+                            State current = state.get();
+                            switch (current)
+                            {
+                                case BEGIN:
+                                {
+                                    if (!updateState(current, State.SEND))
+                                        continue;
+                                    requestNotifier.notifyHeaders(request);
+                                    break out;
+                                }
+                                case SEND:
+                                case COMMIT:
+                                {
+                                    // State update is performed after the write in commit()
+                                    break out;
+                                }
+                                case FAILURE:
+                                {
+                                    // Failed concurrently, avoid the write since
+                                    // the connection is probably already closed
+                                    return;
+                                }
+                                default:
+                                {
+                                    throw new IllegalStateException();
+                                }
+                            }
                         }
 
                         StatefulExecutorCallback callback = new StatefulExecutorCallback(client.getExecutor())
@@ -327,12 +349,16 @@ public class HttpSender
                     if (!updateState(current, State.COMMIT))
                         continue;
                     LOG.debug("Committed {}", request);
-                    requestNotifier.notifyHeaders(request);
+                    requestNotifier.notifyCommit(request);
                     return true;
                 case COMMIT:
-                    return updateState(current, State.COMMIT);
-                default:
+                    if (!updateState(current, State.COMMIT))
+                        continue;
+                    return true;
+                case FAILURE:
                     return false;
+                default:
+                    throw new IllegalStateException();
             }
         }
     }
@@ -400,7 +426,7 @@ public class HttpSender
         LOG.debug("Failed {} {}", request, failure);
 
         Result result = completion.getReference();
-        boolean notCommitted = current == State.IDLE || current == State.SEND;
+        boolean notCommitted = current == State.IDLE || current == State.BEGIN || current == State.SEND;
         if (result == null && notCommitted && request.getAbortCause() == null)
         {
             result = exchange.responseComplete(failure).getReference();
@@ -422,7 +448,7 @@ public class HttpSender
     public boolean abort(HttpExchange exchange, Throwable cause)
     {
         State current = state.get();
-        boolean abortable = current == State.IDLE || current == State.SEND ||
+        boolean abortable = current == State.IDLE || current == State.BEGIN || current == State.SEND ||
                 current == State.COMMIT && contentIterator.hasNext();
         return abortable && fail(cause);
     }
@@ -445,7 +471,7 @@ public class HttpSender
 
     private enum State
     {
-        IDLE, SEND, COMMIT, FAILURE
+        IDLE, BEGIN, SEND, COMMIT, FAILURE
     }
 
     private static abstract class StatefulExecutorCallback implements Callback, Runnable

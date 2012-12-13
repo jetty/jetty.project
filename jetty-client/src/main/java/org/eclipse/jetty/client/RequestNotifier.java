@@ -96,6 +96,27 @@ public class RequestNotifier
         }
     }
 
+    public void notifyCommit(Request request)
+    {
+        for (Request.CommitListener listener : request.getRequestListeners(Request.CommitListener.class))
+            notifyCommit(listener, request);
+        for (Request.Listener listener : client.getRequestListeners())
+            notifyCommit(listener, request);
+    }
+
+    private void notifyCommit(Request.CommitListener listener, Request request)
+    {
+        try
+        {
+            if (listener != null)
+                listener.onCommit(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
     public void notifySuccess(Request request)
     {
         for (Request.SuccessListener listener : request.getRequestListeners(Request.SuccessListener.class))
