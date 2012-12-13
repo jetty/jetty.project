@@ -49,6 +49,9 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class HttpOutput extends ServletOutputStream
 {
+    private static final boolean OUTPUT_BUFFER_DIRECT=false;
+    private static final boolean CHANNEL_BUFFER_DIRECT=true;
+    private static final boolean STREAM_BUFFER_DIRECT=false;
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
     private boolean _closed;
@@ -165,7 +168,7 @@ public class HttpOutput extends ServletOutputStream
             }
 
             // Allocate an aggregate buffer
-            _aggregate = _channel.getByteBufferPool().acquire(size, false);
+            _aggregate = _channel.getByteBufferPool().acquire(size, OUTPUT_BUFFER_DIRECT);
         }
 
         // Do we have space to aggregate ?
@@ -206,7 +209,7 @@ public class HttpOutput extends ServletOutputStream
             throw new EOFException();
 
         if (_aggregate == null)
-            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), OUTPUT_BUFFER_DIRECT);
         
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
@@ -278,7 +281,7 @@ public class HttpOutput extends ServletOutputStream
         else if (content instanceof ReadableByteChannel)
         {
             ReadableByteChannel channel = (ReadableByteChannel)content;
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), true);
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), CHANNEL_BUFFER_DIRECT);
             try
             {
                 while(channel.isOpen())
@@ -300,7 +303,7 @@ public class HttpOutput extends ServletOutputStream
         else if (content instanceof InputStream)
         {
             InputStream in = (InputStream)content;
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), STREAM_BUFFER_DIRECT);
             byte[] array = buffer.array();
             int offset=buffer.arrayOffset();
             int size=array.length-offset;

@@ -49,6 +49,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
+    private static final boolean REQUEST_BUFFER_DIRECT=false;
+    private static final boolean HEADER_BUFFER_DIRECT=false;
+    private static final boolean CHUNK_BUFFER_DIRECT=false;
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
@@ -226,7 +229,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (!call_channel && BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer == null)
-                        _requestBuffer = _bufferPool.acquire(getInputBufferSize(), false);
+                        _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
 
                     int filled = getEndPoint().fill(_requestBuffer);
                     if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
@@ -359,14 +362,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         content.limit(l);
                     }
                     else
-                        header = _bufferPool.acquire(_config.getResponseHeaderSize(), false);
+                        header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
                     continue;
                 }
                 case NEED_CHUNK:
                 {
                     chunk = _chunk;
                     if (chunk==null)
-                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
                     continue;
                 }
                 case FLUSH:
@@ -586,7 +589,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             int size=getInputBufferSize();
                             if (size<content_length)
                                 size=size*4; // TODO tune this
-                            _requestBuffer=_bufferPool.acquire(size,false);
+                            _requestBuffer=_bufferPool.acquire(size,REQUEST_BUFFER_DIRECT);
                         }
 
                         // read some data
