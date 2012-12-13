@@ -87,65 +87,14 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
-    private static  ThreadLocal<Server> _threadServer= new ThreadLocal<>();
-    private static Server _defaultServer;
-    
-    /* ------------------------------------------------------------ */
-    /** Set the Server instance to be used with {@link #ServerConnector()}
-     * by callers from this thread. After use, the thread server should be
-     * set to null to avoid leaking the server.
-     * @param server The server
-     */
-    public static void setThreadServer(Server server)
-    {
-        _threadServer.set(server);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Set the Server instance to be used with {@link #ServerConnector()}
-     * by calling threads that have not called {@link #setThreadServer(Server)}.
-     * After use, the default server should be set to null to avoid leaking the server.
-     * @param server The server
-     */
-    public static void setDefaultServer(Server server)
-    {
-        _defaultServer=server;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return A server set for this thread by {@link #setThreadServer(Server)} or 
-     * if that is not set, then the server set by {@link #setDefaultServer(Server)}
-     */
-    protected static Server getThreadOrDefaultServer()
-    {
-        Server server=_threadServer.get();
-        if (server==null)
-            server=_defaultServer;
-        if (server==null)
-            throw new IllegalStateException("setDefaultServer or setThreadServer must be called before constructor ServerConnector()");
-        return server;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Construct a ServerConnector using the thread or default server instance.
-     * <p>This constructor can be used by callers that do not have a reference
-     * to a Server instance.  Either {@link #setDefaultServer(Server)} or {@link #setThreadServer(Server)}
-     * must be called prior to the constructor, which is equivalent to 
-     * calling {@link #ServerConnector(Server)} with the server return from
-     * {@link #getThreadOrDefaultServer()}
-     */
-    public ServerConnector()
-    {
-        this(getThreadOrDefaultServer());
-    }
 
     /* ------------------------------------------------------------ */
     /** HTTP Server Connection.
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
      * @param server The {@link Server} this connector will accept connection for. 
      */
-    public ServerConnector(@Name("server") Server server)
+    public ServerConnector(
+        @Name("server") Server server)
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
