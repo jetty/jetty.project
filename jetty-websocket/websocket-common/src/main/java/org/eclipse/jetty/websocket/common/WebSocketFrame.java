@@ -564,7 +564,7 @@ public class WebSocketFrame implements Frame
         {
             if (buf.remaining() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
-                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length. (was " + buf.remaining() + " bytes)");
             }
         }
 

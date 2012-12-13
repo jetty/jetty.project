@@ -49,6 +49,13 @@ import org.junit.Assert;
  */
 public class Fuzzer
 {
+    public static enum CloseState
+    {
+        OPEN,
+        REMOTE_INITIATED,
+        LOCAL_INITIATED
+    }
+
     public static enum SendMode
     {
         BULK,
@@ -56,13 +63,6 @@ public class Fuzzer
         SLOW
     }
 
-    public static enum CloseState
-    {
-        OPEN,
-        REMOTE_INITIATED,
-        LOCAL_INITIATED
-    }
-    
     private static final int KBYTE = 1024;
     private static final int MBYTE = KBYTE * KBYTE;
 
@@ -126,6 +126,7 @@ public class Fuzzer
         if (!client.isConnected())
         {
             client.connect();
+            client.addHeader("X-TestCase: " + testname + "\r\n");
             client.sendStandardRequest();
             client.expectUpgradeResponse();
         }
@@ -189,17 +190,17 @@ public class Fuzzer
         // we expect that the close handshake to have occurred and the server should have closed the connection
         try
         {
-            int val = client.read();  
-            
+            int val = client.read();
+
             Assert.fail("Server has not closed socket");
         }
         catch (SocketException e)
         {
-            
+
         }
-        
+
         IOState ios = client.getIOState();
-        
+
         if (wasClean)
         {
             Assert.assertTrue(ios.wasRemoteCloseInitiated());
@@ -209,7 +210,25 @@ public class Fuzzer
         {
             Assert.assertTrue(ios.wasRemoteCloseInitiated());
         }
-        
+
+    }
+
+    public CloseState getCloseState()
+    {
+        IOState ios = client.getIOState();
+
+        if (ios.wasLocalCloseInitiated())
+        {
+            return CloseState.LOCAL_INITIATED;
+        }
+        else if (ios.wasRemoteCloseInitiated())
+        {
+            return CloseState.REMOTE_INITIATED;
+        }
+        else
+        {
+            return CloseState.OPEN;
+        }
     }
 
     public SendMode getSendMode()
@@ -357,23 +376,5 @@ public class Fuzzer
     public void setSlowSendSegmentSize(int segmentSize)
     {
         this.slowSendSegmentSize = segmentSize;
-    }
-    
-    public CloseState getCloseState()
-    {
-        IOState ios = client.getIOState();
-        
-        if ( ios.wasLocalCloseInitiated() )
-        {
-            return CloseState.LOCAL_INITIATED;
-        }
-        else if ( ios.wasRemoteCloseInitiated() )
-        {
-            return CloseState.REMOTE_INITIATED;
-        }
-        else
-        {
-            return CloseState.OPEN;
-        }
     }
 }

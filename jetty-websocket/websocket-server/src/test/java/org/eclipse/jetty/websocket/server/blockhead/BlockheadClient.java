@@ -107,6 +107,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private int version = 13; // default to RFC-6455
     private String protocols;
     private List<String> extensions = new ArrayList<>();
+    private List<String> headers = new ArrayList<>();
     private byte[] clientmask = new byte[]
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
@@ -116,7 +117,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private ExtensionStack extensionStack;
     private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
-    
+
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
         this(WebSocketPolicy.newClientPolicy(),destWebsocketURI);
@@ -149,6 +150,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         this.extensions.add(xtension);
     }
 
+    public void addHeader(String header)
+    {
+        this.headers.add(header);
+    }
+
     public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException
     {
         return disconnectedLatch.await(timeout,unit);
@@ -173,7 +179,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public void close(int statusCode, String message)
     {
         try
-        {            
+        {
             CloseInfo close = new CloseInfo(statusCode,message);
 
             if (ioState.onCloseHandshake(false,close))
@@ -440,11 +446,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             throw new EOFException("Hit EOF");
         }
-        if (ioState.isInputClosed())
-        {
-            LOG.debug("Input is closed");
-            return 0;
-        }
         int len = 0;
         int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
@@ -552,6 +553,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         req.append("\r\n");
         req.append("Upgrade: websocket\r\n");
         req.append("Connection: Upgrade\r\n");
+        for (String header : headers)
+        {
+            req.append(header);
+        }
         req.append("Sec-WebSocket-Key: ").append(REQUEST_HASH_KEY).append("\r\n");
         req.append("Sec-WebSocket-Origin: ").append(destWebsocketURI.toASCIIString()).append("\r\n");
         if (StringUtil.isNotBlank(protocols))

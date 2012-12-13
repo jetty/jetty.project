@@ -233,12 +233,12 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_5() throws Exception
     {
         byte payload[] = new byte[126]; // intentionally too big
-        Arrays.fill(payload,(byte)0xFE);
+        Arrays.fill(payload,(byte)'5');
 
         List<WebSocketFrame> send = new ArrayList<>();
         // trick websocket frame into making extra large payload for ping
         send.add(WebSocketFrame.binary(payload).setOpCode(OpCode.PING));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.5").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -263,16 +263,17 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_6() throws Exception
     {
+        System.err.println("==================================================================================================");
         byte payload[] = new byte[125];
-        Arrays.fill(payload,(byte)0xFE);
+        Arrays.fill(payload,(byte)'6');
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.ping().setPayload(payload));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(WebSocketFrame.pong().setPayload(payload));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        expect.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
