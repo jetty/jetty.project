@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -61,6 +62,35 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                     public void onBegin(Response response)
                     {
                         response.abort(new Exception());
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        latch.countDown();
+                    }
+                });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAbortOnHeader() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseHeader(new Response.HeaderListener()
+                {
+                    @Override
+                    public boolean onHeader(Response response, HttpField field)
+                    {
+                        response.abort(new Exception());
+                        return true;
                     }
                 })
                 .send(new Response.CompleteListener()

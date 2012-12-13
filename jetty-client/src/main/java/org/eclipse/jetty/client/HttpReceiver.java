@@ -193,21 +193,27 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                exchange.getResponse().getHeaders().add(field);
-                HttpHeader fieldHeader = field.getHeader();
-                if (fieldHeader != null)
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
+                boolean process = responseNotifier.notifyHeader(conversation.getResponseListeners(), response, field);
+                if (process)
                 {
-                    switch (fieldHeader)
+                    response.getHeaders().add(field);
+                    HttpHeader fieldHeader = field.getHeader();
+                    if (fieldHeader != null)
                     {
-                        case SET_COOKIE:
-                        case SET_COOKIE2:
+                        switch (fieldHeader)
                         {
-                            storeCookie(exchange.getRequest().getURI(), field);
-                            break;
-                        }
-                        default:
-                        {
-                            break;
+                            case SET_COOKIE:
+                            case SET_COOKIE2:
+                            {
+                                storeCookie(exchange.getRequest().getURI(), field);
+                                break;
+                            }
+                            default:
+                            {
+                                break;
+                            }
                         }
                     }
                 }

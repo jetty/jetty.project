@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.Schedulable;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -87,6 +88,14 @@ public class TimedResponseListener implements Response.Listener, Schedulable, Ru
     {
         if (delegate instanceof Response.BeginListener)
             ((Response.BeginListener)delegate).onBegin(response);
+    }
+
+    @Override
+    public boolean onHeader(Response response, HttpField field)
+    {
+        if (delegate instanceof Response.HeaderListener)
+            return ((Response.HeaderListener)delegate).onHeader(response, field);
+        return true;
     }
 
     @Override

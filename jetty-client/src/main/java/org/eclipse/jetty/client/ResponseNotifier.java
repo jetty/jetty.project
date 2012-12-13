@@ -19,12 +19,14 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -54,6 +56,28 @@ public class ResponseNotifier
         catch (Exception x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
+    {
+        boolean result = true;
+        for (Response.ResponseListener listener : listeners)
+            if (listener instanceof Response.HeaderListener)
+                result &= notifyHeader((Response.HeaderListener)listener, response, field);
+        return result;
+    }
+
+    private boolean notifyHeader(Response.HeaderListener listener, Response response, HttpField field)
+    {
+        try
+        {
+            return listener.onHeader(response, field);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+            return false;
         }
     }
 
@@ -156,6 +180,12 @@ public class ResponseNotifier
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
         notifyBegin(listeners, response);
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        {
+            HttpField field = iterator.next();
+            if (!notifyHeader(listeners, response, field))
+                iterator.remove();
+        }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
@@ -173,6 +203,12 @@ public class ResponseNotifier
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         notifyBegin(listeners, response);
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        {
+            HttpField field = iterator.next();
+            if (!notifyHeader(listeners, response, field))
+                iterator.remove();
+        }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));

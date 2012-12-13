@@ -301,6 +301,13 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onResponseHeader(Response.HeaderListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
     public Request onResponseHeaders(Response.HeadersListener listener)
     {
         this.responseListeners.add(listener);

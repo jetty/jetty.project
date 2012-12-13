@@ -23,6 +23,7 @@ import java.util.EventListener;
 import java.util.List;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
@@ -97,6 +98,22 @@ public interface Response
          * @param response the response containing the response line data
          */
         public void onBegin(Response response);
+    }
+
+    /**
+     * Listener for a response header event.
+     */
+    public interface HeaderListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked when a response header has been received,
+         * returning whether the header should be processed or not.
+         *
+         * @param response the response containing the response line data and the headers so far
+         * @param field the header received
+         * @return true to process the header, false to skip processing of the header
+         */
+        public boolean onHeader(Response response, HttpField field);
     }
 
     /**
@@ -180,7 +197,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -190,6 +207,12 @@ public interface Response
             @Override
             public void onBegin(Response response)
             {
+            }
+
+            @Override
+            public boolean onHeader(Response response, HttpField field)
+            {
+                return true;
             }
 
             @Override

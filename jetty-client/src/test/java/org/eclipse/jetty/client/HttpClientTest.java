@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -637,5 +638,37 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testHeaderProcessing() throws Exception
+    {
+        final String headerName = "X-Header-Test";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader(headerName, "X");
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseHeader(new Response.HeaderListener()
+                {
+                    @Override
+                    public boolean onHeader(Response response, HttpField field)
+                    {
+                        return !field.getName().equals(headerName);
+                    }
+                })
+                .send()
+                .get(5, TimeUnit.SECONDS);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(headerName));
     }
 }

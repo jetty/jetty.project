@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -36,7 +37,7 @@ import org.eclipse.jetty.util.Fields;
  * various attributes such as the path, the headers, the content, etc.</p>
  * <p>You can create {@link Request} objects via {@link HttpClient#newRequest(String)} and
  * you can send them using either {@link #send()} for a blocking semantic, or
- * {@link #send(Response.Listener)} for an asynchronous semantic.</p>
+ * {@link #send(Response.CompleteListener)} for an asynchronous semantic.</p>
  *
  * @see Response
  */
@@ -261,6 +262,12 @@ public interface Request
     Request onResponseBegin(Response.BeginListener listener);
 
     /**
+     * @param listener a listener for response header event
+     * @return this request object
+     */
+    Request onResponseHeader(Response.HeaderListener listener);
+
+    /**
      * @param listener a listener for response headers event
      * @return this request object
      */
@@ -291,7 +298,7 @@ public interface Request
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
      * For example, this method is not appropriate to download big files from a server; consider using
-     * {@link #send(Response.Listener)} instead, passing your own {@link Response.Listener} or a utility
+     * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
      * <p />
      * The future will return when {@link Response.Listener#onComplete(Result)} is invoked.
