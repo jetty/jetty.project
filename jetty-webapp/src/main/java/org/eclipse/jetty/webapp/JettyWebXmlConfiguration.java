@@ -108,7 +108,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 }
                 finally
                 {
-                    if (context.getServerClasses()==null)
+                    if (old_server_classes != null)
                         context.setServerClasses(old_server_classes);
                 }
             }
