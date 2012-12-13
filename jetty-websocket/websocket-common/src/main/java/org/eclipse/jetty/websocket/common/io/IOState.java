@@ -36,11 +36,18 @@ public class IOState
     private final AtomicBoolean inputClosed;
     private final AtomicBoolean outputClosed;
 
+    private final AtomicBoolean cleanClose;
+    private final AtomicBoolean remoteCloseInitiated;
+    private final AtomicBoolean localCloseInitiated;
+    
     public IOState()
     {
         this.state = ConnectionState.CONNECTING;
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
+        this.remoteCloseInitiated = new AtomicBoolean(false);
+        this.localCloseInitiated = new AtomicBoolean(false);
+        this.cleanClose = new AtomicBoolean(false);
     }
 
     public void assertInputOpen() throws IOException
@@ -111,11 +118,21 @@ public class IOState
         {
             in = true;
             this.inputClosed.set(true);
+            
+            if (!localCloseInitiated.get())
+            {
+                remoteCloseInitiated.set(true);
+            }
         }
         else
         {
             out = true;
             this.outputClosed.set(true);
+            
+            if ( !remoteCloseInitiated.get() )
+            {
+                localCloseInitiated.set(true);
+            }
         }
 
         LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
@@ -123,6 +140,7 @@ public class IOState
         if (in && out)
         {
             LOG.debug("Close Handshake satisfied, disconnecting");
+            cleanClose.set(true);
             return true;
         }
 
@@ -143,5 +161,25 @@ public class IOState
     public void setState(ConnectionState state)
     {
         this.state = state;
+    }
+    
+    public boolean isCloseInitiated()
+    {
+        return remoteCloseInitiated.get() || localCloseInitiated.get();
+    }
+    
+    public boolean wasRemoteCloseInitiated()
+    {
+        return remoteCloseInitiated.get();
+    }
+    
+    public boolean wasLocalCloseInitiated()
+    {
+        return localCloseInitiated.get();
+    }
+    
+    public boolean wasCleanClose()
+    {
+        return cleanClose.get();
     }
 }

@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
@@ -55,6 +56,13 @@ public class Fuzzer
         SLOW
     }
 
+    public static enum CloseState
+    {
+        OPEN,
+        REMOTE_INITIATED,
+        LOCAL_INITIATED
+    }
+    
     private static final int KBYTE = 1024;
     private static final int MBYTE = KBYTE * KBYTE;
 
@@ -178,7 +186,30 @@ public class Fuzzer
 
     public void expectServerClose(boolean wasClean) throws IOException, InterruptedException
     {
-        // DOES NOT WORK -- Assert.assertThat("Should have disconnected",client.awaitDisconnect(2,TimeUnit.SECONDS),is(true));
+        // we expect that the close handshake to have occurred and the server should have closed the connection
+        try
+        {
+            int val = client.read();  
+            
+            Assert.fail("Server has not closed socket");
+        }
+        catch (SocketException e)
+        {
+            
+        }
+        
+        IOState ios = client.getIOState();
+        
+        if (wasClean)
+        {
+            Assert.assertTrue(ios.wasRemoteCloseInitiated());
+            Assert.assertTrue(ios.wasCleanClose());
+        }
+        else
+        {
+            Assert.assertTrue(ios.wasRemoteCloseInitiated());
+        }
+        
     }
 
     public SendMode getSendMode()
@@ -326,5 +357,23 @@ public class Fuzzer
     public void setSlowSendSegmentSize(int segmentSize)
     {
         this.slowSendSegmentSize = segmentSize;
+    }
+    
+    public CloseState getCloseState()
+    {
+        IOState ios = client.getIOState();
+        
+        if ( ios.wasLocalCloseInitiated() )
+        {
+            return CloseState.LOCAL_INITIATED;
+        }
+        else if ( ios.wasRemoteCloseInitiated() )
+        {
+            return CloseState.REMOTE_INITIATED;
+        }
+        else
+        {
+            return CloseState.OPEN;
+        }
     }
 }

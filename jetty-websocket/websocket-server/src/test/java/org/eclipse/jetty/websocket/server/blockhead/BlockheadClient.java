@@ -116,7 +116,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private ExtensionStack extensionStack;
     private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
-
+    
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
         this(WebSocketPolicy.newClientPolicy(),destWebsocketURI);
@@ -173,7 +173,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public void close(int statusCode, String message)
     {
         try
-        {
+        {            
             CloseInfo close = new CloseInfo(statusCode,message);
 
             if (ioState.onCloseHandshake(false,close))
