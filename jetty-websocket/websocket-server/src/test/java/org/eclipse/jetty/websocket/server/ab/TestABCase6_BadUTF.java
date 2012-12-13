@@ -169,7 +169,7 @@ public class TestABCase6_BadUTF extends AbstractABCase
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerClose();
+            fuzzer.expectServerClose(Fuzzer.NOT_CLEAN_CLOSE);
         }
         finally
         {

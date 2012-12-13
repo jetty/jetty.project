@@ -51,6 +51,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerClose(Fuzzer.CLEAN_CLOSE);
         }
         finally
         {
