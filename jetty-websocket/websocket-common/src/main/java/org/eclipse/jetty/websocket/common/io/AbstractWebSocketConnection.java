@@ -169,10 +169,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             if (frame.getType().getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo close = new CloseInfo(origPayload,false);
-                if (ioState.onCloseHandshake(false,close))
-                {
-                    disconnect();
-                }
+                // TODO: change into DisconnectWebSocketCallback
+                onWriteWebSocketClose(close);
             }
 
             getBufferPool().release(origPayload);
@@ -578,6 +576,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         LOG.debug("Read Timeout. disconnecting connection");
         // TODO: notify end user websocket of read timeout?
         return true;
+    }
+
+    public void onWriteWebSocketClose(CloseInfo close)
+    {
+        if (ioState.onCloseHandshake(false,close))
+        {
+            disconnect();
+        }
     }
 
     @Override

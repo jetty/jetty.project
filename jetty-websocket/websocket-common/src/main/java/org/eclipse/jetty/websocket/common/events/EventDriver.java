@@ -103,11 +103,17 @@ public abstract class EventDriver implements IncomingFrames
                     // notify user websocket pojo
                     onClose(close);
 
-                    // respond
-                    session.close(close.getStatusCode(),close.getReason());
-
                     // process handshake
-                    session.getConnection().getIOState().onCloseHandshake(true,close);
+                    if (session.getConnection().getIOState().onCloseHandshake(true,close))
+                    {
+                        // handshake resolved, disconnect.
+                        session.getConnection().disconnect();
+                    }
+                    else
+                    {
+                        // respond
+                        session.close(close.getStatusCode(),close.getReason());
+                    }
 
                     return;
                 }

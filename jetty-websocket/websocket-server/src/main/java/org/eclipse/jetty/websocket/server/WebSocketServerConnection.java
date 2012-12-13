@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection
@@ -69,6 +70,13 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
+    }
+
+    @Override
+    public void onWriteWebSocketClose(CloseInfo close)
+    {
+        // as server, always disconnect if writing close
+        disconnect();
     }
 
     @Override

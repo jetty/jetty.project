@@ -624,6 +624,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public void write(WebSocketFrame frame) throws IOException
     {
+        if (!ioState.isOpen())
+        {
+            return;
+        }
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         if (LOG.isDebugEnabled())
         {

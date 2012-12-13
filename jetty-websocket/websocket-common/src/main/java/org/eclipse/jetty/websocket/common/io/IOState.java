@@ -144,11 +144,9 @@ public class IOState
             return true;
         }
 
-        if (close.isHarsh())
-        {
-            LOG.debug("Close status code was harsh, disconnecting");
-            return true;
-        }
+        /*
+         * if (close.isHarsh()) { LOG.debug("Close status code was harsh, disconnecting"); return true; }
+         */
 
         return false;
     }

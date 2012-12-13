@@ -62,7 +62,7 @@ public class WebSocketInvalidVersionTest
         }
         finally
         {
-            client.close();
+            client.disconnect();
         }
     }
 }
