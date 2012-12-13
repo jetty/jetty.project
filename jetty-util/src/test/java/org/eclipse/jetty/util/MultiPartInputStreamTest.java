@@ -148,10 +148,77 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(baos.toString("US-ASCII"), is("ttt"));  
     }
 
+    public void testNoBody()
+    throws Exception
+    {
+        String body = "";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(body.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing content"));
+        }
+    }
+    
+    public void testWhitespaceBodyWithCRLF()
+    throws Exception
+    {
+        String whitespace = "              \n\n\n\r\n\r\n\r\n\r\n";
+ 
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(whitespace.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing initial"));
+        }
+    }
+    
+    public void testWhitespaceBody()
+    throws Exception
+    {
+        String whitespace = " ";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(whitespace.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing initial"));
+        }
+    }
 
     public void testNonMultiPartRequest()
     throws Exception
     {
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              "Content-type: text/plain",
