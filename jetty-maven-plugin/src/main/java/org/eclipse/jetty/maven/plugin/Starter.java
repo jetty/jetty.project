@@ -120,7 +120,7 @@ public class Starter
     {
         LOG.debug("Starting Jetty Server ...");
 
-        this.server = new JettyServer();
+        this.server = JettyServer.getInstance();
 
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
@@ -131,7 +131,10 @@ public class Starter
         if (connectors == null|| connectors.length == 0)
         {
             //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            connectors = new Connector[] { this.server.createDefaultConnector(System.getProperty(PORT_SYSPROPERTY, null)) };
+            MavenServerConnector httpConnector = new MavenServerConnector();
+            String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
+            httpConnector.setPort(Integer.parseInt(tmp.trim()));
+            connectors = new Connector[] {httpConnector};
             this.server.setConnectors(connectors);
         }
 
@@ -491,9 +494,9 @@ public class Starter
      */
     public static final void main(String[] args)
     {
-       if (args == null)
+        if (args == null)
            System.exit(1);
-
+       
        Starter starter = null;
        try
        {

@@ -85,17 +85,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     protected String[] excludedGoals;
     
 
-    /**
-     * List of connectors to use. If none are configured
-     * then the default is a single SelectChannelConnector at port 8080. You can
-     * override this default port number by using the system property jetty.port
-     * on the command line, eg:  mvn -Djetty.port=9999 jetty:run. Consider using instead
-     * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
-     * 
-     * @parameter 
-     */
-    protected Connector[] connectors;
-    
+  
     
     /**
      * List of other contexts to set up. Consider using instead
@@ -282,11 +272,19 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected List pluginArtifacts;
     
+
+    /**
+     * A ServerConnector to use.
+     * 
+     * @parameter
+     */
+    protected MavenServerConnector httpConnector;
+    
     
     /**
      * A wrapper for the Server object
      */
-    protected JettyServer server;
+    protected JettyServer server = JettyServer.getInstance();
     
     
     /**
@@ -473,28 +471,38 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             getLog().debug("Starting Jetty Server ...");
 
             printSystemProperties();
-            this.server = new JettyServer();
             
             //apply any config from a jetty.xml file first which is able to
             //be overwritten by config in the pom.xml
             applyJettyXml ();      
 
-            // if the user hasn't configured their project's pom to use a
-            // different set of connectors,
-            // use the default
+            // if a <httpConnector> was specified in the pom, use it
+            if (httpConnector != null)
+            {
+                // check that its port was set
+                if (httpConnector.getPort() <= 0)
+                {
+                    //use any jetty.port settings provided
+                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
+                    httpConnector.setPort(Integer.parseInt(tmp.trim()));
+                }  
+                this.server.addConnector(httpConnector);
+            }
+
+            // if the user hasn't configured the connectors in a jetty.xml file so use a default one
             Connector[] connectors = this.server.getConnectors();
             if (connectors == null|| connectors.length == 0)
             {
-                //try using ones configured in pom
-                this.server.setConnectors(this.connectors);
-
-                connectors = this.server.getConnectors();
-                if (connectors == null || connectors.length == 0)
+                //if <httpConnector> not configured in the pom, create one
+                if (httpConnector == null)
                 {
-                    //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-                    this.connectors = new Connector[] { this.server.createDefaultConnector(System.getProperty(PORT_SYSPROPERTY, null)) };
-                    this.server.setConnectors(this.connectors);
+                    httpConnector = new MavenServerConnector();
+                    //use any jetty.port settings provided
+                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
+                    httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }
+                
+                this.server.setConnectors(new Connector[] {httpConnector});
             }
 
             //set up a RequestLog if one is provided
@@ -565,12 +573,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     public void configureWebApplication () throws Exception
     {
-        //As of jetty-7, you must use a <webAppConfig> element
+        //As of jetty-7, you must use a <webApp> element
         if (webApp == null)
             webApp = new JettyWebAppContext();
         
         //Apply any context xml file to set up the webapp
-        //CAUTION: if you've defined a <webAppConfig> element then the
+        //CAUTION: if you've defined a <webApp> element then the
         //context xml file can OVERRIDE those settings
         if (contextXml != null)
         {
