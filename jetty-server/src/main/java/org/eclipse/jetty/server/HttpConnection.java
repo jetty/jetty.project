@@ -411,7 +411,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (header!=null)
                     {
                         // don't release header in spare content buffer
-                        if (!lastContent || content==null || content.array()!=header.array())
+                        if (!lastContent || content==null || !content.hasArray() || !header.hasArray() ||  content.array()!=header.array())
                             _bufferPool.release(header);
                     }
                     if (chunk!=null)
