@@ -478,6 +478,76 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
     }
     
+    
+    @Test
+    public void testNoBody()
+    throws Exception
+    {
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        assertTrue(response.getReason().startsWith("Missing content"));
+    }
+
+    @Test
+    public void testWhitespaceBodyWithCRLF()
+    throws Exception
+    {
+        String whitespace = "              \n\n\n\r\n\r\n\r\n\r\n";
+
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(whitespace);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        assertTrue(response.getReason().startsWith("Missing initial"));
+    }
+    
+  
+    @Test
+    public void testWhitespaceBody()
+    throws Exception
+    {
+        String whitespace = " ";
+
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(whitespace);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        assertTrue(response.getReason().startsWith("Missing initial"));
+    }
+
+
+    
 
     /*
      * see the testParameterMap test

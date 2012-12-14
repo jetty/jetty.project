@@ -469,7 +469,10 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
                     {
                         if (_uri.getScheme()!=null && _uri.getHost()!=null)
+                        {
                             info="/";
+                            _request.setRequestURI("");
+                        }
                         else
                             throw new HttpException(400);
                     }

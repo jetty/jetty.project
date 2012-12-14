@@ -67,8 +67,4 @@ public class HelloWorld extends HttpServlet
             getServletContext().log("exception",e);
         }
     }
-
-    
- 
-    
 }
