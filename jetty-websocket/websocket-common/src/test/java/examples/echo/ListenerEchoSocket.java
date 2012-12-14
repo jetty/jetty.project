@@ -18,15 +18,12 @@
 
 package examples.echo;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WriteResult;
 
 /**
  * Example EchoSocket using Listener.
@@ -68,14 +65,6 @@ public class ListenerEchoSocket implements WebSocketListener
             return;
         }
 
-        try
-        {
-            @SuppressWarnings("unused")
-            Future<WriteResult> future = outbound.write(message);
-        }
-        catch (IOException e)
-        {
-            LOG.log(Level.WARNING,"unable to echo message: " + message,e);
-        }
+        outbound.write(message);
     }
 }

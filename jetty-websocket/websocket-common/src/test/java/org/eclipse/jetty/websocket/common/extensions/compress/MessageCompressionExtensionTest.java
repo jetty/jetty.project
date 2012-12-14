@@ -288,7 +288,7 @@ public class MessageCompressionExtensionTest
         for (String section : quote)
         {
             Frame frame = WebSocketFrame.text(section);
-            ext.outgoingFrame(frame);
+            ext.outgoingFrame(frame,null);
         }
 
         int len = quote.size();
@@ -340,7 +340,7 @@ public class MessageCompressionExtensionTest
         String payload = "Are you there?";
         Frame ping = WebSocketFrame.ping().setPayload(payload);
 
-        ext.outgoingFrame(ping);
+        ext.outgoingFrame(ping,null);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);

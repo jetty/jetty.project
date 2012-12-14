@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.extensions.identity;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
-
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
@@ -54,10 +51,10 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         // pass through
-        return nextOutgoingFrame(frame);
+        nextOutgoingFrame(frame,callback);
     }
 
     @Override

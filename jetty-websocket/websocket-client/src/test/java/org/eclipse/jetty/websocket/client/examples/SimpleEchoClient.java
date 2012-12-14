@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -70,7 +69,7 @@ public class SimpleEchoClient
             this.conn = conn;
             try
             {
-                Future<WriteResult> fut;
+                Future<Void> fut;
                 fut = conn.write("Hello");
                 fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
 

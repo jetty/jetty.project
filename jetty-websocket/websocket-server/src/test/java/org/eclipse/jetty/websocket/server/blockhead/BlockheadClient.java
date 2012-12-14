@@ -36,7 +36,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,7 +54,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -70,7 +69,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.io.IOState;
-import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
@@ -415,24 +413,38 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         ByteBuffer buf = generator.generate(frame);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
         }
-        BufferUtil.writeTo(buf,out);
-        out.flush();
-
-        bufferPool.release(buf);
+        try
+        {
+            BufferUtil.writeTo(buf,out);
+            out.flush();
+            if (callback != null)
+            {
+                callback.writeSuccess();
+            }
+        }
+        catch (IOException e)
+        {
+            if (callback != null)
+            {
+                callback.writeFailed(e);
+            }
+        }
+        finally
+        {
+            bufferPool.release(buf);
+        }
 
         if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             disconnect();
         }
-
-        return FinishedFuture.INSTANCE;
     }
 
     public int read() throws IOException
@@ -643,7 +655,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             frame.setMask(clientmask);
         }
-        extensionStack.outgoingFrame(frame);
+        extensionStack.outgoingFrame(frame,null);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

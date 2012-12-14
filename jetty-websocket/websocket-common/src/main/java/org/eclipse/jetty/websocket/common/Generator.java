@@ -374,6 +374,11 @@ public class Generator
         return buffer;
     }
 
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
     public boolean isRsv1InUse()
     {
         return rsv1InUse;

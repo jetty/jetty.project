@@ -19,14 +19,40 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 
-public class WriteResultFuture extends FuturePromise<WriteResult> implements Callback
+/**
+ * Wraps the exposed {@link WriteCallback} API with a Jetty {@link Callback}.
+ * <p>
+ * We don't expose the jetty {@link Callback} object to the webapp, as that makes things complicated for the WebAppContext's Classloader.
+ */
+public class WriteCallbackWrapper implements Callback
 {
+    public static Callback wrap(WriteCallback callback)
+    {
+        if (callback == null)
+        {
+            return null;
+        }
+        return new WriteCallbackWrapper(callback);
+    }
+
+    private final WriteCallback callback;
+
+    public WriteCallbackWrapper(WriteCallback callback)
+    {
+        this.callback = callback;
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        callback.writeFailed(x);
+    }
+
     @Override
     public void succeeded()
     {
-        succeeded(new WriteResult());
+        callback.writeSuccess();
     }
 }

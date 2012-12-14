@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
@@ -152,9 +152,8 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        return null;
     }
 
     @Override
@@ -196,19 +195,19 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<Void> write(byte[] buf, int offset, int len)
     {
         return null;
     }
 
     @Override
-    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
+    public Future<Void> write(ByteBuffer buffer)
     {
         return null;
     }
 
     @Override
-    public Future<WriteResult> write(String message) throws IOException
+    public Future<Void> write(String message)
     {
         return null;
     }

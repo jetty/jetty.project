@@ -19,11 +19,9 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -86,15 +84,14 @@ public class FrameCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
             // skip, cannot compress control frames.
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
-
-        Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
 
@@ -108,15 +105,16 @@ public class FrameCompressionExtension extends AbstractExtension
             if (!method.compress().isDone())
             {
                 out.setFin(false);
+                nextOutgoingFrame(frame,null); // no callback for start/end frames
             }
-
-            future = nextOutgoingFrame(out);
+            else
+            {
+                nextOutgoingFrame(out,callback); // pass thru callback
+            }
         }
 
         // reset on every frame.
         method.compress().end();
-
-        return future;
     }
 
     @Override

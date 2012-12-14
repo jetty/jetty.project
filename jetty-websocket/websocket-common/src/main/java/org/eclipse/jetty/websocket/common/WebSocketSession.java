@@ -44,7 +44,6 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -394,19 +393,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<Void> write(byte[] buf, int offset, int len)
     {
         return remote.sendBytesByFuture(ByteBuffer.wrap(buf,offset,len));
     }
 
     @Override
-    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
+    public Future<Void> write(ByteBuffer buffer)
     {
         return remote.sendBytesByFuture(buffer);
     }
 
     @Override
-    public Future<WriteResult> write(String message) throws IOException
+    public Future<Void> write(String message)
     {
         return remote.sendStringByFuture(message);
     }

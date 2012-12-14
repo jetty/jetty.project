@@ -20,12 +20,11 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -56,7 +55,7 @@ public class MuxGenerator
         this.bufferPool = bufferPool;
     }
 
-    public Future<WriteResult> generate(long channelId, Frame frame) throws IOException
+    public void generate(long channelId, Frame frame, WriteCallback callback)
     {
         ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
         BufferUtil.flipToFill(muxPayload);
@@ -81,10 +80,10 @@ public class MuxGenerator
         bufferPool.release(frame.getPayload());
 
         // send muxed frame down to the physical connection.
-        return outgoing.outgoingFrame(muxFrame);
+        outgoing.outgoingFrame(muxFrame,callback);
     }
 
-    public void generate(MuxControlBlock... blocks) throws IOException
+    public void generate(WriteCallback callback,MuxControlBlock... blocks) throws IOException
     {
         if ((blocks == null) || (blocks.length <= 0))
         {
@@ -167,7 +166,7 @@ public class MuxGenerator
         BufferUtil.flipToFlush(payload,0);
         WebSocketFrame frame = WebSocketFrame.binary();
         frame.setPayload(payload);
-        outgoing.outgoingFrame(frame);
+        outgoing.outgoingFrame(frame,callback);
     }
 
     public OutgoingFrames getOutgoing()

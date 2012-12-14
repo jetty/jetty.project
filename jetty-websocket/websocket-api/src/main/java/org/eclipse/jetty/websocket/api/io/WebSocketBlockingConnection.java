@@ -24,7 +24,6 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
 
 /**
  * For working with the {@link WebSocketConnection} in a blocking technique.
@@ -49,20 +48,16 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<WriteResult> blocker = conn.write(data,offset,length);
-            WriteResult result = blocker.get(); // block till finished
-            if (result.getException() != null)
-            {
-                throw new WebSocketException(result.getException());
-            }
+            Future<Void> blocker = conn.write(data,offset,length);
+            blocker.get(); // block till finished
         }
         catch (InterruptedException e)
         {
-            throw new IOException("Blocking write failed",e);
+            throw new WebSocketException("Blocking write failed",e);
         }
         catch (ExecutionException e)
         {
-            throw new WebSocketException(e.getCause());
+            throw new IOException(e.getCause());
         }
     }
 
@@ -75,20 +70,16 @@ public class WebSocketBlockingConnection
     {
         try
         {
-            Future<WriteResult> blocker = conn.write(message);
-            WriteResult result = blocker.get(); // block till finished
-            if (result.getException() != null)
-            {
-                throw new WebSocketException(result.getException());
-            }
+            Future<Void> blocker = conn.write(message);
+            blocker.get(); // block till finished
         }
         catch (InterruptedException e)
         {
-            throw new IOException("Blocking write failed",e);
+            throw new WebSocketException("Blocking write failed",e);
         }
         catch (ExecutionException e)
         {
-            throw new WebSocketException(e.getCause());
+            throw new IOException(e.getCause());
         }
     }
 }

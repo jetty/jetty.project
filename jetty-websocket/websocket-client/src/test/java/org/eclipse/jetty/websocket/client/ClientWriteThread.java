@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WriteResult;
 
 public class ClientWriteThread extends Thread
 {
@@ -67,7 +65,7 @@ public class ClientWriteThread extends Thread
         {
             LOG.debug("Writing {} messages to connection {}",messageCount);
             LOG.debug("Artificial Slowness {} ms",slowness);
-            Future<WriteResult> lastMessage = null;
+            Future<Void> lastMessage = null;
             while (m.get() < messageCount)
             {
                 lastMessage = conn.write(message + "/" + m.get() + "/");
@@ -82,7 +80,7 @@ public class ClientWriteThread extends Thread
             // block on write of last message
             lastMessage.get(2,TimeUnit.MINUTES); // block on write
         }
-        catch (InterruptedException | IOException | ExecutionException | TimeoutException e)
+        catch (InterruptedException | ExecutionException | TimeoutException e)
         {
             LOG.warn(e);
         }

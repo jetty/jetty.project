@@ -68,18 +68,11 @@ public class LoadTest
         @OnWebSocketMessage
         public void onWebSocketText(String message)
         {
-            try
+            conn.write(message);
+            long iter = count.incrementAndGet();
+            if ((iter % 100) == 0)
             {
-                conn.write(message);
-                long iter = count.incrementAndGet();
-                if ((iter % 100) == 0)
-                {
-                    LOG.info("Echo'd back {} msgs",iter);
-                }
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
+                LOG.info("Echo'd back {} msgs",iter);
             }
         }
     }

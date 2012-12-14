@@ -85,6 +85,8 @@ public class FrameQueue extends LinkedList<FrameBytes>
                 bytes.failed(failure);
                 return;
             }
+
+            // TODO: make sure that we don't go in front of started but not yet finished frames.
             addFirst(bytes);
         }
     }

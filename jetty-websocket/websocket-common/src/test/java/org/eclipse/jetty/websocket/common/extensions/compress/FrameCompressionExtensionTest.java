@@ -110,7 +110,7 @@ public class FrameCompressionExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = WebSocketFrame.text(text);
-        ext.outgoingFrame(frame);
+        ext.outgoingFrame(frame,null);
 
         capture.assertBytes(0,expectedHex);
     }
@@ -228,8 +228,8 @@ public class FrameCompressionExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(WebSocketFrame.text("Hello"));
-        ext.outgoingFrame(WebSocketFrame.text("There"));
+        ext.outgoingFrame(WebSocketFrame.text("Hello"),null);
+        ext.outgoingFrame(WebSocketFrame.text("There"),null);
 
         capture.assertBytes(0,"c107f248cdc9c90700");
         capture.assertBytes(1,"c1070ac9482d4a0500");

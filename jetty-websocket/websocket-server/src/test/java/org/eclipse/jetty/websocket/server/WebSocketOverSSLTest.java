@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -151,16 +150,9 @@ public class WebSocketOverSSLTest
             @Override
             public void onWebSocketText(String message)
             {
-                try
-                {
-                    Assert.assertEquals(message,message);
-                    connection.write(message);
-                    serverLatch.countDown();
-                }
-                catch (IOException x)
-                {
-                    x.printStackTrace();
-                }
+                Assert.assertEquals(message,message);
+                connection.write(message);
+                serverLatch.countDown();
             }
         });
         final CountDownLatch clientLatch = new CountDownLatch(1);

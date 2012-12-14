@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -39,15 +38,7 @@ public class EchoBroadcastSocket
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            try
-            {
-                sock.conn.write(buf,offset,len);
-            }
-            catch (IOException e)
-            {
-                BROADCAST.remove(sock);
-                e.printStackTrace();
-            }
+            sock.conn.write(buf,offset,len);
         }
     }
 
@@ -69,15 +60,7 @@ public class EchoBroadcastSocket
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            try
-            {
-                sock.conn.write(text);
-            }
-            catch (IOException e)
-            {
-                BROADCAST.remove(sock);
-                e.printStackTrace();
-            }
+            sock.conn.write(text);
         }
     }
 }

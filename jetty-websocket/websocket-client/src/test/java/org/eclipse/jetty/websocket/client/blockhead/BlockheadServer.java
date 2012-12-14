@@ -34,7 +34,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +48,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -62,8 +61,6 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.io.WriteResultFailedFuture;
-import org.eclipse.jetty.websocket.common.io.WriteResultFinishedFuture;
 import org.junit.Assert;
 
 /**
@@ -211,7 +208,7 @@ public class BlockheadServer
         }
 
         @Override
-        public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+        public void outgoingFrame(Frame frame, WriteCallback callback)
         {
             ByteBuffer buf = generator.generate(frame);
             if (LOG.isDebugEnabled())
@@ -222,19 +219,23 @@ public class BlockheadServer
             try
             {
                 BufferUtil.writeTo(buf,out);
-                LOG.debug("flushing output");
                 out.flush();
-                LOG.debug("output flush complete");
+                if (callback != null)
+                {
+                    callback.writeSuccess();
+                }
 
                 if (frame.getType().getOpCode() == OpCode.CLOSE)
                 {
                     disconnect();
                 }
-                return WriteResultFinishedFuture.INSTANCE;
             }
             catch (Throwable t)
             {
-                return new WriteResultFailedFuture(t);
+                if (callback != null)
+                {
+                    callback.writeFailed(t);
+                }
             }
         }
 
@@ -430,7 +431,7 @@ public class BlockheadServer
         public void write(Frame frame) throws IOException
         {
             LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.outgoingFrame(frame);
+            outgoing.outgoingFrame(frame,null);
         }
 
         public void write(int b) throws IOException

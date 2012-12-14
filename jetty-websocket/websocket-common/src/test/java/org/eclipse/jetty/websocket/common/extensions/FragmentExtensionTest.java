@@ -156,7 +156,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = WebSocketFrame.text(section);
-            ext.outgoingFrame(frame);
+            ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
@@ -225,7 +225,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = WebSocketFrame.text(section);
-            ext.outgoingFrame(frame);
+            ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
@@ -282,7 +282,7 @@ public class FragmentExtensionTest
         String payload = "Are you there?";
         Frame ping = WebSocketFrame.ping().setPayload(payload);
 
-        ext.outgoingFrame(ping);
+        ext.outgoingFrame(ping,null);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);

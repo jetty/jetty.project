@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -52,14 +50,7 @@ public class ABSocket
         LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
 
         // echo the message back.
-        try
-        {
-            this.conn.write(buf,offset,len);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
+        this.conn.write(buf,offset,len);
     }
 
     @OnWebSocketConnect
@@ -84,13 +75,6 @@ public class ABSocket
         }
 
         // echo the message back.
-        try
-        {
-            this.conn.write(message);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
+        this.conn.write(message);
     }
 }

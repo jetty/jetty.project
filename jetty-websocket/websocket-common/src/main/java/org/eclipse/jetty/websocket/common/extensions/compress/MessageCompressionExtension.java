@@ -19,13 +19,11 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -94,15 +92,14 @@ public class MessageCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
             // skip, cannot compress control frames.
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
-
-        Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
         // deflate data
@@ -115,11 +112,13 @@ public class MessageCompressionExtension extends AbstractExtension
             if (!method.compress().isDone())
             {
                 out.setFin(false);
-                future = nextOutgoingFrame(out);
+                // no callback for start/middle frames
+                nextOutgoingFrame(out,null);
             }
             else
             {
-                future = nextOutgoingFrame(out);
+                // pass through callback to last frame
+                nextOutgoingFrame(out,callback);
             }
         }
 
@@ -128,8 +127,6 @@ public class MessageCompressionExtension extends AbstractExtension
         {
             method.compress().end();
         }
-
-        return future;
     }
 
     @Override

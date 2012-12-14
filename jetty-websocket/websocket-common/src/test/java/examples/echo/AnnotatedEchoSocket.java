@@ -18,8 +18,6 @@
 
 package examples.echo;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -37,13 +35,6 @@ public class AnnotatedEchoSocket
         {
             return;
         }
-        try
-        {
-            conn.write(message);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        conn.write(message);
     }
 }

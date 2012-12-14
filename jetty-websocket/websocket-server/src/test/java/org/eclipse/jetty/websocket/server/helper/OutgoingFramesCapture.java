@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.server.helper;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.util.LinkedList;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -93,10 +91,13 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);
-        return FinishedFuture.INSTANCE;
+        if (callback != null)
+        {
+            callback.writeSuccess();
+        }
     }
 }

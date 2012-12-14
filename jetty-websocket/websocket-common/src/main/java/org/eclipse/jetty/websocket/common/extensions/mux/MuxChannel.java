@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
 /**
@@ -84,15 +86,8 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     public void close(int statusCode, String reason)
     {
         CloseInfo close = new CloseInfo(statusCode,reason);
-        try
-        {
-            outgoingFrame(close.asFrame());
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Unable to issue Close",e);
-            disconnect();
-        }
+        // TODO: disconnect callback?
+        outgoingFrame(close.asFrame(),null);
     }
 
     @Override
@@ -198,12 +193,25 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     }
 
     /**
+     * Internal
+     * 
+     * @param frame the frame to write
+     * @return the future for the network write of the frame
+     */
+    private Future<Void> outgoingAsyncFrame(WebSocketFrame frame)
+    {
+        FutureWriteCallback future = new FutureWriteCallback();
+        outgoingFrame(frame,future);
+        return future;
+    }
+
+    /**
      * Frames destined for the Muxer
      */
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        return muxer.output(channelId,frame);
+        muxer.output(channelId,frame,callback);
     }
 
     /**
@@ -212,7 +220,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     @Override
     public void ping(ByteBuffer buf) throws IOException
     {
-        outgoingFrame(WebSocketFrame.ping().setPayload(buf));
+        outgoingFrame(WebSocketFrame.ping().setPayload(buf),null);
     }
 
     @Override
@@ -254,26 +262,32 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
+    public Future<Void> write(byte[] buf, int offset, int len)
     {
-        return outgoingFrame(WebSocketFrame.binary().setPayload(buf,offset,len));
+        ByteBuffer bb = ByteBuffer.wrap(buf,offset,len);
+        return write(bb);
     }
 
     /**
      * Generate a binary message, destined for Muxer
      */
     @Override
-    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
+    public Future<Void> write(ByteBuffer buffer)
     {
-        return outgoingFrame(WebSocketFrame.binary().setPayload(buffer));
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write with {}",BufferUtil.toDetailString(buffer));
+        }
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
+        return outgoingAsyncFrame(frame);
     }
 
     /**
      * Generate a text message, destined for Muxer
      */
     @Override
-    public Future<WriteResult> write(String message) throws IOException
+    public Future<Void> write(String message)
     {
-        return outgoingFrame(WebSocketFrame.text(message));
+        return outgoingAsyncFrame(WebSocketFrame.text(message));
     }
 }

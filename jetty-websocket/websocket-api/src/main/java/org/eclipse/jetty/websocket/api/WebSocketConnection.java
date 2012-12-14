@@ -116,15 +116,15 @@ public interface WebSocketConnection
     /**
      * Send an async binary message.
      */
-    Future<WriteResult> write(byte buf[], int offset, int len) throws IOException;
+    Future<Void> write(byte buf[], int offset, int len);
 
     /**
      * Send an async binary message.
      */
-    Future<WriteResult> write(ByteBuffer buffer) throws IOException;
+    Future<Void> write(ByteBuffer buffer);
 
     /**
      * Send an async text messages.
      */
-    Future<WriteResult> write(String message) throws IOException;
+    Future<Void> write(String message);
 }

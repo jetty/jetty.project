@@ -16,26 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.annotations;
-
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+package org.eclipse.jetty.websocket.api;
 
 /**
- * Example of a stateless websocket implementation.
- * <p>
- * Useful for websockets that only reply to incoming requests.
- * <p>
- * Note: that for this style of websocket to be viable on the server side be sure that you only create 1 instance of this socket, as more instances would be
- * wasteful of resources and memory.
+ * Callback for Write events.
  */
-@WebSocket
-public class MyStatelessEchoSocket
+public interface WriteCallback
 {
-    @OnWebSocketMessage
-    public void onText(WebSocketConnection conn, String text)
-    {
-        conn.write(text);
-    }
+    /*
+     * NOTE: We don't expose org.eclipse.jetty.util.Callback here as that would complicate matters with the WebAppContext's classloader isolation.
+     */
+
+    /**
+     * <p>
+     * Callback invoked when the write fails.
+     * </p>
+     * 
+     * @param x
+     *            the reason for the write failure
+     */
+    public void writeFailed(Throwable x);
+
+    /**
+     * <p>
+     * Callback invoked when the write completes.
+     * </p>
+     * 
+     * @see #writeFailed(Throwable)
+     */
+    public abstract void writeSuccess();
 }

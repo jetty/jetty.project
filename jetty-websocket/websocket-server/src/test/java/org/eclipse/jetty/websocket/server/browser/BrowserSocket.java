@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -127,14 +126,7 @@ public class BrowserSocket
             return;
         }
 
-        try
-        {
-            connection.write(message);
-        }
-        catch (IOException e)
-        {
-            LOG.info(e);
-        }
+        connection.write(message);
     }
 
     private void writeMessage(String format, Object... args)

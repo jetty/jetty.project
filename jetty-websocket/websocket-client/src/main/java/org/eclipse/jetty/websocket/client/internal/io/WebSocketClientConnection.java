@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.websocket.client.internal.io;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
  */
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketClientConnection.class);
     private final WebSocketClientFactory factory;
     private final DefaultWebSocketClient client;
     private final Masker masker;
@@ -86,17 +88,29 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connected = true;
         }
         super.onOpen();
-    };
+    }
 
+    /**
+     * Overrride to set masker
+     */
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame instanceof WebSocketFrame)
         {
-            if (masker != null)
-                masker.setMask((WebSocketFrame)frame);
+            if (masker == null)
+            {
+                ProtocolException ex = new ProtocolException("Must set a Masker");
+                LOG.warn(ex);
+                if (callback != null)
+                {
+                    callback.writeFailed(ex);
+                }
+                return;
+            }
+            masker.setMask((WebSocketFrame)frame);
         }
-        return super.outgoingFrame(frame);
+        super.outgoingFrame(frame,callback);
     }
 
     @Override

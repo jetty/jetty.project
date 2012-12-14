@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -37,14 +35,7 @@ public class BigEchoSocket
         {
             return;
         }
-        try
-        {
-            conn.write(buf,offset,length);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        conn.write(buf,offset,length);
     }
 
     @OnWebSocketMessage
@@ -54,13 +45,6 @@ public class BigEchoSocket
         {
             return;
         }
-        try
-        {
-            conn.write(message);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        conn.write(message);
     }
 }

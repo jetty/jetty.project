@@ -79,7 +79,7 @@ public class IdentityExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = WebSocketFrame.text("hello");
-        ext.outgoingFrame(frame);
+        ext.outgoingFrame(frame,null);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT,1);

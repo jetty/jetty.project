@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
-
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 
@@ -41,9 +38,8 @@ public class MuxDecoder extends MuxEventCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         parser.parse(frame);
-        return null; // FIXME: should return completed future.
     }
 }
