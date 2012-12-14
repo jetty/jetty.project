@@ -677,10 +677,28 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET));
     }
+    
+    public static ByteBuffer toDirectBuffer(String s)
+    {
+        byte[] bytes=s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
+    }
 
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
         return ByteBuffer.wrap(s.getBytes(charset));
+    }
+    
+    public static ByteBuffer toDirectBuffer(String s, Charset charset)
+    {
+        byte[] bytes=s.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
     }
 
     /**

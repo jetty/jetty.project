@@ -648,7 +648,6 @@ public class HttpGenerator
                                     connection.append(split==null?field.getValue():split[i]);
                                 }
                             }
-
                         }
 
                         // Do NOT add yet!
@@ -666,15 +665,7 @@ public class HttpGenerator
                     }
 
                     default:
-                        if (h==null)
-                            field.putTo(header);
-                        else
-                        {
-                            header.put(h.getBytesColonSpace());
-                            field.putValueTo(header);
-                            header.put(CRLF);
-                        }
-
+                        field.putTo(header);
                 }
             }
         }

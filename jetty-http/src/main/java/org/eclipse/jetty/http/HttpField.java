@@ -39,6 +39,7 @@ public class HttpField
     {
         CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE));
         CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE));
+        CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.UPGRADE));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));

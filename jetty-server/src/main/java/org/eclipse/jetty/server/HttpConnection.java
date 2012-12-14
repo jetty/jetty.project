@@ -50,7 +50,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
     private static final boolean REQUEST_BUFFER_DIRECT=false;
-    private static final boolean HEADER_BUFFER_DIRECT=false;
+    private static final boolean HEADER_BUFFER_DIRECT=true;
     private static final boolean CHUNK_BUFFER_DIRECT=false;
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();

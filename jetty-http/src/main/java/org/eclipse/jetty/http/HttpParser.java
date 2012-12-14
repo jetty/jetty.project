@@ -716,10 +716,11 @@ public class HttpParser
                             }
                             else
                             {
-                                if (buffer.remaining()>6 && buffer.hasArray())
+                                if (buffer.remaining()>6)
                                 {
                                     // Try a look ahead for the known header name and value.
-                                    _field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
+                                    _field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
+                                    //_field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
                                     if (_field!=null)
                                     {
                                         _header=_field.getHeader();
@@ -742,7 +743,8 @@ public class HttpParser
                                     }
 
                                     // Try a look ahead for the known header name.
-                                    _header=HttpHeader.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
+                                    _header=HttpHeader.CACHE.getBest(buffer,-1,buffer.remaining());
+                                    //_header=HttpHeader.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
                                     if (_header!=null)
                                     {
                                         _headerString=_header.asString();

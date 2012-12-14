@@ -217,15 +217,16 @@ public class Trie<V>
     {
         if (b.hasArray())
             return getBest(b.array(),b.arrayOffset()+b.position()+offset,len);
-        return doGetBest(b,offset,len);
+        return getBestByteBuffer(b,offset,len);
     }
     
-    private V doGetBest(ByteBuffer b,int offset,int len)
+    private V getBestByteBuffer(ByteBuffer b,int offset,int len)
     {
         Trie<V> t = this;
+        int pos=b.position()+offset;
         for(int i=0; i < len; i++)
         {
-            byte c=b.get(offset+i);
+            byte c=b.get(pos++);
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
