@@ -471,10 +471,12 @@ public class MultiPartInputStreamParser
 
         // Get first boundary
         String line=((ReadLineInputStream)_in).readLine();
-        if(line==null || !line.equals(boundary))
-        {
+        
+        if (line == null || line.length() == 0)
+            throw new IOException("Missing content for multipart request");
+
+        if (!line.equals(boundary))
             throw new IOException("Missing initial multi part boundary");
-        }
 
         // Read each part
         boolean lastPart=false;
