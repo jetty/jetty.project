@@ -104,7 +104,7 @@ public abstract class EventDriver implements IncomingFrames
                     onClose(close);
 
                     // process handshake
-                    if (session.getConnection().getIOState().onCloseHandshake(true,close))
+                    if (session.getConnection().getIOState().onCloseHandshake(true))
                     {
                         // handshake resolved, disconnect.
                         session.getConnection().disconnect();

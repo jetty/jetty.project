@@ -263,7 +263,6 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_6() throws Exception
     {
-        System.err.println("==================================================================================================");
         byte payload[] = new byte[125];
         Arrays.fill(payload,(byte)'6');
 

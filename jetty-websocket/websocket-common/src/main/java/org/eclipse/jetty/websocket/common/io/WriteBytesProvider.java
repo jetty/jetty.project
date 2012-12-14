@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,7 +40,6 @@ public class WriteBytesProvider implements Callback
 {
     private class FrameEntry
     {
-        private final Logger LOG = Log.getLogger(FrameEntry.class);
         protected final Frame frame;
         protected final Callback callback;
 
@@ -59,6 +60,8 @@ public class WriteBytesProvider implements Callback
         }
     }
 
+    private static final Logger LOG = Log.getLogger(WriteBytesProvider.class);
+
     /** The websocket generator */
     private final Generator generator;
     /** Flush callback, for notifying when a flush should be performed */
@@ -73,6 +76,8 @@ public class WriteBytesProvider implements Callback
     private Throwable failure;
     /** The last requested buffer */
     private ByteBuffer buffer;
+    /** Is WriteBytesProvider closed to more WriteBytes being enqueued? */
+    private AtomicBoolean closed;
 
     /**
      * Create a WriteBytesProvider with specified Generator and "flush" Callback.
@@ -89,28 +94,48 @@ public class WriteBytesProvider implements Callback
         this.generator = Objects.requireNonNull(generator);
         this.flushCallback = Objects.requireNonNull(flushCallback);
         this.queue = new LinkedList<>();
+        this.closed = new AtomicBoolean(false);
     }
 
-    /**
-     * Append a Frame &amp; Callback to the pending queue.
-     * 
-     * @param frame
-     *            the frame to add
-     * @param callback
-     *            the optional callback for the frame write (can be null)
-     */
-    public void append(Frame frame, Callback callback)
+    public void enque(Frame frame, Callback callback)
     {
         Objects.requireNonNull(frame);
+        LOG.debug("enque({}, {})",frame,callback);
         synchronized (this)
         {
+            if (closed.get())
+            {
+                // Closed for more frames.
+                LOG.debug("Write is closed: {}",frame,callback);
+                if (callback != null)
+                {
+                    callback.failed(new IOException("Write is closed"));
+                }
+                return;
+            }
+
             if (isFailed())
             {
                 // no changes when failed
                 notifyFailure(callback);
                 return;
             }
-            queue.addLast(new FrameEntry(frame,callback));
+
+            FrameEntry entry = new FrameEntry(frame,callback);
+
+            switch (frame.getType())
+            {
+                case PING:
+                    queue.addFirst(entry);
+                    break;
+                case CLOSE:
+                    closed.set(true);
+                    // drop the rest of the queue?
+                    queue.addLast(entry);
+                    break;
+                default:
+                    queue.addLast(entry);
+            }
         }
     }
 
@@ -191,6 +216,19 @@ public class WriteBytesProvider implements Callback
         return failure;
     }
 
+    /**
+     * Used to test for the final frame possible to be enqueued, the CLOSE frame.
+     * 
+     * @return true if close frame has been enqueued already.
+     */
+    public boolean isClosed()
+    {
+        synchronized (this)
+        {
+            return closed.get();
+        }
+    }
+
     public boolean isFailed()
     {
         return (failure != null);
@@ -209,30 +247,6 @@ public class WriteBytesProvider implements Callback
             return;
         }
         callback.failed(failure);
-    }
-
-    /**
-     * Prepend a Frame &amp; Callback to the pending queue.
-     * 
-     * @param frame
-     *            the frame to add
-     * @param callback
-     *            the optional callback for the frame write (can be null)
-     */
-    public void prepend(Frame frame, Callback callback)
-    {
-        Objects.requireNonNull(frame);
-        synchronized (this)
-        {
-            if (isFailed())
-            {
-                // no changes when failed
-                notifyFailure(callback);
-                return;
-            }
-
-            queue.addFirst(new FrameEntry(frame,callback));
-        }
     }
 
     /**
@@ -267,11 +281,38 @@ public class WriteBytesProvider implements Callback
             if (active.frame.remaining() <= 0)
             {
                 // All done with active FrameEntry
+                if (active.callback != null)
+                {
+                    // notify of success
+                    active.callback.succeeded();
+                }
+
+                // null it out
                 active = null;
             }
 
             // notify flush callback
             flushCallback.succeeded();
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        b.append("WriteBytesProvider[");
+        b.append("flushCallback=").append(flushCallback);
+        if (isFailed())
+        {
+            b.append(",FAILURE=").append(failure.getClass().getName());
+            b.append(",").append(failure.getMessage());
+        }
+        else
+        {
+            b.append(",active=").append(active);
+            b.append(",queue.size=").append(queue.size());
+        }
+        b.append(']');
+        return b.toString();
     }
 }

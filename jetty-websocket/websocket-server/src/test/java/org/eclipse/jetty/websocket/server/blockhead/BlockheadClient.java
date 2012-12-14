@@ -180,7 +180,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             CloseInfo close = new CloseInfo(statusCode,message);
 
-            if (ioState.onCloseHandshake(false,close))
+            if (ioState.onCloseHandshake(false))
             {
                 this.disconnect();
             }
@@ -364,7 +364,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         if (frame.getType() == Frame.Type.CLOSE)
         {
             CloseInfo close = new CloseInfo(frame);
-            if (ioState.onCloseHandshake(true,close))
+            if (ioState.onCloseHandshake(true))
             {
                 this.disconnect();
             }

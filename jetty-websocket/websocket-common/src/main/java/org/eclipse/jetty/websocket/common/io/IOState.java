@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 
 /**
@@ -39,7 +38,7 @@ public class IOState
     private final AtomicBoolean cleanClose;
     private final AtomicBoolean remoteCloseInitiated;
     private final AtomicBoolean localCloseInitiated;
-    
+
     public IOState()
     {
         this.state = ConnectionState.CONNECTING;
@@ -86,6 +85,11 @@ public class IOState
         return (isInputClosed() && isOutputClosed());
     }
 
+    public boolean isCloseInitiated()
+    {
+        return remoteCloseInitiated.get() || localCloseInitiated.get();
+    }
+
     public boolean isInputClosed()
     {
         return inputClosed.get();
@@ -110,7 +114,7 @@ public class IOState
      *            the close details.
      * @return true if connection should be disconnected now, or false if response to close should be issued.
      */
-    public boolean onCloseHandshake(boolean incoming, CloseInfo close)
+    public boolean onCloseHandshake(boolean incoming)
     {
         boolean in = inputClosed.get();
         boolean out = outputClosed.get();
@@ -118,7 +122,7 @@ public class IOState
         {
             in = true;
             this.inputClosed.set(true);
-            
+
             if (!localCloseInitiated.get())
             {
                 remoteCloseInitiated.set(true);
@@ -128,14 +132,14 @@ public class IOState
         {
             out = true;
             this.outputClosed.set(true);
-            
+
             if ( !remoteCloseInitiated.get() )
             {
                 localCloseInitiated.set(true);
             }
         }
 
-        LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
+        LOG.debug("onCloseHandshake({}), input={}, output={}",incoming,in,out);
 
         if (in && out)
         {
@@ -143,10 +147,6 @@ public class IOState
             cleanClose.set(true);
             return true;
         }
-
-        /*
-         * if (close.isHarsh()) { LOG.debug("Close status code was harsh, disconnecting"); return true; }
-         */
 
         return false;
     }
@@ -160,24 +160,19 @@ public class IOState
     {
         this.state = state;
     }
-    
-    public boolean isCloseInitiated()
+
+    public boolean wasCleanClose()
     {
-        return remoteCloseInitiated.get() || localCloseInitiated.get();
+        return cleanClose.get();
     }
-    
-    public boolean wasRemoteCloseInitiated()
-    {
-        return remoteCloseInitiated.get();
-    }
-    
+
     public boolean wasLocalCloseInitiated()
     {
         return localCloseInitiated.get();
     }
-    
-    public boolean wasCleanClose()
+
+    public boolean wasRemoteCloseInitiated()
     {
-        return cleanClose.get();
+        return remoteCloseInitiated.get();
     }
 }

@@ -126,15 +126,8 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                     continue;
                 }
 
-                try
-                {
-                    // Async write the message back.
-                    member.connection.write(data);
-                }
-                catch (IOException e)
-                {
-                    getServletContext().log("write failed",e);
-                }
+                // Async write the message back.
+                member.connection.write(data);
             }
         }
 

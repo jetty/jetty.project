@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.common.io;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
@@ -28,15 +30,19 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
  */
 public class FutureWriteCallback extends FutureCallback implements WriteCallback
 {
+    private static final Logger LOG = Log.getLogger(FutureWriteCallback.class);
+
     @Override
     public void writeFailed(Throwable cause)
     {
+        LOG.debug(".writeFailed",cause);
         failed(cause);
     }
 
     @Override
     public void writeSuccess()
     {
+        LOG.debug(".writeSuccess");
         succeeded();
     }
 }
