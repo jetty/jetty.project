@@ -261,16 +261,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    try
-                    {
-                        setCurrentConnection(HttpConnection.this);
-                        _channel.run();
-                    }
-                    finally
-                    {
-                        setCurrentConnection(null);
-                    }
-                    return;
+                        
+                    _channel.run();
+                    
+                    // Return if suspended or upgraded
+                    if (_channel.getState().isSuspended() || getEndPoint().getConnection()!=this)
+                        return;
                 }
             }
         }
@@ -478,50 +474,45 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         reset();
 
-        if (_parser.isStart())
+        // if we are not called from the onfillable thread, schedule completion
+        if (getCurrentConnection()==null)
         {
-            // it wants to eat more
-            if (_requestBuffer == null)
+            if (_parser.isStart())
             {
-                fillInterested();
-            }
-            else if (getConnector().isStarted())
-            {
-                LOG.debug("{} pipelined", this);
-
-                try
+                // it wants to eat more
+                if (_requestBuffer == null)
                 {
-                    getExecutor().execute(this);
+                    fillInterested();
                 }
-                catch (RejectedExecutionException e)
+                else if (getConnector().isStarted())
                 {
-                    if (getConnector().isStarted())
-                        LOG.warn(e);
-                    else
-                        LOG.ignore(e);
+                    LOG.debug("{} pipelined", this);
+
+                    try
+                    {
+                        getExecutor().execute(this);
+                    }
+                    catch (RejectedExecutionException e)
+                    {
+                        if (getConnector().isStarted())
+                            LOG.warn(e);
+                        else
+                            LOG.ignore(e);
+                        getEndPoint().close();
+                    }
+                }
+                else
+                {
                     getEndPoint().close();
                 }
             }
-            else
+
+            // make sure that an oshut connection is driven towards close
+            // TODO this is a little ugly
+            if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
             {
-                getEndPoint().close();
+                fillInterested();
             }
-        }
-
-        if (_parser.isClosed() && !getEndPoint().isOutputShutdown())
-        {
-            // TODO This is a catch all indicating some protocol handling failure
-            // Currently needed for requests saying they are HTTP/2.0.
-            // This should be removed once better error handling is in place
-            LOG.warn("Endpoint output not shutdown when seeking EOF");
-            getEndPoint().shutdownOutput();
-        }
-
-        // make sure that an oshut connection is driven towards close
-        // TODO this is a little ugly
-        if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
-        {
-            fillInterested();
         }
     }
 
