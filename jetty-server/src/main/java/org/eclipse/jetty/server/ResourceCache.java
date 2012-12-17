@@ -382,7 +382,8 @@ public class ResourceCache
             _key=pathInContext;
             _resource=resource;
 
-            _contentType=BufferUtil.toBuffer(_mimeTypes.getMimeByExtension(_resource.toString()));
+            String mimeType = _mimeTypes.getMimeByExtension(_resource.toString());
+            _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
             _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));

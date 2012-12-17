@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -56,6 +57,14 @@ public class MimeTypesTest
     {
         assertMimeTypeByExtension("text/plain","test.txt");
         assertMimeTypeByExtension("text/plain","TEST.TXT");
+    }
+    
+    @Test
+    public void testGetMimeByExtension_NoExtension()
+    {
+        MimeTypes mimetypes = new MimeTypes();
+        String contentType = mimetypes.getMimeByExtension("README");
+        assertNull(contentType);
     }
 
     private void assertMimeTypeByExtension(String expectedMimeType, String filename)
