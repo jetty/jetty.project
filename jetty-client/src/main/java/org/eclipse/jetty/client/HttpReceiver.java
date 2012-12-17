@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -141,6 +142,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
 
+                parser.setHeadResponse(exchange.getRequest().getMethod() == HttpMethod.HEAD);
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
