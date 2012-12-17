@@ -20,13 +20,28 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+
+/* ------------------------------------------------------------ */
+/** A Trie String lookup data structure.
+ * @param <V>
+ */
 public class Trie<V>
 {
+    /**
+     * The Size of a Trie row is how many characters can be looked
+     * up directly without going to a big index.  This is set at 
+     * 32 to cover case insensitive alphabet and a few other common
+     * characters. 
+     */
+    private static final int ROW_SIZE = 32;
+    
+    /**
+     * The index lookup table, this maps a character as a byte 
+     * (ISO-8859-1 or UTF8) to an index within a Trie row
+     */
     private static final int[] __lookup = 
     { // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
    /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
@@ -38,33 +53,66 @@ public class Trie<V>
    /*6*/-1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
    /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
     };
-    private static final int INDEX = 32;
-    private final Trie<V>[]  _nextIndex;
-    private final List<Trie<V>> _nextOther=new ArrayList<>();
-    private final char _c;
-    private String _key;
-    private V _value;
+    
+    /**
+     * The Trie rows in a single array which allows a lookup of row,character
+     * to the next row in the Trie.  This is actually a 2 dimensional
+     * array that has been flattened to achieve locality of reference.
+     * The first ROW_SIZE entries are for row 0, then next ROW_SIZE 
+     * entries are for row 1 etc.   So in general instead of using
+     * _rows[row][index], we use _rows[row*ROW_SIZE+index] to look up
+     * the next row for a given character.
+     * 
+     * The array is of characters rather than integers to save space. 
+     */
+    private final char[] _rowIndex;
+    
+    /**
+     * The key (if any) for a Trie row. 
+     * A row may be a leaf, a node or both in the Trie tree.
+     */
+    private final String[] _key;
+    
+    /**
+     * The value (if any) for a Trie row. 
+     * A row may be a leaf, a node or both in the Trie tree.
+     */
+    private final Object[] _value;
+    
+    /**
+     * A big index for each row.
+     * If a character outside of the lookup map is needed,
+     * then a big index will be created for the row, with
+     * 256 entries, one for each possible byte.
+     */
+    private final char[][] _bigIndex;
+    
+    /**
+     * The number of rows allocated
+     */
+    private char _rows;
 
     public Trie()
     {
-        _nextIndex = new Trie[INDEX];
-        _c=0;
+        this(128);
     }
     
-    private Trie(char c)
+    public Trie(int capacityInNodes)
     {
-        _nextIndex = new Trie[INDEX];
-        this._c=c;
+        _value=new Object[capacityInNodes];
+        _rowIndex=new char[capacityInNodes*32];
+        _key=new String[capacityInNodes];
+        _bigIndex=new char[capacityInNodes][];
     }
-
-    public V put(V v)
-    {
-        return put(v.toString(),v);
-    }
-    
+    /* ------------------------------------------------------------ */
+    /** Put and entry into the Trie
+     * @param s The key for the entry
+     * @param v The value of the entry
+     * @return The last value for the key
+     */
     public V put(String s, V v)
     {
-        Trie<V> t = this;
+        int t=0;
         int k;
         int limit = s.length();
         for(k=0; k < limit; k++)
@@ -74,34 +122,38 @@ public class Trie<V>
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
-                if (t._nextIndex[index] == null)
-                    t._nextIndex[index] = new Trie<V>(c);
-                t = t._nextIndex[index];
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
+                    t=_rowIndex[idx]=++_rows;
             }
             else
             {
-                Trie<V> n=null;
-                for (int i=t._nextOther.size();i-->0;)
-                {
-                    n=t._nextOther.get(i);
-                    if (n._c==c)
-                        break;
-                    n=null;
-                }
-                if (n==null)
-                {
-                    n=new Trie<V>(c);
-                    t._nextOther.add(n);
-                }
-                t=n;
+                char[] big=_bigIndex[t];
+                if (big==null)
+                    big=_bigIndex[t]=new char[256];
+                t=big[c];
+                if (t==0)
+                    t=big[c]=++_rows;
             }
         }
-        t._key=v==null?null:s;
-        V old=t._value;
-        t._value = v;
+        _key[t]=v==null?null:s;
+        V old=(V)_value[t];
+        _value[t] = v;
         return old;
     }
 
+
+    /* ------------------------------------------------------------ */
+    /** Put a value as both a key and a value.
+     * @param v
+     * @return
+     */
+    public V put(V v)
+    {
+        return put(v.toString(),v);
+    }
+    
     public V remove(String s)
     {
         V o=get(s);
@@ -109,9 +161,14 @@ public class Trie<V>
         return o;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get and exact match from a String key
+     * @param s The key
+     * @return
+     */
     public V get(String s)
     {
-        Trie<V> t = this;
+        int t = 0;
         int len = s.length();
         for(int i=0; i < len; i++)
         {
@@ -119,110 +176,124 @@ public class Trie<V>
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
-                if (t._nextIndex[index] == null) 
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
                     return null;
-                t = t._nextIndex[index];
             }
             else
             {
-                Trie<V> n=null;
-                for (int j=t._nextOther.size();j-->0;)
-                {
-                    n=t._nextOther.get(j);
-                    if (n._c==c)
-                        break;
-                    n=null;
-                }
-                if (n==null)
+                char[] big=_bigIndex[t];
+                if (big==null)
                     return null;
-                t=n;
+                t=big[c];
+                if (t==0)
+                    return null;
             }
         }
-        return t._value;
+        return (V)_value[t];
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get and exact match from a segment of a ByteBuufer as key
+     * @param b The buffer
+     * @param offset The offset within the buffer of the key
+     * @param len the length of the key
+     * @return The value or null if not found
+     */
     public V get(ByteBuffer b,int offset,int len)
     {
-        Trie<V> t = this;
+        int t = 0;
         for(int i=0; i < len; i++)
         {
             byte c=b.get(offset+i);
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
-                if (t._nextIndex[index] == null) 
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
                     return null;
-                t = t._nextIndex[index];
             }
             else
             {
-                Trie<V> n=null;
-                for (int j=t._nextOther.size();j-->0;)
-                {
-                    n=t._nextOther.get(j);
-                    if (n._c==c)
-                        break;
-                    n=null;
-                }
-                if (n==null)
+                char[] big=_bigIndex[t];
+                if (big==null)
                     return null;
-                t=n;
+                t=big[c];
+                if (t==0)
+                    return null;
             }
         }
-        return t._value;
+        return (V)_value[t];
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the best match from key in a byte array.
+     * The key is assumed to by ISO_8859_1 characters.
+     * @param b The buffer
+     * @param offset The offset within the array of the key
+     * @param len the length of the key
+     * @return The value or null if not found
+     */
     public V getBest(byte[] b,int offset,int len)
     {
-        Trie<V> t = this;
+        return getBest(0,b,offset,len);
+    }
+    
+    private V getBest(int t,byte[] b,int offset,int len)
+    {
         for(int i=0; i < len; i++)
         {
             byte c=b[offset+i];
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
-                if (t._nextIndex[index] == null) 
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
                     return null;
-                t = t._nextIndex[index];
             }
             else
             {
-                Trie<V> n=null;
-                for (int j=t._nextOther.size();j-->0;)
-                {
-                    n=t._nextOther.get(j);
-                    if (n._c==c)
-                        break;
-                    n=null;
-                }
-                if (n==null)
+                char[] big=_bigIndex[t];
+                if (big==null)
                     return null;
-                t=n;
+                t=big[c];
+                if (t==0)
+                    return null;
             }
             
             // Is the next Trie is a match
-            if (t._key!=null)
+            if (_key[t]!=null)
             {
                 // Recurse so we can remember this possibility
-                V best=t.getBest(b,offset+i+1,len-i-1);
+                V best=getBest(t,b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return t._value;
+                return (V)_value[t];
             }
         }
-        return t._value;
+        return (V)_value[t];
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the best match from key in a byte buffer.
+     * The key is assumed to by ISO_8859_1 characters.
+     * @param b The buffer
+     * @param offset The offset within the buffer of the key
+     * @param len the length of the key
+     * @return The value or null if not found
+     */
     public V getBest(ByteBuffer b,int offset,int len)
     {
         if (b.hasArray())
-            return getBest(b.array(),b.arrayOffset()+b.position()+offset,len);
-        return getBestByteBuffer(b,offset,len);
+            return getBest(0,b.array(),b.arrayOffset()+b.position()+offset,len);
+        return getBest(0,b,offset,len);
     }
     
-    private V getBestByteBuffer(ByteBuffer b,int offset,int len)
+    private V getBest(int t,ByteBuffer b,int offset,int len)
     {
-        Trie<V> t = this;
         int pos=b.position()+offset;
         for(int i=0; i < len; i++)
         {
@@ -230,36 +301,32 @@ public class Trie<V>
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
-                if (t._nextIndex[index] == null) 
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
                     return null;
-                t = t._nextIndex[index];
             }
             else
             {
-                Trie<V> n=null;
-                for (int j=t._nextOther.size();j-->0;)
-                {
-                    n=t._nextOther.get(j);
-                    if (n._c==c)
-                        break;
-                    n=null;
-                }
-                if (n==null)
+                char[] big=_bigIndex[t];
+                if (big==null)
                     return null;
-                t=n;
+                t=big[c];
+                if (t==0)
+                    return null;
             }
             
             // Is the next Trie is a match
-            if (t._key!=null)
+            if (_key[t]!=null)
             {
                 // Recurse so we can remember this possibility
-                V best=t.getBest(b,offset+i+1,len-i-1);
+                V best=getBest(t,b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return t._value;
+                return (V)_value[t];
             }
         }
-        return t._value;
+        return (V)_value[t];
     }
     
     
@@ -269,7 +336,7 @@ public class Trie<V>
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        toString(buf,this);
+        toString(buf,0);
         
         if (buf.length()==0)
             return "{}";
@@ -280,56 +347,65 @@ public class Trie<V>
     }
 
 
-    private static <V> void toString(Appendable out, Trie<V> t)
+    private <V> void toString(Appendable out, int t)
     {
-        if (t != null)
+        if (_value[t]!=null)
         {
-            if (t._value!=null)
+            try
             {
-                try
-                {
-                    out.append(',');
-                    out.append(t._key);
-                    out.append('=');
-                    out.append(t._value.toString());
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
+                out.append(',');
+                out.append(_key[t]);
+                out.append('=');
+                out.append(_value[t].toString());
             }
-           
-            for(int i=0; i < INDEX; i++)
+            catch (IOException e)
             {
-                if (t._nextIndex[i] != null)
-                    toString(out,t._nextIndex[i]);
+                throw new RuntimeException(e);
             }
-            for (int i=t._nextOther.size();i-->0;)
-                toString(out,t._nextOther.get(i));
-        }           
+        }
+
+        for(int i=0; i < ROW_SIZE; i++)
+        {
+            int idx=t*ROW_SIZE+i;
+            if (_rowIndex[idx] != 0)
+                toString(out,_rowIndex[idx]);
+        }
+
+        char[] big = _bigIndex[t];
+        if (big!=null)
+        {
+            for (int i:big)
+                if (i!=0)
+                    toString(out,i);
+        }
+
     }
     
     public Set<String> keySet()
     {
         Set<String> keys = new HashSet<>();
-        keySet(keys,this);
+        keySet(keys,0);
         return keys;
     }
     
-    private static <V> void keySet(Set<String> set, Trie<V> t)
+    private void keySet(Set<String> set, int t)
     {
-        if (t != null)
+        if (_value[t]!=null)
+            set.add(_key[t]);
+
+        for(int i=0; i < ROW_SIZE; i++)
         {
-            if (t._key!=null)
-                set.add(t._key);
-           
-            for(int i=0; i < INDEX; i++)
-            {
-                if (t._nextIndex[i] != null)
-                    keySet(set,t._nextIndex[i]);
-            }
-            for (int i=t._nextOther.size();i-->0;)
-                keySet(set,t._nextOther.get(i));
-        }           
+            int idx=t*ROW_SIZE+i;
+            if (_rowIndex[idx] != 0)
+                keySet(set,_rowIndex[idx]);
+        }
+
+        char[] big = _bigIndex[t];
+        if (big!=null)
+        {
+            for (int i:big)
+                if (i!=0)
+                    keySet(set,i);
+        }
     }
 }

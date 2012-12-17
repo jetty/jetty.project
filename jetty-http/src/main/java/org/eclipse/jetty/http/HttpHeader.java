@@ -112,7 +112,7 @@ public enum HttpHeader
 
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new Trie<HttpHeader>();
+    public final static Trie<HttpHeader> CACHE= new Trie<>(512);
     static
     {
         for (HttpHeader header : HttpHeader.values())

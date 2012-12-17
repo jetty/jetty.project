@@ -32,8 +32,8 @@ import org.eclipse.jetty.util.Trie;
  */
 public class HttpField
 {
-    public final static Trie<HttpField> CACHE = new Trie<>();
-    public final static Trie<HttpField> CONTENT_TYPE = new Trie<>();
+    public final static Trie<HttpField> CACHE = new Trie<>(768);
+    public final static Trie<HttpField> CONTENT_TYPE = new Trie<>(512);
     
     static
     {
