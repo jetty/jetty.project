@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,16 +101,17 @@ public class Response implements HttpServletResponse
     private String _characterEncoding;
     private String _contentType;
     private OutputType _outputType = OutputType.NONE;
-    private PrintWriter _writer;
+    private ResponseWriter _writer;
     private long _contentLength = -1;
+    
 
-    public Response(HttpChannel channel, HttpOutput out)
+    public Response(HttpChannel<?> channel, HttpOutput out)
     {
         _channel = channel;
         _out = out;
     }
 
-    protected HttpChannel getHttpChannel()
+    protected HttpChannel<?> getHttpChannel()
     {
         return _channel;
     }
@@ -122,7 +124,6 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _contentType = null;
-        _writer = null;
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _out.reset();
@@ -675,7 +676,7 @@ public class Response implements HttpServletResponse
         if (_outputType == OutputType.STREAM)
             throw new IllegalStateException("STREAM");
 
-        if (_writer == null)
+        if (_outputType == OutputType.NONE)
         {
             /* get encoding from Content-Type header */
             String encoding = _characterEncoding;
@@ -687,19 +688,18 @@ public class Response implements HttpServletResponse
                 setCharacterEncoding(encoding);
             }
             
-            if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
-            {
-                _writer = new PrintWriter(new Iso88591HttpWriter(_out));
-            }
-            else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
-            {
-                _writer = new PrintWriter(new Utf8HttpWriter(_out));
-            }
+            if (_writer != null && _writer.isFor(encoding))
+                _writer.reopen();
             else
             {
-                _writer = new PrintWriter(new EncodingHttpWriter(_out, encoding));
+                if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
+                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),encoding);
+                else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),encoding);
+                else
+                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),encoding);
             }
-
+            
             // Set the output type at the end, because setCharacterEncoding() checks for it
             _outputType = OutputType.WRITER;
         }
@@ -944,7 +944,6 @@ public class Response implements HttpServletResponse
     public void resetForForward()
     {
         resetBuffer();
-        _writer = null;
         _outputType = OutputType.NONE;
     }
 
@@ -1036,5 +1035,30 @@ public class Response implements HttpServletResponse
     public String toString()
     {
         return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
+    }
+    
+
+    private static class ResponseWriter extends PrintWriter
+    {
+        private final String _encoding;
+        private final HttpWriter _httpWriter;
+        
+        public ResponseWriter(HttpWriter httpWriter,String encoding)
+        {
+            super(httpWriter);
+            _httpWriter=httpWriter;
+            _encoding=encoding;
+        }
+
+        public boolean isFor(String encoding)
+        {
+            return _encoding.equalsIgnoreCase(encoding);
+        }
+        
+        protected void reopen()
+        {
+            super.clearError();
+            out=_httpWriter;
+        }
     }
 }
