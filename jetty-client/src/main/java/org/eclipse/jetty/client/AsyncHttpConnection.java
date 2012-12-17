@@ -106,6 +106,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                 LOG.debug("complete {}",exchange);
                                 progress=true;
                                 _generator.complete();
+                                if (exchange.getStatus() < HttpExchange.STATUS_WAITING_FOR_RESPONSE)
+                                    exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
                             }
                             else if (_generator.isEmpty())
                             {
