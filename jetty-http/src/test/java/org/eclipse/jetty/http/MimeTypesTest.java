@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.http;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
-import org.junit.Test;
 
 public class MimeTypesTest
 {
@@ -62,9 +61,13 @@ public class MimeTypesTest
     @Test
     public void testGetMimeByExtension_NoExtension()
     {
-        MimeTypes mimetypes = new MimeTypes();
-        String contentType = mimetypes.getMimeByExtension("README");
-        assertNull(contentType);
+        assertMimeTypeByExtension("application/octet-stream", "README");
+    }
+
+    @Test
+    public void testGetMimeByExtensionWithoutExistingMimeMapping()
+    {
+        assertMimeTypeByExtension("application/octet-stream", "awesome-font.ttf");
     }
 
     private void assertMimeTypeByExtension(String expectedMimeType, String filename)
