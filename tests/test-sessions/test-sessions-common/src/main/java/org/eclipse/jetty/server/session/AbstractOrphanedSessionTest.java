@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +30,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractOrphanedSessionTest
@@ -73,8 +71,7 @@ public abstract class AbstractOrphanedSessionTest
                 try
                 {
                     // Connect to server1 to create a session and get its session cookie
-                    Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                    ContentResponse response1 = future.get();
+                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -89,8 +86,7 @@ public abstract class AbstractOrphanedSessionTest
                     // Perform one request to server2 to be sure that the session has been expired
                     Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=check");
                     request.header("Cookie", sessionCookie);
-                    future = request.send();
-                    ContentResponse response2 = future.get();
+                    ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally

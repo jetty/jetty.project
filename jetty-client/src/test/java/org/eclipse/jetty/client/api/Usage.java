@@ -24,13 +24,12 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
@@ -48,9 +47,8 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        Future<ContentResponse> responseFuture = client.GET("http://localhost:8080/foo");
         // Block to get the response
-        Response response = responseFuture.get();
+        ContentResponse response = client.GET("http://localhost:8080/foo");
 
         // Verify response status code
         Assert.assertEquals(200, response.getStatus());
@@ -74,12 +72,10 @@ public class Usage
                 .param("a", "b")
                 .header("X-Header", "Y-value")
                 .agent("Jetty HTTP Client")
-                .idleTimeout(5000L);
+                .idleTimeout(5000, TimeUnit.MILLISECONDS)
+                .timeout(20, TimeUnit.SECONDS);
 
-        Future<ContentResponse> responseFuture = request.send();
-        // Block to get the response
-        Response response = responseFuture.get();
-
+        ContentResponse response = request.send();
         Assert.assertEquals(200, response.getStatus());
     }
 
@@ -99,7 +95,7 @@ public class Usage
             @Override
             public void onComplete(Result result)
             {
-                if (!result.isFailed())
+                if (result.isSucceeded())
                 {
                     responseRef.set(result.getResponse());
                     latch.countDown();
@@ -137,7 +133,7 @@ public class Usage
                     public void onSuccess(Request request)
                     {
                     }
-                }).send().get(5, TimeUnit.SECONDS);
+                }).send();
         Assert.assertEquals(200, response.getStatus());
     }
 
@@ -152,8 +148,8 @@ public class Usage
         {
             Request request = client.newRequest("localhost", 8080);
 
-            // Asynchronous send but using BlockingResponseListener
-            BlockingResponseListener listener = new BlockingResponseListener(request);
+            // Asynchronous send but using FutureResponseListener
+            FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             // Wait for the response on the listener
             Response response = listener.get(5, TimeUnit.SECONDS);
@@ -170,7 +166,7 @@ public class Usage
         client.start();
 
         // One liner to upload files
-        Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send().get();
+        Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -185,7 +181,7 @@ public class Usage
         client.getCookieStore().add(URI.create("http://host:8080/path"), new HttpCookie("name", "value"));
 
         // Send a request for the cookie's domain
-        Response response = client.newRequest("host", 8080).send().get();
+        Response response = client.newRequest("host", 8080).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -202,7 +198,7 @@ public class Usage
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, "TestRealm", "username", "password"));
 
         // One liner to send the request
-        ContentResponse response = client.newRequest(uri).send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.newRequest(uri).timeout(5, TimeUnit.SECONDS).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -219,8 +215,8 @@ public class Usage
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Follow redirects for this request only
                 .followRedirects(true)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -270,8 +266,7 @@ public class Usage
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Provide the content as InputStream
                 .content(new InputStreamContentProvider(input))
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
     }

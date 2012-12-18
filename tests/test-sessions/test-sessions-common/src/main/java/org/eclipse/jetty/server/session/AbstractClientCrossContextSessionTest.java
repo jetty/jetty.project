@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +31,9 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -63,7 +61,7 @@ public abstract class AbstractClientCrossContextSessionTest
         ctxB.addServlet(holderB, servletMapping);
         server.start();
         int port = server.getPort();
-        
+
         try
         {
             HttpClient client = new HttpClient();
@@ -71,8 +69,7 @@ public abstract class AbstractClientCrossContextSessionTest
             try
             {
                 // Perform a request to contextA
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextA + servletMapping);
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextA + servletMapping);
 
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
@@ -83,8 +80,7 @@ public abstract class AbstractClientCrossContextSessionTest
                 // Perform a request to contextB with the same session cookie
                 Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                ContentResponse responseB = future.get();
+                ContentResponse responseB = request.send();
                 assertEquals(HttpServletResponse.SC_OK,responseB.getStatus());
                 assertEquals(servletA.sessionId, servletB.sessionId);
             }
@@ -102,7 +98,7 @@ public abstract class AbstractClientCrossContextSessionTest
     public static class TestServletA extends HttpServlet
     {
         public String sessionId;
-        
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -125,7 +121,7 @@ public abstract class AbstractClientCrossContextSessionTest
     public static class TestServletB extends HttpServlet
     {
         public String sessionId;
-        
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

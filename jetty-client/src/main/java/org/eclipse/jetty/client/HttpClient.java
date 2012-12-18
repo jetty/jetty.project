@@ -38,8 +38,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -302,10 +304,10 @@ public class HttpClient extends ContainerLifeCycle
      * Performs a GET request to the specified URI.
      *
      * @param uri the URI to GET
-     * @return a future for a {@link ContentResponse}
+     * @return the {@link ContentResponse} for the request
      * @see #GET(URI)
      */
-    public Future<ContentResponse> GET(String uri)
+    public ContentResponse GET(String uri) throws InterruptedException, ExecutionException, TimeoutException
     {
         return GET(URI.create(uri));
     }
@@ -314,10 +316,10 @@ public class HttpClient extends ContainerLifeCycle
      * Performs a GET request to the specified URI.
      *
      * @param uri the URI to GET
-     * @return a future for a {@link ContentResponse}
+     * @return the {@link ContentResponse} for the request
      * @see #newRequest(URI)
      */
-    public Future<ContentResponse> GET(URI uri)
+    public ContentResponse GET(URI uri) throws InterruptedException, ExecutionException, TimeoutException
     {
         return newRequest(uri).send();
     }

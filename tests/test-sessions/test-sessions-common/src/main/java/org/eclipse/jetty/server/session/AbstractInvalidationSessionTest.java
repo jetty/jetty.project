@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +30,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractInvalidationSessionTest
@@ -76,9 +74,8 @@ public abstract class AbstractInvalidationSessionTest
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
                     // Create the session on node1
-                    Future<ContentResponse> future = client.GET(urls[0] + "?action=init");
-                    ContentResponse response1 = future.get();
-                    
+                    ContentResponse response1 = client.GET(urls[0] + "?action=init");
+
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -86,26 +83,24 @@ public abstract class AbstractInvalidationSessionTest
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     // Be sure the session is also present in node2
-                   
+
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
-                    request2.header("Cookie", sessionCookie);       
-                    future = request2.send();
-                    ContentResponse response2 = future.get();                   
+                    request2.header("Cookie", sessionCookie);
+                    ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
                     // Invalidate on node1
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     request1.header("Cookie", sessionCookie);
-                    future = request1.send();
+                    response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
 
                     pause();
-                    
+
                     // Be sure on node2 we don't see the session anymore
                     request2 = client.newRequest(urls[1] + "?action=test");
                     request2.header("Cookie", sessionCookie);
-                    future = request2.send();
-                    response2 = future.get();
+                    response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally

@@ -115,8 +115,8 @@ public class BalancerServletTest
     {
         ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
                 .path(CONTEXT_PATH + SERVLET_PATH + path)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         return response.getContent();
     }
 

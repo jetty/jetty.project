@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -61,7 +60,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         String path = "/path";
         String uri = scheme + "://" + host + ":" + port + path;
-        Response response = client.GET(uri).get(5, TimeUnit.SECONDS);
+        Response response = client.GET(uri);
         Assert.assertEquals(200, response.getStatus());
 
         List<HttpCookie> cookies = client.getCookieStore().get(URI.create(uri));
@@ -98,7 +97,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         HttpCookie cookie = new HttpCookie(name, value);
         client.getCookieStore().add(URI.create(uri), cookie);
 
-        Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
+        Response response = client.GET(scheme + "://" + host + ":" + port + path);
         Assert.assertEquals(200, response.getStatus());
     }
 }

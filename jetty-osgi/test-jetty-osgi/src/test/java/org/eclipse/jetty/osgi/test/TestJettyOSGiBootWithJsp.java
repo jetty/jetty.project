@@ -22,7 +22,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import junit.framework.Assert;
@@ -158,7 +157,7 @@ public class TestJettyOSGiBootWithJsp extends AbstractTestOSGi
         {
             client.start();
             ContentResponse response = client.GET("http://127.0.0.1:"+
-                    TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT+"/jsp/dump.jsp").get(5, TimeUnit.SECONDS);
+                    TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT+"/jsp/dump.jsp");
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());

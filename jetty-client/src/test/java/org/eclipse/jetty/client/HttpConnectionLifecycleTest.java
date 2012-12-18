@@ -452,8 +452,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
 

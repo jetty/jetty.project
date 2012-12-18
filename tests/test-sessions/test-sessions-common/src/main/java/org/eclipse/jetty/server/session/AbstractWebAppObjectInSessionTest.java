@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.util.concurrent.Future;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -35,6 +30,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -114,9 +112,8 @@ public abstract class AbstractWebAppObjectInSessionTest
                     // Perform one request to server1 to create a session
                     Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     request.method(HttpMethod.GET);
-                    
-                    Future<ContentResponse> future = request.send();
-                    ContentResponse response = future.get();
+
+                    ContentResponse response = request.send();
                     assertEquals( HttpServletResponse.SC_OK, response.getStatus());
                     String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -127,8 +124,7 @@ public abstract class AbstractWebAppObjectInSessionTest
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                     request2.method(HttpMethod.GET);
                     request2.header("Cookie", sessionCookie);
-                    future = request2.send();
-                    ContentResponse response2 = future.get();
+                    ContentResponse response2 = request2.send();
 
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }

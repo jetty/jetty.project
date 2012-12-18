@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.concurrent.Future;
-
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,6 +35,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * MaxInactiveMigrationTest
@@ -47,7 +45,7 @@ import org.junit.Test;
  * Test
  */
 public class MaxInactiveMigrationTest
-{      
+{
     private JdbcTestServer testServer1;
     private JdbcTestServer testServer2;
     private HttpClient client;
@@ -82,11 +80,11 @@ public class MaxInactiveMigrationTest
         testServer1.stop();
         testServer2.stop();
         client.stop();
-        try 
+        try
         {
             DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        } 
-        catch( SQLException expected ) 
+        }
+        catch( SQLException expected )
         {
         }
     }
@@ -101,8 +99,7 @@ public class MaxInactiveMigrationTest
         Request request = client.newRequest("http://localhost:" + port + "" + "/test");
         if (sessionCookie != null)
             request.header("Cookie", sessionCookie);
-        Future<ContentResponse> future = request.send();
-        ContentResponse response = future.get();
+        ContentResponse response = request.send();
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
         sessionCookie = response.getHeaders().getStringField("Set-Cookie");
@@ -125,12 +122,12 @@ public class MaxInactiveMigrationTest
             HttpSession session = request.getSession( true );
             Integer counter = ( Integer )session.getAttribute( ATTR_COUNTER );
             if( counter == null ) {
-                counter = new Integer( 0 );
+                counter = 0;
             }
-            counter = new Integer( counter.intValue() + 1 );
+            counter = counter + 1;
             session.setAttribute( ATTR_COUNTER, counter );
             PrintWriter writer = response.getWriter();
-            writer.write( "Hello World " + counter.intValue() );
+            writer.write( "Hello World " + counter);
             writer.flush();
         }
 

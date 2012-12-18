@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +30,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -55,16 +53,15 @@ public abstract class AbstractImmortalSessionTest
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server.start();
         int port=server.getPort();
-        
+
         try
         {
             HttpClient client = new HttpClient();
             client.start();
             try
             {
-                int value = 42; 
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
-                ContentResponse response = future.get();
+                int value = 42;
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -77,11 +74,10 @@ public abstract class AbstractImmortalSessionTest
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                 Thread.sleep(scavengePeriod * 2500L);
 
-                // Be sure the session is still there 
+                // Be sure the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 resp = response.getContentAsString();
                 assertEquals(String.valueOf(value),resp.trim());

@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +28,9 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -57,8 +55,7 @@ public abstract class AbstractReentrantRequestSessionTest
             client.start();
             try
             {
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
@@ -88,12 +85,12 @@ public abstract class AbstractReentrantRequestSessionTest
             String action = request.getParameter("action");
             if ("reenter".equals(action))
             {
-                if (session == null) 
+                if (session == null)
                     session = request.getSession(true);
                 int port = Integer.parseInt(request.getParameter("port"));
                 String path = request.getParameter("path");
 
-                // We want to make another request 
+                // We want to make another request
                 // while this request is still pending, to see if the locking is
                 // fine grained (per session at least).
                 try
@@ -102,8 +99,7 @@ public abstract class AbstractReentrantRequestSessionTest
                     client.start();
                     try
                     {
-                        Future<ContentResponse> future = client.GET("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
-                        ContentResponse resp = future.get();
+                        ContentResponse resp = client.GET("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
                         assertEquals(HttpServletResponse.SC_OK,resp.getStatus());
                         assertEquals("true",session.getAttribute("reentrant"));
                     }

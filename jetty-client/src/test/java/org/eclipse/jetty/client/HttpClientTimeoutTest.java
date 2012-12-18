@@ -58,7 +58,8 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send().get(timeout, TimeUnit.MILLISECONDS);
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .send();
     }
 
     @Slow

@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +30,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractNewSessionTest
@@ -54,7 +52,7 @@ public abstract class AbstractNewSessionTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testNewSession() throws Exception
     {
@@ -72,8 +70,7 @@ public abstract class AbstractNewSessionTest
             client.start();
             try
             {
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -87,8 +84,7 @@ public abstract class AbstractNewSessionTest
                 // The server creates a new session, we must ensure we released all locks
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally

@@ -19,8 +19,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,18 +30,18 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 
 public abstract class AbstractSessionRenewTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
-    
+
     public void testSessionRenewal() throws Exception
     {
         String contextPath = "";
@@ -61,8 +59,7 @@ public abstract class AbstractSessionRenewTest
             client.start();
 
             //make a request to create a session
-            Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-            ContentResponse response = future.get();
+            ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
             String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
@@ -71,20 +68,19 @@ public abstract class AbstractSessionRenewTest
             //make a request to change the sessionid
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             request.header("Cookie", sessionCookie);
-            future = request.send();
-            ContentResponse renewResponse = future.get();
+            ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
             String renewSessionCookie = renewResponse.getHeaders().getStringField("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
         }
-        finally 
+        finally
         {
             client.stop();
         }
     }
-    
-    
+
+
     public static class TestServlet extends HttpServlet
     {
         @Override
@@ -99,30 +95,30 @@ public abstract class AbstractSessionRenewTest
             else if ("renew".equals(action))
             {
                 HttpSession beforeSession = request.getSession(false);
-                String beforeSessionId = beforeSession.getId();
-                                
                 assertTrue(beforeSession != null);
-                
+                String beforeSessionId = beforeSession.getId();
+
+
                 ((AbstractSession)beforeSession).renewId(request);
-                
+
                 HttpSession afterSession = request.getSession(false);
-                String afterSessionId = afterSession.getId();
-                
                 assertTrue(afterSession != null);
+                String afterSessionId = afterSession.getId();
+
                 assertTrue(beforeSession==afterSession);
-                assertTrue(beforeSessionId != afterSessionId);    
-                
+                assertFalse(beforeSessionId.equals(afterSessionId));
+
                 AbstractSessionManager sessionManager = (AbstractSessionManager)((AbstractSession)afterSession).getSessionManager();
                 AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
-                
+
                 assertTrue(sessionIdManager.idInUse(afterSessionId));
                 assertFalse(sessionIdManager.idInUse(beforeSessionId));
-                
+
                 HttpSession session = sessionManager.getSession(afterSessionId);
                 assertNotNull(session);
                 session = sessionManager.getSession(beforeSessionId);
                 assertNull(session);
-             
+
                 if (((AbstractSession)afterSession).isIdChanged())
                 {
                     ((org.eclipse.jetty.server.Response)response).addCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
@@ -130,5 +126,5 @@ public abstract class AbstractSessionRenewTest
             }
         }
     }
-    
+
 }

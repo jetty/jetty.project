@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.HttpChannel;
@@ -76,7 +76,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                             begin.set(true);
                         }
                     })
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -114,7 +115,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                             committed.countDown();
                         }
                     })
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -153,7 +155,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                             committed.countDown();
                         }
                     })
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -188,7 +191,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                                 aborted.countDown();
                         }
                     })
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.assertEquals(200, response.getStatus());
             Assert.assertFalse(aborted.await(1, TimeUnit.SECONDS));
         }
@@ -243,7 +247,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                             return -1;
                         }
                     })
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -270,6 +275,53 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     }
 
     @Slow
+    @Test(expected = InterruptedException.class)
+    public void testInterrupt() throws Exception
+    {
+        final long delay = 1000;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(3 * delay, TimeUnit.MILLISECONDS)
+                .scheme(scheme);
+
+        final Thread thread = Thread.currentThread();
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    thread.interrupt();
+                }
+                catch (InterruptedException x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        }.start();
+
+        request.send();
+    }
+
+    @Slow
     @Test
     public void testAbortLongPoll() throws Exception
     {
@@ -291,23 +343,81 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        Request request = client.newRequest("localhost", connector.getLocalPort())
+        final Request request = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(3 * delay, TimeUnit.MILLISECONDS)
                 .scheme(scheme);
-        Future<ContentResponse> future = request.send();
 
-        TimeUnit.MILLISECONDS.sleep(delay);
-
-        Throwable cause = new Exception();
-        request.abort(cause);
+        final Throwable cause = new Exception();
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    request.abort(cause);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        }.start();
 
         try
         {
-            future.get(5, TimeUnit.SECONDS);
+            request.send();
         }
         catch (ExecutionException x)
         {
             Assert.assertSame(cause, x.getCause());
         }
+    }
+
+    @Slow
+    @Test
+    public void testAbortLongPollAsync() throws Exception
+    {
+        final long delay = 1000;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        final Throwable cause = new Exception();
+        final CountDownLatch latch = new CountDownLatch(1);
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .timeout(3 * delay, TimeUnit.MILLISECONDS);
+        request.send(new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                Assert.assertTrue(result.isFailed());
+                Assert.assertSame(cause, result.getFailure());
+                latch.countDown();
+            }
+        });
+
+        TimeUnit.MILLISECONDS.sleep(delay);
+
+        request.abort(cause);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -343,8 +453,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .path("/redirect")
-                    .send()
-                    .get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException x)

@@ -18,18 +18,13 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +35,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -79,8 +77,7 @@ public abstract class AbstractLightLoadTest
                         urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
                         urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
-                        Future<ContentResponse> future = client.GET( urls[0] + "?action=init" );
-                        ContentResponse response1 = future.get();
+                        ContentResponse response1 = client.GET(urls[0] + "?action=init");
                         assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                         String sessionCookie = response1.getHeaders().getStringField( "Set-Cookie" );
                         assertTrue(sessionCookie != null);
@@ -115,8 +112,7 @@ public abstract class AbstractLightLoadTest
                         // Perform one request to get the result
                         Request request = client.newRequest( urls[0] + "?action=result" );
                         request.header("Cookie", sessionCookie);
-                        future = request.send();
-                        ContentResponse response2 = future.get();
+                        ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                         String response = response2.getContentAsString();
                         System.out.println( "get = " + response );
@@ -151,7 +147,7 @@ public abstract class AbstractLightLoadTest
         private final String sessionCookie;
 
         private final String[] urls;
-        
+
 
         public Worker( CyclicBarrier barrier, int requestsCount, String sessionCookie, String[] urls )
         {
@@ -182,14 +178,13 @@ public abstract class AbstractLightLoadTest
                 barrier.await();
 
                 Random random = new Random( System.nanoTime() );
-                
+
                 for ( int i = 0; i < requestsCount; ++i )
                 {
                     int urlIndex = random.nextInt( urls.length );
                     Request request = client.newRequest(urls[urlIndex] + "?action=increment");
                     request.header("Cookie", sessionCookie);
-                    Future<ContentResponse> future = request.send();
-                    ContentResponse response = future.get();
+                    ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 }
 

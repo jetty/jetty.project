@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -192,15 +194,28 @@ public interface Request
     Request agent(String agent);
 
     /**
-     * @return the idle timeout for this request
+     * @return the idle timeout for this request, in milliseconds
      */
     long getIdleTimeout();
 
     /**
      * @param timeout the idle timeout for this request
+     * @param unit the idle timeout unit
      * @return this request object
      */
-    Request idleTimeout(long timeout);
+    Request idleTimeout(long timeout, TimeUnit unit);
+
+    /**
+     * @return the total timeout for this request, in milliseconds
+     */
+    long getTimeout();
+
+    /**
+     * @param timeout the total timeout for the request/response conversation
+     * @param unit the timeout unit
+     * @return this request object
+     */
+    Request timeout(long timeout, TimeUnit unit);
 
     /**
      * @return whether this request follows redirects
@@ -298,21 +313,21 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
-     * Sends this request and returns a {@link Future} that can be used to wait for the
-     * request and the response to be completed (either with a success or a failure).
+     * Sends this request and returns the response.
      * <p />
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
+     * <p />
      * For example, this method is not appropriate to download big files from a server; consider using
      * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
      * <p />
-     * The future will return when {@link Response.Listener#onComplete(Result)} is invoked.
+     * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
-     * @return a {@link Future} to wait on for request and response completion
-     * @see Response.Listener#onComplete(Result)
+     * @return a {@link ContentResponse} for this request
+     * @see Response.CompleteListener#onComplete(Result)
      */
-    Future<ContentResponse> send();
+    ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
 
     /**
      * Sends this request and asynchronously notifies the given listener for response events.

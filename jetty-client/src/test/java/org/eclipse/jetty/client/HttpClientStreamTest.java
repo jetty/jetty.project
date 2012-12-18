@@ -83,8 +83,8 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                         requestTime.set(System.nanoTime());
                     }
                 })
-                .send()
-                .get(10, TimeUnit.SECONDS);
+                .timeout(10, TimeUnit.SECONDS)
+                .send();
         long responseTime = System.nanoTime();
 
         Assert.assertEquals(200, response.getStatus());

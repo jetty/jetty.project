@@ -141,7 +141,8 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             ++result;
             ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
                     .path(primaryPath)
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.assertEquals(200, response.getStatus());
 
             for (int i = 0; i < cssResources.length; ++i)

@@ -18,14 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +35,10 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * IdleSessionTest
@@ -55,12 +53,6 @@ public class IdleSessionTest
         private int _idlePeriod;
         private File _storeDir;
 
-        /**
-         * @param port
-         * @param maxInactivePeriod
-         * @param scavengePeriod
-         * @param idlePeriod
-         */
         public IdleHashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePeriod, File storeDir)
         {
             super(port, maxInactivePeriod, scavengePeriod);
@@ -83,11 +75,10 @@ public class IdleSessionTest
 
     public  HashTestServer createServer(int port, int max, int scavenge, int idle, File storeDir)
     {
-        HashTestServer server = new IdleHashTestServer(port, max, scavenge, idle, storeDir);       
-        return server;
+        return new IdleHashTestServer(port, max, scavenge, idle, storeDir);
     }
-    
-    
+
+
 
     public void pause (int sec)
     {
@@ -128,8 +119,7 @@ public class IdleSessionTest
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            Future<ContentResponse> future = client.GET(url + "?action=init");
-            ContentResponse response = future.get();
+            ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
@@ -145,8 +135,7 @@ public class IdleSessionTest
             //make another request to de-idle the session
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);
-            future = request.send();
-            ContentResponse response2 = future.get();
+            ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
             //check session de-idled
@@ -184,8 +173,6 @@ public class IdleSessionTest
     public static class TestServlet extends HttpServlet
     {
         public String originalId = null;
-        public String testId = null;
-        public String checkId = null;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException

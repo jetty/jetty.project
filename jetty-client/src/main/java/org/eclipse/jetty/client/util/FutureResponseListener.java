@@ -38,12 +38,12 @@ import org.eclipse.jetty.client.api.Result;
  * Typical usage is:
  * <pre>
  * Request request = httpClient.newRequest(...)...;
- * BlockingResponseListener listener = new BlockingResponseListener(request);
+ * FutureResponseListener listener = new FutureResponseListener(request);
  * request.send(listener); // Asynchronous send
  * ContentResponse response = listener.get(5, TimeUnit.SECONDS); // Timed block
  * </pre>
  */
-public class BlockingResponseListener extends BufferingResponseListener implements Future<ContentResponse>
+public class FutureResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
     private final Request request;
@@ -51,12 +51,12 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     private Throwable failure;
     private volatile boolean cancelled;
 
-    public BlockingResponseListener(Request request)
+    public FutureResponseListener(Request request)
     {
         this(request, 2 * 1024 * 1024);
     }
 
-    public BlockingResponseListener(Request request, int maxLength)
+    public FutureResponseListener(Request request, int maxLength)
     {
         super(maxLength);
         this.request = request;
@@ -106,11 +106,7 @@ public class BlockingResponseListener extends BufferingResponseListener implemen
     {
         boolean expired = !latch.await(timeout, unit);
         if (expired)
-        {
-            TimeoutException reason = new TimeoutException();
-            request.abort(reason);
-            throw reason;
-        }
+            throw new TimeoutException();
         return getResult();
     }
 

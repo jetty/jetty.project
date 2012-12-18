@@ -29,14 +29,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -62,6 +64,7 @@ public class HttpRequest implements Request
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
+    private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
     private volatile Throwable aborted;
@@ -397,18 +400,46 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request idleTimeout(long timeout)
+    public Request idleTimeout(long timeout, TimeUnit unit)
     {
-        this.idleTimeout = timeout;
+        this.idleTimeout = unit.toMillis(timeout);
         return this;
     }
 
     @Override
-    public Future<ContentResponse> send()
+    public long getTimeout()
     {
-        BlockingResponseListener listener = new BlockingResponseListener(this);
+        return timeout;
+    }
+
+    @Override
+    public Request timeout(long timeout, TimeUnit unit)
+    {
+        this.timeout = unit.toMillis(timeout);
+        return this;
+    }
+
+    @Override
+    public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
+    {
+        FutureResponseListener listener = new FutureResponseListener(this);
         send(listener);
-        return listener;
+
+        long timeout = getTimeout();
+        if (timeout <= 0)
+            return listener.get();
+
+        try
+        {
+            return listener.get(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException | TimeoutException x)
+        {
+            // Differently from the Future, the semantic of this method is that if
+            // the send() is interrupted or times out, we abort the request.
+            abort(x);
+            throw x;
+        }
     }
 
     @Override

@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.Future;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +31,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * AbstractLastAccessTimeTest
@@ -43,7 +41,7 @@ import org.junit.Test;
 public abstract class AbstractSessionValueSavingTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
-    
+
     @Test
     public void testSessionValueSaving() throws Exception
     {
@@ -57,7 +55,7 @@ public abstract class AbstractSessionValueSavingTest
         int port1=server1.getPort();
         try
         {
-            
+
                 HttpClient client = new HttpClient();
                 client.start();
                 try
@@ -65,14 +63,13 @@ public abstract class AbstractSessionValueSavingTest
                     long sessionTestValue = 0;
 
                     // Perform one request to server1 to create a session
-                    Future<ContentResponse> future = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                    ContentResponse response1 = future.get();
-                    
-                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());                   
+                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertTrue(sessionTestValue < Long.parseLong(response1.getContentAsString()));
-                   
+
                     sessionTestValue = Long.parseLong(response1.getContentAsString());
-                    
+
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -84,23 +81,22 @@ public abstract class AbstractSessionValueSavingTest
                     // We want to test that optimizations done to the saving of the shared lastAccessTime
                     // do not break the correct working
                     int requestInterval = 500;
-                    
-                    
+
+
                     for (int i = 0; i < 10; ++i)
                     {
                         Request request2 = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping);
                         request2.header("Cookie", sessionCookie);
-                        future = request2.send();
-                        ContentResponse response2 = future.get();
-                        
-                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());                     
+                        ContentResponse response2 = request2.send();
+
+                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
                         assertTrue(sessionTestValue < Long.parseLong(response2.getContentAsString()));
                         sessionTestValue = Long.parseLong(response2.getContentAsString());
-                        
+
                         String setCookie = response1.getHeaders().getStringField("Set-Cookie");
-                        if (setCookie!=null)                    
+                        if (setCookie!=null)
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                        
+
                         Thread.sleep(requestInterval);
                     }
 
@@ -126,7 +122,7 @@ public abstract class AbstractSessionValueSavingTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", System.currentTimeMillis());
-                
+
                 sendResult(session, httpServletResponse.getWriter());
             }
             else
@@ -138,16 +134,16 @@ public abstract class AbstractSessionValueSavingTest
                 	long value = System.currentTimeMillis();
                 	System.out.println("Setting test to : " + value);
                     session.setAttribute("test", value);
-                    
+
                 }
-                
+
                 sendResult(session, httpServletResponse.getWriter());
 
             }
-            
-            
+
+
         }
-        
+
         private void sendResult(HttpSession session, PrintWriter writer)
         {
         	if (session != null)
@@ -159,6 +155,6 @@ public abstract class AbstractSessionValueSavingTest
         		writer.print(0);
         	}
         }
-        
+
     }
 }

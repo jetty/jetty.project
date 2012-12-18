@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -46,7 +46,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
-            BlockingResponseListener listener = new BlockingResponseListener(request);
+            FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
@@ -68,7 +68,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS);
         Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
-        BlockingResponseListener listener = new BlockingResponseListener(request);
+        FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 

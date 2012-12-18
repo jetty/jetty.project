@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Authentication;
@@ -142,7 +143,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.agent(client.getUserAgent());
 
         if (request.getIdleTimeout() <= 0)
-            request.idleTimeout(client.getIdleTimeout());
+            request.idleTimeout(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
 
         HttpMethod method = request.getMethod();
         HttpVersion version = request.getVersion();

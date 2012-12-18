@@ -30,7 +30,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -73,7 +73,7 @@ public class HttpReceiverTest
     protected HttpExchange newExchange()
     {
         HttpRequest request = new HttpRequest(client, URI.create("http://localhost"));
-        BlockingResponseListener listener = new BlockingResponseListener(request);
+        FutureResponseListener listener = new FutureResponseListener(request);
         HttpExchange exchange = new HttpExchange(conversation, connection, request, Collections.<Response.ResponseListener>singletonList(listener));
         conversation.getExchanges().offer(exchange);
         connection.setExchange(exchange);
@@ -90,7 +90,7 @@ public class HttpReceiverTest
                 "Content-length: 0\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -114,7 +114,7 @@ public class HttpReceiverTest
                 "\r\n" +
                 content);
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -141,7 +141,7 @@ public class HttpReceiverTest
                 "\r\n" +
                 content1);
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
         endPoint.setInputEOF();
         exchange.receive();
@@ -165,7 +165,7 @@ public class HttpReceiverTest
                 "Content-length: 1\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
         // Simulate an idle timeout
         connection.idleTimeout();
@@ -189,7 +189,7 @@ public class HttpReceiverTest
                 "Content-length: A\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
 
         try
@@ -220,7 +220,7 @@ public class HttpReceiverTest
                 "Content-Encoding: gzip\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
-        BlockingResponseListener listener = (BlockingResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         exchange.receive();
         endPoint.reset();
 

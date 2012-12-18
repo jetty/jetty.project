@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -103,9 +102,9 @@ public class AbstractTestOSGi
 			{
 				diagnoseNonActiveOrNonResolvedBundle(b);
 			}
-			Assert.assertTrue("Bundle: " + b + " (state should be " + 
-			        "ACTIVE[" + Bundle.ACTIVE + "] or RESOLVED[" + Bundle.RESOLVED + "]" + 
-			        ", but was [" + b.getState() + "])", 
+			Assert.assertTrue("Bundle: " + b + " (state should be " +
+			        "ACTIVE[" + Bundle.ACTIVE + "] or RESOLVED[" + Bundle.RESOLVED + "]" +
+			        ", but was [" + b.getState() + "])",
 			        (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
 		}
 	}
@@ -179,7 +178,7 @@ public class AbstractTestOSGi
         try
         {
             client.start();
-            ContentResponse response = client.GET(protocol+"://127.0.0.1:"+port+"/greetings").get(5, TimeUnit.SECONDS);;
+            ContentResponse response = client.GET(protocol+"://127.0.0.1:"+port+"/greetings");
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
