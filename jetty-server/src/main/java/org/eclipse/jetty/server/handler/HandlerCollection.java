@@ -66,7 +66,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      * @return Returns the handlers.
      */
     @Override
-    @ManagedAttribute("Wrapped handlers")
+    @ManagedAttribute(value="Wrapped handlers", readonly=true)
     public Handler[] getHandlers()
     {
         return _handlers;

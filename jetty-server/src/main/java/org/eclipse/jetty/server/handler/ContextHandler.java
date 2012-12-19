@@ -381,7 +381,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * @return Array of virtual hosts that this context responds to. A null host name or empty array means any hostname is acceptable. Host names may be String
      *         representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
      */
-    @ManagedAttribute("Virtual hosts accepted by the context")
+    @ManagedAttribute(value="Virtual hosts accepted by the context", readonly=true)
     public String[] getVirtualHosts()
     {
         return _vhosts;
@@ -1394,7 +1394,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * @see <a href="http://jcp.org/aboutJava/communityprocess/final/jsr154/index.html">The Servlet Specification</a>
      * @see #setWelcomeFiles
      */
-    @ManagedAttribute("Partial URIs of directory welcome files")
+    @ManagedAttribute(value="Partial URIs of directory welcome files", readonly=true)
     public String[] getWelcomeFiles()
     {
         return _welcomeFiles;

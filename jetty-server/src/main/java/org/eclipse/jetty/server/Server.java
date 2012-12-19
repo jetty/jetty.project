@@ -162,7 +162,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the connectors.
      */
-    @ManagedAttribute("connectors for this server")
+    @ManagedAttribute(value="connectors for this server", readonly=true)
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);

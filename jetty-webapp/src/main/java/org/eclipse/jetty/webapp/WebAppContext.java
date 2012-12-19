@@ -688,7 +688,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @see #setSystemClasses(String[])
      * @return Returns the systemClasses.
      */
-    @ManagedAttribute("classes and packages given priority by context classloader")
+    @ManagedAttribute(value="classes and packages given priority by context classloader", readonly=true)
     public String[] getSystemClasses()
     {
         if (_systemClasses == null)
