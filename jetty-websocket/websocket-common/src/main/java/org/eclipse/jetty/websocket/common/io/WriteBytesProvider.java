@@ -97,10 +97,10 @@ public class WriteBytesProvider implements Callback
         this.closed = new AtomicBoolean(false);
     }
 
-    public void enque(Frame frame, Callback callback)
+    public void enqueue(Frame frame, Callback callback)
     {
         Objects.requireNonNull(frame);
-        LOG.debug("enque({}, {})",frame,callback);
+        LOG.debug("enqueue({}, {})",frame,callback);
         synchronized (this)
         {
             if (closed.get())
@@ -283,8 +283,16 @@ public class WriteBytesProvider implements Callback
                 // All done with active FrameEntry
                 if (active.callback != null)
                 {
-                    // notify of success
-                    active.callback.succeeded();
+                    try
+                    {
+                        // TODO: should probably have callback invoked in new thread as part of scheduler
+                        // notify of success
+                        active.callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.warn("Callback failure",t);
+                    }
                 }
 
                 // null it out

@@ -432,7 +432,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         synchronized (writeBytes)
         {
-            writeBytes.enque(frame,WriteCallbackWrapper.wrap(callback));
+            writeBytes.enqueue(frame,WriteCallbackWrapper.wrap(callback));
         }
 
         flush();
