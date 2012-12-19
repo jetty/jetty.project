@@ -435,6 +435,10 @@ public class QuotedStringTokenizer
             if (escape)
             {
                 escape=false;
+                if (!isValidEscaping(c))
+                {
+                    b.append('\\');
+                }
                 b.append(c);
             }
             else if (c=='\\')
@@ -512,6 +516,10 @@ public class QuotedStringTokenizer
                         );
                         break;
                     default:
+                        if (!isValidEscaping(c))
+                        {
+                            b.append('\\');
+                        }
                         b.append(c);
                 }
             }
@@ -526,6 +534,13 @@ public class QuotedStringTokenizer
         }
 
         return b.toString();
+    }
+    
+    private static boolean isValidEscaping(char c)
+    {
+        return ((c == 'n') || (c == 'r') || (c == 't') || 
+                 (c == 'f') || (c == 'b') || (c == '\\') || 
+                 (c == '/') || (c == '"') || (c == 'u'));
     }
 
     /* ------------------------------------------------------------ */

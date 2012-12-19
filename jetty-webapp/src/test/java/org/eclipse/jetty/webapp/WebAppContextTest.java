@@ -35,7 +35,9 @@ import javax.servlet.ServletResponse;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -184,6 +186,36 @@ public class WebAppContextTest
         assertTrue(context.isProtectedTarget("/meta-inf/readme.txt"));
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
+    
+    
+    @Test
+    public void testNullPath() throws Exception
+    {
+        Server server = new Server(0);
+        HandlerList handlers = new HandlerList();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(Resource.newResource("./src/test/webapp"));
+        context.setContextPath("/");
+        server.setHandler(handlers);
+        handlers.addHandler(contexts);
+        contexts.addHandler(context);
+        
+        LocalConnector connector = new LocalConnector();
+        server.addConnector(connector);
+        
+        server.start();
+        try
+        {
+            String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+            Assert.assertTrue(response.indexOf("200 OK")>=0);
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
     
     class ServletA extends GenericServlet
     {
