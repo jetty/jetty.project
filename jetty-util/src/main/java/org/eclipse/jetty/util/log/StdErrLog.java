@@ -532,7 +532,7 @@ public class StdErrLog extends AbstractLogger
     {
         long now = System.currentTimeMillis();
         int ms=(int)(now%1000);
-        String d = _dateCache.format(now);
+        String d = _dateCache.now();
         tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }

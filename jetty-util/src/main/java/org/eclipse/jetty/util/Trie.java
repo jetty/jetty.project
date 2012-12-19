@@ -119,7 +119,7 @@ public class Trie<V>
         {
             char c=s.charAt(k);
             
-            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            int index=__lookup[c&0x7f];
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
@@ -173,7 +173,7 @@ public class Trie<V>
         for(int i=0; i < len; i++)
         {
             char c=s.charAt(i);
-            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            int index=__lookup[c&0x7f];
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
@@ -207,7 +207,7 @@ public class Trie<V>
         for(int i=0; i < len; i++)
         {
             byte c=b.get(offset+i);
-            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            int index=__lookup[c&0x7f];
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
@@ -246,7 +246,7 @@ public class Trie<V>
         for(int i=0; i < len; i++)
         {
             byte c=b[offset+i];
-            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            int index=__lookup[c&0x7f];
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
@@ -298,7 +298,7 @@ public class Trie<V>
         for(int i=0; i < len; i++)
         {
             byte c=b.get(pos++);
-            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            int index=__lookup[c&0x7f];
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
