@@ -98,6 +98,12 @@ public class ServletTester
     }
 
     /* ------------------------------------------------------------ */
+    public void join() throws Exception
+    {
+        _server.join();
+    }
+
+    /* ------------------------------------------------------------ */
     public void stop() throws Exception
     {
         _server.stop();

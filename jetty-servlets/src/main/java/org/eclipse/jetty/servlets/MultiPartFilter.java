@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -55,7 +54,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -79,6 +79,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String FILES ="org.eclipse.jetty.servlet.MultiPartFilter.files";
     private File tempdir;
@@ -197,7 +198,8 @@ public class MultiPartFilter implements Filter
                     throw new IOException("Missing content-disposition");
                 }
                 
-                QuotedStringTokenizer tok=new QuotedStringTokenizer(content_disposition,";");
+                LOG.debug("Content-Disposition: {}", content_disposition);
+                QuotedStringTokenizer tok=new QuotedStringTokenizer(content_disposition,";",false,true);
                 String name=null;
                 String filename=null;
                 while(tok.hasMoreTokens())
@@ -233,6 +235,7 @@ public class MultiPartFilter implements Filter
                 {
                     if (filename!=null && filename.length()>0)
                     {
+                        LOG.debug("filename = \"{}\"", filename);
                         file = File.createTempFile("MultiPart", "", tempdir);
                         out = new FileOutputStream(file);
                         if(_fileOutputBuffer>0)
@@ -409,7 +412,9 @@ public class MultiPartFilter implements Filter
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue)
     {
-        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();
+        return QuotedStringTokenizer.unquoteOnly(value);
     }
 
     /* ------------------------------------------------------------------------------- */

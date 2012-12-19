@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,7 +36,6 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -196,6 +195,42 @@ public class MultipartFilterTest
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+    
+    @Test
+    public void testBadlyEncodedFilename() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        
+        System.out.printf("Content: [%s]%n", response.getContent());
+
+        assertThat(response.getMethod(), nullValue());
+        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
+        assertThat(response.getContent(), containsString("Filename [Taken on Aug 22 \\ 2012.jpg]"));
+        assertThat(response.getContent(), containsString("How now brown cow."));
     }
 
     /*
@@ -553,7 +588,9 @@ public class MultipartFilterTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            assertEquals("How now brown cow.", req.getParameterMap().get("strupContent-Type: application/octet-stream"));
+            String content = (String)req.getParameterMap().get("\"strup\"Content-Type: application/octet-stream");
+            
+            assertThat(content, containsString("How now brown cow."));
                    
             super.doPost(req, resp);
         }
@@ -613,8 +650,17 @@ public class MultipartFilterTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            resp.getWriter().println((IO.toString(new FileInputStream((File)req.getAttribute("fileup")))));
+            FileInputStream in = null;
+            try {
+                File file = (File)req.getAttribute("fileup");
+                in = new FileInputStream(file);
+                
+                PrintWriter out = resp.getWriter();
+                out.printf("Filename [%s]\r\n", req.getParameter("fileup"));
+                out.println(IO.toString(in));
+            } finally {
+                IO.close(in);
+            }
         }
-        
     }
 }
