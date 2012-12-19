@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +30,7 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 public class HttpAuthenticationStore implements AuthenticationStore
 {
     private final List<Authentication> authentications = new CopyOnWriteArrayList<>();
-    private final Map<String, Authentication.Result> results = new ConcurrentHashMap<>();
+    private final Map<URI, Authentication.Result> results = new ConcurrentHashMap<>();
 
     @Override
     public void addAuthentication(Authentication authentication)
@@ -50,7 +51,7 @@ public class HttpAuthenticationStore implements AuthenticationStore
     }
 
     @Override
-    public Authentication findAuthentication(String type, String uri, String realm)
+    public Authentication findAuthentication(String type, URI uri, String realm)
     {
         for (Authentication authentication : authentications)
         {
@@ -79,12 +80,12 @@ public class HttpAuthenticationStore implements AuthenticationStore
     }
 
     @Override
-    public Authentication.Result findAuthenticationResult(String uri)
+    public Authentication.Result findAuthenticationResult(URI uri)
     {
         // TODO: I should match the longest URI
-        for (Map.Entry<String, Authentication.Result> entry : results.entrySet())
+        for (Map.Entry<URI, Authentication.Result> entry : results.entrySet())
         {
-            if (uri.startsWith(entry.getKey()))
+            if (uri.toString().startsWith(entry.getKey().toString()))
                 return entry.getValue();
         }
         return null;

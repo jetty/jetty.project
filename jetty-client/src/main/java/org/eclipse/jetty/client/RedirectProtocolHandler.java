@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.URI;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
@@ -65,7 +66,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         {
             Request request = result.getRequest();
             Response response = result.getResponse();
-            String location = response.getHeaders().get("location");
+            URI location = URI.create(response.getHeaders().get("location"));
             int status = response.getStatus();
             switch (status)
             {
@@ -103,7 +104,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         }
     }
 
-    private void redirect(Result result, HttpMethod method, String location)
+    private void redirect(Result result, HttpMethod method, URI location)
     {
         final Request request = result.getRequest();
         HttpConversation conversation = client.getConversation(request.getConversationID(), false);

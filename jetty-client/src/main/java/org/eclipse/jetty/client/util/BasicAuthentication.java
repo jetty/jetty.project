@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.net.URI;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -37,7 +39,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class BasicAuthentication implements Authentication
 {
-    private final String uri;
+    private final URI uri;
     private final String realm;
     private final String user;
     private final String password;
@@ -48,7 +50,7 @@ public class BasicAuthentication implements Authentication
      * @param user the user that wants to authenticate
      * @param password the password of the user
      */
-    public BasicAuthentication(String uri, String realm, String user, String password)
+    public BasicAuthentication(URI uri, String realm, String user, String password)
     {
         this.uri = uri;
         this.realm = realm;
@@ -57,12 +59,12 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public boolean matches(String type, String uri, String realm)
+    public boolean matches(String type, URI uri, String realm)
     {
         if (!"basic".equalsIgnoreCase(type))
             return false;
 
-        if (!uri.startsWith(this.uri))
+        if (!uri.toString().startsWith(this.uri.toString()))
             return false;
 
         return this.realm.equals(realm);
@@ -78,17 +80,17 @@ public class BasicAuthentication implements Authentication
 
     private static class BasicResult implements Result
     {
-        private final String uri;
+        private final URI uri;
         private final String value;
 
-        public BasicResult(String uri, String value)
+        public BasicResult(URI uri, String value)
         {
             this.uri = uri;
             this.value = value;
         }
 
         @Override
-        public String getURI()
+        public URI getURI()
         {
             return uri;
         }
@@ -96,7 +98,7 @@ public class BasicAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (request.getURI().startsWith(uri))
+            if (request.getURI().toString().startsWith(uri.toString()))
                 request.header(HttpHeader.AUTHORIZATION.asString(), value);
         }
 

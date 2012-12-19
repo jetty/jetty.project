@@ -59,6 +59,7 @@ public class HttpRequest implements Request
     private final long conversation;
     private final String host;
     private final int port;
+    private URI uri;
     private String scheme;
     private String path;
     private HttpMethod method;
@@ -91,6 +92,7 @@ public class HttpRequest implements Request
                 param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
             }
         }
+        this.uri = buildURI();
         followRedirects(client.isFollowRedirects());
     }
 
@@ -123,6 +125,7 @@ public class HttpRequest implements Request
     public Request scheme(String scheme)
     {
         this.scheme = scheme;
+        this.uri = buildURI();
         return this;
     }
 
@@ -161,19 +164,14 @@ public class HttpRequest implements Request
     public Request path(String path)
     {
         this.path = path;
+        this.uri = buildURI();
         return this;
     }
 
     @Override
-    public String getURI()
+    public URI getURI()
     {
-        String scheme = getScheme();
-        String result = scheme + "://" + getHost();
-        int port = getPort();
-        result += "http".equals(scheme) && port != 80 ? ":" + port : "";
-        result += "https".equals(scheme) && port != 443 ? ":" + port : "";
-        result += getPath();
-        return result;
+        return uri;
     }
 
     @Override
@@ -247,9 +245,14 @@ public class HttpRequest implements Request
     @Override
     public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
+        // This method is invoked often in a request/response conversation,
+        // so we avoid allocation if there is no need to filter.
+        if (type == null)
+            return (List<T>)requestListeners;
+
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
-            if (type == null || type.isInstance(listener))
+            if (type.isInstance(listener))
                 result.add((T)listener);
         return result;
     }
@@ -464,6 +467,11 @@ public class HttpRequest implements Request
     public Throwable getAbortCause()
     {
         return aborted;
+    }
+
+    private URI buildURI()
+    {
+        return URI.create(getScheme() + "://" + getHost() + ":" + getPort() + getPath());
     }
 
     @Override

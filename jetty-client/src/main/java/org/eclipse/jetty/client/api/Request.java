@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
@@ -96,7 +97,7 @@ public interface Request
     /**
      * @return the full URI of this request such as "http://host:port/path"
      */
-    String getURI();
+    URI getURI();
 
     /**
      * @return the HTTP version of this request, such as "HTTP/1.1"

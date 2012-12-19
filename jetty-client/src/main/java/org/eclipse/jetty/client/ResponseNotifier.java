@@ -42,9 +42,13 @@ public class ResponseNotifier
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.BeginListener)
                 notifyBegin((Response.BeginListener)listener, response);
+        }
     }
 
     private void notifyBegin(Response.BeginListener listener, Response response)
@@ -62,9 +66,13 @@ public class ResponseNotifier
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.HeaderListener)
                 result &= notifyHeader((Response.HeaderListener)listener, response, field);
+        }
         return result;
     }
 
@@ -83,9 +91,13 @@ public class ResponseNotifier
 
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.HeadersListener)
                 notifyHeaders((Response.HeadersListener)listener, response);
+        }
     }
 
     private void notifyHeaders(Response.HeadersListener listener, Response response)
@@ -102,10 +114,13 @@ public class ResponseNotifier
 
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.ContentListener)
                 notifyContent((Response.ContentListener)listener, response, buffer);
-
+        }
     }
 
     private void notifyContent(Response.ContentListener listener, Response response, ByteBuffer buffer)
@@ -122,9 +137,13 @@ public class ResponseNotifier
 
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.SuccessListener)
                 notifySuccess((Response.SuccessListener)listener, response);
+        }
     }
 
     private void notifySuccess(Response.SuccessListener listener, Response response)
@@ -141,9 +160,13 @@ public class ResponseNotifier
 
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.FailureListener)
                 notifyFailure((Response.FailureListener)listener, response, failure);
+        }
     }
 
     private void notifyFailure(Response.FailureListener listener, Response response, Throwable failure)
@@ -160,9 +183,13 @@ public class ResponseNotifier
 
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.CompleteListener)
                 notifyComplete((Response.CompleteListener)listener, result);
+        }
     }
 
     private void notifyComplete(Response.CompleteListener listener, Result result)

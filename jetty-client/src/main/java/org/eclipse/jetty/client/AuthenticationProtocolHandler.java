@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -98,7 +99,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            final String uri = request.getURI();
+            final URI uri = request.getURI();
             Authentication authentication = null;
             WWWAuthenticate wwwAuthenticate = null;
             for (WWWAuthenticate wwwAuthn : wwwAuthenticates)
@@ -125,7 +126,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            Request newRequest = client.copyRequest(request, request.getURI());
+            Request newRequest = client.copyRequest(request, uri);
             authnResult.apply(newRequest);
             newRequest.onResponseSuccess(new Response.SuccessListener()
             {

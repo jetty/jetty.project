@@ -38,6 +38,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.TimedResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -63,6 +64,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
     private final InetSocketAddress proxyAddress;
+    private final HttpField hostField;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
     {
@@ -79,6 +81,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
                 new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()) : null;
+
+        String hostValue = host;
+        if ("https".equalsIgnoreCase(scheme) && port != 443 ||
+                "http".equalsIgnoreCase(scheme) && port != 80)
+            hostValue += ":" + port;
+        hostField = new HttpField(HttpHeader.HOST, hostValue);
     }
 
     protected BlockingQueue<Connection> getIdleConnections()
@@ -119,6 +127,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     public boolean isProxied()
     {
         return proxyAddress != null;
+    }
+
+    public HttpField getHostField()
+    {
+        return hostField;
     }
 
     public void send(Request request, List<Response.ResponseListener> listeners)

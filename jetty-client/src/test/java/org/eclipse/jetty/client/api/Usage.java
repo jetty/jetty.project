@@ -192,7 +192,7 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        String uri = "http://localhost:8080/secure";
+        URI uri = URI.create("http://localhost:8080/secure");
 
         // Setup Basic authentication credentials for TestRealm
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, "TestRealm", "username", "password"));

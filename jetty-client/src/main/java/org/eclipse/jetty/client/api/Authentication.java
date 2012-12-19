@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.net.URI;
+
 import org.eclipse.jetty.util.Attributes;
 
 /**
@@ -42,7 +44,7 @@ public interface Authentication
      * @param realm the authentication realm as provided in the {@code WWW-Authenticate} response header
      * @return true if this authentication matches, false otherwise
      */
-    boolean matches(String type, String uri, String realm);
+    boolean matches(String type, URI uri, String realm);
 
     /**
      * Executes the authentication mechanism for the given request, returning a {@link Result} that can be
@@ -70,7 +72,7 @@ public interface Authentication
         /**
          * @return the URI of the request that has been used to generate this {@link Result}
          */
-        String getURI();
+        URI getURI();
 
         /**
          * Applies the authentication result to the given request.

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +53,7 @@ public class DigestAuthentication implements Authentication
 {
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
 
-    private final String uri;
+    private final URI uri;
     private final String realm;
     private final String user;
     private final String password;
@@ -63,7 +64,7 @@ public class DigestAuthentication implements Authentication
      * @param user the user that wants to authenticate
      * @param password the password of the user
      */
-    public DigestAuthentication(String uri, String realm, String user, String password)
+    public DigestAuthentication(URI uri, String realm, String user, String password)
     {
         this.uri = uri;
         this.realm = realm;
@@ -72,12 +73,12 @@ public class DigestAuthentication implements Authentication
     }
 
     @Override
-    public boolean matches(String type, String uri, String realm)
+    public boolean matches(String type, URI uri, String realm)
     {
         if (!"digest".equalsIgnoreCase(type))
             return false;
 
-        if (!uri.startsWith(this.uri))
+        if (!uri.toString().startsWith(this.uri.toString()))
             return false;
 
         return this.realm.equals(realm);
@@ -180,7 +181,7 @@ public class DigestAuthentication implements Authentication
     private class DigestResult implements Result
     {
         private final AtomicInteger nonceCount = new AtomicInteger();
-        private final String uri;
+        private final URI uri;
         private final byte[] content;
         private final String realm;
         private final String user;
@@ -190,7 +191,7 @@ public class DigestAuthentication implements Authentication
         private final String qop;
         private final String opaque;
 
-        public DigestResult(String uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
+        public DigestResult(URI uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
         {
             this.uri = uri;
             this.content = content;
@@ -204,7 +205,7 @@ public class DigestAuthentication implements Authentication
         }
 
         @Override
-        public String getURI()
+        public URI getURI()
         {
             return uri;
         }
@@ -212,7 +213,7 @@ public class DigestAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (!request.getURI().startsWith(uri))
+            if (!request.getURI().toString().startsWith(uri.toString()))
                 return;
 
             MessageDigest digester = getMessageDigest(algorithm);

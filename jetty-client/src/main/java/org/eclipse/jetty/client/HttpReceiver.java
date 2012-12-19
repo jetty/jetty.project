@@ -224,13 +224,13 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         return false;
     }
 
-    private void storeCookie(String uri, HttpField field)
+    private void storeCookie(URI uri, HttpField field)
     {
         try
         {
             Map<String, List<String>> header = new HashMap<>(1);
             header.put(field.getHeader().asString(), Collections.singletonList(field.getValue()));
-            connection.getHttpClient().getCookieManager().put(URI.create(uri), header);
+            connection.getHttpClient().getCookieManager().put(uri, header);
         }
         catch (IOException x)
         {

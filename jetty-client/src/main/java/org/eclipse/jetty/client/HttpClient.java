@@ -30,14 +30,15 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -111,10 +112,10 @@ public class HttpClient extends ContainerLifeCycle
 
     private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
-    private final List<ProtocolHandler> handlers = new CopyOnWriteArrayList<>();
-    private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
+    private final List<ProtocolHandler> handlers = new ArrayList<>();
+    private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    private final Set<ContentDecoder.Factory> decoderFactories = Collections.newSetFromMap(new ConcurrentHashMap<ContentDecoder.Factory, Boolean>());
+    private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
     private final SslContextFactory sslContextFactory;
     private volatile CookieManager cookieManager;
     private volatile CookieStore cookieStore;
@@ -122,7 +123,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
     private volatile SelectorManager selectorManager;
-    private volatile String agent = "Jetty/" + Jetty.VERSION;
+    private volatile HttpField agentField = new HttpField(HttpHeader.USER_AGENT, "Jetty/" + Jetty.VERSION);
     private volatile boolean followRedirects = true;
     private volatile int maxConnectionsPerDestination = 64;
     private volatile int maxRequestsQueuedPerDestination = 1024;
@@ -135,6 +136,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
     private volatile ProxyConfiguration proxyConfig;
+    private volatile HttpField encodingField;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -249,6 +251,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
+     * performing requests.
+     *
      * @return a list of {@link Request.Listener} that can be used to add and remove listeners
      */
     public List<Request.Listener> getRequestListeners()
@@ -293,6 +298,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Returns a <em>non</em> thread-safe set of {@link ContentDecoder.Factory}s that can be modified before
+     * performing requests.
+     *
      * @return a set of {@link ContentDecoder.Factory} that can be used to add and remove content decoder factories
      */
     public Set<ContentDecoder.Factory> getContentDecoderFactories()
@@ -381,9 +389,9 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request copyRequest(Request oldRequest, String newURI)
+    protected Request copyRequest(Request oldRequest, URI newURI)
     {
-        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), URI.create(newURI));
+        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), newURI);
         newRequest.method(oldRequest.getMethod())
                 .version(oldRequest.getVersion())
                 .content(oldRequest.getContent());
@@ -537,8 +545,11 @@ public class HttpClient extends ContainerLifeCycle
 
     protected ProtocolHandler findProtocolHandler(Request request, Response response)
     {
-        for (ProtocolHandler handler : getProtocolHandlers())
+        // Optimized to avoid allocations of iterator instances
+        List<ProtocolHandler> protocolHandlers = getProtocolHandlers();
+        for (int i = 0; i < protocolHandlers.size(); ++i)
         {
+            ProtocolHandler handler = protocolHandlers.get(i);
             if (handler.accept(request, response))
                 return handler;
         }
@@ -614,19 +625,21 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the "User-Agent" HTTP header string of this {@link HttpClient}
+     * @return the "User-Agent" HTTP field of this {@link HttpClient}
      */
-    public String getUserAgent()
+    public HttpField getUserAgentField()
     {
-        return agent;
+        return agentField;
     }
 
     /**
      * @param agent the "User-Agent" HTTP header string of this {@link HttpClient}
      */
-    public void setUserAgent(String agent)
+    public void setUserAgentField(HttpField agent)
     {
-        this.agent = agent;
+        if (agent.getHeader() != HttpHeader.USER_AGENT)
+            throw new IllegalArgumentException();
+        this.agentField = agent;
     }
 
     /**
@@ -844,6 +857,11 @@ public class HttpClient extends ContainerLifeCycle
         this.proxyConfig = proxyConfig;
     }
 
+    protected HttpField getAcceptEncodingField()
+    {
+        return encodingField;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -928,6 +946,120 @@ public class HttpClient extends ContainerLifeCycle
         {
             this.destination = destination;
             this.promise = promise;
+        }
+    }
+
+    private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>
+    {
+        private final Set<ContentDecoder.Factory> set = new HashSet<>();
+
+        @Override
+        public boolean add(ContentDecoder.Factory e)
+        {
+            boolean result = set.add(e);
+            invalidate();
+            return result;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends ContentDecoder.Factory> c)
+        {
+            boolean result = set.addAll(c);
+            invalidate();
+            return result;
+        }
+
+        @Override
+        public boolean remove(Object o)
+        {
+            boolean result = set.remove(o);
+            invalidate();
+            return result;
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c)
+        {
+            boolean result = set.removeAll(c);
+            invalidate();
+            return result;
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c)
+        {
+            boolean result = set.retainAll(c);
+            invalidate();
+            return result;
+        }
+
+        @Override
+        public void clear()
+        {
+            set.clear();
+            invalidate();
+        }
+
+        @Override
+        public int size()
+        {
+            return set.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return set.isEmpty();
+        }
+
+        @Override
+        public boolean contains(Object o)
+        {
+            return set.contains(o);
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c)
+        {
+            return set.containsAll(c);
+        }
+
+        @Override
+        public Iterator<ContentDecoder.Factory> iterator()
+        {
+            return set.iterator();
+        }
+
+        @Override
+        public Object[] toArray()
+        {
+            return set.toArray();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a)
+        {
+            return set.toArray(a);
+        }
+
+        protected void invalidate()
+        {
+            if (set.isEmpty())
+            {
+                encodingField = null;
+            }
+            else
+            {
+                StringBuilder value = new StringBuilder();
+                for (Iterator<ContentDecoder.Factory> iterator = set.iterator(); iterator.hasNext();)
+                {
+                    ContentDecoder.Factory decoderFactory = iterator.next();
+                    value.append(decoderFactory.getEncoding());
+                    if (iterator.hasNext())
+                        value.append(",");
+                }
+                encodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value.toString());
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -301,7 +302,7 @@ public class JdbcLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(_baseUrl, __realm, "jetty", "jetty"));
+         authStore.addAuthentication(new BasicAuthentication(URI.create(_baseUrl), __realm, "jetty", "jetty"));
          _client.start();
      }
 

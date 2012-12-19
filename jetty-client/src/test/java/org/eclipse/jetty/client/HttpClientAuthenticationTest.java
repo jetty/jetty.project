@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DigestAuthentication;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -99,7 +99,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_BasicAuthentication() throws Exception
     {
         startBasic(new EmptyServerHandler());
-        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
@@ -107,7 +107,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyServerHandler());
-        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         test_Authentication(new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
@@ -148,6 +148,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
+        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -167,7 +168,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         // Further requests do not trigger 401 because there is a previous successful authentication
         // Remove existing header to be sure it's added by the implementation
-        request.header(HttpHeader.AUTHORIZATION.asString(), null);
+        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -191,7 +192,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
@@ -230,7 +231,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
@@ -272,7 +273,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
-        String uri = scheme + "://localhost:" + connector.getLocalPort();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
