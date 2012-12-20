@@ -106,6 +106,7 @@ public class DateCache
         {
             long now=System.currentTimeMillis();
             long tick=1000*((now/1000)+1)-now;
+            formatNow();
             getTimer().scheduleAtFixedRate(new TimerTask()
             {
                 @Override
