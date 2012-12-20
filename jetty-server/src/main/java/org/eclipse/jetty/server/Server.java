@@ -263,7 +263,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         if (getStopAtShutdown()) {
             ShutdownThread.register(this);
-            ShutdownMonitor.getInstance(); // initialize
+            ShutdownMonitor.getInstance().start(); // initialize
         }
 
         LOG.info("jetty-"+__version);

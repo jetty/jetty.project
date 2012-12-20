@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 /**
  * Shutdown/Stop Monitor thread.
  * <p>
- * This thread listens on the port specified by the STOP.PORT system parameter (defaults to -1 for not listening) for
- * request authenticated with the key given by the STOP.KEY system parameter (defaults to "eclipse") for admin requests.
+ * This thread listens on the port specified by the STOP.PORT system parameter (defaults to -1 for not listening) for request authenticated with the key given
+ * by the STOP.KEY system parameter (defaults to "eclipse") for admin requests.
  * <p>
  * If the stop port is set to zero, then a random port is assigned and the port number is printed to stdout.
  * <p>
@@ -42,83 +42,83 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  */
 public class ShutdownMonitor extends Thread
 {
-    private static final ShutdownMonitor INSTANCE = new ShutdownMonitor();
-    
+    // Implementation of safe lazy init, using Initialization on Demand Holder technique.
+    static class Holder
+    {
+        static ShutdownMonitor instance = new ShutdownMonitor();
+    }
+
     public static ShutdownMonitor getInstance()
     {
-        return INSTANCE;
+        return Holder.instance;
     }
-    
-    private final boolean DEBUG;
-    private final int port;
-    private final String key;
-    private final ServerSocket serverSocket;
 
+    private boolean DEBUG;
+    private int port;
+    private String key;
+    private boolean exitVm;
+    private ServerSocket serverSocket;
+
+    /**
+     * Create a ShutdownMonitor using configuration from the System properties.
+     * <p>
+     * <code>STOP.PORT</code> = the port to listen on (empty, null, or values less than 0 disable the stop ability)<br>
+     * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop (defaults to "eclipse")<br>
+     * <p>
+     * Note: server socket will only listen on localhost, and a successful stop will issue a System.exit() call.
+     */
     private ShutdownMonitor()
     {
         Properties props = System.getProperties();
 
-        // Use the same debug option as /jetty-start/
         this.DEBUG = props.containsKey("DEBUG");
-        
-        // Use values passed thru /jetty-start/
-        int stopPort = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
-        String stopKey = props.getProperty("STOP.KEY",null);
 
-        ServerSocket sock = null;
+        // Use values passed thru via /jetty-start/
+        this.port = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
+        this.key = props.getProperty("STOP.KEY","eclipse");
+        this.exitVm = true;
+    }
+
+    private void close(ServerSocket server)
+    {
+        if (server == null)
+        {
+            return;
+        }
 
         try
         {
-            if (stopPort < 0)
-            {
-                System.out.println("ShutdownMonitor not in use");
-                sock = null;
-                return;
-            }
-
-            setDaemon(true);
-            setName("ShutdownMonitor");
-
-            sock = new ServerSocket(stopPort,1,InetAddress.getByName("127.0.0.1"));
-            if (stopPort == 0)
-            {
-                // server assigned port in use
-                stopPort = sock.getLocalPort();
-                System.out.printf("STOP.PORT=%d%n",stopPort);
-            }
-
-            if (stopKey == null)
-            {
-                // create random key
-                stopKey = Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()),36);
-                System.out.printf("STOP.KEY=%s%n",stopKey);
-            }
-
+            server.close();
         }
-        catch (Exception e)
+        catch (IOException ignore)
         {
-            debug(e);
-            System.err.println("Error binding monitor port " + stopPort + ": " + e.toString());
+            /* ignore */
         }
-        finally
-        {
-            // establish the port and key that are in use
-            this.port = stopPort;
-            this.key = stopKey;
-
-            this.serverSocket = sock;
-            debug("STOP.PORT=%d", port);
-            debug("STOP.KEY=%s", key);
-            debug("%s", serverSocket);
-        }
-
-        this.start();
     }
-    
-    @Override
-    public String toString()
+
+    private void close(Socket socket)
     {
-        return String.format("%s[port=%d]",this.getClass().getName(),port);
+        if (socket == null)
+        {
+            return;
+        }
+
+        try
+        {
+            socket.close();
+        }
+        catch (IOException ignore)
+        {
+            /* ignore */
+        }
+    }
+
+    private void debug(String format, Object... args)
+    {
+        if (DEBUG)
+        {
+            System.err.printf("[ShutdownMonitor] " + format + "%n",args);
+        }
     }
 
     private void debug(Throwable t)
@@ -129,12 +129,24 @@ public class ShutdownMonitor extends Thread
         }
     }
 
-    private void debug(String format, Object... args)
+    public String getKey()
     {
-        if (DEBUG)
-        {
-            System.err.printf("[ShutdownMonitor] " + format + "%n",args);
-        }
+        return key;
+    }
+
+    public int getPort()
+    {
+        return port;
+    }
+
+    public ServerSocket getServerSocket()
+    {
+        return serverSocket;
+    }
+
+    public boolean isExitVm()
+    {
+        return exitVm;
     }
 
     @Override
@@ -169,15 +181,18 @@ public class ShutdownMonitor extends Thread
                     debug("Informing client that we are stopped.");
                     out.write("Stopped\r\n".getBytes(StringUtil.__UTF8));
                     out.flush();
-                    
+
                     // Shutdown Monitor
                     debug("Shutting down monitor");
                     close(socket);
                     close(serverSocket);
 
-                    // Kill JVM
-                    debug("Killing JVM");
-                    System.exit(0);
+                    if (exitVm)
+                    {
+                        // Kill JVM
+                        debug("Killing JVM");
+                        System.exit(0);
+                    }
                 }
                 else if ("status".equals(cmd))
                 {
@@ -199,37 +214,98 @@ public class ShutdownMonitor extends Thread
         }
     }
 
-    private void close(Socket socket)
+    public void setDebug(boolean flag)
     {
-        if (socket == null)
+        this.DEBUG = flag;
+    }
+
+    public void setExitVm(boolean exitVm)
+    {
+        if (isAlive())
         {
-            return;
+            throw new IllegalStateException("ShutdownMonitor already started");
         }
+        this.exitVm = exitVm;
+    }
+
+    public void setKey(String key)
+    {
+        if (isAlive())
+        {
+            throw new IllegalStateException("ShutdownMonitor already started");
+        }
+        this.key = key;
+    }
+
+    public void setPort(int port)
+    {
+        if (isAlive())
+        {
+            throw new IllegalStateException("ShutdownMonitor already started");
+        }
+        this.port = port;
+    }
+
+    public void start()
+    {
+        if (isAlive())
+        {
+            System.out.printf("ShutdownMonitor already started");
+            return; // cannot start it again
+        }
+        startListenSocket();
+        super.start();
+    }
+
+    private void startListenSocket()
+    {
+        ServerSocket sock = null;
 
         try
         {
-            socket.close();
+            if (this.port < 0)
+            {
+                System.out.println("ShutdownMonitor not in use (port < 0): " + port);
+                sock = null;
+                return;
+            }
+
+            setDaemon(true);
+            setName("ShutdownMonitor");
+
+            sock = new ServerSocket(this.port,1,InetAddress.getByName("127.0.0.1"));
+            if (this.port == 0)
+            {
+                // server assigned port in use
+                this.port = sock.getLocalPort();
+                System.out.printf("STOP.PORT=%d%n",this.port);
+            }
+
+            if (this.key == null)
+            {
+                // create random key
+                this.key = Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()),36);
+                System.out.printf("STOP.KEY=%s%n",this.key);
+            }
         }
-        catch (IOException ignore)
+        catch (Exception e)
         {
-            /* ignore */
+            debug(e);
+            System.err.println("Error binding monitor port " + this.port + ": " + e.toString());
+        }
+        finally
+        {
+            // establish the port and key that are in use
+            this.serverSocket = sock;
+            debug("STOP.PORT=%d",this.port);
+            debug("STOP.KEY=%s",this.key);
+            debug("%s",serverSocket);
         }
     }
-    
-    private void close(ServerSocket server)
-    {
-        if (server == null)
-        {
-            return;
-        }
 
-        try
-        {
-            server.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
-        }
+    @Override
+    public String toString()
+    {
+        return String.format("%s[port=%d]",this.getClass().getName(),port);
     }
 }
