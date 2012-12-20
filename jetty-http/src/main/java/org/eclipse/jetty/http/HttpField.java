@@ -71,13 +71,14 @@ public class HttpField
                 CONTENT_TYPE.put(type+";charset="+charset,field);
             }
         }
-        
+
         // Add headers with null values so HttpParser can avoid looking up name again for unknown values
         Set<HttpHeader> headers = new HashSet<>();
         for (String key:CACHE.keySet())
             headers.add(CACHE.get(key).getHeader());
         for (HttpHeader h:headers)
-            CACHE.put(new HttpField(h,(String)null));
+            if (!CACHE.put(new HttpField(h,(String)null)))
+                throw new IllegalStateException("CACHE FULL");
     }
 
     private final static byte[] __colon_space = new byte[] {':',' '};

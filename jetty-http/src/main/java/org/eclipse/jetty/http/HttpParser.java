@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -86,6 +87,8 @@ public class HttpParser
     private int _chunkPosition;
     private boolean _headResponse;
     private ByteBuffer _contentChunk;
+    // private final Trie<HttpField> _connectionFields=(Trie<HttpField>)HttpField.CONNECTION.clone();
+    private final Trie<HttpField> _connectionFields=new Trie(512);
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
@@ -511,6 +514,7 @@ public class HttpParser
 
     private boolean handleKnownHeaders(ByteBuffer buffer)
     {
+        boolean add_to_connection_trie=false;
         switch (_header)
         {
             case CONTENT_LENGTH:
@@ -549,6 +553,7 @@ public class HttpParser
                 break;
 
             case HOST:
+                add_to_connection_trie=_field==null;
                 _host=true;
                 String host=_valueString;
                 int port=0;
@@ -583,8 +588,22 @@ public class HttpParser
                 }
                 if (_requestHandler!=null)
                     _requestHandler.parsedHostHeader(host,port);
+                
+              break;
+              
+            case USER_AGENT:
+            case ACCEPT:
+            case ACCEPT_LANGUAGE:
+            case COOKIE:  // TODO test this assumption!
+                add_to_connection_trie=_field==null;
         }
     
+        if (add_to_connection_trie)
+        {
+            _field=new HttpField.CachedHttpField(_header,_valueString);
+            _connectionFields.put(_field);
+        }
+        
         return false;
     }
     
@@ -645,14 +664,19 @@ public class HttpParser
                             {
                                 // Handle known headers
                                 if (_header!=null && handleKnownHeaders(buffer))
+                                {
+                                    _headerString=_valueString=null;
+                                    _header=null;
+                                    _value=null;
+                                    _field=null;
                                     return true;
-
+                                }
                                 return_from_parse|=_handler.parsedHeader(_field!=null?_field:new HttpField(_header,_headerString,_valueString));
-                                _field=null;
                             }
                             _headerString=_valueString=null;
                             _header=null;
                             _value=null;
+                            _field=null;
 
                             // now handle the ch
                             if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
@@ -719,7 +743,10 @@ public class HttpParser
                                 if (buffer.remaining()>6)
                                 {
                                     // Try a look ahead for the known header name and value.
-                                    _field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
+                                    _field=_connectionFields.getBest(buffer,-1,buffer.remaining());
+                                    if (_field==null)
+                                        _field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
+                                    
                                     //_field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
                                     if (_field!=null)
                                     {
@@ -1188,6 +1215,7 @@ public class HttpParser
         }
         catch(Exception e)
         {
+            e.printStackTrace();
             BufferUtil.clear(buffer);
             if (isClosed())
             {

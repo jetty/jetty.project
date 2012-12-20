@@ -166,4 +166,5 @@ public class TrieTest
         ByteBuffer buffer = (ByteBuffer)BufferUtil.toDirectBuffer("xhelloxxxxxxx").position(2);
         Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
     }
+    
 }

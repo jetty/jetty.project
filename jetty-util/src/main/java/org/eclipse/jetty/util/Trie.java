@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -85,7 +86,7 @@ public class Trie<V>
      * then a big index will be created for the row, with
      * 256 entries, one for each possible byte.
      */
-    private final char[][] _bigIndex;
+    private char[][] _bigIndex;
     
     /**
      * The number of rows allocated
@@ -102,15 +103,16 @@ public class Trie<V>
         _value=new Object[capacityInNodes];
         _rowIndex=new char[capacityInNodes*32];
         _key=new String[capacityInNodes];
-        _bigIndex=new char[capacityInNodes][];
     }
+    
+    
     /* ------------------------------------------------------------ */
     /** Put and entry into the Trie
      * @param s The key for the entry
      * @param v The value of the entry
-     * @return The last value for the key
+     * @return True if the Trie had capacity to add the field.
      */
-    public V put(String s, V v)
+    public boolean put(String s, V v)
     {
         int t=0;
         int k;
@@ -125,22 +127,34 @@ public class Trie<V>
                 int idx=t*ROW_SIZE+index;
                 t=_rowIndex[idx];
                 if (t==0)
+                {
+                    if (_rows==_value.length)
+                        return false;
                     t=_rowIndex[idx]=++_rows;
+                }
             }
+            else if (c>127)
+                throw new IllegalArgumentException("non ascii character");
             else
             {
+                if (_bigIndex==null)
+                    _bigIndex=new char[_value.length][];
                 char[] big=_bigIndex[t];
                 if (big==null)
-                    big=_bigIndex[t]=new char[256];
+                    big=_bigIndex[t]=new char[128];
                 t=big[c];
                 if (t==0)
+                {
+                    if (_rows==_value.length)
+                        return false;
                     t=big[c]=++_rows;
+                }
             }
         }
         _key[t]=v==null?null:s;
         V old=(V)_value[t];
         _value[t] = v;
-        return old;
+        return true;
     }
 
 
@@ -149,7 +163,7 @@ public class Trie<V>
      * @param v
      * @return
      */
-    public V put(V v)
+    public boolean put(V v)
     {
         return put(v.toString(),v);
     }
@@ -183,7 +197,7 @@ public class Trie<V>
             }
             else
             {
-                char[] big=_bigIndex[t];
+                char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
                 t=big[c];
@@ -217,7 +231,7 @@ public class Trie<V>
             }
             else
             {
-                char[] big=_bigIndex[t];
+                char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
                 t=big[c];
@@ -256,7 +270,7 @@ public class Trie<V>
             }
             else
             {
-                char[] big=_bigIndex[t];
+                char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
                 t=big[c];
@@ -308,7 +322,7 @@ public class Trie<V>
             }
             else
             {
-                char[] big=_bigIndex[t];
+                char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
                 t=big[c];
@@ -371,7 +385,7 @@ public class Trie<V>
                 toString(out,_rowIndex[idx]);
         }
 
-        char[] big = _bigIndex[t];
+        char[] big = _bigIndex==null?null:_bigIndex[t];
         if (big!=null)
         {
             for (int i:big)
@@ -399,8 +413,8 @@ public class Trie<V>
             if (_rowIndex[idx] != 0)
                 keySet(set,_rowIndex[idx]);
         }
-
-        char[] big = _bigIndex[t];
+        
+        char[] big = _bigIndex==null?null:_bigIndex[t];
         if (big!=null)
         {
             for (int i:big)
