@@ -594,7 +594,6 @@ public class HttpParser
             case USER_AGENT:
             case ACCEPT:
             case ACCEPT_LANGUAGE:
-            case COOKIE:  // TODO test this assumption!
                 add_to_connection_trie=_field==null;
         }
     
