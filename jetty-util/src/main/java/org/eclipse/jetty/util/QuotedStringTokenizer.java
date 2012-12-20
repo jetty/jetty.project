@@ -409,12 +409,21 @@ public class QuotedStringTokenizer
         }
     }
     
+    
+    /* ------------------------------------------------------------ */
+    public static String unquoteOnly(String s)
+    {
+        return unquoteOnly(s, false);
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /** Unquote a string, NOT converting unicode sequences
      * @param s The string to unquote.
+     * @param lenient if true, will leave in backslashes that aren't valid escapes
      * @return quoted string
      */
-    public static String unquoteOnly(String s)
+    public static String unquoteOnly(String s, boolean lenient)
     {
         if (s==null)
             return null;
@@ -435,7 +444,7 @@ public class QuotedStringTokenizer
             if (escape)
             {
                 escape=false;
-                if (!isValidEscaping(c))
+                if (lenient && !isValidEscaping(c))
                 {
                     b.append('\\');
                 }
@@ -453,13 +462,19 @@ public class QuotedStringTokenizer
 
         return b.toString(); 
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public static String unquote(String s)
+    {
+        return unquote(s,false);
+    }
+    
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
      * @return quoted string
      */
-    public static String unquote(String s)
+    public static String unquote(String s, boolean lenient)
     {
         if (s==null)
             return null;
@@ -516,7 +531,7 @@ public class QuotedStringTokenizer
                         );
                         break;
                     default:
-                        if (!isValidEscaping(c))
+                        if (lenient && !isValidEscaping(c))
                         {
                             b.append('\\');
                         }
@@ -536,6 +551,13 @@ public class QuotedStringTokenizer
         return b.toString();
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /** Check that char c (which is preceded by a backslash) is a valid
+     * escape sequence.
+     * @param c
+     * @return
+     */
     private static boolean isValidEscaping(char c)
     {
         return ((c == 'n') || (c == 'r') || (c == 't') || 

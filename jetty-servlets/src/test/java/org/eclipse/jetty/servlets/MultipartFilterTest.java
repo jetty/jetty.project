@@ -224,7 +224,7 @@ public class MultipartFilterTest
         
         response.parse(tester.getResponses(request.generate()));
         
-        System.out.printf("Content: [%s]%n", response.getContent());
+        //System.out.printf("Content: [%s]%n", response.getContent());
 
         assertThat(response.getMethod(), nullValue());
         assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -232,7 +232,80 @@ public class MultipartFilterTest
         assertThat(response.getContent(), containsString("Filename [Taken on Aug 22 \\ 2012.jpg]"));
         assertThat(response.getContent(), containsString("How now brown cow."));
     }
+    
+    @Test
+    public void testBadlyEncodedMSFilename() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\this\\really\\is\\some\\path\\to\\a\\file.txt\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        
+        //System.out.printf("Content: [%s]%n", response.getContent());
+
+        assertThat(response.getMethod(), nullValue());
+        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
+        assertThat(response.getContent(), containsString("Filename [c:\\this\\really\\is\\some\\path\\to\\a\\file.txt]"));
+        assertThat(response.getContent(), containsString("How now brown cow.")); 
+    }
+
+    @Test
+    public void testCorrectlyEncodedMSFilename() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        
+        //System.out.printf("Content: [%s]%n", response.getContent());
+
+        assertThat(response.getMethod(), nullValue());
+        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
+        assertThat(response.getContent(), containsString("Filename [c:\\this\\really\\is\\some\\path\\to\\a\\file.txt]"));
+        assertThat(response.getContent(), containsString("How now brown cow.")); 
+    }
+
+    
     /*
      * Test multipart with parts encoded in base64 (RFC1521 section 5)
      */
