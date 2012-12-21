@@ -24,7 +24,6 @@ import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -72,9 +72,16 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         this.scheme = scheme;
         this.host = host;
         this.address = new InetSocketAddress(host, port);
-        this.requests = new ArrayBlockingQueue<>(client.getMaxRequestsQueuedPerDestination());
-        this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerDestination());
-        this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerDestination());
+
+        int maxRequestsQueued = client.getMaxRequestsQueuedPerDestination();
+        int capacity = Math.min(32, maxRequestsQueued);
+        this.requests = new BlockingArrayQueue<>(capacity, capacity, maxRequestsQueued);
+
+        int maxConnections = client.getMaxConnectionsPerDestination();
+        capacity = Math.min(8, maxConnections);
+        this.idleConnections = new BlockingArrayQueue<>(capacity, capacity, maxConnections);
+        this.activeConnections = new BlockingArrayQueue<>(capacity, capacity, maxConnections);
+
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier(client);
 
