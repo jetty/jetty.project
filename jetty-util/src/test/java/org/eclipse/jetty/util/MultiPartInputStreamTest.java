@@ -434,6 +434,69 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(baos.toString("UTF-8"), is("Other")); 
     }
     
+    
+    public void testBadlyEncodedFilename() throws Exception
+    {
+        
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"Taken on Aug 22 \\ 2012.jpg"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("Taken on Aug 22 \\ 2012.jpg"));
+    }
+    
+    public void testBadlyEncodedMSFilename() throws Exception
+    {
+        
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+    }
+
+    public void testCorrectlyEncodedMSFilename() throws Exception
+    {
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+    }
+    
     public void testMulti ()
     throws Exception
     {
@@ -445,6 +508,9 @@ public class MultiPartInputStreamTest extends TestCase
         testMulti("stuff with spaces.txt");
     }
 
+    
+    
+    
     private void testMulti(String filename) throws IOException, ServletException
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  

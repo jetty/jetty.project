@@ -53,12 +53,13 @@ import java.util.Set;
 /*-------------------------------------------*/
 /**
  * <p>
- * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows an application to be started with
- * the command "java -jar start.jar".
+ * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It
+ * allows an application to be started with the command "java -jar start.jar".
  * </p>
- *
+ * 
  * <p>
- * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file obtained as a resource or file.
+ * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file
+ * obtained as a resource or file.
  * </p>
  */
 public class Main
@@ -91,7 +92,7 @@ public class Main
             Main main = new Main();
             List<String> arguments = main.expandCommandLine(args);
             List<String> xmls = main.processCommandLine(arguments);
-            if (xmls!=null)
+            if (xmls != null)
                 main.start(xmls);
         }
         catch (Throwable e)
@@ -143,7 +144,7 @@ public class Main
 
     List<String> parseStartIniFiles()
     {
-        List<String> ini_args=new ArrayList<String>();
+        List<String> ini_args = new ArrayList<String>();
         File start_ini = new File(_jettyHome,"start.ini");
         if (start_ini.exists())
             ini_args.addAll(loadStartIni(start_ini));
@@ -179,14 +180,14 @@ public class Main
                 _showUsage = true;
                 continue;
             }
-            
+
             if ("--stop".equals(arg))
             {
                 int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
                 String key = Config.getProperty("STOP.KEY",null);
-                int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT", "0"));
+                int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
-                return null;  
+                return null;
             }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
@@ -226,7 +227,7 @@ public class Main
                 if (!startDir.exists() || !startDir.canWrite())
                     startDir = new File(".");
 
-                File startLog = new File(startDir, START_LOG_ROLLOVER_DATEFORMAT.format(new Date()));
+                File startLog = new File(startDir,START_LOG_ROLLOVER_DATEFORMAT.format(new Date()));
 
                 if (!startLog.exists() && !startLog.createNewFile())
                 {
@@ -246,7 +247,7 @@ public class Main
                 PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
                 System.setOut(logger);
                 System.setErr(logger);
-                System.out.println("Establishing "+ START_LOG_FILENAME + " on " + new Date());
+                System.out.println("Establishing " + START_LOG_FILENAME + " on " + new Date());
                 continue;
             }
 
@@ -492,11 +493,6 @@ public class Main
     /* ------------------------------------------------------------ */
     public void start(List<String> xmls) throws IOException, InterruptedException
     {
-        // Setup Start / Stop Monitoring
-        int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
-        String key = Config.getProperty("STOP.KEY",null);
-        Monitor monitor = new Monitor(port,key);
-
         // Load potential Config (start.config)
         List<String> configuredXmls = loadConfig(xmls);
 
@@ -581,9 +577,8 @@ public class Main
             copyInThread(process.getErrorStream(),System.err);
             copyInThread(process.getInputStream(),System.out);
             copyInThread(System.in,process.getOutputStream());
-            monitor.setProcess(process);
             process.waitFor();
-
+            System.exit(0); // exit JVM when child process ends.
             return;
         }
 
@@ -688,11 +683,18 @@ public class Main
             cmd.addArg(x);
         }
         cmd.addRawArg("-Djetty.home=" + _jettyHome);
+
+        // Special Stop/Shutdown properties
+        ensureSystemPropertySet("STOP.PORT");
+        ensureSystemPropertySet("STOP.KEY");
+
+        // System Properties
         for (String p : _sysProps)
         {
             String v = System.getProperty(p);
             cmd.addEqualsArg("-D" + p,v);
         }
+
         cmd.addArg("-cp");
         cmd.addRawArg(classpath.toString());
         cmd.addRawArg(_config.getMainClassname());
@@ -713,6 +715,34 @@ public class Main
             cmd.addRawArg(xml);
         }
         return cmd;
+    }
+
+    /**
+     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or
+     * start.ini property)
+     * 
+     * @param key
+     *            the key to be sure of
+     */
+    private void ensureSystemPropertySet(String key)
+    {
+        if (_sysProps.contains(key))
+        {
+            return; // done
+        }
+
+        Properties props = Config.getProperties();
+        if (props.containsKey(key))
+        {
+            String val = props.getProperty(key,null);
+            if (val == null)
+            {
+                return; // no value to set
+            }
+            // setup system property
+            _sysProps.add(key);
+            System.setProperty(key,val);
+        }
     }
 
     private String findJavaBin()
@@ -927,10 +957,10 @@ public class Main
 
     /**
      * Load Configuration.
-     *
-     * No specific configuration is real until a {@link Config#getCombinedClasspath(java.util.Collection)} is used to execute the {@link Class} specified by
-     * {@link Config#getMainClassname()} is executed.
-     *
+     * 
+     * No specific configuration is real until a {@link Config#getCombinedClasspath(java.util.Collection)} is used to
+     * execute the {@link Class} specified by {@link Config#getMainClassname()} is executed.
+     * 
      * @param xmls
      *            the command line specified xml configuration options.
      * @return the list of xml configurations arriving via command line and start.config choices.
@@ -1007,11 +1037,10 @@ public class Main
      */
     public void stop(int port, String key)
     {
-        stop (port,key, 0);
+        stop(port,key,0);
     }
 
-    
-    public void stop (int port, String key, int timeout)
+    public void stop(int port, String key, int timeout)
     {
         int _port = port;
         String _key = key;
@@ -1031,7 +1060,7 @@ public class Main
 
             Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
             if (timeout > 0)
-                s.setSoTimeout(timeout*1000);
+                s.setSoTimeout(timeout * 1000);
             try
             {
                 OutputStream out = s.getOutputStream();
@@ -1040,11 +1069,15 @@ public class Main
 
                 if (timeout > 0)
                 {
-                    System.err.println("Waiting"+(timeout > 0 ? (" "+timeout+"sec") : "")+" for jetty to stop");
+                    System.err.printf("Waiting %,d seconds for jetty to stop%n",timeout);
                     LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
-                    String response=lin.readLine();
-                    if ("Stopped".equals(response))
-                        System.err.println("Stopped");
+                    String response;
+                    while ((response = lin.readLine()) != null)
+                    {
+                        Config.debug("Received \"" + response + "\"");
+                        if ("Stopped".equals(response))
+                            System.err.println("Server reports itself as Stopped");
+                    }
                 }
             }
             finally

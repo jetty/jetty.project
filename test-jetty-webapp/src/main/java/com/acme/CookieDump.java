@@ -128,6 +128,7 @@ public class CookieDump extends HttpServlet
         // For testing --stop with STOP.WAIT handling of the jetty-start behavior.
         if (Boolean.getBoolean("test.slow.destroy"))
         {
+            log("Simulating a slow destroy (10 seconds)",null);
             try
             {
                 TimeUnit.SECONDS.sleep(10);
