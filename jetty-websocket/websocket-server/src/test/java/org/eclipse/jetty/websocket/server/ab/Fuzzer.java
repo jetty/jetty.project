@@ -190,6 +190,7 @@ public class Fuzzer
         // we expect that the close handshake to have occurred and the server should have closed the connection
         try
         {
+            @SuppressWarnings("unused")
             int val = client.read();
 
             Assert.fail("Server has not closed socket");
