@@ -414,6 +414,7 @@
     <module>tests</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
+    <module>aggregates/jetty-all</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
