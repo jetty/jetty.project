@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.HashSet;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
@@ -41,7 +42,7 @@ public class BlockingArrayQueueTest
 
         Assert.assertEquals(0, queue.size());
 
-        for (int i=0;i<3;i++)
+        for (int i=0;i<queue.getMaxCapacity();i++)
         {
             queue.offer("one");
             Assert.assertEquals(1, queue.size());
@@ -324,5 +325,171 @@ public class BlockingArrayQueueTest
         HashSet<Integer> consSet = new HashSet<>(consumed);
 
         Assert.assertEquals(prodSet, consSet);
+    }
+
+    @Test
+    public void testRemoveObjectFromEmptyQueue()
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        Assert.assertFalse(queue.remove("SOMETHING"));
+    }
+
+    @Test
+    public void testRemoveObjectWithWrappedTail() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(6);
+        // Wrap the tail
+        for (int i = 0; i < queue.getMaxCapacity(); ++i)
+            queue.offer("" + i);
+        // Advance the head
+        queue.poll();
+        // Remove from the middle
+        Assert.assertTrue(queue.remove("2"));
+
+        // Advance the tail
+        Assert.assertTrue(queue.offer("A"));
+        Assert.assertTrue(queue.offer("B"));
+        queue.poll();
+        // Remove from the middle
+        Assert.assertTrue(queue.remove("3"));
+    }
+
+    @Test
+    public void testRemoveObject() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+
+        String element1 = "A";
+        Assert.assertTrue(queue.offer(element1));
+        Assert.assertTrue(queue.remove(element1));
+
+        for (int i = 0; i < queue.getMaxCapacity() - 1; ++i)
+        {
+            queue.offer("" + i);
+            queue.poll();
+        }
+        String element2 = "B";
+        Assert.assertTrue(queue.offer(element2));
+        Assert.assertTrue(queue.offer(element1));
+        Assert.assertTrue(queue.remove(element1));
+
+        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+
+        Assert.assertTrue(queue.remove(element2));
+        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+
+        queue.clear();
+
+        for (int i = 0; i < queue.getMaxCapacity(); ++i)
+            queue.offer("" + i);
+
+        Assert.assertTrue(queue.remove("" + (queue.getMaxCapacity() - 1)));
+    }
+
+    @Test
+    public void testRemoveWithMaxCapacityOne() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
+
+        String element = "A";
+        Assert.assertTrue(queue.offer(element));
+        Assert.assertTrue(queue.remove(element));
+
+        Assert.assertTrue(queue.offer(element));
+        Assert.assertEquals(element, queue.remove(0));
+    }
+
+    @Test
+    public void testIteratorWithModification() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        int count = queue.getMaxCapacity() - 1;
+        for (int i = 0; i < count; ++i)
+            queue.offer("" + i);
+
+        int sum = 0;
+        for (String element : queue)
+        {
+            ++sum;
+            // Concurrent modification, must not change the iterator
+            queue.remove(element);
+        }
+
+        Assert.assertEquals(count, sum);
+        Assert.assertTrue(queue.isEmpty());
+    }
+
+    @Test
+    public void testListIterator() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        String element1 = "A";
+        String element2 = "B";
+        queue.offer(element1);
+        queue.offer(element2);
+
+        ListIterator<String> iterator = queue.listIterator();
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        String element = iterator.next();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.next();
+        Assert.assertEquals(element2, element);
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element2, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+    }
+
+    @Test
+    public void testListIteratorWithWrappedHead() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        // This sequence of offers and polls wraps the head around the array
+        queue.offer("0");
+        queue.offer("1");
+        queue.offer("2");
+        queue.offer("3");
+        queue.poll();
+        queue.poll();
+
+        String element1 = queue.get(0);
+        String element2 = queue.get(1);
+
+        ListIterator<String> iterator = queue.listIterator();
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        String element = iterator.next();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.next();
+        Assert.assertEquals(element2, element);
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element2, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
     }
 }
