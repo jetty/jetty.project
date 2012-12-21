@@ -269,14 +269,14 @@ public class ShutdownMonitor extends Thread
 
     private void startListenSocket()
     {
+        if (this.port < 0)
+        {
+            System.out.println("ShutdownMonitor not in use (port < 0): " + port);
+            return;
+        }
+
         try
         {
-            if (this.port < 0)
-            {
-                System.out.println("ShutdownMonitor not in use (port < 0): " + port);
-                return;
-            }
-
             setDaemon(true);
             setName("ShutdownMonitor");
 
