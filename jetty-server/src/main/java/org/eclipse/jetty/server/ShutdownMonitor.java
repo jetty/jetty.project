@@ -152,6 +152,11 @@ public class ShutdownMonitor extends Thread
     @Override
     public void run()
     {
+        if (serverSocket == null)
+        {
+            return;
+        }
+
         while (true)
         {
             Socket socket = null;
@@ -254,30 +259,32 @@ public class ShutdownMonitor extends Thread
             return; // cannot start it again
         }
         startListenSocket();
+        if (serverSocket == null)
+        {
+            return;
+        }
+
         super.start();
     }
 
     private void startListenSocket()
     {
-        ServerSocket sock = null;
-
         try
         {
             if (this.port < 0)
             {
                 System.out.println("ShutdownMonitor not in use (port < 0): " + port);
-                sock = null;
                 return;
             }
 
             setDaemon(true);
             setName("ShutdownMonitor");
 
-            sock = new ServerSocket(this.port,1,InetAddress.getByName("127.0.0.1"));
+            this.serverSocket = new ServerSocket(this.port,1,InetAddress.getByName("127.0.0.1"));
             if (this.port == 0)
             {
                 // server assigned port in use
-                this.port = sock.getLocalPort();
+                this.port = serverSocket.getLocalPort();
                 System.out.printf("STOP.PORT=%d%n",this.port);
             }
 
@@ -296,7 +303,6 @@ public class ShutdownMonitor extends Thread
         finally
         {
             // establish the port and key that are in use
-            this.serverSocket = sock;
             debug("STOP.PORT=%d",this.port);
             debug("STOP.KEY=%s",this.key);
             debug("%s",serverSocket);
