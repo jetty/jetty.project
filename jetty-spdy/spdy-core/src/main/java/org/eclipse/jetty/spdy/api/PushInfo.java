@@ -23,12 +23,12 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.Fields;
 
 /**
- * <p>A container for SYN_STREAM frames metadata and data.</p>
+ * <p>A container for PUSH_SYN_STREAM frames metadata and data.</p>
  */
-public class SynInfo extends Info
+public class PushInfo extends Info
 {
     /**
-     * <p>Flag that indicates that this {@link SynInfo} is the last frame in the stream.</p>
+     * <p>Flag that indicates that this {@link PushInfo} is the last frame in the stream.</p>
      *
      * @see #isClose()
      * @see #getFlags()
@@ -36,54 +36,35 @@ public class SynInfo extends Info
     public static final byte FLAG_CLOSE = 1;
 
     private final boolean close;
-    private final byte priority;
     private final Fields headers;
 
     /**
-     * <p>Creates a {@link SynInfo} instance with the given headers and the given close flag,
+     * <p>Creates a {@link PushInfo} instance with the given headers and the given close flag,
      * not unidirectional, without associated stream, and with default priority.</p>
      *
      * @param headers the {@link Fields}
      * @param close the value of the close flag
      */
-    public SynInfo(Fields headers, boolean close)
+    public PushInfo(Fields headers, boolean close)
     {
-        this(0, TimeUnit.SECONDS, headers, close, (byte)0);
+        this(0, TimeUnit.SECONDS, headers, close);
         // either builder or setters for timeout
     }
 
     /**
      * <p>
-     * Creates a {@link SynInfo} instance with the given headers, the given close flag and with the given priority.
-     * </p>
-     * @param headers
-     *            the {@link Fields}
-     * @param close
-     *            the value of the close flag
-     * @param priority
-     */
-    public SynInfo(Fields headers, boolean close, byte priority)
-    {
-        this(0, TimeUnit.SECONDS, headers, close, priority);
-    }
-
-    /**
-     * <p>
-     * Creates a {@link SynInfo} instance with the given headers, the given close flag and with the given priority.
+     * Creates a {@link PushInfo} instance with the given headers, the given close flag and with the given priority.
      * </p>
      * @param timeout the timeout value
      * @param unit the TimeUnit of the timeout
      * @param headers
-     *            the {@link Fields}
+ *            the {@link Fields}
      * @param close
-     *            the value of the close flag
-     * @param priority
      */
-    public SynInfo(long timeout, TimeUnit unit, Fields headers, boolean close, byte priority)
+    public PushInfo(long timeout, TimeUnit unit, Fields headers, boolean close)
     {
         super(timeout, unit);
         this.close = close;
-        this.priority = priority;
         this.headers = headers;
     }
 
@@ -93,14 +74,6 @@ public class SynInfo extends Info
     public boolean isClose()
     {
         return close;
-    }
-
-    /**
-     * @return the priority
-     */
-    public byte getPriority()
-    {
-        return priority;
     }
 
     /**
@@ -123,6 +96,6 @@ public class SynInfo extends Info
     @Override
     public String toString()
     {
-        return String.format("SYN close=%b headers=%s", close, headers);
+        return String.format("SYN push close=%b headers=%s", close, headers);
     }
 }

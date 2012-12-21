@@ -137,7 +137,7 @@ public class ClientUsageTest
 
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
                 {
-            // The good of passing the listener to syn() is that applications can safely
+            // The good of passing the listener to push() is that applications can safely
             // accumulate info from the reply headers to be used in the data callback,
             // e.g. content-type, charset, etc.
 

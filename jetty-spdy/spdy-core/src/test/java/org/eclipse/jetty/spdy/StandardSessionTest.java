@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -225,8 +226,8 @@ public class StandardSessionTest
     private void createPushStreamAndMakeSureItFails(IStream stream) throws InterruptedException
     {
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
-        stream.syn(synInfo, new Promise.Adapter<Stream>()
+        PushInfo pushInfo = new PushInfo(5, TimeUnit.SECONDS, headers, false);
+        stream.push(pushInfo, new Promise.Adapter<Stream>()
         {
             @Override
             public void failed(Throwable x)
@@ -259,7 +260,7 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        IStream pushStream = (IStream)stream.syn(new SynInfo(new Fields(), false));
+        IStream pushStream = (IStream)stream.push(new PushInfo(new Fields(), false));
         assertThatPushStreamIsInSession(pushStream);
         session.rst(new RstInfo(pushStream.getId(), StreamStatus.INVALID_STREAM));
         assertThatPushStreamIsNotInSession(pushStream);
@@ -273,8 +274,8 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, true, stream.getPriority());
-        IStream pushStream = (IStream)stream.syn(synInfo);
+        PushInfo pushInfo = new PushInfo(5, TimeUnit.SECONDS, headers, true);
+        IStream pushStream = (IStream)stream.push(pushInfo);
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsClosed(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream, pushStream);
@@ -288,8 +289,8 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
-        IStream pushStream = (IStream)stream.syn(synInfo);
+        PushInfo pushInfo = new PushInfo(5, TimeUnit.SECONDS, headers, false);
+        IStream pushStream = (IStream)stream.push(pushInfo);
         assertThatStreamIsAssociatedWithPushStream(stream, pushStream);
         assertThatPushStreamIsInSession(pushStream);
         pushStream.headers(new HeadersInfo(headers, true));
@@ -543,8 +544,8 @@ public class StandardSessionTest
 
     private IStream createPushStream(Stream stream) throws InterruptedException, ExecutionException, TimeoutException
     {
-        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
-        return (IStream)stream.syn(synInfo);
+        PushInfo pushInfo = new PushInfo(5, TimeUnit.SECONDS, headers, false);
+        return (IStream)stream.push(pushInfo);
     }
 
     private void assertThatStreamIsClosed(IStream stream)

@@ -38,6 +38,7 @@ import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -105,7 +106,7 @@ public class ProxyHTTPSPDYTest
     {
         server = new Server();
         SPDYServerConnector serverConnector = new SPDYServerConnector(server, listener);
-        serverConnector.addConnectionFactory(new SPDYServerConnectionFactory(version,listener));
+        serverConnector.addConnectionFactory(new SPDYServerConnectionFactory(version, listener));
         serverConnector.setPort(0);
         server.addConnector(serverConnector);
         server.start();
@@ -567,7 +568,7 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(5, TimeUnit.SECONDS, pushHeaders, false, (byte)0), new Promise.Adapter<Stream>()
+                stream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
@@ -620,7 +621,7 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(5, TimeUnit.SECONDS, pushHeaders, false, (byte)0), new Promise.Adapter<Stream>()
+                stream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)

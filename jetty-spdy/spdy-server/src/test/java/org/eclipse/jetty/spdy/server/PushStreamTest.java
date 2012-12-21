@@ -39,6 +39,7 @@ import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -63,6 +64,8 @@ import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,6 +77,8 @@ import static org.junit.Assert.fail;
 
 public class PushStreamTest extends AbstractTest
 {
+    private static final Logger LOG = Log.getLogger(PushStreamTest.class);
+
     @Test
     public void testSynPushStream() throws Exception
     {
@@ -86,7 +91,7 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                stream.syn(new SynInfo(new Fields(), true), new Promise.Adapter<Stream>());
+                stream.push(new PushInfo(new Fields(), true), new Promise.Adapter<Stream>());
                 return null;
             }
         }), new SessionFrameListener.Adapter()
@@ -154,7 +159,7 @@ public class PushStreamTest extends AbstractTest
                                 streamDataSent.countDown();
                                 if (pushStreamDataReceived.getCount() == 2)
                                 {
-                                    Stream pushStream = stream.syn(new SynInfo(new Fields(), false));
+                                    Stream pushStream = stream.push(new PushInfo(new Fields(), false));
                                     streamExchanger.exchange(pushStream, 5, TimeUnit.SECONDS);
                                 }
                             }
@@ -246,20 +251,21 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true), new Callback.Adapter());
-                stream.syn(new SynInfo(1, TimeUnit.SECONDS, new Fields(), false, (byte)0), new Promise.Adapter<Stream>()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        pushStreamFailedLatch.countDown();
-                    }
-                });
+                stream.push(new PushInfo(1, TimeUnit.SECONDS, new Fields(), false),
+                        new Promise.Adapter<Stream>()
+                        {
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                pushStreamFailedLatch.countDown();
+                            }
+                        });
                 return super.onSyn(stream, synInfo);
             }
         }), new SessionFrameListener.Adapter());
 
         clientSession.syn(new SynInfo(new Fields(), true), null);
-        assertThat("pushStream syn has failed", pushStreamFailedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("pushStream push has failed", pushStreamFailedLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -279,7 +285,7 @@ public class PushStreamTest extends AbstractTest
             {
                 try
                 {
-                    Stream pushStream = stream.syn(new SynInfo(new Fields(), false));
+                    Stream pushStream = stream.push(new PushInfo(new Fields(), false));
                     stream.reply(new ReplyInfo(true));
                     // wait until stream is closed
                     streamClosedLatch.await(5, TimeUnit.SECONDS);
@@ -391,7 +397,7 @@ public class PushStreamTest extends AbstractTest
                         try
                         {
                             stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                            pushStream = stream.syn(new SynInfo(new Fields(), false));
+                            pushStream = stream.push(new PushInfo(new Fields(), false));
                             resetReceivedLatch.await(5, TimeUnit.SECONDS);
                         }
                         catch (InterruptedException | ExecutionException | TimeoutException e)
@@ -400,8 +406,15 @@ public class PushStreamTest extends AbstractTest
                             unexpectedExceptionOccurred.set(true);
                         }
                         assert pushStream != null;
-                        pushStream.data(new BytesDataInfo(transferBytes, true), new Callback.Adapter());
-                        stream.data(new StringDataInfo("close", true), new Callback.Adapter());
+                        try
+                        {
+                            pushStream.data(new BytesDataInfo(transferBytes, true));
+                            stream.data(new StringDataInfo("close", true));
+                        }
+                        catch (InterruptedException | ExecutionException | TimeoutException e)
+                        {
+                            LOG.debug(e.getMessage());
+                        }
                     }
                 }).start();
                 return null;
@@ -527,7 +540,7 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.syn(new SynInfo(new Fields(), false), new Promise.Adapter<Stream>());
+                stream.push(new PushInfo(new Fields(), false), new Promise.Adapter<Stream>());
                 return null;
             }
         }), new SessionFrameListener.Adapter()

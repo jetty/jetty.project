@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.spdy.server;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -221,9 +221,9 @@ public class GoAwayTest extends AbstractTest
             stream2.data(new StringDataInfo("foo", true));
             Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
         }
-        catch (SPDYException x)
+        catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), CoreMatchers.instanceOf(ClosedChannelException.class));
+            Assert.assertThat(x.getCause(), CoreMatchers.instanceOf(EofException.class));
         }
 
         // The last good stream is the second, because it was received by the server

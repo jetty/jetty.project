@@ -31,6 +31,7 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -460,8 +461,8 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
             StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
             serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-            clientStream.syn(new SynInfo(getTimeout(), TimeUnit.MILLISECONDS, headers, serverSynInfo.isClose(),
-                    (byte)0), handler);
+            clientStream.push(new PushInfo(getTimeout(), TimeUnit.MILLISECONDS, headers, serverSynInfo.isClose()),
+                    handler);
             return this;
         }
 

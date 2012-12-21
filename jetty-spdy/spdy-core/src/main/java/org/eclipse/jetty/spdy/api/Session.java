@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Promise;
  * <pre>
  * Session session = ...;
  * SynInfo synInfo = new SynInfo(true);
- * session.syn(synInfo, new Stream.FrameListener.Adapter()
+ * session.push(synInfo, new Stream.FrameListener.Adapter()
  * {
  *     public void onReply(Stream stream, ReplyInfo replyInfo)
  *     {
@@ -95,7 +95,6 @@ public interface Session
      * @see #syn(SynInfo, StreamFrameListener)
      */
     public void syn(SynInfo synInfo, StreamFrameListener listener, Promise<Stream> promise);
-
 
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>

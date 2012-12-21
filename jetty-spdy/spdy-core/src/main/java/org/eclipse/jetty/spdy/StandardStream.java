@@ -28,12 +28,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -335,18 +335,18 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public Stream syn(SynInfo synInfo) throws InterruptedException, ExecutionException, TimeoutException
+    public Stream push(PushInfo pushInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FuturePromise<Stream> result = new FuturePromise<>();
-        syn(synInfo, result);
-        if (synInfo.getTimeout() > 0)
-            return result.get(synInfo.getTimeout(), synInfo.getUnit());
+        push(pushInfo, result);
+        if (pushInfo.getTimeout() > 0)
+            return result.get(pushInfo.getTimeout(), pushInfo.getUnit());
         else
             return result.get();
     }
 
     @Override
-    public void syn(SynInfo synInfo, Promise<Stream> promise)
+    public void push(PushInfo pushInfo, Promise<Stream> promise)
     {
         if (isClosed() || isReset())
         {
@@ -354,7 +354,7 @@ public class StandardStream implements IStream
                     "Stream: " + this + " already closed or reset!"));
             return;
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(), pushInfo);
         session.syn(pushSynInfo, null, promise);
     }
 

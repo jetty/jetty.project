@@ -39,9 +39,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link ProxyEngineSelector} is the main entry point for syn stream events of a jetty SPDY proxy. It receives the
- * syn stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
- * host and forwards the syn to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
+ * <p>{@link ProxyEngineSelector} is the main entry point for push stream events of a jetty SPDY proxy. It receives the
+ * push stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
+ * host and forwards the push to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
  *
  * <p>If no {@link ProxyServerInfo} can be found for the given target host or no {@link ProxyEngine} can be found for
  * the given protocol, it resets the client stream.</p>

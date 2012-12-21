@@ -44,6 +44,7 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -210,7 +211,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void syn(SynInfo synInfo, Promise<Stream> handler)
+        public void push(PushInfo pushInfo, Promise<Stream> handler)
         {
             // HTTP does not support pushed streams
             handler.succeeded(new HTTPPushStream(2, getPriority(), getSession(), this));

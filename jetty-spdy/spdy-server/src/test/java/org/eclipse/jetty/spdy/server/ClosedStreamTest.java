@@ -225,7 +225,7 @@ public class ClosedStreamTest extends AbstractTest
         socketChannel.write(synData);
         assertThat("synData is fully written", synData.hasRemaining(), is(false));
 
-        assertThat("server: syn reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("server: push reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
 
         Parser parser = new Parser(new StandardCompressionFactory.StandardDecompressor());
         parser.addListener(new Listener.Adapter()
