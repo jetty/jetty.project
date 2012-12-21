@@ -41,8 +41,10 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -265,7 +267,7 @@ public class SPDYClient
         private void closeConnections()
         {
             for (Session session : sessions)
-                session.goAway();
+                session.goAway(new GoAwayInfo(), new Callback.Adapter());
             sessions.clear();
         }
 

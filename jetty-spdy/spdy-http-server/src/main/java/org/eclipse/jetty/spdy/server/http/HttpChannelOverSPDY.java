@@ -134,7 +134,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         // will be consumed. When the copy is consumed, we consume also the
         // original, so the implementation can send a window update.
         ByteBuffer copyByteBuffer = dataInfo.asByteBuffer(false);
-        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose(), dataInfo.isCompress())
+        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose())
         {
             @Override
             public void consume(int delta)

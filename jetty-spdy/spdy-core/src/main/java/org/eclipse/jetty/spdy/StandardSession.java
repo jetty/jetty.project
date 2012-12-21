@@ -33,9 +33,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,7 +45,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -148,15 +151,18 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     }
 
     @Override
-    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener)
+    public Stream syn(SynInfo synInfo, StreamFrameListener listener) throws ExecutionException, InterruptedException, TimeoutException
     {
         FuturePromise<Stream> result = new FuturePromise<>();
-        syn(synInfo,listener,0,TimeUnit.MILLISECONDS,result);
-        return result;
+        syn(synInfo, listener, result);
+        if (synInfo.getTimeout() > 0)
+            return result.get(synInfo.getTimeout(), synInfo.getUnit());
+        else
+            return result.get();
     }
 
     @Override
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Promise<Stream> promise)
+    public void syn(SynInfo synInfo, StreamFrameListener listener, Promise<Stream> promise)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -174,21 +180,24 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             // TODO: for SPDYv3 we need to support the "slot" argument
             SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true, promise);
-            generateAndEnqueueControlFrame(stream, synStream, timeout, unit, stream);
+            generateAndEnqueueControlFrame(stream, synStream, synInfo.getTimeout(), synInfo.getUnit(), stream);
         }
         flush();
     }
 
     @Override
-    public Future<Void> rst(RstInfo rstInfo)
+    public void rst(RstInfo rstInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        rst(rstInfo,0,TimeUnit.MILLISECONDS,result);
-        return result;
+        rst(rstInfo, result);
+        if (rstInfo.getTimeout() > 0)
+            result.get(rstInfo.getTimeout(), rstInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback callback)
+    public void rst(RstInfo rstInfo, Callback callback)
     {
         // SPEC v3, 2.2.2
         if (goAwaySent.get())
@@ -199,8 +208,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
-            RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-            control(stream,frame,timeout,unit,callback);
+            RstStreamFrame frame = new RstStreamFrame(version, streamId, rstInfo.getStreamStatus().getCode(version));
+            control(stream, frame, rstInfo.getTimeout(), rstInfo.getUnit(), callback);
             if (stream != null)
             {
                 stream.process(frame);
@@ -210,64 +219,74 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     }
 
     @Override
-    public Future<Void> settings(SettingsInfo settingsInfo)
+    public void settings(SettingsInfo settingsInfo) throws ExecutionException, InterruptedException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        settings(settingsInfo, 0, TimeUnit.MILLISECONDS, result);
-        return result;
+        settings(settingsInfo, result);
+        if (settingsInfo.getTimeout() > 0)
+            result.get(settingsInfo.getTimeout(), settingsInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Callback callback)
+    public void settings(SettingsInfo settingsInfo, Callback callback)
     {
-        SettingsFrame frame = new SettingsFrame(version,settingsInfo.getFlags(),settingsInfo.getSettings());
-        control(null, frame, timeout, unit, callback);
+        SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
+        control(null, frame, settingsInfo.getTimeout(), settingsInfo.getUnit(), callback);
     }
 
     @Override
-    public Future<PingInfo> ping()
+    public PingResultInfo ping(PingInfo pingInfo) throws ExecutionException, InterruptedException, TimeoutException
     {
-        FuturePromise<PingInfo> result = new FuturePromise<>();
-        ping(0, TimeUnit.MILLISECONDS, result);
-        return result;
+        //TODO: find a better name for PingResultInfo
+        FuturePromise<PingResultInfo> result = new FuturePromise<>();
+        ping(pingInfo, result);
+        if (pingInfo.getTimeout() > 0)
+            return result.get(pingInfo.getTimeout(), pingInfo.getUnit());
+        else
+            return result.get();
     }
 
     @Override
-    public void ping(long timeout, TimeUnit unit, Promise<PingInfo> promise)
+    public void ping(PingInfo pingInfo, Promise<PingResultInfo> promise)
     {
         int pingId = pingIds.getAndAdd(2);
-        PingInfoCallback pingInfo = new PingInfoCallback(pingId, promise);
+        PingInfoCallback pingInfoCallback = new PingInfoCallback(pingId, promise);
         PingFrame frame = new PingFrame(version, pingId);
-        control(null, frame, timeout, unit, pingInfo);
+        control(null, frame, pingInfo.getTimeout(), pingInfo.getUnit(), pingInfoCallback);
     }
 
     @Override
-    public Future<Void> goAway()
+    public void goAway(GoAwayInfo goAwayInfo) throws ExecutionException, InterruptedException, TimeoutException
     {
-        return goAway(SessionStatus.OK);
+        goAway(goAwayInfo, SessionStatus.OK);
     }
 
-    private Future<Void> goAway(SessionStatus sessionStatus)
+    private void goAway(GoAwayInfo goAwayInfo, SessionStatus sessionStatus) throws ExecutionException, InterruptedException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        goAway(sessionStatus, 0, TimeUnit.MILLISECONDS, result);
-        return result;
+        goAway(sessionStatus, goAwayInfo.getTimeout(), goAwayInfo.getUnit(), result);
+        if (goAwayInfo.getTimeout() > 0)
+            result.get(goAwayInfo.getTimeout(), goAwayInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void goAway(long timeout, TimeUnit unit, Callback callback)
+    public void goAway(GoAwayInfo goAwayInfo, Callback callback)
     {
-        goAway(SessionStatus.OK, timeout, unit, callback);
+        goAway(SessionStatus.OK, goAwayInfo.getTimeout(), goAwayInfo.getUnit(), callback);
     }
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Callback callback)
     {
-        if (goAwaySent.compareAndSet(false,true))
+        if (goAwaySent.compareAndSet(false, true))
         {
             if (!goAwayReceived.get())
             {
-                GoAwayFrame frame = new GoAwayFrame(version,lastStreamId.get(),sessionStatus.getCode());
-                control(null,frame,timeout,unit,callback);
+                GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), sessionStatus.getCode());
+                control(null, frame, timeout, unit, callback);
                 return;
             }
         }
@@ -416,7 +435,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             {
                 RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
                 LOG.debug("Unknown stream {}", rstInfo);
-                rst(rstInfo);
+                rst(rstInfo, new Callback.Adapter());
             }
             else
             {
@@ -437,7 +456,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
     private void processData(final IStream stream, DataFrame frame, ByteBuffer data)
     {
-        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress())
+        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose())
         {
             @Override
             public void consume(int delta)
@@ -456,15 +475,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public void onStreamException(StreamException x)
     {
         notifyOnException(listener, x);
-        rst(new RstInfo(x.getStreamId(),x.getStreamStatus()));
+        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), new Callback.Adapter());
     }
 
     @Override
     public void onSessionException(SessionException x)
     {
         Throwable cause = x.getCause();
-        notifyOnException(listener,cause == null?x:cause);
-        goAway(x.getSessionStatus());
+        notifyOnException(listener, cause == null ? x : cause);
+        goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, new Callback.Adapter());
     }
 
     private void onSyn(SynStreamFrame frame)
@@ -479,8 +498,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         stream.process(frame);
         // Update the last stream id before calling the application (which may send a GO_AWAY)
         updateLastStreamId(stream);
-        SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
-        StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
+        SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.getPriority());
+        StreamFrameListener streamListener = notifyOnSyn(listener, stream, synInfo);
         stream.setStreamFrameListener(streamListener);
         flush();
         // The onSyn() listener may have sent a frame that closed the stream
@@ -512,7 +531,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 throw new IllegalStateException("Duplicate stream id " + streamId);
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
             LOG.debug("Duplicate stream, {}", rstInfo);
-            rst(rstInfo);
+            try
+            {
+                rst(rstInfo);
+            }
+            catch (InterruptedException | ExecutionException | TimeoutException e)
+            {
+                e.printStackTrace(); // TODO: really catch???
+            }
             return null;
         }
         else
@@ -589,13 +615,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         IStream stream = streams.get(streamId);
         if (stream == null)
         {
-            RstInfo rstInfo = new RstInfo(streamId,StreamStatus.INVALID_STREAM);
-            LOG.debug("Unknown stream {}",rstInfo);
-            rst(rstInfo);
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+            LOG.debug("Unknown stream {}", rstInfo);
+            rst(rstInfo, new Callback.Adapter());
         }
         else
         {
-            processReply(stream,frame);
+            processReply(stream, frame);
         }
     }
 
@@ -613,7 +639,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         if (stream != null)
             stream.process(frame);
 
-        RstInfo rstInfo = new RstInfo(frame.getStreamId(),StreamStatus.from(frame.getVersion(),frame.getStatusCode()));
+        RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
         notifyOnRst(listener, rstInfo);
         flush();
 
@@ -640,8 +666,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         int pingId = frame.getPingId();
         if (pingId % 2 == pingIds.get() % 2)
         {
-            PingInfo pingInfo = new PingInfo(frame.getPingId());
-            notifyOnPing(listener, pingInfo);
+            PingResultInfo pingResultInfo = new PingResultInfo(frame.getPingId());
+            notifyOnPing(listener, pingResultInfo);
             flush();
         }
         else
@@ -654,8 +680,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         if (goAwayReceived.compareAndSet(false, true))
         {
-            GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(),SessionStatus.from(frame.getStatusCode()));
-            notifyOnGoAway(listener,goAwayInfo);
+            //TODO: Find a better name for GoAwayReceivedInfo
+            GoAwayReceivedInfo goAwayReceivedInfo = new GoAwayReceivedInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
+            notifyOnGoAway(listener, goAwayReceivedInfo);
             flush();
             // SPDY does not require to send back a response to a GO_AWAY.
             // We notified the application of the last good stream id and
@@ -669,13 +696,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         IStream stream = streams.get(streamId);
         if (stream == null)
         {
-            RstInfo rstInfo = new RstInfo(streamId,StreamStatus.INVALID_STREAM);
-            LOG.debug("Unknown stream, {}",rstInfo);
-            rst(rstInfo);
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+            LOG.debug("Unknown stream, {}", rstInfo);
+            rst(rstInfo, new Callback.Adapter());
         }
         else
         {
-            processHeaders(stream,frame);
+            processHeaders(stream, frame);
         }
     }
 
@@ -713,7 +740,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}",x,listener);
+                LOG.debug("Invoking callback with {} on listener {}", x, listener);
                 listener.onException(x);
             }
         }
@@ -734,12 +761,12 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener == null)
                 return null;
-            LOG.debug("Invoking callback with {} on listener {}",synInfo,listener);
-            return listener.onSyn(stream,synInfo);
+            LOG.debug("Invoking callback with {} on listener {}", synInfo, listener);
+            return listener.onSyn(stream, synInfo);
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener,x);
+            LOG.info("Exception while notifying listener " + listener, x);
             return null;
         }
         catch (Error x)
@@ -755,8 +782,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}",rstInfo,listener);
-                listener.onRst(this,rstInfo);
+                LOG.debug("Invoking callback with {} on listener {}", rstInfo, listener);
+                listener.onRst(this, rstInfo);
             }
         }
         catch (Exception x)
@@ -776,7 +803,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}",settingsInfo,listener);
+                LOG.debug("Invoking callback with {} on listener {}", settingsInfo, listener);
                 listener.onSettings(this, settingsInfo);
             }
         }
@@ -791,14 +818,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private void notifyOnPing(SessionFrameListener listener, PingInfo pingInfo)
+    private void notifyOnPing(SessionFrameListener listener, PingResultInfo pingResultInfo)
     {
         try
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}",pingInfo,listener);
-                listener.onPing(this, pingInfo);
+                LOG.debug("Invoking callback with {} on listener {}", pingResultInfo, listener);
+                listener.onPing(this, pingResultInfo);
             }
         }
         catch (Exception x)
@@ -812,14 +839,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private void notifyOnGoAway(SessionFrameListener listener, GoAwayInfo goAwayInfo)
+    private void notifyOnGoAway(SessionFrameListener listener, GoAwayReceivedInfo goAwayReceivedInfo)
     {
         try
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}",goAwayInfo,listener);
-                listener.onGoAway(this, goAwayInfo);
+                LOG.debug("Invoking callback with {} on listener {}", goAwayReceivedInfo, listener);
+                listener.onGoAway(this, goAwayReceivedInfo);
             }
         }
         catch (Exception x)
@@ -879,10 +906,10 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback)
     {
-        LOG.debug("Queuing {} on {}",dataInfo,stream);
-        DataFrameBytes frameBytes = new DataFrameBytes(stream,callback,dataInfo);
+        LOG.debug("Queuing {} on {}", dataInfo, stream);
+        DataFrameBytes frameBytes = new DataFrameBytes(stream, callback, dataInfo);
         if (timeout > 0)
-            frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
+            frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
         append(frameBytes);
         flush();
     }
@@ -909,7 +936,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (flushing || queue.isEmpty())
                 return;
-            
+
             Set<IStream> stalledStreams = null;
             for (int i = 0; i < queue.size(); ++i)
             {
@@ -937,14 +964,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 if (stream != null)
                     stalledStreams.add(stream);
 
-                LOG.debug("Flush stalled for {}, {} frame(s) in queue",frameBytes,queue.size());
+                LOG.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
             }
 
             if (buffer == null)
                 return;
 
             flushing = true;
-            LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
+            LOG.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
         }
         write(buffer, frameBytes);
     }
@@ -996,7 +1023,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                         break;
                     ++index;
                 }
-                queue.add(index,frameBytes);
+                queue.add(index, frameBytes);
             }
         }
 
@@ -1008,8 +1035,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         if (controller != null)
         {
-            LOG.debug("Writing {} frame bytes of {}",buffer.remaining());
-            controller.write(buffer,callback);
+            LOG.debug("Writing {} frame bytes of {}", buffer.remaining(), buffer.limit());
+            controller.write(buffer, callback);
         }
     }
 
@@ -1053,7 +1080,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
+        return String.format("%s@%x{v%d,queueSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(),
+                hashCode(), version, queue.size(), getWindowSize(), streams.size());
     }
 
     @Override
@@ -1065,8 +1093,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
+        ContainerLifeCycle.dumpObject(out, this);
+        ContainerLifeCycle.dump(out, indent, Collections.singletonList(controller), streams.values());
     }
 
     private class SessionInvoker extends ForkInvoker<Callback>
@@ -1177,7 +1205,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             synchronized (queue)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Completed write of {}, {} frame(s) in queue",this,queue.size());
+                    LOG.debug("Completed write of {}, {} frame(s) in queue", this, queue.size());
                 flushing = false;
             }
             complete();
@@ -1194,8 +1222,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 failure = x;
                 if (LOG.isDebugEnabled())
                 {
-                    String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue",this,queue.size());
-                    LOG.debug(logMessage,x);
+                    String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue", this, queue.size());
+                    LOG.debug(logMessage, x);
                 }
                 frameBytesToFail.addAll(queue);
                 queue.clear();
@@ -1214,7 +1242,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         private ControlFrameBytes(IStream stream, Callback callback, ControlFrame frame, ByteBuffer buffer)
         {
-            super(stream,callback);
+            super(stream, callback);
             this.frame = frame;
             this.buffer = buffer;
         }
@@ -1276,7 +1304,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 if (size > windowSize)
                     size = windowSize;
 
-                buffer = generator.data(stream.getId(),size,dataInfo);
+                buffer = generator.data(stream.getId(), size, dataInfo);
                 return buffer;
             }
             catch (Throwable x)
@@ -1303,7 +1331,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             else
             {
                 super.complete();
-                stream.updateCloseState(dataInfo.isClose(),true);
+                stream.updateCloseState(dataInfo.isClose(), true);
                 if (stream.isClosed())
                     removeStream(stream);
             }
@@ -1337,14 +1365,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private static class PingInfoCallback extends PingInfo implements Callback
+    private static class PingInfoCallback extends PingResultInfo implements Callback
     {
-        private final Promise<PingInfo> promise;
+        private final Promise<PingResultInfo> promise;
 
-        public PingInfoCallback(int pingId, Promise<PingInfo> promise)
+        public PingInfoCallback(int pingId, Promise<PingResultInfo> promise)
         {
             super(pingId);
-            this.promise=promise;
+            this.promise = promise;
         }
 
         @Override

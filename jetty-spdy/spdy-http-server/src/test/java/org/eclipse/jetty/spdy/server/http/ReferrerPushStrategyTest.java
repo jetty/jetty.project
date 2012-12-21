@@ -43,7 +43,9 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,7 +119,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                                 ("" +
                                         ".css"),
                         is(true));
-                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
 
@@ -224,7 +226,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 if (dataInfo.isClose())
                     dataReceivedLatch.countDown();
             }
-        });
+        }, new Promise.Adapter<Stream>());
         Assert.assertTrue(received200OKLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataReceivedLatch.await(5, TimeUnit.SECONDS));
     }

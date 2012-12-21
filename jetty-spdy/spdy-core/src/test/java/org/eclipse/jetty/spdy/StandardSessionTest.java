@@ -48,6 +48,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.verify;
 public class StandardSessionTest
 {
     private static final Logger LOG = Log.getLogger(StandardSessionTest.class);
+    private static final short VERSION = SPDY.V2;
 
     @Mock
     private Controller controller;
@@ -92,7 +94,7 @@ public class StandardSessionTest
         threadPool = Executors.newCachedThreadPool();
         scheduler = new TimerScheduler();
         scheduler.start();
-        session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, controller, null, null, 1, null,
+        session = new StandardSession(VERSION, bufferPool, threadPool, scheduler, controller, null, null, 1, null,
                 generator, new FlowControlStrategy.None());
         headers = new Fields();
     }
@@ -144,7 +146,7 @@ public class StandardSessionTest
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
         stream.updateCloseState(true, true);
-        session.onControlFrame(new SynReplyFrame(SPDY.V2, SynInfo.FLAG_CLOSE, stream.getId(), null));
+        session.onControlFrame(new SynReplyFrame(VERSION, SynInfo.FLAG_CLOSE, stream.getId(), null));
         assertThatStreamIsClosed(stream);
         assertThatStreamIsNotInSession(stream);
     }
@@ -202,7 +204,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsNotClosed(pushStream);
 
-        session.onControlFrame(new SynReplyFrame(SPDY.V2, SynInfo.FLAG_CLOSE, stream.getId(), null));
+        session.onControlFrame(new SynReplyFrame(VERSION, SynInfo.FLAG_CLOSE, stream.getId(), null));
         assertThatStreamIsClosed(stream);
         assertThatPushStreamIsNotClosed(pushStream);
     }
@@ -223,8 +225,8 @@ public class StandardSessionTest
     private void createPushStreamAndMakeSureItFails(IStream stream) throws InterruptedException
     {
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        SynInfo synInfo = new SynInfo(headers, false, stream.getPriority());
-        stream.syn(synInfo, 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
+        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
+        stream.syn(synInfo, new Promise.Adapter<Stream>()
         {
             @Override
             public void failed(Throwable x)
@@ -257,7 +259,7 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        IStream pushStream = (IStream)stream.syn(new SynInfo(false)).get();
+        IStream pushStream = (IStream)stream.syn(new SynInfo(new Fields(), false));
         assertThatPushStreamIsInSession(pushStream);
         session.rst(new RstInfo(pushStream.getId(), StreamStatus.INVALID_STREAM));
         assertThatPushStreamIsNotInSession(pushStream);
@@ -271,8 +273,8 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        SynInfo synInfo = new SynInfo(headers, true, stream.getPriority());
-        IStream pushStream = (IStream)stream.syn(synInfo).get(5, TimeUnit.SECONDS);
+        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, true, stream.getPriority());
+        IStream pushStream = (IStream)stream.syn(synInfo);
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsClosed(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream, pushStream);
@@ -286,8 +288,8 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         IStream stream = createStream();
-        SynInfo synInfo = new SynInfo(headers, false, stream.getPriority());
-        IStream pushStream = (IStream)stream.syn(synInfo).get(5, TimeUnit.SECONDS);
+        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
+        IStream pushStream = (IStream)stream.syn(synInfo);
         assertThatStreamIsAssociatedWithPushStream(stream, pushStream);
         assertThatPushStreamIsInSession(pushStream);
         pushStream.headers(new HeadersInfo(headers, true));
@@ -306,6 +308,7 @@ public class StandardSessionTest
         final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
         session.addListener(new TestStreamListener(createdListenerCalledLatch, closedListenerCalledLatch));
         IStream stream = createStream();
+        session.onControlFrame(new SynReplyFrame(VERSION, (byte)0, stream.getId(), new Fields()));
         session.onDataFrame(new DataFrame(stream.getId(), SynInfo.FLAG_CLOSE, 128), ByteBuffer.allocate(128));
         stream.data(new StringDataInfo("close", true));
         assertThat("onStreamCreated listener has been called", createdListenerCalledLatch.await(5, TimeUnit.SECONDS), is(true));
@@ -383,11 +386,11 @@ public class StandardSessionTest
 
     @Test
     @Ignore("In V3 we need to rst the stream if we receive data on a remotely half closed stream.")
-    public void receiveDataOnRemotelyHalfClosedStreamResetsStreamInV3() throws InterruptedException, ExecutionException
+    public void receiveDataOnRemotelyHalfClosedStreamResetsStreamInV3() throws InterruptedException, ExecutionException, TimeoutException
     {
         setControllerWriteExpectation(false);
 
-        IStream stream = (IStream)session.syn(new SynInfo(false), new StreamFrameListener.Adapter()).get();
+        IStream stream = (IStream)session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter());
         stream.updateCloseState(true, false);
         assertThat("stream is half closed from remote side", stream.isHalfClosed(), is(true));
         stream.process(new ByteBufferDataInfo(ByteBuffer.allocate(256), true));
@@ -399,16 +402,17 @@ public class StandardSessionTest
         setControllerWriteExpectation(false);
 
         final CountDownLatch onDataCalledLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                onDataCalledLatch.countDown();
-                super.onData(stream, dataInfo);
-            }
-        }).get(5, TimeUnit.SECONDS);
-        session.onControlFrame(new SynReplyFrame(SPDY.V2, SynInfo.FLAG_CLOSE, stream.getId(), headers));
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        onDataCalledLatch.countDown();
+                        super.onData(stream, dataInfo);
+                    }
+                });
+        session.onControlFrame(new SynReplyFrame(VERSION, SynInfo.FLAG_CLOSE, stream.getId(), headers));
         session.onDataFrame(new DataFrame(stream.getId(), (byte)0, 0), ByteBuffer.allocate(128));
         assertThat("onData is never called", onDataCalledLatch.await(1, TimeUnit.SECONDS), not(true));
     }
@@ -420,7 +424,7 @@ public class StandardSessionTest
         setControllerWriteExpectation(true);
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
-        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
+        SynStreamFrame synStreamFrame = new SynStreamFrame(VERSION, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
         IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
         stream.updateWindowSize(8192);
         Callback.Adapter callback = new Callback.Adapter()
@@ -433,9 +437,9 @@ public class StandardSessionTest
         };
 
         // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
+        stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data", false), callback);
         // second data frame should fail without controller.write() as the connection is expected to be broken after first controller.write() call failed.
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
+        stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data", false), callback);
 
         verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class));
         assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
@@ -449,7 +453,7 @@ public class StandardSessionTest
         // This is necessary to keep the compression context of Headers valid
         IStream stream = createStream();
         session.rst(new RstInfo(stream.getId(), StreamStatus.INVALID_STREAM));
-        stream.headers(new HeadersInfo(headers,true));
+        stream.headers(new HeadersInfo(headers, true));
 
         verify(controller, times(3)).write(any(ByteBuffer.class), any(Callback.class));
 
@@ -471,7 +475,7 @@ public class StandardSessionTest
 
     private void testHeaderFramesAreSentInOrder(final byte priority0, final byte priority1, final byte priority2) throws InterruptedException, ExecutionException
     {
-        final StandardSession testLocalSession = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler,
+        final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, threadPool, scheduler,
                 new ControllerMock(), null, null, 1, null, generator, new FlowControlStrategy.None());
         HashSet<Future> tasks = new HashSet<>();
 
@@ -492,7 +496,7 @@ public class StandardSessionTest
                 private void synStream(byte priority)
                 {
                     SynInfo synInfo = new SynInfo(headers, false, priority);
-                    testLocalSession.syn(synInfo, new StreamFrameListener.Adapter());
+                    testLocalSession.syn(synInfo, new StreamFrameListener.Adapter(), new FuturePromise<Stream>());
                 }
             }));
         }
@@ -533,14 +537,14 @@ public class StandardSessionTest
 
     private IStream createStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        SynInfo synInfo = new SynInfo(headers, false, (byte)0);
-        return (IStream)session.syn(synInfo, new StreamFrameListener.Adapter()).get(5, TimeUnit.SECONDS);
+        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0);
+        return (IStream)session.syn(synInfo, new StreamFrameListener.Adapter());
     }
 
     private IStream createPushStream(Stream stream) throws InterruptedException, ExecutionException, TimeoutException
     {
-        SynInfo synInfo = new SynInfo(headers, false, stream.getPriority());
-        return (IStream)stream.syn(synInfo).get(5, TimeUnit.SECONDS);
+        SynInfo synInfo = new SynInfo(5, TimeUnit.SECONDS, headers, false, stream.getPriority());
+        return (IStream)stream.syn(synInfo);
     }
 
     private void assertThatStreamIsClosed(IStream stream)

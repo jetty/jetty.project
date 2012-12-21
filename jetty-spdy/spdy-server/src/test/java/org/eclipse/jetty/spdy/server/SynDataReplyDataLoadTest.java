@@ -57,14 +57,14 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(synInfo.getHeaders(), false));
+                stream.reply(new ReplyInfo(synInfo.getHeaders(), false), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         ByteBuffer buffer = dataInfo.asByteBuffer(true);
-                        stream.data(new ByteBufferDataInfo(buffer, dataInfo.isClose()));
+                        stream.data(new ByteBufferDataInfo(buffer, dataInfo.isClose()), new Callback.Adapter());
                     }
                 };
             }
@@ -173,12 +173,13 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                                 latch.countDown();
                             }
                         }
-                    }, 0, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
-            {
+                    }, new Promise.Adapter<Stream>()
+                    {
                 @Override
                 public void succeeded(Stream stream)
                 {
-                    stream.data(new StringDataInfo("data_" + stream.getId(), true), 0, TimeUnit.SECONDS, new Callback.Adapter());
+                    stream.data(new StringDataInfo("data_" + stream.getId(), true),
+                            new Callback.Adapter());
                 }
             });
         }
@@ -195,7 +196,8 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             final AtomicInteger count = new AtomicInteger(2);
             final int index = i;
             counter.put(index, index);
-            Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+            Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
+                    new StreamFrameListener.Adapter()
             {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -216,8 +218,8 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                         latch.countDown();
                     }
                 }
-            }).get(5, TimeUnit.SECONDS);
-            stream.data(new StringDataInfo("data_" + stream.getId(), true)).get(5, TimeUnit.SECONDS);
+            });
+            stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data_" + stream.getId(), true));
         }
         Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         Assert.assertTrue(counter.toString(), counter.isEmpty());

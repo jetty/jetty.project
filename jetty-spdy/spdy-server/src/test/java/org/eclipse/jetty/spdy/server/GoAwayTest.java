@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -36,6 +37,10 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,12 +56,12 @@ public class GoAwayTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 return null;
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 Assert.assertEquals(0, goAwayInfo.getLastStreamId());
                 Assert.assertSame(SessionStatus.OK, goAwayInfo.getSessionStatus());
@@ -65,9 +70,9 @@ public class GoAwayTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
-        session.goAway();
+        session.goAway(new GoAwayInfo());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -80,17 +85,17 @@ public class GoAwayTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
-                stream.getSession().goAway();
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
+                stream.getSession().goAway(new GoAwayInfo(), new FutureCallback());
                 return null;
             }
         };
-        final AtomicReference<GoAwayInfo> ref = new AtomicReference<>();
+        final AtomicReference<GoAwayReceivedInfo> ref = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 ref.set(goAwayInfo);
                 latch.countDown();
@@ -98,13 +103,13 @@ public class GoAwayTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
-        Stream stream1 = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream1 = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        GoAwayInfo goAwayInfo = ref.get();
-        Assert.assertNotNull(goAwayInfo);
-        Assert.assertEquals(stream1.getId(), goAwayInfo.getLastStreamId());
-        Assert.assertSame(SessionStatus.OK, goAwayInfo.getSessionStatus());
+        GoAwayReceivedInfo goAwayReceivedInfo = ref.get();
+        Assert.assertNotNull(goAwayReceivedInfo);
+        Assert.assertEquals(stream1.getId(), goAwayReceivedInfo.getLastStreamId());
+        Assert.assertSame(SessionStatus.OK, goAwayReceivedInfo.getSessionStatus());
     }
 
     @Test
@@ -121,8 +126,8 @@ public class GoAwayTest extends AbstractTest
                 int synCount = syns.incrementAndGet();
                 if (synCount == 1)
                 {
-                    stream.reply(new ReplyInfo(true));
-                    stream.getSession().goAway();
+                    stream.reply(new ReplyInfo(true), new Callback.Adapter());
+                    stream.getSession().goAway(new GoAwayInfo(), new FutureCallback());
                 }
                 else
                 {
@@ -134,14 +139,14 @@ public class GoAwayTest extends AbstractTest
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
-                session.syn(new SynInfo(true), null);
+                session.syn(new SynInfo(new Fields(), true), null, new FuturePromise<Stream>());
             }
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
@@ -158,7 +163,7 @@ public class GoAwayTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 int synCount = syns.incrementAndGet();
                 if (synCount == 1)
                 {
@@ -166,7 +171,7 @@ public class GoAwayTest extends AbstractTest
                 }
                 else
                 {
-                    stream.getSession().goAway();
+                    stream.getSession().goAway(new GoAwayInfo(), new FutureCallback());
                     closeLatch.countDown();
                     return new StreamFrameListener.Adapter()
                     {
@@ -179,12 +184,12 @@ public class GoAwayTest extends AbstractTest
                 }
             }
         };
-        final AtomicReference<GoAwayInfo> goAwayRef = new AtomicReference<>();
+        final AtomicReference<GoAwayReceivedInfo> goAwayRef = new AtomicReference<>();
         final CountDownLatch goAwayLatch = new CountDownLatch(1);
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 goAwayRef.set(goAwayInfo);
                 goAwayLatch.countDown();
@@ -194,18 +199,18 @@ public class GoAwayTest extends AbstractTest
 
         // First stream is processed ok
         final CountDownLatch reply1Latch = new CountDownLatch(1);
-        Stream stream1 = session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 reply1Latch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         Assert.assertTrue(reply1Latch.await(5, TimeUnit.SECONDS));
 
         // Second stream is closed in the middle
-        Stream stream2 = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream2 = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
         // There is a race between the data we want to send, and the client
@@ -223,7 +228,7 @@ public class GoAwayTest extends AbstractTest
 
         // The last good stream is the second, because it was received by the server
         Assert.assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
-        GoAwayInfo goAway = goAwayRef.get();
+        GoAwayReceivedInfo goAway = goAwayRef.get();
         Assert.assertNotNull(goAway);
         Assert.assertEquals(stream2.getId(), goAway.getLastStreamId());
     }

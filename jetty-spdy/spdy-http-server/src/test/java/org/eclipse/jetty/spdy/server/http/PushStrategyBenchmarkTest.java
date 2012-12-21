@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -97,7 +98,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         Session session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         // Second push strategy
         pushStrategy = new ReferrerPushStrategy();
@@ -105,7 +106,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     private void benchmarkHTTP(HttpClient httpClient) throws Exception

@@ -98,17 +98,17 @@ public interface SessionFrameListener extends EventListener
      * <p>Callback invoked when a ping request has completed its round-trip.</p>
      *
      * @param session the session
-     * @param pingInfo the metadata received
+     * @param pingResultInfo the metadata received
      */
-    public void onPing(Session session, PingInfo pingInfo);
+    public void onPing(Session session, PingResultInfo pingResultInfo);
 
     /**
      * <p>Callback invoked when the other peer signals that it is closing the connection.</p>
      *
      * @param session the session
-     * @param goAwayInfo the metadata sent
+     * @param goAwayReceivedInfo the metadata sent
      */
-    public void onGoAway(Session session, GoAwayInfo goAwayInfo);
+    public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo);
 
     /**
      * <p>Callback invoked when an exception is thrown during the processing of an event on a
@@ -143,12 +143,12 @@ public interface SessionFrameListener extends EventListener
         }
 
         @Override
-        public void onPing(Session session, PingInfo pingInfo)
+        public void onPing(Session session, PingResultInfo pingResultInfo)
         {
         }
 
         @Override
-        public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+        public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo)
         {
         }
 

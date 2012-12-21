@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -33,6 +33,8 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,7 +53,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 return null;
             }
         });
@@ -61,13 +63,13 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 latch.countDown();
             }
         });
 
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -83,14 +85,14 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 latch.countDown();
             }
         });
 
         // The SYN is not replied, and the server should idle timeout
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -107,7 +109,7 @@ public class IdleTimeoutTest extends AbstractTest
                 try
                 {
                     Thread.sleep(2 * idleTimeout);
-                    stream.reply(new ReplyInfo(true));
+                    stream.reply(new ReplyInfo(true), new Callback.Adapter());
                     return null;
                 }
                 catch (InterruptedException x)
@@ -123,14 +125,14 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 goAwayLatch.countDown();
             }
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -154,12 +156,12 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 return null;
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -173,7 +175,7 @@ public class IdleTimeoutTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -185,7 +187,7 @@ public class IdleTimeoutTest extends AbstractTest
         InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -199,7 +201,7 @@ public class IdleTimeoutTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -213,12 +215,12 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 return null;
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -233,7 +235,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

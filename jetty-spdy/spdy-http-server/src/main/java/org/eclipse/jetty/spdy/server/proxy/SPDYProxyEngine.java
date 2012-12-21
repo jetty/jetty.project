@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -108,7 +109,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
         StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
         clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-        serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, handler);
+        serverSession.syn(serverSynInfo, listener, handler);
         return this;
     }
 
@@ -170,7 +171,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
-                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+                    session.goAway(new GoAwayInfo(), new Callback.Adapter());
                     session = existing;
                 }
             }
@@ -203,7 +204,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+        stream.getSession().rst(rstInfo, new Callback.Adapter());
     }
 
     private class ProxyStreamFrameListener extends StreamFrameListener.Adapter
@@ -259,7 +260,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         {
             final ReplyInfo replyInfo = this.replyInfo;
             this.replyInfo = null;
-            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
+            clientStream.reply(replyInfo, new Callback()
             {
                 @Override
                 public void succeeded()
@@ -278,7 +279,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
         private void data(final Stream stream, final DataInfo dataInfo)
         {
-            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
+            clientStream.data(dataInfo, new Callback() //TODO: timeout???
             {
                 @Override
                 public void succeeded()
@@ -394,7 +395,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         private void flush(Stream serverStream, DataInfoHandler dataInfoHandler)
         {
             logger.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
-            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS,dataInfoHandler);
+            serverStream.data(dataInfoHandler.dataInfo, dataInfoHandler); //TODO: timeout???
         }
 
         private class DataInfoHandler implements Callback
@@ -459,8 +460,8 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
             StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
             serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-            clientStream.syn(new SynInfo(headers, serverSynInfo.isClose()), getTimeout(), TimeUnit.MILLISECONDS, handler);
-
+            clientStream.syn(new SynInfo(getTimeout(), TimeUnit.MILLISECONDS, headers, serverSynInfo.isClose(),
+                    (byte)0), handler);
             return this;
         }
 
@@ -475,13 +476,13 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 {
                     Session clientSession = clientStream.getSession();
                     RstInfo clientRstInfo = new RstInfo(clientStream.getId(), serverRstInfo.getStreamStatus());
-                    clientSession.rst(clientRstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+                    clientSession.rst(clientRstInfo, new Callback.Adapter());
                 }
             }
         }
 
         @Override
-        public void onGoAway(Session serverSession, GoAwayInfo goAwayInfo)
+        public void onGoAway(Session serverSession, GoAwayReceivedInfo goAwayReceivedInfo)
         {
             serverSessions.values().remove(serverSession);
         }

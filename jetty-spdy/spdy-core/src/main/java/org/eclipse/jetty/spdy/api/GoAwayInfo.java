@@ -18,40 +18,21 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * <p>A container for GOAWAY frames metadata: the last good stream id and
- * the session status.</p>
+ * A GoAwayInfo container. Currently adding nothing to it's base class, but serves to keep the api unchanged in
+ * future versions when we need to pass more info to the methods having a {@link GoAwayInfo} parameter.
  */
-public class GoAwayInfo
+public class GoAwayInfo extends Info
 {
-    private final int lastStreamId;
-    private final SessionStatus sessionStatus;
-
-    /**
-     * <p>Creates a new {@link GoAwayInfo} with the given last good stream id and session status</p>
-     *
-     * @param lastStreamId  the last good stream id
-     * @param sessionStatus the session status
-     */
-    public GoAwayInfo(int lastStreamId, SessionStatus sessionStatus)
+    public GoAwayInfo(long timeout, TimeUnit unit)
     {
-        this.lastStreamId = lastStreamId;
-        this.sessionStatus = sessionStatus;
+        super(timeout, unit);
     }
 
-    /**
-     * @return the last good stream id
-     */
-    public int getLastStreamId()
+    public GoAwayInfo()
     {
-        return lastStreamId;
-    }
-
-    /**
-     * @return the session status
-     */
-    public SessionStatus getSessionStatus()
-    {
-        return sessionStatus;
+        super();
     }
 }

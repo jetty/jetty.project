@@ -20,8 +20,6 @@ package org.eclipse.jetty.spdy.server.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,6 +42,7 @@ import org.eclipse.jetty.spdy.StandardStream;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -135,7 +134,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             assert content == null;
             if (headers.isEmpty())
-                proxyEngineSelector.onGoAway(session, new GoAwayInfo(0, SessionStatus.OK));
+                proxyEngineSelector.onGoAway(session, new GoAwayReceivedInfo(0, SessionStatus.OK));
             else
                 syn(true);
         }
@@ -184,14 +183,14 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback handler)
+        public void rst(RstInfo rstInfo, Callback handler)
         {
             // Not much we can do in HTTP land: just close the connection
-            goAway(timeout, unit, handler);
+            goAway(new GoAwayInfo(rstInfo.getTimeout(), rstInfo.getUnit()), handler);
         }
 
         @Override
-        public void goAway(long timeout, TimeUnit unit, Callback handler)
+        public void goAway(GoAwayInfo goAwayInfo, Callback handler)
         {
             getEndPoint().close();
             handler.succeeded();
@@ -211,21 +210,21 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> handler)
+        public void syn(SynInfo synInfo, Promise<Stream> handler)
         {
             // HTTP does not support pushed streams
             handler.succeeded(new HTTPPushStream(2, getPriority(), getSession(), this));
         }
 
         @Override
-        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback handler)
+        public void headers(HeadersInfo headersInfo, Callback handler)
         {
             // TODO
             throw new UnsupportedOperationException("Not Yet Implemented");
         }
 
         @Override
-        public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback handler)
+        public void reply(ReplyInfo replyInfo, Callback handler)
         {
             try
             {
@@ -284,7 +283,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback handler)
+        public void data(DataInfo dataInfo, Callback handler)
         {
             try
             {
@@ -313,14 +312,14 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback handler)
+        public void headers(HeadersInfo headersInfo, Callback handler)
         {
             // Ignore pushed headers
             handler.succeeded();
         }
 
         @Override
-        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback handler)
+        public void data(DataInfo dataInfo, Callback handler)
         {
             // Ignore pushed data
             handler.succeeded();

@@ -33,6 +33,7 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +46,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,10 +70,10 @@ public class StandardStreamTest
         Set<Stream> streams = new HashSet<>();
         streams.add(stream);
         when(synStreamFrame.isClose()).thenReturn(false);
-        SynInfo synInfo = new SynInfo(false);
+        SynInfo synInfo = new SynInfo(new Fields(), false);
         when(session.getStreams()).thenReturn(streams);
-        stream.syn(synInfo);
-        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(), synInfo)), any(StreamFrameListener.class), anyLong(), any(TimeUnit.class), any(Promise.class));
+        stream.syn(synInfo, new Promise.Adapter<Stream>());
+        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(), synInfo)), any(StreamFrameListener.class), any(Promise.class));
     }
 
     private class PushSynInfoMatcher extends ArgumentMatcher<PushSynInfo>
@@ -91,9 +91,7 @@ public class StandardStreamTest
         public boolean matches(Object argument)
         {
             PushSynInfo pushSynInfo = (PushSynInfo)argument;
-            if (pushSynInfo.getAssociatedStreamId() != associatedStreamId)
-                return false;
-            return pushSynInfo.isClose() == synInfo.isClose();
+            return pushSynInfo.getAssociatedStreamId() == associatedStreamId && pushSynInfo.isClose() == synInfo.isClose();
         }
     }
 
@@ -105,7 +103,7 @@ public class StandardStreamTest
         stream.updateCloseState(true, false);
         assertThat("stream expected to be closed", stream.isClosed(), is(true));
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.syn(new SynInfo(false), 1, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
+        stream.syn(new SynInfo(1, TimeUnit.SECONDS, new Fields(), false, (byte)0), new Promise.Adapter<Stream>()
         {
             @Override
             public void failed(Throwable x)

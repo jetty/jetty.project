@@ -202,7 +202,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
+                new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -212,7 +213,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new StringDataInfo(data, true));
 
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
@@ -243,7 +244,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
+                new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -253,7 +255,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         // Sleep between the data frames so that they will be read in 2 reads
         stream.data(new StringDataInfo(data1, false));
         Thread.sleep(1000);
@@ -287,7 +289,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Fields headers = createHeaders("POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -297,7 +299,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
+
         // Send the data frames consecutively, so the server reads both frames in one read
         stream.data(new StringDataInfo(data1, false));
         stream.data(new StringDataInfo(data2, true));
@@ -1034,7 +1037,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1043,7 +1046,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(data, true));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1077,7 +1080,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1086,7 +1089,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
                 TimeUnit.SECONDS));
@@ -1122,7 +1125,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1131,7 +1134,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(data, true));
 
         Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
@@ -1190,7 +1193,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1199,7 +1202,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(data, false));
         stream.data(new BytesDataInfo(data, true));
 
@@ -1258,7 +1261,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(2);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1274,7 +1277,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 if (dataInfo.isClose())
                     responseLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(data, true));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1299,7 +1302,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         Fields headers = createHeaders("POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -1308,9 +1311,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 responseLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(data, false));
-        stream.data(new BytesDataInfo(data, true)).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(5, TimeUnit.SECONDS, data, true));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
