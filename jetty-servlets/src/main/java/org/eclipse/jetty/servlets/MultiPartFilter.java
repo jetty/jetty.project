@@ -151,7 +151,18 @@ public class MultiPartFilter implements Filter
             if (line == null || line.length() == 0)
                 throw new IOException("Missing content for multipart request");
 
-            if (!line.equals(boundary))
+            boolean badFormatLogged = false;
+            while (line != null && !line.equals(boundary))
+            {
+                if (!badFormatLogged)
+                {
+                    LOG.warn("Badly formatted multipart request");
+                    badFormatLogged = true;
+                }
+                line=((ReadLineInputStream)in).readLine();
+            }
+            
+            if (line == null || line.length() == 0)
                 throw new IOException("Missing initial multi part boundary");
             
             // Read each part
