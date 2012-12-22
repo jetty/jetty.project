@@ -67,6 +67,7 @@ public class MultipartFilterTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            System.err.println(req.getParameter("field1"));
             assertNotNull(req.getParameter("fileup"));
             assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
             assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");

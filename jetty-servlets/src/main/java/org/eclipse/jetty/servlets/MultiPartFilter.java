@@ -151,6 +151,7 @@ public class MultiPartFilter implements Filter
             if (line == null || line.length() == 0)
                 throw new IOException("Missing content for multipart request");
 
+            line = line.trim();
             boolean badFormatLogged = false;
             while (line != null && !line.equals(boundary))
             {
@@ -160,6 +161,7 @@ public class MultiPartFilter implements Filter
                     badFormatLogged = true;
                 }
                 line=((ReadLineInputStream)in).readLine();
+                line=(line==null?line:line.trim());
             }
             
             if (line == null || line.length() == 0)
