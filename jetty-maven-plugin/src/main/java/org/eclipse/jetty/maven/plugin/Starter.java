@@ -33,6 +33,7 @@ import java.util.TreeMap;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -57,7 +58,7 @@ public class Starter
 
     private JettyServer server;
     private JettyWebAppContext webApp;
-    private Monitor monitor;
+
     
     private int stopPort=0;
     private String stopKey=null;
@@ -172,7 +173,10 @@ public class Starter
         System.err.println("STOP PORT="+stopPort+", STOP KEY="+stopKey);
         if(stopPort>0 && stopKey!=null)
         {
-            monitor = new Monitor(stopPort, stopKey, new Server[]{server}, true);
+            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+            monitor.setPort(stopPort);
+            monitor.setKey(stopKey);
+            monitor.setExitVm(true);
         }
     }
     
@@ -375,9 +379,6 @@ public class Starter
      */
     public void run() throws Exception
     {
-        if (monitor != null)
-            monitor.start();
-
         LOG.info("Started Jetty Server");
         server.start();  
     }

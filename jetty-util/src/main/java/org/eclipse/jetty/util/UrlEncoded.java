@@ -226,10 +226,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                       key = null;
                       value=null;
                       if (maxKeys>0 && map.size()>maxKeys)
-                      {
-                          LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
-                          return;
-                      }
+                          throw new IllegalStateException("Form too many keys");
                       break;
                   case '=':
                       if (key!=null)
@@ -385,10 +382,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         key = null;
                         value=null;
                         if (maxKeys>0 && map.size()>maxKeys)
-                        {
-                            LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
-                            return;
-                        }
+                            throw new IllegalStateException("Form too many keys");
                         break;
                         
                     case '=':
@@ -471,10 +465,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             key = null;
                             value=null;
                             if (maxKeys>0 && map.size()>maxKeys)
-                            {
-                                LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
-                                return;
-                            }
+                                throw new IllegalStateException("Form too many keys");
                             break;
 
                         case '=':
@@ -599,6 +590,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         }
                         key = null;
                         value=null;
+                        if (maxKeys>0 && map.size()>maxKeys)
+                            throw new IllegalStateException("Form too many keys");
                         break;
                     case '=':
                         if (key!=null)

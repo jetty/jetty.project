@@ -54,7 +54,7 @@ public class ReadLineInputStream extends BufferedInputStream
                 int m=markpos;
                 markpos=-1;
                 if (pos>m)
-                    return new String(buf,m,pos-m, StringUtil.__UTF8_CHARSET);
+                    return new String(buf,m,pos-m,StringUtil.__UTF8_CHARSET);
 
                 return null;
             }

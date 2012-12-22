@@ -464,7 +464,7 @@ public class MultiPartInputStreamParser
 
         String contentTypeBoundary = "";
         if (_contentType.indexOf("boundary=") >= 0)
-            contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary=")), true).trim());
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary="))).trim());
         
         String boundary="--"+contentTypeBoundary;
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
@@ -525,7 +525,7 @@ public class MultiPartInputStreamParser
                 throw new IOException("Missing content-disposition");
             }
 
-            QuotedStringTokenizer tok=new QuotedStringTokenizer(contentDisposition,";");
+            QuotedStringTokenizer tok=new QuotedStringTokenizer(contentDisposition,";", false, true);
             String name=null;
             String filename=null;
             while(tok.hasMoreTokens())
@@ -535,9 +535,9 @@ public class MultiPartInputStreamParser
                 if(t.startsWith("form-data"))
                     form_data=true;
                 else if(tl.startsWith("name="))
-                    name=value(t, true);
+                    name=value(t);
                 else if(tl.startsWith("filename="))
-                    filename=value(t, false);
+                    filename=filenameValue(t);
             }
 
             // Check disposition
@@ -703,24 +703,42 @@ public class MultiPartInputStreamParser
 
 
     /* ------------------------------------------------------------ */
-    private String value(String nameEqualsValue, boolean splitAfterSpace)
+    private String value(String nameEqualsValue)
     {
-        String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
-        int i=value.indexOf(';');
-        if(i>0)
-            value=value.substring(0,i);
-        if(value.startsWith("\""))
-        {
-            value=value.substring(1,value.indexOf('"',1));
-        }
-        else if (splitAfterSpace)
-        {
-            i=value.indexOf(' ');
-            if(i>0)
-                value=value.substring(0,i);
-        }
-        return value;
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();
+        return QuotedStringTokenizer.unquoteOnly(value);
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String filenameValue(String nameEqualsValue)
+    {
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();
+
+        if (value.matches(".??[a-z,A-Z]\\:\\\\[^\\\\].*"))
+        {
+            //incorrectly escaped IE filenames that have the whole path
+            //we just strip any leading & trailing quotes and leave it as is
+            char first=value.charAt(0);
+            if (first=='"' || first=='\'')
+                value=value.substring(1);
+            char last=value.charAt(value.length()-1);
+            if (last=='"' || last=='\'')
+                value = value.substring(0,value.length()-1);
+
+            return value;
+        }
+        else
+            //unquote the string, but allow any backslashes that don't
+            //form a valid escape sequence to remain as many browsers
+            //even on *nix systems will not escape a filename containing
+            //backslashes
+            return QuotedStringTokenizer.unquoteOnly(value, true);
+    }
+
+    
 
     private static class Base64InputStream extends InputStream
     {

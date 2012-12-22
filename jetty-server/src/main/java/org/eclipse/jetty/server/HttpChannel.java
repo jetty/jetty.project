@@ -403,7 +403,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
+        {
             info = "/";
+            _request.setRequestURI("");
+        }
         _request.setPathInfo(info);
         _version = version == null ? HttpVersion.HTTP_0_9 : version;
         _request.setHttpVersion(_version);

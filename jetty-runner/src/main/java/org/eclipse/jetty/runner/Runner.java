@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -84,7 +85,6 @@ public class Runner
     public static final int __defaultPort = 8080;
 
     protected Server _server;
-    protected Monitor _monitor;
     protected URLClassLoader _classLoader;
     protected Classpath _classpath = new Classpath();
     protected ContextHandlerCollection _contexts;
@@ -461,7 +461,10 @@ public class Runner
                 break;
                 
             case 3:
-                _monitor = new Monitor(stopPort, stopKey);
+                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+                monitor.setPort(stopPort);
+                monitor.setKey(stopKey);
+                monitor.setExitVm(true);
                 break;
         }
 
@@ -498,11 +501,6 @@ public class Runner
      */
     public void run() throws Exception
     {
-        if (_monitor != null)
-        {
-            _monitor.start();
-        }
-        
         _server.start();
         _server.join();
     }
