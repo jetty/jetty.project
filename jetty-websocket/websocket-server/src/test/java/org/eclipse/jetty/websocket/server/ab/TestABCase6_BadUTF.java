@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -176,11 +175,5 @@ public class TestABCase6_BadUTF extends AbstractABCase
             fuzzer.close();
             enableStacks(Parser.class,true);
         }
-    }
-
-    private void enableStacks(Class<?> clazz, boolean enabled)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(!enabled);
     }
 }

@@ -35,7 +35,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -103,7 +106,7 @@ public class ProxyHTTPSPDYTest
     {
         server = new Server();
         SPDYServerConnector serverConnector = new SPDYServerConnector(server, listener);
-        serverConnector.addConnectionFactory(new SPDYServerConnectionFactory(version,listener));
+        serverConnector.addConnectionFactory(new SPDYServerConnectionFactory(version, listener));
         serverConnector.setPort(0);
         server.addConnector(serverConnector);
         server.start();
@@ -159,12 +162,12 @@ public class ProxyHTTPSPDYTest
                 Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
-                stream.reply(new ReplyInfo(responseHeaders, true));
+                stream.reply(new ReplyInfo(responseHeaders, true), new Callback.Adapter());
                 return null;
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 closeLatch.countDown();
             }
@@ -211,7 +214,7 @@ public class ProxyHTTPSPDYTest
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, true);
-                stream.reply(replyInfo);
+                stream.reply(replyInfo, new Callback.Adapter());
                 return null;
             }
         }));
@@ -272,8 +275,8 @@ public class ProxyHTTPSPDYTest
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
-                stream.reply(replyInfo);
-                stream.data(new BytesDataInfo(data, true));
+                stream.reply(replyInfo, new Callback.Adapter());
+                stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
 
                 return null;
             }
@@ -335,7 +338,7 @@ public class ProxyHTTPSPDYTest
                             Fields headers = new Fields();
                             headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             headers.put(HTTPSPDYHeader.STATUS.name(version), "303 See Other");
-                            stream.reply(new ReplyInfo(headers, true));
+                            stream.reply(new ReplyInfo(headers, true), new Callback.Adapter());
                         }
                     }
                 };
@@ -399,8 +402,8 @@ public class ProxyHTTPSPDYTest
                             responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                             ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
-                            stream.reply(replyInfo);
-                            stream.data(new BytesDataInfo(data, true));
+                            stream.reply(replyInfo, new Callback.Adapter());
+                            stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
                         }
                     }
                 };
@@ -462,7 +465,7 @@ public class ProxyHTTPSPDYTest
 
                 Fields responseHeaders = new Fields();
                 responseHeaders.put(header, "baz");
-                stream.reply(new ReplyInfo(responseHeaders, true));
+                stream.reply(new ReplyInfo(responseHeaders, true), new Callback.Adapter());
                 return null;
             }
         }));
@@ -487,7 +490,7 @@ public class ProxyHTTPSPDYTest
 
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway().get(5, TimeUnit.SECONDS);
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -506,8 +509,8 @@ public class ProxyHTTPSPDYTest
 
                 Fields responseHeaders = new Fields();
                 responseHeaders.put(header, "baz");
-                stream.reply(new ReplyInfo(responseHeaders, false));
-                stream.data(new BytesDataInfo(data, true));
+                stream.reply(new ReplyInfo(responseHeaders, false), new Callback.Adapter());
+                stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
                 return null;
             }
         }));
@@ -547,7 +550,7 @@ public class ProxyHTTPSPDYTest
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway().get(5, TimeUnit.SECONDS);
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -565,16 +568,16 @@ public class ProxyHTTPSPDYTest
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
+                stream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
-                        pushStream.data(new BytesDataInfo(data, true));
+                        pushStream.data(new BytesDataInfo(data, true), new Callback.Adapter());
                     }
                 });
 
-                stream.reply(new ReplyInfo(responseHeaders, true));
+                stream.reply(new ReplyInfo(responseHeaders, true), new Callback.Adapter());
                 return null;
             }
         }));
@@ -614,20 +617,20 @@ public class ProxyHTTPSPDYTest
                 Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
-                stream.reply(new ReplyInfo(responseHeaders, false));
+                stream.reply(new ReplyInfo(responseHeaders, false), new Callback.Adapter());
 
                 Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
-                stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Promise.Adapter<Stream>()
+                stream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
-                        pushStream.data(new BytesDataInfo(data, true));
+                        pushStream.data(new BytesDataInfo(data, true), new Callback.Adapter());
                     }
                 });
 
-                stream.data(new BytesDataInfo(data, true));
+                stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
 
                 return null;
             }
@@ -681,7 +684,7 @@ public class ProxyHTTPSPDYTest
         Assert.assertTrue(pushDataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway().get(5, TimeUnit.SECONDS);
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -697,17 +700,17 @@ public class ProxyHTTPSPDYTest
         Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()
         {
             @Override
-            public void onPing(Session session, PingInfo pingInfo)
+            public void onPing(Session session, PingResultInfo pingInfo)
             {
                 pingLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
 
-        client.ping().get(5, TimeUnit.SECONDS);
+        client.ping(new PingInfo(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway().get(5, TimeUnit.SECONDS);
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -722,7 +725,7 @@ public class ProxyHTTPSPDYTest
                 Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
-                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
 
                 return null;
             }
@@ -758,7 +761,7 @@ public class ProxyHTTPSPDYTest
                 Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
-                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
 
                 return null;
             }
@@ -781,6 +784,6 @@ public class ProxyHTTPSPDYTest
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway().get(5, TimeUnit.SECONDS);
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 }

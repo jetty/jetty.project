@@ -30,6 +30,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,7 +38,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -62,6 +64,8 @@ import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,6 +77,8 @@ import static org.junit.Assert.fail;
 
 public class PushStreamTest extends AbstractTest
 {
+    private static final Logger LOG = Log.getLogger(PushStreamTest.class);
+
     @Test
     public void testSynPushStream() throws Exception
     {
@@ -84,8 +90,8 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
-                stream.syn(new SynInfo(true));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.push(new PushInfo(new Fields(), true), new Promise.Adapter<Stream>());
                 return null;
             }
         }), new SessionFrameListener.Adapter()
@@ -93,13 +99,13 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                assertThat("streamId is even",stream.getId() % 2,is(0));
-                assertThat("stream is unidirectional",stream.isUnidirectional(),is(true));
-                assertThat("stream is closed",stream.isClosed(),is(true));
-                assertThat("stream has associated stream",stream.getAssociatedStream(),notNullValue());
+                assertThat("streamId is even", stream.getId() % 2, is(0));
+                assertThat("stream is unidirectional", stream.isUnidirectional(), is(true));
+                assertThat("stream is closed", stream.isClosed(), is(true));
+                assertThat("stream has associated stream", stream.getAssociatedStream(), notNullValue());
                 try
                 {
-                    stream.reply(new ReplyInfo(false));
+                    stream.reply(new ReplyInfo(false), new Callback.Adapter());
                     fail("Cannot reply to push streams");
                 }
                 catch (IllegalStateException x)
@@ -112,10 +118,10 @@ public class PushStreamTest extends AbstractTest
             }
         });
 
-        Stream stream = clientSession.syn(new SynInfo(true),null).get();
-        assertThat("onSyn has been called",pushStreamLatch.await(5,TimeUnit.SECONDS),is(true));
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), null);
+        assertThat("onSyn has been called", pushStreamLatch.await(5, TimeUnit.SECONDS), is(true));
         Stream pushStream = pushStreamRef.get();
-        assertThat("main stream and associated stream are the same",stream,sameInstance(pushStream.getAssociatedStream()));
+        assertThat("main stream and associated stream are the same", stream, sameInstance(pushStream.getAssociatedStream()));
     }
 
     @Test
@@ -134,10 +140,10 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
                 try
                 {
-                    replyBarrier.await(5,TimeUnit.SECONDS);
+                    replyBarrier.await(5, TimeUnit.SECONDS);
                     return new StreamFrameListener.Adapter()
                     {
                         @Override
@@ -147,14 +153,14 @@ public class PushStreamTest extends AbstractTest
                             {
                                 if (dataInfo.isClose())
                                 {
-                                    stream.data(new StringDataInfo("close stream",true));
-                                    closeBarrier.await(5,TimeUnit.SECONDS);
+                                    stream.data(new StringDataInfo("close stream", true));
+                                    closeBarrier.await(5, TimeUnit.SECONDS);
                                 }
                                 streamDataSent.countDown();
                                 if (pushStreamDataReceived.getCount() == 2)
                                 {
-                                    Stream pushStream = stream.syn(new SynInfo(false)).get();
-                                    streamExchanger.exchange(pushStream,5,TimeUnit.SECONDS);
+                                    Stream pushStream = stream.push(new PushInfo(new Fields(), false));
+                                    streamExchanger.exchange(pushStream, 5, TimeUnit.SECONDS);
                                 }
                             }
                             catch (Exception e)
@@ -171,7 +177,7 @@ public class PushStreamTest extends AbstractTest
                 }
             }
 
-        }),new SessionFrameListener.Adapter()
+        }), new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -183,20 +189,20 @@ public class PushStreamTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         pushStreamDataReceived.countDown();
-                        super.onData(stream,dataInfo);
+                        super.onData(stream, dataInfo);
                     }
                 };
             }
         });
 
-        Stream stream = clientSession.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 try
                 {
-                    replyBarrier.await(5,TimeUnit.SECONDS);
+                    replyBarrier.await(5, TimeUnit.SECONDS);
                 }
                 catch (Exception e)
                 {
@@ -209,29 +215,29 @@ public class PushStreamTest extends AbstractTest
             {
                 try
                 {
-                    closeBarrier.await(5,TimeUnit.SECONDS);
+                    closeBarrier.await(5, TimeUnit.SECONDS);
                 }
                 catch (Exception e)
                 {
                     exceptionCountDownLatch.countDown();
                 }
             }
-        }).get();
+        });
 
-        replyBarrier.await(5,TimeUnit.SECONDS);
-        stream.data(new StringDataInfo("client data",false));
-        Stream pushStream = streamExchanger.exchange(null,5,TimeUnit.SECONDS);
-        pushStream.data(new StringDataInfo("first push data frame",false));
+        replyBarrier.await(5, TimeUnit.SECONDS);
+        stream.data(new StringDataInfo("client data", false));
+        Stream pushStream = streamExchanger.exchange(null, 5, TimeUnit.SECONDS);
+        pushStream.data(new StringDataInfo("first push data frame", false));
         // nasty, but less complex than using another cyclicBarrier for example
         while (pushStreamDataReceived.getCount() != 1)
             Thread.sleep(1);
-        stream.data(new StringDataInfo("client close",true));
-        closeBarrier.await(5,TimeUnit.SECONDS);
-        assertThat("stream is closed",stream.isClosed(),is(true));
-        pushStream.data(new StringDataInfo("second push data frame while associated stream has been closed already",false));
-        assertThat("2 pushStream data frames have been received.",pushStreamDataReceived.await(5,TimeUnit.SECONDS),is(true));
-        assertThat("2 data frames have been sent",streamDataSent.await(5,TimeUnit.SECONDS),is(true));
-        assertThatNoExceptionOccured(exceptionCountDownLatch);
+        stream.data(new StringDataInfo("client close", true));
+        closeBarrier.await(5, TimeUnit.SECONDS);
+        assertThat("stream is closed", stream.isClosed(), is(true));
+        pushStream.data(new StringDataInfo("second push data frame while associated stream has been closed already", false));
+        assertThat("2 pushStream data frames have been received.", pushStreamDataReceived.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("2 data frames have been sent", streamDataSent.await(5, TimeUnit.SECONDS), is(true));
+        assertThatNoExceptionOccurred(exceptionCountDownLatch);
     }
 
     @Test
@@ -244,21 +250,22 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
-                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Promise.Adapter<Stream>()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        pushStreamFailedLatch.countDown();
-                    }
-                });
-                return super.onSyn(stream,synInfo);
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
+                stream.push(new PushInfo(1, TimeUnit.SECONDS, new Fields(), false),
+                        new Promise.Adapter<Stream>()
+                        {
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                pushStreamFailedLatch.countDown();
+                            }
+                        });
+                return super.onSyn(stream, synInfo);
             }
-        }),new SessionFrameListener.Adapter());
+        }), new SessionFrameListener.Adapter());
 
-        clientSession.syn(new SynInfo(true),null);
-        assertThat("pushStream syn has failed",pushStreamFailedLatch.await(5,TimeUnit.SECONDS),is(true));
+        clientSession.syn(new SynInfo(new Fields(), true), null);
+        assertThat("pushStream push has failed", pushStreamFailedLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -278,11 +285,11 @@ public class PushStreamTest extends AbstractTest
             {
                 try
                 {
-                    Stream pushStream = stream.syn(new SynInfo(false)).get();
+                    Stream pushStream = stream.push(new PushInfo(new Fields(), false));
                     stream.reply(new ReplyInfo(true));
                     // wait until stream is closed
-                    streamClosedLatch.await(5,TimeUnit.SECONDS);
-                    pushStream.data(new BytesDataInfo(transferBytes,true));
+                    streamClosedLatch.await(5, TimeUnit.SECONDS);
+                    pushStream.data(new BytesDataInfo(transferBytes, true), new Callback.Adapter());
                     return null;
                 }
                 catch (Exception e)
@@ -291,7 +298,7 @@ public class PushStreamTest extends AbstractTest
                     throw new IllegalStateException(e);
                 }
             }
-        }),new SessionFrameListener.Adapter()
+        }), new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -310,7 +317,7 @@ public class PushStreamTest extends AbstractTest
                             try
                             {
                                 receivedBytes.flip();
-                                exchanger.exchange(receivedBytes.slice(),5,TimeUnit.SECONDS);
+                                exchanger.exchange(receivedBytes.slice(), 5, TimeUnit.SECONDS);
                             }
                             catch (Exception e)
                             {
@@ -322,23 +329,23 @@ public class PushStreamTest extends AbstractTest
             }
         });
 
-        Stream stream = clientSession.syn(new SynInfo(true),new StreamFrameListener.Adapter()
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 streamClosedLatch.countDown();
-                super.onReply(stream,replyInfo);
+                super.onReply(stream, replyInfo);
             }
-        }).get();
+        });
 
-        ByteBuffer receivedBytes = exchanger.exchange(null,5,TimeUnit.SECONDS);
+        ByteBuffer receivedBytes = exchanger.exchange(null, 5, TimeUnit.SECONDS);
 
-        assertThat("received byte array is the same as transferred byte array",Arrays.equals(transferBytes,receivedBytes.array()),is(true));
-        assertThat("onReply has been called to close the stream",streamClosedLatch.await(5,TimeUnit.SECONDS),is(true));
-        assertThat("stream is closed",stream.isClosed(),is(true));
-        assertThat("all data has been received",allDataReceived.await(20,TimeUnit.SECONDS),is(true));
-        assertThatNoExceptionOccured(exceptionCountDownLatch);
+        assertThat("received byte array is the same as transferred byte array", Arrays.equals(transferBytes, receivedBytes.array()), is(true));
+        assertThat("onReply has been called to close the stream", streamClosedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("stream is closed", stream.isClosed(), is(true));
+        assertThat("all data has been received", allDataReceived.await(20, TimeUnit.SECONDS), is(true));
+        assertThatNoExceptionOccurred(exceptionCountDownLatch);
     }
 
     private byte[] createHugeByteArray(int sizeInBytes)
@@ -364,10 +371,11 @@ public class PushStreamTest extends AbstractTest
     }
 
     private volatile boolean read = true;
-    private void testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(final boolean flowControl) throws Exception, IOException, InterruptedException
+
+    private void testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(final boolean flowControl) throws Exception
     {
         final short version = SPDY.V3;
-        final AtomicBoolean unexpectedExceptionOccured = new AtomicBoolean(false);
+        final AtomicBoolean unexpectedExceptionOccurred = new AtomicBoolean(false);
         final CountDownLatch resetReceivedLatch = new CountDownLatch(1);
         final CountDownLatch allDataFramesReceivedLatch = new CountDownLatch(1);
         final CountDownLatch goAwayReceivedLatch = new CountDownLatch(1);
@@ -385,20 +393,28 @@ public class PushStreamTest extends AbstractTest
                     @Override
                     public void run()
                     {
-                        Stream pushStream=null;
+                        Stream pushStream = null;
                         try
                         {
-                            stream.reply(new ReplyInfo(false));
-                            pushStream = stream.syn(new SynInfo(false)).get();
-                            resetReceivedLatch.await(5,TimeUnit.SECONDS);
+                            stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                            pushStream = stream.push(new PushInfo(new Fields(), false));
+                            resetReceivedLatch.await(5, TimeUnit.SECONDS);
                         }
-                        catch (InterruptedException | ExecutionException e)
+                        catch (InterruptedException | ExecutionException | TimeoutException e)
                         {
                             e.printStackTrace();
-                            unexpectedExceptionOccured.set(true);
+                            unexpectedExceptionOccurred.set(true);
                         }
-                        pushStream.data(new BytesDataInfo(transferBytes,true));
-                        stream.data(new StringDataInfo("close",true));
+                        assert pushStream != null;
+                        try
+                        {
+                            pushStream.data(new BytesDataInfo(transferBytes, true));
+                            stream.data(new StringDataInfo("close", true));
+                        }
+                        catch (InterruptedException | ExecutionException | TimeoutException e)
+                        {
+                            LOG.debug(e.getMessage());
+                        }
                     }
                 }).start();
                 return null;
@@ -411,7 +427,7 @@ public class PushStreamTest extends AbstractTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 goAwayReceivedLatch.countDown();
             }
@@ -420,9 +436,9 @@ public class PushStreamTest extends AbstractTest
         final SocketChannel channel = SocketChannel.open(serverAddress);
         final Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         int streamId = 1;
-        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,(short)0,new Fields()));
+        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version, (byte)0, streamId, 0, (byte)0, (short)0, new Fields()));
         channel.write(writeBuffer);
-        assertThat("writeBuffer is fully written",writeBuffer.hasRemaining(), is(false));
+        assertThat("writeBuffer is fully written", writeBuffer.hasRemaining(), is(false));
 
         final Parser parser = new Parser(new StandardCompressionFactory.StandardDecompressor());
         parser.addListener(new Listener.Adapter()
@@ -432,9 +448,10 @@ public class PushStreamTest extends AbstractTest
             @Override
             public void onControlFrame(ControlFrame frame)
             {
-                if(frame instanceof SynStreamFrame){
+                if (frame instanceof SynStreamFrame)
+                {
                     int pushStreamId = ((SynStreamFrame)frame).getStreamId();
-                    ByteBuffer writeBuffer = generator.control(new RstStreamFrame(version,pushStreamId,StreamStatus.CANCEL_STREAM.getCode(version)));
+                    ByteBuffer writeBuffer = generator.control(new RstStreamFrame(version, pushStreamId, StreamStatus.CANCEL_STREAM.getCode(version)));
                     try
                     {
                         channel.write(writeBuffer);
@@ -442,7 +459,7 @@ public class PushStreamTest extends AbstractTest
                     catch (IOException e)
                     {
                         e.printStackTrace();
-                        unexpectedExceptionOccured.set(true);
+                        unexpectedExceptionOccurred.set(true);
                     }
                 }
             }
@@ -450,15 +467,16 @@ public class PushStreamTest extends AbstractTest
             @Override
             public void onDataFrame(DataFrame frame, ByteBuffer data)
             {
-                if(frame.getStreamId() == 2)
+                if (frame.getStreamId() == 2)
                     bytesRead = bytesRead + frame.getLength();
-                if(bytesRead == dataSizeInBytes){
+                if (bytesRead == dataSizeInBytes)
+                {
                     allDataFramesReceivedLatch.countDown();
                     return;
                 }
                 if (flowControl)
                 {
-                    ByteBuffer writeBuffer = generator.control(new WindowUpdateFrame(version,frame.getStreamId(),frame.getLength()));
+                    ByteBuffer writeBuffer = generator.control(new WindowUpdateFrame(version, frame.getStreamId(), frame.getLength()));
                     try
                     {
                         channel.write(writeBuffer);
@@ -466,7 +484,7 @@ public class PushStreamTest extends AbstractTest
                     catch (IOException e)
                     {
                         e.printStackTrace();
-                        unexpectedExceptionOccured.set(true);
+                        unexpectedExceptionOccurred.set(true);
                     }
                 }
             }
@@ -477,7 +495,7 @@ public class PushStreamTest extends AbstractTest
             @Override
             public void run()
             {
-                ByteBuffer readBuffer = ByteBuffer.allocate(dataSizeInBytes*2);
+                ByteBuffer readBuffer = ByteBuffer.allocate(dataSizeInBytes * 2);
                 while (read)
                 {
                     try
@@ -487,7 +505,7 @@ public class PushStreamTest extends AbstractTest
                     catch (IOException e)
                     {
                         e.printStackTrace();
-                        unexpectedExceptionOccured.set(true);
+                        unexpectedExceptionOccurred.set(true);
                     }
                     readBuffer.flip();
                     parser.parse(readBuffer);
@@ -499,15 +517,15 @@ public class PushStreamTest extends AbstractTest
         reader.start();
         read = false;
 
-        assertThat("no unexpected exceptions occured", unexpectedExceptionOccured.get(), is(false));
-        assertThat("not all dataframes have been received as the pushstream has been reset by the client.",allDataFramesReceivedLatch.await(streamId,TimeUnit.SECONDS),is(false));
+        assertThat("no unexpected exceptions occurred", unexpectedExceptionOccurred.get(), is(false));
+        assertThat("not all dataframes have been received as the pushstream has been reset by the client.", allDataFramesReceivedLatch.await(streamId, TimeUnit.SECONDS), is(false));
 
 
         ByteBuffer buffer = generator.control(new GoAwayFrame(version, streamId, SessionStatus.OK.getCode()));
         channel.write(buffer);
         Assert.assertThat(buffer.hasRemaining(), is(false));
 
-        assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
+        assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
         channel.shutdownOutput();
         channel.close();
     }
@@ -522,42 +540,42 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.syn(new SynInfo(false));
+                stream.push(new PushInfo(new Fields(), false), new Promise.Adapter<Stream>());
                 return null;
             }
-        }),new SessionFrameListener.Adapter()
+        }), new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 assertStreamIdIsEven(stream);
                 pushStreamIdIsEvenLatch.countDown();
-                return super.onSyn(stream,synInfo);
+                return super.onSyn(stream, synInfo);
             }
         });
 
-        Stream stream = clientSession.syn(new SynInfo(false),null).get();
-        Stream stream2 = clientSession.syn(new SynInfo(false),null).get();
-        Stream stream3 = clientSession.syn(new SynInfo(false),null).get();
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), false), null);
+        Stream stream2 = clientSession.syn(new SynInfo(new Fields(), false), null);
+        Stream stream3 = clientSession.syn(new SynInfo(new Fields(), false), null);
         assertStreamIdIsOdd(stream);
         assertStreamIdIsOdd(stream2);
         assertStreamIdIsOdd(stream3);
 
-        assertThat("all pushStreams had even ids",pushStreamIdIsEvenLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("all pushStreams had even ids", pushStreamIdIsEvenLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     private void assertStreamIdIsEven(Stream stream)
     {
-        assertThat("streamId is odd",stream.getId() % 2,is(0));
+        assertThat("streamId is odd", stream.getId() % 2, is(0));
     }
 
     private void assertStreamIdIsOdd(Stream stream)
     {
-        assertThat("streamId is odd",stream.getId() % 2,is(1));
+        assertThat("streamId is odd", stream.getId() % 2, is(1));
     }
 
-    private void assertThatNoExceptionOccured(final CountDownLatch exceptionCountDownLatch) throws InterruptedException
+    private void assertThatNoExceptionOccurred(final CountDownLatch exceptionCountDownLatch) throws InterruptedException
     {
-        assertThat("No exception occured",exceptionCountDownLatch.await(1,TimeUnit.SECONDS),is(false));
+        assertThat("No exception occurred", exceptionCountDownLatch.await(1, TimeUnit.SECONDS), is(false));
     }
 }

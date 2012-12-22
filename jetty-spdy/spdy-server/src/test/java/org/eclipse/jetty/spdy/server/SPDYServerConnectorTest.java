@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.junit.Assert;
@@ -37,7 +38,7 @@ public class SPDYServerConnectorTest extends AbstractTest
         startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo)
             {
                 latch.countDown();
             }
@@ -58,7 +59,7 @@ public class SPDYServerConnectorTest extends AbstractTest
     {
         Session session = startClient(startServer(null), null);
 
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         // Sleep a while to allow the connector to remove the session
         // since it is done asynchronously by the selector thread

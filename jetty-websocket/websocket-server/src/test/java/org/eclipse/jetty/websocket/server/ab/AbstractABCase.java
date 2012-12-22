@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -87,6 +88,12 @@ public abstract class AbstractABCase
 
     @Rule
     public TestName testname = new TestName();
+
+    protected void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
+    }
 
     public Generator getLaxGenerator()
     {

@@ -31,6 +31,7 @@ import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.spdy.parser.Parser.Listener;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -69,7 +71,7 @@ public class ClosedStreamTest extends AbstractTest
 
         Session session = startClient(new InetSocketAddress("localhost", server.socket().getLocalPort()), null);
         final CountDownLatch dataLatch = new CountDownLatch(2);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -102,7 +104,7 @@ public class ClosedStreamTest extends AbstractTest
 
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         server.close();
     }
@@ -119,7 +121,7 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 try
                 {
                     replyReceivedLatch.await(5,TimeUnit.SECONDS);
@@ -130,7 +132,7 @@ public class ClosedStreamTest extends AbstractTest
                 }
                 try
                 {
-                    stream.data(new StringDataInfo("data send after half closed",false));
+                    stream.data(new StringDataInfo("data send after half closed",false), new Callback.Adapter());
                 }
                 catch (RuntimeException e)
                 {
@@ -142,7 +144,7 @@ public class ClosedStreamTest extends AbstractTest
             }
         }),null);
 
-        Stream stream = clientSession.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), false),new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -155,7 +157,7 @@ public class ClosedStreamTest extends AbstractTest
             {
                 clientReceivedDataLatch.countDown();
             }
-        }).get();
+        });
         assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
         assertThat("stream is half closed from server",stream.isHalfClosed(),is(true));
         assertThat("client has not received any data sent after stream was half closed by server",
@@ -189,7 +191,7 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
                 serverReplySentLatch.countDown();
                 try
                 {
@@ -209,7 +211,7 @@ public class ClosedStreamTest extends AbstractTest
                 };
             }
             @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
             {
                 goAwayReceivedLatch.countDown();
             }
@@ -223,7 +225,7 @@ public class ClosedStreamTest extends AbstractTest
         socketChannel.write(synData);
         assertThat("synData is fully written", synData.hasRemaining(), is(false));
 
-        assertThat("server: syn reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("server: push reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
 
         Parser parser = new Parser(new StandardCompressionFactory.StandardDecompressor());
         parser.addListener(new Listener.Adapter()

@@ -55,14 +55,9 @@ public class DataFrame
         return (flags & DataInfo.FLAG_CLOSE) == DataInfo.FLAG_CLOSE;
     }
 
-    public boolean isCompress()
-    {
-        return (flags & DataInfo.FLAG_COMPRESS) == DataInfo.FLAG_COMPRESS;
-    }
-
     @Override
     public String toString()
     {
-        return String.format("DATA frame stream=%d length=%d close=%b compress=%b", getStreamId(), getLength(), isClose(), isCompress());
+        return String.format("DATA frame stream=%d length=%d close=%b", getStreamId(), getLength(), isClose());
     }
 }

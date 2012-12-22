@@ -18,21 +18,27 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
 /**
- * A PingInfo container. Currently adding nothing to it's base class, but serves to keep the api unchanged in
- * future versions when we need to pass more info to the methods having a {@link PingInfo} parameter.
+ * <p>A container for PING frames data.</p>
  */
-public class PingInfo extends Info
+public class PingResultInfo
 {
-    public PingInfo(long timeout, TimeUnit unit)
+    private final int pingId;
+
+    /**
+     * <p>Creates a {@link PingResultInfo} with the given ping id</p>
+     * @param pingId the ping id
+     */
+    public PingResultInfo(int pingId)
     {
-        super(timeout, unit);
+        this.pingId = pingId;
     }
 
-    public PingInfo()
+    /**
+     * @return the ping id
+     */
+    public int getPingId()
     {
-        this(0, TimeUnit.SECONDS);
+        return pingId;
     }
 }

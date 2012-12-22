@@ -43,7 +43,9 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,7 +119,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                                 ("" +
                                         ".css"),
                         is(true));
-                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
 
@@ -130,11 +132,11 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 };
             }
         });
-        // Send main request. That should initiate the push syn's which get reset by the client
+        // Send main request. That should initiate the push push's which get reset by the client
         sendRequest(session, mainRequestHeaders);
 
         assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
-        assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
 
         sendRequest(session, associatedCSSRequestHeaders);
     }
@@ -224,7 +226,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 if (dataInfo.isClose())
                     dataReceivedLatch.countDown();
             }
-        });
+        }, new Promise.Adapter<Stream>());
         Assert.assertTrue(received200OKLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataReceivedLatch.await(5, TimeUnit.SECONDS));
     }
@@ -286,7 +288,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         else
             assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
         if (validateHeaders)
-            assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
+            assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test

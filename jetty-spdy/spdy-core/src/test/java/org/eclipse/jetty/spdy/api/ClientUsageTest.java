@@ -19,9 +19,12 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.spdy.StandardSession;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Ignore;
@@ -35,7 +38,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
 
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -44,7 +47,14 @@ public class ClientUsageTest
                 replyInfo.getHeaders().get("host");
 
                 // Then issue another similar request
-                stream.getSession().syn(new SynInfo(true), this);
+                try
+                {
+                    stream.getSession().syn(new SynInfo(new Fields(), true), this);
+                }
+                catch (ExecutionException | InterruptedException | TimeoutException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             }
         });
     }
@@ -54,18 +64,26 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
 
-        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
-        {
-            @Override
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 // Do something with the response
                 replyInfo.getHeaders().get("host");
 
                 // Then issue another similar request
-                stream.getSession().syn(new SynInfo(true), this);
+                try
+                {
+                    stream.getSession().syn(new SynInfo(new Fields(), true), this);
+                }
+                catch (ExecutionException | InterruptedException | TimeoutException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             }
-        }).get(5, TimeUnit.SECONDS);
+                });
         // Send-and-forget the data
         stream.data(new StringDataInfo("data", true));
     }
@@ -76,8 +94,8 @@ public class ClientUsageTest
         Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
 
         final String context = "context";
-        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
-        {
+        session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
+                {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -85,11 +103,18 @@ public class ClientUsageTest
                 replyInfo.getHeaders().get("host");
 
                 // Then issue another similar request
-                stream.getSession().syn(new SynInfo(true), this);
+                try
+                {
+                    stream.getSession().syn(new SynInfo(new Fields(), true), this);
+                }
+                catch (ExecutionException | InterruptedException | TimeoutException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             }
-        }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
-        {
-            @Override
+                }, new Promise.Adapter<Stream>()
+                {
+                    @Override
             public void succeeded(Stream stream)
             {
                 // Differently from JDK 7 AIO, there is no need to
@@ -100,7 +125,7 @@ public class ClientUsageTest
                 // The style below is fire-and-forget, since
                 // we do not pass the handler nor we call get()
                 // to wait for the data to be sent
-                stream.data(new StringDataInfo(context, true));
+                stream.data(new StringDataInfo(context, true), new Callback.Adapter());
             }
         });
     }
@@ -110,9 +135,9 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
 
-        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
-        {
-            // The good of passing the listener to syn() is that applications can safely
+        session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
+                {
+            // The good of passing the listener to push() is that applications can safely
             // accumulate info from the reply headers to be used in the data callback,
             // e.g. content-type, charset, etc.
 
@@ -127,7 +152,14 @@ public class ClientUsageTest
                     stream.setAttribute("builder", new StringBuilder());
 
                 // May issue another similar request while waiting for data
-                stream.getSession().syn(new SynInfo(true), this);
+                try
+                {
+                    stream.getSession().syn(new SynInfo(new Fields(), true), this);
+                }
+                catch (ExecutionException | InterruptedException | TimeoutException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             }
 
             @Override
@@ -138,18 +170,18 @@ public class ClientUsageTest
                 if (dataInfo.isClose())
                 {
                     int receivedLength = builder.toString().getBytes(Charset.forName("UTF-8")).length;
-                    assert receivedLength == (Integer)stream.getAttribute("content-length");
+                    assert receivedLength == stream.getAttribute("content-length");
                 }
 
             }
-        }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
-        {
-            @Override
+                }, new Promise.Adapter<Stream>()
+                {
+                    @Override
             public void succeeded(Stream stream)
             {
-                stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false));
-                stream.data(new StringDataInfo("foo", false));
-                stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), true));
+                stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false), new Callback.Adapter());
+                stream.data(new StringDataInfo("foo", false), new Callback.Adapter());
+                stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), true), new Callback.Adapter());
             }
         });
     }

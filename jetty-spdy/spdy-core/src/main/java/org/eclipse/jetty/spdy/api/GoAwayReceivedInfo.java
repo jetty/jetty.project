@@ -18,21 +18,40 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
 /**
- * A PingInfo container. Currently adding nothing to it's base class, but serves to keep the api unchanged in
- * future versions when we need to pass more info to the methods having a {@link PingInfo} parameter.
+ * <p>A container for GOAWAY frames metadata: the last good stream id and
+ * the session status.</p>
  */
-public class PingInfo extends Info
+public class GoAwayReceivedInfo
 {
-    public PingInfo(long timeout, TimeUnit unit)
+    private final int lastStreamId;
+    private final SessionStatus sessionStatus;
+
+    /**
+     * <p>Creates a new {@link GoAwayReceivedInfo} with the given last good stream id and session status</p>
+     *
+     * @param lastStreamId  the last good stream id
+     * @param sessionStatus the session status
+     */
+    public GoAwayReceivedInfo(int lastStreamId, SessionStatus sessionStatus)
     {
-        super(timeout, unit);
+        this.lastStreamId = lastStreamId;
+        this.sessionStatus = sessionStatus;
     }
 
-    public PingInfo()
+    /**
+     * @return the last good stream id
+     */
+    public int getLastStreamId()
     {
-        this(0, TimeUnit.SECONDS);
+        return lastStreamId;
+    }
+
+    /**
+     * @return the session status
+     */
+    public SessionStatus getSessionStatus()
+    {
+        return sessionStatus;
     }
 }

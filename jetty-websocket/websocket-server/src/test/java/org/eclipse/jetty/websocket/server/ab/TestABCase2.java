@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class TestABCase2 extends AbstractABCase
 {
     /**
@@ -232,6 +236,9 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_5() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         byte payload[] = new byte[126]; // intentionally too big
         Arrays.fill(payload,(byte)'5');
 
@@ -253,6 +260,7 @@ public class TestABCase2 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Specialized {@link DataInfo} for {@link String} content.</p>
@@ -28,5 +29,10 @@ public class StringDataInfo extends BytesDataInfo
     public StringDataInfo(String string, boolean close)
     {
         super(string.getBytes(Charset.forName("UTF-8")), close);
+    }
+
+    public StringDataInfo(long timeout, TimeUnit unit, String string, boolean close)
+    {
+        super(timeout, unit, string.getBytes(Charset.forName("UTF-8")), close);
     }
 }

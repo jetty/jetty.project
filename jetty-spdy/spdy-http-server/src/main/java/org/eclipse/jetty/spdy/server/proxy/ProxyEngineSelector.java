@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -33,14 +33,15 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link ProxyEngineSelector} is the main entry point for syn stream events of a jetty SPDY proxy. It receives the
- * syn stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
- * host and forwards the syn to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
+ * <p>{@link ProxyEngineSelector} is the main entry point for push stream events of a jetty SPDY proxy. It receives the
+ * push stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
+ * host and forwards the push to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
  *
  * <p>If no {@link ProxyServerInfo} can be found for the given target host or no {@link ProxyEngine} can be found for
  * the given protocol, it resets the client stream.</p>
@@ -96,14 +97,14 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     }
 
     @Override
-    public void onPing(Session clientSession, PingInfo pingInfo)
+    public void onPing(Session clientSession, PingResultInfo pingResultInfo)
     {
         // We do not know to which upstream server
         // to send the PING so we just ignore it
     }
 
     @Override
-    public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+    public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo)
     {
         // TODO:
     }
@@ -153,7 +154,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo);
+        stream.getSession().rst(rstInfo, new Callback.Adapter());
     }
 
     public static class ProxyServerInfo

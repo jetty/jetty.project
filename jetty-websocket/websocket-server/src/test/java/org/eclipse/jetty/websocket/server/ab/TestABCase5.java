@@ -27,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +44,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_1() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.PING).setPayload("hello, ").setFin(false));
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
@@ -62,6 +66,7 @@ public class TestABCase5 extends AbstractABCase
         finally
         {
             fuzzer.close();
+            enableStacks(Parser.class,true);
         }
     }
 
@@ -71,6 +76,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_10() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -89,6 +97,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -99,6 +108,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_11() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -118,6 +130,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -128,6 +141,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_12() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -146,6 +162,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -156,6 +173,8 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_13() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -174,6 +193,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -184,6 +204,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_14() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -203,6 +226,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,false);
             fuzzer.close();
         }
     }
@@ -213,6 +237,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_15() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
@@ -234,6 +261,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -244,6 +272,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_16() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(false)); // bad frame
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
@@ -266,6 +297,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -276,6 +308,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_17() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(true)); // nothing to continue
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
@@ -298,6 +333,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -308,6 +344,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_18() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
@@ -326,6 +365,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -388,6 +428,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_2() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.PONG).setPayload("hello, ").setFin(false));
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
@@ -406,6 +449,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -691,6 +735,9 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_9() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
         send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
@@ -709,6 +756,7 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Specialized {@link DataInfo} for byte array content.</p>
@@ -32,12 +33,17 @@ public class BytesDataInfo extends DataInfo
 
     public BytesDataInfo(byte[] bytes, boolean close)
     {
-        this(bytes, 0, bytes.length, close);
+        this(0, TimeUnit.SECONDS, bytes, close);
     }
 
-    public BytesDataInfo(byte[] bytes, int offset, int length, boolean close)
+    public BytesDataInfo(long timeout, TimeUnit unit, byte[] bytes, boolean close)
     {
-        super(close, false);
+        this(timeout, unit, bytes, 0, bytes.length, close);
+    }
+
+    public BytesDataInfo(long timeout, TimeUnit unit, byte[] bytes, int offset, int length, boolean close)
+    {
+        super(timeout, unit, close);
         this.bytes = bytes;
         this.offset = offset;
         this.length = length;

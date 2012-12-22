@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
@@ -83,6 +84,6 @@ public class SSLEngineLeakTest extends AbstractTest
     private void avoidStackLocalVariables() throws Exception
     {
         Session session = startClient(startServer(null), null);
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 }

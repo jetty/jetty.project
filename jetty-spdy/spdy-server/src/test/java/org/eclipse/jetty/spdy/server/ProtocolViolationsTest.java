@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
@@ -64,7 +66,7 @@ public class ProtocolViolationsTest extends AbstractTest
             {
                 try
                 {
-                    stream.data(new StringDataInfo("failure", true));
+                    stream.data(new StringDataInfo("failure", true), new Callback.Adapter());
                     return null;
                 }
                 catch (IllegalStateException x)
@@ -82,7 +84,7 @@ public class ProtocolViolationsTest extends AbstractTest
                 resetLatch.countDown();
             }
         });
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -94,7 +96,7 @@ public class ProtocolViolationsTest extends AbstractTest
         server.bind(new InetSocketAddress("localhost", 0));
 
         Session session = startClient(new InetSocketAddress("localhost", server.socket().getLocalPort()), null);
-        session.syn(new SynInfo(true), null);
+        session.syn(new SynInfo(new Fields(), true), null);
 
         SocketChannel channel = server.accept();
         ByteBuffer readBuffer = ByteBuffer.allocate(1024);
@@ -114,7 +116,7 @@ public class ProtocolViolationsTest extends AbstractTest
         Assert.assertEquals(ControlFrameType.RST_STREAM.getCode(), readBuffer.getShort(2));
         Assert.assertEquals(streamId, readBuffer.getInt(8));
 
-        session.goAway().get(5,TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         server.close();
     }
@@ -123,7 +125,7 @@ public class ProtocolViolationsTest extends AbstractTest
     public void testSendDataAfterCloseIsIllegal() throws Exception
     {
         Session session = startClient(startServer(null), null);
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), null);
         stream.data(new StringDataInfo("test", true));
     }
 
@@ -131,7 +133,7 @@ public class ProtocolViolationsTest extends AbstractTest
     public void testSendHeadersAfterCloseIsIllegal() throws Exception
     {
         Session session = startClient(startServer(null), null);
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), null);
         stream.headers(new HeadersInfo(new Fields(), true));
     }
 
@@ -143,7 +145,7 @@ public class ProtocolViolationsTest extends AbstractTest
 
         Session session = startClient(new InetSocketAddress("localhost", server.socket().getLocalPort()), null);
         final CountDownLatch dataLatch = new CountDownLatch(2);
-        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -176,7 +178,7 @@ public class ProtocolViolationsTest extends AbstractTest
 
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
-        session.goAway().get(5,TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         server.close();
     }

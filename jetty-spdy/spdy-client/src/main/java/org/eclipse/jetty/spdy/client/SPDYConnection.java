@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.Controller;
 import org.eclipse.jetty.spdy.ISession;
 import org.eclipse.jetty.spdy.IdleListener;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -46,10 +47,10 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
 
     public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
-        this(endPoint,bufferPool,parser,executor,8192);
+        this(endPoint, bufferPool, parser, executor, 8192);
     }
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,int bufferSize)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, int bufferSize)
     {
         // Since SPDY is multiplexed, onFillable() must never block
         // while calling application code. In fact, onFillable()
@@ -60,7 +61,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
-        this.bufferSize=bufferSize;
+        this.bufferSize = bufferSize;
     }
 
     @Override
@@ -165,7 +166,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     protected void goAway(ISession session)
     {
         if (session != null)
-            session.goAway();
+            session.goAway(new GoAwayInfo(), new Callback.Adapter());
     }
 
     private void shutdown(ISession session)

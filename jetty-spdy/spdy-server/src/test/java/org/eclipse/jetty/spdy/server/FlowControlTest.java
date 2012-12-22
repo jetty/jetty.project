@@ -42,6 +42,9 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.FutureCallback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -66,7 +69,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(true), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
                     private final AtomicInteger dataFrames = new AtomicInteger();
@@ -80,7 +83,7 @@ public class FlowControlTest extends AbstractTest
                             dataInfoRef.set(dataInfo);
                             Settings settings = new Settings();
                             settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, size));
-                            stream.getSession().settings(new SettingsInfo(settings));
+                            stream.getSession().settings(new SettingsInfo(settings), new FutureCallback());
                         }
                         else if (dataFrameCount > 1)
                         {
@@ -99,12 +102,12 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
         stream.data(new BytesDataInfo(new byte[size * 2], false));
         settingsLatch.await(5, TimeUnit.SECONDS);
 
         // Send the second chunk of data, must not arrive since we're flow control stalled now
-        stream.data(new BytesDataInfo(new byte[size * 2], true));
+        stream.data(new BytesDataInfo(new byte[size * 2], true), new Callback.Adapter());
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
         // Consume the data arrived to server, this will resume flow control
@@ -131,8 +134,8 @@ public class FlowControlTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
-                stream.data(new BytesDataInfo(new byte[length], true));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(new BytesDataInfo(new byte[length], true), new Callback.Adapter());
                 return null;
             }
         }), null);
@@ -144,7 +147,7 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         final Exchanger<DataInfo> exchanger = new Exchanger<>();
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             private AtomicInteger dataFrames = new AtomicInteger();
 
@@ -230,13 +233,13 @@ public class FlowControlTest extends AbstractTest
             {
                 Settings settings = new Settings();
                 settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
-                session.settings(new SettingsInfo(settings));
+                session.settings(new SettingsInfo(settings), new FutureCallback());
             }
 
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
                     private AtomicInteger dataFrames = new AtomicInteger();
@@ -294,9 +297,9 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
         final int length = 5 * windowSize;
-        stream.data(new BytesDataInfo(new byte[length], true));
+        stream.data(new BytesDataInfo(new byte[length], true), new Callback.Adapter());
 
         DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
@@ -341,8 +344,8 @@ public class FlowControlTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
-                stream.data(new BytesDataInfo(new byte[windowSize * 2], true));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(new BytesDataInfo(new byte[windowSize * 2], true), new Callback.Adapter());
                 return null;
             }
         }), null);
@@ -355,7 +358,7 @@ public class FlowControlTest extends AbstractTest
         final CountDownLatch latch = new CountDownLatch(3);
         final AtomicReference<DataInfo> dataInfoRef1 = new AtomicReference<>();
         final AtomicReference<DataInfo> dataInfoRef2 = new AtomicReference<>();
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
         {
             private final AtomicInteger dataFrames = new AtomicInteger();
 
@@ -375,8 +378,8 @@ public class FlowControlTest extends AbstractTest
                         latch.countDown();
                 }
             }
-        }).get(5, TimeUnit.SECONDS);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        });
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
         {
             private final AtomicInteger dataFrames = new AtomicInteger();
 
@@ -396,8 +399,8 @@ public class FlowControlTest extends AbstractTest
                         latch.countDown();
                 }
             }
-        }).get(5, TimeUnit.SECONDS);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        });
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -412,7 +415,7 @@ public class FlowControlTest extends AbstractTest
                 if (dataInfo.isClose())
                     latch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -440,13 +443,13 @@ public class FlowControlTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
-                stream.data(bigByteBufferDataInfo);
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(bigByteBufferDataInfo, new Callback.Adapter());
                 return null;
             }
         }),new SessionFrameListener.Adapter());
 
-        session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), false),new StreamFrameListener.Adapter()
         {
             private int dataBytesReceived;
 

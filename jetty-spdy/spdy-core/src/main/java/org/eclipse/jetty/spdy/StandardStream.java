@@ -22,18 +22,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -133,7 +133,7 @@ public class StandardStream implements IStream
     @Override
     public void setAttribute(String key, Object value)
     {
-        attributes.put(key,value);
+        attributes.put(key, value);
     }
 
     @Override
@@ -156,7 +156,7 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close, boolean local)
     {
-        LOG.debug("{} close={} local={}",this,close,local);
+        LOG.debug("{} close={} local={}", this, close, local);
         if (close)
         {
             switch (closeState)
@@ -184,7 +184,7 @@ public class StandardStream implements IStream
                 }
                 default:
                 {
-                    LOG.warn("Already CLOSED! {} local={}",this,local);
+                    LOG.warn("Already CLOSED! {} local={}", this, local);
                 }
             }
         }
@@ -243,8 +243,8 @@ public class StandardStream implements IStream
 
         if (!canReceive())
         {
-            LOG.debug("Protocol error receiving {}, resetting" + dataInfo);
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            LOG.debug("Protocol error receiving {}, resetting", dataInfo);
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
             return;
         }
 
@@ -335,15 +335,18 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public Future<Stream> syn(SynInfo synInfo)
+    public Stream push(PushInfo pushInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FuturePromise<Stream> result = new FuturePromise<>();
-        syn(synInfo,0,TimeUnit.MILLISECONDS,result);
-        return result;
+        push(pushInfo, result);
+        if (pushInfo.getTimeout() > 0)
+            return result.get(pushInfo.getTimeout(), pushInfo.getUnit());
+        else
+            return result.get();
     }
 
     @Override
-    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Promise<Stream> promise)
+    public void push(PushInfo pushInfo, Promise<Stream> promise)
     {
         if (isClosed() || isReset())
         {
@@ -351,81 +354,90 @@ public class StandardStream implements IStream
                     "Stream: " + this + " already closed or reset!"));
             return;
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
-        session.syn(pushSynInfo, null, timeout, unit, promise);
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(), pushInfo);
+        session.syn(pushSynInfo, null, promise);
     }
 
     @Override
-    public Future<Void> reply(ReplyInfo replyInfo)
+    public void reply(ReplyInfo replyInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        reply(replyInfo, 0, TimeUnit.MILLISECONDS, result);
-        return result;
+        reply(replyInfo, result);
+        if (replyInfo.getTimeout() > 0)
+            result.get(replyInfo.getTimeout(), replyInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback callback)
+    public void reply(ReplyInfo replyInfo, Callback callback)
     {
         if (isUnidirectional())
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-        session.control(this, frame, timeout, unit, callback);
+        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), callback);
     }
 
     @Override
-    public Future<Void> data(DataInfo dataInfo)
+    public void data(DataInfo dataInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        data(dataInfo, 0, TimeUnit.MILLISECONDS, result);
-        return result;
+        data(dataInfo, result);
+        if (dataInfo.getTimeout() > 0)
+            result.get(dataInfo.getTimeout(), dataInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback)
+    public void data(DataInfo dataInfo, Callback callback)
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, timeout, unit, callback);
+        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), callback);
     }
 
     @Override
-    public Future<Void> headers(HeadersInfo headersInfo)
+    public void headers(HeadersInfo headersInfo) throws InterruptedException, ExecutionException, TimeoutException
     {
         FutureCallback result = new FutureCallback();
-        headers(headersInfo, 0, TimeUnit.MILLISECONDS, result);
-        return result;
+        headers(headersInfo, result);
+        if (headersInfo.getTimeout() > 0)
+            result.get(headersInfo.getTimeout(), headersInfo.getUnit());
+        else
+            result.get();
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback callback)
+    public void headers(HeadersInfo headersInfo, Callback callback)
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
         updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-        session.control(this, frame, timeout, unit, callback);
+        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), callback);
     }
 
     @Override

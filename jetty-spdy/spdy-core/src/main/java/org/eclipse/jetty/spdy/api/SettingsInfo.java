@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.spdy.api;
 
-public class SettingsInfo
+import java.util.concurrent.TimeUnit;
+
+public class SettingsInfo extends Info
 {
     public static final byte CLEAR_PERSISTED = 1;
 
@@ -27,13 +29,19 @@ public class SettingsInfo
 
     public SettingsInfo(Settings settings)
     {
-        this(settings, false);
+        this(0, TimeUnit.SECONDS, settings, false);
+    }
+
+    public SettingsInfo(long timeout, TimeUnit unit, Settings settings, boolean clearPersisted)
+    {
+        super(timeout, unit);
+        this.settings = settings;
+        this.clearPersisted = clearPersisted;
     }
 
     public SettingsInfo(Settings settings, boolean clearPersisted)
     {
-        this.settings = settings;
-        this.clearPersisted = clearPersisted;
+        this(0, TimeUnit.SECONDS, settings, clearPersisted);
     }
 
     public boolean isClearPersisted()

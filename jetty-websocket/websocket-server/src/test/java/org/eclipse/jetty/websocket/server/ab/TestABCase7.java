@@ -26,7 +26,6 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -41,12 +40,6 @@ import org.junit.Test;
  */
 public class TestABCase7 extends AbstractABCase
 {
-    private static void enableStacks(Class<?> clazz, boolean enabled)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(!enabled);
-    }
-
     @Rule
     public TestTracker tt = new TestTracker();
 
