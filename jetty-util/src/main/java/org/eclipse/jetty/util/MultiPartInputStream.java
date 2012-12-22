@@ -45,6 +45,9 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 
 
 /**
@@ -54,6 +57,8 @@ import javax.servlet.http.Part;
  */
 public class MultiPartInputStream
 {
+    private static final Logger LOG = Log.getLogger(MultiPartInputStream.class);
+
     public static final MultipartConfigElement  __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     protected InputStream _in;
     protected MultipartConfigElement _config;
@@ -476,11 +481,24 @@ public class MultiPartInputStream
 
         // Get first boundary
         String line=((ReadLineInputStream)_in).readLine();
-     
+
         if (line == null || line.length() == 0)
             throw new IOException("Missing content for multipart request");
-        
-        if (!line.equals(boundary))
+
+        boolean badFormatLogged = false;
+        line=line.trim();
+        while (line != null && !line.equals(boundary))
+        {
+            if (!badFormatLogged)
+            {
+                LOG.warn("Badly formatted multipart request");
+                badFormatLogged = true;
+            }
+            line=((ReadLineInputStream)_in).readLine();
+            line=(line==null?line:line.trim());
+        }
+
+        if (line == null || line.length() == 0)
             throw new IOException("Missing initial multi part boundary");
 
 
