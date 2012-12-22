@@ -273,13 +273,7 @@ public class TypeUtil
         {
             char c=s.charAt(offset+i);
 
-            int digit=c-'0';
-            if (digit<0 || digit>=base || digit>=10)
-            {
-                digit=10+c-'A';
-                if (digit<10 || digit>=base)
-                    digit=10+c-'a';
-            }
+            int digit=convertHexDigit((int)c);
             if (digit<0 || digit>=base)
                 throw new NumberFormatException(s.substring(offset,offset+length));
             value=value*base+digit;
@@ -353,15 +347,28 @@ public class TypeUtil
 
     /* ------------------------------------------------------------ */
     /**
-     * @param b An ASCII encoded character 0-9 a-f A-F
+     * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
      */
-    public static byte convertHexDigit( byte b )
+    public static byte convertHexDigit( byte c )
     {
-        if ((b >= '0') && (b <= '9')) return (byte)(b - '0');
-        if ((b >= 'a') && (b <= 'f')) return (byte)(b - 'a' + 10);
-        if ((b >= 'A') && (b <= 'F')) return (byte)(b - 'A' + 10);
-        throw new IllegalArgumentException("!hex:"+Integer.toHexString(0xff&b));
+        byte b = (byte)((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
+        if (b<0 || b>15)
+            throw new IllegalArgumentException("!hex "+c);
+        return b;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param c An ASCII encoded character 0-9 a-f A-F
+     * @return The byte value of the character 0-16.
+     */
+    public static int convertHexDigit( int c )
+    {
+        int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
+        if (d<0 || d>15)
+            throw new NumberFormatException("!hex "+c);
+        return d;
     }
 
     /* ------------------------------------------------------------ */

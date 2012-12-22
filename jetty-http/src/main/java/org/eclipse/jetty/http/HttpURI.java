@@ -566,9 +566,7 @@ public class HttpURI
         if (_path==_param)
             return null;
 
-        int length = _param-_path;
-        byte[] bytes=null;
-        int n=0;
+        Utf8StringBuilder utf8b=null;
 
         for (int i=_path;i<_param;i++)
         {
@@ -576,31 +574,47 @@ public class HttpURI
 
             if (b=='%')
             {
+                if (utf8b==null)
+                {
+                    utf8b=new Utf8StringBuilder();
+                    utf8b.append(_raw,_path,i-_path);
+                }
+                
                 if ((i+2)>=_param)
                     throw new IllegalArgumentException("Bad % encoding: "+this);
-                b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
-                i+=2;
-            }
-            else if (bytes==null)
-            {
-                n++;
+                if (_raw[i+1]=='u')
+                {
+                    if ((i+5)>=_param)
+                        throw new IllegalArgumentException("Bad %u encoding: "+this);
+                    try
+                    {
+                        String unicode = new String(Character.toChars(TypeUtil.parseInt(_raw,i+2,4,16)));
+                        utf8b.getStringBuilder().append(unicode);
+                        i+=5;
+                    }
+                    catch(Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else
+                {
+                    b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
+                    utf8b.append(b);
+                    i+=2;
+                }
                 continue;
             }
-
-            if (bytes==null)
+            else if (utf8b!=null)
             {
-                bytes=new byte[length];
-                System.arraycopy(_raw,_path,bytes,0,n);
+                utf8b.append(b);
             }
-
-            bytes[n++]=b;
         }
 
-        if (bytes==null)
-            return new String(_raw,_path,length,_charset);
-        return new String(bytes,0,n,_charset);
+        if (utf8b==null)
+            return StringUtil.toUTF8String(_raw, _path, _param-_path);
+        return utf8b.toString();
     }
-    
     
     public String getDecodedPath(String encoding)
     {
@@ -617,21 +631,44 @@ public class HttpURI
 
             if (b=='%')
             {
+                if (bytes==null)
+                {
+                    bytes=new byte[length];
+                    System.arraycopy(_raw,_path,bytes,0,n);
+                }
+                
                 if ((i+2)>=_param)
                     throw new IllegalArgumentException("Bad % encoding: "+this);
-                b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
-                i+=2;
+                if (_raw[i+1]=='u')
+                {
+                    if ((i+5)>=_param)
+                        throw new IllegalArgumentException("Bad %u encoding: "+this);
+
+                    try
+                    {
+                        String unicode = new String(Character.toChars(TypeUtil.parseInt(_raw,i+2,4,16)));
+                        byte[] encoded = unicode.getBytes(encoding);
+                        System.arraycopy(encoded,0,bytes,n,encoded.length);
+                        n+=encoded.length;
+                        i+=5;
+                    }
+                    catch(Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else
+                {
+                    b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
+                    bytes[n++]=b;
+                    i+=2;
+                }
+                continue;
             }
             else if (bytes==null)
             {
                 n++;
                 continue;
-            }
-
-            if (bytes==null)
-            {
-                bytes=new byte[length];
-                System.arraycopy(_raw,_path,bytes,0,n);
             }
 
             bytes[n++]=b;
