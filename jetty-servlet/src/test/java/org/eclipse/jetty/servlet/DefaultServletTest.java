@@ -544,7 +544,63 @@ public class DefaultServletTest
         assertResponseContains("Content-Range: bytes 70-79/80", response);
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
+
+        //test a range request with a file with no suffix, therefore no mimetype
+        File nofilesuffix = new File(resBase, "nofilesuffix");
+        createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+        "\r\n");
+        assertResponseContains("200 OK", response);
+        assertResponseContains("Accept-Ranges: bytes", response);
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9\r\n" +
+        "\r\n");
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Length: 10", response);
+        assertTrue(!response.contains("Content-Type:"));
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49\r\n" +
+        "\r\n");
+        start = response.indexOf("--jetty");
+        body = response.substring(start);
+        boundary = body.substring(0, body.indexOf("\r\n"));
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+        assertResponseContains("Content-Range: bytes 20-29/80", response);
+        assertResponseContains("Content-Length: " + body.length(), response);
+        assertTrue(body.endsWith(boundary + "--\r\n"));
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+        "\r\n");
+        start = response.indexOf("--jetty");
+        body = response.substring(start);
+        boundary = body.substring(0, body.indexOf("\r\n"));
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+        assertResponseContains("Content-Range: bytes 20-29/80", response);
+        assertResponseContains("Content-Range: bytes 60-60/80", response);
+        assertResponseContains("Content-Range: bytes 70-79/80", response);
+        assertResponseContains("Content-Length: " + body.length(), response);
+        assertTrue(body.endsWith(boundary + "--\r\n"));
+
     }
+
+
+
 
     @Test
     public void testFiltered() throws Exception
