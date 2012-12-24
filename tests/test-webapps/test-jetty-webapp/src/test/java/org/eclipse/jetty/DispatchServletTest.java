@@ -22,10 +22,14 @@ import com.acme.DispatchServlet;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Simple tests against DispatchServlet.
@@ -136,8 +140,7 @@ public class DispatchServletTest
                     response.startsWith("HTTP/1.1 413 "));
 
             assertFalse(msg + " should not be code 500.", response.startsWith("HTTP/1.1 500 "));
-
-            assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
+            assertThat(response,Matchers.startsWith("HTTP/1.1 403 "));
         }
     }
 }

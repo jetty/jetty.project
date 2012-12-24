@@ -843,14 +843,14 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
+        public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
         {
             request=true;
             _h= -1;
             _hdr= new String[10];
             _val= new String[10];
             _methodOrVersion= method;
-            _uriOrStatus= uri;
+            _uriOrStatus= BufferUtil.toUTF8String(uri);
             _versionOrReason= version==null?null:version.asString();
 
             fields=new HttpFields();

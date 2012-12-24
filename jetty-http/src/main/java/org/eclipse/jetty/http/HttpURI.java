@@ -127,7 +127,7 @@ public class HttpURI
 
     public void parse(String raw)
     {
-        byte[] b = StringUtil.getBytes(raw);
+        byte[] b = StringUtil.getUtf8Bytes(raw);
         parse2(b,0,b.length);
         _rawString=raw;
     }
@@ -680,12 +680,6 @@ public class HttpURI
 
         return StringUtil.toString(bytes,0,n,encoding);
     }
-    
-    
-    
-    
-    
-
 
     public String getPathAndParam()
     {
@@ -734,17 +728,17 @@ public class HttpURI
         return new String(_raw,_fragment+1,_end-_fragment-1,_charset);
     }
 
-    public void decodeQueryTo(MultiMap parameters)
+    public void decodeQueryTo(MultiMap<String> parameters)
     {
         if (_query==_fragment)
             return;
         if (_charset==StringUtil.__UTF8_CHARSET)
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,_charset.toString()),parameters,_charset.toString());
+            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,_charset.toString()),parameters,_charset.toString(),-1);
     }
 
-    public void decodeQueryTo(MultiMap parameters, String encoding) throws UnsupportedEncodingException
+    public void decodeQueryTo(MultiMap<String> parameters, String encoding) throws UnsupportedEncodingException
     {
         if (_query==_fragment)
             return;
@@ -752,7 +746,7 @@ public class HttpURI
         if (encoding==null || StringUtil.isUTF8(encoding))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding);
+            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding,-1);
     }
 
     public void clear()

@@ -52,6 +52,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
@@ -80,13 +81,13 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion httpVersion)
+    public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion httpVersion)
     {
         Connector connector = getConnector();
         String scheme = connector.getConnectionFactory(SslConnectionFactory.class) != null ? "https" : "http";
         headers.put(HTTPSPDYHeader.SCHEME.name(version), scheme);
         headers.put(HTTPSPDYHeader.METHOD.name(version), methodString);
-        headers.put(HTTPSPDYHeader.URI.name(version), uri);
+        headers.put(HTTPSPDYHeader.URI.name(version), BufferUtil.toUTF8String(uri)); // TODO handle bad encodings
         headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
         return false;
     }

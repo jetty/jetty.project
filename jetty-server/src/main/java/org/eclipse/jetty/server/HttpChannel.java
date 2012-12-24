@@ -373,7 +373,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
+    public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
     {
         _expect = false;
         _expect100Continue = false;
@@ -384,9 +384,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         _request.setMethod(httpMethod, method);
 
         if (httpMethod == HttpMethod.CONNECT)
-            _uri.parseConnect(uri);
+            _uri.parseConnect(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
         else
-            _uri.parse(uri);
+            _uri.parse(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
         _request.setUri(_uri);
 
         String path;

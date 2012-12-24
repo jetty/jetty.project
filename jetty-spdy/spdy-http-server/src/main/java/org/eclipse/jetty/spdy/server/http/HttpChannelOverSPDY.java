@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -170,10 +171,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         HttpMethod httpMethod = HttpMethod.fromString(methodHeader.value());
         HttpVersion httpVersion = HttpVersion.fromString(versionHeader.value());
-        String uriString = uriHeader.value();
+        
+        // TODO should handle URI as byte buffer as some bad clients send WRONG encodings in query string
+        // that  we have to deal with
+        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.value());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriString, httpVersion);
-        startRequest(httpMethod, httpMethod.asString(), uriString, httpVersion);
+        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.value(), httpVersion);
+        startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
