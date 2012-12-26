@@ -21,12 +21,21 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+/**
+ * Test various bad / forbidden opcodes (per spec)
+ */
+@RunWith(AdvancedRunner.class)
 public class TestABCase4 extends AbstractABCase
 {
     // Allow Fuzzer / Generator to create bad frames for testing frame validation
@@ -38,6 +47,18 @@ public class TestABCase4 extends AbstractABCase
             super.opcode = opcode;
             // NOTE: Not setting Frame.Type intentionally
         }
+    }
+
+    @After
+    public void enableParserStacks()
+    {
+        enableStacks(Parser.class,true);
+    }
+
+    @Before
+    public void quietParserStacks()
+    {
+        enableStacks(Parser.class,false);
     }
 
     /**

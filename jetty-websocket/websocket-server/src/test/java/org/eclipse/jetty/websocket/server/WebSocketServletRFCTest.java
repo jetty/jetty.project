@@ -25,13 +25,16 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
@@ -42,12 +45,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
  * <p>
  * This test serves a different purpose than than the {@link WebSocketMessageRFC6455Test}, and {@link WebSocketParserRFC6455Test} tests.
  */
+@RunWith(AdvancedRunner.class)
 public class WebSocketServletRFCTest
 {
     private static Generator generator = new UnitGenerator();
@@ -64,6 +69,12 @@ public class WebSocketServletRFCTest
     public static void stopServer()
     {
         server.stop();
+    }
+
+    private void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
     }
 
     /**
@@ -324,6 +335,9 @@ public class WebSocketServletRFCTest
     @Test
     public void testTextNotUTF8() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setProtocols("other");
         try
@@ -347,8 +361,9 @@ public class WebSocketServletRFCTest
         }
         finally
         {
+            // Reenable Long Stacks from Parser
+            enableStacks(Parser.class,true);
             client.close();
         }
     }
-
 }

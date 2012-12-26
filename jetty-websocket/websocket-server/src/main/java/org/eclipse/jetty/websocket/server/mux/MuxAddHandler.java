@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
@@ -89,7 +90,7 @@ public class MuxAddHandler implements MuxAddServer
 
         HttpMethod method = HttpMethod.fromString(request.getMethod());
         HttpVersion version = HttpVersion.fromString(request.getHttpVersion());
-        httpChannel.startRequest(method,request.getMethod(),request.getRequestURI().toASCIIString(),version);
+        httpChannel.startRequest(method,request.getMethod(),BufferUtil.toBuffer(request.getRequestURI().toASCIIString()),version);
 
         for (String headerName : request.getHeaders().keySet())
         {

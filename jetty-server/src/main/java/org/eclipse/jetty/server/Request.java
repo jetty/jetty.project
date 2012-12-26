@@ -2102,7 +2102,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8); //have to assume UTF-8 because we can't know otherwise
+        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8_CHARSET,-1); //have to assume UTF-8 because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2123,11 +2123,11 @@ public class Request implements HttpServletRequest
             {
                 StringBuilder overridden_query_string = new StringBuilder();
                 MultiMap<String> overridden_old_query = new MultiMap<>();
-                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding());//decode using any queryencoding set for the request
+                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding(),-1);//decode using any queryencoding set for the request
                 
                 
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8); //have to assume utf8 as we cannot know otherwise
+                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8_CHARSET,-1); //have to assume utf8 as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {

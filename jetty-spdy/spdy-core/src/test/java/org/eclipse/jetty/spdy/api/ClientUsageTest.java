@@ -136,7 +136,7 @@ public class ClientUsageTest
         Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
-                {
+        {
             // The good of passing the listener to push() is that applications can safely
             // accumulate info from the reply headers to be used in the data callback,
             // e.g. content-type, charset, etc.
@@ -167,16 +167,11 @@ public class ClientUsageTest
             {
                 StringBuilder builder = (StringBuilder)stream.getAttribute("builder");
                 builder.append(dataInfo.asString("UTF-8", true));
-                if (dataInfo.isClose())
-                {
-                    int receivedLength = builder.toString().getBytes(Charset.forName("UTF-8")).length;
-                    assert receivedLength == stream.getAttribute("content-length");
-                }
 
             }
-                }, new Promise.Adapter<Stream>()
-                {
-                    @Override
+        }, new Promise.Adapter<Stream>()
+        {
+            @Override
             public void succeeded(Stream stream)
             {
                 stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false), new Callback.Adapter());

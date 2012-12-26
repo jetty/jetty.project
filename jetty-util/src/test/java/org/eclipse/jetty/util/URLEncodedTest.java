@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -120,33 +121,34 @@ public class URLEncodedTest
         assertEquals("encoded get", url_encoded.getString("Name8"),"xx,  yy  ,zz");
 
         url_encoded.clear();
-        url_encoded.decode("Name11=xxVerdi+%C6+og+2zz", "ISO-8859-1");
+        url_encoded.decode("Name11=%u30EDxxVerdi+%C6+og+2zz", StringUtil.__ISO_8859_1_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", url_encoded.getString("Name11"),"xxVerdi \u00c6 og 2zz");
+        assertEquals("encoded get", "?xxVerdi \u00c6 og 2zz",url_encoded.getString("Name11"));
 
         url_encoded.clear();
-        url_encoded.decode("Name12=xxVerdi+%2F+og+2zz", "UTF-8");
+        url_encoded.decode("Name12=%u30EDxxVerdi+%2F+og+2zz", StringUtil.__UTF8_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", url_encoded.getString("Name12"),"xxVerdi / og 2zz");
+        assertEquals("encoded get", url_encoded.getString("Name12"),"\u30edxxVerdi / og 2zz");
 
         url_encoded.clear();
-        url_encoded.decode("Name14=%GG%+%%+%", "ISO-8859-1");
+        url_encoded.decode("Name14=%uXXXXa%GGb%+%c%+%d", StringUtil.__ISO_8859_1_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", url_encoded.getString("Name14"),"%GG% %% %");
+        assertEquals("encoded get","?a?b?c?d", url_encoded.getString("Name14"));
 
         url_encoded.clear();
-        url_encoded.decode("Name14=%GG%+%%+%", "UTF-8");
+        url_encoded.decode("Name14=%uXXXX%GG%+%%+%", StringUtil.__UTF8_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", url_encoded.getString("Name14"),"%GG% %% %");
+        assertEquals("encoded get", "\ufffd\ufffd\ufffd\ufffd",url_encoded.getString("Name14"));
 
+        
         /* Not every jvm supports this encoding */
 
         if (java.nio.charset.Charset.isSupported("SJIS"))
         {
             url_encoded.clear();
-            url_encoded.decode("Name9=%83e%83X%83g", "SJIS"); // "Test" in Japanese Katakana
+            url_encoded.decode("Name9=%u30ED%83e%83X%83g", Charset.forName("SJIS")); // "Test" in Japanese Katakana
             assertEquals("encoded param size",1, url_encoded.size());
-            assertEquals("encoded get", "\u30c6\u30b9\u30c8", url_encoded.getString("Name9"));
+            assertEquals("encoded get", "\u30ed\u30c6\u30b9\u30c8", url_encoded.getString("Name9"));   
         }
         else
             assertTrue("Charset SJIS not supported by jvm", true);
@@ -158,11 +160,11 @@ public class URLEncodedTest
     public void testBadEncoding()
     {
         UrlEncoded url_encoded = new UrlEncoded();
-        url_encoded.decode("Name15=xx%zz", "UTF-8");
+        url_encoded.decode("Name15=xx%zz", StringUtil.__UTF8_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", "xx%zz", url_encoded.getString("Name15"));
+        assertEquals("encoded get", "xx\ufffd", url_encoded.getString("Name15"));
 
-        assertEquals("%u123",UrlEncoded.decodeString("%u123",0,5,"UTF-8"));
+        assertEquals("xxx",UrlEncoded.decodeString("xxx%u123",0,5,StringUtil.__UTF8_CHARSET));
     }
 
 
@@ -184,20 +186,20 @@ public class URLEncodedTest
         {
             ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
             MultiMap<String> m = new MultiMap<>();
-            UrlEncoded.decodeTo(in, m, charsets[i][1], -1,-1);
-            assertEquals(i+" stream length",4,m.size());
-            assertEquals(i+" stream name\\n","value 0",m.getString("name\n"));
-            assertEquals(i+" stream name1","",m.getString("name1"));
-            assertEquals(i+" stream name2","",m.getString("name2"));
-            assertEquals(i+" stream n\u00e3me3","value 3",m.getString("n\u00e3me3"));
+            UrlEncoded.decodeTo(in, m, charsets[i][1]==null?null:Charset.forName(charsets[i][1]), -1,-1);
+            assertEquals(charsets[i][1]+" stream length",4,m.size());
+            assertEquals(charsets[i][1]+" stream name\\n","value 0",m.getString("name\n"));
+            assertEquals(charsets[i][1]+" stream name1","",m.getString("name1"));
+            assertEquals(charsets[i][1]+" stream name2","",m.getString("name2"));
+            assertEquals(charsets[i][1]+" stream n\u00e3me3","value 3",m.getString("n\u00e3me3"));
         }
 
 
         if (java.nio.charset.Charset.isSupported("Shift_JIS"))
         {
-            ByteArrayInputStream in2 = new ByteArrayInputStream ("name=%83e%83X%83g".getBytes());
+            ByteArrayInputStream in2 = new ByteArrayInputStream ("name=%83e%83X%83g".getBytes(StringUtil.__ISO_8859_1));
             MultiMap<String> m2 = new MultiMap<>();
-            UrlEncoded.decodeTo(in2, m2, "Shift_JIS", -1,-1);
+            UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1,-1);
             assertEquals("stream length",1,m2.size());
             assertEquals("stream name","\u30c6\u30b9\u30c8",m2.getString("name"));
         }

@@ -29,7 +29,6 @@ import java.util.List;
 import org.apache.tools.ant.BuildException;
 import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.ContextHandlers;
-import org.eclipse.jetty.ant.utils.Monitor;
 import org.eclipse.jetty.ant.utils.ServerProxy;
 import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.security.LoginService;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -95,7 +95,6 @@ public class ServerProxyImpl implements ServerProxy
     /** wait for all jetty threads to exit or continue */
     private boolean daemon;
 
-    private Monitor monitor;
 
     private boolean configured = false;
 
@@ -267,8 +266,6 @@ public class ServerProxyImpl implements ServerProxy
                 System.setProperty("jetty.ant.server.host", host);
             }
             
-            startMonitor();
-            
             startScanners();
             
             TaskLog.log("Jetty AntTask Started");
@@ -356,6 +353,11 @@ public class ServerProxyImpl implements ServerProxy
         
         configured = true;
         
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(stopPort);
+        monitor.setKey(stopKey);
+        monitor.setExitVm(false);
+        
         if (tempDirectory != null && !tempDirectory.exists())
             tempDirectory.mkdirs();
         
@@ -430,17 +432,7 @@ public class ServerProxyImpl implements ServerProxy
         }
     }
 
-    /**
-     * @throws Exception
-     */
-    private void startMonitor() throws Exception
-    {
-        if (stopPort > 0 && stopKey != null && monitor == null)
-        {
-            monitor = new Monitor(stopPort, stopKey, new Server[] {server});
-            monitor.start();
-        }
-    }
+
 
     
     /**

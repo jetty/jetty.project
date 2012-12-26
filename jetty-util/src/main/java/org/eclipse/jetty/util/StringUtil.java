@@ -52,11 +52,13 @@ public class StringUtil
     
     public final static Charset __UTF8_CHARSET;
     public final static Charset __ISO_8859_1_CHARSET;
+    public final static Charset __UTF16_CHARSET;
     
     static
     {
         __UTF8_CHARSET=Charset.forName(__UTF8);
         __ISO_8859_1_CHARSET=Charset.forName(__ISO_8859_1);
+        __UTF16_CHARSET=Charset.forName(__UTF16);
         
         CHARSETS.put("UTF-8",__UTF8);
         CHARSETS.put("UTF8",__UTF8);

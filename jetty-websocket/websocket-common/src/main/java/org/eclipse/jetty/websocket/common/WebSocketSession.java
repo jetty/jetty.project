@@ -88,7 +88,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         String query = requestURI.getQuery();
         if (StringUtil.isNotBlank(query))
         {
-            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8);
+            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8_CHARSET,-1);
         }
 
         for (String name : params.keySet())

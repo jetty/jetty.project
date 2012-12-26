@@ -966,7 +966,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             //  content-length header
             //
             writeHeaders(response,content,-1);
-            String mimetype=content.getContentType().toString();
+            String mimetype=(content.getContentType()==null?null:content.getContentType().toString());
+            if (mimetype==null)
+                LOG.warn("Unknown mimetype for "+request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
 
@@ -993,7 +995,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 length+=
                     ((i>0)?2:0)+
                     2+multi.getBoundary().length()+2+
-                    HttpHeader.CONTENT_TYPE.asString().length()+2+mimetype.length()+2+
+                    (mimetype==null?0:HttpHeader.CONTENT_TYPE.asString().length()+2+mimetype.length())+2+
                     HttpHeader.CONTENT_RANGE.asString().length()+2+header[i].length()+2+
                     2+
                     (ibr.getLast(content_length)-ibr.getFirst(content_length))+1;

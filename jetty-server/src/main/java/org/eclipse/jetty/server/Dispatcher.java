@@ -147,7 +147,7 @@ public class Dispatcher implements RequestDispatcher
                     }
 
                     MultiMap<String> parameters=new MultiMap<>();
-                    UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding());
+                    UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding(),-1);
 
                     if(old_params != null) {
                         // Merge parameters.

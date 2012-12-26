@@ -505,13 +505,6 @@
       <type>war</type>
     </dependency>
     <!-- NOT READY YET 
-    <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
-      <version>${project.version}</version>
-    </dependency>
      -->
     <!-- <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-jndi</artifactId> 
       <version>${project.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 

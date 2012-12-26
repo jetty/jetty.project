@@ -41,6 +41,7 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private boolean open = false;
     private IncomingFrames incoming;
+    private IOState ioState = new IOState();
 
     public LocalWebSocketConnection()
     {
@@ -83,8 +84,7 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     @Override
     public IOState getIOState()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return ioState;
     }
 
     @Override

@@ -78,7 +78,7 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private String _uri;
+    private ByteBuffer _uri=ByteBuffer.allocate(128); // Tune?
     private byte _eol;
     private EndOfContent _endOfContent;
     private long _contentLength;
@@ -87,12 +87,10 @@ public class HttpParser
     private int _chunkPosition;
     private boolean _headResponse;
     private ByteBuffer _contentChunk;
-    // private final Trie<HttpField> _connectionFields=(Trie<HttpField>)HttpField.CONNECTION.clone();
-    private final Trie<HttpField> _connectionFields=new Trie(512);
+    private final Trie<HttpField> _connectionFields=new Trie<>(512);
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
-    private final Utf8StringBuilder _utf8=new Utf8StringBuilder();
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler<ByteBuffer> handler)
@@ -360,9 +358,39 @@ public class HttpParser
                         }
                         else
                         {
+                            _uri.clear();
                             setState(State.URI);
-                            _utf8.reset();
-                            _utf8.append(ch);
+                            // quick scan for space or EoBuffer
+                            if (buffer.hasArray())
+                            {
+                                byte[] array=buffer.array();
+                                int p=buffer.arrayOffset()+buffer.position();
+                                int l=buffer.arrayOffset()+buffer.limit();
+                                int i=p;
+                                while (i<l && array[i]>HttpTokens.SPACE)
+                                    i++;
+
+                                int len=i-p;
+                                _headerBytes+=len;
+                                
+                                if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
+                                {
+                                    LOG.warn("URI is too large >"+_maxHeaderBytes);
+                                    badMessage(buffer,HttpStatus.REQUEST_URI_TOO_LONG_414,null);
+                                    return true;
+                                }
+                                if (_uri.remaining()<len)
+                                {
+                                    ByteBuffer uri = ByteBuffer.allocate(_uri.capacity()+2*len);
+                                    _uri.flip();
+                                    uri.put(_uri);
+                                    _uri=uri;
+                                }
+                                _uri.put(array,p-1,len+1);
+                                buffer.position(i-buffer.arrayOffset());
+                            }
+                            else
+                                _uri.put(ch);
                         }
                     }
                     else if (ch < HttpTokens.SPACE)
@@ -396,15 +424,12 @@ public class HttpParser
                 case URI:
                     if (ch == HttpTokens.SPACE)
                     {
-                        _uri=_utf8.toString();
-                        _utf8.reset();
                         setState(State.SPACE2);
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
                         // HTTP/0.9
-                        _uri=_utf8.toString();
-                        _utf8.reset();
+                        _uri.flip();
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
                         setState(State.END);
                         BufferUtil.clear(buffer);
@@ -412,7 +437,16 @@ public class HttpParser
                         return_from_parse|=_handler.messageComplete();
                     }
                     else
-                        _utf8.append(ch);
+                    {
+                        if (!_uri.hasRemaining())
+                        {
+                            ByteBuffer uri = ByteBuffer.allocate(_uri.capacity()*2);
+                            _uri.flip();
+                            uri.put(_uri);
+                            _uri=uri;
+                        }
+                        _uri.put(ch);
+                    }
                     break;
 
                 case SPACE2:
@@ -439,7 +473,8 @@ public class HttpParser
                                     buffer.position(buffer.position()+_version.asString().length()-1);
                                     _eol=buffer.get();
                                     setState(State.HEADER);
-                                    return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
+                                    _uri.flip();
+                                    return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri, _version);
                                 }
                             }
                         }
@@ -455,7 +490,8 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, null);
+                            _uri.flip();
+                            return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri, null);
                             setState(State.END);
                             BufferUtil.clear(buffer);
                             return_from_parse|=_handler.headerComplete();
@@ -477,7 +513,8 @@ public class HttpParser
 
                         _eol=ch;
                         setState(State.HEADER);
-                        return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
+                        _uri.flip();
+                        return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri, _version);
                         continue;
                     }
                     else
@@ -1001,7 +1038,6 @@ public class HttpParser
                     _version=null;
                     _method=null;
                     _methodString=null;
-                    _uri=null;
                     _endOfContent=EndOfContent.UNKNOWN_CONTENT;
                     _header=null;
                     quickStart(buffer);
@@ -1214,7 +1250,6 @@ public class HttpParser
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             BufferUtil.clear(buffer);
             if (isClosed())
             {
@@ -1360,8 +1395,13 @@ public class HttpParser
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
+         * @param method The method as enum if of a known type
+         * @param methodString The method as a string
+         * @param uri The raw bytes of the URI.  These are copied into a ByteBuffer that will not be changed until this parser is reset and reused.
+         * @param version
+         * @return true if handling parsing should return.
          */
-        public abstract boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion version);
+        public abstract boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion version);
 
         /**
          * This is the method called by the parser after it has parsed the host header (and checked it's format). This is

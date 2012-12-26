@@ -237,7 +237,7 @@ public class MimeTypes
     /** Set a mime mapping
      * @param extension
      * @param type
-     */ 
+     */
     public void addMimeMapping(String extension,String type)
     {
         _mimeMap.put(StringUtil.asciiToLowerCase(extension),normalizeMimeType(type));
