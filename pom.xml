@@ -567,7 +567,7 @@
    -->
   <profiles>
     <profile>
-      <id>release</id>
+      <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
