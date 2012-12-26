@@ -1,5 +1,74 @@
 jetty-9.0.0-SNAPSHOT
 
+jetty-9.0.0.M5 - 26 December 2012
+ + 367638 throw exception for excess form keys
+ + 391623 Making --stop with STOP.WAIT perform graceful shutdown
+ + 393158 java.lang.IllegalStateException when sending an empty InputStream
+ + 393220 remove dead code from ServletHandler and log ServletExceptions in
+   warn instead of debug
+ + 396459 Log specific message for empty request body for multipart mime
+   requests
+ + 396886 MultiPartFilter strips bad escaping on filename="..."
+ + 397110 Accept %uXXXX encodings in URIs
+ + 397111 Allow multipart bodies with leading blank lines
+ + 397112 Requests with byte-range throws NPE if requested file has no mimetype
+   (eg no file extension)
+ + JETTY-1533 handle URL with no path
+
+jetty-9.0.0.M4 - 21 December 2012
+ + 392417 Prevent Cookie parsing interpreting unicode chars
+ + 393220 remove dead code from ServletHandler and log ServletExceptions in
+   warn instead of debug
+ + 393770 Error in ContextHandler.setEventListeners(EventListener[])
+ + 394210 spdy api rename stream.syn() to stream.push()
+ + 394211 spdy: Expose RemoteServerAddress and LocalServerAddress in
+   StandardSession
+ + 394294 Start web-bundles started before jetty
+ + 394370 Add integration test for client resetting SPDY push SYN's
+ + 394514 Preserve URI parameters in sendRedirect
+ + 394552 HEAD requests don't work for jetty-client.
+ + 394719 remove regex from classpath matching
+ + 394829 Session can not be restored after SessionManager.setIdleSavePeriod
+   has saved the session
+ + 394839 Allow multipart mime with no boundary
+ + 394854 optimised promise implementation
+ + 394870 Make enablement of remote access to test webapp configurable in
+   override-web.xml
+ + 395168 fix unavailable attributes when return type has annotation on super
+   class
+ + 395215 Multipart mime with just LF and no CRLF: add test for legacy filter
+ + 395220 New InputStream extension to allow a mix of EOL styles between
+   headers and content
+ + 395312 log.warn if a SPDY stream gets committed twice
+ + 395313 HttpTransportOverSPDY.send() does not rethrow exceptions, but call
+   Callback.failed() only
+ + 395314 Add missing flush() call after StandardSession.complete() has been
+   called. Some test cleanup.
+ + 395344 Move JSR-356 (Java WebSocket API) work off to Jetty 9.1.x
+ + 395380 add ValidUrlRule to jetty-rewrite
+ + 395394 allow logging from boot classloader
+ + 395574 port jetty-runner and StatisticsServlet to jetty-9
+ + 395605 class cast exception in XMLConfiguration fixed
+ + 395649 add jetty-setuid back into jetty 9 and distribution
+ + 395794 slightly modified fix for empty file extenstion to mime type mapping.
+   Added a default, so it will also work with unknown file extensions
+ + 396036 SPDY send controlFrames even if Stream is reset to avoid breaking the
+   compression context
+ + 396193 spdy remove timeout parameters from api and move them to the Info*
+   classes
+ + 396459 Log specific message for empty request body for multipart mime
+   requests
+ + 396460 Make ServerConnector configurable with jetty-maven-plugin
+ + 396472 org.eclipse.jetty.websocket needs to be removed from serverclasses as
+   it should only be a systemclass
+ + 396473 JettyWebXMlConfiguration does not reset serverclasses
+ + 396474 add websocket server classes to jetty-maven-plugin classpath
+ + 396475 Remove unneeded websocket-server dependency from test-jetty-webapp
+ + 396518 Websocket AB Tests should test for which side disconnected and
+   closed.wasClean
+ + 396687 missing jetty-io dependency in jetty-servlets
+ + JETTY-796 jetty ant plugin improvements
+
 jetty-9.0.0.M3 - 20 November 2012
  + 391623 Add option to --stop to wait for target jetty to stop
  + 392237 Port test-integration to jetty-9
