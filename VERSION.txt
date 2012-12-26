@@ -1,3 +1,18 @@
+jetty-9.0.0.M5 - 26 December 2012
+ + 367638 throw exception for excess form keys
+ + 391623 Making --stop with STOP.WAIT perform graceful shutdown
+ + 393158 java.lang.IllegalStateException when sending an empty InputStream
+ + 393220 remove dead code from ServletHandler and log ServletExceptions in
+   warn instead of debug
+ + 396459 Log specific message for empty request body for multipart mime
+   requests
+ + 396886 MultiPartFilter strips bad escaping on filename="..."
+ + 397110 Accept %uXXXX encodings in URIs
+ + 397111 Allow multipart bodies with leading blank lines
+ + 397112 Requests with byte-range throws NPE if requested file has no mimetype
+   (eg no file extension)
+ + JETTY-1533 handle URL with no path
+
 jetty-9.0.0.M4 - 21 December 2012
  + 392417 Prevent Cookie parsing interpreting unicode chars
  + 393220 remove dead code from ServletHandler and log ServletExceptions in
