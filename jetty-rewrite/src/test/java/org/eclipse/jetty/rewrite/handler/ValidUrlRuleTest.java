@@ -97,7 +97,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
 
-    @Ignore("Not passing (yet)")
+    @Ignore("Not passing (yet), issue in uri decoding")
     @Test
     public void testValidShamrock() throws Exception
     {
@@ -109,7 +109,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
 
         assertEquals(200,_response.getStatus());
     }
-
+    
     @Test
     public void testCharacters() throws Exception
     {
