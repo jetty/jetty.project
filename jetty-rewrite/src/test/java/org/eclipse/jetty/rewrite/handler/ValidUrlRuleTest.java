@@ -22,9 +22,9 @@ import static org.junit.Assert.assertEquals;
 import junit.framework.Assert;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class ValidUrlRuleTest extends AbstractRuleTestCase
 {
     private ValidUrlRule _rule;
@@ -89,7 +89,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/jsp/shamrock-%002618.jsp");
+        _request.setRequestURI("/jsp/shamrock-%00%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -97,13 +97,12 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
 
-    @Ignore("Not passing (yet), issue in uri decoding")
     @Test
     public void testValidShamrock() throws Exception
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/jsp/shamrock-%00%E2%98%98.jsp");
+        _request.setRequestURI("/jsp/shamrock-%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 

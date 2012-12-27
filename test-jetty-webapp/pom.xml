@@ -201,7 +201,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
