@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.test.jsp;
 
 import static org.hamcrest.Matchers.*;
 
@@ -26,15 +26,15 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.apache.jasper.servlet.JspServlet;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -59,22 +59,24 @@ public class JspMatchingTest
         File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
         login.setConfig(realmFile.getAbsolutePath());
         server.addBean(login);
-
-        // Configure WebApp
-        HandlerList handlers = new HandlerList();
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        WebAppContext context = new WebAppContext();
-
-        File webappBase = MavenTestingUtils.getProjectDir("src/main/webapp");
-        Resource resBase = Resource.newResource(webappBase);
-        context.setBaseResource(resBase);
         
-        File aliasedWebDefault = MavenTestingUtils.getTestResourceFile("webdefault-with-aliases.xml");
-        context.setDefaultsDescriptor(aliasedWebDefault.getAbsolutePath());
+        // Configure WebApp
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
-        contexts.addHandler(context);
+        File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
+        context.setResourceBase(webappBase.getAbsolutePath());
+        context.setClassLoader(Thread.currentThread().getContextClassLoader());
+
+        // add default servlet
+        ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class, "/");
+        defaultServHolder.setInitParameter("aliases", "true"); // important!
+        
+        // add jsp
+        ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
+        jsp.setInitParameter("classpath", context.getClassPath());
+        
+        // add context
+        server.setHandler(context);
 
         server.start();
 
@@ -92,12 +94,14 @@ public class JspMatchingTest
     public void testGetBeanRef() throws Exception
     {
 
-        URI uri = serverURI.resolve("/jsp/bean1.jsp");
+        URI uri = serverURI.resolve("/dump.jsp");
 
         HttpURLConnection conn = null;
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
+            conn.setConnectTimeout(1000);
+            conn.setReadTimeout(1000);
             Assert.assertThat(conn.getResponseCode(),is(200));
             System.err.printf("Response Code: %d%n", conn.getResponseCode());
             
@@ -117,12 +121,14 @@ public class JspMatchingTest
     public void testGetBeanRefInvalid_null() throws Exception
     {
 
-        URI uri = serverURI.resolve("/jsp/bean1.jsp%00");
+        URI uri = serverURI.resolve("/dump.jsp%00");
 
         HttpURLConnection conn = null;
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
+            conn.setConnectTimeout(1000);
+            conn.setReadTimeout(1000);
             Assert.assertThat(conn.getResponseCode(),is(404));
             System.err.printf("Response Code: %d%n", conn.getResponseCode());
         }
@@ -136,12 +142,14 @@ public class JspMatchingTest
     public void testGetBeanRefInvalid_nullx() throws Exception
     {
 
-        URI uri = serverURI.resolve("/jsp/bean1.jsp%00x");
+        URI uri = serverURI.resolve("/dump.jsp%00x");
 
         HttpURLConnection conn = null;
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
+            conn.setConnectTimeout(1000);
+            conn.setReadTimeout(1000);
             Assert.assertThat(conn.getResponseCode(),is(404));
             System.err.printf("Response Code: %d%n", conn.getResponseCode());
         }
