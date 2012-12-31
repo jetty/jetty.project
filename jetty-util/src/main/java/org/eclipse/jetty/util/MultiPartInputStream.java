@@ -482,7 +482,7 @@ public class MultiPartInputStream
         // Get first boundary
         String line=((ReadLineInputStream)_in).readLine();
 
-        if (line == null || line.length() == 0)
+        if (line == null)
             throw new IOException("Missing content for multipart request");
 
         boolean badFormatLogged = false;
@@ -498,9 +498,8 @@ public class MultiPartInputStream
             line=(line==null?line:line.trim());
         }
 
-        if (line == null || line.length() == 0)
+        if (line == null)
             throw new IOException("Missing initial multi part boundary");
-
 
         // Read each part
         boolean lastPart=false;
