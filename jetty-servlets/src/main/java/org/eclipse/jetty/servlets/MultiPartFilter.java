@@ -148,7 +148,7 @@ public class MultiPartFilter implements Filter
             // Get first boundary
             String line=((ReadLineInputStream)in).readLine();
 
-            if (line == null || line.length() == 0)
+            if (line == null)
                 throw new IOException("Missing content for multipart request");
 
             line = line.trim();
@@ -164,7 +164,7 @@ public class MultiPartFilter implements Filter
                 line=(line==null?line:line.trim());
             }
             
-            if (line == null || line.length() == 0)
+            if (line == null)
                 throw new IOException("Missing initial multi part boundary");
             
             // Read each part
