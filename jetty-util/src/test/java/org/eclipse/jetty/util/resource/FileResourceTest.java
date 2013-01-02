@@ -80,6 +80,7 @@ public class FileResourceTest
         }
     }
 
+    @Ignore("Validation shouldn't be done in FileResource")
     @Test
     public void testExist_BadNullX() throws Exception
     {
