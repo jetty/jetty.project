@@ -75,6 +75,7 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
         _parent=parent;
+        _useFileMappedBuffer=useFileMappedBuffer;
         _etagSupported=etags;
     }
 
