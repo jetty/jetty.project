@@ -221,8 +221,6 @@ public class SslConnection extends AbstractConnection
         // to do the fill and/or flush again and these calls will do the actually
         // handle the cause.
 
-        super.onFillInterestedFailed(cause);
-
         synchronized(_decryptedEndPoint)
         {
             _decryptedEndPoint.getFillInterest().onFail(cause);

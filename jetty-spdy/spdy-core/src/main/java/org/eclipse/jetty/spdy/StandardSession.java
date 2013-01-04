@@ -281,6 +281,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Callback callback)
     {
+        new Exception().printStackTrace();
         if (goAwaySent.compareAndSet(false, true))
         {
             if (!goAwayReceived.get())

@@ -255,7 +255,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 }
 
                 // TODO: handle better the HEAD last parameter
-                HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, -1, code, reason, false);
+                long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+                HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
+                        reason, false);
                 send(info, null, replyInfo.isClose());
 
                 if (replyInfo.isClose())

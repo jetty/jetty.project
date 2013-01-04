@@ -46,6 +46,8 @@ import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
@@ -53,6 +55,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 {
+    private static final Logger LOG = Log.getLogger(SPDYProxyEngine.class);
+
     private static final String STREAM_HANDLER_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.streamHandler";
     private static final String CLIENT_STREAM_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.clientStream";
 
@@ -130,7 +134,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     @Override
     public void onReply(Stream stream, ReplyInfo replyInfo)
     {
-        // Servers do not receive replies
+        throw new IllegalStateException("Servers do not receive replies");
     }
 
     @Override
@@ -143,7 +147,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     @Override
     public void onData(Stream clientStream, final DataInfo clientDataInfo)
     {
-        logger.debug("C -> P {} on {}", clientDataInfo, clientStream);
+        LOG.debug("C -> P {} on {}", clientDataInfo, clientStream);
 
         ByteBufferDataInfo serverDataInfo = new ByteBufferDataInfo(clientDataInfo.asByteBuffer(false), clientDataInfo.isClose())
         {
@@ -168,7 +172,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             {
                 SPDYClient client = factory.newSPDYClient(version);
                 session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
-                logger.debug("Proxy session connected to {}", address);
+                LOG.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
@@ -180,7 +184,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
         catch (Exception x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             return null;
         }
     }
@@ -221,7 +225,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public void onReply(final Stream stream, ReplyInfo replyInfo)
         {
-            logger.debug("S -> P {} on {}", replyInfo, stream);
+            LOG.debug("S -> P {} on {}", replyInfo, stream);
 
             short serverVersion = stream.getSession().getVersion();
             Fields headers = new Fields(replyInfo.getHeaders(), false);
@@ -246,7 +250,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public void onData(final Stream stream, final DataInfo dataInfo)
         {
-            logger.debug("S -> P {} on {}", dataInfo, stream);
+            LOG.debug("S -> P {} on {}", dataInfo, stream);
 
             if (replyInfo != null)
             {
@@ -266,13 +270,13 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 @Override
                 public void succeeded()
                 {
-                    logger.debug("P -> C {} from {} to {}", replyInfo, stream, clientStream);
+                    LOG.debug("P -> C {} from {} to {}", replyInfo, stream, clientStream);
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    logger.debug(x);
+                    LOG.debug(x);
                     rst(clientStream);
                 }
             });
@@ -286,13 +290,13 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 public void succeeded()
                 {
                     dataInfo.consume(dataInfo.length());
-                    logger.debug("P -> C {} from {} to {}", dataInfo, stream, clientStream);
+                    LOG.debug("P -> C {} from {} to {}", dataInfo, stream, clientStream);
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    logger.debug(x);
+                    LOG.debug(x);
                     rst(clientStream);
                 }
             });
@@ -323,7 +327,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public void succeeded(Stream serverStream)
         {
-            logger.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
+            LOG.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
 
             serverStream.setAttribute(CLIENT_STREAM_ATTRIBUTE, clientStream);
 
@@ -336,18 +340,18 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 {
                     if (dataInfoHandler.flushing)
                     {
-                        logger.debug("SYN completed, flushing {}, queue size {}", dataInfoHandler.dataInfo, queue.size());
+                        LOG.debug("SYN completed, flushing {}, queue size {}", dataInfoHandler.dataInfo, queue.size());
                         dataInfoHandler = null;
                     }
                     else
                     {
                         dataInfoHandler.flushing = true;
-                        logger.debug("SYN completed, queue size {}", queue.size());
+                        LOG.debug("SYN completed, queue size {}", queue.size());
                     }
                 }
                 else
                 {
-                    logger.debug("SYN completed, queue empty");
+                    LOG.debug("SYN completed, queue empty");
                 }
             }
             if (dataInfoHandler != null)
@@ -357,7 +361,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public void failed(Throwable x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             rst(clientStream);
         }
 
@@ -375,18 +379,18 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                     dataInfoHandler = queue.peek();
                     if (dataInfoHandler.flushing)
                     {
-                        logger.debug("Queued {}, flushing {}, queue size {}", dataInfo, dataInfoHandler.dataInfo, queue.size());
+                        LOG.debug("Queued {}, flushing {}, queue size {}", dataInfo, dataInfoHandler.dataInfo, queue.size());
                         serverStream = null;
                     }
                     else
                     {
                         dataInfoHandler.flushing = true;
-                        logger.debug("Queued {}, queue size {}", dataInfo, queue.size());
+                        LOG.debug("Queued {}, queue size {}", dataInfo, queue.size());
                     }
                 }
                 else
                 {
-                    logger.debug("Queued {}, SYN incomplete, queue size {}", dataInfo, queue.size());
+                    LOG.debug("Queued {}, SYN incomplete, queue size {}", dataInfo, queue.size());
                 }
             }
             if (serverStream != null)
@@ -395,7 +399,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
         private void flush(Stream serverStream, DataInfoHandler dataInfoHandler)
         {
-            logger.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
+            LOG.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
             serverStream.data(dataInfoHandler.dataInfo, dataInfoHandler); //TODO: timeout???
         }
 
@@ -425,11 +429,11 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                     {
                         assert !dataInfoHandler.flushing;
                         dataInfoHandler.flushing = true;
-                        logger.debug("Completed {}, queue size {}", dataInfo, queue.size());
+                        LOG.debug("Completed {}, queue size {}", dataInfo, queue.size());
                     }
                     else
                     {
-                        logger.debug("Completed {}, queue empty", dataInfo);
+                        LOG.debug("Completed {}, queue empty", dataInfo);
                     }
                 }
                 if (dataInfoHandler != null)
@@ -439,7 +443,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             @Override
             public void failed(Throwable x)
             {
-                logger.debug(x);
+                LOG.debug(x);
                 rst(clientStream);
             }
         }
@@ -450,7 +454,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public StreamFrameListener onSyn(Stream serverStream, SynInfo serverSynInfo)
         {
-            logger.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
+            LOG.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
 
             Fields headers = new Fields(serverSynInfo.getHeaders(), false);
 
@@ -492,18 +496,19 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         public void onReply(Stream stream, ReplyInfo replyInfo)
         {
             // Push streams never send a reply
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
-            throw new UnsupportedOperationException(); //TODO
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void onData(Stream serverStream, final DataInfo serverDataInfo)
         {
-            logger.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
+            LOG.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
 
             ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
             {
