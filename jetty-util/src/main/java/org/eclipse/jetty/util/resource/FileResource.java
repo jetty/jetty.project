@@ -75,37 +75,6 @@ public class FileResource extends URLResource
         return __checkAliases;
     }
     
-    /**
-     * Perform some basic validation of the characters in the string for invalid
-     * codepoints and null characters.
-     * 
-     * @param str the string to validate
-     * @throws URISyntaxException thrown if invalid characters are encountered
-     */
-    private static final String validateUri(String str) throws URISyntaxException
-    {
-        if (str == null)
-        {
-            return str;
-        }
-        
-        int len = str.length();
-        int codepoint;
-        for (int i = 0; i < len; i++)
-        {
-            codepoint = str.codePointAt(i);
-            if (codepoint == 0)
-            {
-                throw new URISyntaxException(str,"Encountered NULL character");
-            }
-            if (Character.isISOControl(codepoint))
-            {
-                throw new URISyntaxException(str,"Encountered ISO Control Code");
-            }
-        }
-        return str;
-    }
-    
     /* -------------------------------------------------------- */
     public FileResource(URL url)
         throws IOException, URISyntaxException
@@ -115,17 +84,6 @@ public class FileResource extends URLResource
         try
         {
             // Try standard API to convert URL to file.
-            
-            /* Note:
-             *  If the passed in URL has a null at the end of the string, then
-             *  url.toExternalForm() and url.toString() strip that knowledge out.
-             *  Which can lead to false positives for .exists() calls.
-             *  
-             *  The URL should be validated in parts, then passed to the File object.
-             */
-            validateUri(url.getFile());
-            validateUri(url.getPath());
-            
             _file =new File(new URI(url.toString()));
         }
         catch (URISyntaxException e) 
@@ -144,7 +102,7 @@ public class FileResource extends URLResource
                 if (uri.getAuthority()==null) 
                     _file = new File(uri);
                 else
-                    _file = new File(validateUri("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile())));
+                    _file = new File("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile()));
             }
             catch (Exception e2)
             {
