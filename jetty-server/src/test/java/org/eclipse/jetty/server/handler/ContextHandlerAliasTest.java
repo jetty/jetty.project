@@ -18,46 +18,55 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
-import java.io.FilePermission;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.attribute.FileAttribute;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
+
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-/**
- * @version $Revision$
- */
 public class ContextHandlerAliasTest
 {
+    private static final Logger LOG = Log.getLogger(ContextHandlerAliasTest.class);
+	
     private Server _server;
     private ContextHandler _ctx;
     private File _tmp;
     private File _dir;
     
- 
+    /**
+     * Create a symlink using java.nio.file.Files technique.
+     * Ignore test if JDK7 not present or not found
+     * 
+     * @param link the file of the symbolic link to create
+     * @param target the target of the sumbolic link
+     */
+	private void createNIOSymlink(File link, File target) {
+		try {
+			Class<?> cFiles = Class.forName("java.nio.file.Files", false, Thread.currentThread().getContextClassLoader());
+			Object pathLink = TypeUtil.call(File.class, "toPath", link, new Object[] {});
+			Object pathTarget = TypeUtil.call(File.class, "toPath", link, new Object[] {});
+
+			TypeUtil.call(cFiles, "createSymbolicLink", cFiles, new Object[] { pathLink, pathTarget });
+		} catch (Exception e) {
+			LOG.debug("Ignoring lack of JDK7", e);
+			Assume.assumeNoException(e);
+		}
+	}
+
     @Before
     public void before() throws Exception
     {
@@ -65,11 +74,8 @@ public class ContextHandlerAliasTest
         _ctx = new ContextHandler();
         _server.setHandler(_ctx);
         
-        
-        _tmp = new File( System.getProperty( "basedir", "." ) + "/target/tmp/aliastests" ).getCanonicalFile();
-        if (_tmp.exists())
-            IO.delete(_tmp);
-        assertTrue(_tmp.mkdirs());
+        _tmp = MavenTestingUtils.getTargetTestingDir(ContextHandlerAliasTest.class.getName()).getCanonicalFile();
+        FS.ensureEmpty(_tmp);
         
         File root = new File(_tmp,getClass().getName());
         assertTrue(root.mkdir());
@@ -122,7 +128,7 @@ public class ContextHandlerAliasTest
         File symlink = new File(_tmp,"symlink");
         try
         {
-            Files.createSymbolicLink(symlink.toPath(),_dir.toPath());
+        	createNIOSymlink(symlink, _dir);
 
             _server.stop();
             _ctx.setBaseResource(FileResource.newResource(symlink));
@@ -138,13 +144,13 @@ public class ContextHandlerAliasTest
         }
     }
     
-    @Test
+	@Test
     public void testSymLinkToContent() throws Exception
     {
         File symlink = new File(_dir,"link.html");
         try
         {
-            Files.createSymbolicLink(symlink.toPath(),new File(_dir,"index.html").toPath());
+            createNIOSymlink(symlink, new File(_dir,"index.html"));
 
             _ctx.setAliases(true);
             Assert.assertTrue(_ctx.getResource("/index.html").exists());
@@ -167,7 +173,7 @@ public class ContextHandlerAliasTest
         File symlink = new File(_dir,"link.html");
         try
         {
-            Files.createSymbolicLink(symlink.toPath(),new File(_dir,"index.html").toPath());
+        	createNIOSymlink(symlink,new File(_dir,"index.html"));
 
             _ctx.setAliases(false);
             _ctx.addAliasCheck(new ContextHandler.ApproveSameSuffixAliases());
@@ -186,7 +192,7 @@ public class ContextHandlerAliasTest
         File symlink = new File(_dir,"dirlink");
         try
         {
-            Files.createSymbolicLink(symlink.toPath(),new File(_dir,".").toPath());
+        	createNIOSymlink(symlink,new File(_dir,"."));
 
             _ctx.setAliases(false);
             _ctx.addAliasCheck(new ContextHandler.ApprovePathPrefixAliases());

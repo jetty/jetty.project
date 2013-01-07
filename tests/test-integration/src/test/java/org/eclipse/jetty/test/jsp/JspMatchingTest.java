@@ -40,8 +40,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class JspMatchingTest
@@ -72,7 +72,6 @@ public class JspMatchingTest
         URLClassLoader contextLoader = new URLClassLoader(new URL[]{}, Server.class.getClassLoader());
         context.setClassLoader(contextLoader);
 
-
         // add default servlet
         ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class,"/");
         defaultServHolder.setInitParameter("aliases","false"); // important!
@@ -97,6 +96,28 @@ public class JspMatchingTest
         server.stop();
     }
 
+    private void assertProcessedByJspServlet(HttpURLConnection conn) throws IOException
+    {
+        // make sure that jsp actually ran, and didn't just get passed onto
+        // the default servlet to return the jsp source
+        String body = getResponseBody(conn);
+        Assert.assertThat("Body",body,not(containsString("<%@")));
+        Assert.assertThat("Body",body,not(containsString("<jsp:")));
+    }
+
+    private void assertResponseOnBadRequest(HttpURLConnection conn) throws IOException
+    {
+        if (conn.getResponseCode() == 200)
+        {
+            // Serving content is allowed, but it better be the processed JspServlet
+            assertProcessedByJspServlet(conn);
+            return;
+        }
+        
+        // Of other possible paths, only 404 Not Found is expected
+        Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+    }
+
     @Test
     public void testGetBeanRef() throws Exception
     {
@@ -110,12 +131,7 @@ public class JspMatchingTest
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
             Assert.assertThat(conn.getResponseCode(),is(200));
-
-            // make sure that jsp actually ran, and didn't just get passed onto
-            // the default servlet to return the jsp source
-            String body = getResponseBody(conn);
-            Assert.assertThat("Body",body,not(containsString("<%@")));
-            Assert.assertThat("Body",body,not(containsString("<jsp:")));
+            assertProcessedByJspServlet(conn);
         }
         finally
         {
@@ -135,7 +151,7 @@ public class JspMatchingTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(1000);
             conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+            assertResponseOnBadRequest(conn);
         }
         finally
         {
@@ -155,7 +171,7 @@ public class JspMatchingTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(1000);
             conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+            assertResponseOnBadRequest(conn);
         }
         finally
         {
@@ -166,6 +182,7 @@ public class JspMatchingTest
     @Test
     public void testGetBeanRefInvalid_nullslash() throws Exception
     {
+        assumeJava7();
 
         URI uri = serverURI.resolve("/dump.jsp%00/");
 
@@ -175,7 +192,7 @@ public class JspMatchingTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(1000);
             conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+            assertResponseOnBadRequest(conn);
         }
         finally
         {
@@ -186,6 +203,7 @@ public class JspMatchingTest
     @Test
     public void testGetBeanRefInvalid_nullxslash() throws Exception
     {
+        assumeJava7();
 
         URI uri = serverURI.resolve("/dump.jsp%00x/");
 
@@ -195,11 +213,24 @@ public class JspMatchingTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(1000);
             conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+            assertResponseOnBadRequest(conn);
         }
         finally
         {
             close(conn);
+        }
+    }
+
+    private void assumeJava7()
+    {
+        try
+        {
+            float ver = Float.parseFloat(System.getProperty("java.specification.version"));
+            Assume.assumeTrue(ver >= 1.7);
+        }
+        catch (NumberFormatException e)
+        {
+            Assume.assumeNoException(e);
         }
     }
 
