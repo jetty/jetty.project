@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 import org.apache.jasper.servlet.JspServlet;
 import org.eclipse.jetty.security.HashLoginService;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Loader;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -66,7 +69,8 @@ public class JspMatchingTest
         context.setContextPath("/");
         File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
         context.setResourceBase(webappBase.getAbsolutePath());
-        context.setClassLoader(Thread.currentThread().getContextClassLoader());
+        URLClassLoader contextLoader = new URLClassLoader(new URL[]{}, Server.class.getClassLoader());
+        context.setClassLoader(contextLoader);
 
         // add default servlet
         ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class,"/");
@@ -74,7 +78,8 @@ public class JspMatchingTest
 
         // add jsp
         ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
-        jsp.setInitParameter("classpath",context.getClassPath());
+        context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
+        jsp.setInitParameter("com.sun.appserv.jsp.classpath", Loader.getClassPath(Server.class.getClassLoader()));
 
         // add context
         server.setHandler(context);
@@ -101,8 +106,8 @@ public class JspMatchingTest
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
             Assert.assertThat(conn.getResponseCode(),is(200));
 
             // make sure that jsp actually ran, and didn't just get passed onto
