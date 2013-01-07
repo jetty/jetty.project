@@ -75,7 +75,7 @@ public class JspMatchingTest
 
         // add default servlet
         ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class,"/");
-        defaultServHolder.setInitParameter("aliases","true"); // important!
+        defaultServHolder.setInitParameter("aliases","false"); // important!
 
         // add jsp
         ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
@@ -143,7 +143,6 @@ public class JspMatchingTest
         }
     }
 
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
     @Test
     public void testGetBeanRefInvalid_nullx() throws Exception
     {
@@ -164,7 +163,6 @@ public class JspMatchingTest
         }
     }
 
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
     @Test
     public void testGetBeanRefInvalid_nullslash() throws Exception
     {
@@ -185,7 +183,6 @@ public class JspMatchingTest
         }
     }
 
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
     @Test
     public void testGetBeanRefInvalid_nullxslash() throws Exception
     {

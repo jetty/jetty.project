@@ -205,7 +205,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (!aliases && !FileResource.getCheckAliases())
             throw new IllegalStateException("Alias checking disabled");
         if (aliases)
-            _servletContext.log("Aliases are enabled");
+            _servletContext.log("Aliases are enabled! Security constraints may be bypassed!!!");
 
         _useFileMappedBuffer=getInitBoolean("useFileMappedBuffer",_useFileMappedBuffer);
 
