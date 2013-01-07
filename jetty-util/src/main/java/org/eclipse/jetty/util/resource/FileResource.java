@@ -89,6 +89,10 @@ public class FileResource extends URLResource
             // Try standard API to convert URL to file.
             _file =new File(new URI(url.toString()));
         }
+        catch (URISyntaxException e) 
+        {
+            throw e;
+        }
         catch (Exception e)
         {
             LOG.ignore(e);

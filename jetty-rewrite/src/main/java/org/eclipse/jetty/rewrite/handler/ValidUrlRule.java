@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * This rule can be used to protect against invalid unicode characters in a url making it into applications.
@@ -36,6 +38,8 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ValidUrlRule extends Rule
 {
+    private static final Logger LOG = Log.getLogger(ValidUrlRule.class);
+
     String _code = "400";
     String _reason = "Illegal Url";
     
@@ -72,12 +76,16 @@ public class ValidUrlRule extends Rule
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         // best to decide the request uri and validate that
+        // String uri = request.getRequestURI();
         String uri = URIUtil.decodePath(request.getRequestURI());
-        
-        for (int i = 0; i < uri.length(); ++i)
+
+        for (int i = 0; i < uri.length();)
         {
-            if (!isValidChar(uri.charAt(i)))
+            int codepoint = uri.codePointAt(i);
+
+            if (!isValidChar(uri.codePointAt(i)))
             {
+
                 int code = Integer.parseInt(_code);
 
                 // status code 400 and up are error codes so include a reason
@@ -93,17 +101,20 @@ public class ValidUrlRule extends Rule
                 // we have matched, return target and consider it is handled
                 return target;
             }
+            i += Character.charCount(codepoint);
         }
 
         // we have not matched so return null
         return null;
     }
 
-    protected boolean isValidChar(char c)
+    protected boolean isValidChar(int codepoint)
     {
-        Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+        Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
         
-        return (!Character.isISOControl(c)) && block != null && block != Character.UnicodeBlock.SPECIALS;
+        LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
+        
+        return (!Character.isISOControl(codepoint)) && block != null && block != Character.UnicodeBlock.SPECIALS;       
     }
 
     public String toString()

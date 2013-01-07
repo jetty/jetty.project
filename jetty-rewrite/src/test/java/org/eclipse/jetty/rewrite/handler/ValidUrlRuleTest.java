@@ -22,8 +22,10 @@ import static org.junit.Assert.assertEquals;
 import junit.framework.Assert;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class ValidUrlRuleTest extends AbstractRuleTestCase
 {
     private ValidUrlRule _rule;
@@ -68,6 +70,46 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
 
         assertEquals(405,_response.getStatus());
         assertEquals("foo",_response.getReason());
+    }
+    
+    @Test
+    public void testInvalidJsp() throws Exception
+    {
+        _rule.setCode("405");
+        _rule.setReason("foo");
+        _request.setRequestURI("/jsp/bean1.jsp%00");
+        
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertEquals(405,_response.getStatus());
+        assertEquals("foo",_response.getReason());
+    }
+    
+    @Ignore("Not working in jetty-9")
+    @Test
+    public void testInvalidShamrock() throws Exception
+    {
+        _rule.setCode("405");
+        _rule.setReason("foo");
+        _request.setRequestURI("/jsp/shamrock-%00%E2%98%98.jsp");
+        
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertEquals(405,_response.getStatus());
+        assertEquals("foo",_response.getReason());
+    }
+
+    @Ignore("Not working in jetty-9")
+    @Test
+    public void testValidShamrock() throws Exception
+    {
+        _rule.setCode("405");
+        _rule.setReason("foo");
+        _request.setRequestURI("/jsp/shamrock-%E2%98%98.jsp");
+        
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertEquals(200,_response.getStatus());
     }
     
     @Test
