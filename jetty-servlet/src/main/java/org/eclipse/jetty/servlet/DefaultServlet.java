@@ -109,9 +109,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *  stylesheet	      Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *
- *  aliases           If True, aliases of resources are allowed (eg. symbolic
- *                    links and caps variations). May bypass security constraints.
- *                    
  *  etags             If True, weak etags will be generated and handled.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
@@ -191,15 +188,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
             _welcomeServlets=getInitBoolean("welcomeServlets", _welcomeServlets);
-
-        if (getInitParameter("aliases")!=null)
-            _contextHandler.setAliases(getInitBoolean("aliases",false));
-
-        boolean aliases=_contextHandler.isAliases();
-        if (!aliases && !FileResource.getCheckAliases())
-            throw new IllegalStateException("Alias checking disabled");
-        if (aliases)
-            _servletContext.log("Aliases are enabled! Security constraints may be bypassed!!!");
 
         _useFileMappedBuffer=getInitBoolean("useFileMappedBuffer",_useFileMappedBuffer);
 
@@ -479,7 +467,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else if (!resource.isDirectory())
             {
-                if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
+                if (endsWithSlash && pathInContext.length()>1)
                 {
                     String q=request.getQueryString();
                     pathInContext=pathInContext.substring(0,pathInContext.length()-1);

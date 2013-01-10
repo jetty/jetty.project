@@ -162,7 +162,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",-1).intValue();
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",-1).intValue();
     private boolean _compactPath = false;
-    private boolean _aliases = false;
 
     private final List<EventListener> _eventListeners=new CopyOnWriteArrayList<>();
     private final List<EventListener> _programmaticListeners=new CopyOnWriteArrayList<>();
@@ -1345,26 +1344,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if aliases are allowed
-     */
-    @ManagedAttribute("true if alias checking is performed on resource")
-    public boolean isAliases()
-    {
-        return _aliases;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param aliases
-     *            aliases are allowed
-     */
-    public void setAliases(boolean aliases)
-    {
-        _aliases = aliases;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the mimeTypes.
      */
     public MimeTypes getMimeTypes()
@@ -1573,7 +1552,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             Resource resource = _baseResource.addPath(path);
 
             // Is the resource aliased?
-            if (!_aliases && resource.getAlias() != null)
+            if (resource.getAlias() != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
@@ -2549,6 +2528,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         boolean check(String path, Resource resource);
     }
     
+
+    /* ------------------------------------------------------------ */
+    /** Approve all aliases.
+     */
+    public static class ApproveAliases implements AliasCheck
+    {
+        @Override
+        public boolean check(String path, Resource resource)
+        {
+            return true;
+        }
+    }
     
     /* ------------------------------------------------------------ */
     /** Approve Aliases with same suffix.
@@ -2557,6 +2548,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public static class ApproveSameSuffixAliases implements AliasCheck
     {
+        @Override
         public boolean check(String path, Resource resource)
         {
             int dot = path.lastIndexOf('.');
@@ -2575,6 +2567,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public static class ApprovePathPrefixAliases implements AliasCheck
     {
+        @Override
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');
@@ -2591,6 +2584,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public static class ApproveNonExistentDirectoryAliases implements AliasCheck
     {
+        @Override
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');

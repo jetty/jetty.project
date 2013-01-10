@@ -64,7 +64,6 @@ public class ResourceHandler extends HandlerWrapper
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
     String _cacheControl;
-    boolean _aliases;
     boolean _directory;
     boolean _etags;
 
@@ -84,28 +83,6 @@ public class ResourceHandler extends HandlerWrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return True if resource aliases are allowed.
-     */
-    public boolean isAliases()
-    {
-        return _aliases;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set if resource aliases (eg symlink, 8.3 names, case insensitivity) are allowed.
-     * Allowing aliases can significantly increase security vulnerabilities.
-     * If this handler is deployed inside a ContextHandler, then the
-     * {@link ContextHandler#isAliases()} takes precedent.
-     * @param aliases True if aliases are supported.
-     */
-    public void setAliases(boolean aliases)
-    {
-        _aliases = aliases;
     }
 
     /* ------------------------------------------------------------ */
@@ -151,12 +128,6 @@ public class ResourceHandler extends HandlerWrapper
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
-
-        if (_context!=null)
-            _aliases=_context.isAliases();
-
-        if (!_aliases && !FileResource.getCheckAliases())
-            throw new IllegalStateException("Alias checking disabled");
 
         super.doStart();
     }
@@ -404,12 +375,6 @@ public class ResourceHandler extends HandlerWrapper
                 super.handle(target, baseRequest, request, response);
                 return;
             }
-        }
-
-        if (!_aliases && resource.getAlias()!=null)
-        {
-            LOG.info(resource+" aliased to "+resource.getAlias());
-            return;
         }
 
         // We are going to serve something
