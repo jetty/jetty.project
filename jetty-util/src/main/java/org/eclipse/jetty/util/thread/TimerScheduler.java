@@ -39,22 +39,24 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
      */
 
     private final String _name;
+    private final boolean _daemon;
     private Timer _timer;
 
     public TimerScheduler()
     {
-        this(null);
+        this(null, false);
     }
 
-    public TimerScheduler(String name)
+    public TimerScheduler(String name, boolean daemon)
     {
         _name=name;
+        _daemon=daemon;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        _timer=_name==null?new Timer():new Timer(_name);
+        _timer=_name==null?new Timer():new Timer(_name,_daemon);
         super.doStart();
     }
 
