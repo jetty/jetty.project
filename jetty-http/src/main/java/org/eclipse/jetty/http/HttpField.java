@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -32,8 +33,8 @@ import org.eclipse.jetty.util.Trie;
  */
 public class HttpField
 {
-    public final static Trie<HttpField> CACHE = new Trie<>(768);
-    public final static Trie<HttpField> CONTENT_TYPE = new Trie<>(512);
+    public final static Trie<HttpField> CACHE = new ArrayTrie<>(768);
+    public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
     
     static
     {

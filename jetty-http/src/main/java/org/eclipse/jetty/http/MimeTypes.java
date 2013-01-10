@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -109,8 +110,8 @@ public class MimeTypes
 
     /* ------------------------------------------------------------ */
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
-    public  final static Trie<MimeTypes.Type> CACHE= new Trie<>(512);
-    private final static Trie<ByteBuffer> TYPES= new Trie<ByteBuffer>(512);
+    public  final static Trie<MimeTypes.Type> CACHE= new ArrayTrie<>(512);
+    private final static Trie<ByteBuffer> TYPES= new ArrayTrie<ByteBuffer>(512);
     private final static Map<String,String> __dftMimeMap = new HashMap<String,String>();
     private final static Map<String,String> __encodings = new HashMap<String,String>();
 

@@ -69,7 +69,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;

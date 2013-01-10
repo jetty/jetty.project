@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;

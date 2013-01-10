@@ -42,9 +42,7 @@ import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

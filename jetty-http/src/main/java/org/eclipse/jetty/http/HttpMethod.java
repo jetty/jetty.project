@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
@@ -113,7 +114,7 @@ public enum HttpMethod
     }
     
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpMethod> CACHE= new Trie<HttpMethod>();
+    public final static Trie<HttpMethod> CACHE= new ArrayTrie<HttpMethod>();
     static
     {
         for (HttpMethod method : HttpMethod.values())

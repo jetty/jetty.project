@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -87,7 +87,7 @@ public class HttpParser
     private int _chunkPosition;
     private boolean _headResponse;
     private ByteBuffer _contentChunk;
-    private final Trie<HttpField> _connectionFields=new Trie<>(512);
+    private final Trie<HttpField> _connectionFields=new TreeTrie<>();
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();

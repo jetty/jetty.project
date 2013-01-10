@@ -20,14 +20,35 @@ package org.eclipse.jetty.util;
 
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+
+@RunWith(value = Parameterized.class)
 public class TrieTest
 {
-    Trie<Integer> trie = new Trie<>();
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        Object[][] data = new Object[][]{
+            {new ArrayTrie<String>()},
+            {new TreeTrie<Integer>()}
+        };
+        return Arrays.asList(data);
+    }
+
+    Trie<Integer> trie;
+    
+    public TrieTest(Trie<Integer> t)
+    {
+        trie=t;
+    }
     
     @Before
     public void before()

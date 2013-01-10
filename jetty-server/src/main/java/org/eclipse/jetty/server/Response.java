@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.Collection;

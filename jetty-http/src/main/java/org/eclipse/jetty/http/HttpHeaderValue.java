@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Trie;
 
@@ -44,7 +45,7 @@ public enum HttpHeaderValue
     UNKNOWN("::UNKNOWN::");
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeaderValue> CACHE= new Trie<HttpHeaderValue>();
+    public final static Trie<HttpHeaderValue> CACHE= new ArrayTrie<HttpHeaderValue>();
     static
     {
         for (HttpHeaderValue value : HttpHeaderValue.values())

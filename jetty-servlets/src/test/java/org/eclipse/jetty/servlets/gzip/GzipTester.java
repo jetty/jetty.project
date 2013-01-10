@@ -73,12 +73,12 @@ public class GzipTester
         // DOES NOT WORK IN WINDOWS - this.testdir.ensureEmpty();
     }
 
-    public HttpTester assertIsResponseGzipCompressed(String filename) throws Exception
+    public HttpTester.Response assertIsResponseGzipCompressed(String filename) throws Exception
     {
         return assertIsResponseGzipCompressed(filename,filename);
     }
 
-    public HttpTester assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
+    public HttpTester.Response assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
     {
         // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
@@ -237,7 +237,7 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public HttpTester assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
+    public HttpTester.Response assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
     {
         String uri = "/context/"+filename;
         HttpTester.Response response = executeRequest(uri);

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
