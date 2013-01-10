@@ -98,7 +98,7 @@ public class IncludableGzipFilterMinSizeTest
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
-        holder.setInitParameter("mimeTypes","application/soap+xml,text/javascript");
+        holder.setInitParameter("mimeTypes","application/soap+xml,text/javascript,application/x-javascript");
         holder.setInitParameter("minGzipSize", "2048");
         holder.setInitParameter("uncheckedPrintWriter","true");
 

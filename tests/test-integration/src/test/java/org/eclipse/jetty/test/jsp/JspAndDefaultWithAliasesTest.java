@@ -25,8 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.jasper.servlet.JspServlet;
 import org.eclipse.jetty.security.HashLoginService;
@@ -37,17 +38,46 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class JspMatchingTest
+/**
+ * Test various paths for JSP resources that tickle various java.io.File bugs to get around the JspServlet matching, that then flows to the DefaultServlet to be
+ * served as source files.
+ */
+@RunWith(Parameterized.class)
+public class JspAndDefaultWithAliasesTest
 {
+    private static final Logger LOG = Log.getLogger(JspAndDefaultWithAliasesTest.class);
     private static Server server;
     private static URI serverURI;
+
+    @Parameters
+    public static Collection<String[]> data()
+    {
+        List<String[]> data = new ArrayList<String[]>();
+
+        // @formatter:off
+        data.add(new String[] { "false","/dump.jsp" });
+        data.add(new String[] { "true", "/dump.jsp%00" });
+        data.add(new String[] { "false","/dump.jsp%00x" });
+        data.add(new String[] { "false","/dump.jsp%00/" });
+        data.add(new String[] { "false","/dump.jsp%00x/" });
+        data.add(new String[] { "false","/dump.jsp%00x/dump.jsp" });
+        data.add(new String[] { "false","/dump.jsp%00/dump.jsp" });
+        data.add(new String[] { "false","/dump.jsp%00/index.html" });
+        // @formatter:on
+
+        return data;
+    }
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -69,17 +99,15 @@ public class JspMatchingTest
         context.setContextPath("/");
         File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
         context.setResourceBase(webappBase.getAbsolutePath());
-        URLClassLoader contextLoader = new URLClassLoader(new URL[]{}, Server.class.getClassLoader());
-        context.setClassLoader(contextLoader);
+        context.setClassLoader(Thread.currentThread().getContextClassLoader());
 
         // add default servlet
         ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class,"/");
-        defaultServHolder.setInitParameter("aliases","true"); // important!
+        defaultServHolder.setInitParameter("aliases","true"); // important! must be TRUE
 
         // add jsp
         ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
-        context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
-        jsp.setInitParameter("com.sun.appserv.jsp.classpath", Loader.getClassPath(Server.class.getClassLoader()));
+        jsp.setInitParameter("classpath",context.getClassPath());
 
         // add context
         server.setHandler(context);
@@ -87,7 +115,6 @@ public class JspMatchingTest
         server.start();
 
         serverURI = new URI("http://localhost:" + connector.getLocalPort() + "/");
-
     }
 
     @AfterClass
@@ -96,112 +123,60 @@ public class JspMatchingTest
         server.stop();
     }
 
-    @Test
-    public void testGetBeanRef() throws Exception
+    private String path;
+    private boolean knownBypass;
+
+    public JspAndDefaultWithAliasesTest(String bypassed, String encodedRequestPath)
     {
+        LOG.info("Path \"" + encodedRequestPath + "\"");
+        this.path = encodedRequestPath;
+        this.knownBypass= Boolean.parseBoolean(bypassed);
+    }
 
-        URI uri = serverURI.resolve("/dump.jsp");
-
-        HttpURLConnection conn = null;
-        try
+    private void assertProcessedByJspServlet(HttpURLConnection conn) throws IOException
+    {
+        // make sure that jsp actually ran, and didn't just get passed onto
+        // the default servlet to return the jsp source
+        String body = getResponseBody(conn);
+        
+        if (knownBypass && body.indexOf("<%@")>=0)
+            LOG.info("Known bypass of mapping by "+path);
+        else
         {
-            conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
-            Assert.assertThat(conn.getResponseCode(),is(200));
-
-            // make sure that jsp actually ran, and didn't just get passed onto
-            // the default servlet to return the jsp source
-            String body = getResponseBody(conn);
             Assert.assertThat("Body",body,not(containsString("<%@")));
             Assert.assertThat("Body",body,not(containsString("<jsp:")));
         }
-        finally
+    }
+
+    private void assertResponse(HttpURLConnection conn) throws IOException
+    {
+        if (conn.getResponseCode() == 200)
         {
-            close(conn);
+            // Serving content is allowed, but it better be the processed JspServlet
+            assertProcessedByJspServlet(conn);
+            return;
         }
+
+        // Of other possible paths, only 404 Not Found is expected
+        Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
     }
 
     @Test
-    public void testGetBeanRefInvalid_null() throws Exception
+    public void testGetReference() throws Exception
     {
-
-        URI uri = serverURI.resolve("/dump.jsp%00");
-
+        URI uri = serverURI.resolve(path);
+        
         HttpURLConnection conn = null;
         try
         {
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(1000);
             conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
+            assertResponse(conn);
         }
         finally
         {
-            close(conn);
-        }
-    }
-
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
-    @Test
-    public void testGetBeanRefInvalid_nullx() throws Exception
-    {
-
-        URI uri = serverURI.resolve("/dump.jsp%00x");
-
-        HttpURLConnection conn = null;
-        try
-        {
-            conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
-        }
-        finally
-        {
-            close(conn);
-        }
-    }
-
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
-    @Test
-    public void testGetBeanRefInvalid_nullslash() throws Exception
-    {
-
-        URI uri = serverURI.resolve("/dump.jsp%00/");
-
-        HttpURLConnection conn = null;
-        try
-        {
-            conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
-        }
-        finally
-        {
-            close(conn);
-        }
-    }
-
-    @Ignore("DefaultServlet + aliasing breaks this test ATM")
-    @Test
-    public void testGetBeanRefInvalid_nullxslash() throws Exception
-    {
-
-        URI uri = serverURI.resolve("/dump.jsp%00x/");
-
-        HttpURLConnection conn = null;
-        try
-        {
-            conn = (HttpURLConnection)uri.toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
-        }
-        finally
-        {
-            close(conn);
+            conn.disconnect();
         }
     }
 
@@ -217,10 +192,5 @@ public class JspMatchingTest
         {
             IO.close(in);
         }
-    }
-
-    private void close(HttpURLConnection conn)
-    {
-        conn.disconnect();
     }
 }

@@ -108,13 +108,8 @@ public class WebAppContextTest
         server.setHandler(context);
         server.start();
 
-        // When
         ServletContext ctx = context.getServletContext();
-
-        // Then
-        // This passes:
         assertNotNull(ctx.getRealPath("/doesnotexist"));
-        // This fails:
         assertNotNull(ctx.getRealPath("/doesnotexist/"));
     }
 

@@ -199,7 +199,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (!aliases && !FileResource.getCheckAliases())
             throw new IllegalStateException("Alias checking disabled");
         if (aliases)
-            _servletContext.log("Aliases are enabled");
+            _servletContext.log("Aliases are enabled! Security constraints may be bypassed!!!");
 
         _useFileMappedBuffer=getInitBoolean("useFileMappedBuffer",_useFileMappedBuffer);
 
@@ -421,44 +421,37 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
 
-        // Can we gzip this request?
-        String pathInContextGz=null;
-        boolean gzip=false;
-        if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
-        {
-            // Tell caches that response may vary by accept-encoding
-            response.setHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
-
-            String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-            if (accept!=null && accept.indexOf("gzip")>=0)
-                gzip=true;
-        }
 
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
-
         try
         {
-            // Try gzipped content first
-            if (gzip)
+            // is gzip enabled?
+            String pathInContextGz=null;
+            boolean gzip=false;
+            if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
             {
+                // Look for a gzip resource
                 pathInContextGz=pathInContext+".gz";
-
                 if (_cache==null)
-                {
                     resource=getResource(pathInContextGz);
-                }
                 else
                 {
                     content=_cache.lookup(pathInContextGz);
                     resource=(content==null)?null:content.getResource();
                 }
 
-                if (resource==null || !resource.exists() || resource.isDirectory())
+                // Does a gzip resource exist?
+                if (resource!=null && resource.exists() && !resource.isDirectory())
                 {
-                    gzip=false;
-                    pathInContextGz=null;
+                    // Tell caches that response may vary by accept-encoding
+                    response.setHeader(HttpHeaders.VARY.asString(),HttpHeaders.ACCEPT_ENCODING.asString());
+                    
+                    // Does the client accept gzip?
+                    String accept=request.getHeader(HttpHeaders.ACCEPT_ENCODING.asString());
+                    if (accept!=null && accept.indexOf("gzip")>=0)
+                        gzip=true;
                 }
             }
 
