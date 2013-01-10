@@ -245,7 +245,11 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     private boolean waitForChild;
 
-    
+    /**
+     * @parameter default-value="50"
+     */
+    private int maxStartupLines;
+
     /**
      * The forked jetty instance
      */
@@ -697,30 +701,32 @@ public class JettyRunForkedMojo extends AbstractMojo
                 PluginLog.getLog().info("Forked execution exit: "+exitcode);
             }
             else
-            {
+            {   //we're not going to be reading the stderr as we're not waiting for the child to finish
+                forkedProcess.getErrorStream().close();
+
                 //wait for the child to be ready before terminating.
                 //child indicates it has finished starting by printing on stdout the token passed to it
                 try
                 {
                     LineNumberReader reader = new LineNumberReader(new InputStreamReader(forkedProcess.getInputStream()));
-                    String line = null;
-                    int attempts = 10; //max lines we'll read trying to get token
-                    do
+                    String line = "";
+                    int attempts = maxStartupLines; //max lines we'll read trying to get token
+                    while (attempts>0 && line != null)
                     {
                         --attempts;
                         line = reader.readLine();
                         if (line != null && line.startsWith(token))
                             break;
                     }
-                    while (line != null && attempts>0);
+
                     reader.close();
 
                     if (line != null && line.trim().equals(token))
                         PluginLog.getLog().info("Forked process started.");
                     else
                     {
-                        String err = (line==null?"":line.substring(token.length()));
-                        PluginLog.getLog().info("Forked process startup errors "+(!"".equals(err)?":"+err:""));
+                        String err = (line == null?"":(line.startsWith(token)?line.substring(token.length()):line));
+                        PluginLog.getLog().info("Forked process startup errors"+(!"".equals(err)?", received: "+err:""));
                     }
                 }
                 catch (Exception e)
