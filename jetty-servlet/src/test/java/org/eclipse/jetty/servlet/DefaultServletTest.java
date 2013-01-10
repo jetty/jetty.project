@@ -642,6 +642,42 @@ public class DefaultServletTest
 
 
     @Test
+    public void testGzip() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0gz = new File(resBase, "data0.txt.gz");
+        createFile(file0gz, "fake gzip");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: gzip",response);
+        
+    }
+
+
+
+    @Test
     public void testIfModifiedSmall() throws Exception
     {
         testIfModified("Hello World");
