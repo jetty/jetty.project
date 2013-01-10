@@ -88,7 +88,12 @@ public class AttributesMap implements Attributes
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        return Collections.enumeration(keySet());
+        return Collections.enumeration(getAttributeNameSet());
+    }
+
+    public Set<String> getAttributeNameSet()
+    {
+        return keySet();
     }
 
     public Set<Map.Entry<String, Object>> getAttributeEntrySet()
