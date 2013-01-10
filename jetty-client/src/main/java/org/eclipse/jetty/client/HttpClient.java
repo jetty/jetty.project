@@ -69,8 +69,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
@@ -195,7 +195,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = new TimerScheduler(name + "-scheduler");
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
