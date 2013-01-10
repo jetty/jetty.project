@@ -429,44 +429,37 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
         
-        // Can we gzip this request?
-        String pathInContextGz=null;
-        boolean gzip=false;
-        if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
-        {
-            // Tell caches that response may vary by accept-encoding
-            response.setHeader(HttpHeaders.VARY,HttpHeaders.ACCEPT_ENCODING);
-            // Should we vary this response according to accept-encoding?
-            String accept=request.getHeader(HttpHeaders.ACCEPT_ENCODING);
-            if (accept!=null && accept.indexOf("gzip")>=0)
-                gzip=true;
-        }
 
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
-
         try
         {
-            // Try gzipped content first
-            if (gzip)
+            // is gzip enabled?
+            String pathInContextGz=null;
+            boolean gzip=false;
+            if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
             {
+                // Look for a gzip resource
                 pathInContextGz=pathInContext+".gz";
-
                 if (_cache==null)
-                {
                     resource=getResource(pathInContextGz);
-                }
                 else
                 {
                     content=_cache.lookup(pathInContextGz);
                     resource=(content==null)?null:content.getResource();
                 }
 
-                if (resource==null || !resource.exists() || resource.isDirectory())
+                // Does a gzip resource exist?
+                if (resource!=null && resource.exists() && !resource.isDirectory())
                 {
-                    gzip=false;
-                    pathInContextGz=null;
+                    // Tell caches that response may vary by accept-encoding
+                    response.setHeader(HttpHeaders.VARY,HttpHeaders.ACCEPT_ENCODING);
+                    
+                    // Does the client accept gzip?
+                    String accept=request.getHeader(HttpHeaders.ACCEPT_ENCODING);
+                    if (accept!=null && accept.indexOf("gzip")>=0)
+                        gzip=true;
                 }
             }
 
