@@ -371,7 +371,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         if (removed)
         {
             int open = connectionCount.decrementAndGet();
-            LOG.info("Removed connection {} for {} - open: {}", connection, this, open);
+            LOG.debug("Removed connection {} for {} - open: {}", connection, this, open);
         }
 
         // We need to execute queued requests even if this connection failed.
