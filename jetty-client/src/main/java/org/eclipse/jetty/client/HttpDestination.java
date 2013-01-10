@@ -370,8 +370,8 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         removed |= idleConnections.remove(connection);
         if (removed)
         {
-            LOG.debug("{} removed", connection);
-            connectionCount.decrementAndGet();
+            int open = connectionCount.decrementAndGet();
+            LOG.info("Removed connection {} for {} - open: {}", connection, this, open);
         }
 
         // We need to execute queued requests even if this connection failed.
