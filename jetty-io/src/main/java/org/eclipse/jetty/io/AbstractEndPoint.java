@@ -94,6 +94,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public void onOpen()
     {
         LOG.debug("onOpen {}",this);
+        super.onOpen();
     }
 
     @Override

@@ -404,14 +404,5 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         _growOutput=growOutput;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        super.setIdleTimeout(idleTimeout);
-        scheduleIdleTimeout(idleTimeout);
-    }
-
-
 
 }

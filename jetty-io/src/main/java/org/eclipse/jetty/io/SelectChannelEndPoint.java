@@ -84,13 +84,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        super.setIdleTimeout(idleTimeout);
-        scheduleIdleTimeout(idleTimeout);
-    }
-
-    @Override
     protected boolean needsFill()
     {
         updateLocalInterests(SelectionKey.OP_READ, true);
@@ -187,10 +180,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     public void onOpen()
     {
         if (_open.compareAndSet(false, true))
-        {
             super.onOpen();
-            scheduleIdleTimeout(getIdleTimeout());
-        }
     }
 
     @Override
@@ -201,7 +191,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         // We do a best effort to print the right toString() and that's it.
         try
         {
-            boolean valid = _key.isValid();
+            boolean valid = _key!=null && _key.isValid();
             int keyInterests = valid ? _key.interestOps() : -1;
             int keyReadiness = valid ? _key.readyOps() : -1;
             return String.format("%s{io=%d,kio=%d,kro=%d}",
