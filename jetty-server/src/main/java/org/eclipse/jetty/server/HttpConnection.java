@@ -91,7 +91,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _generator = new HttpGenerator(); // TODO: consider moving the generator to the transport, where it belongs
+        _generator = new HttpGenerator();
         _generator.setSendServerVersion(_config.getSendServerVersion());
         _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
         _parser = newHttpParser();

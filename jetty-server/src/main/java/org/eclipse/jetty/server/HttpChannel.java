@@ -191,7 +191,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 // TODO: break this dependency with HttpGenerator
                 boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue"); // TODO: better message
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
     }
@@ -636,7 +636,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             ResponseInfo info = _response.newResponseInfo();
             boolean committed = commitResponse(info, content, complete);
             if (!committed)
-                throw new IOException("Concurrent commit"); // TODO: better message
+                throw new IOException("Concurrent commit");
         }
     }
 
