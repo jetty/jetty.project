@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.annotations;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -27,8 +29,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
-
-import static org.junit.Assert.assertNotNull;
 
 /**
  * TestAnnotationConfiguration

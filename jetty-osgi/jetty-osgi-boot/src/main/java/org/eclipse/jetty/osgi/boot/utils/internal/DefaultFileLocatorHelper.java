@@ -31,8 +31,8 @@ import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 
 /**

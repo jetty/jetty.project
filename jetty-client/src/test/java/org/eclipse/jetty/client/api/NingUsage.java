@@ -21,14 +21,15 @@ package org.eclipse.jetty.client.api;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.BodyDeferringAsyncHandler;
 import com.ning.http.client.Cookie;
 import com.ning.http.client.Realm;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
-import org.junit.Ignore;
-import org.junit.Test;
 
 @Ignore
 public class NingUsage

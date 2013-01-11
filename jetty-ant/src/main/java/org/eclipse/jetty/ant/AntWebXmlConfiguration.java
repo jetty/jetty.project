@@ -19,14 +19,10 @@
 package org.eclipse.jetty.ant;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 

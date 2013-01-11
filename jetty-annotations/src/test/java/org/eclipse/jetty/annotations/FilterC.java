@@ -19,6 +19,7 @@
 package org.eclipse.jetty.annotations;
 
 import java.io.IOException;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;

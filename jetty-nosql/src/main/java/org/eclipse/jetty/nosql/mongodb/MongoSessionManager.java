@@ -42,7 +42,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.WriteResult;
 
 
 @ManagedObject("Mongo Session Manager")

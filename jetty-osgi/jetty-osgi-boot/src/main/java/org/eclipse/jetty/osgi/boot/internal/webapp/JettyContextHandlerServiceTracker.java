@@ -30,9 +30,9 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHom
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;

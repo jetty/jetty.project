@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security;
 
 import java.util.Set;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;

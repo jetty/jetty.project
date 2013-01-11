@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.PathMap;

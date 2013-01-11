@@ -21,6 +21,7 @@ package org.eclipse.jetty.jndi;
 
 import java.util.Hashtable;
 import java.util.Properties;
+
 import javax.naming.CompoundName;
 import javax.naming.Context;
 import javax.naming.Name;

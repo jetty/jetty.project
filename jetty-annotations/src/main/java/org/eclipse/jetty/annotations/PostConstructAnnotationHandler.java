@@ -20,6 +20,7 @@ package org.eclipse.jetty.annotations;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+
 import javax.annotation.PostConstruct;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;

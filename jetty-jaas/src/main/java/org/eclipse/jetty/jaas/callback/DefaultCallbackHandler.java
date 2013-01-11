@@ -20,6 +20,7 @@ package org.eclipse.jetty.jaas.callback;
 
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;

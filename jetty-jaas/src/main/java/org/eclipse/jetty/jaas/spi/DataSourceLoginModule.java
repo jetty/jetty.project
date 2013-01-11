@@ -20,6 +20,7 @@ package org.eclipse.jetty.jaas.spi;
 
 import java.sql.Connection;
 import java.util.Map;
+
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.security.auth.Subject;

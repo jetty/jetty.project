@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -68,8 +71,6 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 @RunWith(AdvancedRunner.class)
 public class ProxyServletTest

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,9 +35,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
 import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * OrderingTest

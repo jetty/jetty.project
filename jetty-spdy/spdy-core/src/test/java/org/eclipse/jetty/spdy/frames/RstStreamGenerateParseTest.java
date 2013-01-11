@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.spdy.frames;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -28,12 +34,6 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class RstStreamGenerateParseTest
 {

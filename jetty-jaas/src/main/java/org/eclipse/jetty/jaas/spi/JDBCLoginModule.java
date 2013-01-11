@@ -21,6 +21,7 @@ package org.eclipse.jetty.jaas.spi;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 

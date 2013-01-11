@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.not;
+
 import java.io.File;
 import java.util.List;
 
@@ -33,11 +38,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.

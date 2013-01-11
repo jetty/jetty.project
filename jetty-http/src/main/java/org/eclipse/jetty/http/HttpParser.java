@@ -1381,8 +1381,8 @@ public class HttpParser
 
         /**
          * This is the method called by parser when a HTTP Header name and value is found
-         * @param field TODO
-         * @return
+         * @param field The field parsed
+         * @return True if the parser should return to its caller
          */
         public boolean parsedHeader(HttpField field);
 

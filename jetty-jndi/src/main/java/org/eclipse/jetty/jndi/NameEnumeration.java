@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jndi;
 
 import java.util.Iterator;
+
 import javax.naming.Binding;
 import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;

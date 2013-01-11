@@ -20,6 +20,7 @@ package org.eclipse.jetty.jndi;
 
 import java.lang.reflect.Method;
 import java.sql.Statement;
+
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;

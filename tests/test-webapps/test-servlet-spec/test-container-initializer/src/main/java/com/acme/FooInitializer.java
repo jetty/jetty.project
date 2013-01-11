@@ -18,12 +18,13 @@
 
 package com.acme;
 
-import java.util.Set;
 import java.util.ArrayList;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletContext;
-import javax.servlet.annotation.HandlesTypes;
+import java.util.Set;
+
 import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRegistration;
+import javax.servlet.annotation.HandlesTypes;
 
 @HandlesTypes ({javax.servlet.Servlet.class, Foo.class})
 public class FooInitializer implements ServletContainerInitializer

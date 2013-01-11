@@ -753,7 +753,6 @@ public class HttpGenerator
                 break;
 
             default:
-                // TODO - maybe allow forced chunking by setting te ???
                 break;
         }
 

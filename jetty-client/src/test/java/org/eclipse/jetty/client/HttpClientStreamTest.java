@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -30,6 +33,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,9 +48,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {

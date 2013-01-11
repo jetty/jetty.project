@@ -20,8 +20,6 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;

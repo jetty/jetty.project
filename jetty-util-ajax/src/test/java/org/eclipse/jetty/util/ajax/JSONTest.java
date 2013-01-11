@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -31,9 +34,6 @@ import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 public class JSONTest

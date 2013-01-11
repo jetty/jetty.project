@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,6 +32,7 @@ import java.util.Collection;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
@@ -45,8 +48,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class IncludableGzipFilterTest

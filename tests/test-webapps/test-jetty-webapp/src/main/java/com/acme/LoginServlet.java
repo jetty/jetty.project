@@ -18,13 +18,7 @@
 
 package com.acme;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -32,9 +26,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */

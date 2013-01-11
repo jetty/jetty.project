@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jaas;
 
 import java.security.Principal;
+
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 

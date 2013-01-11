@@ -358,7 +358,6 @@ public class SslConnection extends AbstractConnection
                     _cannotAcceptMoreAppDataToFlush = true;
                     getEndPoint().write(_writeCallback, _encryptedOutput);
                 }
-                // TODO: use _fillRequiresFlushToProgress ?
                 else if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP)
                 {
                     // we are actually read blocked in order to write
@@ -541,8 +540,6 @@ public class SslConnection extends AbstractConnection
                                     if (net_filled < 0)
                                         _sslEngine.closeInbound();
 
-                                    // TODO: do we need to check if there is something pending to write ?
-//                                    getWriteFlusher().completeWrite();
                                     return 0;
 
                                 case NEED_TASK:

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
+
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;

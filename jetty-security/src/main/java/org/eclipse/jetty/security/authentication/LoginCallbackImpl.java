@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.security.Principal;
+
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.IdentityService;

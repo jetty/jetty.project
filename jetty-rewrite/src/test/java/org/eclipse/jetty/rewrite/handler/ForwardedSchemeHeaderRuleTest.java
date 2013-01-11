@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.junit.Assert.assertEquals;
+
 import org.eclipse.jetty.http.HttpFields;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
 {

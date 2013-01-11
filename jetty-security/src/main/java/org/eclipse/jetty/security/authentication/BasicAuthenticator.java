@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;

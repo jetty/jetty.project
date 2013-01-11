@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.tools.ant.BuildException;
 import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.ContextHandlers;
 import org.eclipse.jetty.ant.utils.ServerProxy;

@@ -20,6 +20,7 @@ package org.eclipse.jetty.security;
 
 import java.security.Principal;
 import java.util.List;
+
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;

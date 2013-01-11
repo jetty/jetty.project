@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.plus.webapp;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -29,9 +32,6 @@ import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class TestConfiguration
 {

@@ -18,7 +18,6 @@
 
 package com.acme;
 
-import com.acme.Foo;
 
 public class Bar {
 	

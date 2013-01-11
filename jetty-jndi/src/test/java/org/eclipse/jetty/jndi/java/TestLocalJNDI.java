@@ -18,7 +18,12 @@
 
 package org.eclipse.jetty.jndi.java;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import java.util.Hashtable;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
@@ -34,10 +39,6 @@ import javax.naming.spi.ObjectFactory;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.junit.After;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 /**
  *

@@ -20,6 +20,7 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.annotation.WebFilter;

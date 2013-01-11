@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlets.gzip;
 
 import java.io.IOException;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;

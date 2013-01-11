@@ -19,6 +19,7 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.EventListener;
+
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;

@@ -22,6 +22,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingEvent;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;
 import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

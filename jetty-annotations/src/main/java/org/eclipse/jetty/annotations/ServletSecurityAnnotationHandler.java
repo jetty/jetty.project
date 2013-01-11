@@ -20,9 +20,8 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.servlet.ServletSecurityElement;
-import javax.servlet.annotation.HttpConstraint;
-import javax.servlet.annotation.HttpMethodConstraint;
 import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import javax.servlet.annotation.ServletSecurity.TransportGuarantee;

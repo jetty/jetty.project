@@ -20,7 +20,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
@@ -36,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -57,8 +60,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {

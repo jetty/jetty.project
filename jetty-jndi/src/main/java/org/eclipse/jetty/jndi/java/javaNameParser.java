@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jndi.java;
 
 import java.util.Properties;
+
 import javax.naming.CompoundName;
 import javax.naming.Name;
 import javax.naming.NameParser;

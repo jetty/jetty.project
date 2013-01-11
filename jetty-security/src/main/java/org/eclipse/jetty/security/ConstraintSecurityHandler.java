@@ -45,7 +45,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */

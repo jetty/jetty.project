@@ -19,7 +19,13 @@
 package org.eclipse.jetty.plus.webapp;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.net.URL;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -32,11 +38,6 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * PlusDescriptorProcessorTest
