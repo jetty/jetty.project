@@ -37,8 +37,9 @@ public class TrieTest
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new ArrayTrie<String>()},
-            {new TreeTrie<Integer>()}
+            {new ArrayTrie<Integer>(128)},
+            {new TreeTrie<Integer>()},
+            {new ArrayTernaryTrie<Integer>(128)}
         };
         return Arrays.asList(data);
     }
@@ -61,7 +62,6 @@ public class TrieTest
         trie.put("foo-bar",6);
         trie.put("foo+bar",7);
         trie.put("HELL4",8);
-        
     }
     
     @Test
@@ -137,33 +137,33 @@ public class TrieTest
     @Test
     public void testGetBestArray() throws Exception
     {
-        Assert.assertEquals(1,trie.getBest(StringUtil.getUtf8Bytes("xhelloxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(StringUtil.getUtf8Bytes("xhelxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(StringUtil.getUtf8Bytes("xhellxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(StringUtil.getUtf8Bytes("xfoo-barxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(StringUtil.getUtf8Bytes("xhell4xxxx"),1,10).intValue()); 
+        Assert.assertEquals(1,trie.getBest(StringUtil.getUtf8Bytes("xhelloxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(StringUtil.getUtf8Bytes("xhelxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(StringUtil.getUtf8Bytes("xhellxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(StringUtil.getUtf8Bytes("xfoo-barxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(StringUtil.getUtf8Bytes("xhell4xxxx"),1,8).intValue()); 
         
-        Assert.assertEquals(1,trie.getBest(StringUtil.getUtf8Bytes("xHELLOxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(StringUtil.getUtf8Bytes("xHELxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(StringUtil.getUtf8Bytes("xHELLxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(StringUtil.getUtf8Bytes("xfoo-BARxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(StringUtil.getUtf8Bytes("xHELL4xxxx"),1,10).intValue());  
+        Assert.assertEquals(1,trie.getBest(StringUtil.getUtf8Bytes("xHELLOxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(StringUtil.getUtf8Bytes("xHELxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(StringUtil.getUtf8Bytes("xHELLxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(StringUtil.getUtf8Bytes("xfoo-BARxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(StringUtil.getUtf8Bytes("xHELL4xxxx"),1,8).intValue());  
     }
 
     @Test
     public void testGetBestBuffer() throws Exception
     {
-        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xhelloxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xhelxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xhellxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-barxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xhell4xxxx"),1,10).intValue()); 
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xhelloxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xhelxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xhellxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-barxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xhell4xxxx"),1,8).intValue()); 
         
-        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xHELLOxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xHELxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xHELLxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-BARxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xHELL4xxxx"),1,10).intValue());  
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toBuffer("xHELLOxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toBuffer("xHELxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xHELLxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-BARxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xHELL4xxxx"),1,8).intValue());  
         
         ByteBuffer buffer = (ByteBuffer)BufferUtil.toBuffer("xhelloxxxxxxx").position(2);
         Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
@@ -172,20 +172,33 @@ public class TrieTest
     @Test
     public void testGetBestDirectBuffer() throws Exception
     {
-        Assert.assertEquals(1,trie.getBest(BufferUtil.toDirectBuffer("xhelloxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(BufferUtil.toDirectBuffer("xhelxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(BufferUtil.toDirectBuffer("xhellxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(BufferUtil.toDirectBuffer("xfoo-barxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(BufferUtil.toDirectBuffer("xhell4xxxx"),1,10).intValue()); 
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toDirectBuffer("xhelloxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toDirectBuffer("xhelxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toDirectBuffer("xhellxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toDirectBuffer("xfoo-barxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toDirectBuffer("xhell4xxxx"),1,8).intValue()); 
         
-        Assert.assertEquals(1,trie.getBest(BufferUtil.toDirectBuffer("xHELLOxxxx"),1,10).intValue());
-        Assert.assertEquals(2,trie.getBest(BufferUtil.toDirectBuffer("xHELxoxxxx"),1,10).intValue());
-        Assert.assertEquals(3,trie.getBest(BufferUtil.toDirectBuffer("xHELLxxxxx"),1,10).intValue()); 
-        Assert.assertEquals(6,trie.getBest(BufferUtil.toDirectBuffer("xfoo-BARxx"),1,10).intValue()); 
-        Assert.assertEquals(8,trie.getBest(BufferUtil.toDirectBuffer("xHELL4xxxx"),1,10).intValue());  
+        Assert.assertEquals(1,trie.getBest(BufferUtil.toDirectBuffer("xHELLOxxxx"),1,8).intValue());
+        Assert.assertEquals(2,trie.getBest(BufferUtil.toDirectBuffer("xHELxoxxxx"),1,8).intValue());
+        Assert.assertEquals(3,trie.getBest(BufferUtil.toDirectBuffer("xHELLxxxxx"),1,8).intValue()); 
+        Assert.assertEquals(6,trie.getBest(BufferUtil.toDirectBuffer("xfoo-BARxx"),1,8).intValue()); 
+        Assert.assertEquals(8,trie.getBest(BufferUtil.toDirectBuffer("xHELL4xxxx"),1,8).intValue());  
         
         ByteBuffer buffer = (ByteBuffer)BufferUtil.toDirectBuffer("xhelloxxxxxxx").position(2);
         Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
     }
+    
+    @Test 
+    public void testFull() throws Exception
+    {
+       if (!(trie instanceof ArrayTrie<?> || trie instanceof ArrayTernaryTrie<?>))
+           return;
+       
+       Assert.assertFalse(trie.put("Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used.",99));
+       testGetString();
+       testGetBestArray();
+       testGetBestBuffer();
+    }
+    
     
 }

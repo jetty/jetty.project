@@ -84,4 +84,7 @@ public interface Trie<V>
 
     /* ------------------------------------------------------------ */
     public Set<String> keySet();
+    
+    public boolean isFull();
+    
 }

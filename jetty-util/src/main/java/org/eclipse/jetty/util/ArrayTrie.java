@@ -123,9 +123,9 @@ public class ArrayTrie<V> implements Trie<V>
                 t=_rowIndex[idx];
                 if (t==0)
                 {
-                    if (_rows==_value.length)
+                    if (++_rows>=_value.length)
                         return false;
-                    t=_rowIndex[idx]=++_rows;
+                    t=_rowIndex[idx]=_rows;
                 }
             }
             else if (c>127)
@@ -134,6 +134,8 @@ public class ArrayTrie<V> implements Trie<V>
             {
                 if (_bigIndex==null)
                     _bigIndex=new char[_value.length][];
+                if (t>=_bigIndex.length)
+                    return false;
                 char[] big=_bigIndex[t];
                 if (big==null)
                     big=_bigIndex[t]=new char[128];
@@ -234,6 +236,15 @@ public class ArrayTrie<V> implements Trie<V>
     {
         return getBest(0,b,offset,len);
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public V getBest(ByteBuffer b,int offset,int len)
+    {
+        if (b.hasArray())
+            return getBest(0,b.array(),b.arrayOffset()+b.position()+offset,len);
+        return getBest(0,b,offset,len);
+    }
     
     private V getBest(int t,byte[] b,int offset,int len)
     {
@@ -270,16 +281,7 @@ public class ArrayTrie<V> implements Trie<V>
         }
         return (V)_value[t];
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V getBest(ByteBuffer b,int offset,int len)
-    {
-        if (b.hasArray())
-            return getBest(0,b.array(),b.arrayOffset()+b.position()+offset,len);
-        return getBest(0,b,offset,len);
-    }
-
+    
     private V getBest(int t,ByteBuffer b,int offset,int len)
     {
         int pos=b.position()+offset;
@@ -379,22 +381,28 @@ public class ArrayTrie<V> implements Trie<V>
     
     private void keySet(Set<String> set, int t)
     {
-        if (_value[t]!=null)
+        if (t<_value.length&&_value[t]!=null)
             set.add(_key[t]);
 
         for(int i=0; i < ROW_SIZE; i++)
         {
             int idx=t*ROW_SIZE+i;
-            if (_rowIndex[idx] != 0)
+            if (idx<_rowIndex.length && _rowIndex[idx] != 0)
                 keySet(set,_rowIndex[idx]);
         }
         
-        char[] big = _bigIndex==null?null:_bigIndex[t];
+        char[] big = _bigIndex==null||t>=_bigIndex.length?null:_bigIndex[t];
         if (big!=null)
         {
             for (int i:big)
                 if (i!=0)
                     keySet(set,i);
         }
+    }
+    
+    @Override
+    public boolean isFull()
+    {
+        return _rows+1==_key.length;
     }
 }

@@ -57,11 +57,13 @@ public class TreeTrie<V> implements Trie<V>
         this._c=c;
     }
 
+    @Override
     public boolean put(V v)
     {
         return put(v.toString(),v);
     }
-    
+
+    @Override
     public boolean put(String s, V v)
     {
         TreeTrie<V> t = this;
@@ -102,6 +104,7 @@ public class TreeTrie<V> implements Trie<V>
         return true;
     }
 
+    @Override
     public V remove(String s)
     {
         V o=get(s);
@@ -109,6 +112,7 @@ public class TreeTrie<V> implements Trie<V>
         return o;
     }
 
+    @Override
     public V get(String s)
     {
         TreeTrie<V> t = this;
@@ -141,6 +145,7 @@ public class TreeTrie<V> implements Trie<V>
         return t._value;
     }
 
+    @Override
     public V get(ByteBuffer b,int offset,int len)
     {
         TreeTrie<V> t = this;
@@ -172,6 +177,7 @@ public class TreeTrie<V> implements Trie<V>
         return t._value;
     }
 
+    @Override
     public V getBest(byte[] b,int offset,int len)
     {
         TreeTrie<V> t = this;
@@ -213,6 +219,7 @@ public class TreeTrie<V> implements Trie<V>
         return t._value;
     }
 
+    @Override
     public V getBest(ByteBuffer b,int offset,int len)
     {
         if (b.hasArray())
@@ -262,8 +269,6 @@ public class TreeTrie<V> implements Trie<V>
         return t._value;
     }
     
-    
-    
 
     @Override
     public String toString()
@@ -278,7 +283,6 @@ public class TreeTrie<V> implements Trie<V>
         buf.append('}');
         return buf.toString();
     }
-
 
     private static <V> void toString(Appendable out, TreeTrie<V> t)
     {
@@ -308,7 +312,8 @@ public class TreeTrie<V> implements Trie<V>
                 toString(out,t._nextOther.get(i));
         }           
     }
-    
+
+    @Override
     public Set<String> keySet()
     {
         Set<String> keys = new HashSet<>();
@@ -332,4 +337,11 @@ public class TreeTrie<V> implements Trie<V>
                 keySet(set,t._nextOther.get(i));
         }           
     }
+    
+    @Override
+    public boolean isFull()
+    {
+        return false;
+    }
+    
 }

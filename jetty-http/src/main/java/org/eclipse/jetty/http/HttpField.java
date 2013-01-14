@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Trie;
  */
 public class HttpField
 {
-    public final static Trie<HttpField> CACHE = new ArrayTrie<>(768);
+    public final static Trie<HttpField> CACHE = new ArrayTrie<>(1024);
     public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
     
     static
@@ -41,8 +41,14 @@ public class HttpField
         CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE));
         CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE));
         CACHE.put(new CachedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.UPGRADE));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_ENCODING,"gzip"));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_ENCODING,"gzip,deflate,sdch"));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_LANGUAGE,"en-GB,en-US;q=0.8,en;q=0.6"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT_CHARSET,"ISO-8859-1,utf-8;q=0.7,*;q=0.3"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT,"*/*"));
+        CACHE.put(new CachedHttpField(HttpHeader.ACCEPT,"image/png,image/*;q=0.8,*/*;q=0.5"));
         CACHE.put(new CachedHttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
         CACHE.put(new CachedHttpField(HttpHeader.PRAGMA,"no-cache"));
         CACHE.put(new CachedHttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
@@ -51,9 +57,6 @@ public class HttpField
         CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
         CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
         CACHE.put(new CachedHttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
-        
-        // TODO more user agents
-        CACHE.put(new CachedHttpField(HttpHeader.USER_AGENT,"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/17.0 Firefox/17.0"));
         
         // Content types
         for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/x-www-form-urlencoded"})
@@ -80,6 +83,12 @@ public class HttpField
         for (HttpHeader h:headers)
             if (!CACHE.put(new HttpField(h,(String)null)))
                 throw new IllegalStateException("CACHE FULL");
+        // Add some more common headers
+        CACHE.put(new HttpField(HttpHeader.REFERER,(String)null));
+        CACHE.put(new HttpField(HttpHeader.IF_MODIFIED_SINCE,(String)null));
+        CACHE.put(new HttpField(HttpHeader.IF_NONE_MATCH,(String)null));
+        CACHE.put(new HttpField(HttpHeader.AUTHORIZATION,(String)null));
+        CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
     }
 
     private final static byte[] __colon_space = new byte[] {':',' '};

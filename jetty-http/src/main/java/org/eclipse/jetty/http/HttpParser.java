@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
+import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TreeTrie;
@@ -78,7 +80,7 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private ByteBuffer _uri=ByteBuffer.allocate(128); // Tune?
+    private ByteBuffer _uri=ByteBuffer.allocate(256); // Tune?
     private byte _eol;
     private EndOfContent _endOfContent;
     private long _contentLength;
@@ -87,7 +89,7 @@ public class HttpParser
     private int _chunkPosition;
     private boolean _headResponse;
     private ByteBuffer _contentChunk;
-    private final Trie<HttpField> _connectionFields=new TreeTrie<>();
+    private final Trie<HttpField> _connectionFields=new ArrayTernaryTrie<>(256);
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
@@ -627,14 +629,19 @@ public class HttpParser
                     _requestHandler.parsedHostHeader(host,port);
                 
               break;
-              
-            case USER_AGENT:
+
+            case AUTHORIZATION:
             case ACCEPT:
+            case ACCEPT_CHARSET:
+            case ACCEPT_ENCODING:
             case ACCEPT_LANGUAGE:
+            case COOKIE:
+            case CACHE_CONTROL:
+            case USER_AGENT:
                 add_to_connection_trie=_field==null;
         }
     
-        if (add_to_connection_trie)
+        if (add_to_connection_trie && !_connectionFields.isFull())
         {
             _field=new HttpField.CachedHttpField(_header,_valueString);
             _connectionFields.put(_field);
@@ -782,8 +789,7 @@ public class HttpParser
                                     _field=_connectionFields.getBest(buffer,-1,buffer.remaining());
                                     if (_field==null)
                                         _field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
-                                    
-                                    //_field=HttpField.CACHE.getBest(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.remaining()+1);
+                                        
                                     if (_field!=null)
                                     {
                                         _header=_field.getHeader();
@@ -848,7 +854,7 @@ public class HttpParser
                             if (_headerString==null)
                             {
                                 _headerString=takeLengthString();
-                                _header=HttpHeader.CACHE.get(_headerString);
+                                _header=HttpHeader.CACHE.get(_headerString); 
                             }
                             setState(State.HEADER_VALUE);
                             break;
@@ -1260,6 +1266,7 @@ public class HttpParser
             }
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
+            e.printStackTrace();
             LOG.debug(e);
             badMessage(buffer,HttpStatus.BAD_REQUEST_400,null);
             return true;
