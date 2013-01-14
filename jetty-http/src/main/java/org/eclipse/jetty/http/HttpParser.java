@@ -641,7 +641,7 @@ public class HttpParser
                 add_to_connection_trie=_field==null;
         }
     
-        if (add_to_connection_trie && !_connectionFields.isFull())
+        if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
         {
             _field=new HttpField.CachedHttpField(_header,_valueString);
             _connectionFields.put(_field);
