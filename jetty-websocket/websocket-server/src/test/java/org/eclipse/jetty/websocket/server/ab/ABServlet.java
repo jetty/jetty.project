@@ -36,7 +36,6 @@ public class ABServlet extends WebSocketServlet
         // Test cases 9.x uses BIG frame sizes, let policy handle them.
         int bigFrameSize = 20 * MBYTE;
 
-        factory.getPolicy().setBufferSize(bigFrameSize);
         factory.getPolicy().setMaxPayloadSize(bigFrameSize);
         factory.getPolicy().setMaxTextMessageSize(bigFrameSize);
         factory.getPolicy().setMaxBinaryMessageSize(bigFrameSize);

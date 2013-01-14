@@ -38,7 +38,6 @@ public class TextPayloadParserTest
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         // Artificially small buffer/payload
-        policy.setBufferSize(512);
         policy.setMaxPayloadSize(1024);
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');
@@ -89,7 +88,6 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        policy.setBufferSize(100000);
         policy.setMaxPayloadSize(100000);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();

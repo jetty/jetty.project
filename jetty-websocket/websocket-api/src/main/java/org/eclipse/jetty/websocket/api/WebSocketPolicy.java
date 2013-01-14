@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.websocket.api;
 
-
 /**
  * Settings for WebSocket operations.
  */
 public class WebSocketPolicy
 {
+    private static final int KB = 1024;
+
     public static WebSocketPolicy newClientPolicy()
     {
         return new WebSocketPolicy(WebSocketBehavior.CLIENT);
@@ -35,44 +36,25 @@ public class WebSocketPolicy
     }
 
     /**
-     * Automatically fragment large frames.
-     * <p>
-     * If frames are encountered at size larger than {@link #maxPayloadSize} then they are automatically fragmented into pieces fitting within the
-     * maxPayloadSize.
-     * <p>
-     * Default: false
-     */
-    private boolean autoFragment = false;
-
-    /**
      * The maximum allowed payload size (validated in both directions)
      * <p>
      * Default: 65536 (64K)
      */
-    private int maxPayloadSize = 65536;
+    private int maxPayloadSize = 64 * KB;
 
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
      * Default: 16384 (16 K)
      */
-    private int maxTextMessageSize = 16384;
+    private int maxTextMessageSize = 64 * KB;
 
     /**
      * The maximum size of a binary message during parsing/generating.
      * <p>
      * Default: -1 (no validation)
      */
-    private int maxBinaryMessageSize = -1;
-
-    /**
-     * Maximum Message Buffer size, which is also the max frame byte size.
-     * <p>
-     * Default: 65536 (64 K)
-     */
-    private int bufferSize = 65536;
-
-    // TODO: change bufferSize to windowSize for FrameBytes logic?
+    private int maxBinaryMessageSize = 64 * KB;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
@@ -127,9 +109,7 @@ public class WebSocketPolicy
     public WebSocketPolicy clonePolicy()
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
-        clone.autoFragment = this.autoFragment;
         clone.idleTimeout = this.idleTimeout;
-        clone.bufferSize = this.bufferSize;
         clone.maxPayloadSize = this.maxPayloadSize;
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
         clone.maxTextMessageSize = this.maxTextMessageSize;
@@ -139,11 +119,6 @@ public class WebSocketPolicy
     public WebSocketBehavior getBehavior()
     {
         return behavior;
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
     }
 
     public int getIdleTimeout()
@@ -166,21 +141,6 @@ public class WebSocketPolicy
         return maxTextMessageSize;
     }
 
-    public boolean isAutoFragment()
-    {
-        return autoFragment;
-    }
-
-    public void setAutoFragment(boolean autoFragment)
-    {
-        this.autoFragment = autoFragment;
-    }
-
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
-    }
-
     public void setIdleTimeout(int idleTimeout)
     {
         this.idleTimeout = idleTimeout;
@@ -193,9 +153,9 @@ public class WebSocketPolicy
 
     public void setMaxPayloadSize(int maxPayloadSize)
     {
-        if (maxPayloadSize < bufferSize)
+        if (maxPayloadSize < 0)
         {
-            throw new IllegalStateException("Cannot have payload size be smaller than buffer size");
+            throw new IllegalStateException("Cannot have payload size be a negative number");
         }
         this.maxPayloadSize = maxPayloadSize;
     }
@@ -204,5 +164,4 @@ public class WebSocketPolicy
     {
         this.maxTextMessageSize = maxTextMessageSize;
     }
-
 }

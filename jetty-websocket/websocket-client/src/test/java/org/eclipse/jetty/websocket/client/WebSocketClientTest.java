@@ -176,7 +176,6 @@ public class WebSocketClientTest
         try
         {
             int bufferSize = 512;
-            factSmall.getPolicy().setBufferSize(512);
 
             TrackingSocket wsocket = new TrackingSocket();
             WebSocketClient client = factSmall.newWebSocketClient(wsocket);
