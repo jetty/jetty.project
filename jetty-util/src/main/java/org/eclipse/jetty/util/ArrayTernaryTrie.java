@@ -98,8 +98,11 @@ public class ArrayTernaryTrie<V> implements Trie<V>
                 if (t==0)
                 {
                     node=t=++_rows;
-                    if (_rows==_key.length)
+                    if (_rows>=_key.length)
+                    {
+                        _rows--;
                         return false;
+                    }
                     int row=ROW_SIZE*t;
                     _tree[row]=c;
                     _tree[last]=(char)t;
