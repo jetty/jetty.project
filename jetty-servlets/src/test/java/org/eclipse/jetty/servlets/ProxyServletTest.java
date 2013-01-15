@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import junit.framework.Assert;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -45,11 +32,24 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.core.Is;
+import org.hamcrest.core.IsEqual;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class ProxyServletTest
 {
@@ -189,5 +189,54 @@ public class ProxyServletTest
         long millis = TimeUnit.NANOSECONDS.toMillis(elapsed);
         long rate = file.length() / 1024 * 1000 / millis;
         System.out.printf("download rate = %d KiB/s%n", rate);
+    }
+
+    @Test
+    public void testLessContentThanContentLength() throws Exception {
+        init(new HttpServlet() {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+                byte[] message = "tooshort".getBytes("ascii");
+                resp.setContentType("text/plain;charset=ascii");
+                resp.setHeader("Content-Length", Long.toString(message.length+1));
+                resp.getOutputStream().write(message);
+            }
+        });
+
+        final AtomicBoolean excepted = new AtomicBoolean(false);
+
+        ContentExchange exchange = new ContentExchange(true)
+        {
+            @Override
+            protected void onResponseContent(Buffer content) throws IOException
+            {
+                try
+                {
+                    // Slow down the reader
+                    TimeUnit.MILLISECONDS.sleep(10);
+                    super.onResponseContent(content);
+                }
+                catch (InterruptedException x)
+                {
+                    throw (IOException)new IOException().initCause(x);
+                }
+            }
+
+            @Override
+            protected void onException(Throwable x)
+            {              
+                excepted.set(true);
+                super.onException(x);
+            }
+            
+            
+        };
+
+        String url = "http://localhost:" + _connector.getLocalPort() + "/proxy/test";
+        exchange.setURL(url);
+
+        _client.send(exchange);
+        exchange.waitForDone();
+        assertThat(excepted.get(),equalTo(true));
     }
 }

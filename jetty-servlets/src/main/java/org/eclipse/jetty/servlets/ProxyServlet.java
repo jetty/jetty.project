@@ -527,7 +527,7 @@ public class ProxyServlet implements Servlet
                         if (ex instanceof EofException)
                         {
                             _log.ignore(ex);
-                            return;
+                            //return;
                         }
                         handleOnException(ex,request,response);
 
