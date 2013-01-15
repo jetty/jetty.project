@@ -106,7 +106,8 @@ public class JspAndDefaultWithoutAliasesTest
         defaultServHolder.setInitParameter("aliases","false"); // important! must be FALSE
 
         // add jsp
-        ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
+        ServletHolder jsp = new ServletHolder(new FakeJspServlet());
+        context.addServlet(jsp,"*.jsp");        
         jsp.setInitParameter("classpath",context.getClassPath());
 
         // add context
