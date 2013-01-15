@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -78,8 +79,10 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         if (!connected)
         {
+            WebSocketSession session = getSession();
             ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
-            connectionManager.addSession(getSession());
+            connectionManager.addSession(session);
+            connectPromise.onOpen(session);
             connected = true;
         }
         super.onOpen();

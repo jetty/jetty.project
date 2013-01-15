@@ -24,12 +24,13 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * Holder for the pending connect information.
  */
-public class ConnectPromise extends FuturePromise<Session>
+public abstract class ConnectPromise extends FuturePromise<Session> implements Runnable
 {
     private final WebSocketClient client;
     private final EventDriver driver;
@@ -63,6 +64,19 @@ public class ConnectPromise extends FuturePromise<Session>
     public ClientUpgradeRequest getRequest()
     {
         return this.request;
+    }
+
+    public ClientUpgradeResponse getResponse()
+    {
+        return response;
+    }
+
+    public void onOpen(WebSocketSession session)
+    {
+        session.setUpgradeRequest(request);
+        session.setUpgradeResponse(response);
+        session.open();
+        super.succeeded(session);
     }
 
     public void setResponse(ClientUpgradeResponse response)

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -27,11 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -39,7 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -53,7 +49,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
  */
 public class ConnectionManager extends ContainerLifeCycle
 {
-    private class PhysicalConnect extends ConnectPromise implements Callable<Session>
+    private class PhysicalConnect extends ConnectPromise
     {
         private SocketAddress bindAddress;
 
@@ -64,31 +60,37 @@ public class ConnectionManager extends ContainerLifeCycle
         }
 
         @Override
-        public Session call() throws Exception
+        public void run()
         {
-            SocketChannel channel = SocketChannel.open();
-            if (bindAddress != null)
+            try
             {
-                channel.bind(bindAddress);
+                SocketChannel channel = SocketChannel.open();
+                if (bindAddress != null)
+                {
+                    channel.bind(bindAddress);
+                }
+
+                URI wsUri = getRequest().getRequestURI();
+
+                channel.socket().setTcpNoDelay(true); // disable nagle
+                channel.configureBlocking(false); // async always
+
+                InetSocketAddress address = toSocketAddress(wsUri);
+                int timeout = getRequest().getConnectTimeout();
+                LOG.debug("Connect to {} (timeout: {})",address,timeout);
+
+                getSelector().setConnectTimeout(timeout);
+                channel.connect(address);
+                getSelector().connect(channel,this);
             }
-
-            URI wsUri = getRequest().getRequestURI();
-
-            channel.socket().setTcpNoDelay(true); // disable nagle
-            channel.configureBlocking(false); // async always
-
-            InetSocketAddress address = toSocketAddress(wsUri);
-            LOG.debug("Connect to {}",address);
-
-            channel.connect(address);
-            getSelector().connect(channel,this);
-
-            int connectTimeout = getRequest().getConnectTimeout();
-            return getDriver().awaitActiveSession(connectTimeout,TimeUnit.MILLISECONDS);
+            catch (Throwable t)
+            {
+                failed(t);
+            }
         }
     }
 
-    private class VirtualConnect extends ConnectPromise implements Callable<Session>
+    private class VirtualConnect extends ConnectPromise
     {
         public VirtualConnect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
         {
@@ -96,10 +98,9 @@ public class ConnectionManager extends ContainerLifeCycle
         }
 
         @Override
-        public Session call() throws Exception
+        public void run()
         {
-            // TODO Auto-generated method stub
-            throw new ConnectException("MUX Not yet supported");
+            failed(new UpgradeException("MUX Not yet supported"));
         }
     }
 
@@ -170,17 +171,17 @@ public class ConnectionManager extends ContainerLifeCycle
         }
     }
 
-    public FutureTask<Session> connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+    public ConnectPromise connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
     {
         URI toUri = request.getRequestURI();
         String hostname = toUri.getHost();
 
         if (isVirtualConnectionPossibleTo(hostname))
         {
-            return new FutureTask<Session>(new VirtualConnect(client,driver,request));
+            return new VirtualConnect(client,driver,request);
         }
 
-        return new FutureTask<Session>(new PhysicalConnect(client,driver,request));
+        return new PhysicalConnect(client,driver,request);
     }
 
     @Override

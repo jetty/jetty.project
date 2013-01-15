@@ -71,6 +71,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;
+    private UpgradeRequest upgradeRequest;
+    private UpgradeResponse upgradeResponse;
 
     public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -249,15 +251,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public UpgradeRequest getUpgradeRequest()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return this.upgradeRequest;
     }
 
     @Override
     public UpgradeResponse getUpgradeResponse()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return this.upgradeResponse;
     }
 
     /**
@@ -384,6 +384,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void setTimeout(long seconds)
     {
         this.timeout = seconds;
+    }
+
+    public void setUpgradeRequest(UpgradeRequest request)
+    {
+        this.upgradeRequest = request;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse response)
+    {
+        this.upgradeResponse = response;
     }
 
     @Override

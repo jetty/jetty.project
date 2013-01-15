@@ -25,11 +25,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -42,15 +39,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
@@ -70,21 +66,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private Executor executor;
     private Scheduler scheduler;
     private CookieStore cookieStore;
-    /** @deprecated move into connection manager */
-    @Deprecated
-    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private ConnectionManager connectionManager;
-
-    /**
-     * The abstract WebSocketConnection in use and established for this client.
-     * <p>
-     * Note: this is intentionally kept neutral, as WebSocketClient must be able to handle connections that are either physical (a socket connection) or virtual
-     * (eg: a mux connection).
-     * 
-     * @deprecated move to connection/session specific place
-     */
-    @Deprecated
-    private WebSocketConnection connection;
     private Masker masker;
     private SocketAddress bindAddress;
 
@@ -152,13 +134,13 @@ public class WebSocketClient extends ContainerLifeCycle
         EventDriver driver = eventDriverFactory.wrap(websocket);
 
         // Create the appropriate (physical vs virtual) connection task
-        FutureTask<Session> connectTask = manager.connect(this,driver,request);
+        ConnectPromise promise = manager.connect(this,driver,request);
 
         // Execute the connection on the executor thread
-        executor.execute(connectTask);
+        executor.execute(promise);
 
         // Return the future
-        return connectTask;
+        return promise;
     }
 
     @Override
@@ -231,11 +213,6 @@ public class WebSocketClient extends ContainerLifeCycle
         return bufferPool;
     }
 
-    public WebSocketConnection getConnection()
-    {
-        return this.connection;
-    }
-
     public ConnectionManager getConnectionManager()
     {
         return connectionManager;
@@ -293,22 +270,6 @@ public class WebSocketClient extends ContainerLifeCycle
         }
         LOG.debug("extensions={}",extensions);
         return extensions;
-    }
-
-    public boolean sessionClosed(WebSocketSession session)
-    {
-        return isRunning() && sessions.remove(session);
-    }
-
-    public boolean sessionOpened(WebSocketSession session)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Session Opened: {}",session);
-        }
-        boolean ret = sessions.offer(session);
-        session.open();
-        return ret;
     }
 
     public void setBindAdddress(SocketAddress bindAddress)

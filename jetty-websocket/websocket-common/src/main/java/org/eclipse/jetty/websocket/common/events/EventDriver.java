@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.common.events;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -29,9 +27,7 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseException;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -49,7 +45,6 @@ public abstract class EventDriver implements IncomingFrames
     protected final Logger LOG;
     protected final WebSocketPolicy policy;
     protected final Object websocket;
-    protected final CountDownLatch sessionOpenLatch = new CountDownLatch(1);
     protected WebSocketSession session;
 
     public EventDriver(WebSocketPolicy policy, Object websocket)
@@ -57,16 +52,6 @@ public abstract class EventDriver implements IncomingFrames
         this.policy = policy;
         this.websocket = websocket;
         this.LOG = Log.getLogger(websocket.getClass());
-    }
-
-    public Session awaitActiveSession(int timeout, TimeUnit unit) throws InterruptedException, IOException
-    {
-        if (sessionOpenLatch.await(timeout,unit))
-        {
-            return this.session;
-        }
-        // TODO: determine if we should invalidate the session in this case?
-        throw new UpgradeException("Timed out");
     }
 
     public WebSocketPolicy getPolicy()
@@ -188,7 +173,6 @@ public abstract class EventDriver implements IncomingFrames
     {
         this.session = session;
         this.onConnect();
-        sessionOpenLatch.countDown();
     }
 
     protected void terminateConnection(int statusCode, String rawreason)

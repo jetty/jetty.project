@@ -57,10 +57,11 @@ public class ClientUpgradeRequest extends UpgradeRequest
         FORBIDDEN_HEADERS.add("pragma");
         FORBIDDEN_HEADERS.add("cache-control");
     }
+    private static final int DEFAULT_TIMEOUT = 1500;
 
     private final String key;
     private CookieStore cookieStore;
-    private int connectTimeout = 0;
+    private int connectTimeout = DEFAULT_TIMEOUT;
 
     public ClientUpgradeRequest()
     {
@@ -219,6 +220,10 @@ public class ClientUpgradeRequest extends UpgradeRequest
 
     public void setConnectTimeout(int connectTimeout)
     {
+        if (connectTimeout < 0)
+        {
+            throw new IllegalStateException("Connect Timeout cannot be negative");
+        }
         this.connectTimeout = connectTimeout;
     }
 

@@ -77,6 +77,7 @@ public class BadNetworkTest
         server.stop();
     }
 
+    @SuppressWarnings("resource")
     @Test
     public void testAbruptClientClose() throws Exception
     {

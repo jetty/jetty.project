@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnec
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -143,15 +142,19 @@ public class ClientConnectTest
             future.get(500,TimeUnit.MILLISECONDS);
             Assert.fail("Should have Timed Out");
         }
+        catch (ExecutionException e)
+        {
+            // Possible Passing Path (active session wait timeout)
+            wsocket.assertNotOpened();
+        }
         catch (TimeoutException e)
         {
-            // Expected Path
+            // Possible Passing Path (concurrency timeout)
             wsocket.assertNotOpened();
         }
     }
 
     @Test(expected = ConnectException.class)
-    @Ignore("Need to get information about connection issue out of SelectManager somehow")
     public void testConnectionRefused() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
@@ -174,7 +177,7 @@ public class ClientConnectTest
     }
 
     @Test(expected = TimeoutException.class)
-    public void testConnectionTimeout() throws Exception
+    public void testConnectionTimeout_Concurrent() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
 
@@ -191,6 +194,37 @@ public class ClientConnectTest
         {
             future.get(500,TimeUnit.MILLISECONDS);
             Assert.fail("Expected ExecutionException -> TimeoutException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testConnectionTimeout_Configured() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        int timeout = 500;
+
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setConnectTimeout(timeout);
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri,request);
+
+        ServerConnection ssocket = server.accept();
+        Assert.assertNotNull(ssocket);
+        // Intentionally don't upgrade
+        // ssocket.upgrade();
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(timeout * 3,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
         }
         catch (ExecutionException e)
         {
