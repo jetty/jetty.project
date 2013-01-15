@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -35,8 +36,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {
@@ -47,9 +48,16 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
     public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, WebSocketPolicy policy)
     {
-        super(executor, scheduler);
+        super(executor,scheduler);
         this.bufferPool = bufferPool;
         this.policy = policy;
+    }
+
+    @Override
+    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    {
+        ConnectPromise connect = (ConnectPromise)attachment;
+        connect.failed(ex);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -57,20 +65,15 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
-    public void setSslContextFactory(SslContextFactory sslContextFactory)
-    {
-        this.sslContextFactory = sslContextFactory;
-    }
-
     @Override
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
         LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
-        DefaultWebSocketClient client = (DefaultWebSocketClient)attachment;
+        ConnectPromise connectPromise = (ConnectPromise)attachment;
 
         try
         {
-            String scheme = client.getWebSocketUri().getScheme();
+            String scheme = connectPromise.getRequest().getRequestURI().getScheme();
 
             if ("wss".equalsIgnoreCase(scheme))
             {
@@ -82,24 +85,26 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     SslConnection sslConnection = new SslConnection(bufferPool,getExecutor(),endPoint,engine);
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
 
-                    Connection connection = newUpgradeConnection(channel,sslEndPoint,client);
+                    Connection connection = newUpgradeConnection(channel,sslEndPoint,connectPromise);
                     sslEndPoint.setConnection(connection);
                     connectionOpened(connection);
                     return sslConnection;
                 }
                 else
+                {
                     throw new IOException("Cannot init SSL");
+                }
             }
             else
             {
                 // Standard "ws://"
-                return newUpgradeConnection(channel,endPoint,client);
+                return newUpgradeConnection(channel,endPoint,connectPromise);
             }
         }
         catch (IOException e)
         {
             LOG.debug(e);
-            client.failed(e);
+            connectPromise.failed(e);
             // rethrow
             throw e;
         }
@@ -121,21 +126,16 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return engine;
     }
 
-    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, DefaultWebSocketClient client)
+    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, ConnectPromise connectPromise)
     {
-        WebSocketClientFactory factory = client.getFactory();
-        Executor executor = factory.getExecutor();
-        UpgradeConnection connection = new UpgradeConnection(endPoint,executor,client);
-
-        // track the client
-        factory.getConnectionManager().addClient(client);
+        WebSocketClient client = connectPromise.getClient();
+        Executor executor = client.getExecutor();
+        UpgradeConnection connection = new UpgradeConnection(endPoint,executor,connectPromise);
         return connection;
     }
 
-    @Override
-    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
-        DefaultWebSocketClient client = (DefaultWebSocketClient)attachment;
-        client.failed(ex);
+        this.sslContextFactory = sslContextFactory;
     }
 }

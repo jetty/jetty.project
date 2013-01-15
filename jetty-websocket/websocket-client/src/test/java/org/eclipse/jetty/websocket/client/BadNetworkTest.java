@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
@@ -47,14 +48,14 @@ public class BadNetworkTest
     public TestTracker tt = new TestTracker();
 
     private BlockheadServer server;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.getPolicy().setIdleTimeout(250);
-        factory.start();
+        client = new WebSocketClient();
+        client.getPolicy().setIdleTimeout(250);
+        client.start();
     }
 
     @Before
@@ -65,9 +66,9 @@ public class BadNetworkTest
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @After
@@ -80,10 +81,9 @@ public class BadNetworkTest
     public void testAbruptClientClose() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();
@@ -111,10 +111,9 @@ public class BadNetworkTest
     public void testAbruptServerClose() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();

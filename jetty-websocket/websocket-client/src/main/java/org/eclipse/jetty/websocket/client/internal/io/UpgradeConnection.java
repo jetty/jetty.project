@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
-import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -58,7 +58,7 @@ public class UpgradeConnection extends AbstractConnection
         @Override
         public void run()
         {
-            URI uri = client.getWebSocketUri();
+            URI uri = connectPromise.getRequest().getRequestURI();
             request.setRequestURI(uri);
             String rawRequest = request.generate();
 
@@ -78,24 +78,24 @@ public class UpgradeConnection extends AbstractConnection
 
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
-    private final DefaultWebSocketClient client;
+    private final ConnectPromise connectPromise;
     private final HttpResponseHeaderParser parser;
     private ClientUpgradeRequest request;
 
-    public UpgradeConnection(EndPoint endp, Executor executor, DefaultWebSocketClient client)
+    public UpgradeConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
     {
         super(endp,executor);
-        this.client = client;
-        this.bufferPool = client.getFactory().getBufferPool();
+        this.connectPromise = connectPromise;
+        this.bufferPool = connectPromise.getClient().getBufferPool();
         this.parser = new HttpResponseHeaderParser();
 
         try
         {
-            this.request = client.getUpgradeRequest();
+            this.request = connectPromise.getRequest();
         }
         catch (ClassCastException e)
         {
-            client.failed(new RuntimeException("Invalid Upgrade Request structure",e));
+            connectPromise.failed(new RuntimeException("Invalid Upgrade Request structure",e));
         }
     }
 
@@ -115,7 +115,7 @@ public class UpgradeConnection extends AbstractConnection
 
     private void notifyConnect(ClientUpgradeResponse response)
     {
-        client.succeeded(response);
+        connectPromise.setResponse(response);
     }
 
     @Override
@@ -181,7 +181,6 @@ public class UpgradeConnection extends AbstractConnection
                     if (resp != null)
                     {
                         // Got a response!
-                        client.setUpgradeResponse(resp);
                         validateResponse(resp);
                         notifyConnect(resp);
                         upgradeConnection(resp);
@@ -192,13 +191,13 @@ public class UpgradeConnection extends AbstractConnection
         }
         catch (IOException e)
         {
-            client.failed(e);
+            connectPromise.failed(e);
             disconnect(false);
             return false;
         }
         catch (UpgradeException e)
         {
-            client.failed(e);
+            connectPromise.failed(e);
             disconnect(false);
             return false;
         }
@@ -208,11 +207,11 @@ public class UpgradeConnection extends AbstractConnection
     {
         EndPoint endp = getEndPoint();
         Executor executor = getExecutor();
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,client);
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,connectPromise);
 
         // Initialize / Negotiate Extensions
-        EventDriver websocket = client.getWebSocket();
-        WebSocketPolicy policy = client.getPolicy();
+        EventDriver websocket = connectPromise.getDriver();
+        WebSocketPolicy policy = connectPromise.getClient().getPolicy();
         String acceptedSubProtocol = response.getAcceptedSubProtocol();
 
         WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,connection);
@@ -220,7 +219,7 @@ public class UpgradeConnection extends AbstractConnection
         session.setNegotiatedSubprotocol(acceptedSubProtocol);
 
         connection.setSession(session);
-        List<Extension> extensions = client.getFactory().initExtensions(response.getExtensions());
+        List<Extension> extensions = connectPromise.getClient().initExtensions(response.getExtensions());
 
         // Start with default routing.
         IncomingFrames incoming = session;

@@ -29,8 +29,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 
 /**
  * Example of a simple Echo Client.
@@ -99,16 +99,17 @@ public class SimpleEchoClient
             destUri = args[0];
         }
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = new WebSocketClient();
         SimpleEchoSocket socket = new SimpleEchoSocket();
         try
         {
-            factory.start();
-            WebSocketClient client = factory.newWebSocketClient(socket);
+            client.start();
+
             URI echoUri = new URI(destUri);
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.addExtensions("x-webkit-deflate-frame");
+            client.connect(socket,echoUri,request);
             System.out.printf("Connecting to : %s%n",echoUri);
-            client.getUpgradeRequest().addExtensions("x-webkit-deflate-frame");
-            client.connect(echoUri);
 
             // wait for closed socket connection.
             socket.awaitClose(5,TimeUnit.SECONDS);
@@ -121,7 +122,7 @@ public class SimpleEchoClient
         {
             try
             {
-                factory.stop();
+                client.stop();
             }
             catch (Exception e)
             {

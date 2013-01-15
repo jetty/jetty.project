@@ -46,6 +46,8 @@ public interface Session
 
     /**
      * Return the list of extensions currently in use for this conversation.
+     * <p>
+     * Convenience method for <code>.getUpgradeResponse().getExtensions()</code>
      * 
      * @return the negotiated extensions
      */
@@ -53,6 +55,8 @@ public interface Session
 
     /**
      * Return the sub protocol agreed during the websocket handshake for this conversation.
+     * <p>
+     * Convenience method for <code>.getUpgradeResponse().getAcceptedSubProtocol()</code>
      * 
      * @return the negotiated subprotocol
      */
@@ -68,6 +72,8 @@ public interface Session
 
     /**
      * Return the query string associated with the request this session was opened under.
+     * <p>
+     * Convenience method for <code>.getUpgradeRequest().getRequestURI().getQuery()</code>
      */
     String getQueryString();
 
@@ -82,6 +88,8 @@ public interface Session
      * Return the URI that this session was opened under.
      * <p>
      * Note, this is different than the servlet-api getRequestURI, as this will return the query portion as well.
+     * <p>
+     * Convenience method for <code>.getUpgradeRequest().getRequestURI()</code>
      * 
      * @return the request URI.
      */
@@ -94,6 +102,20 @@ public interface Session
      * @return the timeout in milliseconds.
      */
     long getTimeout();
+
+    /**
+     * Get the UpgradeRequest used to create this session
+     * 
+     * @return the UpgradeRequest used to create this session
+     */
+    UpgradeRequest getUpgradeRequest();
+
+    /**
+     * Get the UpgradeResponse used to create this session
+     * 
+     * @return the UpgradeResponse used to create this session
+     */
+    UpgradeResponse getUpgradeResponse();
 
     /**
      * Return true if and only if the underlying socket is open.

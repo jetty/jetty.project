@@ -19,30 +19,315 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
+import java.net.CookieStore;
+import java.net.SocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.client.masks.RandomMasker;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 
-public interface WebSocketClient
+/**
+ * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
+ */
+public class WebSocketClient extends ContainerLifeCycle
 {
-    public Future<ClientUpgradeResponse> connect(URI websocketUri) throws IOException;
+    private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
-    public WebSocketClientFactory getFactory();
+    private final WebSocketPolicy policy;
+    private final SslContextFactory sslContextFactory;
+    private final WebSocketExtensionFactory extensionRegistry;
+    private final EventDriverFactory eventDriverFactory;
+    private ByteBufferPool bufferPool;
+    private Executor executor;
+    private Scheduler scheduler;
+    private CookieStore cookieStore;
+    /** @deprecated move into connection manager */
+    @Deprecated
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
+    private ConnectionManager connectionManager;
 
-    public Masker getMasker();
+    /**
+     * The abstract WebSocketConnection in use and established for this client.
+     * <p>
+     * Note: this is intentionally kept neutral, as WebSocketClient must be able to handle connections that are either physical (a socket connection) or virtual
+     * (eg: a mux connection).
+     * 
+     * @deprecated move to connection/session specific place
+     */
+    @Deprecated
+    private WebSocketConnection connection;
+    private Masker masker;
+    private SocketAddress bindAddress;
 
-    public WebSocketPolicy getPolicy();
+    public WebSocketClient()
+    {
+        this(null);
+    }
 
-    public ClientUpgradeRequest getUpgradeRequest();
+    public WebSocketClient(SslContextFactory sslContextFactory)
+    {
+        this.sslContextFactory = sslContextFactory;
+        this.policy = WebSocketPolicy.newClientPolicy();
+        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
+        this.masker = new RandomMasker();
+        this.eventDriverFactory = new EventDriverFactory(policy);
+    }
 
-    public ClientUpgradeResponse getUpgradeResponse();
+    public Future<Session> connect(Object websocket, URI toUri) throws IOException
+    {
+        ClientUpgradeRequest request = new ClientUpgradeRequest(toUri);
+        request.setRequestURI(toUri);
+        request.setCookieStore(this.cookieStore);
 
-    public EventDriver getWebSocket();
+        return connect(websocket,toUri,request);
+    }
 
-    public URI getWebSocketUri();
+    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
+    {
+        if (!isStarted())
+        {
+            throw new IllegalStateException(WebSocketClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
+        }
 
-    public void setMasker(Masker masker);
+        // Validate websocket URI
+        if (!toUri.isAbsolute())
+        {
+            throw new IllegalArgumentException("WebSocket URI must be absolute");
+        }
+
+        if (StringUtil.isBlank(toUri.getScheme()))
+        {
+            throw new IllegalArgumentException("WebSocket URI must include a scheme");
+        }
+
+        String scheme = toUri.getScheme().toLowerCase(Locale.ENGLISH);
+        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
+        {
+            throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
+        }
+
+        request.setRequestURI(toUri);
+        if (request.getCookieStore() == null)
+        {
+            request.setCookieStore(this.cookieStore);
+        }
+
+        // Validate websocket URI
+        LOG.debug("connect websocket:{} to:{}",websocket,toUri);
+
+        // Grab Connection Manager
+        ConnectionManager manager = getConnectionManager();
+
+        // Setup Driver for user provided websocket
+        EventDriver driver = eventDriverFactory.wrap(websocket);
+
+        // Create the appropriate (physical vs virtual) connection task
+        FutureTask<Session> connectTask = manager.connect(this,driver,request);
+
+        // Execute the connection on the executor thread
+        executor.execute(connectTask);
+
+        // Return the future
+        return connectTask;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        LOG.debug("Starting {}",this);
+
+        if (sslContextFactory != null)
+        {
+            addBean(sslContextFactory);
+        }
+
+        String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setName(name);
+            executor = threadPool;
+        }
+        addBean(executor);
+
+        if (bufferPool == null)
+        {
+            bufferPool = new MappedByteBufferPool();
+        }
+        addBean(bufferPool);
+
+        if (scheduler == null)
+        {
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",false);
+        }
+        addBean(scheduler);
+
+        if (cookieStore == null)
+        {
+            cookieStore = new EmptyCookieStore();
+        }
+
+        this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
+        addBean(this.connectionManager);
+
+        super.doStart();
+
+        LOG.info("Started {}",this);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        LOG.debug("Stopping {}",this);
+
+        if (cookieStore != null)
+        {
+            cookieStore.removeAll();
+            cookieStore = null;
+        }
+
+        super.doStop();
+        LOG.info("Stopped {}",this);
+    }
+
+    public SocketAddress getBindAddress()
+    {
+        return bindAddress;
+    }
+
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public WebSocketConnection getConnection()
+    {
+        return this.connection;
+    }
+
+    public ConnectionManager getConnectionManager()
+    {
+        return connectionManager;
+    }
+
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public ExtensionFactory getExtensionFactory()
+    {
+        return extensionRegistry;
+    }
+
+    public Masker getMasker()
+    {
+        return masker;
+    }
+
+    public WebSocketPolicy getPolicy()
+    {
+        return this.policy;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    /**
+     * @return the {@link SslContextFactory} that manages TLS encryption
+     * @see WebSocketClient(SslContextFactory)
+     */
+    public SslContextFactory getSslContextFactory()
+    {
+        return sslContextFactory;
+    }
+
+    public List<Extension> initExtensions(List<ExtensionConfig> requested)
+    {
+        List<Extension> extensions = new ArrayList<Extension>();
+
+        for (ExtensionConfig cfg : requested)
+        {
+            Extension extension = extensionRegistry.newInstance(cfg);
+
+            if (extension == null)
+            {
+                continue;
+            }
+
+            LOG.debug("added {}",extension);
+            extensions.add(extension);
+        }
+        LOG.debug("extensions={}",extensions);
+        return extensions;
+    }
+
+    public boolean sessionClosed(WebSocketSession session)
+    {
+        return isRunning() && sessions.remove(session);
+    }
+
+    public boolean sessionOpened(WebSocketSession session)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Session Opened: {}",session);
+        }
+        boolean ret = sessions.offer(session);
+        session.open();
+        return ret;
+    }
+
+    public void setBindAdddress(SocketAddress bindAddress)
+    {
+        this.bindAddress = bindAddress;
+    }
+
+    public void setBufferPool(ByteBufferPool bufferPool)
+    {
+        this.bufferPool = bufferPool;
+    }
+
+    public void setExecutor(Executor executor)
+    {
+        this.executor = executor;
+    }
+
+    public void setMasker(Masker masker)
+    {
+        this.masker = masker;
+    }
 }

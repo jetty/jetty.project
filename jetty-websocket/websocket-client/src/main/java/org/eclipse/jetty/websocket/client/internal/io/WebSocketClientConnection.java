@@ -28,8 +28,8 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.client.internal.DefaultWebSocketClient;
+import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
+import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
@@ -40,24 +40,17 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientConnection.class);
-    private final WebSocketClientFactory factory;
-    private final DefaultWebSocketClient client;
+    private final ConnectPromise connectPromise;
     private final Masker masker;
     private boolean connected;
 
-    public WebSocketClientConnection(EndPoint endp, Executor executor, DefaultWebSocketClient client)
+    public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
     {
-        super(endp,executor,client.getFactory().getScheduler(),client.getPolicy(),client.getFactory().getBufferPool());
-        this.client = client;
-        this.factory = client.getFactory();
+        super(endp,executor,connectPromise.getClient().getScheduler(),connectPromise.getClient().getPolicy(),connectPromise.getClient().getBufferPool());
+        this.connectPromise = connectPromise;
         this.connected = false;
-        this.masker = client.getMasker();
+        this.masker = connectPromise.getMasker();
         assert (this.masker != null);
-    }
-
-    public DefaultWebSocketClient getClient()
-    {
-        return client;
     }
 
     @Override
@@ -76,7 +69,8 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     public void onClose()
     {
         super.onClose();
-        factory.sessionClosed(getSession());
+        ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
+        connectionManager.removeSession(getSession());
     }
 
     @Override
@@ -84,7 +78,8 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         if (!connected)
         {
-            factory.sessionOpened(getSession());
+            ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
+            connectionManager.addSession(getSession());
             connected = true;
         }
         super.onOpen();

@@ -41,6 +41,8 @@ import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -244,6 +246,20 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return timeout;
     }
 
+    @Override
+    public UpgradeRequest getUpgradeRequest()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public UpgradeResponse getUpgradeResponse()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * Incoming Errors from Parser
      */
@@ -310,8 +326,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.active = true;
 
         // Open WebSocket
-        websocket.setSession(this);
-        websocket.onConnect();
+        websocket.openSession(this);
 
         if (LOG.isDebugEnabled())
         {

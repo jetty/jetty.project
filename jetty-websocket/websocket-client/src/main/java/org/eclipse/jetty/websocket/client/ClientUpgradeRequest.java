@@ -60,6 +60,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
 
     private final String key;
     private CookieStore cookieStore;
+    private int connectTimeout = 0;
 
     public ClientUpgradeRequest()
     {
@@ -67,7 +68,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         this.key = genRandomKey();
     }
 
-    public ClientUpgradeRequest(URI requestURI)
+    protected ClientUpgradeRequest(URI requestURI)
     {
         super(requestURI);
         this.key = genRandomKey();
@@ -182,22 +183,28 @@ public class ClientUpgradeRequest extends UpgradeRequest
         request.append("\r\n");
         return request.toString();
     }
-    
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        if(cookieStore != null) {
-            return cookieStore.get(getRequestURI());
-        }
-        
-        return super.getCookies();
-    }
 
     private final String genRandomKey()
     {
         byte[] bytes = new byte[16];
         new Random().nextBytes(bytes);
         return new String(B64Code.encode(bytes));
+    }
+
+    public int getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        if (cookieStore != null)
+        {
+            return cookieStore.get(getRequestURI());
+        }
+
+        return super.getCookies();
     }
 
     public CookieStore getCookieStore()
@@ -208,6 +215,11 @@ public class ClientUpgradeRequest extends UpgradeRequest
     public String getKey()
     {
         return key;
+    }
+
+    public void setConnectTimeout(int connectTimeout)
+    {
+        this.connectTimeout = connectTimeout;
     }
 
     public void setCookieStore(CookieStore cookieStore)

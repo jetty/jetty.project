@@ -59,7 +59,7 @@ public class WebSocketClientBadUriTest
     @Rule
     public TestTracker tt = new TestTracker();
 
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
     private final String uriStr;
     private final URI uri;
 
@@ -70,27 +70,26 @@ public class WebSocketClientBadUriTest
     }
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.start();
+        client = new WebSocketClient();
+        client.start();
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @Test
     public void testBadURI() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         try
         {
-            client.connect(uri); // should toss exception
+            client.connect(wsocket,uri); // should toss exception
 
             Assert.fail("Expected IllegalArgumentException");
         }

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
@@ -46,13 +47,13 @@ public class ClientConnectTest
     public TestTracker tt = new TestTracker();
 
     private BlockheadServer server;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.start();
+        client = new WebSocketClient();
+        client.start();
     }
 
     @Before
@@ -63,9 +64,9 @@ public class ClientConnectTest
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @After
@@ -78,10 +79,9 @@ public class ClientConnectTest
     public void testBadHandshake() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -105,10 +105,9 @@ public class ClientConnectTest
     public void testBadUpgrade() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -132,10 +131,9 @@ public class ClientConnectTest
     public void testConnectionNotAccepted() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         // Intentionally not accept incoming socket.
         // server.accept();
@@ -157,11 +155,10 @@ public class ClientConnectTest
     public void testConnectionRefused() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         // Intentionally bad port
         URI wsUri = new URI("ws://127.0.0.1:1");
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         // The attempt to get upgrade response future should throw error
         try
@@ -180,10 +177,9 @@ public class ClientConnectTest
     public void testConnectionTimeout() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection ssocket = server.accept();
         Assert.assertNotNull(ssocket);

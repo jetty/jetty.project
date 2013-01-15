@@ -26,8 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -41,13 +40,13 @@ import org.junit.runner.RunWith;
 public class WebSocketClientTest
 {
     private BlockheadServer server;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.start();
+        client = new WebSocketClient();
+        client.start();
     }
 
     @Before
@@ -58,9 +57,9 @@ public class WebSocketClientTest
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @After
@@ -74,25 +73,24 @@ public class WebSocketClientTest
     {
         TrackingSocket cliSock = new TrackingSocket();
 
-        WebSocketClient client = factory.newWebSocketClient(cliSock);
         client.getPolicy().setIdleTimeout(10000);
 
         URI wsUri = server.getWsUri();
-        UpgradeRequest request = client.getUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(cliSock,wsUri,request);
 
         final ServerConnection srvSock = server.accept();
         srvSock.upgrade();
 
-        UpgradeResponse resp = future.get(500,TimeUnit.MILLISECONDS);
-        Assert.assertThat("Response",resp,notNullValue());
-        Assert.assertThat("Response.success",resp.isSuccess(),is(true));
+        Session sess = future.get(500,TimeUnit.MILLISECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.active",sess.isActive(),is(true));
 
         cliSock.assertWasOpened();
         cliSock.assertNotClosed();
 
-        Assert.assertThat("Factory.sockets.size",factory.getConnectionManager().getClients().size(),is(1));
+        Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
         cliSock.getConnection().write("Hello World!");
         srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
@@ -106,17 +104,16 @@ public class WebSocketClientTest
     public void testBasicEcho_FromServer() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
-        Future<ClientUpgradeResponse> future = client.connect(server.getWsUri());
+        Future<Session> future = client.connect(wsocket,server.getWsUri());
 
         // Server
         final ServerConnection srvSock = server.accept();
         srvSock.upgrade();
 
         // Validate connect
-        UpgradeResponse resp = future.get(500,TimeUnit.MILLISECONDS);
-        Assert.assertThat("Response",resp,notNullValue());
-        Assert.assertThat("Response.success",resp.isSuccess(),is(true));
+        Session sess = future.get(500,TimeUnit.MILLISECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.active",sess.isActive(),is(true));
 
         // Have server send initial message
         srvSock.write(WebSocketFrame.text("Hello World"));
@@ -132,15 +129,14 @@ public class WebSocketClientTest
     @Test
     public void testLocalRemoteAddress() throws Exception
     {
-        WebSocketClientFactory fact = new WebSocketClientFactory();
+        WebSocketClient fact = new WebSocketClient();
         fact.start();
         try
         {
             TrackingSocket wsocket = new TrackingSocket();
-            WebSocketClient client = fact.newWebSocketClient(wsocket);
 
             URI wsUri = server.getWsUri();
-            Future<ClientUpgradeResponse> future = client.connect(wsUri);
+            Future<Session> future = client.connect(wsocket,wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();
@@ -171,17 +167,16 @@ public class WebSocketClientTest
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
-        WebSocketClientFactory factSmall = new WebSocketClientFactory();
+        WebSocketClient factSmall = new WebSocketClient();
         factSmall.start();
         try
         {
             int bufferSize = 512;
 
             TrackingSocket wsocket = new TrackingSocket();
-            WebSocketClient client = factSmall.newWebSocketClient(wsocket);
 
             URI wsUri = server.getWsUri();
-            Future<ClientUpgradeResponse> future = client.connect(wsUri);
+            Future<Session> future = client.connect(wsocket,wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
-import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -27,9 +27,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -37,10 +39,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.internal.io.WebSocketClientSelectorManager;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * Internal Connection/Client Manager used to track active clients, their physical vs virtual connection information, and provide some means to create new
@@ -48,6 +53,56 @@ import org.eclipse.jetty.websocket.client.internal.io.WebSocketClientSelectorMan
  */
 public class ConnectionManager extends ContainerLifeCycle
 {
+    private class PhysicalConnect extends ConnectPromise implements Callable<Session>
+    {
+        private SocketAddress bindAddress;
+
+        public PhysicalConnect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+        {
+            super(client,driver,request);
+            this.bindAddress = client.getBindAddress();
+        }
+
+        @Override
+        public Session call() throws Exception
+        {
+            SocketChannel channel = SocketChannel.open();
+            if (bindAddress != null)
+            {
+                channel.bind(bindAddress);
+            }
+
+            URI wsUri = getRequest().getRequestURI();
+
+            channel.socket().setTcpNoDelay(true); // disable nagle
+            channel.configureBlocking(false); // async always
+
+            InetSocketAddress address = toSocketAddress(wsUri);
+            LOG.debug("Connect to {}",address);
+
+            channel.connect(address);
+            getSelector().connect(channel,this);
+
+            int connectTimeout = getRequest().getConnectTimeout();
+            return getDriver().awaitActiveSession(connectTimeout,TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private class VirtualConnect extends ConnectPromise implements Callable<Session>
+    {
+        public VirtualConnect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
+        {
+            super(client,driver,request);
+        }
+
+        @Override
+        public Session call() throws Exception
+        {
+            // TODO Auto-generated method stub
+            throw new ConnectException("MUX Not yet supported");
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(ConnectionManager.class);
 
     public static InetSocketAddress toSocketAddress(URI uri)
@@ -80,7 +135,8 @@ public class ConnectionManager extends ContainerLifeCycle
 
         return new InetSocketAddress(uri.getHost(),port);
     }
-    private final Queue<DefaultWebSocketClient> clients = new ConcurrentLinkedQueue<>();
+
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private final WebSocketClientSelectorManager selector;
 
     public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, WebSocketPolicy policy)
@@ -91,73 +147,68 @@ public class ConnectionManager extends ContainerLifeCycle
         addBean(selector);
     }
 
-    public void addClient(DefaultWebSocketClient client)
+    public void addSession(WebSocketSession session)
     {
-        clients.add(client);
+        sessions.add(session);
     }
 
     private void closeAllConnections()
     {
-        for (DefaultWebSocketClient client : clients)
+        for (WebSocketSession session : sessions)
         {
-            if (client.getConnection() != null)
+            if (session.getConnection() != null)
             {
                 try
                 {
-                    client.getConnection().close();
+                    session.getConnection().close();
                 }
-                catch (IOException e)
+                catch (Throwable t)
                 {
-                    LOG.debug("During Close All Connections",e);
+                    LOG.debug("During Close All Connections",t);
                 }
             }
         }
     }
 
-    public Future<ClientUpgradeResponse> connectPhysical(DefaultWebSocketClient client) throws IOException
+    public FutureTask<Session> connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
     {
-        SocketChannel channel = SocketChannel.open();
-        SocketAddress bindAddress = client.getFactory().getBindAddress();
-        if (bindAddress != null)
+        URI toUri = request.getRequestURI();
+        String hostname = toUri.getHost();
+
+        if (isVirtualConnectionPossibleTo(hostname))
         {
-            channel.bind(bindAddress);
+            return new FutureTask<Session>(new VirtualConnect(client,driver,request));
         }
 
-        URI wsUri = client.getWebSocketUri();
-
-        channel.socket().setTcpNoDelay(true); // disable nagle
-        channel.configureBlocking(false); // async allways
-
-        InetSocketAddress address = toSocketAddress(wsUri);
-        LOG.debug("Connect to {}",address);
-
-        channel.connect(address);
-        getSelector().connect(channel,client);
-
-        return client;
-    }
-
-    public Future<ClientUpgradeResponse> connectVirtual(WebSocketClient client)
-    {
-        // TODO Auto-generated method stub
-        return null;
+        return new FutureTask<Session>(new PhysicalConnect(client,driver,request));
     }
 
     @Override
     protected void doStop() throws Exception
     {
         closeAllConnections();
-        clients.clear();
+        sessions.clear();
         super.doStop();
-    }
-
-    public Collection<DefaultWebSocketClient> getClients()
-    {
-        return Collections.unmodifiableCollection(clients);
     }
 
     public WebSocketClientSelectorManager getSelector()
     {
         return selector;
+    }
+
+    public Collection<WebSocketSession> getSessions()
+    {
+        return Collections.unmodifiableCollection(sessions);
+    }
+
+    private boolean isVirtualConnectionPossibleTo(String hostname)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public void removeSession(WebSocketSession session)
+    {
+        sessions.remove(session);
     }
 }
