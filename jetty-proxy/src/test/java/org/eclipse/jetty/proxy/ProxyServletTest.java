@@ -774,6 +774,26 @@ public class ProxyServletTest
         Assert.assertArrayEquals(content, response.getContent());
     }
 
+    @Test(expected = TimeoutException.class)
+    public void shouldHandleWrongContentLength() throws Exception {
+        prepareProxy(new ProxyServlet());
+        prepareServer(new HttpServlet() {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+                byte[] message = "tooshort".getBytes("ascii");
+                resp.setContentType("text/plain;charset=ascii");
+                resp.setHeader("Content-Length", Long.toString(message.length+1));
+                resp.getOutputStream().write(message);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.fail();
+    }
+
     // TODO: test proxy authentication
 
     private static class EmptyHttpServlet extends HttpServlet
