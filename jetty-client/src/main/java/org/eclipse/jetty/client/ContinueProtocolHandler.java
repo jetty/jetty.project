@@ -56,7 +56,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
         return new ContinueListener();
     }
 
-    private class ContinueListener extends BufferingResponseListener
+    protected class ContinueListener extends BufferingResponseListener
     {
         @Override
         public void onSuccess(Response response)

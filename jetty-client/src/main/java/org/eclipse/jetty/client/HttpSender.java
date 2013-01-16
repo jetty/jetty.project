@@ -42,24 +42,65 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpSender
+public class HttpSender implements AsyncContentProvider.Listener
 {
     private static final Logger LOG = Log.getLogger(HttpSender.class);
     private static final String EXPECT_100_ATTRIBUTE = HttpSender.class.getName() + ".expect100";
 
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
+    private final AtomicReference<SendState> sendState = new AtomicReference<>(SendState.IDLE);
     private final HttpGenerator generator = new HttpGenerator();
     private final HttpConnection connection;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
     private Iterator<ByteBuffer> contentIterator;
-    private ContentInfo expectedContent;
+    private ContinueContentChunk continueContentChunk;
 
     public HttpSender(HttpConnection connection)
     {
         this.connection = connection;
         this.requestNotifier = new RequestNotifier(connection.getHttpClient());
         this.responseNotifier = new ResponseNotifier(connection.getHttpClient());
+    }
+
+    @Override
+    public void onContent(boolean last)
+    {
+        while (true)
+        {
+            SendState current = sendState.get();
+            switch (current)
+            {
+                case IDLE:
+                {
+                    if (updateSendState(current, SendState.EXECUTE))
+                    {
+                        LOG.debug("Deferred content available, sending");
+                        send();
+                        return;
+                    }
+                    break;
+                }
+                case EXECUTE:
+                {
+                    if (updateSendState(current, SendState.SCHEDULE))
+                    {
+                        LOG.debug("Deferred content available, scheduling");
+                        return;
+                    }
+                    break;
+                }
+                case SCHEDULE:
+                {
+                    LOG.debug("Deferred content available, queueing");
+                    return;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
     }
 
     public void send(HttpExchange exchange)
@@ -91,34 +132,24 @@ public class HttpSender
         {
             LOG.debug("Sending {}", request);
             requestNotifier.notifyBegin(request);
-            ContentProvider content = request.getContent();
-            this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
-            send();
-        }
-    }
 
-    public void proceed(boolean proceed)
-    {
-        ContentInfo contentInfo = expectedContent;
-        if (contentInfo != null)
-        {
-            if (proceed)
-            {
-                LOG.debug("Proceeding {}", connection.getExchange());
-                contentInfo.await();
-                send();
-            }
-            else
-            {
-                HttpExchange exchange = connection.getExchange();
-                if (exchange != null)
-                    fail(new HttpRequestException("Expectation failed", exchange.getRequest()));
-            }
+            ContentProvider content = request.getContent();
+            if (content instanceof AsyncContentProvider)
+                ((AsyncContentProvider)content).setListener(this);
+
+            this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
+
+            boolean updated = updateSendState(SendState.IDLE, SendState.EXECUTE);
+            assert updated;
+            send();
         }
     }
 
     private void send()
     {
+        SendState currentSendState = sendState.get();
+        assert currentSendState != SendState.IDLE : currentSendState;
+
         HttpClient client = connection.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         ByteBuffer header = null;
@@ -134,21 +165,21 @@ public class HttpSender
             HttpConversation conversation = exchange.getConversation();
             HttpGenerator.RequestInfo requestInfo = null;
 
-            boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-            expect100 &= conversation.getAttribute(EXPECT_100_ATTRIBUTE) == null;
-            if (expect100)
+            // Determine whether we have already received the 100 Continue response or not
+            // If it was not received yet, we need to save the content and wait for it
+            boolean expect100HeaderPresent = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+            final boolean expecting100ContinueResponse = expect100HeaderPresent && conversation.getAttribute(EXPECT_100_ATTRIBUTE) == null;
+            if (expecting100ContinueResponse)
                 conversation.setAttribute(EXPECT_100_ATTRIBUTE, Boolean.TRUE);
 
-            ContentInfo contentInfo = this.expectedContent;
-            this.expectedContent = null;
-            if (contentInfo == null)
-                contentInfo = new ContentInfo(contentIterator);
-            else
-                expect100 = false;
+            ContentChunk contentChunk = continueContentChunk;
+            continueContentChunk = null;
+            if (contentChunk == null)
+                contentChunk = new ContentChunk(contentIterator);
 
             while (true)
             {
-                HttpGenerator.Result result = generator.generateRequest(requestInfo, header, chunk, contentInfo.content, contentInfo.lastContent);
+                HttpGenerator.Result result = generator.generateRequest(requestInfo, header, chunk, contentChunk.content, contentChunk.lastContent);
                 switch (result)
                 {
                     case NEED_INFO:
@@ -172,17 +203,17 @@ public class HttpSender
                     {
                         out: while (true)
                         {
-                            State current = state.get();
-                            switch (current)
+                            State currentState = state.get();
+                            switch (currentState)
                             {
                                 case BEGIN:
                                 {
-                                    if (!updateState(current, State.SEND))
+                                    if (!updateState(currentState, State.HEADERS))
                                         continue;
                                     requestNotifier.notifyHeaders(request);
                                     break out;
                                 }
-                                case SEND:
+                                case HEADERS:
                                 case COMMIT:
                                 {
                                     // State update is performed after the write in commit()
@@ -211,15 +242,14 @@ public class HttpSender
                                 if (!commit(request))
                                     return;
 
-                                if (expectedContent == null)
-                                {
-                                    send();
-                                }
-                                else
+                                if (expecting100ContinueResponse)
                                 {
                                     LOG.debug("Expecting 100 Continue for {}", request);
-                                    expectedContent.ready();
+                                    continueContentChunk.signal();
+                                    return;
                                 }
+
+                                send();
                             }
 
                             @Override
@@ -229,13 +259,13 @@ public class HttpSender
                             }
                         };
 
-                        if (expect100)
+                        if (expecting100ContinueResponse)
                         {
-                            // Save the expected content waiting for the 100 Continue response
-                            expectedContent = contentInfo;
+                            // Save the content waiting for the 100 Continue response
+                            continueContentChunk = new ContinueContentChunk(contentChunk);
                         }
 
-                        write(callback, header, chunk, expect100 ? null : contentInfo.content);
+                        write(callback, header, chunk, expecting100ContinueResponse ? null : contentChunk.content);
 
                         if (callback.process())
                         {
@@ -248,16 +278,48 @@ public class HttpSender
                             if (!commit(request))
                                 return;
 
-                            if (expect100)
+                            if (expecting100ContinueResponse)
                             {
                                 LOG.debug("Expecting 100 Continue for {}", request);
-                                expectedContent.ready();
+                                continueContentChunk.signal();
                                 return;
                             }
-                            else
+
+                            // Send further content
+                            contentChunk = new ContentChunk(contentIterator);
+
+                            if (contentChunk.isDeferred())
                             {
-                                // Send further content
-                                contentInfo = new ContentInfo(contentIterator);
+                                out: while (true)
+                                {
+                                    currentSendState = sendState.get();
+                                    switch (currentSendState)
+                                    {
+                                        case EXECUTE:
+                                        {
+                                            if (updateSendState(currentSendState, SendState.IDLE))
+                                            {
+                                                LOG.debug("Waiting for deferred content for {}", request);
+                                                return;
+                                            }
+                                            break;
+                                        }
+                                        case SCHEDULE:
+                                        {
+                                            if (updateSendState(currentSendState, SendState.EXECUTE))
+                                            {
+                                                // TODO: reload the chunk ?
+                                                LOG.debug("??? content for {}", request);
+                                                break out;
+                                            }
+                                            break;
+                                        }
+                                        default:
+                                        {
+                                            throw new IllegalStateException();
+                                        }
+                                    }
+                                }
                             }
                         }
                         break;
@@ -275,7 +337,11 @@ public class HttpSender
                     case DONE:
                     {
                         if (generator.isEnd())
+                        {
+                            if (!updateSendState(SendState.EXECUTE, SendState.IDLE))
+                                throw new IllegalStateException();
                             success();
+                        }
                         return;
                     }
                     default:
@@ -293,6 +359,32 @@ public class HttpSender
         finally
         {
             releaseBuffers(bufferPool, header, chunk);
+        }
+    }
+
+    public void proceed(boolean proceed)
+    {
+        ContinueContentChunk contentChunk = continueContentChunk;
+        if (contentChunk != null)
+        {
+            if (proceed)
+            {
+                // Method send() must not be executed concurrently.
+                // The write in send() may arrive to the server and the server reply with 100 Continue
+                // before send() exits; the processing of the 100 Continue will invoke this method
+                // which in turn invokes send(), with the risk of a concurrent invocation of send().
+                // Therefore we wait here on the ContinueContentChunk to send, and send() will signal
+                // when it is ok to proceed.
+                LOG.debug("Proceeding {}", connection.getExchange());
+                contentChunk.await();
+                send();
+            }
+            else
+            {
+                HttpExchange exchange = connection.getExchange();
+                if (exchange != null)
+                    fail(new HttpRequestException("Expectation failed", exchange.getRequest()));
+            }
         }
     }
 
@@ -345,7 +437,7 @@ public class HttpSender
             State current = state.get();
             switch (current)
             {
-                case SEND:
+                case HEADERS:
                     if (!updateState(current, State.COMMIT))
                         continue;
                     LOG.debug("Committed {}", request);
@@ -426,7 +518,7 @@ public class HttpSender
         LOG.debug("Failed {} {}", request, failure);
 
         Result result = completion.getReference();
-        boolean notCommitted = current == State.IDLE || current == State.BEGIN || current == State.SEND;
+        boolean notCommitted = isBeforeCommit(current);
         if (result == null && notCommitted && request.getAbortCause() == null)
         {
             result = exchange.responseComplete(failure).getReference();
@@ -448,9 +540,14 @@ public class HttpSender
     public boolean abort(HttpExchange exchange, Throwable cause)
     {
         State current = state.get();
-        boolean abortable = current == State.IDLE || current == State.BEGIN || current == State.SEND ||
+        boolean abortable = isBeforeCommit(current) ||
                 current == State.COMMIT && contentIterator.hasNext();
         return abortable && fail(cause);
+    }
+
+    private boolean isBeforeCommit(State state)
+    {
+        return state == State.IDLE || state == State.BEGIN || state == State.HEADERS;
     }
 
     private void releaseBuffers(ByteBufferPool bufferPool, ByteBuffer header, ByteBuffer chunk)
@@ -469,9 +566,22 @@ public class HttpSender
         return updated;
     }
 
+    private boolean updateSendState(SendState from, SendState to)
+    {
+        boolean updated = sendState.compareAndSet(from, to);
+        if (!updated)
+            LOG.debug("Send state update failed: {} -> {}: {}", from, to, sendState.get());
+        return updated;
+    }
+
     private enum State
     {
-        IDLE, BEGIN, SEND, COMMIT, FAILURE
+        IDLE, BEGIN, HEADERS, COMMIT, FAILURE
+    }
+
+    private enum SendState
+    {
+        IDLE, EXECUTE, SCHEDULE
     }
 
     private static abstract class StatefulExecutorCallback implements Callback, Runnable
@@ -556,24 +666,44 @@ public class HttpSender
         }
     }
 
-    private class ContentInfo
+    private class ContentChunk
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
-        public final boolean lastContent;
-        public final ByteBuffer content;
+        private final boolean lastContent;
+        private final ByteBuffer content;
 
-        public ContentInfo(Iterator<ByteBuffer> contentIterator)
+        private ContentChunk(ContentChunk chunk)
+        {
+            lastContent = chunk.lastContent;
+            content = chunk.content;
+        }
+
+        private ContentChunk(Iterator<ByteBuffer> contentIterator)
         {
             lastContent = !contentIterator.hasNext();
             content = lastContent ? BufferUtil.EMPTY_BUFFER : contentIterator.next();
         }
 
-        public void ready()
+        private boolean isDeferred()
+        {
+            return content == null && !lastContent;
+        }
+    }
+
+    private class ContinueContentChunk extends ContentChunk
+    {
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        private ContinueContentChunk(ContentChunk chunk)
+        {
+            super(chunk);
+        }
+
+        private void signal()
         {
             latch.countDown();
         }
 
-        public void await()
+        private void await()
         {
             try
             {

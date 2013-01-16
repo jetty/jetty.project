@@ -22,13 +22,16 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -269,5 +272,43 @@ public class Usage
                 .send();
 
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testProxyUsage() throws Exception
+    {
+        // In proxies, we receive the headers but not the content, so we must be able to send the request with
+        // a lazy content provider that does not block request.send(...)
+
+        HttpClient client = new HttpClient();
+        client.start();
+
+        final AtomicBoolean sendContent = new AtomicBoolean(true);
+        DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
+        client.newRequest("localhost", 8080)
+                .content(async)
+                .send(new Response.Listener.Empty()
+                {
+                    @Override
+                    public void onBegin(Response response)
+                    {
+                        if (response.getStatus() == 404)
+                            sendContent.set(false);
+                    }
+                });
+
+        Thread.sleep(100);
+
+        if (sendContent.get())
+            async.offer(ByteBuffer.wrap(new byte[]{0}));
+
+        Thread.sleep(100);
+
+        if (sendContent.get())
+            async.offer(ByteBuffer.wrap(new byte[]{0}));
+
+        Thread.sleep(100);
+
+        async.close();
     }
 }

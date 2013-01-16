@@ -20,9 +20,11 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -450,5 +453,241 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         {
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
+    }
+
+    @Slow
+    @Test
+    public void test_Expect100Continue_WithDeferredContent_Respond100Continue() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Send 100-Continue and echo the content
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        final byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        DeferredContentProvider content = new DeferredContentProvider();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertArrayEquals(data, getContent());
+                        latch.countDown();
+                    }
+                });
+
+        Thread.sleep(1000);
+
+        content.offer(ByteBuffer.wrap(chunk1));
+
+        Thread.sleep(1000);
+
+        content.offer(ByteBuffer.wrap(chunk2));
+        content.close();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Slow
+    @Test
+    public void test_Expect100Continue_WithInitialAndDeferredContent_Respond100Continue() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Send 100-Continue and echo the content
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        final byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(chunk1));
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertArrayEquals(data, getContent());
+                        latch.countDown();
+                    }
+                });
+
+        Thread.sleep(1000);
+
+        content.offer(ByteBuffer.wrap(chunk2));
+        content.close();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test_Expect100Continue_WithConcurrentDeferredContent_Respond100Continue() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Send 100-Continue and echo the content
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        final DeferredContentProvider content = new DeferredContentProvider()
+        {
+            @Override
+            public Iterator<ByteBuffer> iterator()
+            {
+                final Iterator<ByteBuffer> delegate = super.iterator();
+                return new Iterator<ByteBuffer>()
+                {
+                    private int count;
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return delegate.hasNext();
+                    }
+
+                    @Override
+                    public ByteBuffer next()
+                    {
+                        // Fake that it returns null for two times,
+                        // to trigger particular branches in HttpSender
+                        if (++count <= 2)
+                            return null;
+                        return delegate.next();
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        delegate.remove();
+                    }
+                };
+            }
+        };
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .onRequestHeaders(new org.eclipse.jetty.client.api.Request.HeadersListener()
+                {
+                    @Override
+                    public void onHeaders(org.eclipse.jetty.client.api.Request request)
+                    {
+                        content.offer(ByteBuffer.wrap(data));
+                        content.close();
+                    }
+                })
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertArrayEquals(data, getContent());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test_Expect100Continue_WithInitialAndConcurrentDeferredContent_Respond100Continue() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Send 100-Continue and echo the content
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        final byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
+
+        final DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(chunk1));
+
+        List<ProtocolHandler> protocolHandlers = client.getProtocolHandlers();
+        for (Iterator<ProtocolHandler> iterator = protocolHandlers.iterator(); iterator.hasNext();)
+        {
+            ProtocolHandler protocolHandler = iterator.next();
+            if (protocolHandler instanceof ContinueProtocolHandler)
+                iterator.remove();
+        }
+        protocolHandlers.add(new ContinueProtocolHandler(client)
+        {
+            @Override
+            public Response.Listener getResponseListener()
+            {
+                return new ContinueListener()
+                {
+                    @Override
+                    public void onHeaders(Response response)
+                    {
+                        super.onHeaders(response);
+                        content.offer(ByteBuffer.wrap(chunk2));
+                        content.close();
+                    }
+                };
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertArrayEquals(data, getContent());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

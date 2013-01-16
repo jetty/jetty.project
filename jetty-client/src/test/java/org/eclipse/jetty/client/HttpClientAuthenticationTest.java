@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,6 +49,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
@@ -104,6 +104,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
+    @Ignore
     @Test
     public void test_DigestAuthentication() throws Exception
     {

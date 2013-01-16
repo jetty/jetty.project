@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.fail;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,12 +41,18 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {
@@ -324,5 +329,48 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         // Must not throw
         Assert.assertEquals(-1, input.read());
+    }
+
+    @Slow
+    @Test
+    public void testUploadWithDeferredContentProviderFromInputStream() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), new ByteArrayOutputStream());
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        try (DeferredContentProvider content = new DeferredContentProvider())
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .content(content)
+                    .send(new Response.CompleteListener()
+                    {
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                                latch.countDown();
+                        }
+                    });
+
+            Thread.sleep(1000);
+
+            try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
+            {
+                byte[] buffer = new byte[200];
+                int read;
+                while ((read = input.read(buffer)) >= 0)
+                    content.offer(ByteBuffer.wrap(buffer, 0, read));
+            }
+        }
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }
