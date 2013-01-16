@@ -580,7 +580,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
         StringWriter buf = new StringWriter(8192);
         IO.copy(input,buf,maxLength);
         
-        decodeTo(buf.getBuffer().toString(),map,ENCODING,maxKeys);
+        decodeTo(buf.getBuffer().toString(),map,StringUtil.__UTF16,maxKeys);
     }
     
     /* -------------------------------------------------------------- */

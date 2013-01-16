@@ -174,16 +174,16 @@ public class URLEncodedTest
     {
         String [][] charsets = new String[][]
         {
-           {StringUtil.__UTF8,null},
-           {StringUtil.__ISO_8859_1,StringUtil.__ISO_8859_1},
-           {StringUtil.__UTF8,StringUtil.__UTF8},
-           {StringUtil.__UTF16,StringUtil.__UTF16},
+           {StringUtil.__UTF8,null,"%30"},
+           {StringUtil.__ISO_8859_1,StringUtil.__ISO_8859_1,"%30"},
+           {StringUtil.__UTF8,StringUtil.__UTF8,"%30"},
+           {StringUtil.__UTF16,StringUtil.__UTF16,"%00%30"},
         };
         
 
         for (int i=0;i<charsets.length;i++)
         {
-            ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
+            ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+"+charsets[i][2]+"&name1=&name2&n\u00e3me3=value+3").getBytes(charsets[i][0]));
             MultiMap m = new MultiMap();
             UrlEncoded.decodeTo(in, m, charsets[i][1], -1,-1);
             System.err.println(m);
