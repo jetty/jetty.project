@@ -783,7 +783,8 @@ public class ProxyServletTest
     }
 
     @Test(expected = TimeoutException.class)
-    public void shouldHandleWrongContentLength() throws Exception {
+    public void shouldHandleWrongContentLength() throws Exception
+    {
         prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet() {
             @Override
