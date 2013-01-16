@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -400,6 +399,19 @@ public class HttpClient extends ContainerLifeCycle
         {
             // We have a new URI, so skip the host header if present
             if (HttpHeader.HOST == header.getHeader())
+                continue;
+
+            // Remove expectation headers
+            if (HttpHeader.EXPECT == header.getHeader())
+                continue;
+
+            // Remove cookies
+            if (HttpHeader.COOKIE == header.getHeader())
+                continue;
+
+            // Remove authorization headers
+            if (HttpHeader.AUTHORIZATION == header.getHeader() ||
+                    HttpHeader.PROXY_AUTHORIZATION == header.getHeader())
                 continue;
 
             newRequest.header(header.getName(), header.getValue());
