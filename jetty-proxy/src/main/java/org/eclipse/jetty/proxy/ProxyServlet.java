@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -246,6 +246,9 @@ public class ProxyServlet extends HttpServlet
         HttpClient client = newHttpClient();
         // Redirects must be proxied as is, not followed
         client.setFollowRedirects(false);
+
+        // Must not store cookies, otherwise cookies of different clients will mix
+        client.setCookieStore(new HttpCookieStore.Empty());
 
         String value = config.getInitParameter("maxThreads");
         if (value == null)
