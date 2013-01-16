@@ -45,6 +45,7 @@ public class ClientConnectTest
     @Rule
     public TestTracker tt = new TestTracker();
 
+    private final int timeout = 500;
     private BlockheadServer server;
     private WebSocketClient client;
 
@@ -52,6 +53,7 @@ public class ClientConnectTest
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
+        client.setConnectTimeout(timeout);
         client.start();
     }
 
@@ -194,37 +196,6 @@ public class ClientConnectTest
         {
             future.get(500,TimeUnit.MILLISECONDS);
             Assert.fail("Expected ExecutionException -> TimeoutException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path - throw underlying exception
-            FutureCallback.rethrow(e);
-        }
-    }
-
-    @Test(expected = UpgradeException.class)
-    public void testConnectionTimeout_Configured() throws Exception
-    {
-        TrackingSocket wsocket = new TrackingSocket();
-
-        int timeout = 500;
-
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setConnectTimeout(timeout);
-
-        URI wsUri = server.getWsUri();
-        Future<Session> future = client.connect(wsocket,wsUri,request);
-
-        ServerConnection ssocket = server.accept();
-        Assert.assertNotNull(ssocket);
-        // Intentionally don't upgrade
-        // ssocket.upgrade();
-
-        // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(timeout * 3,TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException -> UpgradeException");
         }
         catch (ExecutionException e)
         {

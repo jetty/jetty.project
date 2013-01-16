@@ -85,7 +85,9 @@ public class WebSocketClientTest
 
         Session sess = future.get(500,TimeUnit.MILLISECONDS);
         Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.active",sess.isActive(),is(true));
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
         cliSock.assertWasOpened();
         cliSock.assertNotClosed();
@@ -113,7 +115,9 @@ public class WebSocketClientTest
         // Validate connect
         Session sess = future.get(500,TimeUnit.MILLISECONDS);
         Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.active",sess.isActive(),is(true));
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
         // Have server send initial message
         srvSock.write(WebSocketFrame.text("Hello World"));

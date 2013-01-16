@@ -56,6 +56,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
+        LOG.info("Connection Failed",ex);
         ConnectPromise connect = (ConnectPromise)attachment;
         connect.failed(ex);
     }

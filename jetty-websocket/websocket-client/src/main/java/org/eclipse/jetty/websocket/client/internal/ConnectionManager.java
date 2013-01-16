@@ -27,16 +27,11 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.internal.io.WebSocketClientSelectorManager;
@@ -76,10 +71,7 @@ public class ConnectionManager extends ContainerLifeCycle
                 channel.configureBlocking(false); // async always
 
                 InetSocketAddress address = toSocketAddress(wsUri);
-                int timeout = getRequest().getConnectTimeout();
-                LOG.debug("Connect to {} (timeout: {})",address,timeout);
 
-                getSelector().setConnectTimeout(timeout);
                 channel.connect(address);
                 getSelector().connect(channel,this);
             }
@@ -138,14 +130,12 @@ public class ConnectionManager extends ContainerLifeCycle
     }
 
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
-    private final WebSocketClientSelectorManager selector;
+    private final WebSocketClient client;
+    private WebSocketClientSelectorManager selector;
 
-    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, WebSocketPolicy policy)
+    public ConnectionManager(WebSocketClient client)
     {
-        // TODO: configure connect timeout
-        selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
-        selector.setSslContextFactory(sslContextFactory);
-        addBean(selector);
+        this.client = client;
     }
 
     public void addSession(WebSocketSession session)
@@ -185,11 +175,23 @@ public class ConnectionManager extends ContainerLifeCycle
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        selector = new WebSocketClientSelectorManager(client.getBufferPool(),client.getExecutor(),client.getScheduler(),client.getPolicy());
+        selector.setSslContextFactory(client.getSslContextFactory());
+        selector.setConnectTimeout(client.getConnectTimeout());
+        addBean(selector);
+
+        super.doStart();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
         closeAllConnections();
         sessions.clear();
         super.doStop();
+        removeBean(selector);
     }
 
     public WebSocketClientSelectorManager getSelector()

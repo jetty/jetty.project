@@ -157,6 +157,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return extensionFactory;
     }
 
+    /**
+     * The idle timeout in seconds
+     */
+    @Override
+    public long getIdleTimeout()
+    {
+        return timeout;
+    }
+
     @ManagedAttribute(readonly = true)
     public IncomingFrames getIncomingHandler()
     {
@@ -239,15 +248,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return getNegotiatedSubprotocol();
     }
 
-    /**
-     * The timeout in seconds
-     */
-    @Override
-    public long getTimeout()
-    {
-        return timeout;
-    }
-
     @Override
     public UpgradeRequest getUpgradeRequest()
     {
@@ -290,15 +290,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public boolean isActive()
-    {
-        return active;
-    }
-
-    @Override
     public boolean isOpen()
     {
-        return isActive();
+        return active;
     }
 
     @Override
@@ -350,6 +344,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.extensionFactory = extensionFactory;
     }
 
+    /**
+     * Set the timeout in seconds
+     */
+    @Override
+    public void setIdleTimeout(long seconds)
+    {
+        this.timeout = seconds;
+    }
+
     @Override
     public void setMaximumMessageSize(long length)
     {
@@ -375,15 +378,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
-    }
-
-    /**
-     * Set the timeout in seconds
-     */
-    @Override
-    public void setTimeout(long seconds)
-    {
-        this.timeout = seconds;
     }
 
     public void setUpgradeRequest(UpgradeRequest request)

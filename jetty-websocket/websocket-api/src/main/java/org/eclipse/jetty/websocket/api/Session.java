@@ -38,6 +38,14 @@ public interface Session
     void close(CloseStatus closeStatus) throws IOException;
 
     /**
+     * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
+     * in that time.
+     * 
+     * @return the timeout in milliseconds.
+     */
+    long getIdleTimeout();
+
+    /**
      * The maximum total length of messages, text or binary, that this Session can handle.
      * 
      * @return the message size
@@ -51,6 +59,7 @@ public interface Session
      * 
      * @return the negotiated extensions
      */
+    @Deprecated
     List<String> getNegotiatedExtensions();
 
     /**
@@ -60,6 +69,7 @@ public interface Session
      * 
      * @return the negotiated subprotocol
      */
+    @Deprecated
     String getNegotiatedSubprotocol();
 
     /**
@@ -75,6 +85,7 @@ public interface Session
      * <p>
      * Convenience method for <code>.getUpgradeRequest().getRequestURI().getQuery()</code>
      */
+    @Deprecated
     String getQueryString();
 
     /**
@@ -93,15 +104,8 @@ public interface Session
      * 
      * @return the request URI.
      */
+    @Deprecated
     URI getRequestURI();
-
-    /**
-     * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
-     * in that time.
-     * 
-     * @return the timeout in milliseconds.
-     */
-    long getTimeout();
 
     /**
      * Get the UpgradeRequest used to create this session
@@ -120,9 +124,9 @@ public interface Session
     /**
      * Return true if and only if the underlying socket is open.
      * 
-     * @return whether the session is active
+     * @return whether the session is open
      */
-    abstract boolean isActive();
+    abstract boolean isOpen();
 
     /**
      * Return true if and only if the underlying socket is using a secure transport.
@@ -132,15 +136,15 @@ public interface Session
     boolean isSecure();
 
     /**
-     * Sets the maximum total length of messages, text or binary, that this Session can handle.
-     */
-    void setMaximumMessageSize(long length);
-
-    /**
      * Set the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received.
      * 
      * @param ms
      *            the number of milliseconds.
      */
-    void setTimeout(long ms);
+    void setIdleTimeout(long ms);
+
+    /**
+     * Sets the maximum total length of messages, text or binary, that this Session can handle.
+     */
+    void setMaximumMessageSize(long length);
 }

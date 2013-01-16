@@ -57,11 +57,8 @@ public class ClientUpgradeRequest extends UpgradeRequest
         FORBIDDEN_HEADERS.add("pragma");
         FORBIDDEN_HEADERS.add("cache-control");
     }
-    private static final int DEFAULT_TIMEOUT = 1500;
 
     private final String key;
-    private CookieStore cookieStore;
-    private int connectTimeout = DEFAULT_TIMEOUT;
 
     public ClientUpgradeRequest()
     {
@@ -192,43 +189,14 @@ public class ClientUpgradeRequest extends UpgradeRequest
         return new String(B64Code.encode(bytes));
     }
 
-    public int getConnectTimeout()
-    {
-        return connectTimeout;
-    }
-
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        if (cookieStore != null)
-        {
-            return cookieStore.get(getRequestURI());
-        }
-
-        return super.getCookies();
-    }
-
-    public CookieStore getCookieStore()
-    {
-        return cookieStore;
-    }
-
     public String getKey()
     {
         return key;
     }
 
-    public void setConnectTimeout(int connectTimeout)
+    public void setCookiesFrom(CookieStore cookieStore)
     {
-        if (connectTimeout < 0)
-        {
-            throw new IllegalStateException("Connect Timeout cannot be negative");
-        }
-        this.connectTimeout = connectTimeout;
-    }
+        // TODO Auto-generated method stub
 
-    public void setCookieStore(CookieStore cookieStore)
-    {
-        this.cookieStore = cookieStore;
     }
 }

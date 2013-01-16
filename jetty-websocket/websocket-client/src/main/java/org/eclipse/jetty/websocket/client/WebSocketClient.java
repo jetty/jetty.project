@@ -57,6 +57,7 @@ import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 public class WebSocketClient extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
+    private static final int DEFAULT_TIMEOUT = 1500;
 
     private final WebSocketPolicy policy;
     private final SslContextFactory sslContextFactory;
@@ -69,6 +70,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private ConnectionManager connectionManager;
     private Masker masker;
     private SocketAddress bindAddress;
+    private long connectTimeout = DEFAULT_TIMEOUT;
 
     public WebSocketClient()
     {
@@ -80,7 +82,6 @@ public class WebSocketClient extends ContainerLifeCycle
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
-        this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
     }
@@ -89,7 +90,7 @@ public class WebSocketClient extends ContainerLifeCycle
     {
         ClientUpgradeRequest request = new ClientUpgradeRequest(toUri);
         request.setRequestURI(toUri);
-        request.setCookieStore(this.cookieStore);
+        request.setCookiesFrom(this.cookieStore);
 
         return connect(websocket,toUri,request);
     }
@@ -119,10 +120,7 @@ public class WebSocketClient extends ContainerLifeCycle
         }
 
         request.setRequestURI(toUri);
-        if (request.getCookieStore() == null)
-        {
-            request.setCookieStore(this.cookieStore);
-        }
+        request.setCookiesFrom(this.cookieStore);
 
         // Validate websocket URI
         LOG.debug("connect websocket:{} to:{}",websocket,toUri);
@@ -180,7 +178,7 @@ public class WebSocketClient extends ContainerLifeCycle
             cookieStore = new EmptyCookieStore();
         }
 
-        this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
+        this.connectionManager = new ConnectionManager(this);
         addBean(this.connectionManager);
 
         super.doStart();
@@ -216,6 +214,16 @@ public class WebSocketClient extends ContainerLifeCycle
     public ConnectionManager getConnectionManager()
     {
         return connectionManager;
+    }
+
+    public long getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    public CookieStore getCookieStore()
+    {
+        return cookieStore;
     }
 
     public Executor getExecutor()
@@ -280,6 +288,25 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setBufferPool(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
+    }
+
+    public void setConnectTimeout(int connectTimeout)
+    {
+        if (isStarted())
+        {
+            throw new IllegalStateException("Cannot change connect timeout, WebSocketClient is already started");
+        }
+
+        if (connectTimeout < 0)
+        {
+            throw new IllegalStateException("Connect Timeout cannot be negative");
+        }
+        this.connectTimeout = connectTimeout;
+    }
+
+    public void setCookieStore(CookieStore cookieStore)
+    {
+        this.cookieStore = cookieStore;
     }
 
     public void setExecutor(Executor executor)

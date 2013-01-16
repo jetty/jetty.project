@@ -699,6 +699,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
             public Connect(SocketChannel channel, Object attachment)
             {
+                LOG.info("Connect({}, {})", channel, attachment);
                 this.channel = channel;
                 this.attachment = attachment;
                 this.timeout = scheduler.schedule(new ConnectTimeout(this), getConnectTimeout(), TimeUnit.MILLISECONDS);
@@ -730,12 +731,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
             private ConnectTimeout(Connect connect)
             {
+                LOG.info("Created");
                 this.connect = connect;
             }
 
             @Override
             public void run()
             {
+                LOG.info("In Run");
                 SocketChannel channel = connect.channel;
                 if (channel.isConnectionPending())
                 {
