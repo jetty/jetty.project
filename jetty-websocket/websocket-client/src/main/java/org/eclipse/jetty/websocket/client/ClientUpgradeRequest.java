@@ -196,7 +196,11 @@ public class ClientUpgradeRequest extends UpgradeRequest
 
     public void setCookiesFrom(CookieStore cookieStore)
     {
-        // TODO Auto-generated method stub
+        if (cookieStore == null)
+        {
+            return;
+        }
 
+        setCookies(cookieStore.get(getRequestURI()));
     }
 }
