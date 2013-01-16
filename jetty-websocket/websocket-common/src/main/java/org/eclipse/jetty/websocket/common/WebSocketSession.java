@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,9 +61,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private ExtensionFactory extensionFactory;
     private boolean active = false;
     private long maximumMessageSize;
-    private List<String> negotiatedExtensions = new ArrayList<>();
     private String protocolVersion;
-    private String negotiatedSubprotocol;
     private long timeout;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
@@ -184,18 +181,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return maximumMessageSize;
     }
 
-    @Override
-    public List<String> getNegotiatedExtensions()
-    {
-        return negotiatedExtensions;
-    }
-
-    @Override
-    public String getNegotiatedSubprotocol()
-    {
-        return negotiatedSubprotocol;
-    }
-
     @ManagedAttribute(readonly = true)
     public OutgoingFrames getOutgoingHandler()
     {
@@ -212,12 +197,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public String getProtocolVersion()
     {
         return protocolVersion;
-    }
-
-    @Override
-    public String getQueryString()
-    {
-        return getRequestURI().getQuery();
     }
 
     @Override
@@ -245,7 +224,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public String getSubProtocol()
     {
-        return getNegotiatedSubprotocol();
+        return upgradeResponse.getAcceptedSubProtocol();
     }
 
     @Override
@@ -357,17 +336,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void setMaximumMessageSize(long length)
     {
         this.maximumMessageSize = length;
-    }
-
-    public void setNegotiatedExtensions(List<String> negotiatedExtensions)
-    {
-        this.negotiatedExtensions.clear();
-        this.negotiatedExtensions.addAll(negotiatedExtensions);
-    }
-
-    public void setNegotiatedSubprotocol(String negotiatedSubprotocol)
-    {
-        this.negotiatedSubprotocol = negotiatedSubprotocol;
     }
 
     public void setOutgoingHandler(OutgoingFrames outgoing)

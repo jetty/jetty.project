@@ -159,9 +159,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      * 
      * @return list of negotiated extensions
      */
-    public List<String> getNegotiatedExtensions()
+    public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        List<String> ret = new ArrayList<>();
+        List<ExtensionConfig> ret = new ArrayList<>();
         if (extensions == null)
         {
             return ret;
@@ -169,7 +169,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
         for (Extension ext : extensions)
         {
-            ret.add(ext.getConfig().getParameterizedName());
+            ret.add(ext.getConfig());
         }
         return ret;
     }

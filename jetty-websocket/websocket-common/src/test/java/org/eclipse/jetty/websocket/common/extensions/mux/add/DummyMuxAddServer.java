@@ -79,7 +79,9 @@ public class DummyMuxAddServer implements MuxAddServer
 
         EventDriver websocket = this.eventDriverFactory.wrap(echo);
         WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,channel);
-        session.setNegotiatedSubprotocol("echo");
+        UpgradeResponse uresponse = new UpgradeResponse();
+        uresponse.setAcceptedSubProtocol("echo");
+        session.setUpgradeResponse(uresponse);
         channel.setSession(session);
         channel.setSubProtocol("echo");
         channel.onOpen();

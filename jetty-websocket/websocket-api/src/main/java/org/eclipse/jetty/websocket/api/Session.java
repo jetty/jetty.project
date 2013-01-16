@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.List;
 
 public interface Session
 {
@@ -53,26 +51,6 @@ public interface Session
     long getMaximumMessageSize();
 
     /**
-     * Return the list of extensions currently in use for this conversation.
-     * <p>
-     * Convenience method for <code>.getUpgradeResponse().getExtensions()</code>
-     * 
-     * @return the negotiated extensions
-     */
-    @Deprecated
-    List<String> getNegotiatedExtensions();
-
-    /**
-     * Return the sub protocol agreed during the websocket handshake for this conversation.
-     * <p>
-     * Convenience method for <code>.getUpgradeResponse().getAcceptedSubProtocol()</code>
-     * 
-     * @return the negotiated subprotocol
-     */
-    @Deprecated
-    String getNegotiatedSubprotocol();
-
-    /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
      * handshake. i.e. "13".
      * 
@@ -81,31 +59,11 @@ public interface Session
     String getProtocolVersion();
 
     /**
-     * Return the query string associated with the request this session was opened under.
-     * <p>
-     * Convenience method for <code>.getUpgradeRequest().getRequestURI().getQuery()</code>
-     */
-    @Deprecated
-    String getQueryString();
-
-    /**
      * Return a reference to the RemoteEndpoint object representing the other end of this conversation.
      * 
      * @return the remote endpoint
      */
     RemoteEndpoint getRemote();
-
-    /**
-     * Return the URI that this session was opened under.
-     * <p>
-     * Note, this is different than the servlet-api getRequestURI, as this will return the query portion as well.
-     * <p>
-     * Convenience method for <code>.getUpgradeRequest().getRequestURI()</code>
-     * 
-     * @return the request URI.
-     */
-    @Deprecated
-    URI getRequestURI();
 
     /**
      * Get the UpgradeRequest used to create this session

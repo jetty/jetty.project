@@ -401,13 +401,13 @@ public class BlockheadServer
                 // Respond to used extensions
                 resp.append("Sec-WebSocket-Extensions: ");
                 boolean delim = false;
-                for (String ext : extensionStack.getNegotiatedExtensions())
+                for (ExtensionConfig ext : extensionStack.getNegotiatedExtensions())
                 {
                     if (delim)
                     {
                         resp.append(", ");
                     }
-                    resp.append(ext);
+                    resp.append(ext.getParameterizedName());
                     delim = true;
                 }
                 resp.append("\r\n");

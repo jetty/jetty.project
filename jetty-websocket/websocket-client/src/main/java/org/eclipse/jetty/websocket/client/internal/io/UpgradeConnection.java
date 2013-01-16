@@ -36,15 +36,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 /**
  * This is the initial connection handling that exists immediately after physical connection is established to destination server.
@@ -212,51 +211,27 @@ public class UpgradeConnection extends AbstractConnection
         // Initialize / Negotiate Extensions
         EventDriver websocket = connectPromise.getDriver();
         WebSocketPolicy policy = connectPromise.getClient().getPolicy();
-        String acceptedSubProtocol = response.getAcceptedSubProtocol();
 
         WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,connection);
         session.setPolicy(policy);
-        session.setNegotiatedSubprotocol(acceptedSubProtocol);
+        session.setUpgradeResponse(response);
 
         connection.setSession(session);
-        List<Extension> extensions = connectPromise.getClient().initExtensions(response.getExtensions());
 
-        // Start with default routing.
-        IncomingFrames incoming = session;
-        // OutgoingFrames outgoing = connection;
+        // Initialize / Negotiate Extensions
+        ExtensionStack extensionStack = new ExtensionStack(connectPromise.getClient().getExtensionFactory());
+        extensionStack.negotiate(response.getExtensions());
 
-        // Connect extensions
-        if (extensions != null)
-        {
-            connection.getParser().configureFromExtensions(extensions);
-            connection.getGenerator().configureFromExtensions(extensions);
+        extensionStack.configure(connection.getParser());
+        extensionStack.configure(connection.getGenerator());
 
-            // FIXME
-            // Iterator<Extension> extIter;
-            // // Connect outgoings
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextOutgoingFrames(outgoing);
-            // outgoing = ext;
-            // }
-            //
-            // // Connect incomings
-            // Collections.reverse(extensions);
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextIncomingFrames(incoming);
-            // incoming = ext;
-            // }
-        }
+        // Setup Incoming Routing
+        connection.setNextIncomingFrames(extensionStack);
+        extensionStack.setNextIncoming(session);
 
-        // configure session for outgoing flows
-        // session.setOutgoing(outgoing);
-        // configure connection for incoming flows
-        connection.getParser().setIncomingFramesHandler(incoming);
+        // Setup Outgoing Routing
+        session.setOutgoingHandler(extensionStack);
+        extensionStack.setNextOutgoing(connection);
 
         // Now swap out the connection
         endp.setConnection(connection);
