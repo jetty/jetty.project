@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal.io;
+package org.eclipse.jetty.websocket.client.io;
 
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;

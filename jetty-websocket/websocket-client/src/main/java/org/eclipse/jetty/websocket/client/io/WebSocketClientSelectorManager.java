@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal.io;
+package org.eclipse.jetty.websocket.client.io;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {

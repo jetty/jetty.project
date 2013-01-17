@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

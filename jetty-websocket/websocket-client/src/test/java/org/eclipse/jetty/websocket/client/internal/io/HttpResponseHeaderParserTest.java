@@ -28,6 +28,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.client.io.HttpResponseHeaderParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

@@ -16,18 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal.mux;
+/**
+ * Jetty WebSocket Common : I/O Implementation
+ */
+package org.eclipse.jetty.websocket.common.io;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.extensions.mux.add.MuxAddClient;
-import org.eclipse.jetty.websocket.common.extensions.mux.op.MuxAddChannelResponse;
-
-public class MuxClientAddHandler implements MuxAddClient
-{
-    @Override
-    public WebSocketSession createSession(MuxAddChannelResponse response)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-}

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal;
+package org.eclipse.jetty.websocket.client.io;
 
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.websocket.api.Session;

@@ -16,16 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal.mux;
+/**
+ * Jetty WebSocket Common : Extension Implementations
+ */
+package org.eclipse.jetty.websocket.common.extensions;
 
-import org.eclipse.jetty.websocket.common.extensions.mux.AbstractMuxExtension;
-import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
-
-public class MuxClientExtension extends AbstractMuxExtension
-{
-    @Override
-    public void configureMuxer(Muxer muxer)
-    {
-        muxer.setAddClient(new MuxClientAddHandler());
-    }
-}

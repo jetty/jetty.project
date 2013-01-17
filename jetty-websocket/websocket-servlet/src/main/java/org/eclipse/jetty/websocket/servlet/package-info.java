@@ -16,22 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.masks;
-
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-
 /**
- * Interface for various Masker implementations.
+ * Jetty WebSocket Servlet API
+ * <p>
+ * How to provide WebSocket servers via the Jetty WebSocket Servlet API:
+ * <ol>
+ * <li>Create your WebSocket Object</li>
+ * <li>Create your WebSocketServlet</li>
+ * <li>Register your WebSocket Object with the WebSocketServletFactory</li>
+ * <li>Wire up your WebSocketServlet to your web.xml or via Servlet 3.x annotations</li>
+ * </ol>
  */
-public interface Masker
-{
-    /**
-     * Set the mask on the provided {@link WebSocketFrame}.
-     * <p>
-     * Implementations MUST set the mask on the frame.
-     * 
-     * @param frame
-     *            the frame to set the mask on.
-     */
-    void setMask(WebSocketFrame frame);
-}
+package org.eclipse.jetty.websocket.servlet;
+

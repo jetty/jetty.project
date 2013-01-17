@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.handshake;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 
@@ -24,9 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.AcceptHash;
-import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
-import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
-import org.eclipse.jetty.websocket.server.WebSocketHandshake;
 
 /**
  * WebSocket Handshake for <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a>.
