@@ -43,7 +43,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -221,7 +220,7 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>timeout</td>
      * <td>60000</td>
-     * <td>The total timeout in milliseconds, see {@link TimedResponseListener}</td>
+     * <td>The total timeout in milliseconds, see {@link Request#timeout(long, TimeUnit)}</td>
      * </tr>
      * <tr>
      * <td>requestBufferSize</td>
@@ -463,7 +462,8 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
+        proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)

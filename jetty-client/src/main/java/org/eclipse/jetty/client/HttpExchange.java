@@ -178,14 +178,7 @@ public class HttpExchange
                 // Request and response completed
                 LOG.debug("{} complete", this);
                 if (isLast())
-                {
-                    HttpExchange first = conversation.getExchanges().peekFirst();
-                    List<Response.ResponseListener> listeners = first.getResponseListeners();
-                    for (Response.ResponseListener listener : listeners)
-                        if (listener instanceof Schedulable)
-                            ((Schedulable)listener).cancel();
                     conversation.complete();
-                }
             }
             result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }

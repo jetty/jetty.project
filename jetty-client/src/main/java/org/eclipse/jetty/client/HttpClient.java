@@ -481,10 +481,6 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        for (Response.ResponseListener listener : listeners)
-            if (listener instanceof Schedulable)
-                ((Schedulable)listener).schedule(scheduler);
-
         HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }

@@ -426,7 +426,7 @@ public class HttpRequest implements Request
     public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
     {
         FutureResponseListener listener = new FutureResponseListener(this);
-        send(listener);
+        send(this, listener);
 
         long timeout = getTimeout();
         if (timeout <= 0)
@@ -448,9 +448,20 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
+        if (getTimeout() > 0)
+        {
+            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(this);
+            timeoutListener.schedule(client.getScheduler());
+            responseListeners.add(timeoutListener);
+        }
+        send(this, listener);
+    }
+
+    private void send(Request request, Response.CompleteListener listener)
+    {
         if (listener != null)
             responseListeners.add(listener);
-        client.send(this, responseListeners);
+        client.send(request, responseListeners);
     }
 
     @Override

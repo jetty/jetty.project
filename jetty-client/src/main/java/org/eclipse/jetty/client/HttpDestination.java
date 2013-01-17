@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -509,8 +508,9 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)
-                    .header(HttpHeader.HOST.asString(), target);
-            connection.send(connect, new TimedResponseListener(client.getConnectTimeout(), TimeUnit.MILLISECONDS, connect, new Response.CompleteListener()
+                    .header(HttpHeader.HOST.asString(), target)
+                    .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
+            connection.send(connect, new Response.CompleteListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -534,7 +534,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                         }
                     }
                 }
-            }));
+            });
         }
     }
 }
