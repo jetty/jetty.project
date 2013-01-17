@@ -56,8 +56,8 @@ public class HostnameVerificationTest
         if (sslContextFactory != null)
         {
             // keystore contains a hostname which doesn't match localhost
-            sslContextFactory.setKeyStorePath("src/test/resources/keystore");
-            sslContextFactory.setKeyStorePassword("abcdef");
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePassword("storepwd");
         }
 
         if (server == null)
