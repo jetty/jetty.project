@@ -34,6 +34,7 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.NoJspServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -106,7 +107,8 @@ public class JspAndDefaultWithAliasesTest
         defaultServHolder.setInitParameter("aliases","true"); // important! must be TRUE
 
         // add jsp
-        ServletHolder jsp = context.addServlet(JspServlet.class,"*.jsp");
+        ServletHolder jsp = new ServletHolder(new FakeJspServlet());
+        context.addServlet(jsp,"*.jsp");        
         jsp.setInitParameter("classpath",context.getClassPath());
 
         // add context
@@ -157,6 +159,9 @@ public class JspAndDefaultWithAliasesTest
             return;
         }
 
+        if (conn.getResponseCode()!=404)
+            System.err.println(conn.getResponseMessage());
+        
         // Of other possible paths, only 404 Not Found is expected
         Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
     }
