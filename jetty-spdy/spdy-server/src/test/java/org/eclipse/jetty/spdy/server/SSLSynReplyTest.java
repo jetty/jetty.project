@@ -34,6 +34,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
         return new SPDYServerConnector(server, sslContextFactory, listener);
     }
 
@@ -41,6 +42,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
         return new SPDYClient.Factory(threadPool, null, sslContextFactory);
     }
 

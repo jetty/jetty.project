@@ -148,7 +148,9 @@ public class AbstractTestOSGi
 
 	protected SslContextFactory getSslContextFactory()
 	{
-		return new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        return sslContextFactory;
 	}
 
 	protected void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception

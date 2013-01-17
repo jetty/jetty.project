@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,7 +25,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -47,6 +40,12 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 {
@@ -60,6 +59,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         __sslCtxFactory.setKeyStorePassword("storepwd");
         __sslCtxFactory.setKeyManagerPassword("keypwd");
+        __sslCtxFactory.setEndpointIdentificationAlgorithm("");
         __sslCtxFactory.start();
     }
 
