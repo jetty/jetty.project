@@ -290,13 +290,8 @@ public class WebSocketClient extends ContainerLifeCycle
         this.bufferPool = bufferPool;
     }
 
-    public void setConnectTimeout(int connectTimeout)
+    public void setConnectTimeout(long connectTimeout)
     {
-        if (isStarted())
-        {
-            throw new IllegalStateException("Cannot change connect timeout, WebSocketClient is already started");
-        }
-
         if (connectTimeout < 0)
         {
             throw new IllegalStateException("Connect Timeout cannot be negative");
