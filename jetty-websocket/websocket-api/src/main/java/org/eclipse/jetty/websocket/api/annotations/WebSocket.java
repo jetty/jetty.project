@@ -33,11 +33,9 @@ import java.lang.annotation.Target;
 { ElementType.TYPE })
 public @interface WebSocket
 {
-    int maxBinarySize() default -2;
-
-    int maxBufferSize() default -2;
+    int inputBufferSize() default -2;
 
     int maxIdleTime() default -2;
 
-    int maxTextSize() default -2;
+    int maxMessageSize() default -2;
 }

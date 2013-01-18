@@ -61,7 +61,7 @@ public class MessageReader extends Reader implements MessageAppender
             return;
         }
 
-        driver.getPolicy().assertValidTextMessageSize(size + payload.remaining());
+        driver.getPolicy().assertValidMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         synchronized (utf)

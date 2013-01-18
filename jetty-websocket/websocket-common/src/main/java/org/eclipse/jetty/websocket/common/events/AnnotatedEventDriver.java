@@ -49,13 +49,13 @@ public class AnnotatedEventDriver extends EventDriver
 
         WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
         // Setup the policy
-        if (anno.maxBinarySize() > 0)
+        if (anno.maxMessageSize() > 0)
         {
-            this.policy.setMaxBinaryMessageSize(anno.maxBinarySize());
+            this.policy.setMaxMessageSize(anno.maxMessageSize());
         }
-        if (anno.maxTextSize() > 0)
+        if (anno.maxMessageSize() > 0)
         {
-            this.policy.setMaxTextMessageSize(anno.maxTextSize());
+            this.policy.setInputBufferSize(anno.inputBufferSize());
         }
         if (anno.maxIdleTime() > 0)
         {
