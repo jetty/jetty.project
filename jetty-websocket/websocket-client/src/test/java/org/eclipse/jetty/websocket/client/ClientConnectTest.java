@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,13 +27,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,14 +45,16 @@ public class ClientConnectTest
     @Rule
     public TestTracker tt = new TestTracker();
 
+    private final int timeout = 500;
     private BlockheadServer server;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.start();
+        client = new WebSocketClient();
+        client.setConnectTimeout(timeout);
+        client.start();
     }
 
     @Before
@@ -63,9 +65,9 @@ public class ClientConnectTest
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @After
@@ -78,10 +80,9 @@ public class ClientConnectTest
     public void testBadHandshake() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -105,10 +106,9 @@ public class ClientConnectTest
     public void testBadUpgrade() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection connection = server.accept();
         connection.readRequest();
@@ -132,10 +132,9 @@ public class ClientConnectTest
     public void testConnectionNotAccepted() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         // Intentionally not accept incoming socket.
         // server.accept();
@@ -145,23 +144,26 @@ public class ClientConnectTest
             future.get(500,TimeUnit.MILLISECONDS);
             Assert.fail("Should have Timed Out");
         }
+        catch (ExecutionException e)
+        {
+            // Possible Passing Path (active session wait timeout)
+            wsocket.assertNotOpened();
+        }
         catch (TimeoutException e)
         {
-            // Expected Path
+            // Possible Passing Path (concurrency timeout)
             wsocket.assertNotOpened();
         }
     }
 
     @Test(expected = ConnectException.class)
-    @Ignore("Need to get information about connection issue out of SelectManager somehow")
     public void testConnectionRefused() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         // Intentionally bad port
         URI wsUri = new URI("ws://127.0.0.1:1");
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         // The attempt to get upgrade response future should throw error
         try
@@ -177,13 +179,12 @@ public class ClientConnectTest
     }
 
     @Test(expected = TimeoutException.class)
-    public void testConnectionTimeout() throws Exception
+    public void testConnectionTimeout_Concurrent() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
-        WebSocketClient client = factory.newWebSocketClient(wsocket);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection ssocket = server.accept();
         Assert.assertNotNull(ssocket);

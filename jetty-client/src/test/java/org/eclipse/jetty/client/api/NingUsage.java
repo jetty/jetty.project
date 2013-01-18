@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,14 +21,15 @@ package org.eclipse.jetty.client.api;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.BodyDeferringAsyncHandler;
 import com.ning.http.client.Cookie;
 import com.ning.http.client.Realm;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
-import org.junit.Ignore;
-import org.junit.Test;
 
 @Ignore
 public class NingUsage

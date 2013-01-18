@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,20 +19,16 @@
 package com.acme;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import javax.servlet.annotation.MultipartConfig;
 
 import org.eclipse.jetty.util.IO;
 /**

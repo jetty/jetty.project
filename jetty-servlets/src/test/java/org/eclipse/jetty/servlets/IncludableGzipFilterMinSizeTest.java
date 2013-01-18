@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlets;
 
 import java.util.Arrays;
 import java.util.Collection;
+
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -98,7 +99,7 @@ public class IncludableGzipFilterMinSizeTest
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
-        holder.setInitParameter("mimeTypes","application/soap+xml,text/javascript");
+        holder.setInitParameter("mimeTypes","application/soap+xml,text/javascript,application/x-javascript");
         holder.setInitParameter("minGzipSize", "2048");
         holder.setInitParameter("uncheckedPrintWriter","true");
 

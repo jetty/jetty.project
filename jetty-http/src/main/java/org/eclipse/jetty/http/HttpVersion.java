@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
@@ -33,7 +34,7 @@ public enum HttpVersion
     HTTP_2_0("HTTP/2.0",20);
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpVersion> CACHE= new Trie<HttpVersion>();
+    public final static Trie<HttpVersion> CACHE= new ArrayTrie<HttpVersion>();
     static
     {
         for (HttpVersion version : HttpVersion.values())

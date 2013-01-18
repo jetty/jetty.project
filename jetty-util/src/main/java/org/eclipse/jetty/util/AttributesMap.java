@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,144 +25,127 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
-/* ------------------------------------------------------------ */
-/** AttributesMap.
- * 
- *
- */
 public class AttributesMap implements Attributes
 {
-    protected final Map<String,Object> _map;
+    private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();
 
-    /* ------------------------------------------------------------ */
     public AttributesMap()
     {
-        _map=new ConcurrentHashMap<String,Object>();
-    }
-    
-    /* ------------------------------------------------------------ */
-    public AttributesMap(Map<String,Object> map)
-    {
-        _map=map;
     }
 
-    /* ------------------------------------------------------------ */
-    public AttributesMap(AttributesMap map)
+    public AttributesMap(AttributesMap attributes)
     {
-        _map=new ConcurrentHashMap<String,Object>(map._map);
+        ConcurrentMap<String, Object> map = attributes.map();
+        if (map != null)
+            _map.set(new ConcurrentHashMap<>(map));
     }
-    
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#removeAttribute(java.lang.String)
-     */
+
+    private ConcurrentMap<String, Object> map()
+    {
+        return _map.get();
+    }
+
+    private ConcurrentMap<String, Object> ensureMap()
+    {
+        while (true)
+        {
+            ConcurrentMap<String, Object> map = map();
+            if (map != null)
+                return map;
+            map = new ConcurrentHashMap<>();
+            if (_map.compareAndSet(null, map))
+                return map;
+        }
+    }
+
     @Override
     public void removeAttribute(String name)
     {
-        _map.remove(name);
+        Map<String, Object> map = map();
+        if (map != null)
+            map.remove(name);
     }
 
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#setAttribute(java.lang.String, java.lang.Object)
-     */
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        if (attribute==null)
-            _map.remove(name);
+        if (attribute == null)
+            removeAttribute(name);
         else
-            _map.put(name, attribute);
+            ensureMap().put(name, attribute);
     }
 
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
-        return _map.get(name);
+        Map<String, Object> map = map();
+        return map == null ? null : map.get(name);
     }
 
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        return Collections.enumeration(_map.keySet());
+        return Collections.enumeration(getAttributeNameSet());
     }
 
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
-     */
     public Set<String> getAttributeNameSet()
     {
-        return _map.keySet();
+        return keySet();
     }
-    
-    /* ------------------------------------------------------------ */
+
     public Set<Map.Entry<String, Object>> getAttributeEntrySet()
     {
-        return _map.entrySet();
+        Map<String, Object> map = map();
+        return map == null ? Collections.<Map.Entry<String, Object>>emptySet() : map.entrySet();
     }
-    
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
-     */
+
     public static Enumeration<String> getAttributeNamesCopy(Attributes attrs)
     {
         if (attrs instanceof AttributesMap)
-            return Collections.enumeration(((AttributesMap)attrs)._map.keySet());
-        
-        List<String> names = new ArrayList<String>();
+            return Collections.enumeration(((AttributesMap)attrs).keySet());
+
+        List<String> names = new ArrayList<>();
         names.addAll(Collections.list(attrs.getAttributeNames()));
         return Collections.enumeration(names);
     }
 
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.util.Attributes#clear()
-     */
     @Override
     public void clearAttributes()
     {
-        _map.clear();
+        Map<String, Object> map = map();
+        if (map != null)
+            map.clear();
     }
-    
-    /* ------------------------------------------------------------ */
+
     public int size()
     {
-        return _map.size();
+        Map<String, Object> map = map();
+        return map == null ? 0 : map.size();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
-        return _map.toString();
+        Map<String, Object> map = map();
+        return map == null ? "{}" : map.toString();
     }
-    
-    /* ------------------------------------------------------------ */
-    public Set<String> keySet()
+
+    private Set<String> keySet()
     {
-        return _map.keySet();
+        Map<String, Object> map = map();
+        return map == null ? Collections.<String>emptySet() : map.keySet();
     }
-    
-    /* ------------------------------------------------------------ */
+
     public void addAll(Attributes attributes)
     {
         Enumeration<String> e = attributes.getAttributeNames();
         while (e.hasMoreElements())
         {
-            String name=e.nextElement();
-            setAttribute(name,attributes.getAttribute(name));
+            String name = e.nextElement();
+            setAttribute(name, attributes.getAttribute(name));
         }
     }
-
 }

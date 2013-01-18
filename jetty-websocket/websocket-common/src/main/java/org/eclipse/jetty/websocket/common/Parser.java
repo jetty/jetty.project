@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -97,7 +97,7 @@ public class Parser
             // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
             throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
-        policy.assertValidPayloadLength((int)len);
+        policy.assertValidMessageSize((int)len);
 
         switch (frame.getOpCode())
         {
@@ -540,7 +540,6 @@ public class Parser
         {
             if (payload == null)
             {
-                getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
                 payload = bufferPool.acquire(payloadLength,false);
                 BufferUtil.clearToFill(payload);

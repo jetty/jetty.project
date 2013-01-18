@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,11 +33,9 @@ import java.lang.annotation.Target;
 { ElementType.TYPE })
 public @interface WebSocket
 {
-    int maxBinarySize() default -2;
-
-    int maxBufferSize() default -2;
+    int inputBufferSize() default -2;
 
     int maxIdleTime() default -2;
 
-    int maxTextSize() default -2;
+    int maxMessageSize() default -2;
 }

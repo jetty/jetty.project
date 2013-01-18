@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -66,21 +66,14 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * basis.
  * 
  * <dl>
- * <dt>bufferSize</dt>
- * <dd>can be used to set the buffer size, which is also the max frame byte size<br>
- * <i>Default: 8192</i></dd>
- * 
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
- * <i>Default:</i></dd>
  * 
- * <dt>maxTextMessagesSize</dt>
- * <dd>set the size in characters that a websocket may be accept before closing<br>
- * <i>Default:</i></dd>
- * 
- * <dt>maxBinaryMessagesSize</dt>
+ * <dt>maxMessagesSize</dt>
  * <dd>set the size in bytes that a websocket may be accept before closing<br>
- * <i>Default:</i></dd>
+ * 
+ * <dt>inputBufferSize</dt>
+ * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
  * </dl>
  */
 @SuppressWarnings("serial")
@@ -104,40 +97,39 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         try
         {
-            String bs = getInitParameter("bufferSize");
             WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-            if (bs != null)
-            {
-                policy.setBufferSize(Integer.parseInt(bs));
-            }
 
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {
-                policy.setIdleTimeout(Integer.parseInt(max));
+                policy.setIdleTimeout(Long.parseLong(max));
             }
 
-            max = getInitParameter("maxTextMessageSize");
+            max = getInitParameter("maxMessageSize");
             if (max != null)
             {
-                policy.setMaxTextMessageSize(Integer.parseInt(max));
+                policy.setMaxMessageSize(Long.parseLong(max));
             }
 
-            max = getInitParameter("maxBinaryMessageSize");
+            max = getInitParameter("inputBufferSize");
             if (max != null)
             {
-                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
+                policy.setInputBufferSize(Integer.parseInt(max));
             }
 
-            WebSocketServletFactory baseFactory ;
+            WebSocketServletFactory baseFactory;
             Iterator<WebSocketServletFactory> factories = ServiceLoader.load(WebSocketServletFactory.class).iterator();
-            
+
             if (factories.hasNext())
-                baseFactory=factories.next();
+            {
+                baseFactory = factories.next();
+            }
             else
             {
-                Class<WebSocketServletFactory> wssf= (Class<WebSocketServletFactory>)getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
-                baseFactory=wssf.newInstance();
+                @SuppressWarnings("unchecked")
+                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)getServletContext().getClass().getClassLoader()
+                        .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
+                baseFactory = wssf.newInstance();
             }
 
             factory = baseFactory.createFactory(policy);

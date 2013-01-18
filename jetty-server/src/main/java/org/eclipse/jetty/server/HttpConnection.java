@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -91,7 +91,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _generator = new HttpGenerator(); // TODO: consider moving the generator to the transport, where it belongs
+        _generator = new HttpGenerator();
         _generator.setSendServerVersion(_config.getSendServerVersion());
         _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
         _parser = newHttpParser();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,9 +30,9 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHom
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;

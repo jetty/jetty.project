@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -33,7 +34,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.MetaDataComplete;
 import org.eclipse.jetty.webapp.WebAppContext;

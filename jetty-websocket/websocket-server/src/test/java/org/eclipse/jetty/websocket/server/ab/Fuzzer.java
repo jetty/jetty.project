@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,9 +87,7 @@ public class Fuzzer
 
         int bigMessageSize = 20 * MBYTE;
 
-        policy.setMaxPayloadSize(bigMessageSize);
-        policy.setMaxTextMessageSize(bigMessageSize);
-        policy.setMaxBinaryMessageSize(bigMessageSize);
+        policy.setMaxMessageSize(bigMessageSize);
 
         this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();

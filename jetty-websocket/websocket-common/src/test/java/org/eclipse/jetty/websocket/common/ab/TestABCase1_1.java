@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -451,7 +451,7 @@ public class TestABCase1_1
 
         expected.flip();
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setMaxTextMessageSize(length);
+        policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -488,7 +488,7 @@ public class TestABCase1_1
         expected.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setMaxTextMessageSize(length);
+        policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +40,8 @@ import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -60,15 +61,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     private ExtensionFactory extensionFactory;
     private boolean active = false;
     private long maximumMessageSize;
-    private List<String> negotiatedExtensions = new ArrayList<>();
     private String protocolVersion;
-    private String negotiatedSubprotocol;
     private long timeout;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;
+    private UpgradeRequest upgradeRequest;
+    private UpgradeResponse upgradeResponse;
 
     public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -153,6 +154,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return extensionFactory;
     }
 
+    /**
+     * The idle timeout in seconds
+     */
+    @Override
+    public long getIdleTimeout()
+    {
+        return timeout;
+    }
+
     @ManagedAttribute(readonly = true)
     public IncomingFrames getIncomingHandler()
     {
@@ -171,18 +181,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         return maximumMessageSize;
     }
 
-    @Override
-    public List<String> getNegotiatedExtensions()
-    {
-        return negotiatedExtensions;
-    }
-
-    @Override
-    public String getNegotiatedSubprotocol()
-    {
-        return negotiatedSubprotocol;
-    }
-
     @ManagedAttribute(readonly = true)
     public OutgoingFrames getOutgoingHandler()
     {
@@ -199,12 +197,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public String getProtocolVersion()
     {
         return protocolVersion;
-    }
-
-    @Override
-    public String getQueryString()
-    {
-        return getRequestURI().getQuery();
     }
 
     @Override
@@ -232,16 +224,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public String getSubProtocol()
     {
-        return getNegotiatedSubprotocol();
+        return upgradeResponse.getAcceptedSubProtocol();
     }
 
-    /**
-     * The timeout in seconds
-     */
     @Override
-    public long getTimeout()
+    public UpgradeRequest getUpgradeRequest()
     {
-        return timeout;
+        return this.upgradeRequest;
+    }
+
+    @Override
+    public UpgradeResponse getUpgradeResponse()
+    {
+        return this.upgradeResponse;
     }
 
     /**
@@ -274,15 +269,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public boolean isActive()
-    {
-        return active;
-    }
-
-    @Override
     public boolean isOpen()
     {
-        return isActive();
+        return active;
     }
 
     @Override
@@ -310,8 +299,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.active = true;
 
         // Open WebSocket
-        websocket.setSession(this);
-        websocket.onConnect();
+        websocket.openSession(this);
 
         if (LOG.isDebugEnabled())
         {
@@ -335,21 +323,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.extensionFactory = extensionFactory;
     }
 
+    /**
+     * Set the timeout in seconds
+     */
+    @Override
+    public void setIdleTimeout(long seconds)
+    {
+        this.timeout = seconds;
+    }
+
     @Override
     public void setMaximumMessageSize(long length)
     {
         this.maximumMessageSize = length;
-    }
-
-    public void setNegotiatedExtensions(List<String> negotiatedExtensions)
-    {
-        this.negotiatedExtensions.clear();
-        this.negotiatedExtensions.addAll(negotiatedExtensions);
-    }
-
-    public void setNegotiatedSubprotocol(String negotiatedSubprotocol)
-    {
-        this.negotiatedSubprotocol = negotiatedSubprotocol;
     }
 
     public void setOutgoingHandler(OutgoingFrames outgoing)
@@ -362,13 +348,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.policy = policy;
     }
 
-    /**
-     * Set the timeout in seconds
-     */
-    @Override
-    public void setTimeout(long seconds)
+    public void setUpgradeRequest(UpgradeRequest request)
     {
-        this.timeout = seconds;
+        this.upgradeRequest = request;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse response)
+    {
+        this.upgradeResponse = response;
     }
 
     @Override

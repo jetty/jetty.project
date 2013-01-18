@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ public class SimpleTextMessage implements MessageAppender
             return;
         }
 
-        onEvent.getPolicy().assertValidTextMessageSize(size + payload.remaining());
+        onEvent.getPolicy().assertValidMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)

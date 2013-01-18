@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,30 +53,11 @@ import org.eclipse.jetty.util.log.Logger;
 public class FileResource extends URLResource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
-    private static boolean __checkAliases = true;
 
     /* ------------------------------------------------------------ */
     private File _file;
     private transient URL _alias=null;
     private transient boolean _aliasChecked=false;
-
-    /* ------------------------------------------------------------------------------- */
-    /** setCheckAliases.
-     * @param checkAliases True of resource aliases are to be checked for (eg case insensitivity or 8.3 short names) and treated as not found.
-     */
-    public static void setCheckAliases(boolean checkAliases)
-    {
-        __checkAliases=checkAliases;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /** getCheckAliases.
-     * @return True of resource aliases are to be checked for (eg case insensitivity or 8.3 short names) and treated as not found.
-     */
-    public static boolean getCheckAliases()
-    {
-        return __checkAliases;
-    }
     
     /* -------------------------------------------------------- */
     public FileResource(URL url)
@@ -88,6 +69,10 @@ public class FileResource extends URLResource
         {
             // Try standard API to convert URL to file.
             _file =new File(new URI(url.toString()));
+        }
+        catch (URISyntaxException e) 
+        {
+            throw e;
         }
         catch (Exception e)
         {
@@ -186,7 +171,7 @@ public class FileResource extends URLResource
     @Override
     public URL getAlias()
     {
-        if (__checkAliases && !_aliasChecked)
+        if (!_aliasChecked)
         {
             try
             {    

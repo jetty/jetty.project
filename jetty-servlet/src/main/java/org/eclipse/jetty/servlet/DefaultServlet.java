@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -56,7 +57,6 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -109,9 +109,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *  stylesheet	      Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *
- *  aliases           If True, aliases of resources are allowed (eg. symbolic
- *                    links and caps variations). May bypass security constraints.
- *                    
  *  etags             If True, weak etags will be generated and handled.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
@@ -191,15 +188,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
             _welcomeServlets=getInitBoolean("welcomeServlets", _welcomeServlets);
-
-        if (getInitParameter("aliases")!=null)
-            _contextHandler.setAliases(getInitBoolean("aliases",false));
-
-        boolean aliases=_contextHandler.isAliases();
-        if (!aliases && !FileResource.getCheckAliases())
-            throw new IllegalStateException("Alias checking disabled");
-        if (aliases)
-            _servletContext.log("Aliases are enabled");
 
         _useFileMappedBuffer=getInitBoolean("useFileMappedBuffer",_useFileMappedBuffer);
 
@@ -421,44 +409,37 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
 
-        // Can we gzip this request?
-        String pathInContextGz=null;
-        boolean gzip=false;
-        if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
-        {
-            // Tell caches that response may vary by accept-encoding
-            response.setHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
-
-            String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
-            if (accept!=null && accept.indexOf("gzip")>=0)
-                gzip=true;
-        }
 
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
-
         try
         {
-            // Try gzipped content first
-            if (gzip)
+            // is gzip enabled?
+            String pathInContextGz=null;
+            boolean gzip=false;
+            if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
             {
+                // Look for a gzip resource
                 pathInContextGz=pathInContext+".gz";
-
                 if (_cache==null)
-                {
                     resource=getResource(pathInContextGz);
-                }
                 else
                 {
                     content=_cache.lookup(pathInContextGz);
                     resource=(content==null)?null:content.getResource();
                 }
 
-                if (resource==null || !resource.exists() || resource.isDirectory())
+                // Does a gzip resource exist?
+                if (resource!=null && resource.exists() && !resource.isDirectory())
                 {
-                    gzip=false;
-                    pathInContextGz=null;
+                    // Tell caches that response may vary by accept-encoding
+                    response.setHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
+                    
+                    // Does the client accept gzip?
+                    String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
+                    if (accept!=null && accept.indexOf("gzip")>=0)
+                        gzip=true;
                 }
             }
 
@@ -486,7 +467,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else if (!resource.isDirectory())
             {
-                if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
+                if (endsWithSlash && pathInContext.length()>1)
                 {
                     String q=request.getQueryString();
                     pathInContext=pathInContext.substring(0,pathInContext.length()-1);

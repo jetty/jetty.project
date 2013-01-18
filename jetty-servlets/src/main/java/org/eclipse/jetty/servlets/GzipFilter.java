@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,10 @@ import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -110,6 +112,7 @@ public class GzipFilter extends UserAgentFilter
     public final static String ETAG_DEFLATE="-deflate\"";
     public final static String ETAG="o.e.j.s.GzipFilter.ETag";
 
+    protected ServletContext _context;
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
@@ -135,6 +138,8 @@ public class GzipFilter extends UserAgentFilter
     {
         super.init(filterConfig);
 
+        _context=filterConfig.getServletContext();
+        
         String tmp=filterConfig.getInitParameter("bufferSize");
         if (tmp!=null)
             _bufferSize=Integer.parseInt(tmp);
@@ -215,6 +220,20 @@ public class GzipFilter extends UserAgentFilter
     {
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
+        
+        
+        // Check if mime type of request can ever be compressed.
+        if (_mimeTypes!=null && _mimeTypes.size()>0)
+        {
+            String mimeType = _context.getMimeType(request.getRequestURI());
+            
+            if (mimeType!=null && !_mimeTypes.contains(mimeType))
+            {
+                // handle normally without setting vary header
+                super.doFilter(request,response,chain);
+                return;
+            }
+        }
 
         // Inform caches that responses may vary according to Accept-Encoding
         response.setHeader("Vary","Accept-Encoding");

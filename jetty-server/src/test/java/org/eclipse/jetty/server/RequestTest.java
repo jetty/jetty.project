@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,8 +53,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;

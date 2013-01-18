@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -169,9 +169,10 @@ public abstract class EventDriver implements IncomingFrames
 
     public abstract void onTextMessage(String message);
 
-    public void setSession(WebSocketSession session)
+    public void openSession(WebSocketSession session)
     {
         this.session = session;
+        this.onConnect();
     }
 
     protected void terminateConnection(int statusCode, String rawreason)

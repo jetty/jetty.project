@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,21 +19,18 @@
 package org.eclipse.jetty.servlets;
 
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.EnumSet;
-
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
-
-
-import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Map;
+import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -45,14 +42,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class MultipartFilterTest
 {

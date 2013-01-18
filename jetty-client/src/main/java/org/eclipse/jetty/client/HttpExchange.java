@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -178,14 +178,7 @@ public class HttpExchange
                 // Request and response completed
                 LOG.debug("{} complete", this);
                 if (isLast())
-                {
-                    HttpExchange first = conversation.getExchanges().peekFirst();
-                    List<Response.ResponseListener> listeners = first.getResponseListeners();
-                    for (Response.ResponseListener listener : listeners)
-                        if (listener instanceof Schedulable)
-                            ((Schedulable)listener).cancel();
                     conversation.complete();
-                }
             }
             result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }

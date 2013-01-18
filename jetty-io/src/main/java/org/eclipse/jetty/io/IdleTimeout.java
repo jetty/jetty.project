@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,6 @@ public abstract class IdleTimeout
         }
     };
 
-    /* ------------------------------------------------------------ */
     /**
      * @param scheduler A scheduler used to schedule checks for the idle timeout.
      */
@@ -77,10 +76,27 @@ public abstract class IdleTimeout
 
     public void setIdleTimeout(long idleTimeout)
     {
+        long old=_idleTimeout;
         _idleTimeout = idleTimeout;
+        
+        // Do we have an old timeout
+        if (old>0)
+        {
+            // if the old was less than or equal to the new timeout, then nothing more to do
+            if (old<=_idleTimeout)
+                return;
+            
+            // old timeout is too long, so cancel it.
+            Scheduler.Task oldTimeout = _timeout.getAndSet(null);
+            if (oldTimeout != null)
+                oldTimeout.cancel();
+        }
+        
+        // If we have a new timeout, then check and reschedule
+        if (_idleTimeout>0 && isOpen())
+            _idleTask.run();
     }
 
-    /* ------------------------------------------------------------ */
     /** This method should be called when non-idle activity has taken place.
      */
     public void notIdle()
@@ -88,7 +104,7 @@ public abstract class IdleTimeout
         _idleTimestamp=System.currentTimeMillis();
     }
     
-    protected void scheduleIdleTimeout(long delay)
+    private void scheduleIdleTimeout(long delay)
     {
         Scheduler.Task newTimeout = null;
         if (isOpen() && delay > 0 && _scheduler!=null)
@@ -96,6 +112,12 @@ public abstract class IdleTimeout
         Scheduler.Task oldTimeout = _timeout.getAndSet(newTimeout);
         if (oldTimeout != null)
             oldTimeout.cancel();
+    }
+    
+    public void onOpen()
+    {
+        if (_idleTimeout>0)
+            _idleTask.run();
     }
     
     protected void close()

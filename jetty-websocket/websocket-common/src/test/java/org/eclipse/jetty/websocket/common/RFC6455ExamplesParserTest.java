@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -175,7 +175,6 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setBufferSize(80000);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

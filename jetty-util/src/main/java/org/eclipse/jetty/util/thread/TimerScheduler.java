@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,22 +39,24 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
      */
 
     private final String _name;
+    private final boolean _daemon;
     private Timer _timer;
 
     public TimerScheduler()
     {
-        this(null);
+        this(null, false);
     }
 
-    public TimerScheduler(String name)
+    public TimerScheduler(String name, boolean daemon)
     {
         _name=name;
+        _daemon=daemon;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        _timer=_name==null?new Timer():new Timer(_name);
+        _timer=_name==null?new Timer():new Timer(_name,_daemon);
         super.doStart();
     }
 

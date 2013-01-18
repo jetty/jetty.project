@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,12 @@
 //
 
 package org.eclipse.jetty.io;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -45,12 +51,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -220,7 +220,7 @@ public class SelectChannelEndPointTest
     {
         Socket client = newClient();
 
-        client.setSoTimeout(600000); // TODO: restore to smaller value
+        client.setSoTimeout(60000); 
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);

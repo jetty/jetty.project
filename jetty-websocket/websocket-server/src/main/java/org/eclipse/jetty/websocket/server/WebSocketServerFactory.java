@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +52,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -415,8 +414,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup Session
         WebSocketSession session = new WebSocketSession(request.getRequestURI(),driver,connection);
         session.setPolicy(getPolicy().clonePolicy());
-        session.setNegotiatedSubprotocol(response.getAcceptedSubProtocol());
-        session.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
+        session.setUpgradeRequest(request);
+        response.setExtensions(extensionStack.getNegotiatedExtensions());
+        session.setUpgradeResponse(response);
         connection.setSession(session);
 
         // Setup Incoming Routing

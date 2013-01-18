@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,12 +43,11 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -221,7 +220,7 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>timeout</td>
      * <td>60000</td>
-     * <td>The total timeout in milliseconds, see {@link TimedResponseListener}</td>
+     * <td>The total timeout in milliseconds, see {@link Request#timeout(long, TimeUnit)}</td>
      * </tr>
      * <tr>
      * <td>requestBufferSize</td>
@@ -246,6 +245,9 @@ public class ProxyServlet extends HttpServlet
         HttpClient client = newHttpClient();
         // Redirects must be proxied as is, not followed
         client.setFollowRedirects(false);
+
+        // Must not store cookies, otherwise cookies of different clients will mix
+        client.setCookieStore(new HttpCookieStore.Empty());
 
         String value = config.getInitParameter("maxThreads");
         if (value == null)
@@ -460,7 +462,8 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
+        proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)

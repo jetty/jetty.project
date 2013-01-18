@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -69,8 +69,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
@@ -195,7 +195,7 @@ public class HttpClient extends ContainerLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = new TimerScheduler(name + "-scheduler");
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
@@ -401,6 +401,19 @@ public class HttpClient extends ContainerLifeCycle
             if (HttpHeader.HOST == header.getHeader())
                 continue;
 
+            // Remove expectation headers
+            if (HttpHeader.EXPECT == header.getHeader())
+                continue;
+
+            // Remove cookies
+            if (HttpHeader.COOKIE == header.getHeader())
+                continue;
+
+            // Remove authorization headers
+            if (HttpHeader.AUTHORIZATION == header.getHeader() ||
+                    HttpHeader.PROXY_AUTHORIZATION == header.getHeader())
+                continue;
+
             newRequest.header(header.getName(), header.getValue());
         }
         return newRequest;
@@ -467,10 +480,6 @@ public class HttpClient extends ContainerLifeCycle
         String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
-
-        for (Response.ResponseListener listener : listeners)
-            if (listener instanceof Schedulable)
-                ((Schedulable)listener).schedule(scheduler);
 
         HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);

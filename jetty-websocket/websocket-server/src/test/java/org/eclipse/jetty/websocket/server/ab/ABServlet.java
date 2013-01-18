@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,10 +36,7 @@ public class ABServlet extends WebSocketServlet
         // Test cases 9.x uses BIG frame sizes, let policy handle them.
         int bigFrameSize = 20 * MBYTE;
 
-        factory.getPolicy().setBufferSize(bigFrameSize);
-        factory.getPolicy().setMaxPayloadSize(bigFrameSize);
-        factory.getPolicy().setMaxTextMessageSize(bigFrameSize);
-        factory.getPolicy().setMaxBinaryMessageSize(bigFrameSize);
+        factory.getPolicy().setMaxMessageSize(bigFrameSize);
 
         factory.register(ABSocket.class);
     }

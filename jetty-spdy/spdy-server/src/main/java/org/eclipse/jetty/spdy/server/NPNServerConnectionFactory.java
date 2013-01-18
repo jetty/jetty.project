@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,7 @@ import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.FilterConnection;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -105,10 +103,9 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
         EndPoint ep=endPoint;
         while(engine==null && ep!=null)
         {
+            // TODO make more generic
             if (ep instanceof SslConnection.DecryptedEndPoint)
                 engine=((SslConnection.DecryptedEndPoint)ep).getSslConnection().getSSLEngine();
-            if (ep instanceof FilterConnection.FilteredEndPoint) // TODO make more generic
-                ep=((FilterConnection.FilteredEndPoint)ep).getWrappedEndPoint();
             else
                 ep=null;
         }

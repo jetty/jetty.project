@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -175,16 +175,16 @@ public class URLEncodedTest
     {
         String [][] charsets = new String[][]
         {
-           {StringUtil.__UTF8,null},
-           {StringUtil.__ISO_8859_1,StringUtil.__ISO_8859_1},
-           {StringUtil.__UTF8,StringUtil.__UTF8},
-           {StringUtil.__UTF16,StringUtil.__UTF16},
+           {StringUtil.__UTF8,null,"%30"},
+           {StringUtil.__ISO_8859_1,StringUtil.__ISO_8859_1,"%30"},
+           {StringUtil.__UTF8,StringUtil.__UTF8,"%30"},
+           {StringUtil.__UTF16,StringUtil.__UTF16,"%00%30"},
         };
 
 
         for (int i=0;i<charsets.length;i++)
         {
-            ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
+            ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+"+charsets[i][2]+"&name1=&name2&n\u00e3me3=value+3").getBytes(charsets[i][0]));
             MultiMap<String> m = new MultiMap<>();
             UrlEncoded.decodeTo(in, m, charsets[i][1]==null?null:Charset.forName(charsets[i][1]), -1,-1);
             assertEquals(charsets[i][1]+" stream length",4,m.size());

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EnumSet;
-import javax.servlet.DispatcherType;
-
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -51,8 +51,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class DefaultServletTest
 {
@@ -648,6 +646,42 @@ public class DefaultServletTest
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
     }
+
+
+    @Test
+    public void testGzip() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0gz = new File(resBase, "data0.txt.gz");
+        createFile(file0gz, "fake gzip");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: gzip",response);
+        
+    }
+
 
 
     @Test

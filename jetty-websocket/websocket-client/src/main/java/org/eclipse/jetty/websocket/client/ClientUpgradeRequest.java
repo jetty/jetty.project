@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +59,6 @@ public class ClientUpgradeRequest extends UpgradeRequest
     }
 
     private final String key;
-    private CookieStore cookieStore;
 
     public ClientUpgradeRequest()
     {
@@ -67,7 +66,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         this.key = genRandomKey();
     }
 
-    public ClientUpgradeRequest(URI requestURI)
+    protected ClientUpgradeRequest(URI requestURI)
     {
         super(requestURI);
         this.key = genRandomKey();
@@ -182,16 +181,6 @@ public class ClientUpgradeRequest extends UpgradeRequest
         request.append("\r\n");
         return request.toString();
     }
-    
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        if(cookieStore != null) {
-            return cookieStore.get(getRequestURI());
-        }
-        
-        return super.getCookies();
-    }
 
     private final String genRandomKey()
     {
@@ -200,18 +189,18 @@ public class ClientUpgradeRequest extends UpgradeRequest
         return new String(B64Code.encode(bytes));
     }
 
-    public CookieStore getCookieStore()
-    {
-        return cookieStore;
-    }
-
     public String getKey()
     {
         return key;
     }
 
-    public void setCookieStore(CookieStore cookieStore)
+    public void setCookiesFrom(CookieStore cookieStore)
     {
-        this.cookieStore = cookieStore;
+        if (cookieStore == null)
+        {
+            return;
+        }
+
+        setCookies(cookieStore.get(getRequestURI()));
     }
 }

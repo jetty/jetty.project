@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -567,7 +566,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         StringWriter buf = new StringWriter(8192);
         IO.copy(input,buf,maxLength);
         
-        decodeTo(buf.getBuffer().toString(),map,ENCODING,maxKeys);
+        decodeTo(buf.getBuffer().toString(),map,StringUtil.__UTF16,maxKeys);
     }
 
     /* -------------------------------------------------------------- */

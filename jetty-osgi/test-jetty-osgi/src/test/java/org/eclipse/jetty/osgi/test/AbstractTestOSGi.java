@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -147,7 +148,9 @@ public class AbstractTestOSGi
 
 	protected SslContextFactory getSslContextFactory()
 	{
-		return new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        return sslContextFactory;
 	}
 
 	protected void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,17 +49,13 @@ public class AnnotatedEventDriver extends EventDriver
 
         WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
         // Setup the policy
-        if (anno.maxBufferSize() > 0)
+        if (anno.maxMessageSize() > 0)
         {
-            this.policy.setBufferSize(anno.maxBufferSize());
+            this.policy.setMaxMessageSize(anno.maxMessageSize());
         }
-        if (anno.maxBinarySize() > 0)
+        if (anno.maxMessageSize() > 0)
         {
-            this.policy.setMaxBinaryMessageSize(anno.maxBinarySize());
-        }
-        if (anno.maxTextSize() > 0)
-        {
-            this.policy.setMaxTextMessageSize(anno.maxTextSize());
+            this.policy.setInputBufferSize(anno.inputBufferSize());
         }
         if (anno.maxIdleTime() > 0)
         {

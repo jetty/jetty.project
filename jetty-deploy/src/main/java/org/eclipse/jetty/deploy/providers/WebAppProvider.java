@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,8 +20,6 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;

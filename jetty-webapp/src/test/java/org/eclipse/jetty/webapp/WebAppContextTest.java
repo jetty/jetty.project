@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,31 +18,30 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.LocalConnector;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class WebAppContextTest
 {
@@ -108,13 +107,8 @@ public class WebAppContextTest
         server.setHandler(context);
         server.start();
 
-        // When
         ServletContext ctx = context.getServletContext();
-
-        // Then
-        // This passes:
         assertNotNull(ctx.getRealPath("/doesnotexist"));
-        // This fails:
         assertNotNull(ctx.getRealPath("/doesnotexist/"));
     }
 

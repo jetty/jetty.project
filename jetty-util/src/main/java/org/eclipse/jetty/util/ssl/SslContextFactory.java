@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,12 +41,12 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -111,6 +111,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** Excluded protocols. */
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
+
     /** Included protocols. */
     private Set<String> _includeProtocols = null;
 
@@ -196,6 +197,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /** SSL context */
     private SSLContext _context;
 
+    /** EndpointIdentificationAlgorithm - when set to "HTTPS" hostname verification will be enabled */
+    private String _endpointIdentificationAlgorithm = "HTTPS";
+
     private boolean _trustAll;
 
     /**
@@ -204,7 +208,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory()
     {
-        _trustAll=true;
+        this(false);
     }
 
     /**
@@ -816,6 +820,16 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /**
+     * When set to "HTTPS" hostname verification will be enabled
+     *
+     * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
+     */
+    public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
+    {
+        this._endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
+    }
+
+    /**
      * Override this method to provide alternate way to load a keystore.
      *
      * @return the key store instance
@@ -1292,6 +1306,10 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public void customize(SSLEngine sslEngine)
     {
+        SSLParameters sslParams = sslEngine.getSSLParameters();
+        sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
+        sslEngine.setSSLParameters(sslParams);
+
         if (getWantClientAuth())
             sslEngine.setWantClientAuth(getWantClientAuth());
         if (getNeedClientAuth())

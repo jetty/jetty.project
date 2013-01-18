@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -370,8 +369,8 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         removed |= idleConnections.remove(connection);
         if (removed)
         {
-            LOG.debug("{} removed", connection);
-            connectionCount.decrementAndGet();
+            int open = connectionCount.decrementAndGet();
+            LOG.debug("Removed connection {} for {} - open: {}", connection, this, open);
         }
 
         // We need to execute queued requests even if this connection failed.
@@ -509,8 +508,9 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)
-                    .header(HttpHeader.HOST.asString(), target);
-            connection.send(connect, new TimedResponseListener(client.getConnectTimeout(), TimeUnit.MILLISECONDS, connect, new Response.CompleteListener()
+                    .header(HttpHeader.HOST.asString(), target)
+                    .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
+            connection.send(connect, new Response.CompleteListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -534,7 +534,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                         }
                     }
                 }
-            }));
+            });
         }
     }
 }

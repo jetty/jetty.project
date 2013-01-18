@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,6 +49,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
@@ -103,6 +104,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         test_Authentication(new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
+    @Ignore
     @Test
     public void test_DigestAuthentication() throws Exception
     {

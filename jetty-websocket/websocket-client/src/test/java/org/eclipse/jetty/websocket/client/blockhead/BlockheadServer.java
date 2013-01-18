@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -401,13 +401,13 @@ public class BlockheadServer
                 // Respond to used extensions
                 resp.append("Sec-WebSocket-Extensions: ");
                 boolean delim = false;
-                for (String ext : extensionStack.getNegotiatedExtensions())
+                for (ExtensionConfig ext : extensionStack.getNegotiatedExtensions())
                 {
                     if (delim)
                     {
                         resp.append(", ");
                     }
-                    resp.append(ext);
+                    resp.append(ext.getParameterizedName());
                     delim = true;
                 }
                 resp.append("\r\n");
@@ -504,10 +504,10 @@ public class BlockheadServer
 
     public void start() throws IOException
     {
-        serverSocket = new ServerSocket();
         InetAddress addr = InetAddress.getByName("localhost");
+        serverSocket = new ServerSocket();
         InetSocketAddress endpoint = new InetSocketAddress(addr,0);
-        serverSocket.bind(endpoint);
+        serverSocket.bind(endpoint,1);
         int port = serverSocket.getLocalPort();
         String uri = String.format("ws://%s:%d/",addr.getHostAddress(),port);
         wsUri = URI.create(uri);

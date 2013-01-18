@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
         return new SPDYServerConnector(server, sslContextFactory, listener);
     }
 
@@ -41,6 +42,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
         return new SPDYClient.Factory(threadPool, null, sslContextFactory);
     }
 

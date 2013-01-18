@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,11 +24,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ConnectException;
+import java.net.HttpCookie;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -39,6 +41,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -97,9 +100,15 @@ public class ProxyServletTest
 
         proxy.start();
 
-        client = new HttpClient();
-        client.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
-        client.start();
+        client = prepareClient();
+    }
+
+    private HttpClient prepareClient() throws Exception
+    {
+        HttpClient result = new HttpClient();
+        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        result.start();
+        return result;
     }
 
     private void prepareServer(HttpServlet servlet) throws Exception
@@ -771,6 +780,88 @@ public class ProxyServletTest
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
         Assert.assertArrayEquals(content, response.getContent());
+    }
+
+    @Test(expected = TimeoutException.class)
+    public void shouldHandleWrongContentLength() throws Exception
+    {
+        prepareProxy(new ProxyServlet());
+        prepareServer(new HttpServlet() {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+                byte[] message = "tooshort".getBytes("ascii");
+                resp.setContentType("text/plain;charset=ascii");
+                resp.setHeader("Content-Length", Long.toString(message.length+1));
+                resp.getOutputStream().write(message);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.fail();
+    }
+
+    @Test
+    public void testCookiesFromDifferentClientsAreNotMixed() throws Exception
+    {
+        final String name = "biscuit";
+        prepareProxy(new ProxyServlet());
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                String value = req.getHeader(name);
+                if (value != null)
+                {
+                    Cookie cookie = new Cookie(name, value);
+                    cookie.setMaxAge(3600);
+                    resp.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = req.getCookies();
+                    Assert.assertEquals(1, cookies.length);
+                }
+            }
+        });
+
+        String value1 = "1";
+        ContentResponse response1 = client.newRequest("localhost", serverConnector.getLocalPort())
+                .header(name, value1)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response1.getStatus());
+        Assert.assertTrue(response1.getHeaders().containsKey(PROXIED_HEADER));
+        List<HttpCookie> cookies = client.getCookieStore().getCookies();
+        Assert.assertEquals(1, cookies.size());
+        Assert.assertEquals(name, cookies.get(0).getName());
+        Assert.assertEquals(value1, cookies.get(0).getValue());
+
+        HttpClient client2 = prepareClient();
+        String value2 = "2";
+        ContentResponse response2 = client2.newRequest("localhost", serverConnector.getLocalPort())
+                .header(name, value2)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response2.getStatus());
+        Assert.assertTrue(response2.getHeaders().containsKey(PROXIED_HEADER));
+        cookies = client2.getCookieStore().getCookies();
+        Assert.assertEquals(1, cookies.size());
+        Assert.assertEquals(name, cookies.get(0).getName());
+        Assert.assertEquals(value2, cookies.get(0).getValue());
+
+        // Make a third request to be sure the proxy does not mix cookies
+        ContentResponse response3 = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response3.getStatus());
+        Assert.assertTrue(response3.getHeaders().containsKey(PROXIED_HEADER));
     }
 
     // TODO: test proxy authentication

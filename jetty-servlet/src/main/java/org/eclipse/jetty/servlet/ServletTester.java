@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,14 +23,15 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;

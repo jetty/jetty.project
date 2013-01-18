@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -191,7 +191,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 // TODO: break this dependency with HttpGenerator
                 boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue"); // TODO: better message
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
     }
@@ -636,7 +636,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             ResponseInfo info = _response.newResponseInfo();
             boolean committed = commitResponse(info, content, complete);
             if (!committed)
-                throw new IOException("Concurrent commit"); // TODO: better message
+                throw new IOException("Concurrent commit");
         }
     }
 

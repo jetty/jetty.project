@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,8 +38,7 @@ public class TextPayloadParserTest
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         // Artificially small buffer/payload
-        policy.setBufferSize(512);
-        policy.setMaxPayloadSize(1024);
+        policy.setMaxMessageSize(1024);
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');
 
@@ -89,8 +88,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        policy.setBufferSize(100000);
-        policy.setMaxPayloadSize(100000);
+        policy.setMaxMessageSize(100000);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

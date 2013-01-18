@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Trie;
 
@@ -34,7 +35,7 @@ public enum HttpScheme
     WSS("wss");
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpScheme> CACHE= new Trie<HttpScheme>();
+    public final static Trie<HttpScheme> CACHE= new ArrayTrie<HttpScheme>();
     static
     {
         for (HttpScheme version : HttpScheme.values())

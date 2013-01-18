@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,8 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.util.Collection;
 
 import javax.servlet.MultipartConfigElement;
@@ -44,9 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
-import org.hamcrest.core.IsNot;
 import org.junit.Test;
-import org.hamcrest.core.IsNot;
 
 /**
  * MultiPartInputStreamTest
