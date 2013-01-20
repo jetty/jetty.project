@@ -1,4 +1,4 @@
-jetty-9.0.0.M5 - 18 January 2013
+jetty-9.0.0.M5 - 19 January 2013
  + 367638 throw exception for excess form keys
  + 381521 Only set Vary header when content could be compressed
  + 391623 Making --stop with STOP.WAIT perform graceful shutdown
@@ -26,6 +26,7 @@ jetty-9.0.0.M5 - 18 January 2013
  + 398105 Clean up WebSocketPolicy
  + 398285 ProxyServlet mixes cookies from different clients.
  + 398337 UTF-16 percent encoding in UTF-16 form content
+ + 398582 Move lib/jta jar into lib/jndi
  + JETTY-1533 handle URL with no path
 
 jetty-9.0.0.M4 - 21 December 2012
