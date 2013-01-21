@@ -34,8 +34,10 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -43,6 +45,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -220,9 +223,16 @@ public class GzipFilter extends UserAgentFilter
     {
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
+
+        // Exclude URIs - no Vary because no matter what client, this URI is always excluded
+        String requestURI = request.getRequestURI();
+        if (isExcludedPath(requestURI))
+        {
+            super.doFilter(request,response,chain);
+            return;
+        }
         
-        
-        // Check if mime type of request can ever be compressed.
+        // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
         if (_mimeTypes!=null && _mimeTypes.size()>0)
         {
             String mimeType = _context.getMimeType(request.getRequestURI());
@@ -234,27 +244,17 @@ public class GzipFilter extends UserAgentFilter
                 return;
             }
         }
-        
-        // Inform caches that responses may vary according to Accept-Encoding
-        response.setHeader("Vary","Accept-Encoding");
 
-        // Should we vary this response according to Accept-Encoding
+        // Inform caches that responses may vary according to Accept-Encoding (this may be nulled later)
+        response.setHeader("Vary","Accept-Encoding");
+        
+        // Exclude User-Agents
+        String ua = getUserAgent(request);
         String compressionType = selectCompression(request.getHeader("accept-encoding"));
-        if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
+        
+        // If this request is not excluded by agent and if it can be compressed
+        if (!isExcludedAgent(ua) && compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
-            String ua = getUserAgent(request);
-            if (isExcludedAgent(ua))
-            {
-                super.doFilter(request,response,chain);
-                return;
-            }
-            String requestURI = request.getRequestURI();
-            if (isExcludedPath(requestURI))
-            {
-                super.doFilter(request,response,chain);
-                return;
-            }
-            
             // Special handling for etags
             String etag = request.getHeader("If-None-Match"); 
             if (etag!=null)
@@ -291,7 +291,7 @@ public class GzipFilter extends UserAgentFilter
         }
         else
         {
-            super.doFilter(request,response,chain);
+            super.doFilter(request,new VaryResponseWrapper(response),chain);
         }
     }
 
@@ -438,8 +438,8 @@ public class GzipFilter extends UserAgentFilter
         wrappedResponse.setMinCompressSize(_minGzipSize);
     }
      
-    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener{
-        
+    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener
+    {    
         private CompressedResponseWrapper wrappedResponse;
 
         public ContinuationListenerWaitingForWrappedResponseToFinish(CompressedResponseWrapper wrappedResponse)
@@ -529,5 +529,55 @@ public class GzipFilter extends UserAgentFilter
             }
         }
         return false;
+    }
+    
+    private class VaryResponseWrapper extends HttpServletResponseWrapper
+    {
+        public VaryResponseWrapper(HttpServletResponse response)
+        {
+            super(response);
+        }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            if ("content-type".equalsIgnoreCase(name))
+            {   
+                setContentType(value);
+            }
+            else
+                super.addHeader(name,value);
+        }
+
+        @Override
+        public void setHeader(String name, String value)
+        {
+            if ("content-type".equalsIgnoreCase(name))
+            {   
+                setContentType(value);
+            }
+            else
+                super.setHeader(name,value);
+        }
+
+        @Override
+        public void setContentType(String ct)
+        {
+            super.setContentType(ct);
+        
+            if (ct!=null)
+            {
+                int colon=ct.indexOf(";");
+                if (colon>0)
+                    ct=ct.substring(0,colon);
+            }
+        
+            if (_mimeTypes!=null && !_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))
+                // Remove the vary header, because of content type.
+                super.setHeader("Vary",null);
+            else
+                super.setHeader("Vary","Accept-Encoding");
+                
+        }
     }
 }
