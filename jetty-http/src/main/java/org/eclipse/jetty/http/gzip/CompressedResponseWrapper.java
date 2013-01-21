@@ -138,6 +138,8 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
              _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
         {
+            // Remove the vary header, because of content type.
+            setHeader("Vary",null);
             noCompression();
         }
     }

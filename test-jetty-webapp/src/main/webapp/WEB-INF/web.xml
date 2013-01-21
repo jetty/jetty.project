@@ -62,6 +62,10 @@
       <param-value>8192</param-value>
     </init-param>
     <init-param>
+      <param-name>mimeTypes</param-name>
+      <param-value>text/plain,application/xml</param-value>
+    </init-param>
+    <init-param>
       <param-name>minGzipSize</param-name>
       <param-value>2048</param-value>
     </init-param>
