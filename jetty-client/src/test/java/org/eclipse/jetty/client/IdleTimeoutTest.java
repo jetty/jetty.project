@@ -42,7 +42,7 @@ public class IdleTimeoutTest
         final HttpClient client = new HttpClient();
         client.setMaxConnectionsPerAddress(4);
         client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        client.setTimeout(TimeUnit.DAYS.toMillis(1)); // very long timeout on data
+        client.setTimeout(TimeUnit.SECONDS.toMillis(86400)); // very long timeout on data
         client.setIdleTimeout(500); // very short idle timeout
         client.start();
 
