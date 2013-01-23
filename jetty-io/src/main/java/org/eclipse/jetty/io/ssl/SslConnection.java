@@ -100,7 +100,7 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
     };
-    
+
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
         // This connection does not execute calls to onfillable, so they will be called by the selector thread.
@@ -109,7 +109,7 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
-        
+
         if (endPoint instanceof SocketBased)
         {
             try
@@ -220,9 +220,6 @@ public class SslConnection extends AbstractConnection
         // the decrypted readInterest and/or writeFlusher so that they will attempt
         // to do the fill and/or flush again and these calls will do the actually
         // handle the cause.
-
-        super.onFillInterestedFailed(cause);
-
         synchronized(_decryptedEndPoint)
         {
             _decryptedEndPoint.getFillInterest().onFail(cause);
@@ -482,13 +479,13 @@ public class SslConnection extends AbstractConnection
                         LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
                     if (net_filled > 0)
                         _underFlown = false;
-                    
+
                     // Let's try the SSL thang even if we have no net data because in that
                     // case we want to fall through to the handshake handling
                     int pos = BufferUtil.flipToFill(app_in);
-                   
+
                     SSLEngineResult unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
-                    
+
                     BufferUtil.flipToFlush(app_in, pos);
                     if (DEBUG)
                         LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
@@ -663,7 +660,7 @@ public class SslConnection extends AbstractConnection
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
                     if (wrapResult.bytesConsumed()>0)
                         consumed+=wrapResult.bytesConsumed();
-                    
+
                     boolean all_consumed=true;
                     // clear empty buffers to prevent position creeping up the buffer
                     for (ByteBuffer b : appOuts)

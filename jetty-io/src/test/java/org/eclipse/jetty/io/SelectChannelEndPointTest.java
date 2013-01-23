@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -51,6 +45,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -220,7 +220,7 @@ public class SelectChannelEndPointTest
     {
         Socket client = newClient();
 
-        client.setSoTimeout(60000); 
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -425,6 +425,7 @@ public class SelectChannelEndPointTest
     public void testBlockedReadIdle() throws Exception
     {
         Socket client = newClient();
+        InputStream clientInputStream = client.getInputStream();
         OutputStream clientOutputStream = client.getOutputStream();
 
         client.setSoTimeout(5000);
@@ -440,7 +441,7 @@ public class SelectChannelEndPointTest
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
         {
-            int b = client.getInputStream().read();
+            int b = clientInputStream.read();
             assertTrue(b > 0);
             assertEquals(c, (char)b);
         }
@@ -456,7 +457,7 @@ public class SelectChannelEndPointTest
 
         // read until idle shutdown received
         long start = System.currentTimeMillis();
-        int b = client.getInputStream().read();
+        int b = clientInputStream.read();
         assertEquals('E', b);
         long idle = System.currentTimeMillis() - start;
         assertTrue(idle > idleTimeout / 2);
@@ -464,10 +465,12 @@ public class SelectChannelEndPointTest
 
         for (char c : "E: 12345678".toCharArray())
         {
-            b = client.getInputStream().read();
+            b = clientInputStream.read();
             assertTrue(b > 0);
             assertEquals(c, (char)b);
         }
+        b = clientInputStream.read();
+        assertEquals(-1,b);
 
         // But endpoint is still open.
         if(_lastEndPoint.isOpen())
