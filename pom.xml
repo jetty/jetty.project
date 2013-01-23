@@ -237,7 +237,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.7</version>
+          <version>1.0.9</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
