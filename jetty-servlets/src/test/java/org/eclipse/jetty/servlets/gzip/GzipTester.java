@@ -308,13 +308,13 @@ public class GzipTester
     {
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
         Assert.assertThat("Response.status",response.getStatus(),is(status));
+        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
         if (expectedFilesize != (-1))
         {
             Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
             int serverLength = Integer.parseInt(response.getHeader("Content-Length"));
             Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
         }
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
     }
 
     private HttpTester executeRequest(String uri) throws IOException, Exception
@@ -467,6 +467,7 @@ public class GzipTester
         ServletHolder servletHolder = servletTester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         FilterHolder holder = servletTester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
+        holder.setInitParameter("vary","Accept-Encoding");
         return holder;
     }
 
