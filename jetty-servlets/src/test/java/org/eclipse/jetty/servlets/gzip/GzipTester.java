@@ -298,6 +298,7 @@ public class GzipTester
     private void assertResponseHeaders(int expectedFilesize, int status, HttpTester.Response response)
     {
         Assert.assertThat("Response.status",response.getStatus(),is(status));
+        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
         if (expectedFilesize != (-1))
         {
             Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
@@ -456,6 +457,7 @@ public class GzipTester
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         FilterHolder holder = tester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
+        holder.setInitParameter("vary","Accept-Encoding");
         return holder;
     }
 
