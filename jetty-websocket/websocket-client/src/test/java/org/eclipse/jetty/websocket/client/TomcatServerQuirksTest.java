@@ -16,88 +16,90 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.dummy.DummyServer;
-import org.eclipse.jetty.websocket.dummy.DummyServer.ServerConnection;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
+import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TomcatServerQuirksTest
 {
+    public static class LatchedSocket extends WebSocketAdapter
+    {
+        final CountDownLatch openLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketConnect(WebSocketConnection connection)
+        {
+            openLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            dataLatch.countDown();
+        }
+    }
+
     /**
      * Test for when encountering a "Transfer-Encoding: chunked" on a Upgrade Response header.
      * <ul>
      * <li><a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=393075">Eclipse Jetty Bug #393075</a></li>
      * <li><a href="https://issues.apache.org/bugzilla/show_bug.cgi?id=54067">Apache Tomcat Bug #54067</a></li>
      * </ul>
-     * @throws IOException 
+     * 
+     * @throws IOException
      */
     @Test
-    public void testTomcat7_0_32_WithTransferEncoding() throws Exception 
+    public void testTomcat7_0_32_WithTransferEncoding() throws Exception
     {
-        DummyServer server = new DummyServer();
-        int bufferSize = 512;
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), bufferSize);
-        
-        try 
+        BlockheadServer server = new BlockheadServer();
+        WebSocketClient client = new WebSocketClient();
+
+        try
         {
+            int bufferSize = 512;
+
             server.start();
-            
+
             // Setup Client Factory
-            threadPool.start();
-            factory.start();
-            
-            // Create Client
-            WebSocketClient client = new WebSocketClient(factory);
+            client.start();
 
             // Create End User WebSocket Class
-            final CountDownLatch openLatch = new CountDownLatch(1);
-            final CountDownLatch dataLatch = new CountDownLatch(1);
-            WebSocket.OnTextMessage websocket = new WebSocket.OnTextMessage()
-            {
-                public void onOpen(Connection connection)
-                {
-                    openLatch.countDown();
-                }
+            LatchedSocket websocket = new LatchedSocket();
 
-                public void onMessage(String data)
-                {
-                    // System.out.println("data = " + data);
-                    dataLatch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                }
-            };
-            
             // Open connection
             URI wsURI = server.getWsUri();
-            client.open(wsURI, websocket);
+            client.connect(websocket,wsURI);
 
             // Accept incoming connection
             ServerConnection socket = server.accept();
             socket.setSoTimeout(2000); // timeout
-            
+
             // Issue upgrade
-            Map<String,String> extraResponseHeaders = new HashMap<String, String>();
-            extraResponseHeaders.put("Transfer-Encoding", "chunked"); // !! The problem !!
-            socket.upgrade(extraResponseHeaders);
-            
+            // Add the extra problematic header that triggers bug found in jetty-io
+            socket.addResponseHeader("Transfer-Encoding","chunked");
+            socket.upgrade();
+
             // Wait for proper upgrade
-            Assert.assertTrue("Timed out waiting for Client side WebSocket open event", openLatch.await(1, TimeUnit.SECONDS));
+            Assert.assertTrue("Timed out waiting for Client side WebSocket open event",websocket.openLatch.await(1,TimeUnit.SECONDS));
 
             // Have server write frame.
             int length = bufferSize / 2;
@@ -107,18 +109,19 @@ public class TomcatServerQuirksTest
             serverFrame.put((byte)(length >> 8)); // first length byte
             serverFrame.put((byte)(length & 0xFF)); // second length byte
             for (int i = 0; i < length; ++i)
+            {
                 serverFrame.put((byte)'x');
+            }
             serverFrame.flip();
             byte buf[] = serverFrame.array();
             socket.write(buf,0,buf.length);
             socket.flush();
 
-            Assert.assertTrue(dataLatch.await(1000, TimeUnit.SECONDS));
-        } 
-        finally 
+            Assert.assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));
+        }
+        finally
         {
-            factory.stop();
-            threadPool.stop();
+            client.stop();
             server.stop();
         }
     }
