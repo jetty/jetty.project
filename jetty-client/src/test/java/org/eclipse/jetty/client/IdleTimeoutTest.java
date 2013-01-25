@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,15 +37,13 @@ public class IdleTimeoutTest
 {
     public int _repetitions = 30;
     
+    @Slow
     @Ignore
-    @Test
     public void testIdleTimeoutOnBlockingConnector() throws Exception
     {
-        /* TODO port to new client
+        
         final HttpClient client = new HttpClient();
-        client.setMaxConnectionsPerAddress(4);
-        client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        client.setTimeout(TimeUnit.SECONDS.toMillis(86400)); // very long timeout on data
+        client.setMaxConnectionsPerDestination(4);
         client.setIdleTimeout(500); // very short idle timeout
         client.start();
 
@@ -57,10 +57,7 @@ public class IdleTimeoutTest
                 {
                     for (int i=0; i<_repetitions; i++) 
                     {
-                        ContentExchange exchange = new ContentExchange();
-                        exchange.setURL("http://www.google.com/?i="+i);
-                        client.send(exchange);
-                        exchange.waitForDone();
+                        ContentResponse response = client.GET("http://www.google.com/?i="+i);
                         counter.countDown();
                         System.err.println(counter.getCount());
                         Thread.sleep(1000); //wait long enough for idle timeout to expire   
@@ -76,8 +73,5 @@ public class IdleTimeoutTest
         runner.start();
         if (!counter.await(80, TimeUnit.SECONDS))
             Assert.fail("Test did not complete in time");
-            
-            */
-        
     }
 }
