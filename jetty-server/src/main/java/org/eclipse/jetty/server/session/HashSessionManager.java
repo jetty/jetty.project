@@ -468,7 +468,9 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     public void setStoreDirectory (File dir) throws IOException
-    {
+    { 
+        // CanonicalFile is used to capture the base store directory in a way that will
+        // work on Windows.  Case differences may through off later checks using this directory.
         _storeDir=dir.getCanonicalFile();
     }
 
