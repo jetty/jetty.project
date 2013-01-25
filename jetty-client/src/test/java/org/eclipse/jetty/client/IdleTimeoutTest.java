@@ -36,9 +36,10 @@ public class IdleTimeoutTest
     public int _repetitions = 30;
     
     @Ignore
-    //@Test
+    @Test
     public void testIdleTimeoutOnBlockingConnector() throws Exception
     {
+        /* TODO port to new client
         final HttpClient client = new HttpClient();
         client.setMaxConnectionsPerAddress(4);
         client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
@@ -75,6 +76,8 @@ public class IdleTimeoutTest
         runner.start();
         if (!counter.await(80, TimeUnit.SECONDS))
             Assert.fail("Test did not complete in time");
+            
+            */
         
     }
 }

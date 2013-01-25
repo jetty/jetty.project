@@ -298,7 +298,7 @@ public class GzipTester
     private void assertResponseHeaders(int expectedFilesize, int status, HttpTester.Response response)
     {
         Assert.assertThat("Response.status",response.getStatus(),is(status));
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
+        Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
         if (expectedFilesize != (-1))
         {
             Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
