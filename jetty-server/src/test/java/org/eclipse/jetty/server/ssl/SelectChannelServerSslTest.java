@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.security.KeyStore;
 import java.util.Arrays;
 
@@ -153,7 +154,8 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         // Sort the list
         Arrays.sort(points);
 
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        URI uri=_server.getURI();
+        Socket client=newSocket(uri.getHost(),uri.getPort());
         try
         {
             OutputStream os=client.getOutputStream();
