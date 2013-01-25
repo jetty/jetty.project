@@ -606,11 +606,9 @@
   <profiles>
     <profile>
       <id>eclipse-release</id>
-      <!-- Not ready yet
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
-      -->
     </profile>
     <profile>
       <id>update-version</id>
