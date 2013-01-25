@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -436,9 +437,9 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    public void setStoreDirectory (File dir)
+    public void setStoreDirectory (File dir) throws IOException
     {
-        _storeDir=dir;
+        _storeDir=dir.getCanonicalFile();
     }
 
     /* ------------------------------------------------------------ */
@@ -496,8 +497,9 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     protected synchronized HashedSession restoreSession(String idInCuster)
-    {
+    {        
         File file = new File(_storeDir,idInCuster);
+
         FileInputStream in = null;
         Exception error = null;
         try
@@ -522,13 +524,15 @@ public class HashSessionManager extends AbstractSessionManager
             
             if (error != null)
             {
-                if (isDeleteUnrestorableSessions() && file.exists())
+                if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
                     __log.warn("Deleting file for unrestorable session "+idInCuster, error);
                 }
                 else
+                {
                     __log.warn("Problem restoring session "+idInCuster, error);
+                }
             }
             else
                file.delete(); //delete successfully restored file
