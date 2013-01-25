@@ -176,6 +176,7 @@ public class Runner
         System.err.println(" --version                           - display version and exit");
         System.err.println(" --log file                          - request log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
+        System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
         System.err.println(" --stop-port n                       - port to listen for stop command");
         System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present)");
@@ -245,6 +246,7 @@ public class Runner
         String contextPath = __defaultContextPath;
         boolean contextPathSet = false;
         int port = __defaultPort;
+        String host = null;
         int stopPort = 0;
         String stopKey = null;
 
@@ -254,6 +256,8 @@ public class Runner
         {
             if ("--port".equals(args[i]))
                 port=Integer.parseInt(args[++i]);
+            else if ("--host".equals(args[i]))
+                host=args[++i];
             else if ("--stop-port".equals(args[i]))
                 stopPort=Integer.parseInt(args[++i]);
             else if ("--stop-key".equals(args[i]))
@@ -392,6 +396,8 @@ public class Runner
                     {
                         ServerConnector connector = new ServerConnector(_server);
                         connector.setPort(port);
+                        if (host != null)
+                        connector.setHost(host);
                         _server.addConnector(connector);
                         if (_enableStats)
                             connector.addBean(new ConnectorStatistics());
