@@ -124,23 +124,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    public <H extends Handler> H getNestedHandlerByClass(Class<H> byclass)
-    {
-        HandlerWrapper h=this;
-        while (h!=null)
-        {
-            if (byclass.isInstance(h))
-                return (H)h;
-            Handler w = h.getHandler();
-            if (w instanceof HandlerWrapper)
-                h=(HandlerWrapper)w;
-            else break;
-        }
-        return null;
-
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     public void destroy()
     {

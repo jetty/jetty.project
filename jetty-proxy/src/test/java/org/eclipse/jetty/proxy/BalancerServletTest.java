@@ -109,7 +109,7 @@ public class BalancerServletTest
 
     private int getServerPort(Server server)
     {
-        return ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
+        return server.getURI().getPort();
     }
 
     protected byte[] sendRequestToBalancer(String path) throws Exception

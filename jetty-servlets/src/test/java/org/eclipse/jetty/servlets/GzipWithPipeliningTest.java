@@ -120,15 +120,7 @@ public class GzipWithPipeliningTest
         // Start Server
         server.start();
 
-        NetworkConnector conn = (NetworkConnector)server.getConnectors()[0];
-        String host = conn.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = conn.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
-        // System.out.printf("Server URI: %s%n",serverUri);
+        serverUri = server.getURI();
     }
 
     @After
