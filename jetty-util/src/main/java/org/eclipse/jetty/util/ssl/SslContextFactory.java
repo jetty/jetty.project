@@ -35,6 +35,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,8 +48,10 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -837,7 +840,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadKeyStore() throws Exception
     {
-        return _keyStore != null ? _keyStore : getKeyStore(_keyStoreInputStream,
+        return _keyStore != null ? _keyStore : CertificateUtils.getKeyStore(_keyStoreInputStream,
                 _keyStorePath, _keyStoreType, _keyStoreProvider,
                 _keyStorePassword==null? null: _keyStorePassword.toString());
     }
@@ -850,32 +853,9 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadTrustStore() throws Exception
     {
-        return _trustStore != null ? _trustStore : getKeyStore(_trustStoreInputStream,
+        return _trustStore != null ? _trustStore : CertificateUtils.getKeyStore(_trustStoreInputStream,
                 _trustStorePath, _trustStoreType,  _trustStoreProvider,
                 _trustStorePassword==null? null: _trustStorePassword.toString());
-    }
-
-    /**
-     * Loads keystore using an input stream or a file path in the same
-     * order of precedence.
-     *
-     * Required for integrations to be able to override the mechanism
-     * used to load a keystore in order to provide their own implementation.
-     *
-     * @param storeStream keystore input stream
-     * @param storePath path of keystore file
-     * @param storeType keystore type
-     * @param storeProvider keystore provider
-     * @param storePassword keystore password
-     * @return created keystore
-     * @throws Exception if the keystore cannot be obtained
-     *
-     * @deprecated
-     */
-    @Deprecated
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
-    {
-        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
     }
 
     /**
@@ -1327,6 +1307,91 @@ public class SslContextFactory extends AbstractLifeCycle
         return address != null ? newSSLEngine(address.getAddress().getHostAddress(), address.getPort()) : newSSLEngine();
     }
 
+    public static X509Certificate[] getCertChain(SSLSession sslSession)
+    {
+        try
+        {
+            javax.security.cert.X509Certificate javaxCerts[]=sslSession.getPeerCertificateChain();
+            if (javaxCerts==null||javaxCerts.length==0)
+                return null;
+
+            int length=javaxCerts.length;
+            X509Certificate[] javaCerts=new X509Certificate[length];
+
+            java.security.cert.CertificateFactory cf=java.security.cert.CertificateFactory.getInstance("X.509");
+            for (int i=0; i<length; i++)
+            {
+                byte bytes[]=javaxCerts[i].getEncoded();
+                ByteArrayInputStream stream=new ByteArrayInputStream(bytes);
+                javaCerts[i]=(X509Certificate)cf.generateCertificate(stream);
+            }
+
+            return javaCerts;
+        }
+        catch (SSLPeerUnverifiedException pue)
+        {
+            return null;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(Log.EXCEPTION,e);
+            return null;
+        }
+    }
+    
+    /**
+     * Given the name of a TLS/SSL cipher suite, return an int representing it effective stream
+     * cipher key strength. i.e. How much entropy material is in the key material being fed into the
+     * encryption routines.
+     * 
+     * <p>
+     * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
+     * Version 1.0, Appendix C. CipherSuite definitions:
+     * 
+     * <pre>
+     *                         Effective 
+     *     Cipher       Type    Key Bits 
+     *                         
+     *     NULL       * Stream     0     
+     *     IDEA_CBC     Block    128     
+     *     RC2_CBC_40 * Block     40     
+     *     RC4_40     * Stream    40     
+     *     RC4_128      Stream   128     
+     *     DES40_CBC  * Block     40     
+     *     DES_CBC      Block     56     
+     *     3DES_EDE_CBC Block    168     
+     * </pre>
+     * 
+     * @param cipherSuite String name of the TLS cipher suite.
+     * @return int indicating the effective key entropy bit-length.
+     */
+    public static int deduceKeyLength(String cipherSuite)
+    {
+        // Roughly ordered from most common to least common.
+        if (cipherSuite == null)
+            return 0;
+        else if (cipherSuite.indexOf("WITH_AES_256_") >= 0)
+            return 256;
+        else if (cipherSuite.indexOf("WITH_RC4_128_") >= 0)
+            return 128;
+        else if (cipherSuite.indexOf("WITH_AES_128_") >= 0)
+            return 128;
+        else if (cipherSuite.indexOf("WITH_RC4_40_") >= 0)
+            return 40;
+        else if (cipherSuite.indexOf("WITH_3DES_EDE_CBC_") >= 0)
+            return 168;
+        else if (cipherSuite.indexOf("WITH_IDEA_CBC_") >= 0)
+            return 128;
+        else if (cipherSuite.indexOf("WITH_RC2_CBC_40_") >= 0)
+            return 40;
+        else if (cipherSuite.indexOf("WITH_DES40_CBC_") >= 0)
+            return 40;
+        else if (cipherSuite.indexOf("WITH_DES_CBC_") >= 0)
+            return 56;
+        else
+            return 0;
+    }
+    
     @Override
     public String toString()
     {
