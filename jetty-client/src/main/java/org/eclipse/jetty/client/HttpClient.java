@@ -500,7 +500,9 @@ public class HttpClient extends ContainerLifeCycle
             Future<Connection> result = new ConnectionCallback(destination, promise);
             selectorManager.connect(channel, result);
         }
-        catch (IOException x)
+        // Must catch all exceptions, since some like
+        // UnresolvedAddressException are not IOExceptions.
+        catch (Exception x)
         {
             if (channel != null)
                 close(channel);
