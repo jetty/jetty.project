@@ -97,10 +97,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
-                "SunX509" : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
+                KeyManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
+    
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.TrustManagerFactory.algorithm") == null ?
-                "SunX509" : Security.getProperty("ssl.TrustManagerFactory.algorithm"));
+                TrustManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.TrustManagerFactory.algorithm"));
 
     /** Default value for the keystore location path. */
     public static final String DEFAULT_KEYSTORE_PATH =
