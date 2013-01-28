@@ -97,7 +97,7 @@ public class Parser
             // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
             throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
-        policy.assertValidPayloadLength((int)len);
+        policy.assertValidMessageSize((int)len);
 
         switch (frame.getOpCode())
         {
@@ -540,7 +540,6 @@ public class Parser
         {
             if (payload == null)
             {
-                getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
                 payload = bufferPool.acquire(payloadLength,false);
                 BufferUtil.clearToFill(payload);

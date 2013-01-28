@@ -481,10 +481,6 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        for (Response.ResponseListener listener : listeners)
-            if (listener instanceof Schedulable)
-                ((Schedulable)listener).schedule(scheduler);
-
         HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
@@ -875,6 +871,16 @@ public class HttpClient extends ContainerLifeCycle
         return encodingField;
     }
 
+    protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
+    {
+        return new HttpConnection(httpClient, endPoint, destination);
+    }
+
+    protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+    {
+        return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -920,12 +926,9 @@ public class HttpClient extends ContainerLifeCycle
                     SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
                     engine.setUseClientMode(true);
 
-                    SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
-                    // TODO: configureConnection => implies we should use SslConnectionFactory to do it
-
+                    SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-                    HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
-                    // TODO: configureConnection, see above
+                    HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
 
                     appEndPoint.setConnection(connection);
                     callback.promise.succeeded(connection);
@@ -935,8 +938,7 @@ public class HttpClient extends ContainerLifeCycle
             }
             else
             {
-                HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
-                // TODO: configureConnection, see above
+                HttpConnection connection = newHttpConnection(HttpClient.this, endPoint, destination);
                 callback.promise.succeeded(connection);
                 return connection;
             }

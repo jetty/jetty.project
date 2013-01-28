@@ -255,7 +255,7 @@ public class ShutdownMonitor extends Thread
     {
         if (isAlive())
         {
-            System.out.printf("ShutdownMonitor already started");
+            System.err.printf("ShutdownMonitor already started");
             return; // cannot start it again
         }
         startListenSocket();
@@ -270,8 +270,9 @@ public class ShutdownMonitor extends Thread
     private void startListenSocket()
     {
         if (this.port < 0)
-        {
-            System.out.println("ShutdownMonitor not in use (port < 0): " + port);
+        {            
+            if (DEBUG)
+                System.err.println("ShutdownMonitor not in use (port < 0): " + port);
             return;
         }
 

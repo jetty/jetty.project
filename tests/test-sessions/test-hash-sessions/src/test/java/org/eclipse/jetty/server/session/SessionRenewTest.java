@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionManager;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SessionRenewTest extends AbstractSessionRenewTest
@@ -40,10 +41,17 @@ public class SessionRenewTest extends AbstractSessionRenewTest
                 File tmpDir = new File(System.getProperty("java.io.tmpdir"), "hash-session-renew-test");
                 tmpDir.deleteOnExit();
                 tmpDir.mkdirs();
-                sessionManager.setStoreDirectory(tmpDir);
+                try
+                {
+                    sessionManager.setStoreDirectory(tmpDir);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
                 return sessionManager;
             }
-            
+
         };
     }
 

@@ -36,11 +36,12 @@ This example uses and tests newer aspects of the servlet specification such as a
       webapps/test-spec.xml
       </pre>
   </li>
-  <li>Edit your $JETTY_HOME/start.ini file and add the following lines:
+  <li>Edit your $JETTY_HOME/start.ini file and uncomment the following lines:
       <pre>
       OPTIONS=plus
+      etc/jetty-plus.xml
       OPTIONS=annotations
-      OPTIONS=jta
+      etc/jetty-annotations.xml
       </pre>
   </li>
  </ol>

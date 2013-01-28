@@ -43,8 +43,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.client.internal.ConnectPromise;
-import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
+import org.eclipse.jetty.websocket.client.io.ConnectPromise;
+import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -290,13 +290,8 @@ public class WebSocketClient extends ContainerLifeCycle
         this.bufferPool = bufferPool;
     }
 
-    public void setConnectTimeout(int connectTimeout)
+    public void setConnectTimeout(long connectTimeout)
     {
-        if (isStarted())
-        {
-            throw new IllegalStateException("Cannot change connect timeout, WebSocketClient is already started");
-        }
-
         if (connectTimeout < 0)
         {
             throw new IllegalStateException("Connect Timeout cannot be negative");

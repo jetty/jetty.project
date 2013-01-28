@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
@@ -180,8 +180,6 @@ public class ProxySPDYToHTTPTest
         });
 
         assertThat("Reply is send to SPDY client", replyLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -227,8 +225,6 @@ public class ProxySPDYToHTTPTest
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("data has been received", dataLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -272,19 +268,17 @@ public class ProxySPDYToHTTPTest
             }
         });
 
-        stream.data(new StringDataInfo(data, true));
+        stream.data(new StringDataInfo(data, true), new Callback.Adapter());
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("data has been received", dataLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testSYNWithSplitRequestContentThenREPLYAndDATA() throws Exception
     {
         final String data = "0123456789ABCDEF";
-        final String data2 = "ABCDEF0123456789";
+        final String data2 = "ABCDEF";
         final String header = "foo";
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
@@ -316,19 +310,20 @@ public class ProxySPDYToHTTPTest
                 result.write(dataInfo.asBytes(true), 0, dataInfo.length());
                 if (dataInfo.isClose())
                 {
+                    System.out.println("client received DATA: " + result);
                     assertThat("received data matches send data", result.toString(), is(data + data2));
                     dataLatch.countDown();
                 }
             }
         });
 
-        stream.data(new StringDataInfo(data, false));
-        stream.data(new StringDataInfo(data2, true));
+        System.out.println("DATA1 sent!!!!!!!!");
+        stream.data(new StringDataInfo(data, false), new Callback.Adapter());
+        System.out.println("DATA2 sent!!!!!!!!");
+        stream.data(new StringDataInfo(data2, true), new Callback.Adapter());
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("data has been received", dataLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -399,7 +394,7 @@ public class ProxySPDYToHTTPTest
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
 
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
+        //        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -425,7 +420,7 @@ public class ProxySPDYToHTTPTest
 
         Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
 
-        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
+        //        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     private class TestServerHandler extends DefaultHandler
@@ -443,6 +438,7 @@ public class ProxySPDYToHTTPTest
         public void handle(String target, Request baseRequest, HttpServletRequest request,
                            HttpServletResponse response) throws IOException, ServletException
         {
+            System.out.println("HANDLER CALLED!!!");
             assertThat("Via Header is set", baseRequest.getHeader("X-Forwarded-For"), is(notNullValue()));
             assertThat("X-Forwarded-For Header is set", baseRequest.getHeader("X-Forwarded-For"),
                     is(notNullValue()));

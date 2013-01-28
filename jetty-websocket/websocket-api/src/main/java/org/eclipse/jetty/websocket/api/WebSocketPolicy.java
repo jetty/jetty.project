@@ -36,32 +36,25 @@ public class WebSocketPolicy
     }
 
     /**
-     * The maximum allowed payload size (validated in both directions)
-     * <p>
-     * Default: 65536 (64K)
-     */
-    private int maxPayloadSize = 64 * KB;
-
-    /**
      * The maximum size of a text message during parsing/generating.
      * <p>
-     * Default: 16384 (16 K)
+     * Default: 65536 (64 K)
      */
-    private int maxTextMessageSize = 64 * KB;
-
-    /**
-     * The maximum size of a binary message during parsing/generating.
-     * <p>
-     * Default: -1 (no validation)
-     */
-    private int maxBinaryMessageSize = 64 * KB;
+    private long maxMessageSize = 64 * KB;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
      * <p>
      * Default: 300000 (ms)
      */
-    private int idleTimeout = 300000;
+    private long idleTimeout = 300000;
+
+    /**
+     * The size of the input (read from network layer) buffer size.
+     * <p>
+     * Default: 4096 (4 K)
+     */
+    private int inputBufferSize = 4 * KB;
 
     /**
      * Behavior of the websockets
@@ -73,35 +66,14 @@ public class WebSocketPolicy
         this.behavior = behavior;
     }
 
-    public void assertValidBinaryMessageSize(int requestedSize)
+    public void assertValidMessageSize(int requestedSize)
     {
-        if (maxBinaryMessageSize > 0)
+        if (maxMessageSize > 0)
         {
             // validate it
-            if (requestedSize > maxBinaryMessageSize)
+            if (requestedSize > maxMessageSize)
             {
-                throw new MessageTooLargeException("Requested binary message size [" + requestedSize + "] exceeds maximum size [" + maxBinaryMessageSize + "]");
-            }
-        }
-    }
-
-    public void assertValidPayloadLength(int payloadLength)
-    {
-        // validate to buffer sizes
-        if (payloadLength > maxPayloadSize)
-        {
-            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + maxPayloadSize + "]");
-        }
-    }
-
-    public void assertValidTextMessageSize(int requestedSize)
-    {
-        if (maxTextMessageSize > 0)
-        {
-            // validate it
-            if (requestedSize > maxTextMessageSize)
-            {
-                throw new MessageTooLargeException("Requested text message size [" + requestedSize + "] exceeds maximum size [" + maxTextMessageSize + "]");
+                throw new MessageTooLargeException("Requested message size [" + requestedSize + "] exceeds maximum size [" + maxMessageSize + "]");
             }
         }
     }
@@ -110,9 +82,8 @@ public class WebSocketPolicy
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
-        clone.maxPayloadSize = this.maxPayloadSize;
-        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxTextMessageSize = this.maxTextMessageSize;
+        clone.maxMessageSize = this.maxMessageSize;
+        clone.inputBufferSize = this.inputBufferSize;
         return clone;
     }
 
@@ -121,47 +92,33 @@ public class WebSocketPolicy
         return behavior;
     }
 
-    public int getIdleTimeout()
+    public long getIdleTimeout()
     {
         return idleTimeout;
     }
 
-    public int getMaxBinaryMessageSize()
+    public int getInputBufferSize()
     {
-        return maxBinaryMessageSize;
+        return inputBufferSize;
     }
 
-    public int getMaxPayloadSize()
+    public long getMaxMessageSize()
     {
-        return maxPayloadSize;
+        return maxMessageSize;
     }
 
-    public int getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
-    }
-
-    public void setIdleTimeout(int idleTimeout)
+    public void setIdleTimeout(long idleTimeout)
     {
         this.idleTimeout = idleTimeout;
     }
 
-    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
+    public void setInputBufferSize(int inputBufferSize)
     {
-        this.maxBinaryMessageSize = maxBinaryMessageSize;
+        this.inputBufferSize = inputBufferSize;
     }
 
-    public void setMaxPayloadSize(int maxPayloadSize)
+    public void setMaxMessageSize(long maxMessageSize)
     {
-        if (maxPayloadSize < 0)
-        {
-            throw new IllegalStateException("Cannot have payload size be a negative number");
-        }
-        this.maxPayloadSize = maxPayloadSize;
-    }
-
-    public void setMaxTextMessageSize(int maxTextMessageSize)
-    {
-        this.maxTextMessageSize = maxTextMessageSize;
+        this.maxMessageSize = maxMessageSize;
     }
 }

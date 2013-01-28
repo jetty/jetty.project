@@ -208,7 +208,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory()
     {
-        this(true);
+        this(false);
     }
 
     /**

@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /* ------------------------------------------------------------ */
 /** An Abstract implementation of an Idle Timeout.
- * 
+ *
  * This implementation is optimised that timeout operations are not cancelled on
- * every operation. Rather timeout are allowed to expire and a check is then made 
- * to see when the last operation took place.  If the idle timeout has not expired, 
+ * every operation. Rather timeout are allowed to expire and a check is then made
+ * to see when the last operation took place.  If the idle timeout has not expired,
  * the timeout is rescheduled for the earliest possible time a timeout could occur.
- * 
+ *
  */
 public abstract class IdleTimeout
 {
@@ -44,7 +44,7 @@ public abstract class IdleTimeout
     private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private volatile long _idleTimeout;
     private volatile long _idleTimestamp=System.currentTimeMillis();
-    
+
     private final Runnable _idleTask = new Runnable()
     {
         @Override
@@ -63,12 +63,12 @@ public abstract class IdleTimeout
     {
         _scheduler=scheduler;
     }
-    
+
     public long getIdleTimestamp()
     {
         return _idleTimestamp;
     }
-    
+
     public long getIdleTimeout()
     {
         return _idleTimeout;
@@ -78,22 +78,22 @@ public abstract class IdleTimeout
     {
         long old=_idleTimeout;
         _idleTimeout = idleTimeout;
-        
+
         // Do we have an old timeout
         if (old>0)
         {
             // if the old was less than or equal to the new timeout, then nothing more to do
-            if (old<=_idleTimeout)
+            if (old<=idleTimeout)
                 return;
-            
+
             // old timeout is too long, so cancel it.
             Scheduler.Task oldTimeout = _timeout.getAndSet(null);
             if (oldTimeout != null)
                 oldTimeout.cancel();
         }
-        
+
         // If we have a new timeout, then check and reschedule
-        if (_idleTimeout>0 && isOpen())
+        if (idleTimeout>0 && isOpen())
             _idleTask.run();
     }
 
@@ -103,7 +103,7 @@ public abstract class IdleTimeout
     {
         _idleTimestamp=System.currentTimeMillis();
     }
-    
+
     private void scheduleIdleTimeout(long delay)
     {
         Scheduler.Task newTimeout = null;
@@ -113,20 +113,20 @@ public abstract class IdleTimeout
         if (oldTimeout != null)
             oldTimeout.cancel();
     }
-    
+
     public void onOpen()
     {
         if (_idleTimeout>0)
             _idleTask.run();
     }
-    
+
     protected void close()
     {
         Scheduler.Task oldTimeout = _timeout.getAndSet(null);
         if (oldTimeout != null)
             oldTimeout.cancel();
     }
-    
+
     protected long checkIdleTimeout()
     {
         if (isOpen())
@@ -158,14 +158,14 @@ public abstract class IdleTimeout
         }
         return -1;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** This abstract method is called when the idle timeout has expired.
      * @param timeout a TimeoutException
      */
     abstract protected void onIdleExpired(TimeoutException timeout);
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** This abstract method should be called to check if idle timeouts
      * should still be checked.

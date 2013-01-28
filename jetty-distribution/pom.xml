@@ -289,7 +289,7 @@
               <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
               <includeArtifactIds>javax.transaction</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jta</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
           <execution>

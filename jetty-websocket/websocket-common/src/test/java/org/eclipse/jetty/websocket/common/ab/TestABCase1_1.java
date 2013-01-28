@@ -451,7 +451,7 @@ public class TestABCase1_1
 
         expected.flip();
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setMaxTextMessageSize(length);
+        policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -488,7 +488,7 @@ public class TestABCase1_1
         expected.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setMaxTextMessageSize(length);
+        policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

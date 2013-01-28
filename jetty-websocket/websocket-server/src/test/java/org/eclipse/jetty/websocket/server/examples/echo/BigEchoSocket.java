@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * Example Socket for echoing back Big data using the Annotation techniques along with stateless techniques.
  */
-@WebSocket(maxTextSize = 64 * 1024, maxBinarySize = 64 * 1024)
+@WebSocket(maxMessageSize = 64 * 1024)
 public class BigEchoSocket
 {
     @OnWebSocketMessage

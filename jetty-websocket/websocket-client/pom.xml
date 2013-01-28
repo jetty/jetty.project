@@ -44,27 +44,39 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>1.1</version>
                 <executions>
-                  <execution>
-                    <id>ban-java-servlet-api</id>
-                    <goals>
-                      <goal>enforce</goal>
-                    </goals>
-                    <configuration>
-                      <rules>
-                        <bannedDependencies>
-                          <includes>
-                            <include>javax.servlet</include>
-                            <include>servletapi</include>
-                            <include>org.eclipse.jetty.orbit:javax.servlet</include>
-                            <include>org.mortbay.jetty:servlet-api</include>
-                            <include>jetty:servlet-api</include>
-                          </includes>
-                          <searchTransitive>true</searchTransitive>
-                          <message>The servlet-api dependency is banned in websocket-client as it causes problems in apps that use client only.</message>
-                        </bannedDependencies>
-                      </rules>
-                    </configuration>
-                  </execution>
+                    <execution>
+                        <id>ban-java-servlet-api</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <includes>
+                                        <include>javax.servlet</include>
+                                        <include>servletapi</include>
+                                        <include>org.eclipse.jetty.orbit:javax.servlet</include>
+                                        <include>org.mortbay.jetty:servlet-api</include>
+                                        <include>jetty:servlet-api</include>
+                                    </includes>
+                                    <searchTransitive>true</searchTransitive>
+                                    <message>The servlet-api dependency is banned in websocket-client as it causes problems in apps that use client only.</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>tests-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

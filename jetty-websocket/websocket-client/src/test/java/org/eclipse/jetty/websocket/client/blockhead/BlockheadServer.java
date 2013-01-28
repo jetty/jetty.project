@@ -33,7 +33,9 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,6 +89,7 @@ public class BlockheadServer
         private OutputStream out;
         private InputStream in;
 
+        private Map<String, String> extraResponseHeaders = new HashMap<>();
         private OutgoingFrames outgoing = this;
 
         public ServerConnection(Socket socket)
@@ -99,6 +102,14 @@ public class BlockheadServer
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
             this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        }
+
+        /**
+         * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
+         */
+        public void addResponseHeader(String rawkey, String rawvalue)
+        {
+            extraResponseHeaders.put(rawkey,rawvalue);
         }
 
         public void close() throws IOException
@@ -411,6 +422,16 @@ public class BlockheadServer
                     delim = true;
                 }
                 resp.append("\r\n");
+            }
+            if (extraResponseHeaders.size() > 0)
+            {
+                for (Map.Entry<String, String> xheader : extraResponseHeaders.entrySet())
+                {
+                    resp.append(xheader.getKey());
+                    resp.append(": ");
+                    resp.append(xheader.getValue());
+                    resp.append("\r\n");
+                }
             }
             resp.append("\r\n");
 

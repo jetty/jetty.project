@@ -64,10 +64,17 @@ public class IdleSessionTest
         @Override
         public SessionManager newSessionManager()
         {
-            HashSessionManager manager = (HashSessionManager)super.newSessionManager();
-            manager.setStoreDirectory(_storeDir);
-            manager.setIdleSavePeriod(_idlePeriod);
-            return manager;
+            try
+            {
+                HashSessionManager manager = (HashSessionManager)super.newSessionManager();
+                manager.setStoreDirectory(_storeDir);
+                manager.setIdleSavePeriod(_idlePeriod);
+                return manager;
+            }
+            catch ( IOException e)
+            {
+                return null;
+            }
         }
 
 

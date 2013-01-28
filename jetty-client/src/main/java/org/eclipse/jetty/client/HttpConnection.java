@@ -22,7 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -108,7 +108,16 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     public void send(Request request, Response.CompleteListener listener)
     {
-        send(request, Collections.<Response.ResponseListener>singletonList(listener));
+        ArrayList<Response.ResponseListener> listeners = new ArrayList<>(2);
+        if (request.getTimeout() > 0)
+        {
+            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(request);
+            timeoutListener.schedule(client.getScheduler());
+            listeners.add(timeoutListener);
+        }
+        if (listener != null)
+            listeners.add(listener);
+        send(request, listeners);
     }
 
     public void send(Request request, List<Response.ResponseListener> listeners)
@@ -124,10 +133,6 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
         setExchange(exchange);
         conversation.getExchanges().offer(exchange);
-
-        for (Response.ResponseListener listener : listeners)
-            if (listener instanceof Schedulable)
-                ((Schedulable)listener).schedule(client.getScheduler());
 
         sender.send(exchange);
     }
