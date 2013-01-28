@@ -79,10 +79,10 @@ public class HttpRequest implements Request
     {
         this.client = client;
         this.conversation = conversation;
-        scheme(uri.getScheme());
+        scheme = uri.getScheme();
         host = uri.getHost();
-        port = uri.getPort();
-        path(uri.getPath());
+        port = client.normalizePort(scheme, uri.getPort());
+        path = uri.getPath();
         String query = uri.getRawQuery();
         if (query != null)
         {
@@ -482,7 +482,11 @@ public class HttpRequest implements Request
 
     private URI buildURI()
     {
-        return URI.create(getScheme() + "://" + getHost() + ":" + getPort() + getPath());
+        String path = getPath();
+        URI result = URI.create(path);
+        if (!result.isAbsolute())
+            result = URI.create(getScheme() + "://" + getHost() + ":" + getPort() + path);
+        return result;
     }
 
     @Override

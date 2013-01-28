@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -69,17 +70,32 @@ public class ExternalSiteTest
             Assume.assumeNoException(x);
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch1 = new CountDownLatch(1);
         client.newRequest(host, port).send(new Response.CompleteListener()
         {
             @Override
             public void onComplete(Result result)
             {
                 if (!result.isFailed() && result.getResponse().getStatus() == 200)
-                    latch.countDown();
+                    latch1.countDown();
             }
         });
+        Assert.assertTrue(latch1.await(10, TimeUnit.SECONDS));
 
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        // Try again the same URI, but without specifying the port
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        client.newRequest("http://" + host).send(new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                Assert.assertTrue(result.isSucceeded());
+                Assert.assertEquals(200, result.getResponse().getStatus());
+                URI uri = result.getRequest().getURI();
+                Assert.assertTrue(uri.getPort() > 0);
+                latch2.countDown();
+            }
+        });
+        Assert.assertTrue(latch2.await(10, TimeUnit.SECONDS));
     }
 }

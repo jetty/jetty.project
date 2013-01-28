@@ -444,8 +444,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination provideDestination(String scheme, String host, int port)
     {
-        if (port <= 0)
-            port = "https".equalsIgnoreCase(scheme) ? 443 : 80;
+        port = normalizePort(scheme, port);
 
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
@@ -869,6 +868,12 @@ public class HttpClient extends ContainerLifeCycle
     protected HttpField getAcceptEncodingField()
     {
         return encodingField;
+    }
+
+    protected int normalizePort(String scheme, int port)
+    {
+        return port > 0 ? port :
+                "https".equalsIgnoreCase(scheme) ? 443 : 80;
     }
 
     protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
