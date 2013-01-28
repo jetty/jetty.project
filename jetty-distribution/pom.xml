@@ -436,85 +436,72 @@
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
       <version>${project.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jndi</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-http-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-example-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
-    <!-- NOT READY YET 
-     -->
-    <!-- <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-jndi</artifactId> 
-      <version>${project.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
-      <artifactId>jetty-client</artifactId> <version>${project.version}</version> 
-      </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-policy</artifactId> 
-      <version>${project.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> 
-      <artifactId>jetty-monitor</artifactId> <version>${project.version}</version> 
-      </dependency> <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-overlay-deployer</artifactId> 
-      <version>${project.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty.aggregate</groupId> 
-      <artifactId>jetty-all</artifactId> <classifier>javadoc</classifier> <type>jar</type> 
-      <version>${project.version}</version> </dependency> -->
   </dependencies>
 </project>
