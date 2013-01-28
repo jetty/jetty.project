@@ -64,7 +64,7 @@ public class HttpSender implements AsyncContentProvider.Listener
     }
 
     @Override
-    public void onContent(boolean last)
+    public void onContent()
     {
         while (true)
         {
@@ -134,13 +134,16 @@ public class HttpSender implements AsyncContentProvider.Listener
             requestNotifier.notifyBegin(request);
 
             ContentProvider content = request.getContent();
-            if (content instanceof AsyncContentProvider)
-                ((AsyncContentProvider)content).setListener(this);
-
             this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
 
             boolean updated = updateSendState(SendState.IDLE, SendState.EXECUTE);
             assert updated;
+
+            // Setting the listener may trigger calls to onContent() by other
+            // threads so we must set it only after the state has been updated
+            if (content instanceof AsyncContentProvider)
+                ((AsyncContentProvider)content).setListener(this);
+
             send();
         }
     }
@@ -308,8 +311,7 @@ public class HttpSender implements AsyncContentProvider.Listener
                                         {
                                             if (updateSendState(currentSendState, SendState.EXECUTE))
                                             {
-                                                // TODO: reload the chunk ?
-                                                LOG.debug("??? content for {}", request);
+                                                LOG.debug("Deferred content available for {}", request);
                                                 break out;
                                             }
                                             break;
@@ -338,8 +340,24 @@ public class HttpSender implements AsyncContentProvider.Listener
                     {
                         if (generator.isEnd())
                         {
-                            if (!updateSendState(SendState.EXECUTE, SendState.IDLE))
-                                throw new IllegalStateException();
+                            out: while (true)
+                            {
+                                currentSendState = sendState.get();
+                                switch (currentSendState)
+                                {
+                                    case EXECUTE:
+                                    case SCHEDULE:
+                                    {
+                                        if (!updateSendState(currentSendState, SendState.IDLE))
+                                            throw new IllegalStateException();
+                                        break out;
+                                    }
+                                    default:
+                                    {
+                                        throw new IllegalStateException();
+                                    }
+                                }
+                            }
                             success();
                         }
                         return;
