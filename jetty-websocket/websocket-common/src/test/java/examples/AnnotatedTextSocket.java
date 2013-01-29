@@ -19,8 +19,10 @@
 package examples;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.events.EventCapture;
@@ -42,10 +44,15 @@ public class AnnotatedTextSocket
         capture.add("onConnect(%s)", conn);
     }
 
+    @OnWebSocketError
+    public void onError(WebSocketException e)
+    {
+        capture.add("onError(%s: %s)",e.getClass().getSimpleName(),e.getMessage());
+    }
+
     @OnWebSocketMessage
     public void onText(String message)
     {
         capture.add("onText(%s)",capture.q(message));
     }
-
 }

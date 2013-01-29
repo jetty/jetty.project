@@ -28,10 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -58,6 +60,11 @@ public class EventDriverFactory
     private static final ParamList validCloseParams;
 
     /**
+     * Parameter list for &#064;OnWebSocketError
+     */
+    private static final ParamList validErrorParams;
+
+    /**
      * Parameter list for &#064;OnWebSocketFrame
      */
     private static final ParamList validFrameParams;
@@ -75,6 +82,10 @@ public class EventDriverFactory
         validCloseParams = new ParamList();
         validCloseParams.addParams(int.class,String.class);
         validCloseParams.addParams(WebSocketConnection.class,int.class,String.class);
+
+        validErrorParams = new ParamList();
+        validErrorParams.addParams(WebSocketException.class);
+        validErrorParams.addParams(WebSocketConnection.class,WebSocketException.class);
 
         validTextParams = new ParamList();
         validTextParams.addParams(String.class);
@@ -309,6 +320,14 @@ public class EventDriverFactory
                     assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
                     assertUnset(events.onClose,OnWebSocketClose.class,method);
                     events.onClose = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketError.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketError.class,validErrorParams);
+                    assertUnset(events.onException,OnWebSocketError.class,method);
+                    events.onException = new EventMethod(pojo,method);
                     continue;
                 }
 

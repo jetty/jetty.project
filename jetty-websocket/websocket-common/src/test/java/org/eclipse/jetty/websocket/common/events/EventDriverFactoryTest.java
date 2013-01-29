@@ -34,11 +34,6 @@ import org.eclipse.jetty.websocket.common.annotations.MyEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.NoopSocket;
 import org.eclipse.jetty.websocket.common.annotations.NotASocket;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.common.events.EventMethod;
-import org.eclipse.jetty.websocket.common.events.EventMethods;
-import org.eclipse.jetty.websocket.common.events.ListenerEventDriver;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -330,7 +325,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onException",methods.onException);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
