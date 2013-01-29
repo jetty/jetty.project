@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -110,7 +112,7 @@ public class StatisticsServlet extends HttpServlet
         }
         if (_restrictToLocalhost)
         {
-            if (!"127.0.0.1".equals(req.getRemoteAddr()))
+            if (!isLoopbackAddress(req.getRemoteAddr()))
             {
                 resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
@@ -132,12 +134,20 @@ public class StatisticsServlet extends HttpServlet
 
     }
 
-    
-    
-    /**
-     * @param response
-     * @throws IOException
-     */
+    private boolean isLoopbackAddress(String address)
+    {
+        try
+        {
+            InetAddress addr = InetAddress.getByName(address); 
+            return addr.isLoopbackAddress();
+        }
+        catch (UnknownHostException e )
+        {
+            LOG.warn("Warning: attempt to access statistics servlet from " + address, e);
+            return false;
+        }
+    }
+
     private void sendXmlResponse(HttpServletResponse response) throws IOException
     {
         StringBuilder sb = new StringBuilder();
