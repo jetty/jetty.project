@@ -22,11 +22,13 @@ import static org.hamcrest.Matchers.*;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -205,6 +207,47 @@ public class WebSocketClientTest
         finally
         {
             factSmall.stop();
+        }
+    }
+
+    @Test
+    public void testParameterMap() throws Exception
+    {
+        WebSocketClient fact = new WebSocketClient();
+        fact.start();
+        try
+        {
+            TrackingSocket wsocket = new TrackingSocket();
+
+            URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
+            Future<Session> future = client.connect(wsocket,wsUri);
+
+            ServerConnection ssocket = server.accept();
+            ssocket.upgrade();
+
+            future.get(500,TimeUnit.MILLISECONDS);
+
+            Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+
+            Session session = (Session)wsocket.getConnection();
+            UpgradeRequest req = session.getUpgradeRequest();
+            Assert.assertThat("Upgrade Request",req,notNullValue());
+
+            Map<String, String[]> parameterMap = req.getParameterMap();
+            Assert.assertThat("Parameter Map",parameterMap,notNullValue());
+
+            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(new String[]
+            { "cashews" }));
+            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(new String[]
+            { "handful" }));
+            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(new String[]
+            { "off" }));
+
+            Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
+        }
+        finally
+        {
+            fact.stop();
         }
     }
 }

@@ -49,6 +49,9 @@ public class ServletWebSocketRequest extends UpgradeRequest
         setMethod(request.getMethod());
         setHttpVersion(request.getProtocol());
 
+        // Copy parameters
+        super.setParameterMap(request.getParameterMap());
+
         // Copy Cookies
         cookieMap = new HashMap<String, String>();
         for (Cookie cookie : request.getCookies())
@@ -98,6 +101,40 @@ public class ServletWebSocketRequest extends UpgradeRequest
         }
     }
 
+    public Principal getPrincipal()
+    {
+        return req.getUserPrincipal();
+    }
+
+    public StringBuffer getRequestURL()
+    {
+        return req.getRequestURL();
+    }
+
+    public Map<String, Object> getServletAttributes()
+    {
+        Map<String, Object> attributes = new HashMap<String, Object>();
+
+        for (String name : Collections.list(req.getAttributeNames()))
+        {
+            attributes.put(name,req.getAttribute(name));
+        }
+
+        return attributes;
+    }
+
+    public Map<String, List<String>> getServletParameters()
+    {
+        Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+
+        for (String name : Collections.list(req.getParameterNames()))
+        {
+            parameters.put(name,Collections.unmodifiableList(Arrays.asList(req.getParameterValues(name))));
+        }
+
+        return parameters;
+    }
+
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
@@ -121,38 +158,4 @@ public class ServletWebSocketRequest extends UpgradeRequest
     {
         this.req.setAttribute(name,o);
     }
-    
-    public Principal getPrincipal()
-    {
-        return req.getUserPrincipal();
-    }
-    
-    public StringBuffer getRequestURL()
-    {
-        return req.getRequestURL();
-    }
-    
-    public Map<String, Object> getServletAttributes()
-    {
-        Map<String, Object> attributes = new HashMap<String,Object>();
-        
-        for (String name : Collections.list((Enumeration<String>)req.getAttributeNames()))
-        {
-            attributes.put(name, req.getAttribute(name));
-        }
-        
-        return attributes;
-    }
-    
-    public Map<String, List<String>> getServletParameters()
-    {
-        Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-        
-        for (String name : Collections.list((Enumeration<String>)req.getParameterNames()))
-        {
-            parameters.put(name, Collections.unmodifiableList(Arrays.asList(req.getParameterValues(name))));
-        }
-        
-        return parameters;
-    }   
 }

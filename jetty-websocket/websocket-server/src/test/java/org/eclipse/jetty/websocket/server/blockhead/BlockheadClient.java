@@ -130,7 +130,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             scheme = "https";
         }
-        this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
+        this.destHttpURI = new URI(scheme,destWebsocketURI.getUserInfo(),destWebsocketURI.getHost(),destWebsocketURI.getPort(),destWebsocketURI.getPath(),
+                destWebsocketURI.getQuery(),destWebsocketURI.getFragment());
 
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
@@ -556,7 +557,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public void sendStandardRequest() throws IOException
     {
         StringBuilder req = new StringBuilder();
-        req.append("GET /chat HTTP/1.1\r\n");
+        req.append("GET ");
+        req.append(destHttpURI.getPath());
+        if (StringUtil.isNotBlank(destHttpURI.getQuery()))
+        {
+            req.append('?').append(destHttpURI.getQuery());
+        }
+        req.append(" HTTP/1.1\r\n");
         req.append("Host: ").append(destHttpURI.getHost());
         if (destHttpURI.getPort() > 0)
         {
