@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -117,6 +118,18 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public void close(int statusCode, String reason)
     {
         connection.close(statusCode,reason);
+    }
+
+    /**
+     * Harsh disconnect
+     */
+    @Override
+    public void disconnect()
+    {
+        connection.disconnect();
+
+        // notify of harsh disconnect
+        websocket.onClose(new CloseInfo(StatusCode.NO_CLOSE,"Harsh disconnect"));
     }
 
     @Override

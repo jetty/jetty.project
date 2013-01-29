@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +27,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -40,7 +36,6 @@ import org.junit.Test;
 /**
  * Tests for conditions due to bad networking.
  */
-@Ignore("Not working yet")
 public class BadNetworkTest
 {
     @Rule
@@ -76,7 +71,6 @@ public class BadNetworkTest
         server.stop();
     }
 
-    @SuppressWarnings("resource")
     @Test
     public void testAbruptClientClose() throws Exception
     {
@@ -93,10 +87,8 @@ public class BadNetworkTest
         wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
 
         // Have client disconnect abruptly
-        Session conn = wsocket.getSession();
-        Assert.assertThat("Connection",conn,instanceOf(AbstractWebSocketConnection.class));
-        AbstractWebSocketConnection awsc = (AbstractWebSocketConnection)conn;
-        awsc.disconnect(false); // FIXME: Session.disconnect
+        Session session = wsocket.getSession();
+        session.disconnect();
 
         // Client Socket should see close
         wsocket.waitForClose(10,TimeUnit.SECONDS);
@@ -107,6 +99,7 @@ public class BadNetworkTest
         wsocket.assertCloseCode(StatusCode.NO_CLOSE);
     }
 
+    @Ignore("Idle timeout not working yet")
     @Test
     public void testAbruptServerClose() throws Exception
     {
@@ -125,7 +118,7 @@ public class BadNetworkTest
         // Have server disconnect abruptly
         ssocket.disconnect();
 
-        // Wait for close
+        // Wait for close (as response to idle timeout)
         wsocket.waitForClose(10,TimeUnit.SECONDS);
 
         // Client Socket should see a close event, with status NO_CLOSE

@@ -41,6 +41,7 @@ public class AnnotatedEventDriver extends EventDriver
 {
     private final EventMethods events;
     private MessageAppender activeMessage;
+    private boolean hasCloseBeenCalled = false;
 
     public AnnotatedEventDriver(WebSocketPolicy policy, Object websocket, EventMethods events)
     {
@@ -105,6 +106,12 @@ public class AnnotatedEventDriver extends EventDriver
     @Override
     public void onClose(CloseInfo close)
     {
+        if (hasCloseBeenCalled)
+        {
+            // avoid duplicate close events (possible when using harsh Session.disconnect())
+            return;
+        }
+        hasCloseBeenCalled = true;
         if (events.onClose != null)
         {
             events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());

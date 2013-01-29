@@ -81,6 +81,12 @@ public class SessionSocket
                 return;
             }
 
+            if ("harsh-disconnect".equals(message))
+            {
+                session.disconnect();
+                return;
+            }
+
             // echo the message back.
             this.session.getRemote().sendStringByFuture(message);
         }

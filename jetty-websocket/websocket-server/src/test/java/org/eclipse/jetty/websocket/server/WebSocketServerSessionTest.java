@@ -57,6 +57,27 @@ public class WebSocketServerSessionTest
     }
 
     @Test
+    public void testDisconnect() throws Exception
+    {
+        URI uri = server.getServerUri().resolve("/test/disconnect");
+        BlockheadClient client = new BlockheadClient(uri);
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(WebSocketFrame.text("harsh-disconnect"));
+
+            client.awaitDisconnect(1,TimeUnit.SECONDS);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void testUpgradeRequestResponse() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test?snack=cashews&amount=handful&brand=off");
@@ -89,4 +110,5 @@ public class WebSocketServerSessionTest
             client.close();
         }
     }
+
 }
