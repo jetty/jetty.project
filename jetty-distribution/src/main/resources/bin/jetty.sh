@@ -307,7 +307,7 @@ fi
 #####################################################
 if [ -z "$JETTY_RUN" ] 
 then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run /tmp)
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_HOME /tmp)
 fi
 
 #####################################################
