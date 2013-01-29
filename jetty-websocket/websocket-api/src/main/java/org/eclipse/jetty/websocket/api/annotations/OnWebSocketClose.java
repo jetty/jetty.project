@@ -24,7 +24,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 
 /**
  * Annotation for tagging methods to receive connection close events.
@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
  * Note: <code>methodName</code> can be any name you want to use.
  * <ol>
  * <li><code>public void methodName(int statusCode, String reason)</code></li>
- * <li><code>public void methodName({@link WebSocketConnection} conn, int statusCode, String reason)</code></li>
+ * <li><code>public void methodName({@link Session} session, int statusCode, String reason)</code></li>
  * </ol>
  */
 @Documented

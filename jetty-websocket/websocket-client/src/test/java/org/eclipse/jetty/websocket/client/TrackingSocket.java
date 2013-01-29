@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
 
 /**
@@ -140,9 +140,9 @@ public class TrackingSocket extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        super.onWebSocketConnect(connection);
+        super.onWebSocketConnect(session);
         openLatch.countDown();
     }
 

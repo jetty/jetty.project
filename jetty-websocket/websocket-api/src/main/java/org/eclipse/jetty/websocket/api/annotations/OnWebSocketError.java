@@ -24,6 +24,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
 /**
@@ -34,6 +35,7 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
  * <p>
  * <ol>
  * <li><code>public void methodName({@link WebSocketException} error)</code></li>
+ * <li><code>public void methodName({@link Session} session, {@link WebSocketException} error)</code></li>
  * </ol>
  */
 @Documented

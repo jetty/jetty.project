@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server.examples;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
@@ -36,7 +37,8 @@ public class BasicEchoSocket extends WebSocketAdapter
         }
         try
         {
-            getBlockingConnection().write(payload,offset,len);
+            ByteBuffer buf = ByteBuffer.wrap(payload,offset,len);
+            getRemote().sendBytes(buf);
         }
         catch (IOException e)
         {
@@ -53,7 +55,7 @@ public class BasicEchoSocket extends WebSocketAdapter
         }
         try
         {
-            getBlockingConnection().write(message);
+            getRemote().sendString(message);
         }
         catch (IOException e)
         {

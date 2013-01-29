@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.junit.Assert;
@@ -46,7 +46,7 @@ public class TomcatServerQuirksTest
         }
 
         @Override
-        public void onWebSocketConnect(WebSocketConnection connection)
+        public void onWebSocketConnect(Session session)
         {
             openLatch.countDown();
         }

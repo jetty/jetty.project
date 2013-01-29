@@ -26,7 +26,10 @@ import java.util.concurrent.Future;
 
 /**
  * Connection interface for WebSocket protocol <a href="https://tools.ietf.org/html/rfc6455">RFC-6455</a>.
+ * 
+ * @deprecated replaced with more JSR friendly {@link Session} interface
  */
+@Deprecated
 public interface WebSocketConnection
 {
     /**

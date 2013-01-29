@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
@@ -139,19 +140,19 @@ public class WebSocketOverSSLTest
         final CountDownLatch serverLatch = new CountDownLatch(1);
         startServer(new WebSocketAdapter()
         {
-            private WebSocketConnection connection;
+            private Session session;
 
             @Override
-            public void onWebSocketConnect(WebSocketConnection connection)
+            public void onWebSocketConnect(Session session)
             {
-                this.connection = connection;
+                this.session = session;
             }
 
             @Override
             public void onWebSocketText(String message)
             {
                 Assert.assertEquals(message,message);
-                connection.write(message);
+                session.getRemote().sendStringByFuture(message);
                 serverLatch.countDown();
             }
         });

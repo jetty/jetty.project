@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
@@ -94,10 +93,10 @@ public class BadNetworkTest
         wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
 
         // Have client disconnect abruptly
-        WebSocketConnection conn = wsocket.getConnection();
+        Session conn = wsocket.getSession();
         Assert.assertThat("Connection",conn,instanceOf(AbstractWebSocketConnection.class));
         AbstractWebSocketConnection awsc = (AbstractWebSocketConnection)conn;
-        awsc.disconnect(false);
+        awsc.disconnect(false); // FIXME: Session.disconnect
 
         // Client Socket should see close
         wsocket.waitForClose(10,TimeUnit.SECONDS);

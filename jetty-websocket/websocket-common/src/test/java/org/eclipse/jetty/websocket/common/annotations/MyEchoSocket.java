@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common.annotations;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
 @WebSocket
 public class MyEchoSocket
 {
-    private WebSocketConnection conn;
+    private Session session;
     private WebSocketBlockingConnection blocking;
 
     public WebSocketBlockingConnection getConnection()
@@ -46,20 +46,20 @@ public class MyEchoSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        this.conn = null;
+        this.session = null;
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session session)
     {
-        this.conn = conn;
-        this.blocking = new WebSocketBlockingConnection(conn);
+        this.session = session;
+        this.blocking = new WebSocketBlockingConnection(session);
     }
 
     @OnWebSocketMessage
     public void onText(String message)
     {
-        if (conn == null)
+        if (session == null)
         {
             // no connection, do nothing.
             // this is possible due to async behavior

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
-
 /**
  * Default implementation of the {@link WebSocketListener}.
  * <p>
@@ -27,27 +25,26 @@ import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
  */
 public class WebSocketAdapter implements WebSocketListener
 {
-    private WebSocketConnection connection;
-    private WebSocketBlockingConnection blocking;
+    private Session session;
 
-    public WebSocketBlockingConnection getBlockingConnection()
+    public RemoteEndpoint getRemote()
     {
-        return blocking;
+        return session.getRemote();
     }
 
-    public WebSocketConnection getConnection()
+    public Session getSession()
     {
-        return connection;
+        return session;
     }
 
     public boolean isConnected()
     {
-        return (connection != null) && (connection.isOpen());
+        return (session != null) && (session.isOpen());
     }
 
     public boolean isNotConnected()
     {
-        return (connection == null) || (!connection.isOpen());
+        return (session == null) || (!session.isOpen());
     }
 
     @Override
@@ -59,14 +56,13 @@ public class WebSocketAdapter implements WebSocketListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        this.connection = null;
+        this.session = null;
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session sess)
     {
-        this.connection = connection;
-        this.blocking = new WebSocketBlockingConnection(this.connection);
+        this.session = sess;
     }
 
     @Override

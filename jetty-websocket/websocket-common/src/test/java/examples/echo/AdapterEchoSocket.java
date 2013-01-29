@@ -44,7 +44,7 @@ public class AdapterEchoSocket extends WebSocketAdapter
         {
             LOG.debug("Echoing back message [{}]",message);
             // echo the data back
-            getBlockingConnection().write(message);
+            getRemote().sendString(message);
         }
         catch (IOException e)
         {

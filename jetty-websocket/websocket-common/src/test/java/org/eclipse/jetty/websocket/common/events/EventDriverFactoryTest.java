@@ -173,7 +173,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.hasConnection",methods.onBinary.isHasConnection());
+        Assert.assertFalse(classId + ".onBinary.hasSession",methods.onBinary.isHasSession());
         Assert.assertFalse(classId + ".onBinary.isStreaming",methods.onBinary.isStreaming());
     }
 
@@ -197,7 +197,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.hasConnection",methods.onBinary.isHasConnection());
+        Assert.assertFalse(classId + ".onBinary.hasSession",methods.onBinary.isHasSession());
         Assert.assertTrue(classId + ".onBinary.isStreaming",methods.onBinary.isStreaming());
     }
 
@@ -263,7 +263,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertTrue(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertTrue(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertFalse(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 
@@ -329,7 +329,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertFalse(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertFalse(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 
@@ -353,7 +353,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertFalse(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertTrue(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 

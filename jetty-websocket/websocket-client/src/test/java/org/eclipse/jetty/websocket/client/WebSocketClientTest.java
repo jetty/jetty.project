@@ -96,7 +96,7 @@ public class WebSocketClientTest
 
         Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-        cliSock.getConnection().write("Hello World!");
+        cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
         srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
         // wait for response from server
         cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
@@ -151,8 +151,8 @@ public class WebSocketClientTest
 
             Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
-            InetSocketAddress local = wsocket.getConnection().getLocalAddress();
-            InetSocketAddress remote = wsocket.getConnection().getRemoteAddress();
+            InetSocketAddress local = wsocket.getSession().getLocalAddress();
+            InetSocketAddress remote = wsocket.getSession().getRemoteAddress();
 
             Assert.assertThat("Local Socket Address",local,notNullValue());
             Assert.assertThat("Remote Socket Address",remote,notNullValue());
@@ -229,7 +229,7 @@ public class WebSocketClientTest
 
             Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
-            Session session = (Session)wsocket.getConnection();
+            Session session = wsocket.getSession();
             UpgradeRequest req = session.getUpgradeRequest();
             Assert.assertThat("Upgrade Request",req,notNullValue());
 

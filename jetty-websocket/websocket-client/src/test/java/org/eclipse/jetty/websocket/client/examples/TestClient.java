@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -42,11 +42,6 @@ public class TestClient
 {
     public class TestSocket extends WebSocketAdapter
     {
-        public void disconnect() throws Exception
-        {
-            super.getConnection().close();
-        }
-
         @Override
         public void onWebSocketBinary(byte[] payload, int offset, int len)
         {
@@ -59,11 +54,11 @@ public class TestClient
         }
 
         @Override
-        public void onWebSocketConnect(WebSocketConnection connection)
+        public void onWebSocketConnect(Session session)
         {
             if (_verbose)
             {
-                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),connection,connection.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),session,session.getClass().getSimpleName());
             }
         }
 

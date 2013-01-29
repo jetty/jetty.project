@@ -18,7 +18,7 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.common.events.EventCapture;
@@ -40,9 +40,9 @@ public class ListenerBasicSocket implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        capture.add("onWebSocketConnect(%s)",connection);
+        capture.add("onWebSocketConnect(%s)",session);
     }
 
     @Override

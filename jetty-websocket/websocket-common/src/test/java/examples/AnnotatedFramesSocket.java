@@ -18,7 +18,7 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
@@ -38,9 +38,9 @@ public class AnnotatedFramesSocket
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session sess)
     {
-        capture.add("onConnect(%s)",conn);
+        capture.add("onConnect(%s)",sess);
     }
 
     @OnWebSocketFrame
