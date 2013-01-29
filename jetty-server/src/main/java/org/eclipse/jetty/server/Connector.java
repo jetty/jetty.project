@@ -215,7 +215,7 @@ public interface Connector extends LifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param port The port fto listen of for connections or 0 if any available
+     * @param port The port to listen of for connections or 0 if any available
      * port may be used.
      */
     void setPort(int port);
