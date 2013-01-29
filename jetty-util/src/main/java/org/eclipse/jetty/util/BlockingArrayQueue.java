@@ -49,33 +49,36 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQueue<E>
 {
     /**
+     * The head offset in the {@link #_indexes} array, displaced
+     * by 15 slots to avoid false sharing with the array length
+     * (stored before the first element of the array itself).
+     */
+    private static final int HEAD_OFFSET = 15;
+    /**
+     * The tail offset in the {@link #_indexes} array, displaced
+     * by 16 slots from the head to avoid false sharing with it.
+     */
+    private static final int TAIL_OFFSET = 31;
+    /**
      * Default initial capacity, 128.
      */
-    public final int DEFAULT_CAPACITY = 128;
+    public static final int DEFAULT_CAPACITY = 128;
     /**
      * Default growth factor, 64.
      */
-    public final int DEFAULT_GROWTH = 64;
+    public static final int DEFAULT_GROWTH = 64;
 
     private final int _maxCapacity;
-    private final AtomicInteger _size = new AtomicInteger();
     private final int _growCapacity;
-    private Object[] _elements;
+    /**
+     * Array that holds the head and tail indexes, separated by a cache line to avoid false sharing
+     */
+    private final int[] _indexes = new int[TAIL_OFFSET + 1];
+    private final Lock _tailLock = new ReentrantLock();
+    private final AtomicInteger _size = new AtomicInteger();
     private final Lock _headLock = new ReentrantLock();
     private final Condition _notEmpty = _headLock.newCondition();
-    private int _head;
-    // Spacers created to prevent false sharing between head and tail http://en.wikipedia.org/wiki/False_sharing
-    // TODO verify these spacers really prevent false sharing
-    private long _space0;
-    private long _space1;
-    private long _space2;
-    private long _space3;
-    private long _space4;
-    private long _space5;
-    private long _space6;
-    private long _space7;
-    private final Lock _tailLock = new ReentrantLock();
-    private int _tail;
+    private Object[] _elements;
 
     /**
      * Creates an unbounded {@link BlockingArrayQueue} with default initial capacity and grow factor.
@@ -147,8 +150,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             headLock.lock();
             try
             {
-                _head = 0;
-                _tail = 0;
+                _indexes[HEAD_OFFSET] = 0;
+                _indexes[TAIL_OFFSET] = 0;
                 _size.set(0);
             }
             finally
@@ -192,10 +195,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         {
             if (_size.get() > 0)
             {
-                final int head = _head;
+                final int head = _indexes[HEAD_OFFSET];
                 e = (E)_elements[head];
                 _elements[head] = null;
-                _head = (head + 1) % _elements.length;
+                _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
                 if (_size.decrementAndGet() > 0)
                     _notEmpty.signal();
             }
@@ -220,7 +223,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         try
         {
             if (_size.get() > 0)
-                e = (E)_elements[_head];
+                e = (E)_elements[_indexes[HEAD_OFFSET]];
         }
         finally
         {
@@ -281,11 +284,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
             }
 
-            // Must re-read fields since there may have been a grow
-            // Add the element
-            int tail = _tail;
+            // Re-read head and tail after a possible grow
+            int tail = _indexes[TAIL_OFFSET];
             _elements[tail] = e;
-            _tail = (tail + 1) % _elements.length;
+            _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
             notEmpty = _size.getAndIncrement() == 0;
         }
         finally
@@ -354,10 +356,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 throw ie;
             }
 
-            final int head = _head;
+            final int head = _indexes[HEAD_OFFSET];
             e = (E)_elements[head];
             _elements[head] = null;
-            _head = (head + 1) % _elements.length;
+            _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
@@ -394,10 +396,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 throw x;
             }
 
-            int head = _head;
+            int head = _indexes[HEAD_OFFSET];
             e = (E)_elements[head];
             _elements[head] = null;
-            _head = (head + 1) % _elements.length;
+            _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
@@ -423,8 +425,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 if (isEmpty())
                     return false;
 
-                final int head = _head;
-                final int tail = _tail;
+                final int head = _indexes[HEAD_OFFSET];
+                final int tail = _indexes[TAIL_OFFSET];
                 final int capacity = _elements.length;
 
                 int i = head;
@@ -507,7 +509,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             {
                 if (index < 0 || index >= _size.get())
                     throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
-                int i = _head + index;
+                int i = _indexes[HEAD_OFFSET] + index;
                 int capacity = _elements.length;
                 if (i >= capacity)
                     i -= capacity;
@@ -549,19 +551,20 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
                 else
                 {
-                    if (_tail == _head)
+                    if (_indexes[TAIL_OFFSET] == _indexes[HEAD_OFFSET])
                         if (!grow())
                             throw new IllegalStateException("full");
 
-                    int i = _head + index;
+                    // Re-read head and tail after a possible grow
+                    int i = _indexes[HEAD_OFFSET] + index;
                     int capacity = _elements.length;
 
                     if (i >= capacity)
                         i -= capacity;
 
                     _size.incrementAndGet();
-                    int tail = _tail;
-                    _tail = tail = (tail + 1) % capacity;
+                    int tail = _indexes[TAIL_OFFSET];
+                    _indexes[TAIL_OFFSET] = tail = (tail + 1) % capacity;
 
                     if (i < tail)
                     {
@@ -609,7 +612,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 if (index < 0 || index >= _size.get())
                     throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
 
-                int i = _head + index;
+                int i = _indexes[HEAD_OFFSET] + index;
                 int capacity = _elements.length;
                 if (i >= capacity)
                     i -= capacity;
@@ -643,17 +646,17 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 if (index < 0 || index >= _size.get())
                     throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
 
-                int i = _head + index;
+                int i = _indexes[HEAD_OFFSET] + index;
                 int capacity = _elements.length;
                 if (i >= capacity)
                     i -= capacity;
                 E old = (E)_elements[i];
 
-                int tail = _tail;
+                int tail = _indexes[TAIL_OFFSET];
                 if (i < tail)
                 {
                     System.arraycopy(_elements, i + 1, _elements, i, tail - i);
-                    --_tail;
+                    --_indexes[TAIL_OFFSET];
                 }
                 else
                 {
@@ -662,13 +665,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     if (tail > 0)
                     {
                         System.arraycopy(_elements, 1, _elements, 0, tail);
-                        --_tail;
+                        --_indexes[TAIL_OFFSET];
                     }
                     else
                     {
-                        _tail = capacity - 1;
+                        _indexes[TAIL_OFFSET] = capacity - 1;
                     }
-                    _elements[_tail] = null;
+                    _elements[_indexes[TAIL_OFFSET]] = null;
                 }
 
                 _size.decrementAndGet();
@@ -700,15 +703,17 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 Object[] elements = new Object[size()];
                 if (size() > 0)
                 {
-                    if (_head < _tail)
+                    int head = _indexes[HEAD_OFFSET];
+                    int tail = _indexes[TAIL_OFFSET];
+                    if (head < tail)
                     {
-                        System.arraycopy(_elements, _head, elements, 0, _tail - _head);
+                        System.arraycopy(_elements, head, elements, 0, tail - head);
                     }
                     else
                     {
-                        int chunk = _elements.length - _head;
-                        System.arraycopy(_elements, _head, elements, 0, chunk);
-                        System.arraycopy(_elements, 0, elements, chunk, _tail);
+                        int chunk = _elements.length - head;
+                        System.arraycopy(_elements, head, elements, 0, chunk);
+                        System.arraycopy(_elements, 0, elements, chunk, tail);
                     }
                 }
                 return new Itr(elements, index);
@@ -761,8 +766,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             headLock.lock();
             try
             {
-                final int head = _head;
-                final int tail = _tail;
+                final int head = _indexes[HEAD_OFFSET];
+                final int tail = _indexes[TAIL_OFFSET];
                 final int newTail;
                 final int capacity = _elements.length;
 
@@ -786,8 +791,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
 
                 _elements = elements;
-                _head = 0;
-                _tail = newTail;
+                _indexes[HEAD_OFFSET] = 0;
+                _indexes[TAIL_OFFSET] = newTail;
                 return true;
             }
             finally
@@ -799,13 +804,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         {
             tailLock.unlock();
         }
-    }
-
-    // TODO: verify this is not optimized away by the JIT
-    long sumOfSpace()
-    {
-        // this method exists to stop clever optimisers removing the spacers
-        return _space0++ + _space1++ + _space2++ + _space3++ + _space4++ + _space5++ + _space6++ + _space7++;
     }
 
     private class Itr implements ListIterator<E>

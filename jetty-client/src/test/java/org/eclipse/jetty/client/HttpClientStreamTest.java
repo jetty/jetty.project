@@ -30,9 +30,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,11 +44,13 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -371,6 +376,133 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                     content.offer(ByteBuffer.wrap(buffer, 0, read));
             }
         }
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithDeferredContentProviderRacingWithSend() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final byte[] data = new byte[512];
+        final DeferredContentProvider content = new DeferredContentProvider()
+        {
+            @Override
+            public void setListener(Listener listener)
+            {
+                super.setListener(listener);
+                // Simulate a concurrent call
+                offer(ByteBuffer.wrap(data));
+                close();
+            }
+        };
+
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded() &&
+                                result.getResponse().getStatus() == 200 &&
+                                Arrays.equals(data, getContent()))
+                            latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithDeferredContentProviderRacingWithIterator() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final byte[] data = new byte[512];
+        final AtomicReference<DeferredContentProvider> contentRef = new AtomicReference<>();
+        final DeferredContentProvider content = new DeferredContentProvider()
+        {
+            @Override
+            public Iterator<ByteBuffer> iterator()
+            {
+                return new Iterator<ByteBuffer>()
+                {
+                    // Data for the deferred content iterator:
+                    // [0] => deferred
+                    // [1] => deferred
+                    // [2] => data
+                    private final byte[][] iteratorData = new byte[3][];
+                    private final AtomicInteger index = new AtomicInteger();
+
+                    {
+                        iteratorData[0] = null;
+                        iteratorData[1] = null;
+                        iteratorData[2] = data;
+                    }
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return index.get() < iteratorData.length;
+                    }
+
+                    @Override
+                    public ByteBuffer next()
+                    {
+                        byte[] chunk = iteratorData[index.getAndIncrement()];
+                        ByteBuffer result = chunk == null ? null : ByteBuffer.wrap(chunk);
+                        if (index.get() == 2)
+                        {
+                            contentRef.get().offer(result == null ? BufferUtil.EMPTY_BUFFER : result);
+                            contentRef.get().close();
+                        }
+                        return result;
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                    }
+                };
+            }
+        };
+        contentRef.set(content);
+
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded() &&
+                                result.getResponse().getStatus() == 200 &&
+                                Arrays.equals(data, getContent()))
+                            latch.countDown();
+                    }
+                });
+
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }
