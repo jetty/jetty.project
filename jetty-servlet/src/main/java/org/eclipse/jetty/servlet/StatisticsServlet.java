@@ -201,7 +201,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 sb.append("Statistics gathering started ").append(connector.getStatsOnMs()).append("ms ago").append("<br />\n");
                 sb.append("Total connections: ").append(connector.getConnections()).append("<br />\n");
-                sb.append("Current connections open: ").append(connector.getConnectionsOpen());
+                sb.append("Current connections open: ").append(connector.getConnectionsOpen()).append("<br />\n");
                 sb.append("Max concurrent connections open: ").append(connector.getConnectionsOpenMax()).append("<br />\n");
                 sb.append("Total connections duration: ").append(connector.getConnectionsDurationTotal()).append("<br />\n");
                 sb.append("Mean connection duration: ").append(connector.getConnectionsDurationMean()).append("<br />\n");
