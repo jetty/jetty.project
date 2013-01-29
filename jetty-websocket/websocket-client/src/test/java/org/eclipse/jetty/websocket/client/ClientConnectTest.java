@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client;
 
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -88,6 +90,131 @@ public class ClientConnectTest
         connection.readRequest();
         // no upgrade, just fail with a 404 error
         connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadHandshake_GetOK() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        connection.readRequest();
+        // Send OK to GET but not upgrade
+        connection.respond("HTTP/1.1 200 OK\r\n\r\n");
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send OK to GET but not upgrade
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 200 OK\r\n"); // intentionally 200 (not 101)
+        // Include a value accept key
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        resp.append("\r\n");
+        connection.respond(resp.toString());
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send Switching Protocols 101, but invalid 'Connection' header
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 101 Switching Protocols\r\n");
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        resp.append("Connection: close\r\n");
+        resp.append("\r\n");
+        connection.respond(resp.toString());
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send Switching Protocols 101, but no 'Connection' header
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 101 Switching Protocols\r\n");
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        // Intentionally leave out Connection header
+        resp.append("\r\n");
+        connection.respond(resp.toString());
 
         // The attempt to get upgrade response future should throw error
         try

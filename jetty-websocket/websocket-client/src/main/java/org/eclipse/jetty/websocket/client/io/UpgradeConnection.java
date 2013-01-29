@@ -74,6 +74,9 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
+    /** HTTP Response Code: 101 Switching Protocols */
+    private static final int SWITCHING_PROTOCOLS = 101;
+
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
     private final ConnectPromise connectPromise;
@@ -239,6 +242,19 @@ public class UpgradeConnection extends AbstractConnection
 
     private void validateResponse(ClientUpgradeResponse response)
     {
+        // Validate Response Status Code
+        if (response.getStatusCode() != SWITCHING_PROTOCOLS)
+        {
+            throw new UpgradeException("Didn't switch protocols");
+        }
+
+        // Validate Connection header
+        String connection = response.getHeader("Connection");
+        if (!"upgrade".equalsIgnoreCase(connection))
+        {
+            throw new UpgradeException("Connection is " + connection + " (expected upgrade)");
+        }
+
         // Check the Accept hash
         String reqKey = request.getKey();
         String expectedHash = AcceptHash.hashKey(reqKey);
