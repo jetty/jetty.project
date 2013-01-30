@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -175,7 +176,7 @@ public class WebSocketClient extends ContainerLifeCycle
 
         if (cookieStore == null)
         {
-            cookieStore = new EmptyCookieStore();
+            cookieStore = new HttpCookieStore.Empty();
         }
 
         this.connectionManager = new ConnectionManager(this);
