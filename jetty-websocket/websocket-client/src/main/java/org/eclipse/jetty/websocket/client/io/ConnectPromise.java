@@ -81,16 +81,16 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         return response;
     }
 
-    public void onOpen(WebSocketSession session)
+    public void setResponse(ClientUpgradeResponse response)
+    {
+        this.response = response;
+    }
+
+    public void succeeded(WebSocketSession session)
     {
         session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
         session.open();
         super.succeeded(session);
-    }
-
-    public void setResponse(ClientUpgradeResponse response)
-    {
-        this.response = response;
     }
 }
