@@ -41,7 +41,7 @@ import org.junit.Test;
 
 public class TestABCase2
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testGenerate125OctetPingCase2_4()

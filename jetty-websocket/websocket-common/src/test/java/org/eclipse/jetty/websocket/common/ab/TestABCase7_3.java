@@ -43,7 +43,7 @@ import org.junit.Test;
 
 public class TestABCase7_3
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testCase7_3_1GenerateEmptyClose()

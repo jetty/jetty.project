@@ -35,7 +35,7 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGenerator() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy,bufferPool);
@@ -71,7 +71,7 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy,bufferPool);

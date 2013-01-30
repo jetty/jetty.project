@@ -53,7 +53,7 @@ public class FragmentExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 

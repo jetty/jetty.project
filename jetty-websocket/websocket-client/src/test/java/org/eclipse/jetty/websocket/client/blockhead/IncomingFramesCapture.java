@@ -131,6 +131,7 @@ public class IncomingFramesCapture implements IncomingFrames
     public void incomingFrame(Frame frame)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
+        Assert.assertThat("frame.masking must be set",frame.isMasked(),is(true));
         frames.add(copy);
     }
 

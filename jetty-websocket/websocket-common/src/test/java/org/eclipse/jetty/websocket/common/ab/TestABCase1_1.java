@@ -41,7 +41,7 @@ import org.junit.Test;
  */
 public class TestABCase1_1
 {
-    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
     @Test
     public void testGenerate125ByteTextCase1_1_2()
@@ -450,7 +450,7 @@ public class TestABCase1_1
         }
 
         expected.flip();
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -487,7 +487,7 @@ public class TestABCase1_1
 
         expected.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();

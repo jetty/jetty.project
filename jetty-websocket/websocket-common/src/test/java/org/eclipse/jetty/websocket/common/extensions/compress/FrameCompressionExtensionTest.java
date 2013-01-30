@@ -49,7 +49,7 @@ public class FrameCompressionExtensionTest
 {
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
@@ -92,7 +92,7 @@ public class FrameCompressionExtensionTest
 
     private void assertOutgoing(String text, String expectedHex) throws IOException
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
@@ -211,7 +211,7 @@ public class FrameCompressionExtensionTest
     @Test
     public void testGeneratedTwoFrames() throws IOException
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());

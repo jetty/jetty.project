@@ -56,7 +56,7 @@ public class MuxParserRFCTest
     private LinkedList<WebSocketFrame> asFrames(byte[] buf)
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         Parser parser = new UnitParser(policy);
         parser.setIncomingFramesHandler(capture);
         List<? extends AbstractExtension> muxList = Collections.singletonList(new DummyMuxExtension());
