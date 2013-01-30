@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 public class ClientUpgradeResponse extends UpgradeResponse
@@ -34,17 +33,5 @@ public class ClientUpgradeResponse extends UpgradeResponse
     public void sendForbidden(String message) throws IOException
     {
         throw new UnsupportedOperationException("Not supported on client implementation");
-    }
-
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException
-    {
-        String respHash = getHeader("Sec-WebSocket-Accept");
-
-        setSuccess(true);
-        if (expectedHash.equals(respHash) == false)
-        {
-            setSuccess(false);
-            throw new UpgradeException("Invalid Sec-WebSocket-Accept hash");
-        }
     }
 }

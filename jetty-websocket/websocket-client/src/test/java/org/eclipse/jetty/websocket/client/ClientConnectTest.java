@@ -123,7 +123,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(404));
         }
     }
 
@@ -149,7 +152,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(200));
         }
     }
 
@@ -182,7 +188,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(200));
         }
     }
 
@@ -215,7 +224,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
         }
     }
 
@@ -248,7 +260,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
         }
     }
 
@@ -274,7 +289,10 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExpectedError(e,wsocket,UpgradeException.class);
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
         }
     }
 
