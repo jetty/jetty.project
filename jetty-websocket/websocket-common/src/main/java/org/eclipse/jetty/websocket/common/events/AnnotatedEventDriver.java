@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -128,11 +127,11 @@ public class AnnotatedEventDriver extends EventDriver
     }
 
     @Override
-    public void onException(WebSocketException e)
+    public void onError(Throwable cause)
     {
-        if (events.onException != null)
+        if (events.onError != null)
         {
-            events.onException.call(websocket,session,e);
+            events.onError.call(websocket,session,cause);
         }
     }
 

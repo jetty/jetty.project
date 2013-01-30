@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -84,8 +83,8 @@ public class EventDriverFactory
         validCloseParams.addParams(Session.class,int.class,String.class);
 
         validErrorParams = new ParamList();
-        validErrorParams.addParams(WebSocketException.class);
-        validErrorParams.addParams(Session.class,WebSocketException.class);
+        validErrorParams.addParams(Throwable.class);
+        validErrorParams.addParams(Session.class,Throwable.class);
 
         validTextParams = new ParamList();
         validTextParams.addParams(String.class);
@@ -326,8 +325,8 @@ public class EventDriverFactory
                 if (method.getAnnotation(OnWebSocketError.class) != null)
                 {
                     assertValidSignature(method,OnWebSocketError.class,validErrorParams);
-                    assertUnset(events.onException,OnWebSocketError.class,method);
-                    events.onException = new EventMethod(pojo,method);
+                    assertUnset(events.onError,OnWebSocketError.class,method);
+                    events.onError = new EventMethod(pojo,method);
                     continue;
                 }
 

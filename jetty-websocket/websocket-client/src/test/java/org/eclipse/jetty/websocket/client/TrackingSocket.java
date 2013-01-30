@@ -47,6 +47,7 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
+    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
 
     public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
@@ -144,6 +145,13 @@ public class TrackingSocket extends WebSocketAdapter
     {
         super.onWebSocketConnect(session);
         openLatch.countDown();
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        LOG.debug("onWebSocketError",cause);
+        Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
     }
 
     @Override

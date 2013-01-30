@@ -19,7 +19,6 @@
 package examples;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -45,9 +44,9 @@ public class AnnotatedTextSocket
     }
 
     @OnWebSocketError
-    public void onError(WebSocketException e)
+    public void onError(Throwable cause)
     {
-        capture.add("onError(%s: %s)",e.getClass().getSimpleName(),e.getMessage());
+        capture.add("onError(%s: %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
 
     @OnWebSocketMessage

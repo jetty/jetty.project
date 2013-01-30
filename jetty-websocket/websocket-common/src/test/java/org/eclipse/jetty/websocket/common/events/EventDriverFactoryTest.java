@@ -169,7 +169,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
@@ -193,7 +193,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
@@ -217,7 +217,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -238,7 +238,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -259,7 +259,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
@@ -283,7 +283,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -304,7 +304,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertHasEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -325,7 +325,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertHasEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
@@ -349,7 +349,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 

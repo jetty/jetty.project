@@ -22,7 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 /**
@@ -52,9 +51,9 @@ public class ListenerEchoSocket implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketException(WebSocketException error)
+    public void onWebSocketError(Throwable cause)
     {
-        LOG.log(Level.WARNING,"onWebSocketException",error);
+        LOG.log(Level.WARNING,"onWebSocketError",cause);
     }
 
     @Override

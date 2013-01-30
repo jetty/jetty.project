@@ -46,6 +46,16 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         this.masker = client.getMasker();
     }
 
+    @Override
+    public void failed(Throwable cause)
+    {
+        // Notify websocket of failure to connect
+        driver.onError(cause);
+
+        // Notify promise/future of failure to connect
+        super.failed(cause);
+    }
+
     public WebSocketClient getClient()
     {
         return client;

@@ -66,7 +66,7 @@ public class WebSocketAdapter implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketException(WebSocketException error)
+    public void onWebSocketError(Throwable cause)
     {
         /* do nothing */
     }

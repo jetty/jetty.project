@@ -69,7 +69,7 @@ public interface WebSocketListener
      * @param error
      *            the error that occurred.
      */
-    void onWebSocketException(WebSocketException error);
+    void onWebSocketError(Throwable cause);
 
     /**
      * A WebSocket Text frame was received.

@@ -78,7 +78,7 @@ public abstract class EventDriver implements IncomingFrames
             terminateConnection(close.getStatusCode(),close.getMessage());
         }
 
-        onException(e);
+        onError(e);
     }
 
     @Override
@@ -161,7 +161,7 @@ public abstract class EventDriver implements IncomingFrames
 
     public abstract void onConnect();
 
-    public abstract void onException(WebSocketException e);
+    public abstract void onError(Throwable t);
 
     public abstract void onFrame(Frame frame);
 
