@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -56,19 +56,19 @@ public class LoadTest
     @WebSocket
     public static class LoadSocket
     {
-        private WebSocketConnection conn;
+        private Session session;
         public static AtomicLong count = new AtomicLong(0);
 
         @OnWebSocketConnect
-        public void onConnect(WebSocketConnection conn)
+        public void onConnect(Session session)
         {
-            this.conn = conn;
+            this.session = session;
         }
 
         @OnWebSocketMessage
         public void onWebSocketText(String message)
         {
-            conn.write(message);
+            session.getRemote().sendStringByFuture(message);
             long iter = count.incrementAndGet();
             if ((iter % 100) == 0)
             {

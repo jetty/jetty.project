@@ -21,11 +21,9 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -43,7 +41,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -53,7 +50,7 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 @ManagedObject
-public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketConnection, IncomingFrames
+public class WebSocketSession extends ContainerLifeCycle implements Session, IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final URI requestURI;
@@ -229,18 +226,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public URI getRequestURI()
-    {
-        return requestURI;
-    }
-
-    @Override
-    public String getSubProtocol()
-    {
-        return upgradeResponse.getAcceptedSubProtocol();
-    }
-
-    @Override
     public UpgradeRequest getUpgradeRequest()
     {
         return this.upgradeRequest;
@@ -290,7 +275,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public boolean isSecure()
     {
-        return getRequestURI().getScheme().equalsIgnoreCase("wss");
+        if (upgradeRequest == null)
+        {
+            throw new IllegalStateException("No valid UpgradeRequest yet");
+        }
+
+        URI requestURI = upgradeRequest.getRequestURI();
+
+        return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
 
     /**
@@ -318,12 +310,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         {
             LOG.debug("{}",dump());
         }
-    }
-
-    @Override
-    public void ping(ByteBuffer buf) throws IOException
-    {
-        remote.sendPing(buf);
     }
 
     public void setActive(boolean active)
@@ -390,23 +376,5 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         builder.append(",outgoing=").append(outgoingHandler);
         builder.append("]");
         return builder.toString();
-    }
-
-    @Override
-    public Future<Void> write(byte[] buf, int offset, int len)
-    {
-        return remote.sendBytesByFuture(ByteBuffer.wrap(buf,offset,len));
-    }
-
-    @Override
-    public Future<Void> write(ByteBuffer buffer)
-    {
-        return remote.sendBytesByFuture(buffer);
-    }
-
-    @Override
-    public Future<Void> write(String message)
-    {
-        return remote.sendStringByFuture(message);
     }
 }

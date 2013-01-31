@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.annotations;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -32,7 +32,7 @@ public class BadTextSignatureSocket
      * Declaring a static method
      */
     @OnWebSocketMessage
-    public static void onText(WebSocketConnection conn, String text)
+    public static void onText(Session session, String text)
     {
         /* do nothing */
     }

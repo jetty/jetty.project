@@ -46,6 +46,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -90,11 +91,13 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     public class ChatWebSocket
     {
         volatile Session session;
+        volatile RemoteEndpoint remote;
 
         @OnWebSocketConnect
         public void onOpen(Session sess)
         {
-            session = sess;
+            this.session = sess;
+            this.remote = sess.getRemote();
             members.add(this);
         }
 
@@ -127,7 +130,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 }
 
                 // Async write the message back.
-                member.session.getRemote().sendStringByFuture(data);
+                member.remote.sendStringByFuture(data);
             }
         }
 

@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -35,7 +30,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements WebSocketConnection, LogicalConnection, IncomingFrames
+public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames
 {
     private final String id;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
@@ -106,19 +101,7 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public URI getRequestURI()
-    {
-        return null;
-    }
-
-    @Override
     public WebSocketSession getSession()
-    {
-        return null;
-    }
-
-    @Override
-    public String getSubProtocol()
     {
         return null;
     }
@@ -157,11 +140,6 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     }
 
     @Override
-    public void ping(ByteBuffer buf) throws IOException
-    {
-    }
-
-    @Override
     public void resume()
     {
     }
@@ -192,23 +170,5 @@ public class LocalWebSocketConnection implements WebSocketConnection, LogicalCon
     public String toString()
     {
         return String.format("%s[%s]",LocalWebSocketConnection.class.getSimpleName(),id);
-    }
-
-    @Override
-    public Future<Void> write(byte[] buf, int offset, int len)
-    {
-        return null;
-    }
-
-    @Override
-    public Future<Void> write(ByteBuffer buffer)
-    {
-        return null;
-    }
-
-    @Override
-    public Future<Void> write(String message)
-    {
-        return null;
     }
 }

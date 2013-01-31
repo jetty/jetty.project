@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket
@@ -31,11 +31,11 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
     private static class KeepAlive extends Thread
     {
         private CountDownLatch latch;
-        private WebSocketConnection conn;
+        private Session session;
 
-        public KeepAlive(WebSocketConnection conn)
+        public KeepAlive(Session session)
         {
-            this.conn = conn;
+            this.session = session;
         }
 
         @Override
@@ -50,7 +50,7 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
                     data.put(new byte[]
                     { (byte)1, (byte)2, (byte)3 });
                     data.flip();
-                    conn.ping(data);
+                    session.getRemote().sendPing(data);
                 }
             }
             catch (Exception e)
@@ -89,13 +89,13 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
     }
 
     @Override
-    public void onOpen(WebSocketConnection conn)
+    public void onOpen(Session session)
     {
         if (keepAlive == null)
         {
-            keepAlive = new KeepAlive(conn);
+            keepAlive = new KeepAlive(session);
         }
         keepAlive.start();
-        super.onOpen(conn);
+        super.onOpen(session);
     }
 }

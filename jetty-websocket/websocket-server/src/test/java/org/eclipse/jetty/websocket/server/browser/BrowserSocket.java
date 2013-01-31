@@ -26,7 +26,7 @@ import java.util.Locale;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class BrowserSocket
 {
     private static final Logger LOG = Log.getLogger(BrowserSocket.class);
-    private WebSocketConnection connection;
+    private Session session;
     private final String userAgent;
     private final String requestedExtensions;
 
@@ -47,15 +47,15 @@ public class BrowserSocket
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session session)
     {
-        this.connection = conn;
+        this.session = session;
     }
 
     @OnWebSocketClose
     public void onDisconnect(int statusCode, String reason)
     {
-        this.connection = null;
+        this.session = null;
         LOG.info("Closed [{}, {}]",statusCode,reason);
     }
 
@@ -114,19 +114,19 @@ public class BrowserSocket
 
     private void writeMessage(String message)
     {
-        if (this.connection == null)
+        if (this.session == null)
         {
             LOG.debug("Not connected");
             return;
         }
 
-        if (connection.isOpen() == false)
+        if (session.isOpen() == false)
         {
             LOG.debug("Not open");
             return;
         }
 
-        connection.write(message);
+        session.getRemote().sendStringByFuture(message);
     }
 
     private void writeMessage(String format, Object... args)

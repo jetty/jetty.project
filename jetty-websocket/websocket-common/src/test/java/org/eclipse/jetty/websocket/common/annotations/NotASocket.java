@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.annotations;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 
 /**
@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 public class NotASocket
 {
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session session)
     {
         /* do nothing */
     }

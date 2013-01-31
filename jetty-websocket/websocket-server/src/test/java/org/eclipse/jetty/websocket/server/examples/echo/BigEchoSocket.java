@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -29,22 +31,22 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class BigEchoSocket
 {
     @OnWebSocketMessage
-    public void onBinary(WebSocketConnection conn, byte buf[], int offset, int length)
+    public void onBinary(Session session, byte buf[], int offset, int length)
     {
-        if (conn.isOpen())
+        if (session.isOpen())
         {
             return;
         }
-        conn.write(buf,offset,length);
+        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(buf,offset,length));
     }
 
     @OnWebSocketMessage
-    public void onText(WebSocketConnection conn, String message)
+    public void onText(Session session, String message)
     {
-        if (conn.isOpen())
+        if (session.isOpen())
         {
             return;
         }
-        conn.write(message);
+        session.getRemote().sendStringByFuture(message);
     }
 }

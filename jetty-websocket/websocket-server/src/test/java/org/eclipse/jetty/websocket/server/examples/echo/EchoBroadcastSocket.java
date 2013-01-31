@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -31,14 +32,15 @@ public class EchoBroadcastSocket
 {
     private static final ConcurrentLinkedQueue<EchoBroadcastSocket> BROADCAST = new ConcurrentLinkedQueue<EchoBroadcastSocket>();
 
-    protected WebSocketConnection conn;
+    protected Session session;
 
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len)
     {
+        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.conn.write(buf,offset,len);
+            sock.session.getRemote().sendBytesByFuture(data.slice());
         }
     }
 
@@ -49,9 +51,9 @@ public class EchoBroadcastSocket
     }
 
     @OnWebSocketConnect
-    public void onOpen(WebSocketConnection conn)
+    public void onOpen(Session session)
     {
-        this.conn = conn;
+        this.session = session;
         BROADCAST.add(this);
     }
 
@@ -60,7 +62,7 @@ public class EchoBroadcastSocket
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.conn.write(text);
+            sock.session.getRemote().sendStringByFuture(text);
         }
     }
 }
