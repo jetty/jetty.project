@@ -43,6 +43,7 @@ import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -50,45 +51,25 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>{@link HTTPProxyEngine} implements a SPDY to HTTP proxy, that is, converts SPDY events received by clients into
  * HTTP events for the servers.</p>
  */
-public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
+public class HTTPProxyEngine extends ProxyEngine
 {
     private static final Logger LOG = Log.getLogger(HTTPProxyEngine.class);
-    private static final String CLIENT_REQUEST_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.request";
     private static final Callback LOGGING_CALLBACK = new LoggingCallback();
 
-    private final HttpClient httpClient = new HttpClient();
-    private volatile boolean committed;
+    private final HttpClient httpClient;
 
-    public HTTPProxyEngine()
+    public HTTPProxyEngine(HttpClient httpClient)
     {
-        try
-        {
-            httpClient.start();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Exception while starting HttpClient: ", e);
-        }
+        this.httpClient = httpClient;
+        configureHttpClient(httpClient);
     }
 
-    public long getConnectTimeout()
+    private void configureHttpClient(HttpClient httpClient)
     {
-        return httpClient.getConnectTimeout();
-    }
-
-    public void setConnectTimeout(long connectTimeout)
-    {
-        httpClient.setConnectTimeout(connectTimeout);
-    }
-
-    public long getIdleTimeout()
-    {
-        return httpClient.getIdleTimeout();
-    }
-
-    public void setIdleTimeout(long idleTimeout)
-    {
-        httpClient.setIdleTimeout(idleTimeout);
+        // Redirects must be proxied as is, not followed
+        httpClient.setFollowRedirects(false);
+        // Must not store cookies, otherwise cookies of different clients will mix
+        httpClient.setCookieStore(new HttpCookieStore.Empty());
     }
 
     public StreamFrameListener proxy(final Stream clientStream, SynInfo clientSynInfo, ProxyEngineSelector.ProxyServerInfo proxyServerInfo)
@@ -105,27 +86,55 @@ public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
 
         String host = proxyServerInfo.getHost();
         int port = proxyServerInfo.getAddress().getPort();
+
         LOG.debug("Sending HTTP request to: {}", host + ":" + port);
-        Request request = httpClient.newRequest(host, port)
+        final Request request = httpClient.newRequest(host, port)
                 .path(path)
                 .method(HttpMethod.fromString(method));
         addNonSpdyHeadersToRequest(version, headers, request);
 
         if (!clientSynInfo.isClose())
         {
-            clientStream.setAttribute(CLIENT_REQUEST_ATTRIBUTE, request);
             request.content(new DeferredContentProvider());
         }
 
         sendRequest(clientStream, request);
 
-        return this;
+        return new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                // We proxy to HTTP so we do not receive replies
+                throw new UnsupportedOperationException("Not Yet Implemented");
+            }
+
+            @Override
+            public void onHeaders(Stream stream, HeadersInfo headersInfo)
+            {
+                throw new UnsupportedOperationException("Not Yet Implemented");
+            }
+
+            @Override
+            public void onData(Stream clientStream, final DataInfo clientDataInfo)
+            {
+                LOG.debug("received clientDataInfo: {} for stream: {}", clientDataInfo, clientStream);
+
+                DeferredContentProvider contentProvider = (DeferredContentProvider)request.getContent();
+                contentProvider.offer(clientDataInfo.asByteBuffer(true));
+
+                if (clientDataInfo.isClose())
+                    contentProvider.close();
+            }
+        };
     }
 
     private void sendRequest(final Stream clientStream, Request request)
     {
         request.send(new Response.Listener.Empty()
         {
+            private volatile boolean committed;
+
             @Override
             public void onHeaders(final Response response)
             {
@@ -140,8 +149,13 @@ public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
                         LOG.debug("failed: ", x);
                         response.abort(x);
                     }
+
+                    @Override
+                    public void succeeded()
+                    {
+                        committed = true;
+                    }
                 });
-                committed = true;
             }
 
             @Override
@@ -185,7 +199,7 @@ public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
             @Override
             public void onFailure(Response response, Throwable failure)
             {
-                LOG.debug("onFailure called: {}", failure);
+                LOG.debug("onFailure called: ", failure);
                 if (committed)
                 {
                     LOG.debug("clientStream already committed. Resetting stream.");
@@ -221,6 +235,9 @@ public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
         Fields responseHeaders = new Fields();
         for (HttpField header : response.getHeaders())
             responseHeaders.add(header.getName(), header.getValue());
+        if (response.getStatus() > 0)
+            responseHeaders.add(HTTPSPDYHeader.STATUS.name(clientStream.getSession().getVersion()),
+                    String.valueOf(response.getStatus()));
         addResponseProxyHeaders(clientStream, responseHeaders);
         return responseHeaders;
     }
@@ -230,32 +247,6 @@ public class HTTPProxyEngine extends ProxyEngine implements StreamFrameListener
         for (Fields.Field header : headers)
             if (HTTPSPDYHeader.from(version, header.name()) == null)
                 request.header(header.name(), header.value());
-    }
-
-    @Override
-    public void onReply(Stream stream, ReplyInfo replyInfo)
-    {
-        // We proxy to HTTP so we do not receive replies
-        throw new UnsupportedOperationException("Not Yet Implemented");
-    }
-
-    @Override
-    public void onHeaders(Stream stream, HeadersInfo headersInfo)
-    {
-        throw new UnsupportedOperationException("Not Yet Implemented");
-    }
-
-    @Override
-    public void onData(Stream clientStream, final DataInfo clientDataInfo)
-    {
-        LOG.debug("received clientDataInfo: {} for stream: {}", clientDataInfo, clientStream);
-        Request request = (Request)clientStream.getAttribute(CLIENT_REQUEST_ATTRIBUTE);
-
-        DeferredContentProvider contentProvider = (DeferredContentProvider)request.getContent();
-        contentProvider.offer(clientDataInfo.asByteBuffer(true));
-
-        if (clientDataInfo.isClose())
-            contentProvider.close();
     }
 
     static class LoggingCallback extends Callback.Adapter

@@ -256,8 +256,43 @@ public class ProxyHTTPToSPDYTest
     }
 
     @Test
-    public void testHEADRequest() throws Exception{
-//        fail("Not yet implemented"); //TODO:
+    public void testHEADRequest() throws Exception
+    {
+        InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                Assert.assertTrue(synInfo.isClose());
+                Fields requestHeaders = synInfo.getHeaders();
+                Assert.assertNotNull(requestHeaders.get("via"));
+
+                Fields responseHeaders = new Fields();
+                responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+                responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
+                ReplyInfo replyInfo = new ReplyInfo(responseHeaders, true);
+                stream.reply(replyInfo, new Callback.Adapter());
+
+                return null;
+            }
+        }));
+        Socket client = new Socket();
+        client.connect(proxyAddress);
+        OutputStream output = client.getOutputStream();
+
+        String request = "" +
+                "HEAD / HTTP/1.1\r\n" +
+                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
+                "\r\n";
+        output.write(request.getBytes("UTF-8"));
+        output.flush();
+
+        InputStream input = client.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+        String line = reader.readLine();
+        Assert.assertTrue(line.contains(" 200 "));
+
+        client.close();
     }
 
     @Test

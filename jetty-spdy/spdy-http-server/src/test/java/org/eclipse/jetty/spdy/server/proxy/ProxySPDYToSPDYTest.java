@@ -169,7 +169,7 @@ public class ProxySPDYToSPDYTest
         Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "GET", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put(header, "bar");
         client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {

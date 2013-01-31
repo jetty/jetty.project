@@ -24,14 +24,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SPDYTestUtils
 {
-    public static Fields createHeaders(int port, short version, String httpMethod, String path)
+    public static Fields createHeaders(String host, int port, short version, String httpMethod, String path)
     {
         Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.METHOD.name(version), httpMethod);
         headers.put(HTTPSPDYHeader.URI.name(version), path);
         headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
         headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + port);
+        headers.put(HTTPSPDYHeader.HOST.name(version), host + ":" + port);
         return headers;
     }
 

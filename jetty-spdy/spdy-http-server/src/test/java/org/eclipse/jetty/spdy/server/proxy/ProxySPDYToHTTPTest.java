@@ -22,12 +22,15 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -38,6 +41,7 @@ import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -45,6 +49,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
@@ -59,15 +64,14 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-//@RunWith(value = Parameterized.class)
-@RunWith(JUnit4.class)
+@RunWith(value = Parameterized.class)
 public class ProxySPDYToHTTPTest
 {
     @Rule
@@ -83,13 +87,14 @@ public class ProxySPDYToHTTPTest
                     description.getMethodName());
         }
     };
-    private final short version = SPDY.V3;
 
-    //    @Parameterized.Parameters
-    //    public static Collection<Short[]> parameters()
-    //    {
-    //        return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
-    //    }
+    private final short version;
+
+    @Parameterized.Parameters
+    public static Collection<Short[]> parameters()
+    {
+        return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
+    }
 
     private SPDYClient.Factory factory;
     private Server server;
@@ -97,10 +102,10 @@ public class ProxySPDYToHTTPTest
     private ServerConnector proxyConnector;
     private SslContextFactory sslContextFactory = SPDYTestUtils.newSslContextFactory();
 
-    //    public ProxySPDYToHTTPTest(short version)
-    //    {
-    //        this.version = version;
-    //    }
+    public ProxySPDYToHTTPTest(short version)
+    {
+        this.version = version;
+    }
 
     protected InetSocketAddress startServer(Handler handler) throws Exception
     {
@@ -116,8 +121,10 @@ public class ProxySPDYToHTTPTest
     {
         proxy = new Server();
         ProxyEngineSelector proxyEngineSelector = new ProxyEngineSelector();
-        HTTPProxyEngine httpProxyEngine = new HTTPProxyEngine();
-        httpProxyEngine.setIdleTimeout(proxyEngineTimeout);
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        httpClient.setIdleTimeout(proxyEngineTimeout);
+        HTTPProxyEngine httpProxyEngine = new HTTPProxyEngine(httpClient);
         proxyEngineSelector.putProxyEngine("http/1.1", httpProxyEngine);
         proxyEngineSelector.putProxyServerInfo("localhost", new ProxyEngineSelector.ProxyServerInfo("http/1.1", address.getHostName(), address.getPort()));
         proxyConnector = new HTTPSPDYProxyServerConnector(proxy, sslContextFactory, proxyEngineSelector);
@@ -162,7 +169,7 @@ public class ProxySPDYToHTTPTest
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "GET", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put(header, "bar");
         headers.put("connection", "close");
 
@@ -195,7 +202,7 @@ public class ProxySPDYToHTTPTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "GET", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put(header, "bar");
         headers.put("connection", "close");
 
@@ -228,6 +235,92 @@ public class ProxySPDYToHTTPTest
     }
 
     @Test
+    public void testHttpServerCommitsResponseTwice() throws Exception
+    {
+        final long timeout = 1000;
+
+        InetSocketAddress proxyAddress = startProxy(startServer(new DefaultHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.addHeader("some response", "header");
+                response.flushBuffer();
+                try
+                {
+                    Thread.sleep(timeout * 2);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+
+            }
+        }), 30000, timeout);
+
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public void onRst(Session session, RstInfo rstInfo)
+            {
+                resetLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
+        headers.put("connection", "close");
+
+        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                replyLatch.countDown();
+            }
+        });
+
+        assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("stream is reset", resetLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testHttpServerSendsRedirect() throws Exception
+    {
+        InetSocketAddress proxyAddress = startProxy(startServer(new DefaultHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(HttpServletResponse.SC_FOUND);
+                response.setHeader("Location", "http://doesnot.exist");
+            }
+        }), 30000, 30000);
+
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
+
+        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                assertThat("Status code is 302", replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value(),
+                        is("302"));
+                assertThat("Location header has been received", replyInfo.getHeaders().get("Location"), is(notNullValue()));
+                replyLatch.countDown();
+            }
+        });
+
+        assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
     public void testSYNWithRequestContentThenREPLYAndDATA() throws Exception
     {
         final String data = "0123456789ABCDEF";
@@ -240,7 +333,7 @@ public class ProxySPDYToHTTPTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "POST", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         headers.put(header, "bar");
         headers.put("connection", "close");
 
@@ -288,7 +381,7 @@ public class ProxySPDYToHTTPTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "POST", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         headers.put(header, "bar");
         headers.put("connection", "close");
 
@@ -310,16 +403,13 @@ public class ProxySPDYToHTTPTest
                 result.write(dataInfo.asBytes(true), 0, dataInfo.length());
                 if (dataInfo.isClose())
                 {
-                    System.out.println("client received DATA: " + result);
                     assertThat("received data matches send data", result.toString(), is(data + data2));
                     dataLatch.countDown();
                 }
             }
         });
 
-        System.out.println("DATA1 sent!!!!!!!!");
         stream.data(new StringDataInfo(data, false), new Callback.Adapter());
-        System.out.println("DATA2 sent!!!!!!!!");
         stream.data(new StringDataInfo(data2, true), new Callback.Adapter());
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
@@ -344,7 +434,7 @@ public class ProxySPDYToHTTPTest
             }
         }).get(5, TimeUnit.SECONDS);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "POST", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         client.syn(new SynInfo(headers, false), null);
         assertThat("goAway has been received by proxy", goAwayLatch.await(2 * timeout, TimeUnit.MILLISECONDS),
                 is(true));
@@ -376,7 +466,7 @@ public class ProxySPDYToHTTPTest
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
-        Fields headers = SPDYTestUtils.createHeaders(proxyAddress.getPort(), version, "POST", "/");
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         headers.put(header, "bar");
         headers.put("connection", "close");
 
@@ -393,8 +483,6 @@ public class ProxySPDYToHTTPTest
         });
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        //        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -419,8 +507,6 @@ public class ProxySPDYToHTTPTest
         client.ping(new PingInfo(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
-
-        //        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     private class TestServerHandler extends DefaultHandler
@@ -438,7 +524,6 @@ public class ProxySPDYToHTTPTest
         public void handle(String target, Request baseRequest, HttpServletRequest request,
                            HttpServletResponse response) throws IOException, ServletException
         {
-            System.out.println("HANDLER CALLED!!!");
             assertThat("Via Header is set", baseRequest.getHeader("X-Forwarded-For"), is(notNullValue()));
             assertThat("X-Forwarded-For Header is set", baseRequest.getHeader("X-Forwarded-For"),
                     is(notNullValue()));
