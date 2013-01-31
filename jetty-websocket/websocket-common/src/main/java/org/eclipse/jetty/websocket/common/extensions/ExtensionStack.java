@@ -218,6 +218,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         for (ExtensionConfig config : configs)
         {
             Extension ext = factory.newInstance(config);
+            if (ext == null)
+            {
+                // Extension not present on this side
+                continue;
+            }
             extensions.add(ext);
             LOG.debug("Adding Extension: {}",ext);
         }

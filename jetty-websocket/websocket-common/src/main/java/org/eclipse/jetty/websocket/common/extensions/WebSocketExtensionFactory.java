@@ -43,8 +43,10 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 
         register("identity",IdentityExtension.class);
         register("fragment",FragmentExtension.class);
-        register("x-webkit-deflate-frame",FrameCompressionExtension.class);
-        register("permessage-compress",MessageCompressionExtension.class);
+        /* FIXME: Disabled due to bug report - http://bugs.eclipse.org/395444 
+         * register("x-webkit-deflate-frame",FrameCompressionExtension.class);
+         * register("permessage-compress",MessageCompressionExtension.class);
+         */
     }
 
     @Override
