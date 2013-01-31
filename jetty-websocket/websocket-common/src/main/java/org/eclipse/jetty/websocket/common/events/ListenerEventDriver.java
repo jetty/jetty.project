@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.common.events;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
  */
 public class ListenerEventDriver extends EventDriver
 {
+    private static final Logger LOG = Log.getLogger(ListenerEventDriver.class);
     private final WebSocketListener listener;
     private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
