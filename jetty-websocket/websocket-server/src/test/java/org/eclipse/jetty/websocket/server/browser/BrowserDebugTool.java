@@ -107,6 +107,12 @@ public class BrowserDebugTool implements WebSocketCreator
             public void configure(WebSocketServletFactory factory)
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
+
+                // Setup some extensions we want to test against
+                // factory.getExtensionFactory().register("x-webkit-deflate-frame",FrameCompressionExtension.class);
+                // factory.getExtensionFactory().register("permessage-compress",MessageCompressionExtension.class);
+
+                // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
             }
         };
