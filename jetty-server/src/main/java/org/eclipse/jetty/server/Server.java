@@ -100,6 +100,8 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     /** Convenience constructor
      * Creates server and a {@link ServerConnector} at the passed port.
+     * @param port The port of a network HTTP connector (or 0 for a randomly allocated port).
+     * @see NetworkConnector#getLocalPort()
      */
     public Server(@Name("port")int port)
     {

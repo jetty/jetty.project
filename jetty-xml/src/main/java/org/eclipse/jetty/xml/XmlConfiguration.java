@@ -685,6 +685,8 @@ public class XmlConfiguration
                 oClass = obj.getClass();
             if (oClass == null)
                 throw new IllegalArgumentException(node.toString());
+            
+            System.err.println("class="+oClass);
 
             int size = 0;
             int argIndex = node.size();
@@ -810,10 +812,12 @@ public class XmlConfiguration
          */
         private Object refObj(Object obj, XmlParser.Node node) throws Exception
         {
-            String id = node.getAttribute("id");
-            obj = _idMap.get(id);
+            String refid = node.getAttribute("refid");
+            if (refid==null)
+                refid = node.getAttribute("id");
+            obj = _idMap.get(refid);
             if (obj == null && node.size()>0)
-                throw new IllegalStateException("No object for id=" + id);
+                throw new IllegalStateException("No object for refid=" + refid);
             configure(obj,node,0);
             return obj;
         }

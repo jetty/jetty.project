@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure Jetty Plus features                                   -->
@@ -55,20 +55,6 @@
   <!-- Uncomment the section entitled "Apply plusConfig to all     -->
   <!-- webapps for this Server". NOTE: this is the default.        -->
   <!-- =========================================================== -->
-  
-
-  <!-- =========================================================== -->
-  <!-- Sequence of configurations to defining Plus features.       -->
-  <!-- =========================================================== -->
-  <Array id="plusConfig" type="java.lang.String">
-    <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
-    <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
-    <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
-    <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
-    <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-    <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
-    <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-  </Array>
 
   <!-- =========================================================== -->
   <!-- Apply plusConfig to all webapps in webapps-plus             -->
@@ -86,7 +72,17 @@
             <Set name="scanInterval">5</Set>
             <Set name="parentLoaderPriority">false</Set>
             <Set name="extractWars">true</Set>
-            <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
+            <Set name="configurationClasses">
+              <Array id="plusConfig" type="java.lang.String">
+                <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+                <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+                <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+              </Array>
+            </Set>
           </New>
         </Arg>
       </Call>
@@ -94,14 +90,20 @@
   -->
 
   <!-- =========================================================== -->
-  <!-- Apply plusConfig to all webapps for this Server             -->
+  <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
-    <Call name="setAttribute">
-      <Arg>org.eclipse.jetty.webapp.configuration</Arg>
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="addAfter">
+      <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
       <Arg>
-          <Ref id="plusConfig"/>
+        <Array type="String">
+          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+        </Array>
       </Arg>
     </Call>
+  </Call>
 
 </Configure>
 

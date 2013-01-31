@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class WebAppContextTest
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertNull(wac.getConfigurations());
+        Assert.assertEquals(0,wac.getConfigurations().length);
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -66,7 +67,7 @@ public class WebAppContextTest
         String[] classNames = {"x.y.z"};
 
         Server server = new Server();
-        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
+        server.setAttribute(Configuration.ATTR, classNames);
 
         //test an explicitly set classnames list overrides that from the server
         WebAppContext wac = new WebAppContext();
@@ -80,6 +81,14 @@ public class WebAppContextTest
         //test if no explicit classnames, they come from the server
         WebAppContext wac2 = new WebAppContext();
         wac2.setServer(server);
+        try
+        {
+            wac2.loadConfigurations();
+        }
+        catch(Exception e)
+        {
+            Log.getRootLogger().ignore(e);
+        }
         assertTrue(Arrays.equals(classNames, wac2.getConfigurationClasses()));
     }
 
@@ -94,7 +103,7 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
-        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
+        server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
     }
