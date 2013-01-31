@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYProxyServerConnector extends ServerConnector
@@ -52,8 +52,8 @@ public class HTTPSPDYProxyServerConnector extends ServerConnector
                 sslContextFactory == null
                         ? new ConnectionFactory[]{new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector)}
                         : new ConnectionFactory[]{new NPNServerConnectionFactory("spdy/3", "spdy/2", "http/1.1"),
-                        new HTTPSPDYServerConnectionFactory(SPDY.V3, config),
-                        new HTTPSPDYServerConnectionFactory(SPDY.V2, config),
+                        new SPDYServerConnectionFactory(SPDY.V3, proxyEngineSelector),
+                        new SPDYServerConnectionFactory(SPDY.V2, proxyEngineSelector),
                         new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector)});
         NPNServerConnectionFactory npnConnectionFactory = getConnectionFactory(NPNServerConnectionFactory.class);
         if (npnConnectionFactory != null)

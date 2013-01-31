@@ -204,7 +204,8 @@ public class HttpSender implements AsyncContentProvider.Listener
                     }
                     case FLUSH:
                     {
-                        out: while (true)
+                        out:
+                        while (true)
                         {
                             State currentState = state.get();
                             switch (currentState)
@@ -293,7 +294,8 @@ public class HttpSender implements AsyncContentProvider.Listener
 
                             if (contentChunk.isDeferred())
                             {
-                                out: while (true)
+                                out:
+                                while (true)
                                 {
                                     currentSendState = sendState.get();
                                     switch (currentSendState)

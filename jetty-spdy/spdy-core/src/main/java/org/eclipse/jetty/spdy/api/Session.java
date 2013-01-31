@@ -71,10 +71,8 @@ public interface Session
     public void removeListener(Listener listener);
 
     /**
-     * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
-     * <p>Callers may use the returned future to wait for the stream to be created, and
-     * use the stream, for example, to send data frames.</p>
-     *
+     * <p>Sends a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
+     * <p>Callers may use the returned Stream for example, to send data frames.</p>
      *
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
@@ -97,9 +95,7 @@ public interface Session
     public void syn(SynInfo synInfo, StreamFrameListener listener, Promise<Stream> promise);
 
     /**
-     * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
-     * <p>Callers may use the returned future to wait for the reset to be sent.</p>
-     *
+     * <p>Sends synchronously a RST_STREAM to abort a stream.</p>
      *
      * @param rstInfo the metadata to reset the stream
      * @return the RstInfo belonging to the reset to be sent
@@ -112,7 +108,6 @@ public interface Session
      * <p>Callers may pass a non-null completion callback to be notified of when the
      * reset has been actually sent.</p>
      *
-     *
      * @param rstInfo the metadata to reset the stream
      * @param callback the completion callback that gets notified of reset's send
      * @see #rst(RstInfo)
@@ -120,12 +115,9 @@ public interface Session
     public void rst(RstInfo rstInfo, Callback callback);
 
     /**
-     * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
-     * <p>Callers may use the returned future to wait for the settings to be sent.</p>
-     *
+     * <p>Sends synchronously a SETTINGS to configure the SPDY connection.</p>
      *
      * @param settingsInfo the metadata to send
-     * @return a future to wait for the settings to be sent
      * @see #settings(SettingsInfo, Callback)
      */
     public void settings(SettingsInfo settingsInfo) throws ExecutionException, InterruptedException, TimeoutException;
@@ -143,10 +135,8 @@ public interface Session
     public void settings(SettingsInfo settingsInfo, Callback callback);
 
     /**
-     * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
-     * <p>Callers may use the returned future to wait for the ping to be sent.</p>
+     * <p>Sends synchronously a PING, normally to measure round-trip time.</p>
      *
-     * @return a future for the metadata sent
      * @see #ping(PingInfo, Promise
      * @param pingInfo
      */
@@ -157,8 +147,6 @@ public interface Session
      * <p>Callers may pass a non-null completion callback to be notified of when the
      * ping has been actually sent.</p>
      *
-     *
-     *
      * @param pingInfo
      * @param promise the completion callback that gets notified of ping's send
      * @see #ping(PingInfo)
@@ -167,9 +155,7 @@ public interface Session
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
-     * <p>Callers may use the returned future to wait for the go away to be sent.</p>
      *
-     * @return a future to wait for the go away to be sent
      * @see #goAway(GoAwayInfo, Callback)
      * @param goAwayInfo
      */
@@ -179,8 +165,6 @@ public interface Session
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
      * <p>Callers may pass a non-null completion callback to be notified of when the
      * go away has been actually sent.</p>
-     *
-     *
      *
      * @param goAwayInfo
      * @param callback the completion callback that gets notified of go away's send
