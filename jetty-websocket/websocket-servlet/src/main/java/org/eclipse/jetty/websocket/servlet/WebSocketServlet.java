@@ -126,8 +126,10 @@ public abstract class WebSocketServlet extends HttpServlet
             }
             else
             {
+                // Load the default class if ServiceLoader mechanism isn't valid in this environment. (such as OSGi)
+                ClassLoader loader = Thread.currentThread().getContextClassLoader();
                 @SuppressWarnings("unchecked")
-                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)getServletContext().getClass().getClassLoader()
+                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)loader
                         .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
                 baseFactory = wssf.newInstance();
             }
