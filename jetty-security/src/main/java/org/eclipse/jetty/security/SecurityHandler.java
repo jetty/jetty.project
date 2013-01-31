@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -339,18 +339,15 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_loginService!=null)
                 _identityService=_loginService.getIdentityService();
 
-            System.err.println("Null identity service, trying login service: "+_identityService);
             if (_identityService==null)
                 _identityService=findIdentityService();
             
-            System.err.println("Finding identity service: "+_identityService);
             if (_identityService==null && _realmName!=null)
                 _identityService=new DefaultIdentityService();
         }
         
         if (_loginService!=null)
         {
-            System.err.println("LoginService="+_loginService + " identityService="+_identityService);
             if (_loginService.getIdentityService()==null)
                 _loginService.setIdentityService(_identityService);
             else if (_loginService.getIdentityService()!=_identityService)

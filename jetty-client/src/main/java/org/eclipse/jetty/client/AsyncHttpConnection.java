@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -106,6 +106,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                 LOG.debug("complete {}",exchange);
                                 progress=true;
                                 _generator.complete();
+                                if (exchange.getStatus() < HttpExchange.STATUS_WAITING_FOR_RESPONSE)
+                                    exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
                             }
                             else if (_generator.isEmpty())
                             {

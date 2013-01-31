@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,43 +40,28 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 public abstract class AbstractCompressedStream extends ServletOutputStream 
 {
     private final String _encoding;
-    protected HttpServletRequest _request;
-    protected HttpServletResponse _response;
+    protected final String _vary;
+    protected final CompressedResponseWrapper _wrapper;
+    protected final HttpServletResponse _response;
     protected OutputStream _out;
     protected ByteArrayOutputStream2 _bOut;
     protected DeflaterOutputStream _compressedOutputStream;
     protected boolean _closed;
-    protected int _bufferSize;
-    protected int _minCompressSize;
-    protected long _contentLength;
     protected boolean _doNotCompress;
 
     /**
      * Instantiates a new compressed stream.
      * 
-     * @param request
-     *            the request
-     * @param response
-     *            the response
-     * @param contentLength
-     *            the content length
-     * @param bufferSize
-     *            the buffer size
-     * @param minCompressSize
-     *            the min compress size
-     * @throws IOException
-     *             Signals that an I/O exception has occurred.
      */
-    public AbstractCompressedStream(String encoding,HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minCompressSize)
+    public AbstractCompressedStream(String encoding,HttpServletRequest request, CompressedResponseWrapper wrapper,String vary)
             throws IOException
     {
         _encoding=encoding;
-        _request = request;
-        _response = response;
-        _contentLength = contentLength;
-        _bufferSize = bufferSize;
-        _minCompressSize = minCompressSize;
-        if (minCompressSize == 0)
+        _wrapper = wrapper;
+        _response = (HttpServletResponse)wrapper.getResponse();
+        _vary=vary;
+        
+        if (_wrapper.getMinCompressSize()==0)
             doCompress();
     }
 
@@ -96,21 +81,19 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         _doNotCompress = false;
     }
 
-    /**
-     * Sets the content length.
-     * 
-     * @param length
-     *            the new content length
-     */
-    public void setContentLength(long length)
+    /* ------------------------------------------------------------ */
+    public void setContentLength()
     {
-        _contentLength = length;
-        if (_doNotCompress && length >= 0)
+        if (_doNotCompress)
         {
-            if (_contentLength < Integer.MAX_VALUE)
-                _response.setContentLength((int)_contentLength);
-            else
-                _response.setHeader("Content-Length",Long.toString(_contentLength));
+            long length=_wrapper.getContentLength();
+            if (length>=0)
+            {
+                if (length < Integer.MAX_VALUE)
+                    _response.setContentLength((int)length);
+                else
+                    _response.setHeader("Content-Length",Long.toString(length));
+            }
         }
     }
 
@@ -123,8 +106,9 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     {
         if (_out == null || _bOut != null)
         {
-            if (_contentLength > 0 && _contentLength < _minCompressSize)
-                doNotCompress();
+            long length=_wrapper.getContentLength();
+            if (length > 0 && length < _wrapper.getMinCompressSize())
+                doNotCompress(false);
             else
                 doCompress();
         }
@@ -142,22 +126,27 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         if (_closed)
             return;
 
-        if (_request.getAttribute("javax.servlet.include.request_uri") != null)
+        if (_wrapper.getRequest().getAttribute("javax.servlet.include.request_uri") != null)
             flush();
         else
         {
             if (_bOut != null)
             {
-                if (_contentLength < 0)
-                    _contentLength = _bOut.getCount();
-                if (_contentLength < _minCompressSize)
-                    doNotCompress();
+                long length=_wrapper.getContentLength();
+                if (length < 0)
+                {
+                    length = _bOut.getCount();
+                    _wrapper.setContentLength(length);
+                }
+                if (length < _wrapper.getMinCompressSize())
+                    doNotCompress(false);
                 else
                     doCompress();
             }
             else if (_out == null)
             {
-                doNotCompress();
+                // No output
+                doNotCompress(false);
             }
 
             if (_compressedOutputStream != null)
@@ -180,8 +169,9 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         {
             if (_out == null || _bOut != null)
             {
-                if (_contentLength > 0 && _contentLength < _minCompressSize)
-                    doNotCompress();
+                long length=_wrapper.getContentLength();
+                if (length > 0 && length < _wrapper.getMinCompressSize())
+                    doNotCompress(false);
                 else
                     doCompress();
             }
@@ -239,19 +229,30 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             if (_response.isCommitted())
                 throw new IllegalStateException();
             
-            setHeader("Content-Encoding", _encoding);            
-            if (_response.containsHeader("Content-Encoding"))
+            if (_encoding!=null)
             {
-                _out=_compressedOutputStream=createStream();
-
-                if (_bOut!=null)
+                setHeader("Content-Encoding", _encoding);            
+                if (_response.containsHeader("Content-Encoding"))
                 {
-                    _out.write(_bOut.getBuf(),0,_bOut.getCount());
-                    _bOut=null;
+                    setHeader("Vary",_vary);
+                    _out=_compressedOutputStream=createStream();
+                    if (_out!=null)
+                    {
+                        if (_bOut!=null)
+                        {
+                            _out.write(_bOut.getBuf(),0,_bOut.getCount());
+                            _bOut=null;
+                        }
+
+                        String etag=_wrapper.getETag();
+                        if (etag!=null)
+                            setHeader("ETag",etag.substring(0,etag.length()-1)+'-'+_encoding+'"');
+                        return;
+                    }
                 }
             }
-            else 
-                doNotCompress();
+            
+            doNotCompress(true); // Send vary as it could have been compressed if encoding was present
         }
     }
 
@@ -261,16 +262,21 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public void doNotCompress() throws IOException
+    public void doNotCompress(boolean sendVary) throws IOException
     {
         if (_compressedOutputStream != null)
             throw new IllegalStateException("Compressed output stream is already assigned.");
         if (_out == null || _bOut != null)
         {
+            if (sendVary)
+                setHeader("Vary",_vary);
+            if (_wrapper.getETag()!=null)
+                setHeader("ETag",_wrapper.getETag());
+                
             _doNotCompress = true;
 
             _out = _response.getOutputStream();
-            setContentLength(_contentLength);
+            setContentLength();
 
             if (_bOut != null)
                 _out.write(_bOut.getBuf(),0,_bOut.getCount());
@@ -281,30 +287,32 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     /**
      * Check out.
      * 
-     * @param length
+     * @param lengthToWrite
      *            the length
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    private void checkOut(int length) throws IOException
+    private void checkOut(int lengthToWrite) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
 
         if (_out == null)
         {
-            if (_response.isCommitted() || (_contentLength >= 0 && _contentLength < _minCompressSize))
-                doNotCompress();
-            else if (length > _minCompressSize)
+            long length=_wrapper.getContentLength();
+            if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
+                doNotCompress(false);
+            else if (lengthToWrite > _wrapper.getMinCompressSize())
                 doCompress();
             else
-                _out = _bOut = new ByteArrayOutputStream2(_bufferSize);
+                _out = _bOut = new ByteArrayOutputStream2(_wrapper.getBufferSize());
         }
         else if (_bOut != null)
         {
-            if (_response.isCommitted() || (_contentLength >= 0 && _contentLength < _minCompressSize))
-                doNotCompress();
-            else if (length >= (_bOut.getBuf().length - _bOut.getCount()))
+            long length=_wrapper.getContentLength();
+            if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
+                doNotCompress(false);
+            else if (lengthToWrite >= (_bOut.getBuf().length - _bOut.getCount()))
                 doCompress();
         }
     }

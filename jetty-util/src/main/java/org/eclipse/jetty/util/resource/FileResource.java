@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,6 +85,10 @@ public class FileResource extends URLResource
         {
             // Try standard API to convert URL to file.
             _file =new File(new URI(url.toString()));
+        }
+        catch (URISyntaxException e) 
+        {
+            throw e;
         }
         catch (Exception e)
         {

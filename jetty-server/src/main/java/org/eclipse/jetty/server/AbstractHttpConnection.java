@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -469,7 +469,10 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
                     {
                         if (_uri.getScheme()!=null && _uri.getHost()!=null)
+                        {
                             info="/";
+                            _request.setRequestURI("");
+                        }
                         else
                             throw new HttpException(400);
                     }
@@ -807,39 +810,42 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 break;
 
             case HttpHeaders.EXPECT_ORDINAL:
-                value = HttpHeaderValues.CACHE.lookup(value);
-                switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                if (_version>=HttpVersions.HTTP_1_1_ORDINAL)
                 {
-                    case HttpHeaderValues.CONTINUE_ORDINAL:
-                        _expect100Continue=_generator instanceof HttpGenerator;
-                        break;
+                    value = HttpHeaderValues.CACHE.lookup(value);
+                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                    {
+                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                            _expect100Continue=_generator instanceof HttpGenerator;
+                            break;
 
-                    case HttpHeaderValues.PROCESSING_ORDINAL:
-                        _expect102Processing=_generator instanceof HttpGenerator;
-                        break;
+                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                            _expect102Processing=_generator instanceof HttpGenerator;
+                            break;
 
-                    default:
-                        String[] values = value.toString().split(",");
-                        for  (int i=0;values!=null && i<values.length;i++)
-                        {
-                            CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
-                            if (cb==null)
-                                _expect=true;
-                            else
+                        default:
+                            String[] values = value.toString().split(",");
+                            for  (int i=0;values!=null && i<values.length;i++)
                             {
-                                switch(cb.getOrdinal())
+                                CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
+                                if (cb==null)
+                                    _expect=true;
+                                else
                                 {
-                                    case HttpHeaderValues.CONTINUE_ORDINAL:
-                                        _expect100Continue=_generator instanceof HttpGenerator;
-                                        break;
-                                    case HttpHeaderValues.PROCESSING_ORDINAL:
-                                        _expect102Processing=_generator instanceof HttpGenerator;
-                                        break;
-                                    default:
-                                        _expect=true;
+                                    switch(cb.getOrdinal())
+                                    {
+                                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                                            _expect100Continue=_generator instanceof HttpGenerator;
+                                            break;
+                                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                                            _expect102Processing=_generator instanceof HttpGenerator;
+                                            break;
+                                        default:
+                                            _expect=true;
+                                    }
                                 }
                             }
-                        }
+                    }
                 }
                 break;
 
@@ -1108,7 +1114,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (super._generator.isWritten())
                 throw new IllegalStateException("!empty");
 
-            // Convert HTTP content to contentl
+            // Convert HTTP content to content
             if (content instanceof HttpContent)
             {
                 HttpContent httpContent = (HttpContent) content;
@@ -1143,13 +1149,20 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 Buffer lm = httpContent.getLastModified();
                 long lml=httpContent.getResource().lastModified();
                 if (lm != null)
+                {
                     _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm);
+                }
                 else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)
                         _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, lml);
                 }
+                
+                Buffer etag=httpContent.getETag();
+                if (etag!=null)
+                    _responseFields.put(HttpHeaders.ETAG_BUFFER,etag);
 
+                
                 boolean direct=_connector instanceof NIOConnector && ((NIOConnector)_connector).getUseDirectBuffers() && !(_connector instanceof SslConnector);
                 content = direct?httpContent.getDirectBuffer():httpContent.getIndirectBuffer();
                 if (content==null)
@@ -1197,7 +1210,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         resource.release();
                     else
                         in.close();
-
                 }
             }
             else

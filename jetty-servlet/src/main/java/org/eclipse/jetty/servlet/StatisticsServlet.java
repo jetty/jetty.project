@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -89,7 +91,7 @@ public class StatisticsServlet extends HttpServlet
         }
         if (_restrictToLocalhost)
         {
-            if (!"127.0.0.1".equals(req.getRemoteAddr()))
+            if (!isLoopbackAddress(req.getRemoteAddr()))
             {
                 resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
@@ -109,6 +111,20 @@ public class StatisticsServlet extends HttpServlet
             sendTextResponse(resp);
         }
 
+    }
+
+    private boolean isLoopbackAddress(String address)
+    {
+        try
+        {
+            InetAddress addr = InetAddress.getByName(address); 
+            return addr.isLoopbackAddress();
+        }
+        catch (UnknownHostException e )
+        {
+            LOG.warn("Warning: attempt to access statistics servlet from " + address, e);
+            return false;
+        }
     }
 
     private void sendXmlResponse(HttpServletResponse response) throws IOException
@@ -132,7 +148,7 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <dispatchedActive>").append(_statsHandler.getDispatchedActive()).append("</dispatchedActive>\n");
         sb.append("    <dispatchedActiveMax>").append(_statsHandler.getDispatchedActiveMax()).append("</dispatchedActiveMax>\n");
         sb.append("    <dispatchedTimeTotal>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotal>\n");
-        sb.append("    <dispatchedTimeMean").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
+        sb.append("    <dispatchedTimeMean>").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
         sb.append("    <dispatchedTimeMax>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMax>\n");
         sb.append("    <dispatchedTimeStdDev").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDev>\n");
         
@@ -201,7 +217,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 sb.append("Statistics gathering started ").append(connector.getStatsOnMs()).append("ms ago").append("<br />\n");
                 sb.append("Total connections: ").append(connector.getConnections()).append("<br />\n");
-                sb.append("Current connections open: ").append(connector.getConnectionsOpen());
+                sb.append("Current connections open: ").append(connector.getConnectionsOpen()).append("<br />\n");
                 sb.append("Max concurrent connections open: ").append(connector.getConnectionsOpenMax()).append("<br />\n");
                 sb.append("Total connections duration: ").append(connector.getConnectionsDurationTotal()).append("<br />\n");
                 sb.append("Mean connection duration: ").append(connector.getConnectionsDurationMean()).append("<br />\n");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,7 +42,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** An in-memory implementation of SessionManager.
+/** 
+ * HashSessionManager
+ * 
+ * An in-memory implementation of SessionManager.
  * <p>
  * This manager supports saving sessions to disk, either periodically or at shutdown.
  * Sessions can also have their content idle saved to disk to reduce the memory overheads of large idle sessions.
@@ -78,7 +82,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStart()
      */
     @Override
@@ -111,7 +115,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStop()
      */
     @Override
@@ -253,7 +257,7 @@ public class HashSessionManager extends AbstractSessionManager
      * @param seconds the period in seconds at which a check is made for sessions to be invalidated.
      */
     public void setScavengePeriod(int seconds)
-    {
+    { 
         if (seconds==0)
             seconds=60;
 
@@ -265,6 +269,7 @@ public class HashSessionManager extends AbstractSessionManager
             period=1000;
 
         _scavengePeriodMs=period;
+    
         if (_timer!=null && (period!=old_period || _task==null))
         {
             synchronized (this)
@@ -304,25 +309,36 @@ public class HashSessionManager extends AbstractSessionManager
 
             // For each session
             long now=System.currentTimeMillis();
+          
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
             {
                 HashedSession session=i.next();
-                long idleTime=session.getMaxInactiveInterval()*1000L;
+                long idleTime=session.getMaxInactiveInterval()*1000L; 
                 if (idleTime>0&&session.getAccessed()+idleTime<now)
                 {
                     // Found a stale session, add it to the list
-                    session.timeout();
+                    try
+                    {
+                        session.timeout();
+                    }
+                    catch (Exception e)
+                    {
+                        __log.warn("Problem scavenging sessions", e);
+                    }
                 }
-                else if (_idleSavePeriodMs>0&&session.getAccessed()+_idleSavePeriodMs<now)
+                else if (_idleSavePeriodMs > 0 && session.getAccessed()+_idleSavePeriodMs < now)
                 {
-                    session.idle();
+                    try
+                    {
+                        session.idle();
+                    }
+                    catch (Exception e)
+                    {
+                        __log.warn("Problem idling session "+ session.getId(), e);
+                    }
                 }
             }
-        }
-        catch (Throwable t)
-        {
-            __log.warn("Problem scavenging sessions", t);
-        }
+        }       
         finally
         {
             thread.setContextClassLoader(old_loader);
@@ -421,9 +437,11 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    public void setStoreDirectory (File dir)
-    {
-        _storeDir=dir;
+    public void setStoreDirectory (File dir) throws IOException
+    { 
+        // CanonicalFile is used to capture the base store directory in a way that will
+        // work on Windows.  Case differences may through off later checks using this directory.
+        _storeDir=dir.getCanonicalFile();
     }
 
     /* ------------------------------------------------------------ */
@@ -481,8 +499,9 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     protected synchronized HashedSession restoreSession(String idInCuster)
-    {
+    {        
         File file = new File(_storeDir,idInCuster);
+
         FileInputStream in = null;
         Exception error = null;
         try
@@ -507,13 +526,15 @@ public class HashSessionManager extends AbstractSessionManager
             
             if (error != null)
             {
-                if (isDeleteUnrestorableSessions() && file.exists())
+                if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
                     __log.warn("Deleting file for unrestorable session "+idInCuster, error);
                 }
                 else
+                {
                     __log.warn("Problem restoring session "+idInCuster, error);
+                }
             }
             else
                file.delete(); //delete successfully restored file

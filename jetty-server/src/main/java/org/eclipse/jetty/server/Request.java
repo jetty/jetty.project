@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -312,18 +312,42 @@ public class Request implements HttpServletRequest
                                 maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
                                 maxFormKeys = _context.getContextHandler().getMaxFormKeys();
                             }
-                            else
+                            
+                            if (maxFormContentSize < 0)
                             {
-                                Number size = (Number)_connection.getConnector().getServer()
-                                        .getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                                maxFormContentSize = size == null?200000:size.intValue();
-                                Number keys = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                                maxFormKeys = keys == null?1000:keys.intValue();
+                                Object obj = _connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                                if (obj == null)
+                                    maxFormContentSize = 200000;
+                                else if (obj instanceof Number)
+                                {                      
+                                    Number size = (Number)obj;
+                                    maxFormContentSize = size.intValue();
+                                }
+                                else if (obj instanceof String)
+                                {
+                                    maxFormContentSize = Integer.valueOf((String)obj);
+                                }
+                            }
+                            
+                            if (maxFormKeys < 0)
+                            {
+                                Object obj = _connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                if (obj == null)
+                                    maxFormKeys = 1000;
+                                else if (obj instanceof Number)
+                                {
+                                    Number keys = (Number)obj;
+                                    maxFormKeys = keys.intValue();
+                                }
+                                else if (obj instanceof String)
+                                {
+                                    maxFormKeys = Integer.valueOf((String)obj);
+                                }
                             }
 
                             if (content_length > maxFormContentSize && maxFormContentSize > 0)
                             {
-                                throw new IllegalStateException("Form too large" + content_length + ">" + maxFormContentSize);
+                                throw new IllegalStateException("Form too large " + content_length + ">" + maxFormContentSize);
                             }
                             InputStream in = getInputStream();
 

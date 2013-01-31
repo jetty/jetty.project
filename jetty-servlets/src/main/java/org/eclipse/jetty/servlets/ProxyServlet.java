@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -527,7 +527,7 @@ public class ProxyServlet implements Servlet
                         if (ex instanceof EofException)
                         {
                             _log.ignore(ex);
-                            return;
+                            //return;
                         }
                         handleOnException(ex,request,response);
 

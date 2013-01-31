@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,6 +45,9 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 
 
 /**
@@ -54,6 +57,8 @@ import javax.servlet.http.Part;
  */
 public class MultiPartInputStream
 {
+    private static final Logger LOG = Log.getLogger(MultiPartInputStream.class);
+
     public static final MultipartConfigElement  __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     protected InputStream _in;
     protected MultipartConfigElement _config;
@@ -332,7 +337,7 @@ public class MultiPartInputStream
      */
     public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        _in = new BufferedInputStream(in);
+        _in = new ReadLineInputStream(in);
        _contentType = contentType;
        _config = config;
        _contextTmpDir = contextTmpDir;
@@ -467,16 +472,34 @@ public class MultiPartInputStream
         if (!_tmpDir.exists())
             _tmpDir.mkdirs();
 
-        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary=")), true).trim());
+        String contentTypeBoundary = "";
+        if (_contentType.indexOf("boundary=") >= 0)
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary=")), true).trim());
+        
+        String boundary="--"+contentTypeBoundary;
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
-        byte[] bytes=TypeUtil.readLine(_in);
-        String line=bytes==null?null:new String(bytes,"UTF-8");
-        if(line==null || !line.equals(boundary))
+        String line=((ReadLineInputStream)_in).readLine();
+
+        if (line == null)
+            throw new IOException("Missing content for multipart request");
+
+        boolean badFormatLogged = false;
+        line=line.trim();
+        while (line != null && !line.equals(boundary))
         {
-            throw new IOException("Missing initial multi part boundary");
+            if (!badFormatLogged)
+            {
+                LOG.warn("Badly formatted multipart request");
+                badFormatLogged = true;
+            }
+            line=((ReadLineInputStream)_in).readLine();
+            line=(line==null?line:line.trim());
         }
+
+        if (line == null)
+            throw new IOException("Missing initial multi part boundary");
 
         // Read each part
         boolean lastPart=false;
@@ -488,19 +511,19 @@ public class MultiPartInputStream
             MultiMap<String> headers = new MultiMap<String>();
             while(true)
             {
-                bytes=TypeUtil.readLine(_in);
-                if(bytes==null)
+                line=((ReadLineInputStream)_in).readLine();
+                
+                //No more input
+                if(line==null)
                     break outer;
 
                 // If blank line, end of part headers
-                if(bytes.length==0)
+                if("".equals(line))
                     break;
                 
-                total += bytes.length;
+                total += line.length();
                 if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
                     throw new IllegalStateException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
-                
-                line=new String(bytes,"UTF-8");
 
                 //get content-disposition and content-type
                 int c=line.indexOf(':',0);
@@ -526,7 +549,7 @@ public class MultiPartInputStream
                 throw new IOException("Missing content-disposition");
             }
 
-            QuotedStringTokenizer tok=new QuotedStringTokenizer(contentDisposition,";");
+            QuotedStringTokenizer tok=new QuotedStringTokenizer(contentDisposition,";", false, true);
             String name=null;
             String filename=null;
             while(tok.hasMoreTokens())
@@ -538,7 +561,7 @@ public class MultiPartInputStream
                 else if(tl.startsWith("name="))
                     name=value(t, true);
                 else if(tl.startsWith("filename="))
-                    filename=value(t, false);
+                    filename=filenameValue(t);
             }
 
             // Check disposition
@@ -601,7 +624,7 @@ public class MultiPartInputStream
                 boolean cr=false;
                 boolean lf=false;
 
-                // loop for all lines`
+                // loop for all lines
                 while(true)
                 {
                     int b=0;
@@ -616,7 +639,14 @@ public class MultiPartInputStream
                         if(c==13||c==10)
                         {
                             if(c==13)
-                                state=_in.read();
+                            {
+                                _in.mark(1);
+                                int tmp=_in.read();
+                                if (tmp!=10)
+                                    _in.reset();
+                                else
+                                    state=tmp;
+                            }
                             break;
                         }
                         // look for boundary
@@ -699,6 +729,7 @@ public class MultiPartInputStream
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue, boolean splitAfterSpace)
     {
+        /*
         String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
         int i=value.indexOf(';');
         if(i>0)
@@ -714,6 +745,38 @@ public class MultiPartInputStream
                 value=value.substring(0,i);
         }
         return value;
+        */
+         int idx = nameEqualsValue.indexOf('=');
+         String value = nameEqualsValue.substring(idx+1).trim();
+         return QuotedStringTokenizer.unquoteOnly(value);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String filenameValue(String nameEqualsValue)
+    {
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();   
+
+        if (value.matches(".??[a-z,A-Z]\\:\\\\[^\\\\].*"))
+        {
+            //incorrectly escaped IE filenames that have the whole path
+            //we just strip any leading & trailing quotes and leave it as is
+            char first=value.charAt(0);
+            if (first=='"' || first=='\'')
+                value=value.substring(1);
+            char last=value.charAt(value.length()-1);
+            if (last=='"' || last=='\'')
+                value = value.substring(0,value.length()-1);
+
+            return value;
+        }
+        else
+            //unquote the string, but allow any backslashes that don't
+            //form a valid escape sequence to remain as many browsers
+            //even on *nix systems will not escape a filename containing
+            //backslashes
+            return QuotedStringTokenizer.unquoteOnly(value, true);
     }
     
     private static class Base64InputStream extends InputStream

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -105,8 +105,9 @@ public class JettyBootstrapActivator implements BundleActivator
         DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
 
         // track Bundles and deploy those that represent webapps to one of the known Servers
-        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
-        _webBundleTracker.open();
+        WebBundleTrackerCustomizer customizer = new WebBundleTrackerCustomizer();
+        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, customizer);
+        customizer.setAndOpenWebBundleTracker(_webBundleTracker);
     }
 
     /**

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 
@@ -33,8 +34,8 @@ import java.io.UnsupportedEncodingException;
 public class B64Code
 {
     // ------------------------------------------------------------------
-    static final char pad='=';
-    static final char[] rfc1421alphabet=
+    static final char __pad='=';
+    static final char[] __rfc1421alphabet=
             {
                 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
                 'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
@@ -42,16 +43,16 @@ public class B64Code
                 'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
             };
 
-    static final byte[] rfc1421nibbles;
+    static final byte[] __rfc1421nibbles;
 
     static
     {
-        rfc1421nibbles=new byte[256];
+        __rfc1421nibbles=new byte[256];
         for (int i=0;i<256;i++)
-            rfc1421nibbles[i]=-1;
+            __rfc1421nibbles[i]=-1;
         for (byte b=0;b<64;b++)
-            rfc1421nibbles[(byte)rfc1421alphabet[b]]=b;
-        rfc1421nibbles[(byte)pad]=0;
+            __rfc1421nibbles[(byte)__rfc1421alphabet[b]]=b;
+        __rfc1421nibbles[(byte)__pad]=0;
     }
 
     // ------------------------------------------------------------------
@@ -104,7 +105,54 @@ public class B64Code
      */
     static public char[] encode(byte[] b)
     {
-        return encode(b,false);
+        if (b==null)
+            return null;
+
+        int bLen=b.length;
+        int cLen=((bLen+2)/3)*4;
+        char c[]=new char[cLen];
+        int ci=0;
+        int bi=0;
+        byte b0, b1, b2;
+        int stop=(bLen/3)*3;
+        while (bi<stop)
+        {
+            b0=b[bi++];
+            b1=b[bi++];
+            b2=b[bi++];
+            c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+            c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
+            c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
+            c[ci++]=__rfc1421alphabet[b2&077];
+        }
+
+        if (bLen!=bi)
+        {
+            switch (bLen%3)
+            {
+                case 2:
+                    b0=b[bi++];
+                    b1=b[bi++];
+                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
+                    c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f];
+                    c[ci++]=__pad;
+                    break;
+
+                case 1:
+                    b0=b[bi++];
+                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f];
+                    c[ci++]=__pad;
+                    c[ci++]=__pad;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        return c;
     }
     
     // ------------------------------------------------------------------
@@ -120,11 +168,12 @@ public class B64Code
     {
         if (b==null)
             return null;
+        if (!rfc2045)
+            return encode(b);
 
         int bLen=b.length;
         int cLen=((bLen+2)/3)*4;
-        if (rfc2045)
-            cLen+=2+2*cLen/76;
+        cLen+=2+2*(cLen/76);
         char c[]=new char[cLen];
         int ci=0;
         int bi=0;
@@ -136,12 +185,12 @@ public class B64Code
             b0=b[bi++];
             b1=b[bi++];
             b2=b[bi++];
-            c[ci++]=rfc1421alphabet[(b0>>>2)&0x3f];
-            c[ci++]=rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-            c[ci++]=rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
-            c[ci++]=rfc1421alphabet[b2&077];
+            c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+            c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
+            c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
+            c[ci++]=__rfc1421alphabet[b2&077];
             l+=4;
-            if (rfc2045 && l%76==0)
+            if (l%76==0)
             {
                 c[ci++]=13;
                 c[ci++]=10;
@@ -155,18 +204,18 @@ public class B64Code
                 case 2:
                     b0=b[bi++];
                     b1=b[bi++];
-                    c[ci++]=rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-                    c[ci++]=rfc1421alphabet[(b1<<2)&0x3f];
-                    c[ci++]=pad;
+                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
+                    c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f];
+                    c[ci++]=__pad;
                     break;
 
                 case 1:
                     b0=b[bi++];
-                    c[ci++]=rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=rfc1421alphabet[(b0<<4)&0x3f];
-                    c[ci++]=pad;
-                    c[ci++]=pad;
+                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
+                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f];
+                    c[ci++]=__pad;
+                    c[ci++]=__pad;
                     break;
 
                 default:
@@ -174,11 +223,8 @@ public class B64Code
             }
         }
 
-        if (rfc2045)
-        {
-            c[ci++]=13;
-            c[ci++]=10;
-        }
+        c[ci++]=13;
+        c[ci++]=10;
         return c;
     }
 
@@ -226,7 +272,7 @@ public class B64Code
             throw new IllegalArgumentException("Input block size is not 4");
 
         int li=bLen-1;
-        while (li>=0 && b[li]==(byte)pad)
+        while (li>=0 && b[li]==(byte)__pad)
             li--;
 
         if (li<0)
@@ -243,10 +289,10 @@ public class B64Code
         {
             while (ri<stop)
             {
-                b0=rfc1421nibbles[b[bi++]];
-                b1=rfc1421nibbles[b[bi++]];
-                b2=rfc1421nibbles[b[bi++]];
-                b3=rfc1421nibbles[b[bi++]];
+                b0=__rfc1421nibbles[b[bi++]];
+                b1=__rfc1421nibbles[b[bi++]];
+                b2=__rfc1421nibbles[b[bi++]];
+                b3=__rfc1421nibbles[b[bi++]];
                 if (b0<0 || b1<0 || b2<0 || b3<0)
                     throw new IllegalArgumentException("Not B64 encoded");
 
@@ -260,9 +306,9 @@ public class B64Code
                 switch (rLen%3)
                 {
                     case 2:
-                        b0=rfc1421nibbles[b[bi++]];
-                        b1=rfc1421nibbles[b[bi++]];
-                        b2=rfc1421nibbles[b[bi++]];
+                        b0=__rfc1421nibbles[b[bi++]];
+                        b1=__rfc1421nibbles[b[bi++]];
+                        b2=__rfc1421nibbles[b[bi++]];
                         if (b0<0 || b1<0 || b2<0)
                             throw new IllegalArgumentException("Not B64 encoded");
                         r[ri++]=(byte)(b0<<2|b1>>>4);
@@ -270,8 +316,8 @@ public class B64Code
                         break;
 
                     case 1:
-                        b0=rfc1421nibbles[b[bi++]];
-                        b1=rfc1421nibbles[b[bi++]];
+                        b0=__rfc1421nibbles[b[bi++]];
+                        b1=__rfc1421nibbles[b[bi++]];
                         if (b0<0 || b1<0)
                             throw new IllegalArgumentException("Not B64 encoded");
                         r[ri++]=(byte)(b0<<2|b1>>>4);
@@ -314,17 +360,17 @@ public class B64Code
         {
             char c=encoded.charAt(ci++);
 
-            if (c==pad)
+            if (c==__pad)
                 break;
             
             if (Character.isWhitespace(c))
                 continue;
 
-            byte nibble=rfc1421nibbles[c];
+            byte nibble=__rfc1421nibbles[c];
             if (nibble<0)
                 throw new IllegalArgumentException("Not B64 encoded");
 
-            nibbles[s++]=rfc1421nibbles[c];
+            nibbles[s++]=__rfc1421nibbles[c];
 
             switch(s)
             {
@@ -345,5 +391,37 @@ public class B64Code
         }
 
         return bout.toByteArray();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static void encode(int value,Appendable buf) throws IOException
+    {
+        buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x000FC000&value)>>14)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x00003F00&value)>>8)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x000000FC&value)>>2)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x00000003&value)<<4)]);
+        buf.append('=');
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static void encode(long lvalue,Appendable buf) throws IOException
+    {
+        int value=(int)(0xFFFFFFFC&(lvalue>>32));
+        buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x000FC000&value)>>14)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x00003F00&value)>>8)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x000000FC&value)>>2)]);
+        
+        buf.append(__rfc1421alphabet[0x3f&((0x00000003&value)<<4) + (0xf&(int)(lvalue>>28))]);
+        
+        value=0x0FFFFFFF&(int)lvalue;
+        buf.append(__rfc1421alphabet[0x3f&((0x0FC00000&value)>>22)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x003F0000&value)>>16)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x0000FC00&value)>>10)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x000003F0&value)>>4)]);
+        buf.append(__rfc1421alphabet[0x3f&((0x0000000F&value)<<2)]);
     }
 }

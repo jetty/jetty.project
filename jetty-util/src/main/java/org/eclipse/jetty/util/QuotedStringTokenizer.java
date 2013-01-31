@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -408,13 +408,73 @@ public class QuotedStringTokenizer
             throw new RuntimeException(e);
         }
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    public static String unquoteOnly(String s)
+    {
+        return unquoteOnly(s, false);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Unquote a string, NOT converting unicode sequences
+     * @param s The string to unquote.
+     * @param lenient if true, will leave in backslashes that aren't valid escapes
+     * @return quoted string
+     */
+    public static String unquoteOnly(String s, boolean lenient)
+    {
+        if (s==null)
+            return null;
+        if (s.length()<2)
+            return s;
 
+        char first=s.charAt(0);
+        char last=s.charAt(s.length()-1);
+        if (first!=last || (first!='"' && first!='\''))
+            return s;
+
+        StringBuilder b = new StringBuilder(s.length() - 2);
+        boolean escape=false;
+        for (int i=1;i<s.length()-1;i++)
+        {
+            char c = s.charAt(i);
+
+            if (escape)
+            {
+                escape=false;
+                if (lenient && !isValidEscaping(c))
+                {
+                    b.append('\\');
+                }
+                b.append(c);
+            }
+            else if (c=='\\')
+            {
+                escape=true;
+            }
+            else
+            {
+                b.append(c);
+            }
+        }
+
+        return b.toString(); 
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static String unquote(String s)
+    {
+        return unquote(s,false);
+    }
+    
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
      * @return quoted string
      */
-    public static String unquote(String s)
+    public static String unquote(String s, boolean lenient)
     {
         if (s==null)
             return null;
@@ -471,6 +531,10 @@ public class QuotedStringTokenizer
                         );
                         break;
                     default:
+                        if (lenient && !isValidEscaping(c))
+                        {
+                            b.append('\\');
+                        }
                         b.append(c);
                 }
             }
@@ -485,6 +549,20 @@ public class QuotedStringTokenizer
         }
 
         return b.toString();
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Check that char c (which is preceded by a backslash) is a valid
+     * escape sequence.
+     * @param c
+     * @return
+     */
+    private static boolean isValidEscaping(char c)
+    {
+        return ((c == 'n') || (c == 'r') || (c == 't') || 
+                 (c == 'f') || (c == 'b') || (c == '\\') || 
+                 (c == '/') || (c == '"') || (c == 'u'));
     }
 
     /* ------------------------------------------------------------ */

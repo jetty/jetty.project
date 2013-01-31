@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -84,6 +85,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private File tempdir;
@@ -132,7 +134,7 @@ public class MultiPartFilter implements Filter
             chain.doFilter(request,response);
             return;
         }
-        
+
         InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
         
@@ -215,12 +217,7 @@ public class MultiPartFilter implements Filter
         request.removeAttribute(MULTIPART);
     }
     
-    /* ------------------------------------------------------------ */
-    private String value(String nameEqualsValue)
-    {
-        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
-    }
-
+ 
     /* ------------------------------------------------------------------------------- */
     /**
      * @see javax.servlet.Filter#destroy()
@@ -291,11 +288,12 @@ public class MultiPartFilter implements Filter
         @Override
         public Map getParameterMap()
         {
-            Map<String, String> cmap = new HashMap<String,String>();
+            Map<String, String[]> cmap = new HashMap<String,String[]>();
             
             for ( Object key : _params.keySet() )
             {
-                cmap.put((String)key,getParameter((String)key));
+                String[] a = LazyList.toStringArray(getParameter((String)key));
+                cmap.put((String)key,a);
             }
             
             return Collections.unmodifiableMap(cmap);

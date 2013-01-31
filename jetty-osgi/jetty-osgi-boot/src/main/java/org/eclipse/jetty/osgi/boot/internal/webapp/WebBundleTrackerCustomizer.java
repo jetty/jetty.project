@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
@@ -56,7 +57,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
                                           "("+OSGiServerConstants.MANAGED_JETTY_SERVER_NAME+"="+OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME+"))";
 
     private ServiceTracker _serviceTracker;
-    
+    private BundleTracker _bundleTracker;
     
     /* ------------------------------------------------------------ */
     /**
@@ -68,8 +69,16 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
         
         //track all instances of deployers of webapps/contexts as bundles       
-        _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
+        _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null) {
+            public Object addingService(ServiceReference reference) {
+                Object object = super.addingService(reference);
+                LOG.debug("Deployer registered {}", reference);
+                openBundleTracker();
+                return object;
+            }
+        };
         _serviceTracker.open();
+
     }
     
     
@@ -98,7 +107,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     {
         if (bundle.getState() == Bundle.ACTIVE)
         {
-           register(bundle);          
+            register(bundle);          
         }
         else if (bundle.getState() == Bundle.STOPPING)
         {
@@ -221,4 +230,21 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             }
         }
     }
+
+    public void setAndOpenWebBundleTracker(BundleTracker bundleTracker) {
+        if(_bundleTracker == null) {
+            _bundleTracker = bundleTracker;
+            LOG.debug("Bundle tracker is set");
+            openBundleTracker();
+        }
+    }
+
+    private void openBundleTracker() {
+        if(_bundleTracker != null && _serviceTracker.getServices() != null &&
+                _serviceTracker.getServices().length > 0) {
+            _bundleTracker.open();
+            LOG.debug("Bundle tracker has been opened");
+        }
+    }
+
 }

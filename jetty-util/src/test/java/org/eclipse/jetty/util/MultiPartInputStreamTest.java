@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.Collection;
 
 import javax.servlet.MultipartConfigElement;
@@ -39,6 +41,7 @@ import javax.servlet.http.Part;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.MultiPartInputStream.MultiPart;
+import org.hamcrest.core.IsNot;
 
 /**
  * MultiPartInputStreamTest
@@ -85,11 +88,224 @@ public class MultiPartInputStreamTest extends TestCase
         }
     }
 
+    
+    public void testNoBoundaryRequest()
+    throws Exception
+    {
+        String str = "--\r\n"+
+        "Content-Disposition: form-data; name=\"fileName\"\r\n"+
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+
+            "Content-Transfer-Encoding: 8bit\r\n"+
+            "\r\n"+
+            "abc\r\n"+
+            "--\r\n"+
+            "Content-Disposition: form-data; name=\"desc\"\r\n"+ 
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+ 
+            "Content-Transfer-Encoding: 8bit\r\n"+
+            "\r\n"+
+            "123\r\n"+ 
+            "--\r\n"+ 
+            "Content-Disposition: form-data; name=\"title\"\r\n"+
+            "Content-Type: text/plain; charset=US-ASCII\r\n"+
+            "Content-Transfer-Encoding: 8bit\r\n"+ 
+            "\r\n"+
+            "ttt\r\n"+ 
+            "--\r\n"+
+            "Content-Disposition: form-data; name=\"datafile5239138112980980385.txt\"; filename=\"datafile5239138112980980385.txt\"\r\n"+
+            "Content-Type: application/octet-stream; charset=ISO-8859-1\r\n"+
+            "Content-Transfer-Encoding: binary\r\n"+ 
+            "\r\n"+
+            "000\r\n"+ 
+            "----\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()),
+                                                             "multipart/form-data",
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(4));
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Part fileName = mpis.getPart("fileName");
+        assertThat(fileName, notNullValue());
+        assertThat(fileName.getSize(), is(3L));
+        IO.copy(fileName.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("abc"));
+       
+        baos = new ByteArrayOutputStream();
+        Part desc = mpis.getPart("desc");
+        assertThat(desc, notNullValue());
+        assertThat(desc.getSize(), is(3L));
+        IO.copy(desc.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("123"));
+        
+        baos = new ByteArrayOutputStream();
+        Part title = mpis.getPart("title");
+        assertThat(title, notNullValue());
+        assertThat(title.getSize(), is(3L));
+        IO.copy(title.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("ttt"));  
+    }
 
+    public void testNoBody()
+    throws Exception
+    {
+        String body = "";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(body.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing content"));
+        }
+    }
+    
+    public void testWhitespaceBodyWithCRLF()
+    throws Exception
+    {
+        String whitespace = "              \n\n\n\r\n\r\n\r\n\r\n";
+ 
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(whitespace.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing initial"));
+        }
+    }
+    
+    public void testWhitespaceBody()
+    throws Exception
+    {
+        String whitespace = " ";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(whitespace.getBytes()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart missing body");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Missing initial"));
+        }
+    }
+
+
+    public void testLeadingWhitespaceBodyWithCRLF()
+    throws Exception
+    {
+        String body = "              \n\n\n\r\n\r\n\r\n\r\n"+
+                      "--AaB03x\r\n"+
+                      "content-disposition: form-data; name=\"field1\"\r\n"+
+                      "\r\n"+
+                      "Joe Blow\r\n"+
+                      "--AaB03x\r\n"+
+                      "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n"+
+                      "Content-Type: text/plain\r\n"+
+                      "\r\n"+"aaaa"+
+                      "bbbbb"+"\r\n" +
+                      "--AaB03x--\r\n";
+
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(body.getBytes()),
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+ 
+        Collection<Part> parts =    mpis.getParts();
+        assertThat(parts, notNullValue());
+        assertThat(parts.size(), is(2));
+        Part field1 = mpis.getPart("field1");
+        assertThat(field1, notNullValue());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(field1.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("Joe Blow"));
+        
+        Part stuff = mpis.getPart("stuff");
+        assertThat(stuff, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(stuff.getInputStream(), baos);
+        assertTrue(baos.toString("US-ASCII").contains("aaaa"));
+    }
+    
+
+
+
+    public void testLeadingWhitespaceBodyWithoutCRLF()
+    throws Exception
+    {
+        String body = "            "+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"field1\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"aaaa"+
+        "bbbbb"+"\r\n" +
+        "--AaB03x--\r\n";
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(body.getBytes()),
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+ 
+        Collection<Part> parts =    mpis.getParts();
+        assertThat(parts, notNullValue());
+        assertThat(parts.size(), is(2));
+        Part field1 = mpis.getPart("field1");
+        assertThat(field1, notNullValue());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(field1.getInputStream(), baos);
+        assertThat(baos.toString("US-ASCII"), is("Joe Blow"));
+        
+        Part stuff = mpis.getPart("stuff");
+        assertThat(stuff, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(stuff.getInputStream(), baos);
+        assertTrue(baos.toString("US-ASCII").contains("bbbbb"));
+    }
+    
+    
+    
+    
+    
 
     public void testNonMultiPartRequest()
     throws Exception
     {
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              "Content-type: text/plain",
@@ -195,7 +411,178 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
     }
     
+ 
+    public void testLFOnlyRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\n"+
+                "content-disposition: form-data; name=\"field1\"\n"+
+                "\n"+
+                "Joe Blow\n"+ 
+                "--AaB03x\n"+
+                "content-disposition: form-data; name=\"field2\"\n"+
+                "\n"+
+                "Other\n"+        
+                "--AaB03x--\n";
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());      
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+                
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other"));
+    }
     
+ 
+    public void testCROnlyRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\r"+
+        "content-disposition: form-data; name=\"field1\"\r"+
+        "\r"+
+        "Joe Blow\r"+ 
+        "--AaB03x\r"+
+        "content-disposition: form-data; name=\"field2\"\r"+
+        "\r"+
+        "Other\r"+        
+        "--AaB03x--\r";
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+        
+        assertThat(parts.size(), is(2));
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+        
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other"));
+    }
+
+   
+    public void testCRandLFMixRequest()
+    throws Exception
+    {
+        String str = "--AaB03x\r"+
+                "content-disposition: form-data; name=\"field1\"\r"+
+                "\r"+
+                "\nJoe Blow\n"+ 
+                "\r"+
+                "--AaB03x\r"+
+                "content-disposition: form-data; name=\"field2\"\r"+
+                "\r"+
+                "Other\r"+        
+                "--AaB03x--\r";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(str.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+
+        Part p1 = mpis.getPart("field1");
+        assertThat(p1, notNullValue());      
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p1.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("\nJoe Blow\n"));
+        
+        Part p2 = mpis.getPart("field2");
+        assertThat(p2, notNullValue());
+        baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertThat(baos.toString("UTF-8"), is("Other")); 
+    }
+    
+    
+    public void testBadlyEncodedFilename() throws Exception
+    {
+        
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"Taken on Aug 22 \\ 2012.jpg"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("Taken on Aug 22 \\ 2012.jpg"));
+    }
+    
+    public void testBadlyEncodedMSFilename() throws Exception
+    {
+        
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+    }
+
+    public void testCorrectlyEncodedMSFilename() throws Exception
+    {
+        String contents =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"" +"c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt"  + "\"\r\n"+
+        "Content-Type: text/plain\r\n"+
+        "\r\n"+"stuff"+
+        "aaa"+"\r\n" +
+        "--AaB03x--\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(contents.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(1));
+        assertThat(((MultiPartInputStream.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+    }
     
     public void testMulti ()
     throws Exception
@@ -208,6 +595,9 @@ public class MultiPartInputStreamTest extends TestCase
         testMulti("stuff with spaces.txt");
     }
 
+    
+    
+    
     private void testMulti(String filename) throws IOException, ServletException
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
