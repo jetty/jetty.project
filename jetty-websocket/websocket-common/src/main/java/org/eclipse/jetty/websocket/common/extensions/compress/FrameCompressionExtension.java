@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
  */
 public class FrameCompressionExtension extends AbstractExtension
 {
-    private DeflateCompressionMethod method;
+    private CompressionMethod method = new DeflateCompressionMethod();
 
     @Override
     public void incomingFrame(Frame frame)
@@ -121,8 +121,6 @@ public class FrameCompressionExtension extends AbstractExtension
     public void setConfig(ExtensionConfig config)
     {
         super.setConfig(config);
-
-        method = new DeflateCompressionMethod();
     }
 
     @Override

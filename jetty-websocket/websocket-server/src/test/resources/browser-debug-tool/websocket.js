@@ -26,6 +26,8 @@ var wstool = {
 
         wstool.info("Document URI: " + document.location);
         wstool.info("WS URI: " + location);
+        
+        this._scount = 0;
 
         try {
             this._ws = new WebSocket(location, "tool");
@@ -61,7 +63,8 @@ var wstool = {
     },
     
     infos : function(message) {
-        wstool._out("server", "[s] " + message);
+        this._scount++;
+        wstool._out("server", "[s" + this._scount + "] " + message);
     },
 
     setState : function(enabled) {

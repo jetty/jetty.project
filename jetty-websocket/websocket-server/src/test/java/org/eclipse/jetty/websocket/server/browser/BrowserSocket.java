@@ -56,7 +56,7 @@ public class BrowserSocket
             char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
             int lettersLen = letters.length;
             char randomText[] = new char[size];
-            Random rand = new Random();
+            Random rand = new Random(42);
             String msg;
 
             for (int n = 0; n < count; n++)
@@ -66,7 +66,7 @@ public class BrowserSocket
                 {
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
-                msg = String.format("Many [%s]",String.valueOf(randomText));
+                msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
                 remote.sendStringByFuture(msg);
             }
         }
@@ -88,6 +88,7 @@ public class BrowserSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
+        LOG.info("Connect [{}]",session);
         this.session = session;
         this.remote = session.getRemote();
     }
@@ -190,7 +191,7 @@ public class BrowserSocket
         char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
         int lettersLen = letters.length;
         char randomText[] = new char[size];
-        Random rand = new Random();
+        Random rand = new Random(42);
 
         for (int n = 0; n < count; n++)
         {
