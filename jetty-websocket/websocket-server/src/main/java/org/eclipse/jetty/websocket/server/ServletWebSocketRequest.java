@@ -135,6 +135,17 @@ public class ServletWebSocketRequest extends UpgradeRequest
         return parameters;
     }
 
+    /**
+     * Return the HttpSession if it exists.
+     * <p>
+     * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
+     */
+    @Override
+    public Object getSession()
+    {
+        return this.req.getSession();
+    }
+
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
