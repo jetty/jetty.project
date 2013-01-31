@@ -30,7 +30,7 @@ public class EventMethods
     public EventMethod onClose = null;
     public EventMethod onBinary = null;
     public EventMethod onText = null;
-    public EventMethod onException = null;
+    public EventMethod onError = null;
     public EventMethod onFrame = null;
 
     public EventMethods(Class<?> pojoClass)
@@ -97,7 +97,7 @@ public class EventMethods
         builder.append(", onText=");
         builder.append(onText);
         builder.append(", onException=");
-        builder.append(onException);
+        builder.append(onError);
         builder.append(", onFrame=");
         builder.append(onFrame);
         builder.append("]");

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.events;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -33,6 +34,7 @@ import examples.AdapterConnectCloseSocket;
 import examples.AnnotatedBinaryArraySocket;
 import examples.AnnotatedBinaryStreamSocket;
 import examples.AnnotatedFramesSocket;
+import examples.AnnotatedTextSocket;
 import examples.ListenerBasicSocket;
 
 public class EventDriverTest
@@ -74,6 +76,23 @@ public class EventDriverTest
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onConnect");
         socket.capture.assertEvent(1,"onBinary([11],0,11)");
+        socket.capture.assertEventStartsWith(2,"onClose(1000,");
+    }
+
+    @Test
+    public void testAnnotated_Error()
+    {
+        AnnotatedTextSocket socket = new AnnotatedTextSocket();
+        EventDriver driver = wrap(socket);
+
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
+        conn.open();
+        driver.incomingError(new WebSocketException("oof"));
+        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        socket.capture.assertEventCount(3);
+        socket.capture.assertEventStartsWith(0,"onConnect");
+        socket.capture.assertEventStartsWith(1,"onError(WebSocketException: oof)");
         socket.capture.assertEventStartsWith(2,"onClose(1000,");
     }
 

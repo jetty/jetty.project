@@ -34,11 +34,6 @@ import org.eclipse.jetty.websocket.common.annotations.MyEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.NoopSocket;
 import org.eclipse.jetty.websocket.common.annotations.NotASocket;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.common.events.EventMethod;
-import org.eclipse.jetty.websocket.common.events.EventMethods;
-import org.eclipse.jetty.websocket.common.events.ListenerEventDriver;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -174,11 +169,11 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.hasConnection",methods.onBinary.isHasConnection());
+        Assert.assertFalse(classId + ".onBinary.hasSession",methods.onBinary.isHasSession());
         Assert.assertFalse(classId + ".onBinary.isStreaming",methods.onBinary.isStreaming());
     }
 
@@ -198,11 +193,11 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.hasConnection",methods.onBinary.isHasConnection());
+        Assert.assertFalse(classId + ".onBinary.hasSession",methods.onBinary.isHasSession());
         Assert.assertTrue(classId + ".onBinary.isStreaming",methods.onBinary.isStreaming());
     }
 
@@ -222,7 +217,7 @@ public class EventDriverFactoryTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -243,7 +238,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -264,11 +259,11 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertTrue(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertTrue(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertFalse(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 
@@ -288,7 +283,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -309,7 +304,7 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertNoEventMethod(classId + ".onClose",methods.onClose);
         assertNoEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertHasEventMethod(classId + ".onFrame",methods.onFrame);
     }
@@ -330,11 +325,11 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertFalse(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertFalse(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 
@@ -354,11 +349,11 @@ public class EventDriverFactoryTest
         assertNoEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onClose",methods.onClose);
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
-        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onException",methods.onError);
         assertHasEventMethod(classId + ".onText",methods.onText);
         assertNoEventMethod(classId + ".onFrame",methods.onFrame);
 
-        Assert.assertFalse(classId + ".onText.hasConnection",methods.onText.isHasConnection());
+        Assert.assertFalse(classId + ".onText.hasSession",methods.onText.isHasSession());
         Assert.assertTrue(classId + ".onText.isStreaming",methods.onText.isStreaming());
     }
 

@@ -39,7 +39,7 @@ public class PingPayloadParserTest
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         BufferUtil.flipToFlush(buf,0);
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

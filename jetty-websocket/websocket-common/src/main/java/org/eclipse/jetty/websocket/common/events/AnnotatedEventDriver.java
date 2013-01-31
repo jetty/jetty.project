@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -41,6 +40,7 @@ public class AnnotatedEventDriver extends EventDriver
 {
     private final EventMethods events;
     private MessageAppender activeMessage;
+    private boolean hasCloseBeenCalled = false;
 
     public AnnotatedEventDriver(WebSocketPolicy policy, Object websocket, EventMethods events)
     {
@@ -105,6 +105,12 @@ public class AnnotatedEventDriver extends EventDriver
     @Override
     public void onClose(CloseInfo close)
     {
+        if (hasCloseBeenCalled)
+        {
+            // avoid duplicate close events (possible when using harsh Session.disconnect())
+            return;
+        }
+        hasCloseBeenCalled = true;
         if (events.onClose != null)
         {
             events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
@@ -121,11 +127,11 @@ public class AnnotatedEventDriver extends EventDriver
     }
 
     @Override
-    public void onException(WebSocketException e)
+    public void onError(Throwable cause)
     {
-        if (events.onException != null)
+        if (events.onError != null)
         {
-            events.onException.call(websocket,session,e);
+            events.onError.call(websocket,session,cause);
         }
     }
 

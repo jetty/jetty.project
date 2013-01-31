@@ -22,16 +22,16 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 
 public class WebSocketWriter extends Writer
 {
     private final Charset charset = Charset.forName("UTF-8");
-    private final WebSocketConnection conn;
+    private final Session session;
 
-    public WebSocketWriter(WebSocketConnection conn)
+    public WebSocketWriter(Session session)
     {
-        this.conn = conn;
+        this.session = session;
     }
 
     @Override

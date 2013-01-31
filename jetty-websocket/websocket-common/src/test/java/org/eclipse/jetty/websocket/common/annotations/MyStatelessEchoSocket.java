@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.annotations;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -34,8 +34,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class MyStatelessEchoSocket
 {
     @OnWebSocketMessage
-    public void onText(WebSocketConnection conn, String text)
+    public void onText(Session session, String text)
     {
-        conn.write(text);
+        session.getRemote().sendStringByFuture(text);
     }
 }

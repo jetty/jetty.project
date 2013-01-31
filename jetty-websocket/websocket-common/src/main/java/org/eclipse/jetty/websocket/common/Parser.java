@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -179,6 +180,17 @@ public class Parser
         {
             LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
         }
+
+        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        {
+            // Parsing on server?
+            // Then you MUST make sure all incoming frames are masked!
+            if (f.isMasked() == false)
+            {
+                throw new ProtocolException("Client frames MUST be masked (RFC-6455)");
+            }
+        }
+
         if (incomingFramesHandler == null)
         {
             return;

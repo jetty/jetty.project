@@ -18,22 +18,78 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
-public interface Session
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+
+/**
+ * Session represents an active link of communications with a Remote WebSocket Endpoint.
+ * <p>
+ */
+public interface Session extends Closeable
 {
     /**
-     * Close the current conversation with a normal status code and no reason phrase.
+     * Request a close of the current conversation with a normal status code and no reason phrase.
+     * <p>
+     * This will enqueue a graceful close to the remote endpoint.
+     * 
+     * @see #close(CloseStatus)
+     * @see #close(int, String)
+     * @see #disconnect()
      */
+    @Override
     void close() throws IOException;
 
     /**
-     * Close the current conversation, giving a reason for the closure. Note the websocket spec defines the acceptable uses of status codes and reason phrases.
+     * Request Close the current conversation, giving a reason for the closure. Note the websocket spec defines the acceptable uses of status codes and reason
+     * phrases.
+     * <p>
+     * This will enqueue a graceful close to the remote endpoint.
      * 
      * @param closeStatus
      *            the reason for the closure
+     * 
+     * @see #close()
+     * @see #close(int, String)
+     * @see #disconnect()
      */
     void close(CloseStatus closeStatus) throws IOException;
+
+    /**
+     * Send a websocket Close frame, with status code.
+     * <p>
+     * This will enqueue a graceful close to the remote endpoint.
+     * 
+     * @param statusCode
+     *            the status code
+     * @param reason
+     *            the (optional) reason. (can be null for no reason)
+     * @see StatusCode
+     * 
+     * @see #close()
+     * @see #close(CloseStatus)
+     * @see #disconnect()
+     */
+    void close(int statusCode, String reason) throws IOException;
+
+    /**
+     * Issue a harsh disconnect of the underlying connection.
+     * <p>
+     * This will terminate the connection, without sending a websocket close frame.
+     * <p>
+     * Once called, any read/write activity on the websocket from this point will be indeterminate.
+     * <p>
+     * Once the underlying connection has been determined to be closed, the various onClose() events (either
+     * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your websocket.
+     * 
+     * @see #close()
+     * @see #close(CloseStatus)
+     * @see #close(int, String)
+     * @see #disconnect()
+     */
+    void disconnect() throws IOException;
 
     /**
      * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
@@ -44,11 +100,25 @@ public interface Session
     long getIdleTimeout();
 
     /**
+     * Get the address of the local side.
+     * 
+     * @return the local side address
+     */
+    public InetSocketAddress getLocalAddress();
+
+    /**
      * The maximum total length of messages, text or binary, that this Session can handle.
      * 
      * @return the message size
      */
     long getMaximumMessageSize();
+
+    /**
+     * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
+     * 
+     * @return the policy in use
+     */
+    WebSocketPolicy getPolicy();
 
     /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
@@ -64,6 +134,13 @@ public interface Session
      * @return the remote endpoint
      */
     RemoteEndpoint getRemote();
+
+    /**
+     * Get the address of the remote side.
+     * 
+     * @return the remote side address
+     */
+    public InetSocketAddress getRemoteAddress();
 
     /**
      * Get the UpgradeRequest used to create this session
@@ -105,4 +182,11 @@ public interface Session
      * Sets the maximum total length of messages, text or binary, that this Session can handle.
      */
     void setMaximumMessageSize(long length);
+
+    /**
+     * Suspend a the incoming read events on the connection.
+     * 
+     * @return the suspend token suitable for resuming the reading of data on the connection.
+     */
+    SuspendToken suspend();
 }

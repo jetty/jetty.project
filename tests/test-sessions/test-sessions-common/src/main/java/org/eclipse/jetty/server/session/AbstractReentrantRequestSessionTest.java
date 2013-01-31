@@ -48,10 +48,11 @@ public abstract class AbstractReentrantRequestSessionTest
         String servletMapping = "/server";
         AbstractTestServer server = createServer(0);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port = server.getPort();
         try
         {
+            server.start();
+            int port = server.getPort();
+
             HttpClient client = new HttpClient();
             client.start();
             try

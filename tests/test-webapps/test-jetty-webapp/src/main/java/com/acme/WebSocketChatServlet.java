@@ -46,9 +46,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -89,12 +90,14 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     @WebSocket
     public class ChatWebSocket
     {
-        volatile WebSocketConnection connection;
+        volatile Session session;
+        volatile RemoteEndpoint remote;
 
         @OnWebSocketConnect
-        public void onOpen(WebSocketConnection conn)
+        public void onOpen(Session sess)
         {
-            connection = conn;
+            this.session = sess;
+            this.remote = sess.getRemote();
             members.add(this);
         }
 
@@ -105,7 +108,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
             {
                 try
                 {
-                    connection.close();
+                    session.close();
                 }
                 catch (IOException ignore)
                 {
@@ -120,14 +123,14 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 ChatWebSocket member = iter.next();
 
                 // Test if member is now disconnected
-                if (!member.connection.isOpen())
+                if (!member.session.isOpen())
                 {
                     iter.remove();
                     continue;
                 }
 
                 // Async write the message back.
-                member.connection.write(data);
+                member.remote.sendStringByFuture(data);
             }
         }
 

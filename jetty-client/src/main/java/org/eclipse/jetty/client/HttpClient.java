@@ -444,8 +444,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination provideDestination(String scheme, String host, int port)
     {
-        if (port <= 0)
-            port = "https".equalsIgnoreCase(scheme) ? 443 : 80;
+        port = normalizePort(scheme, port);
 
         String address = address(scheme, host, port);
         HttpDestination destination = destinations.get(address);
@@ -501,7 +500,9 @@ public class HttpClient extends ContainerLifeCycle
             Future<Connection> result = new ConnectionCallback(destination, promise);
             selectorManager.connect(channel, result);
         }
-        catch (IOException x)
+        // Must catch all exceptions, since some like
+        // UnresolvedAddressException are not IOExceptions.
+        catch (Exception x)
         {
             if (channel != null)
                 close(channel);
@@ -871,6 +872,22 @@ public class HttpClient extends ContainerLifeCycle
         return encodingField;
     }
 
+    protected int normalizePort(String scheme, int port)
+    {
+        return port > 0 ? port :
+                "https".equalsIgnoreCase(scheme) ? 443 : 80;
+    }
+
+    protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
+    {
+        return new HttpConnection(httpClient, endPoint, destination);
+    }
+
+    protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+    {
+        return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -916,12 +933,9 @@ public class HttpClient extends ContainerLifeCycle
                     SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
                     engine.setUseClientMode(true);
 
-                    SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
-                    // TODO: configureConnection => implies we should use SslConnectionFactory to do it
-
+                    SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-                    HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
-                    // TODO: configureConnection, see above
+                    HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
 
                     appEndPoint.setConnection(connection);
                     callback.promise.succeeded(connection);
@@ -931,8 +945,7 @@ public class HttpClient extends ContainerLifeCycle
             }
             else
             {
-                HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
-                // TODO: configureConnection, see above
+                HttpConnection connection = newHttpConnection(HttpClient.this, endPoint, destination);
                 callback.promise.succeeded(connection);
                 return connection;
             }

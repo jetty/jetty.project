@@ -18,22 +18,27 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +53,26 @@ public class ClientConnectTest
     private final int timeout = 500;
     private BlockheadServer server;
     private WebSocketClient client;
+
+    @SuppressWarnings("unchecked")
+    private <E extends Throwable> E assertExpectedError(ExecutionException e, TrackingSocket wsocket, Class<E> errorClass) throws IOException
+    {
+        // Validate thrown cause
+        Throwable cause = e.getCause();
+        Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+
+        // Validate websocket captured cause
+        Assert.assertThat("Error Queue Length",wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
+        Throwable capcause = wsocket.errorQueue.poll();
+        Assert.assertThat("Error Queue[0]",capcause,notNullValue());
+        Assert.assertThat("Error Queue[0]",capcause,instanceOf(errorClass));
+
+        // Validate that websocket didn't see an open event
+        wsocket.assertNotOpened();
+
+        // Return the captured cause
+        return (E)capcause;
+    }
 
     @Before
     public void startClient() throws Exception
@@ -76,7 +101,7 @@ public class ClientConnectTest
         server.stop();
     }
 
-    @Test(expected = UpgradeException.class)
+    @Test
     public void testBadHandshake() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
@@ -97,12 +122,152 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // Expected Path - throw underlying exception
-            FutureCallback.rethrow(e);
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(404));
         }
     }
 
-    @Test(expected = UpgradeException.class)
+    @Test
+    public void testBadHandshake_GetOK() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        connection.readRequest();
+        // Send OK to GET but not upgrade
+        connection.respond("HTTP/1.1 200 OK\r\n\r\n");
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(200));
+        }
+    }
+
+    @Test
+    public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send OK to GET but not upgrade
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 200 OK\r\n"); // intentionally 200 (not 101)
+        // Include a value accept key
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        resp.append("\r\n");
+        connection.respond(resp.toString());
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(200));
+        }
+    }
+
+    @Test
+    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send Switching Protocols 101, but invalid 'Connection' header
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 101 Switching Protocols\r\n");
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        resp.append("Connection: close\r\n");
+        resp.append("\r\n");
+        connection.respond(resp.toString());
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
+        }
+    }
+
+    @Test
+    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        ServerConnection connection = server.accept();
+        List<String> requestLines = connection.readRequestLines();
+        String key = connection.parseWebSocketKey(requestLines);
+
+        // Send Switching Protocols 101, but no 'Connection' header
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 101 Switching Protocols\r\n");
+        resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        // Intentionally leave out Connection header
+        resp.append("\r\n");
+        connection.respond(resp.toString());
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
+        }
+    }
+
+    @Test
     public void testBadUpgrade() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
@@ -123,12 +288,16 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // Expected Path - throw underlying exception
-            FutureCallback.rethrow(e);
+            // Expected Path
+            UpgradeException ue = assertExpectedError(e,wsocket,UpgradeException.class);
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI(),notNullValue());
+            Assert.assertThat("UpgradeException.requestURI",ue.getRequestURI().toASCIIString(),is(wsUri.toASCIIString()));
+            Assert.assertThat("UpgradeException.responseStatusCode",ue.getResponseStatusCode(),is(101));
         }
     }
 
     @Test
+    @Ignore("Opened bug 399525")
     public void testConnectionNotAccepted() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
@@ -146,6 +315,8 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
+            // FIXME: Connect Timeout Error?
+            assertExpectedError(e,wsocket,UpgradeException.class);
             // Possible Passing Path (active session wait timeout)
             wsocket.assertNotOpened();
         }
@@ -156,25 +327,32 @@ public class ClientConnectTest
         }
     }
 
-    @Test(expected = ConnectException.class)
+    @Test
     public void testConnectionRefused() throws Exception
     {
         TrackingSocket wsocket = new TrackingSocket();
 
-        // Intentionally bad port
+        // Intentionally bad port with nothing listening on it
         URI wsUri = new URI("ws://127.0.0.1:1");
-        Future<Session> future = client.connect(wsocket,wsUri);
 
-        // The attempt to get upgrade response future should throw error
         try
         {
+            Future<Session> future = client.connect(wsocket,wsUri);
+
+            // The attempt to get upgrade response future should throw error
             future.get(1000,TimeUnit.MILLISECONDS);
             Assert.fail("Expected ExecutionException -> ConnectException");
         }
+        catch (ConnectException e)
+        {
+            Throwable t = wsocket.errorQueue.remove();
+            Assert.assertThat("Error Queue[0]",t,instanceOf(ConnectException.class));
+            wsocket.assertNotOpened();
+        }
         catch (ExecutionException e)
         {
-            // Expected Path - throw underlying exception
-            FutureCallback.rethrow(e);
+            // Expected path - java.net.ConnectException
+            assertExpectedError(e,wsocket,ConnectException.class);
         }
     }
 
@@ -199,8 +377,8 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // Expected Path - throw underlying exception
-            FutureCallback.rethrow(e);
+            // Expected path - java.net.ConnectException ?
+            assertExpectedError(e,wsocket,ConnectException.class);
         }
     }
 }

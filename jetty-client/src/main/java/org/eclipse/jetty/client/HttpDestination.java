@@ -88,11 +88,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
                 new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()) : null;
 
-        String hostValue = host;
-        if ("https".equalsIgnoreCase(scheme) && port != 443 ||
-                "http".equalsIgnoreCase(scheme) && port != 80)
-            hostValue += ":" + port;
-        hostField = new HttpField(HttpHeader.HOST, hostValue);
+        hostField = new HttpField(HttpHeader.HOST, host + ":" + port);
     }
 
     protected BlockingQueue<Connection> getIdleConnections()

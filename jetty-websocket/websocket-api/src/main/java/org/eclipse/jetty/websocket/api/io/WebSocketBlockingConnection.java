@@ -19,24 +19,23 @@
 package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 
 /**
- * For working with the {@link WebSocketConnection} in a blocking technique.
+ * For working with the {@link Session} in a blocking technique.
  * <p>
  * This is an end-user accessible class.
  */
 public class WebSocketBlockingConnection
 {
-    private final WebSocketConnection conn;
+    private final RemoteEndpoint remote;
 
-    public WebSocketBlockingConnection(WebSocketConnection conn)
+    public WebSocketBlockingConnection(Session session)
     {
-        this.conn = conn;
+        this.remote = session.getRemote();
     }
 
     /**
@@ -46,19 +45,8 @@ public class WebSocketBlockingConnection
      */
     public void write(byte[] data, int offset, int length) throws IOException
     {
-        try
-        {
-            Future<Void> blocker = conn.write(data,offset,length);
-            blocker.get(); // block till finished
-        }
-        catch (InterruptedException e)
-        {
-            throw new WebSocketException("Blocking write failed",e);
-        }
-        catch (ExecutionException e)
-        {
-            throw new IOException(e.getCause());
-        }
+        ByteBuffer buf = ByteBuffer.wrap(data,offset,length);
+        remote.sendBytes(buf);
     }
 
     /**
@@ -68,18 +56,6 @@ public class WebSocketBlockingConnection
      */
     public void write(String message) throws IOException
     {
-        try
-        {
-            Future<Void> blocker = conn.write(message);
-            blocker.get(); // block till finished
-        }
-        catch (InterruptedException e)
-        {
-            throw new WebSocketException("Blocking write failed",e);
-        }
-        catch (ExecutionException e)
-        {
-            throw new IOException(e.getCause());
-        }
+        remote.sendString(message);
     }
 }

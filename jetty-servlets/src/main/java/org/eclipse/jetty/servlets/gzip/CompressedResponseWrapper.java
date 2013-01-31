@@ -316,7 +316,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         {
             try
             {
-                _compressedStream.doNotCompress();
+                _compressedStream.doNotCompress(false);
             }
             catch (IOException e)
             {

@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
+import org.eclipse.jetty.websocket.client.io.HttpResponseHeaderParser.ParseException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -74,6 +75,9 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
+    /** HTTP Response Code: 101 Switching Protocols */
+    private static final int SWITCHING_PROTOCOLS = 101;
+
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
     private final ConnectPromise connectPromise;
@@ -85,16 +89,10 @@ public class UpgradeConnection extends AbstractConnection
         super(endp,executor);
         this.connectPromise = connectPromise;
         this.bufferPool = connectPromise.getClient().getBufferPool();
-        this.parser = new HttpResponseHeaderParser();
+        this.request = connectPromise.getRequest();
 
-        try
-        {
-            this.request = connectPromise.getRequest();
-        }
-        catch (ClassCastException e)
-        {
-            connectPromise.failed(new RuntimeException("Invalid Upgrade Request structure",e));
-        }
+        // Setup the parser
+        this.parser = new HttpResponseHeaderParser();
     }
 
     public void disconnect(boolean onlyOutput)
@@ -187,9 +185,10 @@ public class UpgradeConnection extends AbstractConnection
                 }
             }
         }
-        catch (IOException e)
+        catch (IOException | ParseException e)
         {
-            connectPromise.failed(e);
+            UpgradeException ue = new UpgradeException(request.getRequestURI(),e);
+            connectPromise.failed(ue);
             disconnect(false);
             return false;
         }
@@ -239,10 +238,30 @@ public class UpgradeConnection extends AbstractConnection
 
     private void validateResponse(ClientUpgradeResponse response)
     {
+        // Validate Response Status Code
+        if (response.getStatusCode() != SWITCHING_PROTOCOLS)
+        {
+            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Didn't switch protocols");
+        }
+
+        // Validate Connection header
+        String connection = response.getHeader("Connection");
+        if (!"upgrade".equalsIgnoreCase(connection))
+        {
+            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Connection is " + connection + " (expected upgrade)");
+        }
+
         // Check the Accept hash
         String reqKey = request.getKey();
         String expectedHash = AcceptHash.hashKey(reqKey);
-        response.validateWebSocketHash(expectedHash);
+        String respHash = response.getHeader("Sec-WebSocket-Accept");
+
+        response.setSuccess(true);
+        if (expectedHash.equalsIgnoreCase(respHash) == false)
+        {
+            response.setSuccess(false);
+            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Invalid Sec-WebSocket-Accept hash");
+        }
 
         // Parse extensions
         List<ExtensionConfig> extensions = new ArrayList<>();

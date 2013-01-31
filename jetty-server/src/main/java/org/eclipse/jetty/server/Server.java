@@ -19,7 +19,11 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,14 +39,18 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.validation.Schema;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
@@ -92,6 +100,8 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     /** Convenience constructor
      * Creates server and a {@link ServerConnector} at the passed port.
+     * @param port The port of a network HTTP connector (or 0 for a randomly allocated port).
+     * @see NetworkConnector#getLocalPort()
      */
     public Server(@Name("port")int port)
     {
@@ -580,6 +590,49 @@ public class Server extends HandlerWrapper implements Attributes
         _attributes.setAttribute(name, attribute);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
+     */
+    public URI getURI()
+    {
+        NetworkConnector connector=null;
+        for (Connector c: _connectors)
+        {
+            if (c instanceof NetworkConnector)
+            {
+                connector=(NetworkConnector)c;
+                break;
+            }
+        }
+            
+        if (connector==null)
+            return null;
+        
+        ContextHandler context = getChildHandlerByClass(ContextHandler.class);
+
+        try
+        {
+            String scheme=connector.getDefaultConnectionFactory().getProtocol().startsWith("SSL-")?"https":"http";
+
+            String host=connector.getHost();
+            if (context!=null && context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                host=context.getVirtualHosts()[0];
+            if (host==null)
+                host=InetAddress.getLocalHost().getHostAddress();
+            
+            String path=context==null?null:context.getContextPath();
+            if (path==null)
+                path="/";
+            return new URI(scheme,null,host,connector.getLocalPort(),path,null,null);
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e);
+            return null;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

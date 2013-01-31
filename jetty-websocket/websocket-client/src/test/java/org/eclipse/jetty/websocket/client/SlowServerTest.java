@@ -100,7 +100,7 @@ public class SlowServerTest
         reader.start();
 
         // Have client write as quickly as it can.
-        ClientWriteThread writer = new ClientWriteThread(tsocket.getConnection());
+        ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
         writer.setSlowness(-1); // disable slowness
@@ -112,7 +112,7 @@ public class SlowServerTest
         Assert.assertThat("Frame Receive Count",reader.getFrameCount(),is(messageCount));
 
         // Close
-        tsocket.getConnection().close(StatusCode.NORMAL,"Done");
+        tsocket.getSession().close(StatusCode.NORMAL,"Done");
 
         Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
         tsocket.assertCloseCode(StatusCode.NORMAL);

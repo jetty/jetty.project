@@ -56,17 +56,17 @@ public abstract class AbstractOrphanedSessionTest
         int inactivePeriod = 5;
         AbstractTestServer server1 = createServer(0, inactivePeriod, -1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
             int scavengePeriod = 2;
             AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-            server2.start();
-            int port2 = server2.getPort();
+            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);         
             try
             {
+                server2.start();
+                int port2 = server2.getPort();
                 HttpClient client = new HttpClient();
                 client.start();
                 try

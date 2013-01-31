@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8LineParser;
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 
 /**
@@ -32,6 +31,20 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
  */
 public class HttpResponseHeaderParser
 {
+    @SuppressWarnings("serial")
+    public static class ParseException extends RuntimeException
+    {
+        public ParseException(String message)
+        {
+            super(message);
+        }
+
+        public ParseException(String message, Throwable cause)
+        {
+            super(message,cause);
+        }
+    }
+
     private enum State
     {
         STATUS_LINE,
@@ -57,7 +70,7 @@ public class HttpResponseHeaderParser
         return (state == State.END);
     }
 
-    public ClientUpgradeResponse parse(ByteBuffer buf) throws UpgradeException
+    public ClientUpgradeResponse parse(ByteBuffer buf) throws ParseException
     {
         while (!isDone() && (buf.remaining() > 0))
         {
@@ -73,7 +86,7 @@ public class HttpResponseHeaderParser
         return null;
     }
 
-    private boolean parseHeader(String line)
+    private boolean parseHeader(String line) throws ParseException
     {
         switch (state)
         {
@@ -83,7 +96,7 @@ public class HttpResponseHeaderParser
                 Matcher mat = PAT_STATUS_LINE.matcher(line);
                 if (!mat.matches())
                 {
-                    throw new UpgradeException("Unexpected HTTP upgrade response status line [" + line + "]");
+                    throw new ParseException("Unexpected HTTP upgrade response status line [" + line + "]");
                 }
 
                 try
@@ -92,7 +105,7 @@ public class HttpResponseHeaderParser
                 }
                 catch (NumberFormatException e)
                 {
-                    throw new UpgradeException("Unexpected HTTP upgrade response status code",e);
+                    throw new ParseException("Unexpected HTTP upgrade response status code",e);
                 }
                 response.setStatusReason(mat.group(2));
                 state = State.HEADER;

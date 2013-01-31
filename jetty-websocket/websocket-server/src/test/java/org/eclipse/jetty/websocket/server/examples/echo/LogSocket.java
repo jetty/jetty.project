@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 public class LogSocket implements WebSocketListener
@@ -50,21 +49,21 @@ public class LogSocket implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketConnect(%s)%n",connection);
+            System.err.printf("onWebSocketConnect(%s)%n",session);
         }
     }
 
     @Override
-    public void onWebSocketException(WebSocketException error)
+    public void onWebSocketError(Throwable cause)
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketException((%s) %s)%n",error.getClass().getName(),error.getMessage());
-            error.printStackTrace(System.err);
+            System.err.printf("onWebSocketError((%s) %s)%n",cause.getClass().getName(),cause.getMessage());
+            cause.printStackTrace(System.err);
         }
     }
 

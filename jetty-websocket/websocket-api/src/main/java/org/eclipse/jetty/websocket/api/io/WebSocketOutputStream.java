@@ -21,15 +21,15 @@ package org.eclipse.jetty.websocket.api.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 
 public class WebSocketOutputStream extends OutputStream
 {
-    private final WebSocketConnection conn;
+    private final Session session;
 
-    public WebSocketOutputStream(WebSocketConnection conn)
+    public WebSocketOutputStream(Session session)
     {
-        this.conn = conn;
+        this.session = session;
     }
 
     @Override

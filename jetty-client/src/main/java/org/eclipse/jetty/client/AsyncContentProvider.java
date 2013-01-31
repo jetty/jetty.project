@@ -39,9 +39,7 @@ public interface AsyncContentProvider extends ContentProvider
     {
         /**
          * Callback method invoked when content is available
-         *
-         * @param last whether it is the last notification of content availability
          */
-        public void onContent(boolean last);
+        public void onContent();
     }
 }

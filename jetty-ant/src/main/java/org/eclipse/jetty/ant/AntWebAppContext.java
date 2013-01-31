@@ -49,7 +49,6 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.TagLibConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
@@ -74,7 +73,6 @@ public class AntWebAppContext extends WebAppContext
     public final PlusConfiguration plusConfiguration = new PlusConfiguration();
     public final AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration();
     public final JettyWebXmlConfiguration jettyWebXmlConfiguration = new JettyWebXmlConfiguration();
-    public final TagLibConfiguration tagLibConfiguration = new TagLibConfiguration();
 
 
     public final Configuration[] DEFAULT_CONFIGURATIONS = 
@@ -86,8 +84,7 @@ public class AntWebAppContext extends WebAppContext
          envConfiguration,
          plusConfiguration,
          annotationConfiguration,
-         jettyWebXmlConfiguration,
-         tagLibConfiguration
+         jettyWebXmlConfiguration
         };
     
 

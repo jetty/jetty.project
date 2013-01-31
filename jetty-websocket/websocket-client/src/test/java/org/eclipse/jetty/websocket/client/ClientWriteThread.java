@@ -26,19 +26,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 
 public class ClientWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ClientWriteThread.class);
-    private final WebSocketConnection conn;
+    private final Session session;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
 
-    public ClientWriteThread(WebSocketConnection conn)
+    public ClientWriteThread(Session session)
     {
-        this.conn = conn;
+        this.session = session;
     }
 
     public String getMessage()
@@ -66,9 +67,10 @@ public class ClientWriteThread extends Thread
             LOG.debug("Writing {} messages to connection {}",messageCount);
             LOG.debug("Artificial Slowness {} ms",slowness);
             Future<Void> lastMessage = null;
+            RemoteEndpoint remote = session.getRemote();
             while (m.get() < messageCount)
             {
-                lastMessage = conn.write(message + "/" + m.get() + "/");
+                lastMessage = remote.sendStringByFuture(message + "/" + m.get() + "/");
 
                 m.incrementAndGet();
 

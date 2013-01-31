@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -91,7 +91,7 @@ public class ConnectionManager extends ContainerLifeCycle
         @Override
         public void run()
         {
-            failed(new UpgradeException("MUX Not yet supported"));
+            failed(new WebSocketException("MUX Not yet supported"));
         }
     }
 

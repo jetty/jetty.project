@@ -18,19 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -47,7 +42,7 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
  */
-public class MuxChannel implements WebSocketConnection, LogicalConnection, IncomingFrames, SuspendToken
+public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendToken
 {
     private static final Logger LOG = Log.getLogger(MuxChannel.class);
 
@@ -129,22 +124,9 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     }
 
     @Override
-    public URI getRequestURI()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public WebSocketSession getSession()
     {
         return session;
-    }
-
-    @Override
-    public String getSubProtocol()
-    {
-        return this.subProtocol;
     }
 
     /**
@@ -214,15 +196,6 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         muxer.output(channelId,frame,callback);
     }
 
-    /**
-     * Ping frame destined for the Muxer
-     */
-    @Override
-    public void ping(ByteBuffer buf) throws IOException
-    {
-        outgoingFrame(WebSocketFrame.ping().setPayload(buf),null);
-    }
-
     @Override
     public void resume()
     {
@@ -256,38 +229,5 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         suspendToken.set(true);
         // TODO: how to suspend reading?
         return this;
-    }
-
-    /**
-     * Generate a binary message, destined for Muxer
-     */
-    @Override
-    public Future<Void> write(byte[] buf, int offset, int len)
-    {
-        ByteBuffer bb = ByteBuffer.wrap(buf,offset,len);
-        return write(bb);
-    }
-
-    /**
-     * Generate a binary message, destined for Muxer
-     */
-    @Override
-    public Future<Void> write(ByteBuffer buffer)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write with {}",BufferUtil.toDetailString(buffer));
-        }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
-        return outgoingAsyncFrame(frame);
-    }
-
-    /**
-     * Generate a text message, destined for Muxer
-     */
-    @Override
-    public Future<Void> write(String message)
-    {
-        return outgoingAsyncFrame(WebSocketFrame.text(message));
     }
 }

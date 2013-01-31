@@ -60,11 +60,12 @@ public abstract class AbstractClientCrossContextSessionTest
         TestServletB servletB = new TestServletB();
         ServletHolder holderB = new ServletHolder(servletB);
         ctxB.addServlet(holderB, servletMapping);
-        server.start();
-        int port = server.getPort();
 
         try
         {
+            server.start();
+            int port = server.getPort();
+            
             HttpClient client = new HttpClient();
             client.start();
             try

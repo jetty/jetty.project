@@ -21,13 +21,17 @@ package org.eclipse.jetty.websocket.client;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -39,6 +43,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public class ClientUpgradeRequest extends UpgradeRequest
 {
     private final static Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
+    private final static int MAX_KEYS = -1; // maximum number of parameter keys to decode
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -202,5 +207,38 @@ public class ClientUpgradeRequest extends UpgradeRequest
         }
 
         setCookies(cookieStore.get(getRequestURI()));
+    }
+
+    @Override
+    public void setRequestURI(URI uri)
+    {
+        super.setRequestURI(uri);
+
+        // parse parameter map
+        Map<String, String[]> pmap = new HashMap<>();
+
+        String query = uri.getQuery();
+
+        if (StringUtil.isNotBlank(query))
+        {
+            MultiMap<String> params = new MultiMap<String>();
+            UrlEncoded.decodeTo(uri.getQuery(),params,"UTF-8",MAX_KEYS);
+
+            for (String key : params.keySet())
+            {
+                List<String> values = params.getValues(key);
+                if (values == null)
+                {
+                    pmap.put(key,new String[0]);
+                }
+                else
+                {
+                    int len = values.size();
+                    pmap.put(key,values.toArray(new String[len]));
+                }
+            }
+
+            super.setParameterMap(pmap);
+        }
     }
 }

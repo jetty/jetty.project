@@ -598,7 +598,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
 
             Selector selector = _selector;
-            if (selector != null)
+            if (selector != null && selector.isOpen())
             {
                 final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
                 dump.add(where);

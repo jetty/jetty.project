@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
 
 /**
@@ -47,6 +47,7 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
+    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
 
     public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
@@ -140,10 +141,17 @@ public class TrackingSocket extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        super.onWebSocketConnect(connection);
+        super.onWebSocketConnect(session);
         openLatch.countDown();
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        LOG.debug("onWebSocketError",cause);
+        Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
     }
 
     @Override

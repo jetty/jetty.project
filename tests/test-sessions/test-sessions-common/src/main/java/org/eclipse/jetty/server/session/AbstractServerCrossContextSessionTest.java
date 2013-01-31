@@ -56,10 +56,11 @@ public abstract class AbstractServerCrossContextSessionTest
         ctxA.addServlet(TestServletA.class, servletMapping);
         ServletContextHandler ctxB = server.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
-        server.start();
-        int port=server.getPort();
         try
         {
+            server.start();
+            int port=server.getPort();
+
             HttpClient client = new HttpClient();
             client.start();
             try

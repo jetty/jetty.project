@@ -28,6 +28,7 @@ my be specified if a match is not achieved.
 <!ENTITY % IMPLIEDNAMEATTR "name CDATA #IMPLIED" >
 <!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
 <!ENTITY % IDATTR "id ID #IMPLIED" >
+<!ENTITY % REFATTR "refid CDATA #IMPLIED" >
 <!ENTITY % REQUIREDIDATTR "id ID #REQUIRED" >
 
 
@@ -161,16 +162,18 @@ This is equivalent to:
 
 <!--
 Ref Element.
-This element allows a previously created object to be referenced by id.
+This element allows a previously created object to be referenced by id.  The 
+attribute refid is used to specify the id of another object (the attribute id can
+also be used, but it's use is deprecated).
 A Ref element can contain a sequence of elements such as Set, Put, Call, etc.
-which act on the referenced object:
+which act on the referenced object.
 
- <Ref id="myobject">
+ <Ref refid="myobject">
    <Set name="Test">Value2</Set>
  </New>
 -->
 <!ELEMENT Ref (%CONFIG;)* >
-<!ATTLIST Ref %REQUIREDIDATTR;>
+<!ATTLIST Ref %IDATTR; %REFATTR;>
 
 
 <!--

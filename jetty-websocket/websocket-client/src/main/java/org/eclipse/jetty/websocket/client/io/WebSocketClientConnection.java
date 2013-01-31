@@ -80,7 +80,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             WebSocketSession session = getSession();
             ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
             connectionManager.addSession(session);
-            connectPromise.onOpen(session);
+            connectPromise.succeeded(session);
             connected = true;
         }
         super.onOpen();

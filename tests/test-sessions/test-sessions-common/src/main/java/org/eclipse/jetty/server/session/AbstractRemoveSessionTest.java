@@ -55,10 +55,11 @@ public abstract class AbstractRemoveSessionTest
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();
         context.getSessionHandler().addEventListener(testListener);
-        server.start();
-        int port = server.getPort();
         try
         {
+            server.start();
+            int port = server.getPort();
+
             HttpClient client = new HttpClient();
             client.start();
             try

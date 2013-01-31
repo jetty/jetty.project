@@ -37,7 +37,7 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -135,7 +135,7 @@ public class RFC6455ExamplesParserTest
         }
         buf.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -174,7 +174,7 @@ public class RFC6455ExamplesParserTest
         }
         buf.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -205,7 +205,7 @@ public class RFC6455ExamplesParserTest
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         buf.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -228,7 +228,7 @@ public class RFC6455ExamplesParserTest
                 { (byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         buf.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

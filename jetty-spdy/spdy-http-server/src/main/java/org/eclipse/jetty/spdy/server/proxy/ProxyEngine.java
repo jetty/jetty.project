@@ -22,13 +22,14 @@ package org.eclipse.jetty.spdy.server.proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>{@link ProxyEngine} is the class for SPDY proxy functionalities that receives a SPDY request and converts it to
@@ -39,7 +40,20 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class ProxyEngine
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    private static final Set<String> HOP_HEADERS = new HashSet<>();
+    static
+    {
+        HOP_HEADERS.add("proxy-connection");
+        HOP_HEADERS.add("connection");
+        HOP_HEADERS.add("keep-alive");
+        HOP_HEADERS.add("transfer-encoding");
+        HOP_HEADERS.add("te");
+        HOP_HEADERS.add("trailer");
+        HOP_HEADERS.add("proxy-authorization");
+        HOP_HEADERS.add("proxy-authenticate");
+        HOP_HEADERS.add("upgrade");
+    }
+
     private final String name;
 
     protected ProxyEngine()
@@ -71,12 +85,25 @@ public abstract class ProxyEngine
         return name;
     }
 
+    protected void removeHopHeaders(Fields headers)
+    {
+        for (String hopHeader : HOP_HEADERS)
+            headers.remove(hopHeader);
+    }
+
     protected void addRequestProxyHeaders(Stream stream, Fields headers)
     {
         addViaHeader(headers);
+        Fields.Field schemeField = headers.get(HTTPSPDYHeader.SCHEME.name(stream.getSession().getVersion()));
+        if(schemeField != null)
+            headers.add("X-Forwarded-Proto", schemeField.value());
         InetSocketAddress address = stream.getSession().getRemoteAddress();
         if (address != null)
-            headers.add("X-Forwarded-For", address.getHostName());
+        {
+            headers.add("X-Forwarded-Host", address.getHostName());
+            headers.add("X-Forwarded-For", address.toString());
+        }
+        headers.add("X-Forwarded-Server", name());
     }
 
     protected void addResponseProxyHeaders(Stream stream, Fields headers)

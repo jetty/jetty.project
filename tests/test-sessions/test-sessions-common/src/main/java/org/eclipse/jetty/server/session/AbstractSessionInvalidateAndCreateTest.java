@@ -100,10 +100,12 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         context.addServlet(holder, servletMapping);
         MySessionListener listener = new MySessionListener();
         context.getSessionHandler().addEventListener(listener);
-        server.start();
-        int port1 = server.getPort();
+    
         try
         {
+            server.start();
+            int port1 = server.getPort();
+            
             HttpClient client = new HttpClient();
             client.start();
             try

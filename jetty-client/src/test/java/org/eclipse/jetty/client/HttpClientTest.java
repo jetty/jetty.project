@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -60,6 +58,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -714,5 +714,25 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(length, response.getContent().length);
+    }
+
+    @Test
+    public void testConnectThrowsUnresolvedAddressException() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("idontexist", 80)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        Assert.assertTrue(result.getFailure() instanceof UnresolvedAddressException);
+                        latch.countDown();
+                    }
+                });
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 }

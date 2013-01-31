@@ -61,10 +61,11 @@ public class PingTest extends AbstractTest
     @Test
     public void testServerPingPong() throws Exception
     {
-        final CountDownLatch pingLatch = new CountDownLatch(1);
+        final CountDownLatch pingReceived = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
-            public volatile int pingId;
+            private final CountDownLatch pingSent = new CountDownLatch(1);
+            private int pingId;
 
             @Override
             public void onConnect(Session session)
@@ -75,6 +76,7 @@ public class PingTest extends AbstractTest
                     public void succeeded(PingResultInfo pingInfo)
                     {
                         pingId = pingInfo.getPingId();
+                        pingSent.countDown();
                     }
                 });
             }
@@ -82,13 +84,23 @@ public class PingTest extends AbstractTest
             @Override
             public void onPing(Session session, PingResultInfo pingInfo)
             {
-                Assert.assertEquals(0, pingInfo.getPingId() % 2);
-                Assert.assertEquals(pingId, pingInfo.getPingId());
-                pingLatch.countDown();
+                try
+                {
+                    // This callback may be notified before the promise above,
+                    // so make sure we wait here to know the pingId
+                    Assert.assertTrue(pingSent.await(5, TimeUnit.SECONDS));
+                    Assert.assertEquals(0, pingInfo.getPingId() % 2);
+                    Assert.assertEquals(pingId, pingInfo.getPingId());
+                    pingReceived.countDown();
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         };
         startClient(startServer(serverSessionFrameListener), null);
 
-        Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(pingReceived.await(5, TimeUnit.SECONDS));
     }
 }

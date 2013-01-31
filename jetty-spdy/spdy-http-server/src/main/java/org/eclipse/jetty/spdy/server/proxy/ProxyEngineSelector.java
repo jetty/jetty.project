@@ -50,14 +50,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    protected final Logger LOG = Log.getLogger(getClass());
     private final Map<String, ProxyServerInfo> proxyInfos = new ConcurrentHashMap<>();
     private final Map<String, ProxyEngine> proxyEngines = new ConcurrentHashMap<>();
 
     @Override
     public final StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
     {
-        logger.debug("C -> P {} on {}", clientSynInfo, clientStream);
+        LOG.debug("C -> P {} on {}", clientSynInfo, clientStream);
 
         final Session clientSession = clientStream.getSession();
         short clientVersion = clientSession.getVersion();
@@ -66,7 +66,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         Fields.Field hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
         if (hostHeader == null)
         {
-            logger.debug("No host header found: " + headers);
+            LOG.debug("No host header found: " + headers);
             rst(clientStream);
             return null;
         }
@@ -79,7 +79,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyServerInfo proxyServerInfo = getProxyServerInfo(host);
         if (proxyServerInfo == null)
         {
-            logger.debug("No matching ProxyServerInfo found for: " + host);
+            LOG.debug("No matching ProxyServerInfo found for: " + host);
             rst(clientStream);
             return null;
         }
@@ -88,11 +88,11 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyEngine proxyEngine = proxyEngines.get(protocol);
         if (proxyEngine == null)
         {
-            logger.debug("No matching ProxyEngine found for: " + protocol);
+            LOG.debug("No matching ProxyEngine found for: " + protocol);
             rst(clientStream);
             return null;
         }
-
+        LOG.debug("Forwarding request: {} -> {}", clientSynInfo, proxyServerInfo);
         return proxyEngine.proxy(clientStream, clientSynInfo, proxyServerInfo);
     }
 

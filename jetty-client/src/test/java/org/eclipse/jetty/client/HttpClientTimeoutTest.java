@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,10 +36,13 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -220,6 +225,46 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
             TimeUnit.MILLISECONDS.sleep(2 * timeout);
 
             Assert.assertNull(request.getAbortCause());
+        }
+    }
+
+    @Test
+    public void testIdleTimeout() throws Throwable
+    {
+        long timeout = 1000;
+        start(new TimeoutHandler(2 * timeout));
+        client.stop();
+        final AtomicBoolean sslIdle = new AtomicBoolean();
+        client = new HttpClient(sslContextFactory)
+        {
+            @Override
+            protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine)
+                {
+                    @Override
+                    protected boolean onReadTimeout()
+                    {
+                        sslIdle.set(true);
+                        return super.onReadTimeout();
+                    }
+                };
+            }
+        };
+        client.setIdleTimeout(timeout);
+        client.start();
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .send();
+            Assert.fail();
+        }
+        catch (Exception x)
+        {
+            Assert.assertFalse(sslIdle.get());
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(TimeoutException.class));
         }
     }
 

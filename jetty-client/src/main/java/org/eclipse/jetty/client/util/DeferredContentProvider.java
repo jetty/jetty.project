@@ -20,8 +20,10 @@ package org.eclipse.jetty.client.util;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -72,9 +74,11 @@ import org.eclipse.jetty.client.api.Response;
  */
 public class DeferredContentProvider implements AsyncContentProvider, AutoCloseable
 {
-    private final Queue<ByteBuffer> queue = new ConcurrentLinkedQueue<>();
-    private volatile Listener listener;
-    private volatile boolean closed;
+    private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
+
+    private final Queue<ByteBuffer> chunks = new ConcurrentLinkedQueue<>();
+    private final AtomicReference<Listener> listener = new AtomicReference<>();
+    private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
 
     /**
      * Creates a new {@link DeferredContentProvider} with the given initial content
@@ -84,13 +88,14 @@ public class DeferredContentProvider implements AsyncContentProvider, AutoClosea
     public DeferredContentProvider(ByteBuffer... buffers)
     {
         for (ByteBuffer buffer : buffers)
-            queue.offer(buffer);
+            chunks.offer(buffer);
     }
 
     @Override
     public void setListener(Listener listener)
     {
-        this.listener = listener;
+        if (!this.listener.compareAndSet(null, listener))
+            throw new IllegalStateException();
     }
 
     @Override
@@ -108,8 +113,8 @@ public class DeferredContentProvider implements AsyncContentProvider, AutoClosea
      */
     public boolean offer(ByteBuffer buffer)
     {
-        boolean result = queue.offer(buffer);
-        notifyListener(false);
+        boolean result = chunks.offer(buffer);
+        notifyListener();
         return result;
     }
 
@@ -119,39 +124,44 @@ public class DeferredContentProvider implements AsyncContentProvider, AutoClosea
      */
     public void close()
     {
-        closed = true;
-        notifyListener(true);
+        chunks.offer(CLOSE);
+        notifyListener();
     }
 
-    private void notifyListener(boolean last)
+    private void notifyListener()
     {
-        Listener listener = this.listener;
+        Listener listener = this.listener.get();
         if (listener != null)
-            listener.onContent(last);
+            listener.onContent();
     }
 
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new Iterator<ByteBuffer>()
+        return iterator;
+    }
+
+    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>
+    {
+        @Override
+        public boolean hasNext()
         {
-            @Override
-            public boolean hasNext()
-            {
-                return !queue.isEmpty() || !closed;
-            }
+            return chunks.peek() != CLOSE;
+        }
 
-            @Override
-            public ByteBuffer next()
-            {
-                return queue.poll();
-            }
+        @Override
+        public ByteBuffer next()
+        {
+            ByteBuffer element = chunks.poll();
+            if (element == CLOSE)
+                throw new NoSuchElementException();
+            return element;
+        }
 
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }

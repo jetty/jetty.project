@@ -27,8 +27,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.After;
 import org.junit.Assert;
@@ -41,15 +41,14 @@ public class WebSocketOverSSLTest
     private int _port;
     private QueuedThreadPool _threadPool;
 
-    // private WebSocketClientFactory _wsFactory;
-    private WebSocketConnection _connection;
+    private Session _session;
 
     @After
     public void destroy() throws Exception
     {
-        if (_connection != null)
+        if (_session != null)
         {
-            _connection.close();
+            _session.close();
         }
 
         // if (_wsFactory != null)
@@ -121,7 +120,7 @@ public class WebSocketOverSSLTest
         String message = new String(chars);
         for (int i = 0; i < count; ++i)
         {
-            _connection.write(message);
+            _session.getRemote().sendStringByFuture(message);
         }
 
         Assert.assertTrue(clientLatch.await(20,TimeUnit.SECONDS));
@@ -139,19 +138,19 @@ public class WebSocketOverSSLTest
         final CountDownLatch serverLatch = new CountDownLatch(1);
         startServer(new WebSocketAdapter()
         {
-            private WebSocketConnection connection;
+            private Session session;
 
             @Override
-            public void onWebSocketConnect(WebSocketConnection connection)
+            public void onWebSocketConnect(Session session)
             {
-                this.connection = connection;
+                this.session = session;
             }
 
             @Override
             public void onWebSocketText(String message)
             {
                 Assert.assertEquals(message,message);
-                connection.write(message);
+                session.getRemote().sendStringByFuture(message);
                 serverLatch.countDown();
             }
         });
@@ -165,7 +164,7 @@ public class WebSocketOverSSLTest
                 clientLatch.countDown();
             }
         });
-        _connection.write(message);
+        _session.getRemote().sendStringByFuture(message);
 
         Assert.assertTrue(serverLatch.await(5,TimeUnit.SECONDS));
         Assert.assertTrue(clientLatch.await(5,TimeUnit.SECONDS));

@@ -23,8 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -42,7 +42,7 @@ public class SimpleEchoClient
     {
         private final CountDownLatch closeLatch;
         @SuppressWarnings("unused")
-        private WebSocketConnection conn;
+        private Session session;
 
         public SimpleEchoSocket()
         {
@@ -58,25 +58,25 @@ public class SimpleEchoClient
         public void onClose(int statusCode, String reason)
         {
             System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
-            this.conn = null;
+            this.session = null;
             this.closeLatch.countDown(); // trigger latch
         }
 
         @OnWebSocketConnect
-        public void onConnect(WebSocketConnection conn)
+        public void onConnect(Session session)
         {
-            System.out.printf("Got connect: %s%n",conn);
-            this.conn = conn;
+            System.out.printf("Got connect: %s%n",session);
+            this.session = session;
             try
             {
                 Future<Void> fut;
-                fut = conn.write("Hello");
+                fut = session.getRemote().sendStringByFuture("Hello");
                 fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
-                fut = conn.write("Thanks for the conversation.");
+                fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
                 fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
-                conn.close(StatusCode.NORMAL,"I'm done");
+                session.close(StatusCode.NORMAL,"I'm done");
             }
             catch (Throwable t)
             {

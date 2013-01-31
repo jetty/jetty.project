@@ -46,6 +46,16 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         this.masker = client.getMasker();
     }
 
+    @Override
+    public void failed(Throwable cause)
+    {
+        // Notify websocket of failure to connect
+        driver.onError(cause);
+
+        // Notify promise/future of failure to connect
+        super.failed(cause);
+    }
+
     public WebSocketClient getClient()
     {
         return client;
@@ -71,16 +81,16 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         return response;
     }
 
-    public void onOpen(WebSocketSession session)
+    public void setResponse(ClientUpgradeResponse response)
+    {
+        this.response = response;
+    }
+
+    public void succeeded(WebSocketSession session)
     {
         session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
         session.open();
         super.succeeded(session);
-    }
-
-    public void setResponse(ClientUpgradeResponse response)
-    {
-        this.response = response;
     }
 }

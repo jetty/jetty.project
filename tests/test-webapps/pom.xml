@@ -46,5 +46,6 @@
     <module>test-mock-resources</module>
     <module>test-servlet-spec</module>
     <module>test-jaas-webapp</module>
+    <module>test-jndi-webapp</module>
   </modules>
 </project>

@@ -46,7 +46,7 @@ public class TestABCase4
         LogShush.enableStacks(Parser.class);
     }
 
-    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testParserControlOpCode11Case4_2_1()

@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
  */
 public abstract class EventDriver implements IncomingFrames
 {
-    protected final Logger LOG;
+    private static final Logger LOG = Log.getLogger(EventDriver.class);
     protected final WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
@@ -51,7 +51,6 @@ public abstract class EventDriver implements IncomingFrames
     {
         this.policy = policy;
         this.websocket = websocket;
-        this.LOG = Log.getLogger(websocket.getClass());
     }
 
     public WebSocketPolicy getPolicy()
@@ -78,7 +77,7 @@ public abstract class EventDriver implements IncomingFrames
             terminateConnection(close.getStatusCode(),close.getMessage());
         }
 
-        onException(e);
+        onError(e);
     }
 
     @Override
@@ -161,7 +160,7 @@ public abstract class EventDriver implements IncomingFrames
 
     public abstract void onConnect();
 
-    public abstract void onException(WebSocketException e);
+    public abstract void onError(Throwable t);
 
     public abstract void onFrame(Frame frame);
 

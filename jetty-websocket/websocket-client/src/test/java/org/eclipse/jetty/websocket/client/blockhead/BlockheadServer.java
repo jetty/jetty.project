@@ -33,7 +33,9 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,6 +89,7 @@ public class BlockheadServer
         private OutputStream out;
         private InputStream in;
 
+        private Map<String, String> extraResponseHeaders = new HashMap<>();
         private OutgoingFrames outgoing = this;
 
         public ServerConnection(Socket socket)
@@ -99,6 +102,14 @@ public class BlockheadServer
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
             this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        }
+
+        /**
+         * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
+         */
+        public void addResponseHeader(String rawkey, String rawvalue)
+        {
+            extraResponseHeaders.put(rawkey,rawvalue);
         }
 
         public void close() throws IOException
@@ -239,6 +250,47 @@ public class BlockheadServer
             }
         }
 
+        public List<ExtensionConfig> parseExtensions(List<String> requestLines)
+        {
+            List<ExtensionConfig> extensionConfigs = new ArrayList<>();
+
+            Pattern patExts = Pattern.compile("^Sec-WebSocket-Extensions: (.*)$",Pattern.CASE_INSENSITIVE);
+
+            Matcher mat;
+            for (String line : requestLines)
+            {
+                mat = patExts.matcher(line);
+                if (mat.matches())
+                {
+                    // found extensions
+                    String econf = mat.group(1);
+                    ExtensionConfig config = ExtensionConfig.parse(econf);
+                    extensionConfigs.add(config);
+                }
+            }
+
+            return extensionConfigs;
+        }
+
+        public String parseWebSocketKey(List<String> requestLines)
+        {
+            String key = null;
+
+            Pattern patKey = Pattern.compile("^Sec-WebSocket-Key: (.*)$",Pattern.CASE_INSENSITIVE);
+
+            Matcher mat;
+            for (String line : requestLines)
+            {
+                mat = patKey.matcher(line);
+                if (mat.matches())
+                {
+                    key = mat.group(1);
+                }
+            }
+
+            return key;
+        }
+
         public int read(ByteBuffer buf) throws IOException
         {
             int len = 0;
@@ -318,6 +370,24 @@ public class BlockheadServer
             return request.toString();
         }
 
+        public List<String> readRequestLines() throws IOException
+        {
+            LOG.debug("Reading client request header");
+            List<String> lines = new ArrayList<>();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+            for (String line = in.readLine(); line != null; line = in.readLine())
+            {
+                if (line.length() == 0)
+                {
+                    break;
+                }
+                lines.add(line);
+            }
+
+            return lines;
+        }
+
         public void respond(String rawstr) throws IOException
         {
             LOG.debug("respond(){}{}","\n",rawstr);
@@ -332,39 +402,14 @@ public class BlockheadServer
 
         public void upgrade() throws IOException
         {
-            List<ExtensionConfig> extensionConfigs = new ArrayList<>();
+            List<String> requestLines = readRequestLines();
+            List<ExtensionConfig> extensionConfigs = parseExtensions(requestLines);
+            String key = parseWebSocketKey(requestLines);
 
-            Pattern patExts = Pattern.compile("^Sec-WebSocket-Extensions: (.*)$",Pattern.CASE_INSENSITIVE);
-            Pattern patKey = Pattern.compile("^Sec-WebSocket-Key: (.*)$",Pattern.CASE_INSENSITIVE);
+            LOG.debug("Client Request Extensions: {}",extensionConfigs);
+            LOG.debug("Client Request Key: {}",key);
 
-            Matcher mat;
-            String key = "not sent";
-            BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
-            for (String line = in.readLine(); line != null; line = in.readLine())
-            {
-                if (line.length() == 0)
-                {
-                    break;
-                }
-
-                // Check for extensions
-                mat = patExts.matcher(line);
-                if (mat.matches())
-                {
-                    // found extensions
-                    String econf = mat.group(1);
-                    ExtensionConfig config = ExtensionConfig.parse(econf);
-                    extensionConfigs.add(config);
-                    continue;
-                }
-
-                // Check for Key
-                mat = patKey.matcher(line);
-                if (mat.matches())
-                {
-                    key = mat.group(1);
-                }
-            }
+            Assert.assertThat("Request: Sec-WebSocket-Key",key,notNullValue());
 
             // collect extensions configured in response header
             ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
@@ -394,6 +439,7 @@ public class BlockheadServer
             // Setup Response
             StringBuilder resp = new StringBuilder();
             resp.append("HTTP/1.1 101 Upgrade\r\n");
+            resp.append("Connection: upgrade\r\n");
             resp.append("Sec-WebSocket-Accept: ");
             resp.append(AcceptHash.hashKey(key)).append("\r\n");
             if (!extensionStack.hasNegotiatedExtensions())
@@ -412,9 +458,20 @@ public class BlockheadServer
                 }
                 resp.append("\r\n");
             }
+            if (extraResponseHeaders.size() > 0)
+            {
+                for (Map.Entry<String, String> xheader : extraResponseHeaders.entrySet())
+                {
+                    resp.append(xheader.getKey());
+                    resp.append(": ");
+                    resp.append(xheader.getValue());
+                    resp.append("\r\n");
+                }
+            }
             resp.append("\r\n");
 
             // Write Response
+            LOG.debug("Response: {}",resp.toString());
             write(resp.toString().getBytes());
         }
 
