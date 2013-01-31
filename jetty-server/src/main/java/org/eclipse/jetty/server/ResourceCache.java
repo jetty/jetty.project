@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,24 +58,18 @@ public class ResourceCache
     private final ResourceFactory _factory;
     private final ResourceCache _parent;
     private final MimeTypes _mimeTypes;
+    private final boolean _etags;
 
     private boolean  _useFileMappedBuffer=true;
     private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
-
-    /* ------------------------------------------------------------ */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer)
-    {
-        this(parent,factory,mimeTypes);
-        setUseFileMappedBuffer(useFileMappedBuffer);
-    }
     
     /* ------------------------------------------------------------ */
     /** Constructor.
      * @param mimeTypes Mimetype to use for meta data
      */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes)
+    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,Content>();
@@ -83,6 +77,7 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
         _parent=parent;
+        _etags=etags;
     }
 
     /* ------------------------------------------------------------ */
@@ -249,7 +244,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
+        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etags);
         
     }
     
@@ -361,6 +356,7 @@ public class ResourceCache
         final long _lastModified;
         final Buffer _lastModifiedBytes;
         final Buffer _contentType;
+        final Buffer _etagBuffer;
         
         volatile long _lastAccessed;
         AtomicReference<Buffer> _indirectBuffer=new AtomicReference<Buffer>();
@@ -381,6 +377,8 @@ public class ResourceCache
             _cachedSize.addAndGet(_length);
             _cachedFiles.incrementAndGet();
             _lastAccessed=System.currentTimeMillis();
+            
+            _etagBuffer=_etags?new ByteArrayBuffer(resource.getWeakETag()):null;
         }
 
 
@@ -407,11 +405,17 @@ public class ResourceCache
         {
             return _resource;
         }
+
+        /* ------------------------------------------------------------ */
+        public Buffer getETag()
+        {
+            return _etagBuffer;
+        }
         
         /* ------------------------------------------------------------ */
         boolean isValid()
         {
-            if (_lastModified==_resource.lastModified())
+            if (_lastModified==_resource.lastModified() && _length==_resource.length())
             {
                 _lastAccessed=System.currentTimeMillis();
                 return true;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,12 +73,12 @@ public class GzipTester
         // DOES NOT WORK IN WINDOWS - this.testdir.ensureEmpty();
     }
 
-    public void assertIsResponseGzipCompressed(String filename) throws Exception
+    public HttpTester assertIsResponseGzipCompressed(String filename) throws Exception
     {
-        assertIsResponseGzipCompressed(filename,filename);
+        return assertIsResponseGzipCompressed(filename,filename);
     }
 
-    public void assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
+    public HttpTester assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
     {
         System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester request = new HttpTester();
@@ -139,6 +139,8 @@ public class GzipTester
             IO.close(in);
             IO.close(bais);
         }
+        
+        return response;
     }
 
     /**
@@ -243,7 +245,7 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public void assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
+    public HttpTester assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
     {
         String uri = "/context/"+filename;
         HttpTester response = executeRequest(uri);
@@ -258,6 +260,8 @@ public class GzipTester
             String actual = readResponse(response);
             Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
         }
+        
+        return response;
     }
     
 
@@ -302,13 +306,13 @@ public class GzipTester
     {
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
         Assert.assertThat("Response.status",response.getStatus(),is(status));
+        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
         if (expectedFilesize != (-1))
         {
             Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
             int serverLength = Integer.parseInt(response.getHeader("Content-Length"));
             Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
         }
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
     }
 
     private HttpTester executeRequest(String uri) throws IOException, Exception
@@ -461,6 +465,7 @@ public class GzipTester
         ServletHolder servletHolder = servletTester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         FilterHolder holder = servletTester.addFilter(gzipFilterClass,"/*",0);
+        holder.setInitParameter("vary","Accept-Encoding");
         return holder;
     }
 

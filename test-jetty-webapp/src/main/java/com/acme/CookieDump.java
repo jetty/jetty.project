@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package com.acme;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -121,4 +122,22 @@ public class CookieDump extends HttpServlet
         return string;
     }
     
+    @Override
+    public void destroy()
+    {
+        // For testing --stop with STOP.WAIT handling of the jetty-start behavior.
+        if (Boolean.getBoolean("test.slow.destroy"))
+        {
+            log("Simulating a slow destroy (10 seconds)",null);
+            try
+            {
+                TimeUnit.SECONDS.sleep(10);
+            }
+            catch (InterruptedException e)
+            {
+                // ignore
+            }
+        }
+        super.destroy();
+    }
 }

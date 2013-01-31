@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -53,8 +52,10 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -78,6 +79,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String FILES ="org.eclipse.jetty.servlet.MultiPartFilter.files";
     private File tempdir;
@@ -117,12 +119,16 @@ public class MultiPartFilter implements Filter
             chain.doFilter(request,response);
             return;
         }
-        
-        InputStream in = new BufferedInputStream(request.getInputStream());
+
+        InputStream in = new ReadLineInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
-        
+
         // TODO - handle encodings
-        String boundary="--"+QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+        String contentTypeBoundary = "";
+        if (content_type.indexOf("boundary=") >= 0)
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+
+        String boundary="--"+contentTypeBoundary;
         
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
         
@@ -140,12 +146,26 @@ public class MultiPartFilter implements Filter
         try
         {
             // Get first boundary
-            byte[] bytes=TypeUtil.readLine(in);
-            String line=bytes==null?null:new String(bytes,"UTF-8");
-            if(line==null || !line.equals(boundary))
+            String line=((ReadLineInputStream)in).readLine();
+
+            if (line == null)
+                throw new IOException("Missing content for multipart request");
+
+            line = line.trim();
+            boolean badFormatLogged = false;
+            while (line != null && !line.equals(boundary))
             {
-                throw new IOException("Missing initial multi part boundary");
+                if (!badFormatLogged)
+                {
+                    LOG.warn("Badly formatted multipart request");
+                    badFormatLogged = true;
+                }
+                line=((ReadLineInputStream)in).readLine();
+                line=(line==null?line:line.trim());
             }
+            
+            if (line == null)
+                throw new IOException("Missing initial multi part boundary");
             
             // Read each part
             boolean lastPart=false;
@@ -160,14 +180,15 @@ public class MultiPartFilter implements Filter
                 while(true)
                 {
                     // read a line
-                    bytes=TypeUtil.readLine(in);
-                    if (bytes==null)
+                    line=((ReadLineInputStream)in).readLine();
+                    
+                    //No more input
+                    if (line==null)
                         break outer;
                     
                     // If blank line, end of part headers
-                    if(bytes.length==0)
+                    if("".equals(line))
                         break;
-                    line=new String(bytes,"UTF-8");
                     
                     // place part header key and value in map
                     int c=line.indexOf(':',0);
@@ -190,7 +211,8 @@ public class MultiPartFilter implements Filter
                     throw new IOException("Missing content-disposition");
                 }
                 
-                QuotedStringTokenizer tok=new QuotedStringTokenizer(content_disposition,";");
+                LOG.debug("Content-Disposition: {}", content_disposition);
+                QuotedStringTokenizer tok=new QuotedStringTokenizer(content_disposition,";",false,true);
                 String name=null;
                 String filename=null;
                 while(tok.hasMoreTokens())
@@ -202,7 +224,7 @@ public class MultiPartFilter implements Filter
                     else if(tl.startsWith("name="))
                         name=value(t);
                     else if(tl.startsWith("filename="))
-                        filename=value(t);
+                        filename=filenameValue(t);
                 }
                 
                 // Check disposition
@@ -226,6 +248,7 @@ public class MultiPartFilter implements Filter
                 {
                     if (filename!=null && filename.length()>0)
                     {
+                        LOG.debug("filename = \"{}\"", filename);
                         file = File.createTempFile("MultiPart", "", tempdir);
                         out = new FileOutputStream(file);
                         if(_fileOutputBuffer>0)
@@ -297,7 +320,14 @@ public class MultiPartFilter implements Filter
                             if(c==13||c==10)
                             {
                                 if(c==13)
-                                    state=in.read();
+                                {
+                                    in.mark(1);
+                                    int tmp=in.read();
+                                    if (tmp!=10)
+                                        in.reset();
+                                    else
+                                        state=tmp;
+                                }
                                 break;
                             }
                             // look for boundary
@@ -355,7 +385,7 @@ public class MultiPartFilter implements Filter
                 
                 if (file==null)
                 {
-                    bytes = ((ByteArrayOutputStream)out).toByteArray();
+                    byte[] bytes = ((ByteArrayOutputStream)out).toByteArray();
                     params.add(name,bytes);
                     if (type_content != null)
                         params.add(name+CONTENT_TYPE_SUFFIX, type_content);
@@ -395,7 +425,37 @@ public class MultiPartFilter implements Filter
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue)
     {
-        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();
+        return QuotedStringTokenizer.unquoteOnly(value);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String filenameValue(String nameEqualsValue)
+    {
+        int idx = nameEqualsValue.indexOf('=');
+        String value = nameEqualsValue.substring(idx+1).trim();   
+
+        if (value.matches(".??[a-z,A-Z]\\:\\\\[^\\\\].*"))
+        {
+            //incorrectly escaped IE filenames that have the whole path
+            //we just strip any leading & trailing quotes and leave it as is
+            char first=value.charAt(0);
+            if (first=='"' || first=='\'')
+                value=value.substring(1);
+            char last=value.charAt(value.length()-1);
+            if (last=='"' || last=='\'')
+                value = value.substring(0,value.length()-1);
+
+            return value;
+        }
+        else
+            //unquote the string, but allow any backslashes that don't
+            //form a valid escape sequence to remain as many browsers
+            //even on *nix systems will not escape a filename containing
+            //backslashes
+            return QuotedStringTokenizer.unquoteOnly(value, true);
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -33,14 +35,17 @@ import javax.servlet.ServletResponse;
 
 import junit.framework.AssertionFailedError;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -538,7 +543,63 @@ public class DefaultServletTest
         assertResponseContains("Content-Range: bytes 70-79/80", response);
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
+
+        //test a range request with a file with no suffix, therefore no mimetype
+        File nofilesuffix = new File(resBase, "nofilesuffix");
+        createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+        "\r\n");
+        assertResponseContains("200 OK", response);
+        assertResponseContains("Accept-Ranges: bytes", response);
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9\r\n" +
+        "\r\n");
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Length: 10", response);
+        assertTrue(!response.contains("Content-Type:"));
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49\r\n" +
+        "\r\n");
+        start = response.indexOf("--jetty");
+        body = response.substring(start);
+        boundary = body.substring(0, body.indexOf("\r\n"));
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+        assertResponseContains("Content-Range: bytes 20-29/80", response);
+        assertResponseContains("Content-Length: " + body.length(), response);
+        assertTrue(body.endsWith(boundary + "--\r\n"));
+
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+        "\r\n");
+        start = response.indexOf("--jetty");
+        body = response.substring(start);
+        boundary = body.substring(0, body.indexOf("\r\n"));
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
+        assertResponseContains("Content-Range: bytes 0-9/80", response);
+        assertResponseContains("Content-Range: bytes 20-29/80", response);
+        assertResponseContains("Content-Range: bytes 60-60/80", response);
+        assertResponseContains("Content-Range: bytes 70-79/80", response);
+        assertResponseContains("Content-Length: " + body.length(), response);
+        assertTrue(body.endsWith(boundary + "--\r\n"));
+
     }
+
+
+
 
     @Test
     public void testFiltered() throws Exception
@@ -578,6 +639,159 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Length: 12", response);
     }
 
+
+    @Test
+    public void testGzip() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+        File file0gz = new File(resBase, "data0.txt.gz");
+        createFile(file0gz, "fake gzip");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Hello Text 0",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseNotContains("Content-Encoding: gzip",response);
+        
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        assertResponseContains("Content-Length: 9", response);
+        assertResponseContains("fake gzip",response);
+        assertResponseContains("Vary: Accept-Encoding",response);
+        assertResponseContains("Content-Encoding: gzip",response);
+        
+    }
+
+
+
+    @Test
+    public void testIfModifiedSmall() throws Exception
+    {
+        testIfModified("Hello World");
+    }
+    
+    @Test
+    public void testIfModifiedLarge() throws Exception
+    {
+        testIfModified("Now is the time for all good men to come to the aid of the party");
+    }
+
+    public void testIfModified(String content) throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file = new File(resBase, "file.txt");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        String response = connector.getResponses("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        assertResponseContains("404", response);
+
+        createFile(file, content);
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+
+        assertResponseContains("200", response);
+        assertResponseContains("Last-Modified", response);
+        String last_modified = getHeaderValue("Last-Modified",response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+last_modified+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        assertResponseContains("412", response);
+    }
+
+    @Test
+    public void testIfETagSmall() throws Exception
+    {
+        testIfETag("Hello World");
+    }
+    
+    @Test
+    public void testIfETagLarge() throws Exception
+    {
+        testIfETag("Now is the time for all good men to come to the aid of the party");
+    }
+
+    public void testIfETag(String content) throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File file = new File(resBase, "file.txt");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("etags", "true");
+
+        String response;
+
+        createFile(file, content);
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+
+        assertResponseContains("200", response);
+        assertResponseContains("ETag", response);
+        String etag = getHeaderValue("ETag",response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble,"+etag+",wobble\r\n\r\n");
+        assertResponseContains("304", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble, wobble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: "+etag+"\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble,"+etag+",wobble\r\n\r\n");
+        assertResponseContains("200", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble\r\n\r\n");
+        assertResponseContains("412", response);
+        
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble, wobble\r\n\r\n");
+        assertResponseContains("412", response);
+        
+    }
+    
     public static class OutputFilter implements Filter
     {
         public void init(FilterConfig filterConfig) throws ServletException
@@ -644,18 +858,8 @@ public class DefaultServletTest
 
     private int assertResponseContains(String expected, String response)
     {
-        int idx = response.indexOf(expected);
-        if (idx == (-1))
-        {
-            // Not found
-            StringBuffer err = new StringBuffer();
-            err.append("Response does not contain expected string \"").append(expected).append("\"");
-            err.append("\n").append(response);
-
-            System.err.println(err);
-            throw new AssertionFailedError(err.toString());
-        }
-        return idx;
+        Assert.assertThat(response,Matchers.containsString(expected));
+        return response.indexOf(expected);
     }
 
     private void deleteFile(File file) throws IOException
@@ -679,5 +883,14 @@ public class DefaultServletTest
         {
             Assert.assertTrue("Deleting: " + file.getName(), file.delete());
         }
+    }
+    
+    private String getHeaderValue(String header, String response)
+    {
+        Pattern pattern=Pattern.compile("[\\r\\n]"+header+"\\s*:\\s*(.*?)\\s*[\\r\\n]");
+        Matcher matcher = pattern.matcher(response);
+        if (matcher.find())
+            return matcher.group(1);
+        return null;
     }
 }

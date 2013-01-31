@@ -207,7 +207,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2012</copyright-range>
+             <copyright-range>${project.inceptionYear}-2013</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
@@ -237,7 +237,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.7</version>
+          <version>1.0.9</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -757,6 +757,20 @@
                   <head />
                 </tag>
               </tags>
+              <header>
+                <![CDATA[
+                    <script type="text/javascript">
+                      var _gaq = _gaq || [];
+                      _gaq.push(['_setAccount', 'UA-1149868-7']);
+                      _gaq.push(['_trackPageview']);
+                      (function() {
+                        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+                      })();
+                   </script>
+                ]]>
+              </header>           
             </configuration>
           </plugin>
         </plugins>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -83,7 +83,7 @@ public class TemplateContext extends AggregateLifeCycle implements WebAppClassLo
         _server=server;
         _baseResource=baseResource;
         _mimeTypes=new MimeTypes();
-        _resourceCache=new ResourceCache(null,baseResource,_mimeTypes);
+        _resourceCache=new ResourceCache(null,baseResource,_mimeTypes,false,false);
         
         String[] patterns = (String[])_server.getAttribute(WebAppContext.SERVER_SRV_CLASSES);
         _serverClasses=new ClasspathPattern(patterns==null?WebAppContext.__dftServerClasses:patterns);

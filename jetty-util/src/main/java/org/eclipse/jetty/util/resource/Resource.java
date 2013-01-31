@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -48,7 +49,8 @@ public abstract class Resource implements ResourceFactory
     private static final Logger LOG = Log.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Change the default setting for url connection caches.
      * Subsequent URLConnections will use this default.
@@ -187,20 +189,6 @@ public abstract class Resource implements ResourceFactory
             }
         }
 
-        // Make sure that any special characters stripped really are ignorable.
-        String nurl=url.toString();
-        if (nurl.length()>0 &&  nurl.charAt(nurl.length()-1)!=resource.charAt(resource.length()-1))
-        {
-            if ((nurl.charAt(nurl.length()-1)!='/' ||
-                 nurl.charAt(nurl.length()-2)!=resource.charAt(resource.length()-1))
-                &&
-                (resource.charAt(resource.length()-1)!='/' ||
-                 resource.charAt(resource.length()-2)!=nurl.charAt(nurl.length()-1)
-                 ))
-            {
-                return new BadResource(url,"Trailing special characters stripped by URL in "+resource);
-            }
-        }
         return newResource(url);
     }
 
@@ -296,16 +284,7 @@ public abstract class Resource implements ResourceFactory
         URL url=Resource.class.getResource(name);
         
         if (url==null)
-        {
-            try
-            {
-                url=Loader.getResource(Resource.class,name,checkParents);
-            }
-            catch(ClassNotFoundException e)
-            {
-                url=ClassLoader.getSystemResource(name);
-            }
-        }
+            url=Loader.getResource(Resource.class,name,checkParents);
         if (url==null)
             return null;
         return newResource(url,useCaches);
@@ -662,6 +641,31 @@ public abstract class Resource implements ResourceFactory
         writeTo(new FileOutputStream(destination),0,-1);
     }
 
+    /* ------------------------------------------------------------ */
+    public String getWeakETag()
+    {
+        try
+        {
+            StringBuilder b = new StringBuilder(32);
+            b.append("W/\"");
+            
+            String name=getName();
+            int length=name.length();
+            long lhash=0;
+            for (int i=0; i<length;i++)
+                lhash=31*lhash+name.charAt(i);
+            
+            B64Code.encode(lastModified()^lhash,b);
+            B64Code.encode(length()^lhash,b);
+            b.append('"');
+            return b.toString();
+        } 
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /** Generate a properly encoded URL from a {@link File} instance.
      * @param file Target file. 

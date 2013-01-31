@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,11 +30,14 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -42,6 +45,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -100,15 +104,24 @@ import org.eclipse.jetty.util.log.Logger;
  *                            instead.
  * 
  * excludePathPatterns        Same as excludePath, but accepts regex patterns for more complex matching.
+ * 
+ * vary                       Set to the value of the Vary header sent with responses that could be compressed.  By default it is 
+ *                            set to 'Vary: Accept-Encoding, User-Agent' since IE6 is excluded by default from the excludedAgents. 
+ *                            If user-agents are not to be excluded, then this can be set to 'Vary: Accept-Encoding'.  Note also 
+ *                            that shared caches may cache copies of a resource that is varied by User-Agent - one per variation of 
+ *                            the User-Agent, unless the cache does some normalization of the UA string.
  * </PRE>
  */
 public class GzipFilter extends UserAgentFilter
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
     public final static String GZIP="gzip";
+    public final static String ETAG_GZIP="--gzip\"";
     public final static String DEFLATE="deflate";
-    
+    public final static String ETAG_DEFLATE="--deflate\"";
+    public final static String ETAG="o.e.j.s.GzipFilter.ETag";
 
+    protected ServletContext _context;
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
@@ -118,6 +131,7 @@ public class GzipFilter extends UserAgentFilter
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
+    protected String _vary="Accept-Encoding, User-Agent";
     
     private static final int STATE_SEPARATOR = 0;
     private static final int STATE_Q = 1;
@@ -133,6 +147,8 @@ public class GzipFilter extends UserAgentFilter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
+        
+        _context=filterConfig.getServletContext();
         
         String tmp=filterConfig.getInitParameter("bufferSize");
         if (tmp!=null)
@@ -193,6 +209,10 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));            
         }       
+        
+        tmp=filterConfig.getInitParameter("vary");
+        if (tmp!=null)
+            _vary=tmp;
     }
 
     /* ------------------------------------------------------------ */
@@ -214,54 +234,66 @@ public class GzipFilter extends UserAgentFilter
     {
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
-        
-        // Inform caches that responses may vary according to Accept-Encoding
-        response.setHeader("Vary","Accept-Encoding");
 
-        // Should we vary this response according to Accept-Encoding
-        String compressionType = selectCompression(request.getHeader("accept-encoding"));
-        if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
-        {
-            String ua = getUserAgent(request);
-            if (isExcludedAgent(ua))
-            {
-                super.doFilter(request,response,chain);
-                return;
-            }
-            String requestURI = request.getRequestURI();
-            if (isExcludedPath(requestURI))
-            {
-                super.doFilter(request,response,chain);
-                return;
-            }
-            
-            CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
-            
-            boolean exceptional=true;
-            try
-            {
-                super.doFilter(request,wrappedResponse,chain);
-                exceptional=false;
-            }
-            finally
-            {
-                Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isSuspended() && continuation.isResponseWrapped())   
-                {
-                    continuation.addContinuationListener(new ContinuationListenerWaitingForWrappedResponseToFinish(wrappedResponse));
-                }
-                else if (exceptional && !response.isCommitted())
-                {
-                    wrappedResponse.resetBuffer();
-                    wrappedResponse.noCompression();
-                }
-                else
-                    wrappedResponse.finish();
-            }
-        }
-        else
+        // If not a GET or an Excluded URI - no Vary because no matter what client, this URI is always excluded
+        String requestURI = request.getRequestURI();
+        if (!HttpMethods.GET.equalsIgnoreCase(request.getMethod()) || isExcludedPath(requestURI))
         {
             super.doFilter(request,response,chain);
+            return;
+        }
+        
+        // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
+        if (_mimeTypes!=null && _mimeTypes.size()>0)
+        {
+            String mimeType = _context.getMimeType(request.getRequestURI());
+            
+            if (mimeType!=null && !_mimeTypes.contains(mimeType))
+            {
+                // handle normally without setting vary header
+                super.doFilter(request,response,chain);
+                return;
+            }
+        }
+        
+        // Excluded User-Agents
+        String ua = getUserAgent(request);
+        boolean ua_excluded=ua!=null&&isExcludedAgent(ua);
+        
+        // Acceptable compression type
+        String compressionType = ua_excluded?null:selectCompression(request.getHeader("accept-encoding"));
+        
+        // Special handling for etags
+        String etag = request.getHeader("If-None-Match"); 
+        if (etag!=null)
+        {
+            int dd=etag.indexOf("--");
+            if (dd>0)
+                request.setAttribute(ETAG,etag.substring(0,dd)+(etag.endsWith("\"")?"\"":""));
+        }
+
+        CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
+
+        boolean exceptional=true;
+        try
+        {
+            super.doFilter(request,wrappedResponse,chain);
+            exceptional=false;
+        }
+        finally
+        {
+            Continuation continuation = ContinuationSupport.getContinuation(request);
+            if (continuation.isSuspended() && continuation.isResponseWrapped())   
+            {
+                continuation.addContinuationListener(new ContinuationListenerWaitingForWrappedResponseToFinish(wrappedResponse));
+            }
+            else if (exceptional && !response.isCommitted())
+            {
+                wrappedResponse.resetBuffer();
+                wrappedResponse.noCompression();
+            }
+            else
+                wrappedResponse.finish();
         }
     }
 
@@ -357,14 +389,32 @@ public class GzipFilter extends UserAgentFilter
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
-        if (compressionType.equals(GZIP))
+        if (compressionType==null)
         {
             wrappedResponse = new CompressedResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(null,request,this,_vary)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return null;
+                        }
+                    };
+                }
+            };
+        }
+        else if (compressionType.equals(GZIP))
+        {
+            wrappedResponse = new CompressedResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,this,_vary)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
@@ -380,9 +430,9 @@ public class GzipFilter extends UserAgentFilter
             wrappedResponse = new CompressedResponseWrapper(request,response)
             {
                 @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    return new AbstractCompressedStream(compressionType,request,this,_vary)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
@@ -392,7 +442,7 @@ public class GzipFilter extends UserAgentFilter
                     };
                 }
             };
-        }
+        } 
         else
         {
             throw new IllegalStateException(compressionType + " not supported");
@@ -408,8 +458,8 @@ public class GzipFilter extends UserAgentFilter
         wrappedResponse.setMinCompressSize(_minGzipSize);
     }
      
-    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener{
-        
+    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener
+    {    
         private CompressedResponseWrapper wrappedResponse;
 
         public ContinuationListenerWaitingForWrappedResponseToFinish(CompressedResponseWrapper wrappedResponse)

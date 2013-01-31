@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -468,15 +468,23 @@ public class Response implements HttpServletResponse
             {
                 buf = _connection.getRequest().getRootURL();
                 buf.append(URIUtil.encodePath(canonical));
-                if (uri.getQuery()!=null)
+                String param=uri.getParam();
+                if (param!=null)
+                {
+                    buf.append(';');
+                    buf.append(param);
+                }
+                String query=uri.getQuery();
+                if (query!=null)
                 {
                     buf.append('?');
-                    buf.append(uri.getQuery());
+                    buf.append(query);
                 }
-                if (uri.getFragment()!=null)
+                String fragment=uri.getFragment();
+                if (fragment!=null)
                 {
                     buf.append('#');
-                    buf.append(uri.getFragment());
+                    buf.append(fragment);
                 }
                 location=buf.toString();
             }

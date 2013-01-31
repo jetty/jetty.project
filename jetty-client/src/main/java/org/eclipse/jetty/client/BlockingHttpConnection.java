@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
 
     private boolean _requestComplete;
     private Buffer _requestContentChunk;
+    private boolean _expired=false;
 
     BlockingHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endPoint)
     {
@@ -49,7 +50,51 @@ public class BlockingHttpConnection extends AbstractHttpConnection
     protected void reset() throws IOException
     {
         _requestComplete = false;
+        _expired = false;
         super.reset();
+    }
+    
+    
+    @Override
+    protected void exchangeExpired(HttpExchange exchange)
+    {
+        synchronized (this)
+        {
+           super.exchangeExpired(exchange);
+           _expired = true;
+           this.notifyAll();
+        }
+    }
+    
+    
+
+    @Override
+    public void onIdleExpired(long idleForMs)
+    {
+        try
+        {
+            LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);
+            _expired = true;
+            _endp.close();
+        }
+        catch(IOException e)
+        {
+            LOG.ignore(e);
+
+            try
+            {
+                _endp.close();
+            }
+            catch(IOException e2)
+            {
+                LOG.ignore(e2);
+            }
+        }
+
+        synchronized(this)
+        {
+            this.notifyAll();
+        }
     }
 
     @Override
@@ -71,13 +116,18 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                 synchronized (this)
                 {
                     exchange=_exchange;
-
                     while (exchange == null)
                     {
                         try
                         {
                             this.wait();
                             exchange=_exchange;
+                            if (_expired)
+                            {
+                                failed = true;
+                                throw new InterruptedException();
+                            }
+
                         }
                         catch (InterruptedException e)
                         {

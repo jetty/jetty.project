@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,9 +46,9 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
         
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false);
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false);
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
         
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -76,8 +76,8 @@ public class ResourceCacheTest
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
         
-        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false);
-        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false)
+        ResourceCache rc3 = new ResourceCache(null,r[2],mime,false,false);
+        ResourceCache rc2 = new ResourceCache(rc3,r[1],mime,false,false)
         {
             @Override
             public boolean isCacheable(Resource resource)
@@ -86,7 +86,7 @@ public class ResourceCacheTest
             }
         };
         
-        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false);
+        ResourceCache rc1 = new ResourceCache(rc2,r[0],mime,false,false);
         
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
@@ -126,7 +126,7 @@ public class ResourceCacheTest
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
 
         
-        cache=new ResourceCache(null,directory,new MimeTypes(),false);
+        cache=new ResourceCache(null,directory,new MimeTypes(),false,false);
         
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);

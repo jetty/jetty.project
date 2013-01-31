@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -423,8 +423,13 @@ public class ResponseTest
         throws Exception
     {
         String[][] tests={
-                {"/other/location?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
-               /* {"/other/location","http://myhost:8888/other/location"},
+                // No cookie
+                {"http://myhost:8888/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
+                {"/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
+                {"./location;jsessionid=12345?name=value","http://myhost:8888/path/location;jsessionid=12345?name=value"},
+                
+                // From cookie
+                {"/other/location","http://myhost:8888/other/location"},
                 {"/other/l%20cation","http://myhost:8888/other/l%20cation"},
                 {"location","http://myhost:8888/path/location"},
                 {"./location","http://myhost:8888/path/location"},
@@ -432,11 +437,11 @@ public class ResponseTest
                 {"/other/l%20cation","http://myhost:8888/other/l%20cation"},
                 {"l%20cation","http://myhost:8888/path/l%20cation"},
                 {"./l%20cation","http://myhost:8888/path/l%20cation"},
-                {"../l%20cation","http://myhost:8888/l%20cation"},*/
+                {"../l%20cation","http://myhost:8888/l%20cation"},
                 {"../locati%C3%abn","http://myhost:8888/locati%C3%ABn"},
         };
         
-        for (int i=1;i<tests.length;i++)
+        for (int i=0;i<tests.length;i++)
         {
             ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
             AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
@@ -447,7 +452,7 @@ public class ResponseTest
             request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
             request.setContextPath("/path");
             request.setRequestedSessionId("12345");
-            request.setRequestedSessionIdFromCookie(i>0);
+            request.setRequestedSessionIdFromCookie(i>2);
             AbstractSessionManager manager=new HashSessionManager();
             manager.setSessionIdManager(new HashSessionIdManager());
             request.setSessionManager(manager);
@@ -460,7 +465,7 @@ public class ResponseTest
             int l=location.indexOf("Location: ");
             int e=location.indexOf('\n',l);
             location=location.substring(l+10,e).trim();
-            assertEquals(tests[i][0],tests[i][1],location);
+            assertEquals("test-"+i,tests[i][1],location);
         }
     }
 

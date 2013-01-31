@@ -68,7 +68,8 @@
 #
 # JETTY_RUN
 #   Where the jetty.pid file should be stored. It defaults to the
-#   first available of /var/run, /usr/var/run, and /tmp if not set.
+#   first available of /var/run, /usr/var/run, JETTY_HOME and /tmp 
+#   if not set.
 #  
 # JETTY_PID
 #   The Jetty PID file, defaults to $JETTY_RUN/jetty.pid
@@ -307,7 +308,7 @@ fi
 #####################################################
 if [ -z "$JETTY_RUN" ] 
 then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run /tmp)
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_HOME /tmp)
 fi
 
 #####################################################

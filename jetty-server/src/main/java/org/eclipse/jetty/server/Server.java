@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Enumeration;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -260,11 +261,14 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
-        if (getStopAtShutdown())
+        if (getStopAtShutdown()) {
             ShutdownThread.register(this);
+            ShutdownMonitor.getInstance().start(); // initialize
+        }
 
         LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);
+        
         MultiException mex=new MultiException();
 
         if (_threadPool==null)

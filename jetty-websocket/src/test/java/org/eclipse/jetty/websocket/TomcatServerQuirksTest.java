@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,14 +44,15 @@ public class TomcatServerQuirksTest
      * @throws IOException 
      */
     @Test
-    @Ignore("Bug with Transfer-Encoding")
-    public void testTomcat7_0_32_WithTransferEncoding() throws Exception {
+    public void testTomcat7_0_32_WithTransferEncoding() throws Exception 
+    {
         DummyServer server = new DummyServer();
         int bufferSize = 512;
         QueuedThreadPool threadPool = new QueuedThreadPool();
         WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), bufferSize);
         
-        try {
+        try 
+        {
             server.start();
             
             // Setup Client Factory
@@ -113,7 +114,9 @@ public class TomcatServerQuirksTest
             socket.flush();
 
             Assert.assertTrue(dataLatch.await(1000, TimeUnit.SECONDS));
-        } finally {
+        } 
+        finally 
+        {
             factory.stop();
             threadPool.stop();
             server.stop();
