@@ -52,11 +52,11 @@ public abstract class AbstractImmortalSessionTest
         //turn off session expiry by setting maxInactiveInterval to -1
         AbstractTestServer server = createServer(0, -1, scavengePeriod);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port=server.getPort();
 
         try
         {
+            server.start();
+            int port=server.getPort();
             HttpClient client = new HttpClient();
             client.start();
             try

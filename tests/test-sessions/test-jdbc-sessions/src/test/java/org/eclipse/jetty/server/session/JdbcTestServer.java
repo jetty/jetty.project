@@ -81,6 +81,7 @@ public class JdbcTestServer extends AbstractTestServer
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
+            //System.err.println("new jdbcidmgr inst="+idManager);
             return idManager;
         }
     }

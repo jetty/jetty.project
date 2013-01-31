@@ -51,12 +51,14 @@ public abstract class AbstractSessionRenewTest
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port=server.getPort();
+
 
         HttpClient client = new HttpClient();
         try
         {
+            server.start();
+            int port=server.getPort();
+            
             client.start();
 
             //make a request to create a session
@@ -78,6 +80,7 @@ public abstract class AbstractSessionRenewTest
         finally
         {
             client.stop();
+            server.stop();
         }
     }
 

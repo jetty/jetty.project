@@ -596,6 +596,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         {
             if (_task!=null)
                 _task.cancel();
+            _task=null;
             if (_timer!=null)
                 _timer.cancel();
             _timer=null;

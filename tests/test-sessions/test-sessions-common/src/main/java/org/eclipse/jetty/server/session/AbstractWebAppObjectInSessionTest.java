@@ -96,16 +96,20 @@ public abstract class AbstractWebAppObjectInSessionTest
 
         AbstractTestServer server1 = createServer(0);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
+
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
+            
             AbstractTestServer server2 = createServer(0);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
-            server2.start();
-            int port2 = server2.getPort();
+
             try
             {
+                server2.start();
+                int port2 = server2.getPort();
+                
                 HttpClient client = new HttpClient();
                 client.start();
                 try

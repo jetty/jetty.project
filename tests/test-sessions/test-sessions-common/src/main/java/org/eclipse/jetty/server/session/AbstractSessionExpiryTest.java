@@ -62,12 +62,13 @@ public abstract class AbstractSessionExpiryTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
 
+        HttpClient client = new HttpClient();
         try
         {
-            HttpClient client = new HttpClient();
+            server1.start();
+            int port1 = server1.getPort();
+
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
@@ -96,6 +97,7 @@ public abstract class AbstractSessionExpiryTest
         }
         finally
         {
+            client.stop();
             server1.stop();
         }
     }

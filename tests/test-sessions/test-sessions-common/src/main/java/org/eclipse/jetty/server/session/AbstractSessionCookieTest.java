@@ -67,10 +67,12 @@ public abstract class AbstractSessionCookieTest
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port=server.getPort();
+
         try
         {
+            server.start();
+            int port=server.getPort();
+            
             HttpClient client = new HttpClient();
             client.start();
             try

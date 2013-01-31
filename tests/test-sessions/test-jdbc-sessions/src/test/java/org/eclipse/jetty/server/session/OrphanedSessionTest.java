@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -34,5 +38,17 @@ public class OrphanedSessionTest extends AbstractOrphanedSessionTest
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();
+    }
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        try
+        {
+            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
+        }
+        catch( SQLException expected )
+        {
+        }
     }
 }
