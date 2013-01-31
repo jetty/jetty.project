@@ -1,4 +1,4 @@
-jetty-7.6.9.v20120131 - 31 January 2013
+jetty-7.6.9.v20130131 - 31 January 2013
  + 362226 HttpConnection "wait" call causes thread resource exhaustion
  + 367638 throw exception for excess form keys
  + 381521 Only set Vary header when content could be compressed
