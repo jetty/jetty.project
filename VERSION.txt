@@ -1,48 +1,4 @@
-jetty-9.0.0.RC0 - 31 January 2013
- + 362226 HttpConnection "wait" call causes thread resource exhaustion
- + 370384 jetty-aggregate not used in jetty-distribution
- + 381351 defaults for keymanager and trustmanager come from their factories
-   and not hardcoded
- + 381521 Only set Vary header when content could be compressed
- + 381689 Allow jetty-runner to specify listen host along with listen port
- + 382237 support non java JSON classes
- + 385306 added getURI method
- + 391248 fixing localhost checking in statistics servlet
- + 391249 fix for invalid XML node dispatchedTimeMean in statistics servlet
- + 391345 fix missing br tag in statistics servlet
- + 393933 remove deprecated classes/methods and consolidate some static methods
-   to SslContextFactory
- + 393968 fix typo in javadoc
- + 394541 remove continuation jar from distro, add as dep to test-jetty-webapp
- + 395232 UpgradeRequest object passed to createWebSocket() has null Session
- + 395444 Disabling Websocket Compress Extensions (not working with Chrome /
-   deflate problem)
- + 396428 Test for WebSocket masking on client fragments per RFC 6455 Sec 5.1
- + 396574 add JETTY_HOME as a location for pid to be found
- + 396606 make spdy proxy capable of receiving SPDY and talk HTTP to the
-   upstream server
- + 397769 TimerScheduler does not relinquish cancelled tasks.
- + 398872 SslConnection should not be notified of idle timeouts. First
-   solution. Merge branch 'ssl_idle_timeout_ignored'.
- + 399132 check parent dir of session store against file to be removed
- + 399173 UpgradeRequest.getParameterMap() should never return null
- + 399242 Reduce/eliminate false sharing in BlockingArrayQueue.
- + 399319 Request.getURI() may return negative ports.
- + 399324 HttpClient does not handle correctly UnresolvedAddressException.
- + 399343 OnWebSocketConnect should use api.Session parameter instead.
- + 399344 Add missing @OnWebSocketError annotation
- + 399397 websocket-client needs better upgrade failure checks
- + 399421 Add websocket.api.Session.disconnect() for harsh low level connection
-   disconnect
- + 399515 Websocket-client connect issues should report to websocket onError
-   handlers
- + 399516 Websocket UpgradeException should contain HTTP Request/Response
-   information
- + 399566 Running org.eclipse.jetty.server.session.MaxInactiveMigrationTest
-   produces stack trace
- + 399568 OSGi tests can't find websocket classes
- + 399576 Server dumpStdErr throws exception if server is stopping
- + 399669 Remove WebSocketConnection in favor of websocket.api.Session
+jetty-9.0.0-SNAPSHOT
 
 jetty-9.0.0.M5 - 19 January 2013
  + 367638 throw exception for excess form keys
