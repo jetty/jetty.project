@@ -324,9 +324,19 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                     i++;
                                     if (i+4<end)
                                         buffer.getStringBuilder().append(Character.toChars((convertHexDigit(raw[++i])<<12) +(convertHexDigit(raw[++i])<<8) + (convertHexDigit(raw[++i])<<4) +convertHexDigit(raw[++i])));
+                                    else
+                                    {
+                                        buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
+                                        i=end;
+                                    }
                                 }
                                 else
                                     buffer.append((byte)((convertHexDigit(raw[++i])<<4) + convertHexDigit(raw[++i])));
+                            }
+                            else
+                            {
+                                buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
+                                i=end;
                             }
                             break;
                             
@@ -344,13 +354,13 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             
             if (key != null)
             {
-                value = buffer.length()==0?"":buffer.toString();
+                value = buffer.length()==0?"":buffer.toReplacedString();
                 buffer.reset();
                 map.add(key,value);
             }
             else if (buffer.length()>0)
             {
-                map.add(buffer.toString(),"");
+                map.add(buffer.toReplacedString(),"");
             }
         }
     }
@@ -770,7 +780,10 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                     buffer.getStringBuffer().append(unicode); 
                                 }
                                 else
+                                {
                                     i=length;
+                                    buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT); 
+                                }
                             }
                             else
                             {
@@ -780,13 +793,22 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 buffer.append(b);
                             }
                         }
+                        catch(NotUtf8Exception e)
+                        {
+                            LOG.warn(e.toString());
+                            LOG.debug(e);
+                        }
                         catch(NumberFormatException nfe)
                         {
+                            LOG.debug(nfe);
                             buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT);  
                         }
                     }
                     else
+                    {
+                        buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT); 
                         i=length;
+                    }
                 }
                 else if (buffer!=null)
                     buffer.getStringBuffer().append(c);
@@ -799,7 +821,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 return encoded.substring(offset,offset+length);
             }
 
-            return buffer.toString();
+            return buffer.toReplacedString();
         }
         else
         {
@@ -848,6 +870,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 {
                                     if ('u'==encoded.charAt(offset+i+1))
                                     {
+                                            if (i+6<length)
+                                            {
                                         int o=offset+i+2;
                                         i+=6;
                                         String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
@@ -857,6 +881,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                     }
                                     else
                                     {
+                                                ba[n++] = (byte)'?';
+                                                i=length;
+                                            }
+                                        }
+                                        else
+                                        {
                                         int o=offset+i+1;
                                         i+=3;
                                         ba[n]=(byte)TypeUtil.parseInt(encoded,o,2,16);
@@ -871,8 +901,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             }
                             else
                             {
-                                ba[n++] = (byte)'%';
-                                i++;
+                                    ba[n++] = (byte)'?';
+                                    i=length;
                             }
                         }
                         else if (c=='+')
