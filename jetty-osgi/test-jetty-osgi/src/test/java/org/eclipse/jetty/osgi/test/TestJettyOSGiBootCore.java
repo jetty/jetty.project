@@ -90,7 +90,7 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().noStart());
+       
         return res;
     }
      
