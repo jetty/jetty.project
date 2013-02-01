@@ -36,7 +36,7 @@ public class FrameCompressionExtension extends AbstractExtension
     private CompressionMethod method = new DeflateCompressionMethod();
 
     @Override
-    public void incomingFrame(Frame frame)
+    public synchronized void incomingFrame(Frame frame)
     {
         if (frame.getType().isControl() || !frame.isRsv1())
         {
@@ -84,7 +84,7 @@ public class FrameCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public synchronized void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
