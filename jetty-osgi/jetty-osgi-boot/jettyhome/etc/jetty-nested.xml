@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server Nested inside another                -->
@@ -23,7 +23,7 @@
             <Call name="addLifeCycleListener">
               <Arg>
                 <New class="org.eclipse.jetty.osgi.nested.NestedConnectorListener" id="NestedConnectorListener">
-                  <Set name="nestedConnector"><Ref id="NestedConnector"/></Set>
+                  <Set name="nestedConnector"><Ref refid="NestedConnector"/></Set>
                 </New>
               </Arg>
             </Call>

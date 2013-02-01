@@ -68,7 +68,7 @@
     <Call id="sslConnector" name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.server.ServerConnector">
-                <Arg name="server"><Ref id="Server"/></Arg>
+                <Arg name="server"><Ref refid="Server"/></Arg>
                 <Arg name="factories">
                     <Array type="org.eclipse.jetty.server.ConnectionFactory">
 
@@ -77,7 +77,7 @@
                             <New class="org.eclipse.jetty.server.SslConnectionFactory">
                                 <Arg name="next">npn</Arg>
                                 <Arg name="sslContextFactory">
-                                    <Ref id="sslContextFactory"/>
+                                    <Ref refid="sslContextFactory"/>
                                 </Arg>
                             </New>
                         </Item>
@@ -101,10 +101,10 @@
                             <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                                 <Arg name="version" type="int">3</Arg>
                                 <Arg name="config">
-                                    <Ref id="tlsHttpConfig"/>
+                                    <Ref refid="tlsHttpConfig"/>
                                 </Arg>
                                 <Arg name="pushStrategy">
-                                    <Ref id="pushStrategy"/>
+                                    <Ref refid="pushStrategy"/>
                                 </Arg>
                             </New>
                         </Item>
@@ -114,7 +114,7 @@
                             <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                                 <Arg name="version" type="int">2</Arg>
                                 <Arg name="config">
-                                    <Ref id="tlsHttpConfig"/>
+                                    <Ref refid="tlsHttpConfig"/>
                                 </Arg>
                             </New>
                         </Item>
@@ -123,7 +123,7 @@
                         <Item>
                             <New class="org.eclipse.jetty.server.HttpConnectionFactory">
                                 <Arg name="config">
-                                    <Ref id="tlsHttpConfig"/>
+                                    <Ref refid="tlsHttpConfig"/>
                                 </Arg>
                             </New>
                         </Item>

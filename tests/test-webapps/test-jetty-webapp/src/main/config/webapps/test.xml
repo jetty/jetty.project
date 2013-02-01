@@ -1,5 +1,5 @@
 <?xml version="1.0"  encoding="ISO-8859-1"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- ==================================================================
 Configure and deploy the test web application in $(jetty.home)/webapps/test
@@ -7,7 +7,7 @@ Configure and deploy the test web application in $(jetty.home)/webapps/test
 Note. If this file did not exist or used a context path other that /test
 then the default configuration of jetty.xml would discover the test
 webapplication with a WebAppDeployer.  By specifying a context in this
-directory, additional configuration may be specified and hot deployments 
+directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
@@ -41,7 +41,7 @@ detected.
       <New class="org.eclipse.jetty.server.handler.ContextHandler$ApproveSameSuffixAliases"/>
     </Arg>
   </Call>
-  
+
   <!-- virtual hosts
   <Set name="virtualHosts">
     <Array type="String">
@@ -52,7 +52,7 @@ detected.
   </Set>
   -->
 
-  <!-- disable cookies 
+  <!-- disable cookies
   <Get name="sessionHandler">
      <Get name="sessionManager">
         <Set name="usingCookies" type="boolean">false</Set>
@@ -67,7 +67,7 @@ detected.
 	    <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
             <!-- changing refreshInterval (in seconds) as desired                                -->
-            <!-- 
+            <!--
             <Set name="refreshInterval">5</Set>
             <Call name="start"></Call>
             -->
@@ -80,7 +80,7 @@ detected.
     </Set>
     <Set name="checkWelcomeFiles">true</Set>
   </Get>
-  
+
   <!-- Non standard error page mapping -->
   <!--
   <Get name="errorHandler">

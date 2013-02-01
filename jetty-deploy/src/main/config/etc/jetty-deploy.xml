@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Create the deployment manager                                   -->
@@ -14,15 +14,15 @@
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
-          <Ref id="Contexts" />
+          <Ref refid="Contexts" />
         </Set>
         <Call name="setContextAttribute">
           <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
           <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
         </Call>
-        
+
         <!-- Add a customize step to the deployment lifecycle -->
-        <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
+        <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
         <Call name="insertLifeCycleNode">
           <Arg>deployed</Arg>
           <Arg>starting</Arg>
