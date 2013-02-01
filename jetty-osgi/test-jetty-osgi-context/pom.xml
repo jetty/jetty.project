@@ -108,6 +108,8 @@
                         compilation time. --> 
                         <_nouses>true</_nouses>
                         <Import-Package>
+ javax.servlet;version="2.6.0",
+ javax.servlet.resources;version="2.6.0",
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,

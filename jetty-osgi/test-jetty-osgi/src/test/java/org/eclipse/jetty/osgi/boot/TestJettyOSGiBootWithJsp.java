@@ -41,6 +41,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
@@ -82,7 +83,8 @@ public class TestJettyOSGiBootWithJsp
 
     	ArrayList<Option> options = new ArrayList<Option>();
     	options.addAll(TestJettyOSGiBootCore.provisionCoreJetty());
-    	
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*",
+                                                       "org.w3c.*", "javax.xml.*"));
     	// Enable Logging
     	if(LOGGING_ENABLED) {
     	    options.addAll(Arrays.asList(options(
@@ -132,7 +134,6 @@ public class TestJettyOSGiBootWithJsp
      * plus your testcase, wrapped into a bundle called pax-exam-probe
      */
     @Test
-    @Ignore 
     public void listBundles() throws Exception
     {
     	Map<String,Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
