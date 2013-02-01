@@ -686,8 +686,6 @@ public class XmlConfiguration
             if (oClass == null)
                 throw new IllegalArgumentException(node.toString());
             
-            System.err.println("class="+oClass);
-
             int size = 0;
             int argIndex = node.size();
             for (int i = 0; i < node.size(); i++)

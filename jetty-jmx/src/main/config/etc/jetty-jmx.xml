@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -7,13 +7,13 @@
   <!-- Set the java.rmi.server.hostname property in case you've    -->
   <!-- got a misconfigured /etc/hosts entry or the like.           -->
   <!-- =========================================================== -->
-  <!-- 
+  <!--
   <Call class="java.lang.System" name="setProperty">
     <Arg>java.rmi.server.hostname</Arg>
     <Arg>127.0.0.1</Arg>
   </Call>
   -->
-  
+
   <!-- =========================================================== -->
   <!-- Get the platform mbean server                               -->
   <!-- =========================================================== -->
@@ -27,7 +27,7 @@
     <Arg>
       <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
         <Arg>
-          <Ref id="MBeanServer" />
+          <Ref refid="MBeanServer" />
         </Arg>
       </New>
     </Arg>
@@ -39,12 +39,12 @@
       <New class="org.eclipse.jetty.util.log.Log" />
     </Arg>
   </Call>
-  
+
   <!-- In order to connect to the JMX server remotely from a different
        process, possibly running on a different host, Jetty JMX module
        can create a remote JMX connector. It requires RMI registry to
        be started prior to creating the connector server because the
-       JMX specification uses RMI to facilitate connections.        
+       JMX specification uses RMI to facilitate connections.
    -->
 
   <!-- Optionally start the RMI registry. Normally RMI registry runs on
@@ -59,15 +59,15 @@
     </Call>
   </Call>
   -->
- 
+
   <!-- Optionally add a remote JMX connector. The parameters of the constructor
        below specify the JMX service URL, and the object name string for the
-       connector server bean. The parameters of the JMXServiceURL constructor 
+       connector server bean. The parameters of the JMXServiceURL constructor
        specify the protocol that clients will use to connect to the remote JMX
        connector (RMI), the hostname of the server (local hostname), port number
        (automatically assigned), and the URL path. Note that URL path contains
        the RMI registry hostname and port number, that may need to be modified
-       in order to comply with the firewall requirements. 
+       in order to comply with the firewall requirements.
   -->
   <!--
   <New id="ConnectorServer" class="org.eclipse.jetty.jmx.ConnectorServer">

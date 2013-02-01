@@ -160,11 +160,38 @@ public class URLEncodedTest
     public void testBadEncoding()
     {
         UrlEncoded url_encoded = new UrlEncoded();
-        url_encoded.decode("Name15=xx%zz", StringUtil.__UTF8_CHARSET);
+        url_encoded.decode("Name15=xx%zzyy", StringUtil.__UTF8_CHARSET);
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", "xx\ufffd", url_encoded.getString("Name15"));
+        assertEquals("encoded get", "xx\ufffdyy", url_encoded.getString("Name15"));
 
-        assertEquals("xxx",UrlEncoded.decodeString("xxx%u123",0,5,StringUtil.__UTF8_CHARSET));
+        byte[] bad="Name=%FF%FF%FF".getBytes(StringUtil.__UTF8_CHARSET);
+        MultiMap<String> map = new MultiMap<String>();
+        UrlEncoded.decodeUtf8To(bad,0,bad.length,map);
+        assertEquals("encoded param size",1, map.size());
+        assertEquals("encoded get", "\ufffd\ufffd\ufffd", map.getString("Name"));
+        
+        url_encoded.clear();
+        url_encoded.decode("Name=%FF%FF%FF", StringUtil.__UTF8_CHARSET);
+        assertEquals("encoded param size",1, url_encoded.size());
+        assertEquals("encoded get", "\ufffd\ufffd\ufffd", url_encoded.getString("Name"));
+        
+        url_encoded.clear();
+        url_encoded.decode("Name=%EF%EF%EF", StringUtil.__UTF8_CHARSET);
+        assertEquals("encoded param size",1, url_encoded.size());
+        assertEquals("encoded get", "\ufffd\ufffd", url_encoded.getString("Name"));
+
+        assertEquals("x",UrlEncoded.decodeString("x",0,1,StringUtil.__UTF8_CHARSET));
+        assertEquals("x\ufffd",UrlEncoded.decodeString("x%",0,2,StringUtil.__UTF8_CHARSET));
+        assertEquals("x\ufffd",UrlEncoded.decodeString("x%2",0,3,StringUtil.__UTF8_CHARSET));
+        assertEquals("x ",UrlEncoded.decodeString("x%20",0,4,StringUtil.__UTF8_CHARSET));
+
+        assertEquals("xxx",UrlEncoded.decodeString("xxx",0,3,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%",0,4,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u",0,5,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u1",0,6,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u12",0,7,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u123",0,8,StringUtil.__UTF8_CHARSET));
+        assertEquals("xxx\u1234",UrlEncoded.decodeString("xxx%u1234",0,9,StringUtil.__UTF8_CHARSET));
     }
 
 

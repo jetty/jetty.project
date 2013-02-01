@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -10,7 +10,7 @@
       <Arg>
         <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
           <Set name="contexts">
-            <Ref id="Contexts" />
+            <Ref refid="Contexts" />
           </Set>
           <Call name="setContextAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>

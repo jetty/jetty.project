@@ -29,8 +29,10 @@ import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Bug 395444")
 public class FragmentExtensionTest
 {
     private static SimpleServletServer server;

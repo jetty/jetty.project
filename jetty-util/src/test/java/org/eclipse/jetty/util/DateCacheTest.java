@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,9 +67,9 @@ public class DateCacheTest
             else
                 misses++;
 
-            TimeUnit.MILLISECONDS.sleep(50);
+            TimeUnit.MILLISECONDS.sleep(100);
             now=System.currentTimeMillis();
         }
-        Assert.assertTrue(hits / 10 > misses);
+        Assert.assertThat(hits,Matchers.greaterThan(misses));
     }
 }

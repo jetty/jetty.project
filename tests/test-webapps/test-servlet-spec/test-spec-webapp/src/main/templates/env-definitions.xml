@@ -1,6 +1,6 @@
 
   <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
-    <Arg><Ref id='wac'/></Arg>
+    <Arg><Ref refid='wac'/></Arg>
     <Arg>maxAmount</Arg>
     <Arg type="java.lang.Double">100</Arg>
     <Arg type="boolean">true</Arg>
@@ -8,7 +8,7 @@
 
 
   <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
-    <Arg><Ref id='wac'/></Arg>
+    <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
      <New class="com.acme.MockDataSource">

@@ -38,7 +38,7 @@
     <!-- =========================================================== -->
     <!-- Add HTTP Customizer for Secure request                      -->
     <!-- =========================================================== -->
-    <Ref id="httpConfig">
+    <Ref refid="httpConfig">
         <Call name="addCustomizer">
             <Arg>
                 <New class="org.eclipse.jetty.server.SecureRequestCustomizer"/>
@@ -89,7 +89,7 @@
         <Arg>
             <New class="org.eclipse.jetty.server.ServerConnector">
                 <Arg name="server">
-                    <Ref id="Server"/>
+                    <Ref refid="Server"/>
                 </Arg>
                 <Arg name="factories">
                     <Array type="org.eclipse.jetty.server.ConnectionFactory">
@@ -97,7 +97,7 @@
                             <New class="org.eclipse.jetty.server.SslConnectionFactory">
                                 <Arg name="next">npn</Arg>
                                 <Arg name="sslContextFactory">
-                                    <Ref id="sslContextFactory"/>
+                                    <Ref refid="sslContextFactory"/>
                                 </Arg>
                             </New>
                         </Item>
@@ -119,9 +119,9 @@
                             <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                                 <Arg name="version" type="int">3</Arg>
                                 <Arg name="config">
-                                    <Ref id="httpConfig"/>
+                                    <Ref refid="httpConfig"/>
                                 </Arg>
-                                <!-- <Arg name="pushStrategy"><Ref id="pushStrategy"/></Arg> -->
+                                <!-- <Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg> -->
                             </New>
                         </Item>
 
@@ -129,7 +129,7 @@
                             <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                                 <Arg name="version" type="int">2</Arg>
                                 <Arg name="config">
-                                    <Ref id="httpConfig"/>
+                                    <Ref refid="httpConfig"/>
                                 </Arg>
                             </New>
                         </Item>
@@ -137,7 +137,7 @@
                         <Item>
                             <New class="org.eclipse.jetty.server.HttpConnectionFactory">
                                 <Arg name="config">
-                                    <Ref id="httpConfig"/>
+                                    <Ref refid="httpConfig"/>
                                 </Arg>
                             </New>
                         </Item>

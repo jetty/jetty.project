@@ -17,7 +17,7 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">
-            <Arg name="server"><Ref id="Proxy" /></Arg>
+            <Arg name="server"><Ref refid="Proxy" /></Arg>
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8888"/></Set>
             <Set name="idleTimeout">300000</Set>
@@ -32,10 +32,10 @@
                 <Call id="proxyHolder" name="addServletWithMapping">
                   <Arg>org.eclipse.jetty.proxy.ProxyServlet</Arg>
                   <Arg>/</Arg>
-		  <Call name="setInitParameter">
-		      <Arg>maxThreads</Arg>
-		      <Arg>128</Arg>
-		  </Call>
+                    <Call name="setInitParameter">
+                        <Arg>maxThreads</Arg>
+                        <Arg>128</Arg>
+                    </Call>
                 </Call>
               </New>
             </Set>

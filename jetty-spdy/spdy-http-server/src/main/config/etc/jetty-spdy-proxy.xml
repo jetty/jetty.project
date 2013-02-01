@@ -39,7 +39,7 @@
   <!-- session information                                         -->
   <!-- =========================================================== -->
   <New id="tlsHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg><Ref id="httpConfig"/></Arg>
+    <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
     </Call>
@@ -53,7 +53,7 @@
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server">
-          <Ref id="Server"/>
+          <Ref refid="Server"/>
         </Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
@@ -62,7 +62,7 @@
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">3</Arg>
                 <Arg name="config">
-                  <Ref id="tlsHttpConfig"/>
+                  <Ref refid="tlsHttpConfig"/>
                 </Arg>
               </New>
             </Item>
@@ -98,7 +98,7 @@
     <Call name="putProxyEngine">
       <Arg>spdy/3</Arg>
       <Arg>
-        <Ref id="spdyProxyEngine"/>
+        <Ref refid="spdyProxyEngine"/>
       </Arg>
     </Call>
     <Set name="proxyServerInfos">
@@ -129,10 +129,10 @@
     <Arg>
       <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyServerConnector">
         <Arg>
-          <Ref id="Server"/>
+          <Ref refid="Server"/>
         </Arg>
         <Arg>
-          <Ref id="proxyEngineSelector"/>
+          <Ref refid="proxyEngineSelector"/>
         </Arg>
         <Set name="Port">8080</Set>
       </New>
@@ -142,13 +142,13 @@
     <Arg>
       <New class="org.eclipse.jetty.spdy.server.proxy.HTTPSPDYProxyServerConnector">
         <Arg>
-          <Ref id="Server"/>
+          <Ref refid="Server"/>
         </Arg>
         <Arg>
-          <Ref id="sslContextFactory"/>
+          <Ref refid="sslContextFactory"/>
         </Arg>
         <Arg>
-          <Ref id="proxyEngineSelector"/>
+          <Ref refid="proxyEngineSelector"/>
         </Arg>
         <Set name="Port">8443</Set>
       </New>

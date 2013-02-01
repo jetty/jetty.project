@@ -27,6 +27,7 @@ import java.util.Random;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -36,8 +37,45 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class BrowserSocket
 {
+    private static class WriteMany implements Runnable
+    {
+        private RemoteEndpoint remote;
+        private int size;
+        private int count;
+
+        public WriteMany(RemoteEndpoint remote, int size, int count)
+        {
+            this.remote = remote;
+            this.size = size;
+            this.count = count;
+        }
+
+        @Override
+        public void run()
+        {
+            char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+            int lettersLen = letters.length;
+            char randomText[] = new char[size];
+            Random rand = new Random(42);
+            String msg;
+
+            for (int n = 0; n < count; n++)
+            {
+                // create random text
+                for (int i = 0; i < size; i++)
+                {
+                    randomText[i] = letters[rand.nextInt(lettersLen)];
+                }
+                msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
+                remote.sendStringByFuture(msg);
+            }
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(BrowserSocket.class);
+
     private Session session;
+    private RemoteEndpoint remote;
     private final String userAgent;
     private final String requestedExtensions;
 
@@ -50,7 +88,9 @@ public class BrowserSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
+        LOG.info("Connect [{}]",session);
         this.session = session;
+        this.remote = session.getRemote();
     }
 
     @OnWebSocketClose
@@ -99,21 +139,31 @@ public class BrowserSocket
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
-                    char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
-                    int lettersLen = letters.length;
-                    char randomText[] = new char[size];
-                    Random rand = new Random();
+                    writeManyAsync(size,count);
+                    break;
+                }
+                case "manythreads":
+                {
+                    String parts[] = val.split(",");
+                    int threadCount = Integer.parseInt(parts[0]);
+                    int size = Integer.parseInt(parts[1]);
+                    int count = Integer.parseInt(parts[2]);
 
-                    for (int n = 0; n < count; n++)
+                    Thread threads[] = new Thread[threadCount];
+
+                    // Setup threads
+                    for (int n = 0; n < threadCount; n++)
                     {
-                        // create random text
-                        for (int i = 0; i < size; i++)
-                        {
-                            randomText[i] = letters[rand.nextInt(lettersLen)];
-                        }
-                        writeMessage("Many [%s]",String.valueOf(randomText));
+                        threads[n] = new Thread(new WriteMany(remote,size,count),"WriteMany[" + n + "]");
                     }
 
+                    // Execute threads
+                    for (Thread thread : threads)
+                    {
+                        thread.start();
+                    }
+
+                    // Drop out of this thread
                     break;
                 }
                 case "time":
@@ -136,6 +186,24 @@ public class BrowserSocket
         }
     }
 
+    private void writeManyAsync(int size, int count)
+    {
+        char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+        int lettersLen = letters.length;
+        char randomText[] = new char[size];
+        Random rand = new Random(42);
+
+        for (int n = 0; n < count; n++)
+        {
+            // create random text
+            for (int i = 0; i < size; i++)
+            {
+                randomText[i] = letters[rand.nextInt(lettersLen)];
+            }
+            writeMessage("Many [%s]",String.valueOf(randomText));
+        }
+    }
+
     private void writeMessage(String message)
     {
         if (this.session == null)
@@ -150,7 +218,8 @@ public class BrowserSocket
             return;
         }
 
-        session.getRemote().sendStringByFuture(message);
+        // Async write
+        remote.sendStringByFuture(message);
     }
 
     private void writeMessage(String format, Object... args)

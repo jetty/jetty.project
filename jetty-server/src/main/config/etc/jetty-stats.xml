@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the Statistics Handler                                    -->
@@ -9,7 +9,7 @@
   <Get id="oldhandler" name="handler" />
   <Set name="handler">
     <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
-      <Set name="handler"><Ref id="oldhandler" /></Set>
+      <Set name="handler"><Ref refid="oldhandler" /></Set>
     </New>
   </Set>
 </Configure>

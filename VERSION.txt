@@ -139,6 +139,101 @@ jetty-9.0.0.M3 - 20 November 2012
  + 393947 additional tests
  + 394143 add jetty-all aggregate via release profile
  + 394144 add jetty-jaspi
+jetty-8.1.9.v20130131 - 31 January 2013
+ + 362226 HttpConnection "wait" call causes thread resource exhaustion
+ + 367638 throw exception for excess form keys
+ + 381521 Only set Vary header when content could be compressed
+ + 382237 support non java JSON classes
+ + 391248 fixing localhost checking in statistics servlet
+ + 391249 fix for invalid XML node dispatchedTimeMean in statistics servlet
+ + 391345 fix missing br tag in statistics servlet
+ + 391623 Add option to --stop to wait for target jetty to stop
+ + 392417 Prevent Cookie parsing interpreting unicode chars
+ + 392492 expect headers only examined for requests>=HTTP/1.1
+ + 393075 1xx 204 and 304 ignore all headers suggesting content
+ + 393158 java.lang.IllegalStateException when sending an empty InputStream
+ + 393220 remove dead code from ServletHandler and log ServletExceptions in
+   warn instead of debug
+ + 393947 additional tests
+ + 393968 fix typo in javadoc
+ + 394294 A web-bundle started before jetty-osgi should be deployed as a webapp
+   when jetty-osgi starts
+ + 394514 Preserve URI parameters in sendRedirect
+ + 394541 remove continuation jar from distro, add as dep to test-jetty-webapp
+ + 394719 remove regex from classpath matching
+ + 394811 Make JAASLoginService log login failures to DEBUG instead of WARN.
+   Same for some other exceptions.
+ + 394829 Session can not be restored after SessionManager.setIdleSavePeriod
+   has saved the session
+ + 394839 Allow multipart mime with no boundary
+ + 394870 Make enablement of remote access to test webapp configurable in
+   override-web.xml
+ + 395215 Multipart mime with just LF and no CRLF
+ + 395380 add ValidUrlRule to jetty-rewrite
+ + 395394 allow logging from boot classloader
+ + 396253 FilterRegistration wrong order
+ + 396459 Log specific message for empty request body for multipart mime
+   requests
+ + 396500 HttpClient Exchange takes forever to complete when less content sent
+   than Content-Length
+ + 396574 add JETTY_HOME as a location for pid to be found
+ + 396886 MultiPartFilter strips bad escaping on filename="..."
+ + 397110 Accept %uXXXX encodings in URIs
+ + 397111 Tolerate empty or excessive whitespace preceeding MultiParts
+ + 397112 Requests with byte-range throws NPE if requested file has no mimetype
+   (eg no file extension)
+ + 397130 maxFormContentSize set in jetty.xml is ignored
+ + 397190 improve ValidUrlRule to iterate on codepoints
+ + 397321 Wrong condition in default start.config for annotations
+ + 397535 Support pluggable alias checking to support symbolic links
+ + 398337 UTF-16 percent encoding in UTF-16 form content
+ + 399132 check parent dir of session store against file to be removed
+ + JETTY-1533 handle URL with no path
+
+jetty-7.6.9.v20130131 - 31 January 2013
+ + 362226 HttpConnection "wait" call causes thread resource exhaustion
+ + 367638 throw exception for excess form keys
+ + 381521 Only set Vary header when content could be compressed
+ + 382237 support non java JSON classes
+ + 391248 fixing localhost checking in statistics servlet
+ + 391249 fix for invalid XML node dispatchedTimeMean in statistics servlet
+ + 391345 fix missing br tag in statistics servlet
+ + 391623 Add option to --stop to wait for target jetty to stop
+ + 392417 Prevent Cookie parsing interpreting unicode chars
+ + 392492 expect headers only examined for requests>=HTTP/1.1
+ + 393075 1xx 204 and 304 ignore all headers suggesting content
+ + 393220 remove dead code from ServletHandler and log ServletExceptions in
+   warn instead of debug
+ + 393947 additional tests
+ + 393968 fix typo in javadoc
+ + 394514 Preserve URI parameters in sendRedirect
+ + 394541 remove continuation jar from distro, add as dep to test-jetty-webapp
+ + 394719 remove regex from classpath matching
+ + 394811 Make JAASLoginService log login failures to DEBUG instead of WARN.
+   Same for some other exceptions.
+ + 394829 Session can not be restored after SessionManager.setIdleSavePeriod
+   has saved the session
+ + 394839 Allow multipart mime with no boundary
+ + 395215 Multipart mime with just LF and no CRLF
+ + 395380 add ValidUrlRule to jetty-rewrite
+ + 395394 allow logging from boot classloader
+ + 396459 Log specific message for empty request body for multipart mime
+   requests
+ + 396500 HttpClient Exchange takes forever to complete when less content sent
+   than Content-Length
+ + 396574 add JETTY_HOME as a location for pid to be found
+ + 396886 MultiPartFilter strips bad escaping on filename="..."
+ + 397110 Accept %uXXXX encodings in URIs
+ + 397111 Tolerate empty or excessive whitespace preceeding MultiParts
+ + 397112 Requests with byte-range throws NPE if requested file has no mimetype
+   (eg no file extension)
+ + 397130 maxFormContentSize set in jetty.xml is ignored
+ + 397190 improve ValidUrlRule to iterate on codepoints
+ + 397321 Wrong condition in default start.config for annotations
+ + 397535 Support pluggable alias checking to support symbolic links
+ + 398337 UTF-16 percent encoding in UTF-16 form content
+ + 399132 check parent dir of session store against file to be removed
+ + JETTY-1533 handle URL with no path
  + 394215 Scheduled tasks throwing exceptions kill java.util.Timer thread.
  + 394232 add jetty-ant into jetty9
  + 394357 Make JarResource constructors protected

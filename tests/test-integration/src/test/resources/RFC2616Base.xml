@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -91,7 +91,7 @@
     <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.deploy.ContextDeployer">
-          <Set name="contexts"><Ref id="WebappContexts"/></Set>
+          <Set name="contexts"><Ref refid="WebappContexts"/></Set>
           <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
           <Set name="scanInterval">0</Set>
           <Set name="configurationManager">
@@ -120,7 +120,7 @@
     <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.deploy.WebAppDeployer">
-          <Set name="contexts"><Ref id="WebappContexts"/></Set>
+          <Set name="contexts"><Ref refid="WebappContexts"/></Set>
           <Set name="webAppDir"><Property name="test.targetdir" default="target"/>/webapps</Set>
           <Set name="parentLoaderPriority">false</Set>
           <Set name="extract">true</Set>

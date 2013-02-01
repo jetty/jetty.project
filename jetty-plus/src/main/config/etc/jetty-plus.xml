@@ -25,7 +25,7 @@
   <!-- login.conf file, and the realm Name must be the same as in  -->
   <!-- the web.xml file.                                           -->
   <!-- =========================================================== -->
-  <!-- 
+  <!--
   <Call name="addBean">
     <Arg>
       <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
@@ -63,7 +63,7 @@
   <!-- deploy webapps from a directory called webapps-plus. Note   -->
   <!-- that you will need to create this directory first!          -->
   <!--
-  <Ref id="DeploymentManager">
+  <Ref refid="DeploymentManager">
       <Call name="addAppProvider">
         <Arg>
           <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
