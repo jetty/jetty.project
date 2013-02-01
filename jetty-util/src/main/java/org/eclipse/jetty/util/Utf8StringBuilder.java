@@ -74,9 +74,5 @@ public class Utf8StringBuilder extends Utf8Appendable
         return _buffer.toString();
     }
 
-    private void checkState()
-    {
-        if (!isUtf8SequenceComplete())
-            throw new IllegalArgumentException("Tried to read incomplete UTF8 decoded String");
-    }
+
 }

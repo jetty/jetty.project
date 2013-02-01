@@ -72,10 +72,4 @@ public class Utf8StringBuffer extends Utf8Appendable
         checkState();
         return _buffer.toString();
     }
-
-    private void checkState()
-    {
-        if (!isUtf8SequenceComplete())
-            throw new IllegalArgumentException("Tried to read incomplete UTF8 decoded String");
-    }
 }
