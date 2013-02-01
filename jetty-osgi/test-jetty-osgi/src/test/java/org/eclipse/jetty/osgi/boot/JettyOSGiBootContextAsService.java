@@ -38,6 +38,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
@@ -69,7 +70,9 @@ public class JettyOSGiBootContextAsService
     {
     	ArrayList<Option> options = new ArrayList<Option>();
     	options.addAll(TestJettyOSGiBootCore.provisionCoreJetty());
-    	
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*",
+                                                       "org.w3c.*", "javax.xml.*"));
+       
     	   File base = MavenTestingUtils.getBasedir();
            File src = new File (base, "src");
            File tst = new File (src, "test");
@@ -114,7 +117,7 @@ public class JettyOSGiBootContextAsService
 
             //a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
             mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "test-jetty-osgi-context" ).versionAsInProject().start()
-            // mavenBundle().groupId( "org.eclipse.equinox.http" ).artifactId( "servlet" ).versionAsInProject().start()
+            // mavenBundle().groupId( "org.eclipse.equinox.http" ).artifactId( "servlet" ).versionAsInProject().start()     
         )));
     	
     	return options.toArray(new Option[options.size()]);
@@ -173,8 +176,18 @@ public class JettyOSGiBootContextAsService
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         Assert.assertNotNull(refs);
         Assert.assertEquals(1,refs.length);
+        String[] keys = refs[0].getPropertyKeys();
+        if (keys != null)
+        {
+            for (String k:keys)
+                System.err.println("service property: "+k+", "+refs[0].getProperty(k));
+        }
         ContextHandler ch = (ContextHandler)bundleContext.getService(refs[0]);
         Assert.assertEquals("/acme", ch.getContextPath());
+        
+        testWebBundle.stop();
+        
+        //Check you can see CONTEXT DESTROYED on stderr. TODO: think of a better way to communicate this to the test
     }
 
 	
