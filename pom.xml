@@ -358,7 +358,7 @@
                 <head>Apache XBean:</head>
               </tag>
             </tags>
-            </configuration>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
