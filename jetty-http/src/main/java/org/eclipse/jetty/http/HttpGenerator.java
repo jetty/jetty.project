@@ -1017,7 +1017,7 @@ public class HttpGenerator extends AbstractGenerator
                 {
                     if (_needCRLF)
                     {
-                        if (_buffer == null && _header.space() >= 2)
+                        if (_buffer == null && _header != null && _header.space() >= 2)
                         {
                             _header.put(HttpTokens.CRLF);
                             _needCRLF = false;
@@ -1031,7 +1031,7 @@ public class HttpGenerator extends AbstractGenerator
 
                     if (!_needCRLF && _needEOC)
                     {
-                        if (_buffer == null && _header.space() >= LAST_CHUNK.length)
+                        if (_buffer == null && _header != null && _header.space() >= LAST_CHUNK.length)
                         {
                             if (!_head)
                             {
