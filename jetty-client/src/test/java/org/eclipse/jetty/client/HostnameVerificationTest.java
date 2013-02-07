@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -82,6 +83,14 @@ public class HostnameVerificationTest
         client.start();
     }
 
+    @After
+    public void tearDown() throws Exception
+    {
+        client.stop();
+        server.stop();
+        server.join();
+    }
+
     /**
      * This test is supposed to verify that hostname verification works as described in:
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
@@ -114,7 +123,28 @@ public class HostnameVerificationTest
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
     {
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        String uri = "https://localhost:" + connector.getLocalPort() + "/";
+        try
+        {
+            client.GET(uri);
+        }
+        catch (ExecutionException e)
+        {
+            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+        }
+    }
+
+    /**
+     * This test has hostname verification disabled by setting trustAll to true and connecting,
+     * ssl handshake and sending the request should just work fine.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void trustAllDisablesHostnameVerificationTest() throws Exception
+    {
+        sslContextFactory.setTrustAll(true);
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
         try
         {

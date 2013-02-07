@@ -223,7 +223,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(boolean trustAll)
     {
-        _trustAll=trustAll;
+        setTrustAll(trustAll);
     }
 
     /**
@@ -752,6 +752,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setTrustAll(boolean trustAll)
     {
         _trustAll = trustAll;
+        if(trustAll)
+            setEndpointIdentificationAlgorithm(null);
     }
 
     /**
