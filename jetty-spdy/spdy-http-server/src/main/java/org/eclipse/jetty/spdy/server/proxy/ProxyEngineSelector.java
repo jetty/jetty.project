@@ -184,5 +184,15 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         {
             return address;
         }
+
+        @Override
+        public String toString()
+        {
+            return "ProxyServerInfo{" +
+                    "protocol='" + protocol + '\'' +
+                    ", host='" + host + '\'' +
+                    ", address=" + address +
+                    '}';
+        }
     }
 }
