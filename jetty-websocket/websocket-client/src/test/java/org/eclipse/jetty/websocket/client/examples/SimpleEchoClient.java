@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
  */
 public class SimpleEchoClient
 {
-    @WebSocket
+    @WebSocket(maxMessageSize = 64 * 1024)
     public static class SimpleEchoSocket
     {
         private final CountDownLatch closeLatch;
@@ -107,7 +107,7 @@ public class SimpleEchoClient
 
             URI echoUri = new URI(destUri);
             ClientUpgradeRequest request = new ClientUpgradeRequest();
-            request.addExtensions("x-webkit-deflate-frame");
+            // request.addExtensions("x-webkit-deflate-frame");
             client.connect(socket,echoUri,request);
             System.out.printf("Connecting to : %s%n",echoUri);
 
