@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
@@ -33,6 +34,10 @@ import org.eclipse.jetty.client.api.Response;
 /**
  * A {@link ContentProvider} that allows to add content after {@link Request#send(Response.CompleteListener)}
  * has been called, therefore providing the request content at a later time.
+ * <p />
+ * {@link DeferredContentProvider} can only be used in conjunction with
+ * {@link Request#send(Response.CompleteListener)} (and not with its blocking counterpart {@link Request#send()})
+ * because it provides content asynchronously.
  * <p />
  * The deferred content is provided once and then fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
@@ -79,6 +84,7 @@ public class DeferredContentProvider implements AsyncContentProvider, AutoClosea
     private final Queue<ByteBuffer> chunks = new ConcurrentLinkedQueue<>();
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * Creates a new {@link DeferredContentProvider} with the given initial content
@@ -124,8 +130,11 @@ public class DeferredContentProvider implements AsyncContentProvider, AutoClosea
      */
     public void close()
     {
-        chunks.offer(CLOSE);
-        notifyListener();
+        if (closed.compareAndSet(false, true))
+        {
+            chunks.offer(CLOSE);
+            notifyListener();
+        }
     }
 
     private void notifyListener()
