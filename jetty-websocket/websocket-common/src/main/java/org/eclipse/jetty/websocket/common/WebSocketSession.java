@@ -57,7 +57,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private final EventDriver websocket;
     private final LogicalConnection connection;
     private ExtensionFactory extensionFactory;
-    private boolean active = false;
     private long maximumMessageSize;
     private String protocolVersion;
     private long timeout;
@@ -269,7 +268,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public boolean isOpen()
     {
-        return active;
+        if (this.connection == null)
+        {
+            return false;
+        }
+        return this.connection.isOpen();
     }
 
     @Override
@@ -292,29 +295,22 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
      */
     public void open()
     {
-        if (isOpen())
+        if (remote != null)
         {
-            throw new WebSocketException("Cannot Open WebSocketSession, Already open");
+            // already opened
+            return;
         }
 
         // Connect remote
         remote = new WebSocketRemoteEndpoint(connection,outgoingHandler);
-
-        // Activate Session
-        this.active = true;
 
         // Open WebSocket
         websocket.openSession(this);
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}",dump());
+            LOG.debug("open -> {}",dump());
         }
-    }
-
-    public void setActive(boolean active)
-    {
-        this.active = active;
     }
 
     public void setExtensionFactory(ExtensionFactory extensionFactory)
@@ -370,6 +366,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketSession[");
         builder.append("websocket=").append(websocket);
+        builder.append(",behavior=").append(policy.getBehavior());
         builder.append(",connection=").append(connection);
         builder.append(",remote=").append(remote);
         builder.append(",incoming=").append(incomingHandler);
