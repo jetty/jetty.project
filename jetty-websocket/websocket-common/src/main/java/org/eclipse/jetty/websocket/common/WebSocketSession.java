@@ -105,15 +105,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     }
 
     @Override
-    public void close(CloseStatus closeStatus) throws IOException
+    public void close(CloseStatus closeStatus)
     {
-        connection.close(closeStatus.getCode(),closeStatus.getPhrase());
+        this.close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
         connection.close(statusCode,reason);
+        websocket.onClose(new CloseInfo(statusCode,reason));
     }
 
     /**

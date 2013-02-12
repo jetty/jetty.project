@@ -32,14 +32,12 @@ import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnec
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * Various tests for Timeout handling
  */
-@Ignore("Idle timeouts not working yet")
 public class TimeoutTest
 {
     @Rule
@@ -85,24 +83,33 @@ public class TimeoutTest
         TrackingSocket wsocket = new TrackingSocket();
 
         URI wsUri = server.getWsUri();
+        client.setMaxIdleTimeout(1000);
         Future<Session> future = client.connect(wsocket,wsUri);
 
         ServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
-        // Validate that connect occurred
-        future.get(500,TimeUnit.MILLISECONDS);
-        wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        try
+        {
+            ssocket.startEcho();
+            // Validate that connect occurred
+            future.get(500,TimeUnit.MILLISECONDS);
+            wsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
 
-        // Wait for inactivity idle timeout.
-        long start = System.currentTimeMillis();
-        wsocket.waitForClose(10,TimeUnit.SECONDS);
-        long end = System.currentTimeMillis();
-        long dur = (end - start);
-        // Make sure idle timeout takes less than 5 total seconds
-        Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(5000L));
+            // Wait for inactivity idle timeout.
+            long start = System.currentTimeMillis();
+            wsocket.waitForClose(10,TimeUnit.SECONDS);
+            long end = System.currentTimeMillis();
+            long dur = (end - start);
+            // Make sure idle timeout takes less than 5 total seconds
+            Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(5000L));
 
-        // Client should see a close event, with status NO_CLOSE
-        wsocket.assertCloseCode(StatusCode.NORMAL);
+            // Client should see a close event, with status NO_CLOSE
+            wsocket.assertCloseCode(StatusCode.NORMAL);
+        }
+        finally
+        {
+            ssocket.stopEcho();
+        }
     }
 }

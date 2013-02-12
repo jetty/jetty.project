@@ -406,9 +406,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.debug("Read Timeout. disconnecting connection");
-        // TODO: notify end user websocket of read timeout?
-        return true;
+        LOG.warn("Read Timeout");
+
+        if ((ioState.getState() == ConnectionState.CLOSING) || (ioState.getState() == ConnectionState.CLOSED))
+        {
+            // close already initiated, extra timeouts not relevant
+            // allow udnerlying connection and endpoint to disconnect on its own
+            return true;
+        }
+
+        // Initiate close - politely send close frame.
+        // Note: it is not possible in 100% of cases during read timeout to send this close frame.
+        session.close(StatusCode.NORMAL,"Idle Timeout");
+
+        return false;
     }
 
     public void onWriteWebSocketClose()

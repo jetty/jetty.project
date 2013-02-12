@@ -251,6 +251,16 @@ public class WebSocketClient extends ContainerLifeCycle
         return masker;
     }
 
+    /**
+     * Get the max idle timeout for new connections.
+     * 
+     * @return the max idle timeout in milliseconds for new connections.
+     */
+    public long getMaxIdleTimeout()
+    {
+        return this.policy.getIdleTimeout();
+    }
+
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
@@ -328,5 +338,18 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setMasker(Masker masker)
     {
         this.masker = masker;
+    }
+
+    /**
+     * Set the max idle timeout for new connections.
+     * <p>
+     * Existing connections will not have their max idle timeout adjusted.
+     * 
+     * @param milliseconds
+     *            the timeout in milliseconds
+     */
+    public void setMaxIdleTimeout(long milliseconds)
+    {
+        this.policy.setIdleTimeout(milliseconds);
     }
 }
