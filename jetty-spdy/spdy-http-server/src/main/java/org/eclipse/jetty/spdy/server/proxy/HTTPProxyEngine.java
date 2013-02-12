@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
@@ -235,9 +236,11 @@ public class HTTPProxyEngine extends ProxyEngine
         Fields responseHeaders = new Fields();
         for (HttpField header : response.getHeaders())
             responseHeaders.add(header.getName(), header.getValue());
+            short version = clientStream.getSession().getVersion();
         if (response.getStatus() > 0)
-            responseHeaders.add(HTTPSPDYHeader.STATUS.name(clientStream.getSession().getVersion()),
+            responseHeaders.add(HTTPSPDYHeader.STATUS.name(version),
                     String.valueOf(response.getStatus()));
+        responseHeaders.add(HTTPSPDYHeader.VERSION.name(version), HttpVersion.HTTP_1_1.asString());
         addResponseProxyHeaders(clientStream, responseHeaders);
         return responseHeaders;
     }

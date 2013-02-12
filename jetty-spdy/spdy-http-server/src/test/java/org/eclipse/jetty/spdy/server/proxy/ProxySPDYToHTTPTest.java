@@ -179,6 +179,7 @@ public class ProxySPDYToHTTPTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
+                assertThat("Version header is set", headers.get(HTTPSPDYHeader.VERSION.name(version)), is(notNullValue()));
                 assertThat("Custom set header foo is set on response", headers.get(header), is(notNullValue()));
                 assertThat("HOP headers like connection are removed before forwarding",
                         headers.get("connection"), is(nullValue()));
