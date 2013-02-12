@@ -123,6 +123,15 @@ public class WebSocketClient extends ContainerLifeCycle
         request.setRequestURI(toUri);
         request.setCookiesFrom(this.cookieStore);
 
+        // Validate Requested Extensions
+        for (ExtensionConfig reqExt : request.getExtensions())
+        {
+            if (!extensionRegistry.isAvailable(reqExt.getName()))
+            {
+                throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
+            }
+        }
+
         // Validate websocket URI
         LOG.debug("connect websocket:{} to:{}",websocket,toUri);
 
