@@ -54,7 +54,7 @@ public class SimpleBinaryMessage implements MessageAppender
             return;
         }
 
-        onEvent.getPolicy().assertValidMessageSize(size + payload.remaining());
+        onEvent.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         BufferUtil.writeTo(payload,out);

@@ -22,6 +22,8 @@ import static org.hamcrest.Matchers.*;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -249,15 +251,15 @@ public class WebSocketClientTest
             UpgradeRequest req = session.getUpgradeRequest();
             Assert.assertThat("Upgrade Request",req,notNullValue());
 
-            Map<String, String[]> parameterMap = req.getParameterMap();
+            Map<String, List<String>> parameterMap = req.getParameterMap();
             Assert.assertThat("Parameter Map",parameterMap,notNullValue());
 
-            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(new String[]
-            { "cashews" }));
-            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(new String[]
-            { "handful" }));
-            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(new String[]
-            { "off" }));
+            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[]
+            { "cashews" })));
+            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[]
+            { "handful" })));
+            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[]
+            { "off" })));
 
             Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
         }

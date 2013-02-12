@@ -315,6 +315,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return getEndPoint().getIdleTimeout();
+    }
+
+    @Override
     public IOState getIOState()
     {
         return ioState;
@@ -515,6 +521,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void setExtensions(List<ExtensionConfig> extensions)
     {
         this.extensions = extensions;
+    }
+
+    @Override
+    public void setIdleTimeout(long ms)
+    {
+        getEndPoint().setIdleTimeout(ms);
     }
 
     @Override

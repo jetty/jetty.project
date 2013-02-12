@@ -107,13 +107,6 @@ public interface Session extends Closeable
     public InetSocketAddress getLocalAddress();
 
     /**
-     * The maximum total length of messages, text or binary, that this Session can handle.
-     * 
-     * @return the message size
-     */
-    long getMaximumMessageSize();
-
-    /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
      * 
      * @return the policy in use
@@ -177,11 +170,6 @@ public interface Session extends Closeable
      *            the number of milliseconds.
      */
     void setIdleTimeout(long ms);
-
-    /**
-     * Sets the maximum total length of messages, text or binary, that this Session can handle.
-     */
-    void setMaximumMessageSize(long length);
 
     /**
      * Suspend a the incoming read events on the connection.

@@ -58,6 +58,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     void disconnect();
 
     /**
+     * Get the read/write idle timeout.
+     * 
+     * @return the idle timeout in milliseconds
+     */
+    public long getIdleTimeout();
+
+    /**
      * Get the IOState of the connection.
      * 
      * @return the IOState of the connection.
@@ -108,6 +115,16 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return true if connection is actively attempting to read.
      */
     boolean isReading();
+
+    /**
+     * Set the read/write idle timeout for new operations (in milliseconds)
+     * <p>
+     * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
+     * New read/write actions will have this new idle timeout.
+     * 
+     * @param ms idle timeout in milliseconds
+     */
+    public void setIdleTimeout(long ms);
 
     /**
      * Set where the connection should send the incoming frames to.

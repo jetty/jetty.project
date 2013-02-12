@@ -40,7 +40,14 @@ public class WebSocketPolicy
      * <p>
      * Default: 65536 (64 K)
      */
-    private long maxMessageSize = 64 * KB;
+    private int maxTextMessageSize = 64 * KB;
+
+    /**
+     * The maximum size of a binary message during parsing/generating.
+     * <p>
+     * Default: 65536 (64 K)
+     */
+    private int maxBinaryMessageSize = 64 * KB;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
@@ -66,14 +73,26 @@ public class WebSocketPolicy
         this.behavior = behavior;
     }
 
-    public void assertValidMessageSize(int requestedSize)
+    public void assertValidBinaryMessageSize(int requestedSize)
     {
-        if (maxMessageSize > 0)
+        if (maxBinaryMessageSize > 0)
         {
             // validate it
-            if (requestedSize > maxMessageSize)
+            if (requestedSize > maxBinaryMessageSize)
             {
-                throw new MessageTooLargeException("Requested message size [" + requestedSize + "] exceeds maximum size [" + maxMessageSize + "]");
+                throw new MessageTooLargeException("Binary message size [" + requestedSize + "] exceeds maximum size [" + maxBinaryMessageSize + "]");
+            }
+        }
+    }
+
+    public void assertValidTextMessageSize(int requestedSize)
+    {
+        if (maxTextMessageSize > 0)
+        {
+            // validate it
+            if (requestedSize > maxTextMessageSize)
+            {
+                throw new MessageTooLargeException("Text message size [" + requestedSize + "] exceeds maximum size [" + maxTextMessageSize + "]");
             }
         }
     }
@@ -82,7 +101,8 @@ public class WebSocketPolicy
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
-        clone.maxMessageSize = this.maxMessageSize;
+        clone.maxTextMessageSize = this.maxTextMessageSize;
+        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
         clone.inputBufferSize = this.inputBufferSize;
         return clone;
     }
@@ -102,9 +122,14 @@ public class WebSocketPolicy
         return inputBufferSize;
     }
 
-    public long getMaxMessageSize()
+    public int getMaxBinaryMessageSize()
     {
-        return maxMessageSize;
+        return maxBinaryMessageSize;
+    }
+
+    public int getMaxTextMessageSize()
+    {
+        return maxTextMessageSize;
     }
 
     public void setIdleTimeout(long idleTimeout)
@@ -117,8 +142,13 @@ public class WebSocketPolicy
         this.inputBufferSize = inputBufferSize;
     }
 
-    public void setMaxMessageSize(long maxMessageSize)
+    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
-        this.maxMessageSize = maxMessageSize;
+        this.maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+
+    public void setMaxTextMessageSize(int maxTextMessageSize)
+    {
+        this.maxTextMessageSize = maxTextMessageSize;
     }
 }

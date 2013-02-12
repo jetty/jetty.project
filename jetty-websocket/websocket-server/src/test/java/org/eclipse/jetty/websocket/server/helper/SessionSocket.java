@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
@@ -52,11 +53,11 @@ public class SessionSocket
         {
             if (message.startsWith("getParameterMap"))
             {
-                Map<String, String[]> parameterMap = session.getUpgradeRequest().getParameterMap();
+                Map<String, List<String>> parameterMap = session.getUpgradeRequest().getParameterMap();
 
                 int idx = message.indexOf('|');
                 String key = message.substring(idx + 1);
-                String values[] = parameterMap.get(key);
+                List<String> values = parameterMap.get(key);
 
                 if (values == null)
                 {

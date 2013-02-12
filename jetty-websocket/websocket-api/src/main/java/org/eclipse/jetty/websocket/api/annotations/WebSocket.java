@@ -35,7 +35,9 @@ public @interface WebSocket
 {
     int inputBufferSize() default -2;
 
+    int maxBinaryMessageSize() default -2;
+
     int maxIdleTime() default -2;
 
-    int maxMessageSize() default -2;
+    int maxTextMessageSize() default -2;
 }

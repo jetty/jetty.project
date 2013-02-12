@@ -87,7 +87,8 @@ public class Fuzzer
 
         int bigMessageSize = 20 * MBYTE;
 
-        policy.setMaxMessageSize(bigMessageSize);
+        policy.setMaxTextMessageSize(bigMessageSize);
+        policy.setMaxBinaryMessageSize(bigMessageSize);
 
         this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();

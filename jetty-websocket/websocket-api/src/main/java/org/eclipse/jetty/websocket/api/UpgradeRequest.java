@@ -36,7 +36,7 @@ public class UpgradeRequest
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private List<HttpCookie> cookies = new ArrayList<>();
     private Map<String, List<String>> headers = new HashMap<>();
-    private Map<String, String[]> parameters = new HashMap<>();
+    private Map<String, List<String>> parameters = new HashMap<>();
     private Object session;
     private String httpVersion;
     private String method;
@@ -175,7 +175,7 @@ public class UpgradeRequest
      * 
      * @return a unmodifiable map of query parameters of the request.
      */
-    public Map<String, String[]> getParameterMap()
+    public Map<String, List<String>> getParameterMap()
     {
         return Collections.unmodifiableMap(parameters);
     }
@@ -244,7 +244,7 @@ public class UpgradeRequest
         this.method = method;
     }
 
-    protected void setParameterMap(Map<String, String[]> parameters)
+    protected void setParameterMap(Map<String, List<String>> parameters)
     {
         this.parameters.clear();
         this.parameters.putAll(parameters);

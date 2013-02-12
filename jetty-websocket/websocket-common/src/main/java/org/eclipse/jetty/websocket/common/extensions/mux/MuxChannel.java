@@ -98,6 +98,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
     public IOState getIOState()
     {
         // TODO Auto-generated method stub
@@ -203,6 +210,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
         {
             // TODO: Start reading again. (how?)
         }
+    }
+
+    @Override
+    public void setIdleTimeout(long ms)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     @Override

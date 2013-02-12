@@ -16,29 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.ab;
+package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 
-/**
- * Servlet with bigger message policy sizes, with registered simple echo socket.
- */
-@SuppressWarnings("serial")
-public class ABServlet extends WebSocketServlet
+public class JsrContainerProvider extends ContainerProvider
 {
-    private static final int KBYTE = 1024;
-    private static final int MBYTE = KBYTE * KBYTE;
+    private final JettyWebSocketContainer websocketContainer;
 
-    @Override
-    public void configure(WebSocketServletFactory factory)
+    public JsrContainerProvider()
     {
-        // Test cases 9.x uses BIG frame sizes, let policy handle them.
-        int bigFrameSize = 20 * MBYTE;
+        websocketContainer = new JettyWebSocketContainer();
+    }
 
-        factory.getPolicy().setMaxTextMessageSize(bigFrameSize);
-        factory.getPolicy().setMaxBinaryMessageSize(bigFrameSize);
-
-        factory.register(ABSocket.class);
+    @SuppressWarnings("unchecked")
+    @Override
+    protected <T> T getContainer(Class<T> containerClass)
+    {
+        if (WebSocketContainer.class.isAssignableFrom(containerClass))
+        {
+            return (T)websocketContainer;
+        }
+        return null;
     }
 }

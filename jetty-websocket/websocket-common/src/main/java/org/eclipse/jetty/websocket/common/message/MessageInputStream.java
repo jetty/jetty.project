@@ -67,7 +67,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
             return;
         }
 
-        driver.getPolicy().assertValidMessageSize(size + payload.remaining());
+        driver.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         synchronized (buf)

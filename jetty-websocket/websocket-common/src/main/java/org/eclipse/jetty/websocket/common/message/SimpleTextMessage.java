@@ -53,7 +53,7 @@ public class SimpleTextMessage implements MessageAppender
             return;
         }
 
-        onEvent.getPolicy().assertValidMessageSize(size + payload.remaining());
+        onEvent.getPolicy().assertValidTextMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)

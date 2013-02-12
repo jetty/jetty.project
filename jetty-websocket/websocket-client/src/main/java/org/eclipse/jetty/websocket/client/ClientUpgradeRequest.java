@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -215,7 +216,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         super.setRequestURI(uri);
 
         // parse parameter map
-        Map<String, String[]> pmap = new HashMap<>();
+        Map<String, List<String>> pmap = new HashMap<>();
 
         String query = uri.getQuery();
 
@@ -229,12 +230,14 @@ public class ClientUpgradeRequest extends UpgradeRequest
                 List<String> values = params.getValues(key);
                 if (values == null)
                 {
-                    pmap.put(key,new String[0]);
+                    pmap.put(key,new ArrayList<String>());
                 }
                 else
                 {
-                    int len = values.size();
-                    pmap.put(key,values.toArray(new String[len]));
+                    // break link to original
+                    List<String> copy = new ArrayList<>();
+                    copy.addAll(values);
+                    pmap.put(key,copy);
                 }
             }
 

@@ -38,14 +38,14 @@ public class TextPayloadParserTest
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         // Artificially small buffer/payload
-        policy.setMaxMessageSize(1024);
+        policy.setMaxTextMessageSize(1024);
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');
 
         Assert.assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
 
         ByteBuffer buf = ByteBuffer.allocate(utf.length + 8);
-        buf.put((byte)0x81);
+        buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
         MaskedByteBuffer.putMask(buf);
@@ -80,7 +80,7 @@ public class TextPayloadParserTest
         Assert.assertThat("Must be a long length payload",utf.length,greaterThan(0xFFFF));
 
         ByteBuffer buf = ByteBuffer.allocate(utf.length + 32);
-        buf.put((byte)0x81);
+        buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 8 byte payload length)
         buf.putLong(utf.length);
         MaskedByteBuffer.putMask(buf);
@@ -88,7 +88,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        policy.setMaxMessageSize(100000);
+        policy.setMaxTextMessageSize(100000);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);

@@ -74,6 +74,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         open = false;
     }
 
+    @Override
+    public long getIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
     public IncomingFrames getIncoming()
     {
         return incoming;
@@ -146,6 +153,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void resume()
     {
+    }
+
+    @Override
+    public void setIdleTimeout(long ms)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     @Override

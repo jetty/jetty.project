@@ -98,7 +98,6 @@ public class Parser
             // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
             throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
-        policy.assertValidMessageSize((int)len);
 
         switch (frame.getOpCode())
         {
@@ -115,6 +114,12 @@ public class Parser
                     throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
                             + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
+                break;
+            case OpCode.TEXT:
+                policy.assertValidTextMessageSize((int)len);
+                break;
+            case OpCode.BINARY:
+                policy.assertValidBinaryMessageSize((int)len);
                 break;
         }
     }

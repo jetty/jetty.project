@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * Example EchoSocket using Annotations.
  */
-@WebSocket(maxMessageSize = 64 * 1024)
+@WebSocket(maxTextMessageSize = 64 * 1024)
 public class AnnotatedEchoSocket
 {
     @OnWebSocketMessage
