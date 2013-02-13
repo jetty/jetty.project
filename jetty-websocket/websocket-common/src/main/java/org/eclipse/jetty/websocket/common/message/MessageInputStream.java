@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.events.AnnotatedEventDriver;
+import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
 
 /**
  * Support class for reading binary message data as an InputStream.
@@ -35,14 +35,14 @@ public class MessageInputStream extends InputStream implements MessageAppender
      * Threshold (of bytes) to perform compaction at
      */
     private static final int COMPACT_THRESHOLD = 5;
-    private final AnnotatedEventDriver driver;
+    private final JettyAnnotatedEventDriver driver;
     private final ByteBuffer buf;
     private int size;
     private boolean finished;
     private boolean needsNotification;
     private int readPosition;
 
-    public MessageInputStream(AnnotatedEventDriver driver)
+    public MessageInputStream(JettyAnnotatedEventDriver driver)
     {
         this.driver = driver;
         this.buf = ByteBuffer.allocate(BUFFER_SIZE);

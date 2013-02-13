@@ -236,6 +236,11 @@ public class WebSocketClient extends ContainerLifeCycle
         return cookieStore;
     }
 
+    public EventDriverFactory getEventDriverFactory()
+    {
+        return eventDriverFactory;
+    }
+
     public Executor getExecutor()
     {
         return executor;

@@ -16,13 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.events;
+package org.eclipse.jetty.websocket.common.events.annotated;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.events.ParamList;
 
 @SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException

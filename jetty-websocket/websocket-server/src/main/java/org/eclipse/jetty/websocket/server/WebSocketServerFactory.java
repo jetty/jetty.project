@@ -244,6 +244,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return this.creator;
     }
 
+    public EventDriverFactory getEventDriverFactory()
+    {
+        return eventDriverFactory;
+    }
+
     @Override
     public ExtensionFactory getExtensionFactory()
     {

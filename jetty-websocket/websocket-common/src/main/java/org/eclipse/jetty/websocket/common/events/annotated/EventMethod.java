@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.events;
+package org.eclipse.jetty.websocket.common.events.annotated;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -108,7 +108,7 @@ public class EventMethod
         }
     }
 
-    protected Method getMethod()
+    public Method getMethod()
     {
         return method;
     }

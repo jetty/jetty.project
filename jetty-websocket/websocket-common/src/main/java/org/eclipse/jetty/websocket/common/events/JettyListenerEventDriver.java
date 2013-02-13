@@ -34,14 +34,14 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 /**
  * Handler for {@link WebSocketListener} based User WebSocket implementations.
  */
-public class ListenerEventDriver extends EventDriver
+public class JettyListenerEventDriver extends AbstractEventDriver
 {
-    private static final Logger LOG = Log.getLogger(ListenerEventDriver.class);
+    private static final Logger LOG = Log.getLogger(JettyListenerEventDriver.class);
     private final WebSocketListener listener;
     private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
-    public ListenerEventDriver(WebSocketPolicy policy, WebSocketListener listener)
+    public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketListener listener)
     {
         super(policy,listener);
         this.listener = listener;

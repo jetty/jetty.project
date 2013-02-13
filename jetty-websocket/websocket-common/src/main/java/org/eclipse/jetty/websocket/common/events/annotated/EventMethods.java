@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.events;
+package org.eclipse.jetty.websocket.common.events.annotated;
 
 /**
  * A representation of the methods available to call for a particular class.

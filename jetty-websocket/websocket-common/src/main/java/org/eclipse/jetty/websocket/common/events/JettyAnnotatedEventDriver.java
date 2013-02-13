@@ -36,13 +36,13 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 /**
  * Handler for Annotated User WebSocket objects.
  */
-public class AnnotatedEventDriver extends EventDriver
+public class JettyAnnotatedEventDriver extends AbstractEventDriver
 {
-    private final EventMethods events;
+    private final JettyAnnotatedMetadata events;
     private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
-    public AnnotatedEventDriver(WebSocketPolicy policy, Object websocket, EventMethods events)
+    public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
         super(policy,websocket);
         this.events = events;
