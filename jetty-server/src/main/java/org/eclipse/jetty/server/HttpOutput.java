@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -31,7 +30,6 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -78,31 +76,27 @@ public class HttpOutput extends ServletOutputStream
     public void reset()
     {
         _written = 0;
-        _closed = false;
+        reopen();
     }
 
     public void reopen()
     {
         _closed = false;
     }
-    
-    /** Called by the HttpChannel if the output was closed 
+
+    /** Called by the HttpChannel if the output was closed
      * externally (eg by a 500 exception handling).
      */
-    void closed() 
+    void closed()
     {
         _closed = true;
-        if (_aggregate != null)
-        {
-            _channel.getConnector().getByteBufferPool().release(_aggregate);
-            _aggregate = null;
-        }
+        releaseBuffer();
     }
 
     @Override
-    public void close() 
+    public void close()
     {
-        if (!_closed)
+        if (!isClosed())
         {
             try
             {
@@ -117,7 +111,11 @@ public class HttpOutput extends ServletOutputStream
                 LOG.ignore(e);
             }
         }
-        _closed = true;
+        closed();
+    }
+
+    private void releaseBuffer()
+    {
         if (_aggregate != null)
         {
             _channel.getConnector().getByteBufferPool().release(_aggregate);
@@ -133,8 +131,8 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        if (_closed)
-            throw new EofException();
+        if (isClosed())
+            return;
 
         if (BufferUtil.hasContent(_aggregate))
             _channel.write(_aggregate, false);
@@ -150,8 +148,8 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-        if (_closed)
-            throw new EOFException();
+        if (isClosed())
+            throw new EOFException("Closed");
 
         // Do we have an aggregate buffer already ?
         if (_aggregate == null)
@@ -201,16 +199,16 @@ public class HttpOutput extends ServletOutputStream
             _channel.write(_aggregate, false);
     }
 
-    
+
     @Override
     public void write(int b) throws IOException
     {
-        if (_closed)
-            throw new EOFException();
+        if (isClosed())
+            throw new EOFException("Closed");
 
         if (_aggregate == null)
             _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), OUTPUT_BUFFER_DIRECT);
-        
+
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
 
@@ -224,6 +222,7 @@ public class HttpOutput extends ServletOutputStream
     {
         if (isClosed())
             throw new IOException("Closed");
+
         write(s.getBytes(_channel.getResponse().getCharacterEncoding()));
     }
 
@@ -256,7 +255,7 @@ public class HttpOutput extends ServletOutputStream
             String etag=httpContent.getETag();
             if (etag!=null)
                 response.getHttpFields().put(HttpHeader.ETAG,etag);
-            
+
             content = httpContent.getDirectBuffer();
             if (content == null)
                 content = httpContent.getIndirectBuffer();
