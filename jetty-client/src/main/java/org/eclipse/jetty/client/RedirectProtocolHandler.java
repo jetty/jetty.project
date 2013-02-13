@@ -66,36 +66,47 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         {
             Request request = result.getRequest();
             Response response = result.getResponse();
-            URI location = URI.create(response.getHeaders().get("location"));
-            int status = response.getStatus();
-            switch (status)
+            String location = response.getHeaders().get("location");
+            if (location != null)
             {
-                case 301:
+                URI newURI = URI.create(location);
+                if (!newURI.isAbsolute())
+                    newURI = request.getURI().resolve(newURI);
+
+                int status = response.getStatus();
+                switch (status)
                 {
-                    if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
-                        redirect(result, request.getMethod(), location);
-                    else
-                        fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
-                    break;
+                    case 301:
+                    {
+                        if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
+                            redirect(result, request.getMethod(), newURI);
+                        else
+                            fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
+                        break;
+                    }
+                    case 302:
+                    case 303:
+                    {
+                        // Redirect must be done using GET
+                        redirect(result, HttpMethod.GET, newURI);
+                        break;
+                    }
+                    case 307:
+                    {
+                        // Keep same method
+                        redirect(result, request.getMethod(), newURI);
+                        break;
+                    }
+                    default:
+                    {
+                        fail(result, new HttpResponseException("Unhandled HTTP status code " + status, response));
+                        break;
+                    }
                 }
-                case 302:
-                case 303:
-                {
-                    // Redirect must be done using GET
-                    redirect(result, HttpMethod.GET, location);
-                    break;
-                }
-                case 307:
-                {
-                    // Keep same method
-                    redirect(result, request.getMethod(), location);
-                    break;
-                }
-                default:
-                {
-                    fail(result, new HttpResponseException("Unhandled HTTP status code " + status, response));
-                    break;
-                }
+            }
+            else
+            {
+                fail(result, new HttpResponseException("Missing Location header " + location, response));
             }
         }
         else

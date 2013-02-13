@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +38,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
@@ -199,6 +198,19 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Assert.assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
     }
 
+    @Test
+    public void testRelativeLocation() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/done?relative=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
     private class RedirectHandler extends AbstractHandler
     {
         @Override
@@ -212,10 +224,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 response.setStatus(status);
 
                 String host = paths[2];
-                response.setHeader("Location", request.getScheme() + "://" + host + ":" + request.getServerPort() + "/" + paths[3]);
+                String path = paths[3];
+                boolean relative = Boolean.parseBoolean(request.getParameter("relative"));
+                String location = relative ? "" : request.getScheme() + "://" + host + ":" + request.getServerPort();
+                location += "/" + path;
+                response.setHeader("Location", location);
 
-                String close = request.getParameter("close");
-                if (Boolean.parseBoolean(close))
+                if (Boolean.parseBoolean(request.getParameter("close")))
                     response.setHeader("Connection", "close");
             }
             catch (NumberFormatException x)
