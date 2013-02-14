@@ -52,9 +52,11 @@ import org.eclipse.jetty.util.log.Logger;
  *  specific to a webapp).
  *  
  *  The context selected is based on classloaders. First
- *  we try looking in at the classloader that is associated
- *  with the current webapp context (if there is one). If
- *  not, we use the thread context classloader.
+ *  we try looking at the thread context classloader if it is set, and walk its
+ *  hierarchy, creating a context if none is found. If the thread context classloader
+ *  is not set, then we use the classloader associated with the current Context.
+ *  
+ *  If there is no current context, or no classloader, we return null.
  * 
  * Created: Fri Jun 27 09:26:40 2003
  *
@@ -80,9 +82,16 @@ public class ContextFactory implements ObjectFactory
     /** 
      * Find or create a context which pertains to a classloader.
      * 
-     * We use either the classloader for the current ContextHandler if
-     * we are handling a request, OR we use the thread context classloader
-     * if we are not processing a request.
+     * If the thread context classloader is set, we try to find an already-created naming context
+     * for it. If one does not exist, we walk its classloader hierarchy until one is found, or we 
+     * run out of parent classloaders. In the latter case, we will create a new naming context associated
+     * with the original thread context classloader.
+     * 
+     * If the thread context classloader is not set, we obtain the classloader from the current 
+     * jetty Context, and look for an already-created naming context. 
+     * 
+     * If there is no current jetty Context, or it has no associated classloader, we 
+     * return null.
      * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
      */
     public Object getObjectInstance (Object obj,
@@ -99,41 +108,89 @@ public class ContextFactory implements ObjectFactory
             return ctx;
         }
         
-        ClassLoader loader = null;
-        
-        loader = Thread.currentThread().getContextClassLoader();
-        if (__log.isDebugEnabled() && loader != null) __log.debug("Using thread context classloader");
-
-        if (loader == null && ContextHandler.getCurrentContext() != null)
+       
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        ClassLoader loader = tccl;
+        //If the thread context classloader is set, then try its hierarchy to find a matching context
+        if (loader != null)
         {
+            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying thread context classloader");
+            while (ctx == null && loader != null)
+            {
+                ctx = getContextForClassLoader(loader);
+                if (ctx == null && loader != null)
+                    loader = loader.getParent();
+            }
+
+            if (ctx == null)
+            {
+                ctx = newNamingContext(obj, tccl, env, name, nameCtx);
+                __contextMap.put (tccl, ctx);
+                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+tccl);
+            }
+            return ctx;
+        }
+
+
+        //If trying thread context classloader hierarchy failed, try the
+        //classloader associated with the current context
+        if (ContextHandler.getCurrentContext() != null)
+        {
+            
+            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
             loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Using classloader of current org.eclipse.jetty.server.handler.ContextHandler");
+            ctx = (Context)__contextMap.get(loader);    
+
+            if (ctx == null && loader != null)
+            {
+                ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                __contextMap.put (loader, ctx);
+                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
+            }
+
+            return ctx;
         }
+        return null;
+    }
 
-        //Get the context matching the classloader
-        ctx = (Context)__contextMap.get(loader);
 
-        //The map does not contain an entry for this classloader
-        if (ctx == null)
-        {
-            //Didn't find a context to match, make one
-            Reference ref = (Reference)obj;
-            StringRefAddr parserAddr = (StringRefAddr)ref.get("parser");
-            String parserClassName = (parserAddr==null?null:(String)parserAddr.getContent());
-            NameParser parser = (NameParser)(parserClassName==null?null:loader.loadClass(parserClassName).newInstance());
+    /**
+     * Create a new NamingContext.
+     * @param obj
+     * @param loader
+     * @param env
+     * @param name
+     * @param parentCtx
+     * @return
+     * @throws Exception
+     */
+    public NamingContext newNamingContext(Object obj, ClassLoader loader, Hashtable env, Name name, Context parentCtx)
+    throws Exception
+    {
+        Reference ref = (Reference)obj;
+        StringRefAddr parserAddr = (StringRefAddr)ref.get("parser");
+        String parserClassName = (parserAddr==null?null:(String)parserAddr.getContent());
+        NameParser parser = (NameParser)(parserClassName==null?null:loader.loadClass(parserClassName).newInstance());
 
-            ctx = new NamingContext (env,
-                                     name.get(0),
-                                     (NamingContext)nameCtx,
-                                     parser);
-            if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
-            __contextMap.put (loader, ctx);
-        }
-
-        return ctx;
+        return new NamingContext (env,
+                                  name.get(0),
+                                  (NamingContext)parentCtx,
+                                  parser);
     }
 
   
+    /**
+     * Find the naming Context for the given classloader
+     * @param loader
+     * @return
+     */
+    public Context getContextForClassLoader(ClassLoader loader)
+    {
+        if (loader == null)
+            return null;
+        
+        return (Context)__contextMap.get(loader);
+    }
     
 
     /**
