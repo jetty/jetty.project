@@ -82,7 +82,7 @@ public class HttpRequest implements Request
         scheme = uri.getScheme();
         host = uri.getHost();
         port = client.normalizePort(scheme, uri.getPort());
-        path = uri.getPath();
+        path = uri.getRawPath();
         String query = uri.getRawQuery();
         if (query != null)
         {

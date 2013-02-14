@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -211,6 +212,32 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
     }
 
+    @Test
+    public void testAbsoluteURIPathWithSpaces() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/a+space?decode=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRelativeURIPathWithSpaces() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/a+space?relative=true&decode=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
     private class RedirectHandler extends AbstractHandler
     {
         @Override
@@ -228,6 +255,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 boolean relative = Boolean.parseBoolean(request.getParameter("relative"));
                 String location = relative ? "" : request.getScheme() + "://" + host + ":" + request.getServerPort();
                 location += "/" + path;
+
+                if (Boolean.parseBoolean(request.getParameter("decode")))
+                    location = URLDecoder.decode(location, "UTF-8");
+
                 response.setHeader("Location", location);
 
                 if (Boolean.parseBoolean(request.getParameter("close")))

@@ -19,7 +19,10 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -28,6 +31,14 @@ import org.eclipse.jetty.http.HttpMethod;
 
 public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
 {
+    private static String SCHEME_REGEXP = "(^https?)";
+    private static String AUTHORITY_REGEXP = "([^/\\?#]+)";
+    // The location may be relative so the scheme://authority part may be missing
+    private static String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
+    private static String PATH_REGEXP = "([^\\?#]*)";
+    private static String QUERY_REGEXP = "([^#]*)";
+    private static String FRAGMENT_REGEXP = "(.*)";
+    private static Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
     private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirects";
 
     private final HttpClient client;
@@ -69,39 +80,46 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             String location = response.getHeaders().get("location");
             if (location != null)
             {
-                URI newURI = URI.create(location);
-                if (!newURI.isAbsolute())
-                    newURI = request.getURI().resolve(newURI);
-
-                int status = response.getStatus();
-                switch (status)
+                URI newURI = sanitize(location);
+                if (newURI != null)
                 {
-                    case 301:
+                    if (!newURI.isAbsolute())
+                        newURI = request.getURI().resolve(newURI);
+
+                    int status = response.getStatus();
+                    switch (status)
                     {
-                        if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
+                        case 301:
+                        {
+                            if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
+                                redirect(result, request.getMethod(), newURI);
+                            else
+                                fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
+                            break;
+                        }
+                        case 302:
+                        case 303:
+                        {
+                            // Redirect must be done using GET
+                            redirect(result, HttpMethod.GET, newURI);
+                            break;
+                        }
+                        case 307:
+                        {
+                            // Keep same method
                             redirect(result, request.getMethod(), newURI);
-                        else
-                            fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
-                        break;
+                            break;
+                        }
+                        default:
+                        {
+                            fail(result, new HttpResponseException("Unhandled HTTP status code " + status, response));
+                            break;
+                        }
                     }
-                    case 302:
-                    case 303:
-                    {
-                        // Redirect must be done using GET
-                        redirect(result, HttpMethod.GET, newURI);
-                        break;
-                    }
-                    case 307:
-                    {
-                        // Keep same method
-                        redirect(result, request.getMethod(), newURI);
-                        break;
-                    }
-                    default:
-                    {
-                        fail(result, new HttpResponseException("Unhandled HTTP status code " + status, response));
-                        break;
-                    }
+                }
+                else
+                {
+                    fail(result, new HttpResponseException("Malformed Location header " + location, response));
                 }
             }
             else
@@ -112,6 +130,43 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         else
         {
             fail(result, result.getFailure());
+        }
+    }
+
+    private URI sanitize(String location)
+    {
+        // Redirects should be valid, absolute, URIs, with properly escaped paths and encoded
+        // query parameters. However, shit happens, and here we try our best to recover.
+
+        try
+        {
+            // Direct hit first: if passes, we're good
+            return new URI(location);
+        }
+        catch (URISyntaxException x)
+        {
+            Matcher matcher = URI_PATTERN.matcher(location);
+            if (matcher.matches())
+            {
+                String scheme = matcher.group(2);
+                String authority = matcher.group(3);
+                String path = matcher.group(4);
+                String query = matcher.group(5);
+                if (query.length() == 0)
+                    query = null;
+                String fragment = matcher.group(6);
+                if (fragment.length() == 0)
+                    fragment = null;
+                try
+                {
+                    return new URI(scheme, authority, path, query, fragment);
+                }
+                catch (URISyntaxException xx)
+                {
+                    // Give up
+                }
+            }
+            return null;
         }
     }
 
