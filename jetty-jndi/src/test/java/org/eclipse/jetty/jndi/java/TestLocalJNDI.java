@@ -224,6 +224,15 @@ public class TestLocalJNDI
         assertEquals("333", (String)o);
         assertEquals("333", ic.lookup(name));
         ic.destroySubcontext("a");
+        try
+        {
+            ic.lookup("a");
+            fail("context a was not destroyed");
+        }
+        catch (NameNotFoundException e)
+        {
+            //expected
+        }
 
         name = parser.parse("");
         name.add("x");
