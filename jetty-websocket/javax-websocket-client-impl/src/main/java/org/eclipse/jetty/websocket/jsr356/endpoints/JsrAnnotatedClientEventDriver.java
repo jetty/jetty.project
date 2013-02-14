@@ -28,8 +28,12 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
-public class JsrAnnotatedEventDriver implements EventDriver
+public class JsrAnnotatedClientEventDriver implements EventDriver
 {
+    public JsrAnnotatedClientEventDriver(WebSocketPolicy policy, Object websocket, JsrAnnotatedMetadata metadata)
+    {
+        // TODO Auto-generated constructor stub
+    }
 
     @Override
     public void incomingError(WebSocketException e)

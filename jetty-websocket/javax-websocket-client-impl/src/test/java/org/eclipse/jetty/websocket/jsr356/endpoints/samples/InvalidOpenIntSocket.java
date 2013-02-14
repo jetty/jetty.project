@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,12 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-/**
- * Represents the metadata associated with Annotation discovery of a specific class.
- */
-public class JavaxPojoMetadata
+import javax.websocket.CloseReason;
+import javax.websocket.WebSocketClient;
+import javax.websocket.WebSocketOpen;
+
+import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
+
+@WebSocketClient
+public class InvalidOpenIntSocket extends TrackingSocket
 {
-
+    /**
+     * Invalid Open Method Declaration (parameter type CloseReason)
+     */
+    @WebSocketOpen
+    public void onOpen(CloseReason close)
+    {
+        openLatch.countDown();
+    }
 }
