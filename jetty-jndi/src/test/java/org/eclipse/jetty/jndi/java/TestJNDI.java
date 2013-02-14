@@ -36,13 +36,17 @@ import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -72,70 +76,135 @@ public class TestJNDI
         }
         
     }
-
+    
+    
     @Test
-    public void testIt() throws Exception
+    public void testThreadContextClassloaderAndCurrentContext()
+    throws Exception
     {
-        //set up some classloaders
-        Thread currentThread = Thread.currentThread();
-        ClassLoader currentLoader = currentThread.getContextClassLoader();
-        ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
-        ClassLoader childLoader2 = new URLClassLoader(new URL[0], currentLoader);
+        //create a jetty context, and start it so that its classloader it created
+        //and it is the current context
+        ContextHandler ch = new ContextHandler();
+        URLClassLoader chLoader = new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader());
+        ch.setClassLoader(chLoader);
+        
+        //Create another one
+        ContextHandler ch2 = new ContextHandler();
+        URLClassLoader ch2Loader = new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader());
+        ch2.setClassLoader(ch2Loader);
         
         try
         {
-
-            //Uncomment to aid with debug
-            /*
-            javaRootURLContext.getRoot().addListener(new NamingContext.Listener()
+            ch.setContextPath("/ch");
+            ch.addEventListener(new ServletContextListener()
             {
-                public void unbind(NamingContext ctx, Binding binding)
-                {
-                    System.err.println("java unbind "+binding+" from "+ctx.getName());
-                }
+                private Context comp;
+                private Object testObj = new Object();
                 
-                public Binding bind(NamingContext ctx, Binding binding)
+                public void contextInitialized(ServletContextEvent sce)
                 {
-                    System.err.println("java bind "+binding+" to "+ctx.getName());
-                    return binding;
+                    try
+                    {
+                        InitialContext initCtx = new InitialContext();
+                        Context java = (Context)initCtx.lookup("java:");
+                        assertNotNull(java);
+                        comp = (Context)initCtx.lookup("java:comp");
+                        assertNotNull(comp);
+                        Context env = ((Context)comp).createSubcontext("env");
+                        assertNotNull(env);
+                        env.bind("ch", testObj);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                public void contextDestroyed(ServletContextEvent sce)
+                {
+                    try
+                    {
+                        assertNotNull(comp);
+                        assertEquals(testObj,comp.lookup("env/ch"));
+                        comp.destroySubcontext("env");
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
                 }
             });
+            //Starting the context makes it current and creates a classloader for it
+            ch.start();
             
-            localContextRoot.getRoot().addListener(new NamingContext.Listener()
+            ch2.setContextPath("/ch2");
+            ch2.addEventListener(new ServletContextListener()
             {
-                public void unbind(NamingContext ctx, Binding binding)
+                private Context comp;
+                private Object testObj = new Object();
+
+                public void contextInitialized(ServletContextEvent sce)
                 {
-                    System.err.println("local unbind "+binding+" from "+ctx.getName());
+                    try
+                    {
+                        InitialContext initCtx = new InitialContext();
+                        comp = (Context)initCtx.lookup("java:comp");
+                        assertNotNull(comp);
+                       
+                        //another context's bindings should not be visible
+                        Context env = ((Context)comp).createSubcontext("env");
+                        try
+                        {
+                            env.lookup("ch");
+                            fail("java:comp/env visible from another context!");
+                        }
+                        catch (NameNotFoundException e)
+                        {
+                            //expected
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
                 }
                 
-                public Binding bind(NamingContext ctx, Binding binding)
+                public void contextDestroyed(ServletContextEvent sce)
                 {
-                    System.err.println("local bind "+binding+" to "+ctx.getName());
-                    return binding;
+                    try
+                    {
+                        assertNotNull(comp);
+                        comp.destroySubcontext("env");
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
                 }
             });
-            */
-            
-            
-            //set the current thread's classloader
-            currentThread.setContextClassLoader(childLoader1);
+            //make the new context the current one
+            ch2.start();
+        }
+        finally
+        {
+            ch.stop();
+            ch2.stop();
+        }
+    }
+    
+    @Test
+    public void testJavaNameParsing() throws Exception
+    {
+        Thread currentThread = Thread.currentThread();
+        ClassLoader currentLoader = currentThread.getContextClassLoader();
+        ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
+        
+        
+        //set the current thread's classloader
+        currentThread.setContextClassLoader(childLoader1);
 
-            InitialContext initCtxA = new InitialContext();
-            initCtxA.bind ("blah", "123");
-            assertEquals ("123", initCtxA.lookup("blah"));
-            
-            initCtxA.destroySubcontext("blah");
-            try
-            {
-                initCtxA.lookup("blah");
-                fail("context blah was not destroyed");
-            }
-            catch (NameNotFoundException e)
-            {
-                //expected
-            }
-            
-            
+        try
+        {
             InitialContext initCtx = new InitialContext();
             Context sub0 = (Context)initCtx.lookup("java:");
 
@@ -185,10 +254,73 @@ public class TestJNDI
 
             Context fee = ncontext.createSubcontext("fee");
             fee.bind ("fi", "88");
-            assertEquals("88", initCtxA.lookup("java:/fee/fi"));
-            assertEquals("88", initCtxA.lookup("java:/fee/fi/"));
-            assertTrue (initCtxA.lookup("java:/fee/") instanceof javax.naming.Context);
+            assertEquals("88", initCtx.lookup("java:/fee/fi"));
+            assertEquals("88", initCtx.lookup("java:/fee/fi/"));
+            assertTrue (initCtx.lookup("java:/fee/") instanceof javax.naming.Context);
+        }
+        finally
+        {
+            InitialContext ic = new InitialContext();
+            Context java = (Context)ic.lookup("java:");
+            java.destroySubcontext("fee");
+        }
+    }
+    
+    
 
+    @Test
+    public void testIt() throws Exception
+    {
+        //set up some classloaders
+        Thread currentThread = Thread.currentThread();
+        ClassLoader currentLoader = currentThread.getContextClassLoader();
+        ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
+        ClassLoader childLoader2 = new URLClassLoader(new URL[0], currentLoader);
+        
+        try
+        {
+
+            //Uncomment to aid with debug
+            /*
+            javaRootURLContext.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            
+            localContextRoot.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            */
+            
+            //Set up the tccl before doing any jndi operations
+            currentThread.setContextClassLoader(childLoader1);
+            InitialContext initCtx = new InitialContext();
+            
+            //Test we can lookup the root java: naming tree
+            Context sub0 = (Context)initCtx.lookup("java:");
+            assertNotNull(sub0);
+            
+            //Test that we cannot bind java:comp as it should
+            //already be bound 
             try
             {
                 Context sub1 = sub0.createSubcontext ("comp");
@@ -201,8 +333,10 @@ public class TestJNDI
 
             //check bindings at comp
             Context sub1 = (Context)initCtx.lookup("java:comp");
+            assertNotNull(sub1);
 
             Context sub2 = sub1.createSubcontext ("env");
+            assertNotNull(sub2);
 
             initCtx.bind ("java:comp/env/rubbish", "abc");
             assertEquals ("abc", initCtx.lookup("java:comp/env/rubbish"));
@@ -305,7 +439,6 @@ public class TestJNDI
                 //expected failure to modify immutable context
             }
             
-            //test what happens when you close an initial context that was used
             initCtx.close();
         }
         finally
@@ -320,61 +453,6 @@ public class TestJNDI
             comp.destroySubcontext("env");
             comp.unbind("crud");
             comp.unbind("crud2");
-        }
-    }
-    
-    
-    @Test
-    public void testParent()
-    throws Exception
-    {
-        //set up some classloaders
-        Thread currentThread = Thread.currentThread();
-        ClassLoader parentLoader = currentThread.getContextClassLoader();
-        ClassLoader childLoader1 = new URLClassLoader(new URL[0], parentLoader);
-        
-        try
-        {
-            //Test creating a comp for the parent loader does not leak to child
-            InitialContext initCtx = new InitialContext();
-            Context comp = (Context)initCtx.lookup("java:comp");
-            assertNotNull(comp);
-            
-            Context env = (Context)comp.createSubcontext("env");
-            assertNotNull(env);
-            
-            env.bind("foo", "aaabbbcccddd");
-            assertEquals("aaabbbcccddd", (String)initCtx.lookup("java:comp/env/foo"));
-            
-            //Change to child loader
-            currentThread.setContextClassLoader(childLoader1);
-            comp = (Context)initCtx.lookup("java:comp");
-            
-            Context childEnv = (Context)comp.createSubcontext("env");
-            assertNotSame(env, childEnv);
-            
-            childEnv.bind("foo", "eeefffggghhh");
-            assertEquals("eeefffggghhh", (String)initCtx.lookup("java:comp/env/foo"));
-            
-            //Change back to parent
-            currentThread.setContextClassLoader(parentLoader);
-            assertEquals("aaabbbcccddd", (String)initCtx.lookup("java:comp/env/foo"));
-            
-            
-        }
-        finally
-        {
-            //make some effort to clean up
-            InitialContext ic = new InitialContext();
-            currentThread.setContextClassLoader(parentLoader);
-            Context comp = (Context)ic.lookup("java:comp");
-            comp.destroySubcontext("env");
-            
-            currentThread.setContextClassLoader(childLoader1);
-            comp = (Context)ic.lookup("java:comp");
-            comp.destroySubcontext("env");
-         
-         
         }
     }
 }
