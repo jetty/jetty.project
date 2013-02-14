@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -149,7 +150,9 @@ public class Usage
         client.start();
 
         // Create an explicit connection, and use try-with-resources to manage it
-        try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", 8080);
 

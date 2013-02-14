@@ -19,13 +19,11 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +39,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -56,13 +53,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final HttpClient client;
     private final String scheme;
     private final String host;
-    private final InetSocketAddress address;
+    private final Address address;
     private final Queue<RequestContext> requests;
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
-    private final InetSocketAddress proxyAddress;
+    private final Address proxyAddress;
     private final HttpField hostField;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
@@ -70,7 +67,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         this.client = client;
         this.scheme = scheme;
         this.host = host;
-        this.address = new InetSocketAddress(host, port);
+        this.address = new Address(host, port);
 
         int maxRequestsQueued = client.getMaxRequestsQueuedPerDestination();
         int capacity = Math.min(32, maxRequestsQueued);
@@ -86,7 +83,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
-                new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()) : null;
+                new Address(proxyConfig.getHost(), proxyConfig.getPort()) : null;
 
         hostField = new HttpField(HttpHeader.HOST, host + ":" + port);
     }
@@ -121,7 +118,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return address.getPort();
     }
 
-    public InetSocketAddress getConnectAddress()
+    public Address getConnectAddress()
     {
         return isProxied() ? proxyAddress : address;
     }
@@ -175,14 +172,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
     }
 
-    public Future<Connection> newConnection()
+    public void newConnection(Promise<Connection> promise)
     {
-        FuturePromise<Connection> result = new FuturePromise<>();
-        newConnection(new ProxyPromise(result));
-        return result;
+        createConnection(new ProxyPromise(promise));
     }
 
-    protected void newConnection(Promise<Connection> promise)
+    protected void createConnection(Promise<Connection> promise)
     {
         client.newConnection(this, promise);
     }
@@ -236,7 +231,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 // Create a new connection, and pass a ProxyPromise to establish a proxy tunnel, if needed.
                 // Differently from the case where the connection is created explicitly by applications, here
                 // we need to do a bit more logging and keep track of the connection count in case of failures.
-                newConnection(new ProxyPromise(promise)
+                createConnection(new ProxyPromise(promise)
                 {
                     @Override
                     public void succeeded(Connection connection)
@@ -449,7 +444,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 getScheme(),
                 getHost(),
                 getPort(),
-                proxyAddress == null ? "" : " via " + proxyAddress.getHostString() + ":" + proxyAddress.getPort());
+                proxyAddress == null ? "" : " via " + proxyAddress.getHost() + ":" + proxyAddress.getPort());
     }
 
     private static class RequestContext
@@ -499,8 +494,8 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
         private void tunnel(final Connection connection)
         {
-            String target = address.getHostString() + ":" + address.getPort();
-            Request connect = client.newRequest(proxyAddress.getHostString(), proxyAddress.getPort())
+            String target = address.getHost() + ":" + address.getPort();
+            Request connect = client.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)
