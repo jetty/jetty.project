@@ -84,13 +84,14 @@ public class TestJNDI
     {
         //create a jetty context, and start it so that its classloader it created
         //and it is the current context
+        ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ContextHandler ch = new ContextHandler();
-        URLClassLoader chLoader = new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader());
+        URLClassLoader chLoader = new URLClassLoader(new URL[0], currentLoader);
         ch.setClassLoader(chLoader);
         
         //Create another one
         ContextHandler ch2 = new ContextHandler();
-        URLClassLoader ch2Loader = new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader());
+        URLClassLoader ch2Loader = new URLClassLoader(new URL[0], currentLoader);
         ch2.setClassLoader(ch2Loader);
         
         try
@@ -189,6 +190,7 @@ public class TestJNDI
         {
             ch.stop();
             ch2.stop();
+            Thread.currentThread().setContextClassLoader(currentLoader);
         }
     }
     
@@ -263,6 +265,7 @@ public class TestJNDI
             InitialContext ic = new InitialContext();
             Context java = (Context)ic.lookup("java:");
             java.destroySubcontext("fee");
+            currentThread.setContextClassLoader(currentLoader);
         }
     }
     
@@ -453,6 +456,7 @@ public class TestJNDI
             comp.destroySubcontext("env");
             comp.unbind("crud");
             comp.unbind("crud2");
+            currentThread.setContextClassLoader(currentLoader);
         }
     }
 }
