@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -429,7 +429,7 @@ public class ProxySPDYToHTTPTest
         Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayReceivedInfo)
             {
                 goAwayLatch.countDown();
             }

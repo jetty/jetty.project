@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -61,7 +61,7 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 Assert.assertEquals(0, goAwayInfo.getLastStreamId());
                 Assert.assertSame(SessionStatus.OK, goAwayInfo.getSessionStatus());
@@ -90,12 +90,12 @@ public class GoAwayTest extends AbstractTest
                 return null;
             }
         };
-        final AtomicReference<GoAwayReceivedInfo> ref = new AtomicReference<>();
+        final AtomicReference<GoAwayResultInfo> ref = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 ref.set(goAwayInfo);
                 latch.countDown();
@@ -106,10 +106,10 @@ public class GoAwayTest extends AbstractTest
         Stream stream1 = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        GoAwayReceivedInfo goAwayReceivedInfo = ref.get();
-        Assert.assertNotNull(goAwayReceivedInfo);
-        Assert.assertEquals(stream1.getId(), goAwayReceivedInfo.getLastStreamId());
-        Assert.assertSame(SessionStatus.OK, goAwayReceivedInfo.getSessionStatus());
+        GoAwayResultInfo goAwayResultInfo = ref.get();
+        Assert.assertNotNull(goAwayResultInfo);
+        Assert.assertEquals(stream1.getId(), goAwayResultInfo.getLastStreamId());
+        Assert.assertSame(SessionStatus.OK, goAwayResultInfo.getSessionStatus());
     }
 
     @Test
@@ -139,7 +139,7 @@ public class GoAwayTest extends AbstractTest
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 session.syn(new SynInfo(new Fields(), true), null, new FuturePromise<Stream>());
             }
@@ -184,12 +184,12 @@ public class GoAwayTest extends AbstractTest
                 }
             }
         };
-        final AtomicReference<GoAwayReceivedInfo> goAwayRef = new AtomicReference<>();
+        final AtomicReference<GoAwayResultInfo> goAwayRef = new AtomicReference<>();
         final CountDownLatch goAwayLatch = new CountDownLatch(1);
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 goAwayRef.set(goAwayInfo);
                 goAwayLatch.countDown();
@@ -228,7 +228,7 @@ public class GoAwayTest extends AbstractTest
 
         // The last good stream is the second, because it was received by the server
         Assert.assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
-        GoAwayReceivedInfo goAway = goAwayRef.get();
+        GoAwayResultInfo goAway = goAwayRef.get();
         Assert.assertNotNull(goAway);
         Assert.assertEquals(stream2.getId(), goAway.getLastStreamId());
     }
