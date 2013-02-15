@@ -20,33 +20,19 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import static org.hamcrest.Matchers.*;
 
-import java.lang.annotation.Annotation;
-
 import javax.websocket.CloseReason;
-import javax.websocket.Session;
-import javax.websocket.WebSocketOpen;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenCloseReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenIntSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenSessionIntSocket;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class JsrAnnotatedClientScannerTest
 {
-    private static final Logger LOG = Log.getLogger(JsrAnnotatedClientScannerTest.class);
-
     private void assertHasCallable(String msg, CallableMethod callable, Class<?>... expectedParameters)
     {
-        Assert.assertThat(msg,notNullValue());
+        Assert.assertThat(msg,callable,notNullValue());
         int len = expectedParameters.length;
         for (int i = 0; i < len; i++)
         {
@@ -55,30 +41,6 @@ public class JsrAnnotatedClientScannerTest
 
             Assert.assertTrue("Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]",actualParam.equals(expectedParam));
         }
-    }
-
-    private void assertInvalidAnnotationSignature(Class<?> pojo, Class<? extends Annotation> expectedAnnoClass)
-    {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(pojo);
-        try
-        {
-            scanner.scan();
-            Assert.fail("Expected " + InvalidSignatureException.class + " with message that references " + expectedAnnoClass + " annotation");
-        }
-        catch (InvalidSignatureException e)
-        {
-            LOG.debug("{}:{}",e.getClass(),e.getMessage());
-            Assert.assertThat("Message",e.getMessage(),containsString(expectedAnnoClass.getSimpleName()));
-        }
-    }
-
-    @Test
-    public void testScan_BasicOpen()
-    {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(BasicOpenSocket.class);
-        JsrAnnotatedMetadata metadata = scanner.scan();
-        Assert.assertThat("Metadata",metadata,notNullValue());
-        assertHasCallable("Metadata.onOpen",metadata.onOpen);
     }
 
     @Test
@@ -94,15 +56,6 @@ public class JsrAnnotatedClientScannerTest
     }
 
     @Test
-    public void testScan_BasicOpenSession()
-    {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(BasicOpenSessionSocket.class);
-        JsrAnnotatedMetadata metadata = scanner.scan();
-        Assert.assertThat("Metadata",metadata,notNullValue());
-        assertHasCallable("Metadata.onOpen",metadata.onOpen,Session.class);
-    }
-
-    @Test
     public void testScan_BasicSessionOpenClose()
     {
         JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(BasicOpenCloseSessionSocket.class);
@@ -112,23 +65,5 @@ public class JsrAnnotatedClientScannerTest
 
         assertHasCallable("Metadata.onOpen",metadata.onOpen);
         assertHasCallable("Metadata.onClose",metadata.onClose,CloseReason.class);
-    }
-
-    @Test
-    public void testScan_InvalidOpenCloseReason()
-    {
-        assertInvalidAnnotationSignature(InvalidOpenCloseReasonSocket.class,WebSocketOpen.class);
-    }
-
-    @Test
-    public void testScan_InvalidOpenInt()
-    {
-        assertInvalidAnnotationSignature(InvalidOpenIntSocket.class,WebSocketOpen.class);
-    }
-
-    @Test
-    public void testScan_InvalidOpenSessionInt()
-    {
-        assertInvalidAnnotationSignature(InvalidOpenSessionIntSocket.class,WebSocketOpen.class);
     }
 }

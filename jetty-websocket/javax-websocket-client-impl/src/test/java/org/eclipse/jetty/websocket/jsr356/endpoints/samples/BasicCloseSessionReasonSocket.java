@@ -19,20 +19,19 @@
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
 import javax.websocket.CloseReason;
+import javax.websocket.Session;
 import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.WebSocketClose;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
 @WebSocketClient
-public class InvalidOpenCloseReasonSocket extends TrackingSocket
+public class BasicCloseSessionReasonSocket extends TrackingSocket
 {
-    /**
-     * Invalid Open Method Declaration (parameter type CloseReason)
-     */
-    @WebSocketOpen
-    public void onOpen(CloseReason reason)
+    @WebSocketClose
+    public void onClose(Session session, CloseReason reason)
     {
-        openLatch.countDown();
+        addEvent("onClose(%s,%s)",session,reason);
+        closeLatch.countDown();
     }
 }
