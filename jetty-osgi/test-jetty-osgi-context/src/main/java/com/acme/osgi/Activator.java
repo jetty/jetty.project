@@ -49,20 +49,17 @@ public class Activator implements BundleActivator
     public void start(final BundleContext context) throws Exception
     {
         ContextHandler ch = new ContextHandler();
-        ch.addEventListener(new ServletContextListener () {
-
-            @Override
+        ch.addEventListener(new ServletContextListener () 
+        {
             public void contextInitialized(ServletContextEvent sce)
             {
                System.err.println("Context is initialized");
             }
 
-            @Override
             public void contextDestroyed(ServletContextEvent sce)
             {
                 System.err.println("CONTEXT IS DESTROYED!");                
             }
-            
         });
         Dictionary props = new Hashtable();
         props.put("contextPath","/acme");
