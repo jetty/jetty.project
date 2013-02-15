@@ -468,8 +468,7 @@ public class HttpRequest implements Request
     public boolean abort(Throwable cause)
     {
         aborted = Objects.requireNonNull(cause);
-        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, cause))
-            return true;
+        // The conversation may be null if it is already completed
         HttpConversation conversation = client.getConversation(getConversationID(), false);
         return conversation != null && conversation.abort(cause);
     }

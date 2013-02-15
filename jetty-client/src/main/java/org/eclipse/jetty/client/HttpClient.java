@@ -444,10 +444,10 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Destination getDestination(String scheme, String host, int port)
     {
-        return provideDestination(scheme, host, port);
+        return destinationFor(scheme, host, port);
     }
 
-    protected HttpDestination provideDestination(String scheme, String host, int port)
+    protected HttpDestination destinationFor(String scheme, String host, int port)
     {
         port = normalizePort(scheme, port);
 
@@ -485,7 +485,7 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
+        HttpDestination destination = destinationFor(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
@@ -563,7 +563,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void removeConversation(HttpConversation conversation)
     {
-        conversations.remove(conversation.id());
+        conversations.remove(conversation.getID());
         LOG.debug("{} removed", conversation);
     }
 

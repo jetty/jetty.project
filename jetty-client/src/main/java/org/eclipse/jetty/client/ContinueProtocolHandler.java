@@ -76,17 +76,19 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 case 100:
                 {
                     // All good, continue
+                    conversation.setResponseListener(null);
                     exchange.resetResponse(true);
-                    conversation.setResponseListeners(listeners);
                     exchange.proceed(true);
                     break;
                 }
                 default:
                 {
-                    // Server either does not support 100 Continue, or it does and wants to refuse the request content
+                    // Server either does not support 100 Continue,
+                    // or it does and wants to refuse the request content,
+                    // or we got some other HTTP status code like a redirect.
+                    conversation.setResponseListener(null);
                     HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getEncoding());
                     notifier.forwardSuccess(listeners, contentResponse);
-                    conversation.setResponseListeners(listeners);
                     exchange.proceed(false);
                     break;
                 }

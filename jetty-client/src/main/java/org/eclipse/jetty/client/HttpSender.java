@@ -19,10 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -30,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -51,16 +48,12 @@ public class HttpSender implements AsyncContentProvider.Listener
     private final AtomicReference<SendState> sendState = new AtomicReference<>(SendState.IDLE);
     private final HttpGenerator generator = new HttpGenerator();
     private final HttpConnection connection;
-    private final RequestNotifier requestNotifier;
-    private final ResponseNotifier responseNotifier;
     private Iterator<ByteBuffer> contentIterator;
     private ContinueContentChunk continueContentChunk;
 
     public HttpSender(HttpConnection connection)
     {
         this.connection = connection;
-        this.requestNotifier = new RequestNotifier(connection.getHttpClient());
-        this.responseNotifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     @Override
@@ -108,20 +101,6 @@ public class HttpSender implements AsyncContentProvider.Listener
         if (!updateState(State.IDLE, State.BEGIN))
             throw new IllegalStateException();
 
-        // Arrange the listeners, so that if there is a request failure the proper listeners are notified
-        HttpConversation conversation = exchange.getConversation();
-        HttpExchange initialExchange = conversation.getExchanges().peekFirst();
-        if (initialExchange == exchange)
-        {
-            conversation.setResponseListeners(exchange.getResponseListeners());
-        }
-        else
-        {
-            List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
-            listeners.addAll(initialExchange.getResponseListeners());
-            conversation.setResponseListeners(listeners);
-        }
-
         Request request = exchange.getRequest();
         Throwable cause = request.getAbortCause();
         if (cause != null)
@@ -131,7 +110,8 @@ public class HttpSender implements AsyncContentProvider.Listener
         else
         {
             LOG.debug("Sending {}", request);
-            requestNotifier.notifyBegin(request);
+            RequestNotifier notifier = connection.getDestination().getRequestNotifier();
+            notifier.notifyBegin(request);
 
             ContentProvider content = request.getContent();
             this.contentIterator = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
@@ -214,7 +194,8 @@ public class HttpSender implements AsyncContentProvider.Listener
                                 {
                                     if (!updateState(currentState, State.HEADERS))
                                         continue;
-                                    requestNotifier.notifyHeaders(request);
+                                    RequestNotifier notifier = connection.getDestination().getRequestNotifier();
+                                    notifier.notifyHeaders(request);
                                     break out;
                                 }
                                 case HEADERS:
@@ -461,7 +442,8 @@ public class HttpSender implements AsyncContentProvider.Listener
                     if (!updateState(current, State.COMMIT))
                         continue;
                     LOG.debug("Committed {}", request);
-                    requestNotifier.notifyCommit(request);
+                    RequestNotifier notifier = connection.getDestination().getRequestNotifier();
+                    notifier.notifyCommit(request);
                     return true;
                 case COMMIT:
                     if (!updateState(current, State.COMMIT))
@@ -495,8 +477,9 @@ public class HttpSender implements AsyncContentProvider.Listener
         // It is important to notify completion *after* we reset because
         // the notification may trigger another request/response
 
+        HttpDestination destination = connection.getDestination();
         Request request = exchange.getRequest();
-        requestNotifier.notifySuccess(request);
+        destination.getRequestNotifier().notifySuccess(request);
         LOG.debug("Sent {}", request);
 
         Result result = completion.getReference();
@@ -505,7 +488,7 @@ public class HttpSender implements AsyncContentProvider.Listener
             connection.complete(exchange, !result.isFailed());
 
             HttpConversation conversation = exchange.getConversation();
-            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
+            destination.getResponseNotifier().notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;
@@ -533,8 +516,9 @@ public class HttpSender implements AsyncContentProvider.Listener
 
         exchange.terminateRequest();
 
+        HttpDestination destination = connection.getDestination();
         Request request = exchange.getRequest();
-        requestNotifier.notifyFailure(request, failure);
+        destination.getRequestNotifier().notifyFailure(request, failure);
         LOG.debug("Failed {} {}", request, failure);
 
         Result result = completion.getReference();
@@ -551,13 +535,13 @@ public class HttpSender implements AsyncContentProvider.Listener
             connection.complete(exchange, false);
 
             HttpConversation conversation = exchange.getConversation();
-            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
+            destination.getResponseNotifier().notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;
     }
 
-    public boolean abort(HttpExchange exchange, Throwable cause)
+    public boolean abort(Throwable cause)
     {
         State current = state.get();
         boolean abortable = isBeforeCommit(current) ||

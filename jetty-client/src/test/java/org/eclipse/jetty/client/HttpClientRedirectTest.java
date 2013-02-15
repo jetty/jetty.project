@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -236,6 +238,23 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRedirectFailed() throws Exception
+    {
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path("/303/doesNotExist/done")
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(UnresolvedAddressException.class));
+        }
     }
 
     private class RedirectHandler extends AbstractHandler
