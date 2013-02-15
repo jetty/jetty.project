@@ -60,10 +60,14 @@ public abstract class Descriptor
         
         if (_root == null)
         {
-            //boolean oldValidating = _processor.getParser().getValidating();
-            //_processor.getParser().setValidating(_validating);
-            _root = _parser.parse(_xml.getURL().toString());
-            //_processor.getParser().setValidating(oldValidating);
+            try
+            {
+                _root = _parser.parse(_xml.getInputStream());
+            }
+            finally
+            {
+                _xml.release();
+            }
         }
     }
     
