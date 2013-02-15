@@ -178,7 +178,7 @@ public class GzipFilter extends UserAgentFilter
                 _methods.add(tok.nextToken().trim().toUpperCase());
         }
         else
-            _methods.add(HttpMethods.GET);
+            _methods.add(HttpMethod.GET.asString());
         
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp!=null)
