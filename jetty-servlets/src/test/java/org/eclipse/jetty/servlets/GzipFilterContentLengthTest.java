@@ -112,7 +112,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseGzipCompressed(testfile.getName());
+            tester.assertIsResponseGzipCompressed("GET",testfile.getName());
         }
         finally
         {
@@ -132,7 +132,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed(testfile.getName(),filesize,HttpStatus.OK_200);
+            tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
         }
         finally
         {
