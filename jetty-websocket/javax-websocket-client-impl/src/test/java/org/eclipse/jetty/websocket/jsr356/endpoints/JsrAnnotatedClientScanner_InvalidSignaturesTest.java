@@ -49,9 +49,9 @@ import org.junit.runners.Parameterized.Parameters;
  * Test {@link JsrAnnotatedClientScanner} against various simple, single method annotated classes with invalid signatures.
  */
 @RunWith(Parameterized.class)
-public class JsrAnnotatedClientScanner_InvalidSignatureTest
+public class JsrAnnotatedClientScanner_InvalidSignaturesTest
 {
-    private static final Logger LOG = Log.getLogger(JsrAnnotatedClientScanner_InvalidSignatureTest.class);
+    private static final Logger LOG = Log.getLogger(JsrAnnotatedClientScanner_InvalidSignaturesTest.class);
 
     @Parameters
     public static Collection<Class<?>[]> data()
@@ -68,6 +68,11 @@ public class JsrAnnotatedClientScanner_InvalidSignatureTest
         data.add(new Class<?>[]{ InvalidOpenSessionIntSocket.class, WebSocketOpen.class });
         // @formatter:on
 
+        // TODO: invalid return types
+        // TODO: static methods
+        // TODO: private or protected methods
+        // TODO: abstract methods
+
         return data;
     }
 
@@ -76,7 +81,7 @@ public class JsrAnnotatedClientScanner_InvalidSignatureTest
     // The annotation class expected to be mentioned in the error message
     private Class<? extends Annotation> expectedAnnoClass;
 
-    public JsrAnnotatedClientScanner_InvalidSignatureTest(Class<?> pojo, Class<? extends Annotation> expectedAnnotation)
+    public JsrAnnotatedClientScanner_InvalidSignaturesTest(Class<?> pojo, Class<? extends Annotation> expectedAnnotation)
     {
         this.pojo = pojo;
         this.expectedAnnoClass = expectedAnnotation;

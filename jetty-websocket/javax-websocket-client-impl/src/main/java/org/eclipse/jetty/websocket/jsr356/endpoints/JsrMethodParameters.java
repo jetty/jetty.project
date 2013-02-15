@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
+import org.eclipse.jetty.websocket.common.events.ParamList;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrMethodParameters.Param;
 
 public class JsrMethodParameters extends ArrayList<Param>
@@ -69,6 +70,12 @@ public class JsrMethodParameters extends ArrayList<Param>
         {
             add(new Param(i,ptypes[i]));
         }
+    }
+
+    public Class<?>[] containsAny(ParamList validTextFormatParams)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public boolean containsParameterSet(Class<?>[] paramSet)

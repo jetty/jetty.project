@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfiguration;
+import javax.websocket.PongMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketClient;
 import javax.websocket.WebSocketClose;
@@ -51,6 +55,10 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
     private static final ParamList validOpenParams;
     private static final ParamList validCloseParams;
     private static final ParamList validErrorParams;
+    private static final ParamList validPongFormatParams;
+    private static final ParamList validMessageParams;
+    private static final ParamList validTextFormatParams;
+    private static final ParamList validBinaryFormatParams;
 
     static
     {
@@ -65,11 +73,61 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
         validErrorParams = new ParamList();
         validErrorParams.addParams(Session.class);
         validErrorParams.addParams(Throwable.class);
+
+        validMessageParams = new ParamList();
+        validMessageParams.addParams(Session.class);
+
+        // TEXT Formats
+        validTextFormatParams = new ParamList();
+        // partial message
+        validTextFormatParams.addParams(String.class,Boolean.TYPE);
+        validTextFormatParams.addParams(String.class,Boolean.class);
+        // whole message
+        validTextFormatParams.addParams(String.class);
+        // java primitives
+        validTextFormatParams.addParams(Boolean.TYPE);
+        validTextFormatParams.addParams(Byte.TYPE);
+        validTextFormatParams.addParams(Character.TYPE);
+        validTextFormatParams.addParams(Double.TYPE);
+        validTextFormatParams.addParams(Float.TYPE);
+        validTextFormatParams.addParams(Integer.TYPE);
+        validTextFormatParams.addParams(Long.TYPE);
+        validTextFormatParams.addParams(Short.TYPE);
+        // java primitives class equivalents
+        validTextFormatParams.addParams(Boolean.class);
+        validTextFormatParams.addParams(Byte.class);
+        validTextFormatParams.addParams(Character.class);
+        validTextFormatParams.addParams(Double.class);
+        validTextFormatParams.addParams(Float.class);
+        validTextFormatParams.addParams(Integer.class);
+        validTextFormatParams.addParams(Long.class);
+        validTextFormatParams.addParams(Short.class);
+        // streaming
+        validTextFormatParams.addParams(Reader.class);
+
+        // BINARY Formats
+        validBinaryFormatParams = new ParamList();
+        // partial message
+        validBinaryFormatParams.addParams(ByteBuffer.class,Boolean.TYPE);
+        validBinaryFormatParams.addParams(ByteBuffer.class,Boolean.class);
+        validBinaryFormatParams.addParams(byte[].class,Boolean.TYPE);
+        validBinaryFormatParams.addParams(byte[].class,Boolean.class);
+        // whole message
+        validBinaryFormatParams.addParams(ByteBuffer.class);
+        validBinaryFormatParams.addParams(byte[].class);
+        // streaming
+        validBinaryFormatParams.addParams(InputStream.class);
+
+        // PONG Format
+        validPongFormatParams = new ParamList();
+        validPongFormatParams.addParams(PongMessage.class);
     }
 
     protected final Class<?> pojo;
     protected final Class<? extends Encoder> encoders[];
     protected final Class<? extends Decoder> decoders[];
+    protected final ParamList validTextDecoderParameters;
+    protected final ParamList validBinaryDecoderParameters;
 
     public JsrAnnotatedClientScanner(Class<?> websocket)
     {
@@ -83,6 +141,26 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
 
         this.encoders = anno.encoders();
         this.decoders = anno.decoders();
+
+        this.validTextDecoderParameters = new ParamList();
+        this.validBinaryDecoderParameters = new ParamList();
+
+        // decoder based valid parameters
+        for (Class<? extends Decoder> decoder : this.decoders)
+        {
+            if (Decoder.Text.class.isAssignableFrom(decoder) || Decoder.TextStream.class.isAssignableFrom(decoder))
+            {
+                // Text decoder
+                decoder.getTypeParameters();
+                // TODO: Fixme
+            }
+
+            if (Decoder.Binary.class.isAssignableFrom(decoder) || Decoder.BinaryStream.class.isAssignableFrom(decoder))
+            {
+                // Binary decoder
+                // TODO: Fixme
+            }
+        }
     }
 
     private void assertValidJsrSignature(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
@@ -180,7 +258,72 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
             JsrMessageCallableMethod callable = new JsrMessageCallableMethod(pojo,method);
             callable.setReturnType(method.getReturnType(),encoders);
 
-            // TODO: create MessageHandler wrapper for methods
+            // TODO: create MessageHandler wrapper for methods?
+
+            JsrMethodParameters params = new JsrMethodParameters(method);
+
+            // First, find the path-mapping parameters
+            for (Param param : params)
+            {
+                String varname = getPathMappingParameterVariable(param.type);
+                if (varname != null)
+                {
+                    param.setPathParamVariable(varname);
+                }
+            }
+
+            // Next find the Message Format Parameters
+            Class<?> formatParams[] = null;
+            if ((formatParams = params.containsAny(validTextFormatParams)) != null)
+            {
+                // TEXT
+                params.setValid(formatParams);
+            }
+
+            if ((formatParams = params.containsAny(validBinaryFormatParams)) != null)
+            {
+                // BINARY
+                params.setValid(formatParams);
+            }
+
+            if ((formatParams = params.containsAny(validPongFormatParams)) != null)
+            {
+                // PONG
+                params.setValid(formatParams);
+            }
+
+            // Now find the non-format parameters
+            for (Class<?>[] paramSet : validMessageParams)
+            {
+                // Each entry in validParams is a set of possible valid references.
+                // If not all parts of the set are present, that set isn't valid for the provided parameters.
+
+                if (params.containsParameterSet(paramSet))
+                {
+                    // flag as valid
+                    params.setValid(paramSet);
+                }
+            }
+
+            // Finally, ensure we identified all of the parameters
+            for (Param param : params)
+            {
+                if (param.isValid() == false)
+                {
+                    StringBuilder err = new StringBuilder();
+                    err.append("Encountered invalid/unhandled parameter <");
+                    err.append(param.type.getName());
+                    err.append("> (position ").append(param.index).append(") in method <");
+                    err.append(method.getName());
+                    err.append("> of object <");
+                    err.append(pojo.getName());
+                    err.append("> that doesn't fit the requirements for the @");
+                    err.append(WebSocketMessage.class.getSimpleName());
+                    err.append(" annotation");
+
+                    throw new InvalidSignatureException(err.toString());
+                }
+            }
 
             // TODO: ensure conflicting parameters not present
             // assertUnset(metadata.onMessage,WebSocketMessage.class,method);

@@ -21,14 +21,17 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 import static org.hamcrest.Matchers.*;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import javax.websocket.CloseReason;
+import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseSessionReasonSocket;
@@ -40,6 +43,8 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableS
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicPongMessageSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicTextMessageStringSocket;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +55,7 @@ import org.junit.runners.Parameterized.Parameters;
  * Test {@link JsrAnnotatedClientScanner} against various valid, simple, 1 method annotated classes with valid signatures.
  */
 @RunWith(Parameterized.class)
-public class JsrAnnotatedClientScanner_BasicTest
+public class JsrAnnotatedClientScanner_GoodSignaturesTest
 {
     public static class Case
     {
@@ -82,20 +87,34 @@ public class JsrAnnotatedClientScanner_BasicTest
         Field fOpen = findFieldRef(JsrAnnotatedMetadata.class,"onOpen");
         Field fClose = findFieldRef(JsrAnnotatedMetadata.class,"onClose");
         Field fError = findFieldRef(JsrAnnotatedMetadata.class,"onError");
+        Field fText = findFieldRef(JsrAnnotatedMetadata.class,"onText");
+        Field fBinary = findFieldRef(JsrAnnotatedMetadata.class,"onBinary");
+        Field fPong = findFieldRef(JsrAnnotatedMetadata.class,"onPong");
 
         // @formatter:off
-        Case.add(data,BasicOpenSocket.class, fOpen);
-        Case.add(data,BasicOpenSessionSocket.class, fOpen, Session.class);
-        Case.add(data,BasicCloseSocket.class, fClose);
-        Case.add(data,BasicCloseReasonSocket.class, fClose, CloseReason.class);
-        Case.add(data,BasicCloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
-        Case.add(data,BasicCloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
-        Case.add(data,BasicErrorSocket.class, fError);
-        Case.add(data,BasicErrorSessionSocket.class, fError, Session.class);
-        Case.add(data,BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class);
-        Case.add(data,BasicErrorThrowableSocket.class, fError, Throwable.class);
-        Case.add(data,BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class);
+        // -- Open Events
+        Case.add(data, BasicOpenSocket.class, fOpen);
+        Case.add(data, BasicOpenSessionSocket.class, fOpen, Session.class);
+        // -- Close Events
+        Case.add(data, BasicCloseSocket.class, fClose);
+        Case.add(data, BasicCloseReasonSocket.class, fClose, CloseReason.class);
+        Case.add(data, BasicCloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
+        Case.add(data, BasicCloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
+        // -- Error Events
+        Case.add(data, BasicErrorSocket.class, fError);
+        Case.add(data, BasicErrorSessionSocket.class, fError, Session.class);
+        Case.add(data, BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class);
+        Case.add(data, BasicErrorThrowableSocket.class, fError, Throwable.class);
+        Case.add(data, BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class);
+        // -- Text Events
+        Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
+        // -- Binary Events
+        Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
+        // -- Pong Events
+        Case.add(data, BasicPongMessageSocket.class, fPong, PongMessage.class);
         // @formatter:on
+
+        // TODO: validate return types
 
         return data;
     }
@@ -107,7 +126,7 @@ public class JsrAnnotatedClientScanner_BasicTest
 
     private Case testcase;
 
-    public JsrAnnotatedClientScanner_BasicTest(Case testcase)
+    public JsrAnnotatedClientScanner_GoodSignaturesTest(Case testcase)
     {
         this.testcase = testcase;
     }
