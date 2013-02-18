@@ -26,6 +26,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.LowResourceMonitor;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class LikeJettyXml
 {
@@ -53,6 +55,8 @@ public class LikeJettyXml
         server.setDumpAfterStart(false);
         server.setDumpBeforeStop(false);
 
+        server.addBean(new TimerScheduler());
+        
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
@@ -120,6 +124,12 @@ public class LikeJettyXml
         requestLogHandler.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
+        
+        LowResourceMonitor lowResourcesMonitor=new LowResourceMonitor(server);
+        lowResourcesMonitor.setLowResourcesIdleTimeout(1000);
+        lowResourcesMonitor.setMaxConnections(2);
+        lowResourcesMonitor.setPeriod(1200);
+        server.addBean(lowResourcesMonitor);
 
         server.start();
         server.join();
