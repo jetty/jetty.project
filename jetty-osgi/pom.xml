@@ -23,6 +23,8 @@
     <module>jetty-osgi-boot-jsp</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
+    <module>test-jetty-osgi-webapp</module>
+    <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>
@@ -142,28 +144,6 @@
         <artifactId>servlet</artifactId>
         <version>${equinox-http-servlet-version}</version>
       </dependency>
-      <!--dependency>
-        <groupId>org.eclipse.equinox</groupId>
-        <artifactId>servletbridge</artifactId>
-        <version>${equinox-servletbridge-version}</version>
-      </dependency-->
-      <!-- not ready <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-impl</artifactId>
-        <version>${jsp-impl-2.2-glassfish-version}</version>
-      </dependency-->
-<!--
-      <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-2.1-glassfish</artifactId>
-        <version>${jsp-2.1-glassfish-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-api-2.1-glassfish</artifactId>
-        <version>${jsp-2.1-glassfish-version}</version>
-      </dependency>
--->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>

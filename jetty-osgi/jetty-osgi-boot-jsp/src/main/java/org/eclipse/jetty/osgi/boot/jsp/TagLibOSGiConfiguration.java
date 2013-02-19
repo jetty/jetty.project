@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -114,7 +115,7 @@ public class TagLibOSGiConfiguration extends TagLibConfiguration
             {
                 atLeastOneTldFound = true;
                 URL oriUrl = en.nextElement();
-                URL url = DefaultFileLocatorHelper.getLocalURL(oriUrl);
+                URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(oriUrl);
                 Resource tldResource;
                 try
                 {

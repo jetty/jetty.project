@@ -20,7 +20,8 @@ package org.eclipse.jetty.osgi.boot.utils;
 
 import java.net.URL;
 
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
+import org.eclipse.jetty.deploy.DeploymentManager;
+
 
 /**
  * Fix various shortcomings with the way jasper parses the tld files.
@@ -55,6 +56,6 @@ public interface WebappRegistrationCustomizer
      * @return array of URLs
      * @throws Exception
      */
-    URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper fileLocator) throws Exception;
+    URL[] getJarsWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
 
 }
