@@ -64,6 +64,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -122,6 +123,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
+    private volatile SocketAddressResolver resolver;
     private volatile SelectorManager selectorManager;
     private volatile HttpField agentField = new HttpField(HttpHeader.USER_AGENT, "Jetty/" + Jetty.VERSION);
     private volatile boolean followRedirects = true;
@@ -132,6 +134,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long connectTimeout = 15000;
+    private volatile long addressResolutionTimeout = 15000;
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
@@ -197,6 +200,8 @@ public class HttpClient extends ContainerLifeCycle
         if (scheduler == null)
             scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
         addBean(scheduler);
+
+        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
 
         selectorManager = newSelectorManager();
         selectorManager.setConnectTimeout(getConnectTimeout());
@@ -439,10 +444,10 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Destination getDestination(String scheme, String host, int port)
     {
-        return provideDestination(scheme, host, port);
+        return destinationFor(scheme, host, port);
     }
 
-    protected HttpDestination provideDestination(String scheme, String host, int port)
+    protected HttpDestination destinationFor(String scheme, String host, int port)
     {
         port = normalizePort(scheme, port);
 
@@ -480,34 +485,48 @@ public class HttpClient extends ContainerLifeCycle
         if (!Arrays.asList("http", "https").contains(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        HttpDestination destination = provideDestination(scheme, request.getHost(), request.getPort());
+        HttpDestination destination = destinationFor(scheme, request.getHost(), request.getPort());
         destination.send(request, listeners);
     }
 
-    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
+    protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
-        SocketChannel channel = null;
-        try
+        Destination.Address address = destination.getConnectAddress();
+        resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
         {
-            channel = SocketChannel.open();
-            SocketAddress bindAddress = getBindAddress();
-            if (bindAddress != null)
-                channel.bind(bindAddress);
-            configure(channel);
-            channel.configureBlocking(false);
-            channel.connect(destination.getConnectAddress());
+            @Override
+            public void succeeded(SocketAddress socketAddress)
+            {
+                SocketChannel channel = null;
+                try
+                {
+                    channel = SocketChannel.open();
+                    SocketAddress bindAddress = getBindAddress();
+                    if (bindAddress != null)
+                        channel.bind(bindAddress);
+                    configure(channel);
+                    channel.configureBlocking(false);
+                    channel.connect(socketAddress);
 
-            Future<Connection> result = new ConnectionCallback(destination, promise);
-            selectorManager.connect(channel, result);
-        }
-        // Must catch all exceptions, since some like
-        // UnresolvedAddressException are not IOExceptions.
-        catch (Exception x)
-        {
-            if (channel != null)
-                close(channel);
-            promise.failed(x);
-        }
+                    Future<Connection> futureConnection = new ConnectionCallback(destination, promise);
+                    selectorManager.connect(channel, futureConnection);
+                }
+                // Must catch all exceptions, since some like
+                // UnresolvedAddressException are not IOExceptions.
+                catch (Throwable x)
+                {
+                    if (channel != null)
+                        close(channel);
+                    promise.failed(x);
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+        });
     }
 
     protected void configure(SocketChannel channel) throws SocketException
@@ -544,7 +563,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void removeConversation(HttpConversation conversation)
     {
-        conversations.remove(conversation.id());
+        conversations.remove(conversation.getID());
         LOG.debug("{} removed", conversation);
     }
 
@@ -597,6 +616,22 @@ public class HttpClient extends ContainerLifeCycle
     public void setConnectTimeout(long connectTimeout)
     {
         this.connectTimeout = connectTimeout;
+    }
+
+    /**
+     * @return the timeout, in milliseconds, for the DNS resolution of host addresses
+     */
+    public long getAddressResolutionTimeout()
+    {
+        return addressResolutionTimeout;
+    }
+
+    /**
+     * @param addressResolutionTimeout the timeout, in milliseconds, for the DNS resolution of host addresses
+     */
+    public void setAddressResolutionTimeout(long addressResolutionTimeout)
+    {
+        this.addressResolutionTimeout = addressResolutionTimeout;
     }
 
     /**

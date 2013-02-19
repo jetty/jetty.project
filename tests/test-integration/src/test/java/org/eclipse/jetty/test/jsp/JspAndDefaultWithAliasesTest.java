@@ -29,12 +29,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.jasper.servlet.JspServlet;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.NoJspServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -44,7 +42,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -65,16 +62,22 @@ public class JspAndDefaultWithAliasesTest
     public static Collection<String[]> data()
     {
         List<String[]> data = new ArrayList<String[]>();
+        
+        double javaVersion = Double.parseDouble(System.getProperty("java.specification.version"));
 
         // @formatter:off
         data.add(new String[] { "false","/dump.jsp" });
         data.add(new String[] { "true", "/dump.jsp%00" });
-        data.add(new String[] { "false","/dump.jsp%00x" });
         data.add(new String[] { "false","/dump.jsp%00/" });
-        data.add(new String[] { "false","/dump.jsp%00x/" });
         data.add(new String[] { "false","/dump.jsp%00x/dump.jsp" });
         data.add(new String[] { "false","/dump.jsp%00/dump.jsp" });
-        data.add(new String[] { "false","/dump.jsp%00/index.html" });
+
+        if (javaVersion >= 1.7) 
+        {
+            data.add(new String[] { "false","/dump.jsp%00x" });
+            data.add(new String[] { "false","/dump.jsp%00x/" });
+            data.add(new String[] { "false","/dump.jsp%00/index.html" });
+        }
         // @formatter:on
 
         return data;

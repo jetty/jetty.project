@@ -74,9 +74,9 @@ public class HttpReceiverTest
     {
         HttpRequest request = new HttpRequest(client, URI.create("http://localhost"));
         FutureResponseListener listener = new FutureResponseListener(request);
-        HttpExchange exchange = new HttpExchange(conversation, connection, request, Collections.<Response.ResponseListener>singletonList(listener));
+        HttpExchange exchange = new HttpExchange(conversation, destination, request, Collections.<Response.ResponseListener>singletonList(listener));
         conversation.getExchanges().offer(exchange);
-        connection.setExchange(exchange);
+        connection.associate(exchange);
         exchange.requestComplete(null);
         exchange.terminateRequest();
         return exchange;
@@ -91,7 +91,7 @@ public class HttpReceiverTest
                 "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -115,7 +115,7 @@ public class HttpReceiverTest
                 content);
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -142,9 +142,9 @@ public class HttpReceiverTest
                 content1);
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
         endPoint.setInputEOF();
-        exchange.receive();
+        connection.receive();
 
         try
         {
@@ -166,7 +166,7 @@ public class HttpReceiverTest
                 "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
         // Simulate an idle timeout
         connection.idleTimeout();
 
@@ -190,7 +190,7 @@ public class HttpReceiverTest
                 "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
 
         try
         {
@@ -221,20 +221,20 @@ public class HttpReceiverTest
                 "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        exchange.receive();
+        connection.receive();
         endPoint.reset();
 
         ByteBuffer buffer = ByteBuffer.wrap(gzip);
         int fragment = buffer.limit() - 1;
         buffer.limit(fragment);
         endPoint.setInput(buffer);
-        exchange.receive();
+        connection.receive();
         endPoint.reset();
 
         buffer.limit(gzip.length);
         buffer.position(fragment);
         endPoint.setInput(buffer);
-        exchange.receive();
+        connection.receive();
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);

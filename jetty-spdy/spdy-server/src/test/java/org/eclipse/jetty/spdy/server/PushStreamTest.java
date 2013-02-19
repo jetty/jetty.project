@@ -19,12 +19,6 @@
 
 package org.eclipse.jetty.spdy.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -44,7 +38,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -75,6 +69,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 public class PushStreamTest extends AbstractTest
 {
     private static final Logger LOG = Log.getLogger(PushStreamTest.class);
@@ -94,10 +94,12 @@ public class PushStreamTest extends AbstractTest
                 stream.push(new PushInfo(new Fields(), true), new Promise.Adapter<Stream>());
                 return null;
             }
-        }), new SessionFrameListener.Adapter()
+        }), null);
+
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 assertThat("streamId is even", stream.getId() % 2, is(0));
                 assertThat("stream is unidirectional", stream.isUnidirectional(), is(true));
@@ -117,8 +119,6 @@ public class PushStreamTest extends AbstractTest
                 return null;
             }
         });
-
-        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), null);
         assertThat("onSyn has been called", pushStreamLatch.await(5, TimeUnit.SECONDS), is(true));
         Stream pushStream = pushStreamRef.get();
         assertThat("main stream and associated stream are the same", stream, sameInstance(pushStream.getAssociatedStream()));
@@ -177,10 +177,12 @@ public class PushStreamTest extends AbstractTest
                 }
             }
 
-        }), new SessionFrameListener.Adapter()
+        }), null);
+
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 pushStreamSynLatch.countDown();
                 return new StreamFrameListener.Adapter()
@@ -193,10 +195,7 @@ public class PushStreamTest extends AbstractTest
                     }
                 };
             }
-        });
 
-        Stream stream = clientSession.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
-        {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -298,10 +297,12 @@ public class PushStreamTest extends AbstractTest
                     throw new IllegalStateException(e);
                 }
             }
-        }), new SessionFrameListener.Adapter()
+        }), null);
+
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 return new StreamFrameListener.Adapter()
                 {
@@ -327,10 +328,7 @@ public class PushStreamTest extends AbstractTest
                     }
                 };
             }
-        });
 
-        Stream stream = clientSession.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
-        {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -427,7 +425,7 @@ public class PushStreamTest extends AbstractTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 goAwayReceivedLatch.countDown();
             }
@@ -543,25 +541,37 @@ public class PushStreamTest extends AbstractTest
                 stream.push(new PushInfo(new Fields(), false), new Promise.Adapter<Stream>());
                 return null;
             }
-        }), new SessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                assertStreamIdIsEven(stream);
-                pushStreamIdIsEvenLatch.countDown();
-                return super.onSyn(stream, synInfo);
-            }
-        });
+        }), null);
 
-        Stream stream = clientSession.syn(new SynInfo(new Fields(), false), null);
-        Stream stream2 = clientSession.syn(new SynInfo(new Fields(), false), null);
-        Stream stream3 = clientSession.syn(new SynInfo(new Fields(), false), null);
+        Stream stream = clientSession.syn(new SynInfo(new Fields(), false),
+                new VerifyPushStreamIdIsEvenStreamFrameListener(pushStreamIdIsEvenLatch));
+        Stream stream2 = clientSession.syn(new SynInfo(new Fields(), false),
+                new VerifyPushStreamIdIsEvenStreamFrameListener(pushStreamIdIsEvenLatch));
+        Stream stream3 = clientSession.syn(new SynInfo(new Fields(), false),
+                new VerifyPushStreamIdIsEvenStreamFrameListener(pushStreamIdIsEvenLatch));
         assertStreamIdIsOdd(stream);
         assertStreamIdIsOdd(stream2);
         assertStreamIdIsOdd(stream3);
 
         assertThat("all pushStreams had even ids", pushStreamIdIsEvenLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    private class VerifyPushStreamIdIsEvenStreamFrameListener extends StreamFrameListener.Adapter
+    {
+        final CountDownLatch pushStreamIdIsEvenLatch;
+
+        private VerifyPushStreamIdIsEvenStreamFrameListener(CountDownLatch pushStreamIdIsEvenLatch)
+        {
+            this.pushStreamIdIsEvenLatch = pushStreamIdIsEvenLatch;
+        }
+
+        @Override
+        public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+        {
+            assertStreamIdIsEven(stream);
+            pushStreamIdIsEvenLatch.countDown();
+            return super.onPush(stream, pushInfo);
+        }
     }
 
     private void assertStreamIdIsEven(Stream stream)

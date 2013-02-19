@@ -22,18 +22,18 @@ package org.eclipse.jetty.spdy.api;
  * <p>A container for GOAWAY frames metadata: the last good stream id and
  * the session status.</p>
  */
-public class GoAwayReceivedInfo
+public class GoAwayResultInfo
 {
     private final int lastStreamId;
     private final SessionStatus sessionStatus;
 
     /**
-     * <p>Creates a new {@link GoAwayReceivedInfo} with the given last good stream id and session status</p>
+     * <p>Creates a new {@link GoAwayResultInfo} with the given last good stream id and session status</p>
      *
      * @param lastStreamId  the last good stream id
      * @param sessionStatus the session status
      */
-    public GoAwayReceivedInfo(int lastStreamId, SessionStatus sessionStatus)
+    public GoAwayResultInfo(int lastStreamId, SessionStatus sessionStatus)
     {
         this.lastStreamId = lastStreamId;
         this.sessionStatus = sessionStatus;

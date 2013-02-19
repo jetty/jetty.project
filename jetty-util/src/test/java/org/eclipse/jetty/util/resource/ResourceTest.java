@@ -32,7 +32,12 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import java.util.TimeZone;
+import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
+
+import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
@@ -121,11 +126,15 @@ public class ResourceTest
         file=new File(file.getCanonicalPath());
         URI uri = file.toURI();
         __userURL=uri.toURL();
-
-        __userURL = new URL(__userURL.toString() + "src/test/resources/org/eclipse/jetty/util/resource/");
-        FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
-        __userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
-        __relDir = "src/test/resources/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);
+        
+        __userURL = MavenTestingUtils.getTestResourcesDir().toURI().toURL();
+	FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
+	__userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
+	__relDir = "src/test/resources/".replace('/', File.separatorChar);  
+        
+        //System.err.println("User Dir="+__userDir);
+        //System.err.println("Rel  Dir="+__relDir);
+        //System.err.println("User URL="+__userURL);
 
         tmpFile=File.createTempFile("test",null).getCanonicalFile();
         tmpFile.deleteOnExit();
@@ -319,14 +328,16 @@ public class ResourceTest
     throws Exception
     {
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
-        ZipFile zf = new ZipFile(MavenTestingUtils.getProjectFile("src/test/resources/org/eclipse/jetty/util/resource/TestData/test.zip"));
 
+        
+        ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip"));
+        
         long last = zf.getEntry("subdir/numbers").getTime();
 
         Resource r = Resource.newResource(s);
         assertEquals(last,r.lastModified());
     }
-
+    
     /* ------------------------------------------------------------ */
     @Test
     public void testJarFileCopyToDirectoryTraversal () throws Exception

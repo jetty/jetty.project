@@ -42,7 +42,7 @@ import org.eclipse.jetty.spdy.StandardStream;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -136,7 +136,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             assert content == null;
             if (headers.isEmpty())
-                proxyEngineSelector.onGoAway(session, new GoAwayReceivedInfo(0, SessionStatus.OK));
+                proxyEngineSelector.onGoAway(session, new GoAwayResultInfo(0, SessionStatus.OK));
             else
                 syn(true);
         }

@@ -19,13 +19,11 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +39,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -56,13 +53,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     private final HttpClient client;
     private final String scheme;
     private final String host;
-    private final InetSocketAddress address;
-    private final Queue<RequestContext> requests;
+    private final Address address;
+    private final Queue<HttpExchange> exchanges;
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
-    private final InetSocketAddress proxyAddress;
+    private final Address proxyAddress;
     private final HttpField hostField;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
@@ -70,11 +67,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         this.client = client;
         this.scheme = scheme;
         this.host = host;
-        this.address = new InetSocketAddress(host, port);
+        this.address = new Address(host, port);
 
         int maxRequestsQueued = client.getMaxRequestsQueuedPerDestination();
         int capacity = Math.min(32, maxRequestsQueued);
-        this.requests = new BlockingArrayQueue<>(capacity, capacity, maxRequestsQueued);
+        this.exchanges = new BlockingArrayQueue<>(capacity, capacity, maxRequestsQueued);
 
         int maxConnections = client.getMaxConnectionsPerDestination();
         capacity = Math.min(8, maxConnections);
@@ -86,7 +83,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
-                new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()) : null;
+                new Address(proxyConfig.getHost(), proxyConfig.getPort()) : null;
 
         hostField = new HttpField(HttpHeader.HOST, host + ":" + port);
     }
@@ -99,6 +96,16 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     protected BlockingQueue<Connection> getActiveConnections()
     {
         return activeConnections;
+    }
+
+    public RequestNotifier getRequestNotifier()
+    {
+        return requestNotifier;
+    }
+
+    public ResponseNotifier getResponseNotifier()
+    {
+        return responseNotifier;
     }
 
     @Override
@@ -121,7 +128,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         return address.getPort();
     }
 
-    public InetSocketAddress getConnectAddress()
+    public Address getConnectAddress()
     {
         return isProxied() ? proxyAddress : address;
     }
@@ -146,12 +153,14 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         if (port >= 0 && getPort() != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
 
-        RequestContext requestContext = new RequestContext(request, listeners);
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
+
         if (client.isRunning())
         {
-            if (requests.offer(requestContext))
+            if (exchanges.offer(exchange))
             {
-                if (!client.isRunning() && requests.remove(requestContext))
+                if (!client.isRunning() && exchanges.remove(exchange))
                 {
                     throw new RejectedExecutionException(client + " is stopping");
                 }
@@ -175,14 +184,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
     }
 
-    public Future<Connection> newConnection()
+    public void newConnection(Promise<Connection> promise)
     {
-        FuturePromise<Connection> result = new FuturePromise<>();
-        newConnection(new ProxyPromise(result));
-        return result;
+        createConnection(new ProxyPromise(promise));
     }
 
-    protected void newConnection(Promise<Connection> promise)
+    protected void createConnection(Promise<Connection> promise)
     {
         client.newConnection(this, promise);
     }
@@ -227,7 +234,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                             @Override
                             public void run()
                             {
-                                drain(x);
+                                abort(x);
                             }
                         });
                     }
@@ -236,7 +243,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 // Create a new connection, and pass a ProxyPromise to establish a proxy tunnel, if needed.
                 // Differently from the case where the connection is created explicitly by applications, here
                 // we need to do a bit more logging and keep track of the connection count in case of failures.
-                newConnection(new ProxyPromise(promise)
+                createConnection(new ProxyPromise(promise)
                 {
                     @Override
                     public void succeeded(Connection connection)
@@ -260,18 +267,11 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
     }
 
-    private void drain(Throwable x)
+    private void abort(Throwable cause)
     {
-        RequestContext requestContext;
-        while ((requestContext = requests.poll()) != null)
-        {
-            Request request = requestContext.request;
-            requestNotifier.notifyFailure(request, x);
-            List<Response.ResponseListener> listeners = requestContext.listeners;
-            HttpResponse response = new HttpResponse(request, listeners);
-            responseNotifier.notifyFailure(listeners, response, x);
-            responseNotifier.notifyComplete(listeners, new Result(request, x, response, x));
-        }
+        HttpExchange exchange;
+        while ((exchange = exchanges.poll()) != null)
+            abort(exchange, cause);
     }
 
     /**
@@ -282,14 +282,15 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
      * <p>If a request is waiting to be executed, it will be dequeued and executed by the new connection.</p>
      *
      * @param connection the new connection
+     * @param dispatch whether to dispatch the processing to another thread
      */
     protected void process(Connection connection, boolean dispatch)
     {
         // Ugly cast, but lack of generic reification forces it
         final HttpConnection httpConnection = (HttpConnection)connection;
 
-        RequestContext requestContext = requests.poll();
-        if (requestContext == null)
+        final HttpExchange exchange = exchanges.poll();
+        if (exchange == null)
         {
             LOG.debug("{} idle", httpConnection);
             if (!idleConnections.offer(httpConnection))
@@ -306,13 +307,12 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         }
         else
         {
-            final Request request = requestContext.request;
-            final List<Response.ResponseListener> listeners = requestContext.listeners;
+            final Request request = exchange.getRequest();
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
-                abort(request, listeners, cause);
-                LOG.debug("Aborted {} before processing", request);
+                abort(exchange, cause);
+                LOG.debug("Aborted before processing {}: {}", exchange, cause);
             }
             else
             {
@@ -328,13 +328,13 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                         @Override
                         public void run()
                         {
-                            httpConnection.send(request, listeners);
+                            httpConnection.send(exchange);
                         }
                     });
                 }
                 else
                 {
-                    httpConnection.send(request, listeners);
+                    httpConnection.send(exchange);
                 }
             }
         }
@@ -372,7 +372,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         // We need to execute queued requests even if this connection failed.
         // We may create a connection that is not needed, but it will eventually
         // idle timeout, so no worries
-        if (!requests.isEmpty())
+        if (!exchanges.isEmpty())
         {
             connection = acquire();
             if (connection != null)
@@ -391,36 +391,26 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             connection.close();
         activeConnections.clear();
 
-        drain(new AsynchronousCloseException());
+        abort(new AsynchronousCloseException());
 
         connectionCount.set(0);
 
         LOG.debug("Closed {}", this);
     }
 
-    public boolean abort(Request request, Throwable cause)
+    public boolean remove(HttpExchange exchange)
     {
-        for (RequestContext requestContext : requests)
-        {
-            if (requestContext.request == request)
-            {
-                if (requests.remove(requestContext))
-                {
-                    // We were able to remove the pair, so it won't be processed
-                    abort(request, requestContext.listeners, cause);
-                    LOG.debug("Aborted {} while queued", request);
-                    return true;
-                }
-            }
-        }
-        return false;
+        return exchanges.remove(exchange);
     }
 
-    private void abort(Request request, List<Response.ResponseListener> listeners, Throwable cause)
+    protected void abort(HttpExchange exchange, Throwable cause)
     {
-        HttpResponse response = new HttpResponse(request, listeners);
-        responseNotifier.notifyFailure(listeners, response, cause);
-        responseNotifier.notifyComplete(listeners, new Result(request, cause, response, cause));
+        Request request = exchange.getRequest();
+        HttpResponse response = exchange.getResponse();
+        getRequestNotifier().notifyFailure(request, cause);
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+        getResponseNotifier().notifyFailure(listeners, response, cause);
+        getResponseNotifier().notifyComplete(listeners, new Result(request, cause, response, cause));
     }
 
     @Override
@@ -432,7 +422,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + requests.size());
+        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + exchanges.size());
         List<String> connections = new ArrayList<>();
         for (Connection connection : idleConnections)
             connections.add(connection + " - IDLE");
@@ -449,19 +439,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                 getScheme(),
                 getHost(),
                 getPort(),
-                proxyAddress == null ? "" : " via " + proxyAddress.getHostString() + ":" + proxyAddress.getPort());
-    }
-
-    private static class RequestContext
-    {
-        private final Request request;
-        private final List<Response.ResponseListener> listeners;
-
-        private RequestContext(Request request, List<Response.ResponseListener> listeners)
-        {
-            this.request = request;
-            this.listeners = listeners;
-        }
+                proxyAddress == null ? "" : " via " + proxyAddress.getHost() + ":" + proxyAddress.getPort());
     }
 
     /**
@@ -499,8 +477,8 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
         private void tunnel(final Connection connection)
         {
-            String target = address.getHostString() + ":" + address.getPort();
-            Request connect = client.newRequest(proxyAddress.getHostString(), proxyAddress.getPort())
+            String target = address.getHost() + ":" + address.getPort();
+            Request connect = client.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)

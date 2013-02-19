@@ -167,6 +167,7 @@ public class LocalConnector extends AbstractConnector
         LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endPoint = _connects.take();
         endPoint.onOpen();
+        onEndPointOpened(endPoint);
 
         Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
@@ -209,6 +210,7 @@ public class LocalConnector extends AbstractConnector
         @Override
         public void onClose()
         {
+            LocalConnector.this.onEndPointClosed(this);
             super.onClose();
             _closed.countDown();
         }

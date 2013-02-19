@@ -59,6 +59,9 @@ public interface IStream extends Stream, Callback
      */
     public void setStreamFrameListener(StreamFrameListener listener);
 
+    //TODO: javadoc thomas
+    public StreamFrameListener getStreamFrameListener();
+
     /**
      * <p>A stream can be open, {@link #isHalfClosed() half closed} or
      * {@link #isClosed() closed} and this method updates the close state
