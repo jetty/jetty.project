@@ -109,6 +109,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.plus.jaas.",     // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.WebSocket", // WebSocket is a jetty extension
         "org.eclipse.jetty.websocket.WebSocketFactory", // WebSocket is a jetty extension
+        "org.eclipse.jetty.websocket.WebSocketServlet", // webapp cannot change WebSocketServlet
         "org.eclipse.jetty.servlet.DefaultServlet" // webapp cannot change default servlets
     } ;
 
@@ -123,6 +124,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas classes
         "-org.eclipse.jetty.websocket.WebSocket", // WebSocket is a jetty extension
         "-org.eclipse.jetty.websocket.WebSocketFactory", // WebSocket is a jetty extension
+        "-org.eclipse.jetty.websocket.WebSocketServlet", // don't hide WebSocketServlet
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "org.eclipse.jetty."                // hide other jetty classes
