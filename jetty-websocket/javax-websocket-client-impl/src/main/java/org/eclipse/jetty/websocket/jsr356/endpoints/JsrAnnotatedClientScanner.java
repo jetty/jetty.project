@@ -56,7 +56,6 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
     private static final ParamList validCloseParams;
     private static final ParamList validErrorParams;
     private static final ParamList validPongFormatParams;
-    private static final ParamList validMessageParams;
     private static final ParamList validTextFormatParams;
     private static final ParamList validBinaryFormatParams;
 
@@ -73,9 +72,6 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
         validErrorParams = new ParamList();
         validErrorParams.addParams(Session.class);
         validErrorParams.addParams(Throwable.class);
-
-        validMessageParams = new ParamList();
-        validMessageParams.addParams(Session.class);
 
         // TEXT Formats
         validTextFormatParams = new ParamList();
@@ -255,57 +251,42 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
         if (isAnnotation(annotation,WebSocketMessage.class))
         {
             assertIsPublicNonStatic(method);
+            /*
             JsrMessageCallableMethod callable = new JsrMessageCallableMethod(pojo,method);
             callable.setReturnType(method.getReturnType(),encoders);
 
-            // TODO: create MessageHandler wrapper for methods?
-
             JsrMethodParameters params = new JsrMethodParameters(method);
 
-            // First, find the path-mapping parameters
+            boolean foundSession = false;
+            boolean foundIsLast = false;
+            boolean foundFormat = false;
+            // Find the path-mapping and Session parameters
             for (Param param : params)
             {
+                // (optional) Path Mapping Parameters
                 String varname = getPathMappingParameterVariable(param.type);
                 if (varname != null)
                 {
                     param.setPathParamVariable(varname);
                 }
-            }
 
-            // Next find the Message Format Parameters
-            Class<?> formatParams[] = null;
-            if ((formatParams = params.containsAny(validTextFormatParams)) != null)
-            {
-                // TEXT
-                params.setValid(formatParams);
-            }
-
-            if ((formatParams = params.containsAny(validBinaryFormatParams)) != null)
-            {
-                // BINARY
-                params.setValid(formatParams);
-            }
-
-            if ((formatParams = params.containsAny(validPongFormatParams)) != null)
-            {
-                // PONG
-                params.setValid(formatParams);
-            }
-
-            // Now find the non-format parameters
-            for (Class<?>[] paramSet : validMessageParams)
-            {
-                // Each entry in validParams is a set of possible valid references.
-                // If not all parts of the set are present, that set isn't valid for the provided parameters.
-
-                if (params.containsParameterSet(paramSet))
+                // (optional) Session parameter
+                if (Session.class.isAssignableFrom(param.type))
                 {
-                    // flag as valid
-                    params.setValid(paramSet);
+                    if(foundSession) {
+                        throw new InvalidSignatureException("Duplicate "+Session.class+" parameter found in " + );
+                    }
+                    param.setValid(true);
+                }
+
+                // (optional) isLast parameter
+                if (Boolean.class.isAssignableFrom(param.type))
+                {
+                    param.setValid(true);
                 }
             }
 
-            // Finally, ensure we identified all of the parameters
+            // Ensure we identified all of the parameters
             for (Param param : params)
             {
                 if (param.isValid() == false)
@@ -325,10 +306,33 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
                 }
             }
 
-            // TODO: ensure conflicting parameters not present
-            // assertUnset(metadata.onMessage,WebSocketMessage.class,method);
+            // Find the Message Format Parameters
+            Class<?> formatParams[] = null;
+            if ((formatParams = params.containsAny(validTextFormatParams)) != null)
+            {
+                // TEXT
+                params.setValid(formatParams);
+                metadata.onText = callable;
+                assertUnset(metadata.onText,WebSocketMessage.class,method);
+            }
 
-            // metadata.onMessage = new CallableMethod(pojo,method);
+            if ((formatParams = params.containsAny(validBinaryFormatParams)) != null)
+            {
+                // BINARY
+                params.setValid(formatParams);
+                metadata.onBinary = callable;
+                assertUnset(metadata.onBinary,WebSocketMessage.class,method);
+            }
+
+            if ((formatParams = params.containsAny(validPongFormatParams)) != null)
+            {
+                // PONG
+                params.setValid(formatParams);
+                metadata.onPong = callable;
+                assertUnset(metadata.onPong,WebSocketMessage.class,method);
+            }
+
+            */
             return;
         }
     }

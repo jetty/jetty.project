@@ -20,24 +20,29 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.List;
-
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
+import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
 public class JsrMessageCallableMethod extends CallableMethod
 {
     private Class<?> returnType;
+    // Index of Session Parameter
+    private int idxSession = -1;
+    private int idxIsLast = -1;
+    private int idxFormat = -1;
 
-    public JsrMessageCallableMethod(Class<?> pojo, Method method)
+    public JsrMessageCallableMethod(Class<?> pojo, Method method, Encoders encoders, Decoders decoders) throws InvalidSignatureException
     {
         super(pojo,method);
+
+        setReturnType(method.getReturnType());
     }
 
-    public void setReturnType(Class<?> returnType, Class<? extends Encoder> encoders[])
+    public void setReturnType(Class<?> returnType)
     {
         if (Void.TYPE.equals(returnType))
         {
@@ -67,10 +72,6 @@ public class JsrMessageCallableMethod extends CallableMethod
             return;
         }
 
-        // Determine if encoder exists for this return type
-        for (Class<? extends Encoder> encoder : encoders)
-        {
-            
-        }
+        // TODO: Determine if encoder exists for this return type
     }
 }

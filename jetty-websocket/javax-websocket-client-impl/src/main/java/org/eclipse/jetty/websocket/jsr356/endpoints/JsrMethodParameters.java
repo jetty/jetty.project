@@ -72,9 +72,15 @@ public class JsrMethodParameters extends ArrayList<Param>
         }
     }
 
-    public Class<?>[] containsAny(ParamList validTextFormatParams)
+    public Class<?>[] containsAny(ParamList validParams)
     {
-        // TODO Auto-generated method stub
+        for (Class<?>[] params : validParams)
+        {
+            if (containsParameterSet(params))
+            {
+                return params;
+            }
+        }
         return null;
     }
 
@@ -85,6 +91,10 @@ public class JsrMethodParameters extends ArrayList<Param>
             boolean found = false;
             for (Param param : this)
             {
+                if (param.isValid())
+                {
+                    continue; // skip
+                }
                 if (param.type.isAssignableFrom(entry))
                 {
                     found = true;
