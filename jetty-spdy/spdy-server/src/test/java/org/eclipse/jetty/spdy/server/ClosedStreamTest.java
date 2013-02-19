@@ -35,7 +35,7 @@ import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -211,7 +211,7 @@ public class ClosedStreamTest extends AbstractTest
                 };
             }
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 goAwayReceivedLatch.countDown();
             }

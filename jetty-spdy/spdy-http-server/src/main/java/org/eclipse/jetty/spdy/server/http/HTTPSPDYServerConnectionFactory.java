@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
@@ -129,6 +130,12 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             logger.debug("Received {} on {}", headersInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestHeaders(headersInfo.getHeaders(), headersInfo.isClose());
+        }
+
+        @Override
+        public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+        {
+            return null;
         }
 
         @Override
