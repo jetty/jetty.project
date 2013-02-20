@@ -16,22 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356.samples;
 
-import static org.hamcrest.Matchers.*;
+import javax.websocket.Decoder;
 
-import javax.websocket.DecodeException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-public class IntegerDecoderTest
+/**
+ * Testing scenario of an extended Decoder interface
+ */
+public interface ExtDecoder<T> extends Decoder.Text<T>
 {
-    @Test
-    public void testDecode() throws DecodeException
-    {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        Assert.assertThat("Decoded value",val,is(123));
-    }
+    void setId(String id);
 }

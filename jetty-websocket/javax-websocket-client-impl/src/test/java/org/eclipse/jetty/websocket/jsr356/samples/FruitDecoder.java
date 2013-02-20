@@ -16,25 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders.samples;
+package org.eclipse.jetty.websocket.jsr356.samples;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.websocket.DecodeException;
 
-public class SecondDecoder implements ExtDecoder<Integer>
+public class FruitDecoder implements ExtDecoder<Fruit>
 {
     private String id;
 
     @Override
-    public Integer decode(String s) throws DecodeException
+    public Fruit decode(String s) throws DecodeException
     {
-        try
+        Pattern pat = Pattern.compile("([^|]*)|([^|]*)");
+        Matcher mat = pat.matcher(s);
+        if (!mat.find())
         {
-            return Integer.parseInt(s);
+            throw new DecodeException(s,"Unable to find Fruit reference encoded in text message");
         }
-        catch (NumberFormatException e)
-        {
-            throw new DecodeException(s,"Unable to parse Integer",e);
-        }
+
+        Fruit fruit = new Fruit();
+        fruit.name = mat.group(1);
+        fruit.color = mat.group(2);
+
+        return fruit;
     }
 
     @Override
@@ -57,14 +64,8 @@ public class SecondDecoder implements ExtDecoder<Integer>
             return false;
         }
 
-        try
-        {
-            Integer.parseInt(s);
-            return true;
-        }
-        catch (NumberFormatException e)
-        {
-            return false;
-        }
+        Pattern pat = Pattern.compile("([^|]*)|([^|]*)");
+        Matcher mat = pat.matcher(s);
+        return (mat.find());
     }
 }

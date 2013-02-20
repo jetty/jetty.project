@@ -25,8 +25,9 @@ import java.lang.reflect.WildcardType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-import javax.websocket.DeploymentException;
+import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 
 /**
  * Collection of common {@link Type} utility methods used during Deployment of the Endpoint
@@ -63,7 +64,7 @@ public class DeploymentTypeUtils
         PRIMITIVE_CLASS_MAP = Collections.unmodifiableMap(types);
     }
 
-    public static Type getGenericType(Class<?> clazz, Class<?> interfaceClass) throws DeploymentException
+    public static Type getGenericType(Class<?> clazz, Class<?> interfaceClass)
     {
         for (Type type : clazz.getGenericInterfaces())
         {
@@ -85,7 +86,17 @@ public class DeploymentTypeUtils
         return PRIMITIVE_CLASS_MAP.get(primitiveType);
     }
 
-    public static Class<?> getRawTypeClass(ParameterizedType type) throws DeploymentException
+    public static Set<Class<?>> getPrimitiveClasses()
+    {
+        return CLASS_PRIMITIVE_MAP.keySet();
+    }
+
+    public static Set<Class<?>> getPrimitives()
+    {
+        return PRIMITIVE_CLASS_MAP.keySet();
+    }
+
+    public static Class<?> getRawTypeClass(ParameterizedType type)
     {
         Type raw = type.getRawType();
         if (raw instanceof Class<?>)
@@ -93,7 +104,7 @@ public class DeploymentTypeUtils
             return (Class<?>)raw;
         }
         // bail on non-class raw types
-        throw new DeploymentException("Unexpected, Non Class Raw Type: " + raw);
+        throw new InvalidSignatureException("Unexpected, Non Class Raw Type: " + raw);
     }
 
     /**
@@ -104,14 +115,13 @@ public class DeploymentTypeUtils
      * @param targetType
      *            the target type
      * @return
-     * @throws DeploymentException
      */
-    public static boolean isAssignable(Type type, Type targetType) throws DeploymentException
+    public static boolean isAssignable(Type type, Type targetType)
     {
         return isAssignable(type,targetType,null);
     }
 
-    private static boolean isAssignable(Type type, Type targetType, Map<TypeVariable<?>, Type> typeVars) throws DeploymentException
+    private static boolean isAssignable(Type type, Type targetType, Map<TypeVariable<?>, Type> typeVars)
     {
         if ((type == null) || (targetType == null))
         {
@@ -197,7 +207,7 @@ public class DeploymentTypeUtils
         return targetClass.isAssignableFrom(type);
     }
 
-    private static boolean isAssignableToClass(Type type, Class<?> targetClass) throws DeploymentException
+    private static boolean isAssignableToClass(Type type, Class<?> targetClass)
     {
         if (targetClass.equals(type))
         {
@@ -226,6 +236,6 @@ public class DeploymentTypeUtils
             return false;
         }
 
-        throw new DeploymentException("Unhandled Type: " + type);
+        throw new InvalidSignatureException("Unhandled Type: " + type);
     }
 }

@@ -16,14 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders.samples;
+package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import java.nio.ByteBuffer;
+
+import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
-/**
- * Testing scenario of an extended Decoder interface
- */
-public interface ExtDecoder<T> extends Decoder.Text<T>
+public class ByteBufferDecoder implements Decoder.Binary<ByteBuffer>
 {
-    void setId(String id);
+    @Override
+    public ByteBuffer decode(ByteBuffer bytes) throws DecodeException
+    {
+        return bytes;
+    }
+
+    @Override
+    public boolean willDecode(ByteBuffer bytes)
+    {
+        return true;
+    }
 }

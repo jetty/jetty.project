@@ -18,111 +18,166 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
 
+import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
 import org.eclipse.jetty.websocket.jsr356.utils.DeploymentTypeUtils;
 
 public class Decoders
 {
-    private static final Map<Class<?>, Class<? extends Decoder>> DEFAULTS;
-
-    static
+    private static class DecoderRef
     {
-        DEFAULTS = new HashMap<>();
-        DEFAULTS.put(Boolean.class,BooleanDecoder.class);
-        DEFAULTS.put(Byte.class,ByteDecoder.class);
-        DEFAULTS.put(Character.class,CharacterDecoder.class);
-        DEFAULTS.put(Double.class,DoubleDecoder.class);
-        DEFAULTS.put(Float.class,FloatDecoder.class);
-        DEFAULTS.put(Integer.class,IntegerDecoder.class);
-        DEFAULTS.put(Long.class,LongDecoder.class);
-        DEFAULTS.put(Short.class,ShortDecoder.class);
-        DEFAULTS.put(String.class,StringDecoder.class);
+        Class<?> type;
+        Class<? extends Decoder> decoder;
+
+        public DecoderRef(Class<?> type, Class<? extends Decoder> decoder)
+        {
+            this.type = type;
+            this.decoder = decoder;
+        }
     }
 
-    private final List<Class<? extends Decoder>> decoders;
+    public static List<ParameterizedType> getDecoderInterfaces(Class<? extends Decoder> decoder)
+    {
+        List<ParameterizedType> ret = new ArrayList<>();
+        for (Type type : decoder.getGenericInterfaces())
+        {
+            if (!(type instanceof ParameterizedType))
+            {
+                continue; // skip
+            }
+
+            ParameterizedType ptype = (ParameterizedType)type;
+            if (DeploymentTypeUtils.isAssignable(type,Decoder.Text.class) || DeploymentTypeUtils.isAssignable(type,Decoder.TextStream.class)
+                    || DeploymentTypeUtils.isAssignable(type,Decoder.Binary.class) || DeploymentTypeUtils.isAssignable(type,Decoder.BinaryStream.class))
+            {
+                ret.add(ptype);
+            }
+        }
+        return ret;
+    }
+
+    private final List<DecoderRef> decoders;
 
     public Decoders()
     {
-        this(null);
+        this.decoders = new ArrayList<>();
+
+        // Default TEXT Message Decoders
+        add(new DecoderRef(Boolean.class,BooleanDecoder.class));
+        add(new DecoderRef(Byte.class,ByteDecoder.class));
+        add(new DecoderRef(Character.class,CharacterDecoder.class));
+        add(new DecoderRef(Double.class,DoubleDecoder.class));
+        add(new DecoderRef(Float.class,FloatDecoder.class));
+        add(new DecoderRef(Integer.class,IntegerDecoder.class));
+        add(new DecoderRef(Long.class,LongDecoder.class));
+        add(new DecoderRef(Short.class,ShortDecoder.class));
+        add(new DecoderRef(String.class,StringDecoder.class));
+
+        // Default BINARY Message Decoders
+        add(new DecoderRef(ByteBuffer.class,ByteBufferDecoder.class));
+    }
+
+    public Decoders(Class<? extends Decoder>[] decoderClasses)
+    {
+        this();
+
+        if (decoderClasses != null)
+        {
+            // now add user provided
+            for (Class<? extends Decoder> decoder : decoderClasses)
+            {
+                add(decoder);
+            }
+        }
     }
 
     public Decoders(List<Class<? extends Decoder>> decoderClasses)
     {
-        this.decoders = new ArrayList<>();
-        // now add user provided
-        addAll(decoderClasses);
+        this();
+
+        if (decoderClasses != null)
+        {
+            // now add user provided
+            for (Class<? extends Decoder> decoder : decoderClasses)
+            {
+                add(decoder);
+            }
+        }
     }
 
     public void add(Class<? extends Decoder> decoder)
     {
-        this.decoders.add(decoder);
+        for (ParameterizedType idecoder : getDecoderInterfaces(decoder))
+        {
+            Type handledTypes[] = idecoder.getActualTypeArguments();
+            if (handledTypes == null)
+            {
+                throw new InvalidSignatureException(decoder + " has invalid signature for " + idecoder + " Generic type is null");
+            }
+            if (handledTypes.length != 1)
+            {
+                throw new InvalidSignatureException(decoder + " has invalid signature for " + idecoder + " - multi-value generic types not supported");
+            }
+            Type handledType = handledTypes[0];
+            if (handledType instanceof Class<?>)
+            {
+                Class<?> handler = (Class<?>)handledType;
+                add(handler,decoder);
+            }
+            else
+            {
+                throw new InvalidSignatureException(decoder + " has invalid signature for " + idecoder + " - only java.lang.Class based generics supported");
+            }
+        }
     }
 
-    private void addAll(List<Class<? extends Decoder>> decoderClasses)
+    private void add(Class<?> handler, Class<? extends Decoder> decoder)
     {
-        if (decoderClasses == null)
+        // verify that we are not adding a duplicate
+        for (DecoderRef ref : decoders)
         {
-            return;
+            if (DeploymentTypeUtils.isAssignableClass(handler,ref.type))
+            {
+                throw new ConfigurationException("Duplicate Decoder handling for type " + ref.type + ": found in " + ref.decoder + " and " + decoder);
+            }
         }
-
-        for (Class<? extends Decoder> decoder : decoderClasses)
-        {
-            add(decoder);
-        }
+        // add entry
+        this.decoders.add(new DecoderRef(handler,decoder));
     }
 
-    public Decoder getBinaryDecoder(Type type)
+    private void add(DecoderRef ref)
     {
-        // TODO Auto-generated method stub
-        return null;
+        this.decoders.add(ref);
     }
 
-    public Decoder getTextDecoder(Type type) throws DeploymentException
+    public Decoder getDecoder(Class<?> type)
     {
-        for (Class<? extends Decoder> decoderClass : decoders)
+        Class<?> targetType = type;
+        if (targetType.isPrimitive())
         {
-            if (!DeploymentTypeUtils.isAssignable(decoderClass,Decoder.Text.class))
-            {
-                continue; // not a text decoder
-            }
+            targetType = DeploymentTypeUtils.getPrimitiveClass(targetType);
+        }
 
-            Type textType = DeploymentTypeUtils.getGenericType(decoderClass,Decoder.Text.class);
-            if (DeploymentTypeUtils.isAssignable(type,textType))
+        for (DecoderRef ref : decoders)
+        {
+            if (DeploymentTypeUtils.isAssignable(targetType,ref.type))
             {
-                return instantiate(decoderClass);
+                return instantiate(ref.decoder);
             }
         }
 
-        // Found no user provided decoder, use default (if available)
-        Class<? extends Decoder> decoderClass = null;
-        if (type instanceof Class<?>)
-        {
-            Class<?> typeClass = (Class<?>)type;
-            if (typeClass.isPrimitive())
-            {
-                typeClass = DeploymentTypeUtils.getPrimitiveClass(typeClass);
-            }
-
-            decoderClass = DEFAULTS.get(typeClass);
-
-            if (decoderClass != null)
-            {
-                return instantiate(decoderClass);
-            }
-        }
-
-        throw new DeploymentException("Unable to find appropriate Decoder for type: " + type);
+        throw new InvalidSignatureException("Unable to find appropriate Decoder for type: " + type);
     }
 
-    private Decoder instantiate(Class<? extends Decoder> decoderClass) throws DeploymentException
+    private Decoder instantiate(Class<? extends Decoder> decoderClass)
     {
         try
         {
@@ -130,7 +185,7 @@ public class Decoders
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new DeploymentException("Unable to instantiate Decoder: " + decoderClass,e);
+            throw new ConfigurationException("Unable to instantiate Decoder: " + decoderClass,e);
         }
     }
 }

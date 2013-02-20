@@ -16,22 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356.samples;
 
-import static org.hamcrest.Matchers.*;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
 
-import javax.websocket.DecodeException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-public class IntegerDecoderTest
+public class FruitTextEncoder implements Encoder.Text<Fruit>
 {
-    @Test
-    public void testDecode() throws DecodeException
+    @Override
+    public String encode(Fruit fruit) throws EncodeException
     {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        Assert.assertThat("Decoded value",val,is(123));
+        return String.format("%s|%s",fruit.name,fruit.color);
     }
 }

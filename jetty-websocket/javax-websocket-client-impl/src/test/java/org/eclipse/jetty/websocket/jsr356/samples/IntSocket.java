@@ -16,22 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356.samples;
 
-import static org.hamcrest.Matchers.*;
+import java.io.IOException;
 
-import javax.websocket.DecodeException;
+import javax.websocket.EncodeException;
+import javax.websocket.Session;
+import javax.websocket.WebSocketClient;
+import javax.websocket.WebSocketMessage;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-public class IntegerDecoderTest
+@WebSocketClient(decoders = { DualDecoder.class })
+public class IntSocket
 {
-    @Test
-    public void testDecode() throws DecodeException
+    @WebSocketMessage
+    public void onInt(Session session, int value)
     {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        Assert.assertThat("Decoded value",val,is(123));
+        try
+        {
+            session.getRemote().sendObject(value);
+        }
+        catch (IOException | EncodeException e)
+        {
+            e.printStackTrace();
+        }
     }
 }

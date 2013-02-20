@@ -16,22 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 
-import javax.websocket.DecodeException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-public class IntegerDecoderTest
+public class ConfigurationException extends WebSocketException
 {
-    @Test
-    public void testDecode() throws DecodeException
+    private static final long serialVersionUID = 3026803845657799372L;
+
+    public ConfigurationException(String message)
     {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        Assert.assertThat("Decoded value",val,is(123));
+        super(message);
+    }
+
+    public ConfigurationException(String message, Throwable cause)
+    {
+        super(message,cause);
     }
 }

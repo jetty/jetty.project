@@ -23,32 +23,49 @@ import static org.hamcrest.Matchers.*;
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 
-import org.eclipse.jetty.websocket.jsr356.decoders.samples.DualDecoder;
-import org.eclipse.jetty.websocket.jsr356.decoders.samples.SecondDecoder;
+import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
+import org.eclipse.jetty.websocket.jsr356.samples.DualDecoder;
+import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
+import org.eclipse.jetty.websocket.jsr356.samples.FruitDecoder;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class DecodersTest
 {
     @Test
-    public void testGetDecoders_Dual() throws DeploymentException
+    public void testGetTextDecoder_Character() throws DeploymentException
     {
         Decoders decoders = new Decoders();
-        decoders.add(DualDecoder.class);
+        decoders.add(FruitDecoder.class);
 
-        Decoder txtDecoder = decoders.getTextDecoder(Integer.class);
+        Decoder txtDecoder = decoders.getDecoder(Character.class);
         Assert.assertThat("Text Decoder",txtDecoder,notNullValue());
-        Assert.assertThat("Text Decoder",txtDecoder,instanceOf(DualDecoder.class));
+        Assert.assertThat("Text Decoder",txtDecoder,instanceOf(CharacterDecoder.class));
     }
 
     @Test
-    public void testGetDecoders_Second() throws DeploymentException
+    public void testGetTextDecoder_Dual()
+    {
+        try
+        {
+            Decoders decoders = new Decoders();
+            decoders.add(DualDecoder.class); // has duplicated support for the same target Type
+            Assert.fail("Should have thrown ConfigurationException");
+        }
+        catch (ConfigurationException e)
+        {
+            Assert.assertThat("Error Message",e.getMessage(),containsString("Duplicate"));
+        }
+    }
+
+    @Test
+    public void testGetTextDecoder_Fruit() throws DeploymentException
     {
         Decoders decoders = new Decoders();
-        decoders.add(SecondDecoder.class);
+        decoders.add(FruitDecoder.class);
 
-        Decoder txtDecoder = decoders.getTextDecoder(Integer.class);
+        Decoder txtDecoder = decoders.getDecoder(Fruit.class);
         Assert.assertThat("Text Decoder",txtDecoder,notNullValue());
-        Assert.assertThat("Text Decoder",txtDecoder,instanceOf(SecondDecoder.class));
+        Assert.assertThat("Text Decoder",txtDecoder,instanceOf(FruitDecoder.class));
     }
 }
