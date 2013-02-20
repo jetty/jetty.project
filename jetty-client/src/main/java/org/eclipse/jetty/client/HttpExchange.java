@@ -52,7 +52,7 @@ public class HttpExchange
         this.listeners = listeners;
         this.response = new HttpResponse(request, listeners);
         conversation.getExchanges().offer(this);
-        conversation.setResponseListener(null);
+        conversation.updateResponseListeners(null);
     }
 
     public HttpConversation getConversation()

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
@@ -148,6 +149,36 @@ public class RequestNotifier
         try
         {
             listener.onCommit(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyContent(Request request, ByteBuffer content)
+    {
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.ContentListener)
+                notifyContent((Request.ContentListener)listener, request, content);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
+            notifyContent(listener, request, content);
+        }
+    }
+
+    private void notifyContent(Request.ContentListener listener, Request request, ByteBuffer content)
+    {
+        try
+        {
+            listener.onContent(request, content);
         }
         catch (Exception x)
         {

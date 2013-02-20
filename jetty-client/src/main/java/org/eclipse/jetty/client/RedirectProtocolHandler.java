@@ -212,7 +212,8 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         Request request = result.getRequest();
         Response response = result.getResponse();
         HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-        List<Response.ResponseListener> listeners = conversation.getExchanges().peekFirst().getResponseListeners();
+        conversation.updateResponseListeners(null);
+        List<Response.ResponseListener> listeners = conversation.getResponseListeners();
         notifier.notifyFailure(listeners, response, failure);
         notifier.notifyComplete(listeners, new Result(request, response, failure));
     }

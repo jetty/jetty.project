@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
@@ -266,6 +267,12 @@ public interface Request
     Request onRequestCommit(CommitListener listener);
 
     /**
+     * @param listener a listener for request content events
+     * @return this request object
+     */
+    Request onRequestContent(ContentListener listener);
+
+    /**
      * @param listener a listener for request success event
      * @return this request object
      */
@@ -417,6 +424,19 @@ public interface Request
     }
 
     /**
+     * Listener for the request content event.
+     */
+    public interface ContentListener extends RequestListener
+    {
+        /**
+         * Callback method invoked when a chunk of request content has been sent successfully.
+         * Changes to bytes in the given buffer have no effect, as the content has already been sent.
+         * @param request the request that has been committed
+         */
+        public void onContent(Request request, ByteBuffer content);
+    }
+
+    /**
      * Listener for the request succeeded event.
      */
     public interface SuccessListener extends RequestListener
@@ -445,7 +465,7 @@ public interface Request
     /**
      * Listener for all request events.
      */
-    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, SuccessListener, FailureListener
+    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -469,6 +489,11 @@ public interface Request
 
             @Override
             public void onCommit(Request request)
+            {
+            }
+
+            @Override
+            public void onContent(Request request, ByteBuffer content)
             {
             }
 
