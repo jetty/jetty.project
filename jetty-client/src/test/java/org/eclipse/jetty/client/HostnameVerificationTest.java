@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
@@ -37,12 +39,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.Assert.fail;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
 
 /**
- * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt section 3
- * .1) is configurable in SslContextFactory and works as expected.
+ * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
+ * section 3.1) is configurable in SslContextFactory and works as expected.
  */
 public class HostnameVerificationTest
 {
@@ -107,10 +109,20 @@ public class HostnameVerificationTest
             client.GET(uri);
             fail("sending request to client should have failed with an Exception!");
         }
-        catch (ExecutionException e)
+        catch (ExecutionException x)
         {
-            assertThat("We got a SSLHandshakeException as localhost doesn't match the hostname of the certificate",
-                    e.getCause().getCause(), instanceOf(SSLHandshakeException.class));
+            // The test may fail in 2 ways, since the CertificateException thrown because of the hostname
+            // verification failure is not rethrown immediately by the JDK SSL implementation, but only
+            // rethrown on the next read or write.
+            // Therefore this test may catch a SSLHandshakeException, or a ClosedChannelException.
+            // If it is the former, we verify that its cause is a CertificateException.
+
+            // ExecutionException wraps an EofException that wraps the SSLHandshakeException
+            Throwable cause = x.getCause().getCause();
+            if (cause instanceof SSLHandshakeException)
+                assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
+            else
+                assertThat(cause, instanceOf(ClosedChannelException.class));
         }
     }
 
