@@ -145,8 +145,13 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 // Probe the protocol handlers
                 HttpClient client = connection.getHttpClient();
                 ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
-                Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
-                exchange.getConversation().setResponseListener(handlerListener);
+                Response.Listener handlerListener = null;
+                if (protocolHandler != null)
+                {
+                    handlerListener = protocolHandler.getResponseListener();
+                    LOG.debug("Found protocol handler {}", protocolHandler);
+                }
+                exchange.getConversation().updateResponseListeners(handlerListener);
 
                 LOG.debug("Receiving {}", response);
                 ResponseNotifier notifier = connection.getDestination().getResponseNotifier();

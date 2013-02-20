@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -32,7 +31,8 @@ public class HttpConversation extends AttributesMap
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private final HttpClient client;
     private final long id;
-    private volatile Response.ResponseListener listener;
+    private volatile boolean complete;
+    private volatile List<Response.ResponseListener> listeners;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -55,42 +55,42 @@ public class HttpConversation extends AttributesMap
      * This list changes as the conversation proceeds, as follows:
      * <ol>
      * <li>
-     *     request R1 send => conversation.setResponseListener(null)
+     *     request R1 send => conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1</li>
      *         <li>listeners to be notified: E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R1 arrived, 401 => conversation.setResponseListener(AuthenticationProtocolHandler.listener)
+     *     response R1 arrived, 401 => conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
      *     <ul>
      *         <li>exchanges in conversation: E1</li>
      *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
      *     </ul>
      * </li>
      * <li>
-     *     request R2 send => conversation.setResponseListener(null)
+     *     request R2 send => conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2</li>
      *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R2 arrived, 302 => conversation.setResponseListener(RedirectProtocolHandler.listener)
+     *     response R2 arrived, 302 => conversation.updateResponseListeners(RedirectProtocolHandler.listener)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2</li>
      *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
      *     </ul>
      * </li>
      * <li>
-     *     request R3 send => conversation.setResponseListener(null)
+     *     request R3 send => conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2 + E3</li>
      *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
      *     </ul>
      * </li>
      * <li>
-     *     response R3 arrived, 200 => conversation.setResponseListener(null)
+     *     response R3 arrived, 200 => conversation.updateResponseListeners(null)
      *     <ul>
      *         <li>exchanges in conversation: E1 + E2 + E3</li>
      *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
@@ -110,45 +110,52 @@ public class HttpConversation extends AttributesMap
      */
     public List<Response.ResponseListener> getResponseListeners()
     {
+        return listeners;
+    }
+
+    /**
+     * Requests to update the response listener, eventually using the given override response listener,
+     * that must be notified instead of the first exchange response listeners.
+     * This works in conjunction with {@link #getResponseListeners()}, returning the appropriate response
+     * listeners that needs to be notified of response events.
+     *
+     * @param overrideListener the override response listener
+     */
+    public void updateResponseListeners(Response.ResponseListener overrideListener)
+    {
+        // If we have no override listener, then the
+        // conversation may be completed at a later time
+        complete = overrideListener == null;
+
+        // Create a new instance to avoid that iterating over the listeners
+        // will notify a listener that may send a new request and trigger
+        // another call to this method which will build different listeners
+        // which may be iterated over when the iteration continues.
+        listeners = new ArrayList<>();
+
         HttpExchange firstExchange = exchanges.peekFirst();
         HttpExchange lastExchange = exchanges.peekLast();
         if (firstExchange == lastExchange)
         {
-            if (listener != null)
-                return Arrays.asList(listener);
+            if (overrideListener != null)
+                listeners.add(overrideListener);
             else
-                return firstExchange.getResponseListeners();
+                listeners.addAll(firstExchange.getResponseListeners());
         }
         else
         {
             // Order is important, we want to notify the last exchange first
-            List<Response.ResponseListener> result = new ArrayList<>(lastExchange.getResponseListeners());
-            if (listener != null)
-                result.add(listener);
+            listeners.addAll(lastExchange.getResponseListeners());
+            if (overrideListener != null)
+                listeners.add(overrideListener);
             else
-                result.addAll(firstExchange.getResponseListeners());
-            return result;
+                listeners.addAll(firstExchange.getResponseListeners());
         }
-    }
-
-    /**
-     * Sets an override response listener that must be notified instead of the first exchange response listeners.
-     * This works in conjunction with {@link #getResponseListeners()}, returning the appropriate response
-     * listeners that needs to be notified of response events.
-     *
-     * @param listener the override response listener
-     */
-    public void setResponseListener(Response.ResponseListener listener)
-    {
-        this.listener = listener;
     }
 
     public void complete()
     {
-        // The conversation is really terminated only
-        // when there is no conversation listener that
-        // may have continued the conversation.
-        if (listener == null)
+        if (complete)
             client.removeConversation(this);
     }
 
