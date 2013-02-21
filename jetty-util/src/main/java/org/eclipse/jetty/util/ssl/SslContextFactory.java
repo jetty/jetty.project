@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -98,14 +97,10 @@ public class SslContextFactory extends AbstractLifeCycle
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
                 KeyManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
-    
+
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.TrustManagerFactory.algorithm") == null ?
                 TrustManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.TrustManagerFactory.algorithm"));
-
-    /** Default value for the keystore location path. */
-    public static final String DEFAULT_KEYSTORE_PATH =
-        System.getProperty("user.home") + File.separator + ".keystore";
 
     /** String name of key password property. */
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
@@ -149,9 +144,6 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _needClientAuth = false;
     /** Set to true if client certificate authentication is desired */
     private boolean _wantClientAuth = false;
-
-    /** Set to true if renegotiation is allowed */
-    private boolean _allowRenegotiate = true;
 
     /** Keystore password */
     private transient Password _keyStorePassword;
@@ -1028,8 +1020,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
 
         // Remove any excluded protocols
-        if (_excludeProtocols != null)
-            selected_protocols.removeAll(_excludeProtocols);
+        selected_protocols.removeAll(_excludeProtocols);
 
         return selected_protocols.toArray(new String[selected_protocols.size()]);
     }
@@ -1059,8 +1050,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
 
         // Remove any excluded ciphers
-        if (_excludeCipherSuites != null)
-            selected_ciphers.removeAll(_excludeCipherSuites);
+        selected_ciphers.removeAll(_excludeCipherSuites);
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
@@ -1266,18 +1256,6 @@ public class SslContextFactory extends AbstractLifeCycle
         return socket;
     }
 
-    public SSLEngine newSSLEngine(String host, int port)
-    {
-        if (!isRunning())
-            throw new IllegalStateException("!STARTED");
-        SSLContext context = _context;
-        SSLEngine sslEngine=isSessionCachingEnabled()
-            ? context.createSSLEngine(host, port)
-            : context.createSSLEngine();
-        customize(sslEngine);
-        return sslEngine;
-    }
-
     public SSLEngine newSSLEngine()
     {
         if (!isRunning())
@@ -1285,6 +1263,23 @@ public class SslContextFactory extends AbstractLifeCycle
         SSLEngine sslEngine=_context.createSSLEngine();
         customize(sslEngine);
         return sslEngine;
+    }
+
+    public SSLEngine newSSLEngine(String host, int port)
+    {
+        if (!isRunning())
+            throw new IllegalStateException("!STARTED");
+        SSLEngine sslEngine=isSessionCachingEnabled()
+            ? _context.createSSLEngine(host, port)
+            : _context.createSSLEngine();
+        customize(sslEngine);
+        return sslEngine;
+    }
+
+    public SSLEngine newSSLEngine(InetSocketAddress address)
+    {
+        // Must use the hostName, not the hostAddress, to allow correct host name verification
+        return address != null ? newSSLEngine(address.getAddress().getHostName(), address.getPort()) : newSSLEngine();
     }
 
     public void customize(SSLEngine sslEngine)
@@ -1303,11 +1298,6 @@ public class SslContextFactory extends AbstractLifeCycle
                 sslEngine.getSupportedCipherSuites()));
 
         sslEngine.setEnabledProtocols(selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols()));
-    }
-
-    public SSLEngine newSSLEngine(InetSocketAddress address)
-    {
-        return address != null ? newSSLEngine(address.getAddress().getHostAddress(), address.getPort()) : newSSLEngine();
     }
 
     public static X509Certificate[] getCertChain(SSLSession sslSession)
@@ -1341,30 +1331,30 @@ public class SslContextFactory extends AbstractLifeCycle
             return null;
         }
     }
-    
+
     /**
      * Given the name of a TLS/SSL cipher suite, return an int representing it effective stream
      * cipher key strength. i.e. How much entropy material is in the key material being fed into the
      * encryption routines.
-     * 
+     *
      * <p>
      * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
      * Version 1.0, Appendix C. CipherSuite definitions:
-     * 
+     *
      * <pre>
-     *                         Effective 
-     *     Cipher       Type    Key Bits 
-     *                         
-     *     NULL       * Stream     0     
-     *     IDEA_CBC     Block    128     
-     *     RC2_CBC_40 * Block     40     
-     *     RC4_40     * Stream    40     
-     *     RC4_128      Stream   128     
-     *     DES40_CBC  * Block     40     
-     *     DES_CBC      Block     56     
-     *     3DES_EDE_CBC Block    168     
+     *                         Effective
+     *     Cipher       Type    Key Bits
+     *
+     *     NULL       * Stream     0
+     *     IDEA_CBC     Block    128
+     *     RC2_CBC_40 * Block     40
+     *     RC4_40     * Stream    40
+     *     RC4_128      Stream   128
+     *     DES40_CBC  * Block     40
+     *     DES_CBC      Block     56
+     *     3DES_EDE_CBC Block    168
      * </pre>
-     * 
+     *
      * @param cipherSuite String name of the TLS cipher suite.
      * @return int indicating the effective key entropy bit-length.
      */
@@ -1373,28 +1363,28 @@ public class SslContextFactory extends AbstractLifeCycle
         // Roughly ordered from most common to least common.
         if (cipherSuite == null)
             return 0;
-        else if (cipherSuite.indexOf("WITH_AES_256_") >= 0)
+        else if (cipherSuite.contains("WITH_AES_256_"))
             return 256;
-        else if (cipherSuite.indexOf("WITH_RC4_128_") >= 0)
+        else if (cipherSuite.contains("WITH_RC4_128_"))
             return 128;
-        else if (cipherSuite.indexOf("WITH_AES_128_") >= 0)
+        else if (cipherSuite.contains("WITH_AES_128_"))
             return 128;
-        else if (cipherSuite.indexOf("WITH_RC4_40_") >= 0)
+        else if (cipherSuite.contains("WITH_RC4_40_"))
             return 40;
-        else if (cipherSuite.indexOf("WITH_3DES_EDE_CBC_") >= 0)
+        else if (cipherSuite.contains("WITH_3DES_EDE_CBC_"))
             return 168;
-        else if (cipherSuite.indexOf("WITH_IDEA_CBC_") >= 0)
+        else if (cipherSuite.contains("WITH_IDEA_CBC_"))
             return 128;
-        else if (cipherSuite.indexOf("WITH_RC2_CBC_40_") >= 0)
+        else if (cipherSuite.contains("WITH_RC2_CBC_40_"))
             return 40;
-        else if (cipherSuite.indexOf("WITH_DES40_CBC_") >= 0)
+        else if (cipherSuite.contains("WITH_DES40_CBC_"))
             return 40;
-        else if (cipherSuite.indexOf("WITH_DES_CBC_") >= 0)
+        else if (cipherSuite.contains("WITH_DES_CBC_"))
             return 56;
         else
             return 0;
     }
-    
+
     @Override
     public String toString()
     {
