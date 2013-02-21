@@ -278,7 +278,7 @@ public class ProxyServletTest
                 "2\r\n"+
                 "YZ\r\n"+
                 "0\r\n"
-                ).getBytes(StringUtil.__ISO_8859_1_CHARSET));
+                ).getBytes(StringUtil.__ISO_8859_1));
                 
             
         String response=IO.toString(client.getInputStream());
