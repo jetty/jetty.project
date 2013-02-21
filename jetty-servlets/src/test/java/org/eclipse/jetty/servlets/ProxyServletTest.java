@@ -265,7 +265,6 @@ public class ProxyServletTest
                 "PUT /proxy/test HTTP/1.1\r\n"+
                 "Host: localhost:"+_connector.getLocalPort()+"\r\n"+
                 "Transfer-Encoding: chunked\r\n"+
-                "Content-Type: text/plain\r\n"+
                 "Connection: close\r\n"+
                 "\r\n"+
                 "A\r\n"+

@@ -581,6 +581,12 @@ public class ProxyServlet implements Servlet
                     String hdr = (String)enm.nextElement();
                     String lhdr = hdr.toLowerCase();
 
+                    if ("transfer-encoding".equals(lhdr))
+                    {
+                        if (request.getHeader("transfer-encoding").indexOf("chunk")>=0)
+                            hasContent = true;
+                    }
+                    
                     if (_DontProxyHeaders.contains(lhdr))
                         continue;
                     if (connectionHdr != null && connectionHdr.indexOf(lhdr) >= 0)
