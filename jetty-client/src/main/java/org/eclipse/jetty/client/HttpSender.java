@@ -162,13 +162,16 @@ public class HttpSender implements AsyncContentProvider.Listener
 
             while (true)
             {
-                HttpGenerator.Result result = generator.generateRequest(requestInfo, header, chunk, contentChunk.content, contentChunk.lastContent);
+                ByteBuffer content = contentChunk.content;
+                final ByteBuffer contentBuffer = content == null ? null : content.slice();
+
+                HttpGenerator.Result result = generator.generateRequest(requestInfo, header, chunk, content, contentChunk.lastContent);
                 switch (result)
                 {
                     case NEED_INFO:
                     {
-                        ContentProvider content = request.getContent();
-                        long contentLength = content == null ? -1 : content.getLength();
+                        ContentProvider requestContent = request.getContent();
+                        long contentLength = requestContent == null ? -1 : requestContent.getLength();
                         requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod().asString(), request.getPath());
                         break;
                     }
@@ -224,15 +227,8 @@ public class HttpSender implements AsyncContentProvider.Listener
                             {
                                 LOG.debug("Write succeeded for {}", request);
 
-                                if (!commit(request))
+                                if (!processWrite(request, contentBuffer, expecting100ContinueResponse))
                                     return;
-
-                                if (expecting100ContinueResponse)
-                                {
-                                    LOG.debug("Expecting 100 Continue for {}", request);
-                                    continueContentChunk.signal();
-                                    return;
-                                }
 
                                 send();
                             }
@@ -250,7 +246,7 @@ public class HttpSender implements AsyncContentProvider.Listener
                             continueContentChunk = new ContinueContentChunk(contentChunk);
                         }
 
-                        write(callback, header, chunk, expecting100ContinueResponse ? null : contentChunk.content);
+                        write(callback, header, chunk, expecting100ContinueResponse ? null : content);
 
                         if (callback.process())
                         {
@@ -260,15 +256,8 @@ public class HttpSender implements AsyncContentProvider.Listener
 
                         if (callback.isSucceeded())
                         {
-                            if (!commit(request))
+                            if (!processWrite(request, contentBuffer, expecting100ContinueResponse))
                                 return;
-
-                            if (expecting100ContinueResponse)
-                            {
-                                LOG.debug("Expecting 100 Continue for {}", request);
-                                continueContentChunk.signal();
-                                return;
-                            }
 
                             // Send further content
                             contentChunk = new ContentChunk(contentIterator);
@@ -361,6 +350,27 @@ public class HttpSender implements AsyncContentProvider.Listener
         {
             releaseBuffers(bufferPool, header, chunk);
         }
+    }
+
+    private boolean processWrite(Request request, ByteBuffer content, boolean expecting100ContinueResponse)
+    {
+        if (!commit(request))
+            return false;
+
+        if (content != null)
+        {
+            RequestNotifier notifier = connection.getDestination().getRequestNotifier();
+            notifier.notifyContent(request, content);
+        }
+
+        if (expecting100ContinueResponse)
+        {
+            LOG.debug("Expecting 100 Continue for {}", request);
+            continueContentChunk.signal();
+            return false;
+        }
+
+        return true;
     }
 
     public void proceed(boolean proceed)

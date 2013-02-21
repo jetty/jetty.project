@@ -80,14 +80,12 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
         public void onComplete(Result result)
         {
             Request request = result.getRequest();
-            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-            List<Response.ResponseListener> listeners = conversation.getExchanges().peekFirst().getResponseListeners();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())
             {
                 Throwable failure = result.getFailure();
                 LOG.debug("Authentication challenge failed {}", failure);
-                notifier.forwardFailureComplete(listeners, request, result.getRequestFailure(), response, result.getResponseFailure());
+                forwardFailureComplete(request, result.getRequestFailure(), response, result.getResponseFailure());
                 return;
             }
 
@@ -95,7 +93,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             if (wwwAuthenticates.isEmpty())
             {
                 LOG.debug("Authentication challenge without WWW-Authenticate header");
-                notifier.forwardFailureComplete(listeners, request, null, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
+                forwardFailureComplete(request, null, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
                 return;
             }
 
@@ -114,15 +112,16 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             if (authentication == null)
             {
                 LOG.debug("No authentication available for {}", request);
-                notifier.forwardSuccessComplete(listeners, request, response);
+                forwardSuccessComplete(request, response);
                 return;
             }
 
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
             final Authentication.Result authnResult = authentication.authenticate(request, response, wwwAuthenticate.value, conversation);
             LOG.debug("Authentication result {}", authnResult);
             if (authnResult == null)
             {
-                notifier.forwardSuccessComplete(listeners, request, response);
+                forwardSuccessComplete(request, response);
                 return;
             }
 
@@ -136,6 +135,20 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                     client.getAuthenticationStore().addAuthenticationResult(authnResult);
                 }
             }).send(null);
+        }
+
+        private void forwardSuccessComplete(Request request, Response response)
+        {
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            conversation.updateResponseListeners(null);
+            notifier.forwardSuccessComplete(conversation.getResponseListeners(), request, response);
+        }
+
+        private void forwardFailureComplete(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+        {
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            conversation.updateResponseListeners(null);
+            notifier.forwardFailureComplete(conversation.getResponseListeners(), request, requestFailure, response, responseFailure);
         }
 
         private List<WWWAuthenticate> parseWWWAuthenticate(Response response)

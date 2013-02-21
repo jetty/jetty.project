@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,11 +34,9 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -226,7 +222,6 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        StdErrLog.getLogger(HttpChannel.class).setHideStacks(true);
         final Throwable cause = new Exception();
         try
         {
@@ -254,24 +249,51 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         }
         catch (ExecutionException x)
         {
-            Throwable abort = x.getCause();
-            if (abort instanceof EOFException)
-            {
-                // Server closed abruptly
-                System.err.println("C");
-            }
-            else if (abort == cause)
-            {
-                // Expected
-            }
-            else
-            {
-                throw x;
-            }
+            Assert.assertSame(cause, x.getCause());
         }
-        finally
+    }
+
+    @Test
+    public void testAbortOnContent() throws Exception
+    {
+        start(new EmptyServerHandler()
         {
-            StdErrLog.getLogger(HttpChannel.class).setHideStacks(false);
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                super.handle(target, baseRequest, request, response);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final Throwable cause = new Exception();
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .onRequestContent(new Request.ContentListener()
+                    {
+                        @Override
+                        public void onContent(Request request, ByteBuffer content)
+                        {
+                            request.abort(cause);
+                        }
+                    })
+                    .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                    {
+                        @Override
+                        public long getLength()
+                        {
+                            return -1;
+                        }
+                    })
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertSame(cause, x.getCause());
         }
     }
 
