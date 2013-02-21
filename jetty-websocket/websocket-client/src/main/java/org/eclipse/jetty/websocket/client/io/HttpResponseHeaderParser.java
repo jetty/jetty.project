@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8LineParser;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
@@ -79,6 +80,11 @@ public class HttpResponseHeaderParser
             {
                 if (parseHeader(line))
                 {
+                    // Finished parsing entire header
+                    ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
+                    BufferUtil.put(buf,copy);
+                    BufferUtil.flipToFlush(copy,0);
+                    this.response.setRemainingBuffer(copy);
                     return this.response;
                 }
             }
