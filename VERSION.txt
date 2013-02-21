@@ -1,3 +1,37 @@
+jetty-9.0.0.RC1 - 21 February 2013
+ + 227244 Remove import of backport-util-concurrent Arrays class
+ + 362854 Continuation implementations may deadlock.
+ + 381521 allow compress methods to be configured
+ + 388103 Add API for tracking down upload progress.
+ + 398649 ServletContextListener.contextDestroyed() is not called on
+   ContextHandler unregistration
+ + 399463 add start.ini documentation for OPTIONS. Remove reference to
+   start_config
+ + 399520 Websocket Server Connection needs session idle timeouts
+ + 399535 Websocket-client connect should have configurable connect timeout
+ + 400014 Http async client DNS performance.
+ + 400040 NullPointerException in HttpGenerator.prepareBuffers
+ + 400184 SslContextFactory change. Disable hostname verification if trustAll
+   is set
+ + 400255 Using WebSocket.maxMessageSize results in IllegalArgumentException
+ + 400434 Add support for an OutputStream ContentProvider.
+ + 400457 Thread context classloader hierarchy not searched when finding
+   webapp's java:comp/env
+ + 400512 ClientUpgradeRequet.addExtension() should fail if extension is not
+   installed
+ + 400555 HttpProxyEngine: Add http version header in response
+ + 400631 Calling flush() on HttpServletResponse.getOutputStream() after last
+   byte of body causes EofException.
+ + 400734 NPE for redirects with relative location.
+ + 400738 ResourceHandler doesn't support range requests
+ + 400848 Redirect fails with non-encoded location URIs.
+ + 400849 Conversation hangs if non-first request fails when queued.
+ + 400859 limit max size of writes from cached content
+ + 400864 Added LowResourcesMonitor
+ + 401177 Make org.eclipse.jetty.websocket.api.WebSocketAdapter threadsafe
+ + 401183 Handle push streams in new method StreamFrameListener.onPush()
+   instead of SessionFrameListener.syn()
+
 jetty-9.0.0.RC0 - 01 February 2013
  + 362226 HttpConnection "wait" call causes thread resource exhaustion
  + 370384 jetty-aggregate not used in jetty-distribution
