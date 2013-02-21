@@ -31,6 +31,7 @@ jetty-9.0.0.RC1 - 21 February 2013
  + 401177 Make org.eclipse.jetty.websocket.api.WebSocketAdapter threadsafe
  + 401183 Handle push streams in new method StreamFrameListener.onPush()
    instead of SessionFrameListener.syn()
+ + 401414 Hostname verification fails.
 
 jetty-9.0.0.RC0 - 01 February 2013
  + 362226 HttpConnection "wait" call causes thread resource exhaustion
