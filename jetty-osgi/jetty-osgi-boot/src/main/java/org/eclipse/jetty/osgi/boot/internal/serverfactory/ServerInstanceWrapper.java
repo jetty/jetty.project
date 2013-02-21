@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -357,10 +358,10 @@ public class ServerInstanceWrapper
         List<String> providerClassNames = new ArrayList<String>();
         
         // get a deployerManager and some providers
-        List<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
+        Collection<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
         if (deployers != null && !deployers.isEmpty())
         {
-            _deploymentManager = deployers.get(0);
+            _deploymentManager = deployers.iterator().next();
             
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {

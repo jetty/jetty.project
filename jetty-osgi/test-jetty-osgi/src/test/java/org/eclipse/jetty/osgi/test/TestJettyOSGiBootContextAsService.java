@@ -16,32 +16,30 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.osgi.test;
 
-import static org.ops4j.pax.exam.CoreOptions.*;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+
+import javax.inject.Inject;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
-import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.Bundle;
@@ -56,53 +54,59 @@ import org.osgi.framework.ServiceReference;
  * Tests the ServiceContextProvider.
  * 
  */
-@RunWith( JUnit4TestRunner.class )
-public class TestJettyOSGiBootContextAsService extends AbstractTestOSGi
+@RunWith(JUnit4TestRunner.class)
+public class TestJettyOSGiBootContextAsService
 {
     private static final boolean LOGGING_ENABLED = false;
+
     private static final boolean REMOTE_DEBUGGING = false;
-    
+
     @Inject
     BundleContext bundleContext = null;
 
     @Configuration
     public static Option[] configure()
     {
-    	ArrayList<Option> options = new ArrayList<Option>();
-        addMoreOSGiContainers(options);
+        ArrayList<Option> options = new ArrayList<Option>();
+        TestOSGiUtil.addMoreOSGiContainers(options);
         options.add(CoreOptions.junitBundles());
-        options.addAll(configurteJettyHomeAndPort("jetty-selector.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*",
-                                                       "org.w3c.*", "javax.xml.*"));
+        options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
-       
-    	
-        //a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
-        options.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "test-jetty-osgi-webapp" ).versionAsInProject().start());
 
-    	// Enable Logging
-    	if(LOGGING_ENABLED) {
-    	    options.addAll(Arrays.asList(options(
-                // install log service using pax runners profile abstraction (there are more profiles, like DS)
-        	// logProfile(),
-        	// this is how you set the default log level when using pax logging (logProfile)
-        	systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" )
-    	    )));
-    	}
+        // a bundle that registers a webapp as a service for the jetty osgi core
+        // to pick up and deploy
+        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
 
-    	return options.toArray(new Option[options.size()]);
+        // Enable Logging
+        if (LOGGING_ENABLED)
+        {
+            options.addAll(Arrays.asList(options(
+                                                 // install log service using pax runners profile abstraction (there
+                                                 // are more profiles, like DS)
+                                                 // logProfile(),
+                                                 // this is how you set the default log level when using pax logging
+                                                 // (logProfile)
+                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("INFO"))));
+        }
+
+        return options.toArray(new Option[options.size()]);
     }
 
-     public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
+    public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
     {
         File etcFolder = new File("src/test/config/etc");
         String etc = "file://" + etcFolder.getAbsolutePath();
         List<Option> options = new ArrayList<Option>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS)
-                .value(etc + "/jetty.xml;" +
-                       etc + "/" + jettySelectorFileName + ";" +
-                       etc + "/jetty-deployer.xml;" +
-                       etc + "/jetty-testrealm.xml"));
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(etc     + "/jetty.xml;"
+                + etc
+                + "/"
+                + jettySelectorFileName
+                + ";"
+                + etc
+                + "/jetty-deployer.xml;"
+                + etc
+                + "/jetty-testrealm.xml"));
         options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
@@ -111,25 +115,22 @@ public class TestJettyOSGiBootContextAsService extends AbstractTestOSGi
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        assertAllBundlesActiveOrResolved(bundleContext);
+        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
-
-
 
     /**
      */
     @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
-        //now test the context
+        // now test the context
         HttpClient client = new HttpClient();
         try
         {
             client.start();
-            ContentResponse response = client.GET(""http://127.0.0.1:"+
-                    TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT+"/acme/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/acme/index.html");
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-            
+
             String content = new String(response.getContent());
             Assert.assertTrue(content.indexOf("<h1>Test OSGi Context</h1>") != -1);
         }
@@ -137,23 +138,26 @@ public class TestJettyOSGiBootContextAsService extends AbstractTestOSGi
         {
             client.stop();
         }
-        
+
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         Assert.assertNotNull(refs);
-        Assert.assertEquals(1,refs.length);
+        Assert.assertEquals(1, refs.length);
         String[] keys = refs[0].getPropertyKeys();
         if (keys != null)
         {
-            for (String k:keys)
-                System.err.println("service property: "+k+", "+refs[0].getProperty(k));
+            for (String k : keys)
+                System.err.println("service property: " + k + ", " + refs[0].getProperty(k));
         }
-        ContextHandler ch = (ContextHandler)bundleContext.getService(refs[0]);
+        ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
         Assert.assertEquals("/acme", ch.getContextPath());
-        
-        testWebBundle.stop();
-        
-        //Check you can see CONTEXT DESTROYED on stderr. TODO: think of a better way to communicate this to the test
-    }
 
-	
+        // Stop the bundle with the ContextHandler in it and check the jetty
+        // Context is destroyed for it.
+        // TODO: think of a better way to communicate this to the test, other
+        // than checking stderr output
+        Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.testcontext");
+        Assert.assertNotNull("Could not find the org.eclipse.jetty.test-jetty-osgi-context.jar bundle", testWebBundle);
+        Assert.assertTrue("The bundle org.eclipse.jetty.testcontext is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
+        testWebBundle.stop();
+    }
 }

@@ -49,9 +49,7 @@ public class DefaultJettyAtJettyHomeHelper
     private static final Logger LOG = Log.getLogger(DefaultJettyAtJettyHomeHelper.class);
 
     /**
-     * contains a comma separated list of pathes to the etc/jetty-*.xml files
-     * used to configure jetty. By default the value is 'etc/jetty.xml' when the
-     * path is relative the file is resolved relatively to jettyhome.
+     * contains a comma separated list of paths to the etc/jetty-*.xml files
      */
     public static final String JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
 
@@ -63,7 +61,7 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Default location within bundle of a jetty home dir.
      */
-    public static final String DEFAULT_JETTYHOME = "/jettyhome";
+    public static final String DEFAULT_JETTYHOME = "/jettyhome/";
     
     
     /* ------------------------------------------------------------ */

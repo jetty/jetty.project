@@ -55,15 +55,6 @@ public class Activator implements BundleActivator
             public void contextInitialized(ServletContextEvent sce)
             {
                System.err.println("Context is initialized");
-try
-{
-               Class clazz = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
-               System.err.println("Classloader for org.eclipse.jetty.npn.NextProtoNego="+clazz.getClassLoader());
-}
-catch (Exception e)
-{
-e.printStackTrace();
-}
             }
 
             @Override
