@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the Low Resources Monitor                                 -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.server.LowResourceMonitor">
+        <Arg name="server"><Ref refid='Server'/></Arg>
+        <Set name="period">1000</Set>
+        <Set name="lowResourcesIdleTimeout">200</Set>
+        <Set name="monitorThreads">true</Set>
+        <Set name="maxConnections">0</Set>
+        <Set name="maxMemory">0</Set>
+        <Set name="maxLowResourcesTime">5000</Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
+import java.util.Arrays;
 
 /**
  * OverlayConfig

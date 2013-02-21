@@ -400,5 +400,21 @@ public class ServerConnector extends AbstractNetworkConnector
         {
             return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint);
         }
+
+        @Override
+        protected void endPointOpened(EndPoint endpoint)
+        {
+            super.endPointOpened(endpoint);
+            onEndPointOpened(endpoint);
+        }
+
+        @Override
+        protected void endPointClosed(EndPoint endpoint)
+        {
+            onEndPointClosed(endpoint);
+            super.endPointClosed(endpoint);
+        }
+        
+        
     }
 }

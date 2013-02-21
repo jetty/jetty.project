@@ -57,6 +57,20 @@
     <!-- =========================================================== -->
     <!-- jetty-jndi by default                                       -->
     <!-- =========================================================== -->
+    <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+      <Arg><Ref refid="Server" /></Arg>
+      <Call name="addAfter">
+        <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
+        <Arg>
+          <Array type="String">
+            <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+            <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+            <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+          </Array>
+        </Arg>
+      </Call>
+    </Call>
+
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.initial</Arg>
       <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
