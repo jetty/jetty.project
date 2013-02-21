@@ -86,6 +86,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
 
                     Connection connection = newUpgradeConnection(channel,sslEndPoint,connectPromise);
+                    sslEndPoint.setIdleTimeout(connectPromise.getClient().getMaxIdleTimeout());
                     sslEndPoint.setConnection(connection);
                     connectionOpened(connection);
                     return sslConnection;
@@ -98,6 +99,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
             else
             {
                 // Standard "ws://"
+                endPoint.setIdleTimeout(connectPromise.getClient().getMaxIdleTimeout());
                 return newUpgradeConnection(channel,endPoint,connectPromise);
             }
         }

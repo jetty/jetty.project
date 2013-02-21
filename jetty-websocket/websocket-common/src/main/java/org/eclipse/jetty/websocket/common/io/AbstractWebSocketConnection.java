@@ -123,6 +123,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
 
+    /**
+     * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
+     */
+    private static final int MIN_BUFFER_SIZE = Generator.OVERHEAD;
+
     private final ForkInvoker<Callback> invoker = new FlushInvoker();
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
@@ -140,6 +145,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,EXECUTE_ONFILLABLE); // TODO review if this is best. Specifically with MUX
+        endp.setIdleTimeout(policy.getIdleTimeout());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
@@ -401,9 +407,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.debug("Read Timeout. disconnecting connection");
-        // TODO: notify end user websocket of read timeout?
-        return true;
+        LOG.warn("Read Timeout");
+
+        if ((ioState.getState() == ConnectionState.CLOSING) || (ioState.getState() == ConnectionState.CLOSED))
+        {
+            // close already initiated, extra timeouts not relevant
+            // allow udnerlying connection and endpoint to disconnect on its own
+            return true;
+        }
+
+        // Initiate close - politely send close frame.
+        // Note: it is not possible in 100% of cases during read timeout to send this close frame.
+        session.close(StatusCode.NORMAL,"Idle Timeout");
+
+        return false;
     }
 
     public void onWriteWebSocketClose()
@@ -499,6 +516,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void setExtensions(List<ExtensionConfig> extensions)
     {
         this.extensions = extensions;
+    }
+
+    @Override
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        if(inputBufferSize < MIN_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Cannot have buffer size less than " + MIN_BUFFER_SIZE);
+        }
+        super.setInputBufferSize(inputBufferSize);
     }
 
     @Override

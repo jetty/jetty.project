@@ -72,6 +72,10 @@
       <Set name="requestHeaderSize">8192</Set>
       <Set name="responseHeaderSize">8192</Set>
       
+      <!-- Uncomment to not send the server version as a header
+      <Set name="sendServerVersion">false</Set>
+      -->
+      
       <!-- Uncomment to enable handling of X-Forwarded- style headers 
       <Call name="addCustomizer">
         <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>

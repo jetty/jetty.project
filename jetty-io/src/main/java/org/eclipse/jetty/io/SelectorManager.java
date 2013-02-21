@@ -57,11 +57,15 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    /**
+     * The default connect timeout, in milliseconds
+     */
+    public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
 
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
-    private long _connectTimeout = 15000;
+    private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -86,14 +90,24 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return scheduler;
     }
 
+    /**
+     * Get the connect timeout
+     * 
+     * @return the connect timeout (in milliseconds)
+     */
     public long getConnectTimeout()
     {
         return _connectTimeout;
     }
 
-    public void setConnectTimeout(long connectTimeout)
+    /**
+     * Set the connect timeout (in milliseconds)
+     * 
+     * @param milliseconds the number of milliseconds for the timeout
+     */
+    public void setConnectTimeout(long milliseconds)
     {
-        _connectTimeout = connectTimeout;
+        _connectTimeout = milliseconds;
     }
 
     /**

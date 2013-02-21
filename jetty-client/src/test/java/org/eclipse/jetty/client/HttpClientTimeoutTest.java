@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -175,7 +176,9 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
-        try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        destination.newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
@@ -203,7 +206,9 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
-        try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        destination.newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest(destination.getHost(), destination.getPort())
                     .scheme(scheme)

@@ -117,11 +117,15 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
         if (listener != null)
             listeners.add(listener);
-        send(request, listeners);
+
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpExchange exchange = new HttpExchange(conversation, getDestination(), request, listeners);
+        send(exchange);
     }
 
-    public void send(Request request, List<Response.ResponseListener> listeners)
+    public void send(HttpExchange exchange)
     {
+        Request request = exchange.getRequest();
         normalizeRequest(request);
 
         // Save the old idle timeout to restore it
@@ -129,10 +133,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         idleTimeout = endPoint.getIdleTimeout();
         endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
-        setExchange(exchange);
-        conversation.getExchanges().offer(exchange);
+        // Associate the exchange to the connection
+        associate(exchange);
 
         sender.send(exchange);
     }
@@ -279,12 +281,21 @@ public class HttpConnection extends AbstractConnection implements Connection
         return exchange.get();
     }
 
-    protected void setExchange(HttpExchange exchange)
+    protected void associate(HttpExchange exchange)
     {
         if (!this.exchange.compareAndSet(null, exchange))
             throw new UnsupportedOperationException("Pipelined requests not supported");
-        else
-            LOG.debug("{} associated to {}", exchange, this);
+        exchange.setConnection(this);
+        LOG.debug("{} associated to {}", exchange, this);
+    }
+
+    protected HttpExchange disassociate()
+    {
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        if (exchange != null)
+            exchange.setConnection(null);
+        LOG.debug("{} disassociated from {}", exchange, this);
+        return exchange;
     }
 
     @Override
@@ -293,7 +304,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = getExchange();
         if (exchange != null)
         {
-            exchange.receive();
+            receive();
         }
         else
         {
@@ -310,7 +321,7 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     public void complete(HttpExchange exchange, boolean success)
     {
-        HttpExchange existing = this.exchange.getAndSet(null);
+        HttpExchange existing = disassociate();
         if (existing == exchange)
         {
             exchange.awaitTermination();
@@ -356,13 +367,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public boolean abort(HttpExchange exchange, Throwable cause)
+    public boolean abort(Throwable cause)
     {
         // We want the return value to be that of the response
         // because if the response has already successfully
         // arrived then we failed to abort the exchange
-        sender.abort(exchange, cause);
-        return receiver.abort(exchange, cause);
+        sender.abort(cause);
+        return receiver.abort(cause);
     }
 
     public void proceed(boolean proceed)

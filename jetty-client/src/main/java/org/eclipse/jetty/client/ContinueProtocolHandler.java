@@ -68,25 +68,28 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
+            // Reset the conversation listeners, since we are going to receive another response code
+            conversation.updateResponseListeners(null);
+
             HttpExchange exchange = conversation.getExchanges().peekLast();
             assert exchange.getResponse() == response;
-            List<Response.ResponseListener> listeners = exchange.getResponseListeners();
             switch (response.getStatus())
             {
                 case 100:
                 {
                     // All good, continue
                     exchange.resetResponse(true);
-                    conversation.setResponseListeners(listeners);
                     exchange.proceed(true);
                     break;
                 }
                 default:
                 {
-                    // Server either does not support 100 Continue, or it does and wants to refuse the request content
+                    // Server either does not support 100 Continue,
+                    // or it does and wants to refuse the request content,
+                    // or we got some other HTTP status code like a redirect.
+                    List<Response.ResponseListener> listeners = exchange.getResponseListeners();
                     HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getEncoding());
                     notifier.forwardSuccess(listeners, contentResponse);
-                    conversation.setResponseListeners(listeners);
                     exchange.proceed(false);
                     break;
                 }
@@ -99,6 +102,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
             HttpConversation conversation = client.getConversation(response.getConversationID(), false);
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
+            // Reset the conversation listeners to allow the conversation to be completed
+            conversation.updateResponseListeners(null);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
             assert exchange.getResponse() == response;

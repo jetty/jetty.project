@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -58,7 +59,6 @@ import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 public class WebSocketClient extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
-    private static final int DEFAULT_TIMEOUT = 1500;
 
     private final WebSocketPolicy policy;
     private final SslContextFactory sslContextFactory;
@@ -71,7 +71,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private ConnectionManager connectionManager;
     private Masker masker;
     private SocketAddress bindAddress;
-    private long connectTimeout = DEFAULT_TIMEOUT;
+    private long connectTimeout = SelectorManager.DEFAULT_CONNECT_TIMEOUT;
 
     public WebSocketClient()
     {
@@ -122,6 +122,15 @@ public class WebSocketClient extends ContainerLifeCycle
 
         request.setRequestURI(toUri);
         request.setCookiesFrom(this.cookieStore);
+
+        // Validate Requested Extensions
+        for (ExtensionConfig reqExt : request.getExtensions())
+        {
+            if (!extensionRegistry.isAvailable(reqExt.getName()))
+            {
+                throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
+            }
+        }
 
         // Validate websocket URI
         LOG.debug("connect websocket:{} to:{}",websocket,toUri);
@@ -242,6 +251,16 @@ public class WebSocketClient extends ContainerLifeCycle
         return masker;
     }
 
+    /**
+     * Get the max idle timeout for new connections.
+     * 
+     * @return the max idle timeout in milliseconds for new connections.
+     */
+    public long getMaxIdleTimeout()
+    {
+        return this.policy.getIdleTimeout();
+    }
+
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
@@ -291,13 +310,19 @@ public class WebSocketClient extends ContainerLifeCycle
         this.bufferPool = bufferPool;
     }
 
-    public void setConnectTimeout(long connectTimeout)
+    /**
+     * Set the timeout for connecting to the remote server.
+     * 
+     * @param timeoutMilliseconds
+     *            the timeout in milliseconds
+     */
+    public void setConnectTimeout(long timeoutMilliseconds)
     {
-        if (connectTimeout < 0)
+        if (timeoutMilliseconds < 0)
         {
             throw new IllegalStateException("Connect Timeout cannot be negative");
         }
-        this.connectTimeout = connectTimeout;
+        this.connectTimeout = timeoutMilliseconds;
     }
 
     public void setCookieStore(CookieStore cookieStore)
@@ -313,5 +338,18 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setMasker(Masker masker)
     {
         this.masker = masker;
+    }
+
+    /**
+     * Set the max idle timeout for new connections.
+     * <p>
+     * Existing connections will not have their max idle timeout adjusted.
+     * 
+     * @param milliseconds
+     *            the timeout in milliseconds
+     */
+    public void setMaxIdleTimeout(long milliseconds)
+    {
+        this.policy.setIdleTimeout(milliseconds);
     }
 }

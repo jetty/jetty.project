@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -48,108 +50,120 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAdapter_ConnectClose()
+    public void testAdapter_ConnectClose() throws IOException
     {
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        socket.capture.assertEventCount(2);
-        socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
-        socket.capture.assertEventStartsWith(1,"onWebSocketClose");
+            socket.capture.assertEventCount(2);
+            socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
+            socket.capture.assertEventStartsWith(1,"onWebSocketClose");
+        }
     }
 
     @Test
-    public void testAnnotated_ByteArray()
+    public void testAnnotated_ByteArray() throws IOException
     {
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingFrame(makeBinaryFrame("Hello World",true));
-        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingFrame(makeBinaryFrame("Hello World",true));
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        socket.capture.assertEventCount(3);
-        socket.capture.assertEventStartsWith(0,"onConnect");
-        socket.capture.assertEvent(1,"onBinary([11],0,11)");
-        socket.capture.assertEventStartsWith(2,"onClose(1000,");
+            socket.capture.assertEventCount(3);
+            socket.capture.assertEventStartsWith(0,"onConnect");
+            socket.capture.assertEvent(1,"onBinary([11],0,11)");
+            socket.capture.assertEventStartsWith(2,"onClose(1000,");
+        }
     }
 
     @Test
-    public void testAnnotated_Error()
+    public void testAnnotated_Error() throws IOException
     {
         AnnotatedTextSocket socket = new AnnotatedTextSocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingError(new WebSocketException("oof"));
-        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingError(new WebSocketException("oof"));
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        socket.capture.assertEventCount(3);
-        socket.capture.assertEventStartsWith(0,"onConnect");
-        socket.capture.assertEventStartsWith(1,"onError(WebSocketException: oof)");
-        socket.capture.assertEventStartsWith(2,"onClose(1000,");
+            socket.capture.assertEventCount(3);
+            socket.capture.assertEventStartsWith(0,"onConnect");
+            socket.capture.assertEventStartsWith(1,"onError(WebSocketException: oof)");
+            socket.capture.assertEventStartsWith(2,"onClose(1000,");
+        }
     }
 
     @Test
-    public void testAnnotated_Frames()
+    public void testAnnotated_Frames() throws IOException
     {
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
-        driver.incomingFrame(WebSocketFrame.text("Text Me"));
-        driver.incomingFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
-        driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
+            driver.incomingFrame(WebSocketFrame.text("Text Me"));
+            driver.incomingFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
+            driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
 
-        socket.capture.assertEventCount(6);
-        socket.capture.assertEventStartsWith(0,"onConnect(");
-        socket.capture.assertEventStartsWith(1,"onFrame(PING[");
-        socket.capture.assertEventStartsWith(2,"onFrame(TEXT[");
-        socket.capture.assertEventStartsWith(3,"onFrame(BINARY[");
-        socket.capture.assertEventStartsWith(4,"onFrame(CLOSE[");
-        socket.capture.assertEventStartsWith(5,"onClose(1001,");
+            socket.capture.assertEventCount(6);
+            socket.capture.assertEventStartsWith(0,"onConnect(");
+            socket.capture.assertEventStartsWith(1,"onFrame(PING[");
+            socket.capture.assertEventStartsWith(2,"onFrame(TEXT[");
+            socket.capture.assertEventStartsWith(3,"onFrame(BINARY[");
+            socket.capture.assertEventStartsWith(4,"onFrame(CLOSE[");
+            socket.capture.assertEventStartsWith(5,"onClose(1001,");
+        }
     }
 
     @Test
-    public void testAnnotated_InputStream()
+    public void testAnnotated_InputStream() throws IOException
     {
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingFrame(makeBinaryFrame("Hello World",true));
-        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingFrame(makeBinaryFrame("Hello World",true));
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        socket.capture.assertEventCount(3);
-        socket.capture.assertEventStartsWith(0,"onConnect");
-        socket.capture.assertEventRegex(1,"^onBinary\\(.*InputStream.*");
-        socket.capture.assertEventStartsWith(2,"onClose(1000,");
+            socket.capture.assertEventCount(3);
+            socket.capture.assertEventStartsWith(0,"onConnect");
+            socket.capture.assertEventRegex(1,"^onBinary\\(.*InputStream.*");
+            socket.capture.assertEventStartsWith(2,"onClose(1000,");
+        }
     }
 
     @Test
-    public void testListener_Text()
+    public void testListener_Text() throws IOException
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);
 
-        LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver);
-        conn.open();
-        driver.incomingFrame(WebSocketFrame.text("Hello World"));
-        driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
+        {
+            conn.open();
+            driver.incomingFrame(WebSocketFrame.text("Hello World"));
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        socket.capture.assertEventCount(3);
-        socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
-        socket.capture.assertEventStartsWith(1,"onWebSocketText(\"Hello World\")");
-        socket.capture.assertEventStartsWith(2,"onWebSocketClose(1000,");
+            socket.capture.assertEventCount(3);
+            socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
+            socket.capture.assertEventStartsWith(1,"onWebSocketText(\"Hello World\")");
+            socket.capture.assertEventStartsWith(2,"onWebSocketClose(1000,");
+        }
     }
 
     private EventDriver wrap(Object websocket)

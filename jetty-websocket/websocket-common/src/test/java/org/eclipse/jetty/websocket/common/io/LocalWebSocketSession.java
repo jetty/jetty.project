@@ -29,11 +29,13 @@ public class LocalWebSocketSession extends WebSocketSession
 {
     private String id;
     private OutgoingFramesCapture outgoingCapture;
+    private LocalWebSocketConnection lwsconnection;
 
     public LocalWebSocketSession(TestName testname, EventDriver driver)
     {
         super(URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),driver,new LocalWebSocketConnection(testname));
         this.id = testname.getMethodName();
+        this.lwsconnection = (LocalWebSocketConnection)getConnection();
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
     }
@@ -41,6 +43,13 @@ public class LocalWebSocketSession extends WebSocketSession
     public OutgoingFramesCapture getOutgoingCapture()
     {
         return outgoingCapture;
+    }
+
+    @Override
+    public void open()
+    {
+        lwsconnection.onOpen();
+        super.open();
     }
 
     @Override

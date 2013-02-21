@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.api;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -35,8 +36,10 @@ import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -147,7 +150,9 @@ public class Usage
         client.start();
 
         // Create an explicit connection, and use try-with-resources to manage it
-        try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", 8080);
 
@@ -272,6 +277,33 @@ public class Usage
                 .send();
 
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testRequestOutputStream() throws Exception
+    {
+        HttpClient client = new HttpClient();
+        client.start();
+
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        try (OutputStream output = content.getOutputStream())
+        {
+            client.newRequest("localhost", 8080)
+                    .content(content)
+                    .send(new Response.CompleteListener()
+                    {
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            Assert.assertEquals(200, result.getResponse().getStatus());
+                        }
+                    });
+
+            output.write(new byte[1024]);
+            output.write(new byte[512]);
+            output.write(new byte[256]);
+            output.write(new byte[128]);
+        }
     }
 
     @Test

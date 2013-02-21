@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -164,7 +164,7 @@ public class ProxyHTTPToSPDYTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 closeLatch.countDown();
             }

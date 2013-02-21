@@ -18,23 +18,20 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Deque;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.AttributesMap;
 
-public class HttpConversation implements Attributes
+public class HttpConversation extends AttributesMap
 {
-    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private final HttpClient client;
     private final long id;
+    private volatile boolean complete;
     private volatile List<Response.ResponseListener> listeners;
 
     public HttpConversation(HttpClient client, long id)
@@ -43,7 +40,7 @@ public class HttpConversation implements Attributes
         this.id = id;
     }
 
-    public long id()
+    public long getID()
     {
         return id;
     }
@@ -53,55 +50,119 @@ public class HttpConversation implements Attributes
         return exchanges;
     }
 
+    /**
+     * Returns the list of response listeners that needs to be notified of response events.
+     * This list changes as the conversation proceeds, as follows:
+     * <ol>
+     * <li>
+     *     request R1 send => conversation.updateResponseListeners(null)
+     *     <ul>
+     *         <li>exchanges in conversation: E1</li>
+     *         <li>listeners to be notified: E1.listeners</li>
+     *     </ul>
+     * </li>
+     * <li>
+     *     response R1 arrived, 401 => conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
+     *     <ul>
+     *         <li>exchanges in conversation: E1</li>
+     *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
+     *     </ul>
+     * </li>
+     * <li>
+     *     request R2 send => conversation.updateResponseListeners(null)
+     *     <ul>
+     *         <li>exchanges in conversation: E1 + E2</li>
+     *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
+     *     </ul>
+     * </li>
+     * <li>
+     *     response R2 arrived, 302 => conversation.updateResponseListeners(RedirectProtocolHandler.listener)
+     *     <ul>
+     *         <li>exchanges in conversation: E1 + E2</li>
+     *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
+     *     </ul>
+     * </li>
+     * <li>
+     *     request R3 send => conversation.updateResponseListeners(null)
+     *     <ul>
+     *         <li>exchanges in conversation: E1 + E2 + E3</li>
+     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     *     </ul>
+     * </li>
+     * <li>
+     *     response R3 arrived, 200 => conversation.updateResponseListeners(null)
+     *     <ul>
+     *         <li>exchanges in conversation: E1 + E2 + E3</li>
+     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     *     </ul>
+     * </li>
+     * </ol>
+     * Basically the override conversation listener replaces the first exchange response listener,
+     * and we also notify the last exchange response listeners (if it's not also the first).
+     *
+     * This scheme allows for protocol handlers to not worry about other protocol handlers, or to worry
+     * too much about notifying the first exchange response listeners, but still allowing a protocol
+     * handler to perform completion activities while another protocol handler performs new ones (as an
+     * example, the {@link AuthenticationProtocolHandler} stores the successful authentication credentials
+     * while the {@link RedirectProtocolHandler} performs a redirect).
+     *
+     * @return the list of response listeners that needs to be notified of response events
+     */
     public List<Response.ResponseListener> getResponseListeners()
     {
         return listeners;
     }
 
-    public void setResponseListeners(List<Response.ResponseListener> listeners)
+    /**
+     * Requests to update the response listener, eventually using the given override response listener,
+     * that must be notified instead of the first exchange response listeners.
+     * This works in conjunction with {@link #getResponseListeners()}, returning the appropriate response
+     * listeners that needs to be notified of response events.
+     *
+     * @param overrideListener the override response listener
+     */
+    public void updateResponseListeners(Response.ResponseListener overrideListener)
     {
-        this.listeners = listeners;
+        // If we have no override listener, then the
+        // conversation may be completed at a later time
+        complete = overrideListener == null;
+
+        // Create a new instance to avoid that iterating over the listeners
+        // will notify a listener that may send a new request and trigger
+        // another call to this method which will build different listeners
+        // which may be iterated over when the iteration continues.
+        listeners = new ArrayList<>();
+
+        HttpExchange firstExchange = exchanges.peekFirst();
+        HttpExchange lastExchange = exchanges.peekLast();
+        if (firstExchange == lastExchange)
+        {
+            if (overrideListener != null)
+                listeners.add(overrideListener);
+            else
+                listeners.addAll(firstExchange.getResponseListeners());
+        }
+        else
+        {
+            // Order is important, we want to notify the last exchange first
+            listeners.addAll(lastExchange.getResponseListeners());
+            if (overrideListener != null)
+                listeners.add(overrideListener);
+            else
+                listeners.addAll(firstExchange.getResponseListeners());
+        }
     }
 
     public void complete()
     {
-        client.removeConversation(this);
-    }
-
-    @Override
-    public Object getAttribute(String name)
-    {
-        return attributes.get(name);
-    }
-
-    @Override
-    public void setAttribute(String name, Object attribute)
-    {
-        attributes.put(name, attribute);
-    }
-
-    @Override
-    public void removeAttribute(String name)
-    {
-        attributes.remove(name);
-    }
-
-    @Override
-    public Enumeration<String> getAttributeNames()
-    {
-        return Collections.enumeration(attributes.keySet());
-    }
-
-    @Override
-    public void clearAttributes()
-    {
-        attributes.clear();
+        if (complete)
+            client.removeConversation(this);
     }
 
     public boolean abort(Throwable cause)
     {
         HttpExchange exchange = exchanges.peekLast();
-        return exchange != null && exchange.abort(cause);
+        return exchange.abort(cause);
     }
 
     @Override

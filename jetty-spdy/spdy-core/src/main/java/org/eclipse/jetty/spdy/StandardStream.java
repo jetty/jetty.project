@@ -148,6 +148,7 @@ public class StandardStream implements IStream
         this.listener = listener;
     }
 
+    @Override
     public StreamFrameListener getStreamFrameListener()
     {
         return listener;

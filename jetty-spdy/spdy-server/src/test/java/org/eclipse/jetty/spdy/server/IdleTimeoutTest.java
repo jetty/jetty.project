@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -63,7 +63,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -85,7 +85,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -125,7 +125,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 goAwayLatch.countDown();
             }
@@ -161,7 +161,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -187,7 +187,7 @@ public class IdleTimeoutTest extends AbstractTest
         InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 latch.countDown();
             }
@@ -220,7 +220,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayInfo)
             {
                 latch.countDown();
             }

@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
@@ -38,7 +38,7 @@ public class SPDYClientFactoryTest extends AbstractTest
         startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public void onGoAway(Session session, GoAwayReceivedInfo goAwayReceivedInfo)
+            public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo)
             {
                 latch.countDown();
             }

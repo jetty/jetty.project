@@ -29,8 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.Info;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -50,8 +51,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
- * clients into SPDY events for the servers.</p>
+ * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by clients into
+ * SPDY events for the servers.</p>
  */
 public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 {
@@ -129,6 +130,12 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             default:
                 throw new IllegalArgumentException("Procotol: " + protocol + " is not a known SPDY protocol");
         }
+    }
+
+    @Override
+    public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+    {
+        throw new IllegalStateException("We shouldn't receive pushes from clients");
     }
 
     @Override
@@ -223,6 +230,61 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
 
         @Override
+        public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+        {
+            LOG.debug("S -> P pushed {} on {}", pushInfo, stream);
+
+            Fields headers = new Fields(pushInfo.getHeaders(), false);
+
+            addResponseProxyHeaders(stream, headers);
+            customizeResponseHeaders(stream, headers);
+            Stream clientStream = (Stream)stream.getAssociatedStream().getAttribute
+                    (CLIENT_STREAM_ATTRIBUTE);
+            convert(stream.getSession().getVersion(), clientStream.getSession().getVersion(),
+                    headers);
+
+            StreamHandler handler = new StreamHandler(clientStream, pushInfo);
+            stream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
+            clientStream.push(new PushInfo(getTimeout(), TimeUnit.MILLISECONDS, headers,
+                    pushInfo.isClose()),
+                    handler);
+            return new Adapter()
+            {
+                @Override
+                public void onReply(Stream stream, ReplyInfo replyInfo)
+                {
+                    // Push streams never send a reply
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void onHeaders(Stream stream, HeadersInfo headersInfo)
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void onData(Stream serverStream, final DataInfo serverDataInfo)
+                {
+                    LOG.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
+
+                    ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
+                    {
+                        @Override
+                        public void consume(int delta)
+                        {
+                            super.consume(delta);
+                            serverDataInfo.consume(delta);
+                        }
+                    };
+
+                    StreamHandler handler = (StreamHandler)serverStream.getAttribute(STREAM_HANDLER_ATTRIBUTE);
+                    handler.data(clientDataInfo);
+                }
+            };
+        }
+
+        @Override
         public void onReply(final Stream stream, ReplyInfo replyInfo)
         {
             LOG.debug("S -> P {} on {}", replyInfo, stream);
@@ -304,30 +366,30 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     }
 
     /**
-     * <p>{@link StreamHandler} implements the forwarding of DATA frames from the client to the server.</p>
-     * <p>Instances of this class buffer DATA frames sent by clients and send them to the server.
-     * The buffering happens between the send of the SYN_STREAM to the server (where DATA frames may arrive
-     * from the client before the SYN_STREAM has been fully sent), and between DATA frames, if the client
-     * is a fast producer and the server a slow consumer, or if the client is a SPDY v2 client (and hence
-     * without flow control) while the server is a SPDY v3 server (and hence with flow control).</p>
+     * <p>{@link StreamHandler} implements the forwarding of DATA frames from the client to the server.</p> <p>Instances
+     * of this class buffer DATA frames sent by clients and send them to the server. The buffering happens between the
+     * send of the SYN_STREAM to the server (where DATA frames may arrive from the client before the SYN_STREAM has been
+     * fully sent), and between DATA frames, if the client is a fast producer and the server a slow consumer, or if the
+     * client is a SPDY v2 client (and hence without flow control) while the server is a SPDY v3 server (and hence with
+     * flow control).</p>
      */
     private class StreamHandler implements Promise<Stream>
     {
         private final Queue<DataInfoHandler> queue = new LinkedList<>();
         private final Stream clientStream;
-        private final SynInfo serverSynInfo;
+        private final Info info;
         private Stream serverStream;
 
-        private StreamHandler(Stream clientStream, SynInfo serverSynInfo)
+        private StreamHandler(Stream clientStream, Info info)
         {
             this.clientStream = clientStream;
-            this.serverSynInfo = serverSynInfo;
+            this.info = info;
         }
 
         @Override
         public void succeeded(Stream serverStream)
         {
-            LOG.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
+            LOG.debug("P -> S {} from {} to {}", info, clientStream, serverStream);
 
             serverStream.setAttribute(CLIENT_STREAM_ATTRIBUTE, clientStream);
 
@@ -449,26 +511,8 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
     }
 
-    private class ProxySessionFrameListener extends SessionFrameListener.Adapter implements StreamFrameListener
+    private class ProxySessionFrameListener extends SessionFrameListener.Adapter
     {
-        @Override
-        public StreamFrameListener onSyn(Stream serverStream, SynInfo serverSynInfo)
-        {
-            LOG.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
-
-            Fields headers = new Fields(serverSynInfo.getHeaders(), false);
-
-            addResponseProxyHeaders(serverStream, headers);
-            customizeResponseHeaders(serverStream, headers);
-            Stream clientStream = (Stream)serverStream.getAssociatedStream().getAttribute(CLIENT_STREAM_ATTRIBUTE);
-            convert(serverStream.getSession().getVersion(), clientStream.getSession().getVersion(), headers);
-
-            StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
-            serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-            clientStream.push(new PushInfo(getTimeout(), TimeUnit.MILLISECONDS, headers, serverSynInfo.isClose()),
-                    handler);
-            return this;
-        }
 
         @Override
         public void onRst(Session serverSession, RstInfo serverRstInfo)
@@ -487,41 +531,9 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
 
         @Override
-        public void onGoAway(Session serverSession, GoAwayReceivedInfo goAwayReceivedInfo)
+        public void onGoAway(Session serverSession, GoAwayResultInfo goAwayResultInfo)
         {
             serverSessions.values().remove(serverSession);
-        }
-
-        @Override
-        public void onReply(Stream stream, ReplyInfo replyInfo)
-        {
-            // Push streams never send a reply
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void onHeaders(Stream stream, HeadersInfo headersInfo)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void onData(Stream serverStream, final DataInfo serverDataInfo)
-        {
-            LOG.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
-
-            ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
-            {
-                @Override
-                public void consume(int delta)
-                {
-                    super.consume(delta);
-                    serverDataInfo.consume(delta);
-                }
-            };
-
-            StreamHandler handler = (StreamHandler)serverStream.getAttribute(STREAM_HANDLER_ATTRIBUTE);
-            handler.data(clientDataInfo);
         }
     }
 }

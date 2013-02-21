@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,7 +73,7 @@ import org.junit.Assert;
  */
 public class BlockheadServer
 {
-    public static class ServerConnection implements IncomingFrames, OutgoingFrames
+    public static class ServerConnection implements IncomingFrames, OutgoingFrames, Runnable
     {
         private final int BUFFER_SIZE = 8192;
         private final Socket socket;
@@ -83,6 +84,8 @@ public class BlockheadServer
         private final Generator generator;
         private final AtomicInteger parseCount;
         private final WebSocketExtensionFactory extensionRegistry;
+        private final AtomicBoolean echoing = new AtomicBoolean(false);
+        private Thread echoThread;
 
         /** Set to true to disable timeouts (for debugging reasons) */
         private boolean debug = false;
@@ -395,9 +398,68 @@ public class BlockheadServer
             flush();
         }
 
+        @Override
+        public void run()
+        {
+            LOG.debug("Entering echo thread");
+
+            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
+            BufferUtil.clearToFill(buf);
+            long readBytes = 0;
+            try
+            {
+                while (echoing.get())
+                {
+                    BufferUtil.clearToFill(buf);
+                    long len = read(buf);
+                    if (len > 0)
+                    {
+                        readBytes += len;
+                        LOG.debug("Read {} bytes",len);
+                        BufferUtil.flipToFlush(buf,0);
+                        parser.parse(buf);
+                    }
+
+                    try
+                    {
+                        TimeUnit.MILLISECONDS.sleep(20);
+                    }
+                    catch (InterruptedException gnore)
+                    {
+                        /* ignore */
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                LOG.debug("Exception during echo loop",e);
+            }
+            finally
+            {
+                LOG.debug("Read {} bytes",readBytes);
+                bufferPool.release(buf);
+            }
+        }
+
         public void setSoTimeout(int ms) throws SocketException
         {
             socket.setSoTimeout(ms);
+        }
+
+        public void startEcho()
+        {
+            if (echoThread != null)
+            {
+                throw new IllegalStateException("Echo thread already declared!");
+            }
+            echoThread = new Thread(this,"BlockheadServer/Echo");
+            echoing.set(true);
+            echoThread.start();
+        }
+
+        public void stopEcho()
+        {
+            echoing.set(false);
         }
 
         public void upgrade() throws IOException

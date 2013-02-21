@@ -45,9 +45,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.GoAwayReceivedInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -498,8 +499,17 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         stream.process(frame);
         // Update the last stream id before calling the application (which may send a GO_AWAY)
         updateLastStreamId(stream);
-        SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.getPriority());
-        StreamFrameListener streamListener = notifyOnSyn(listener, stream, synInfo);
+        StreamFrameListener streamListener;
+        if (stream.isUnidirectional())
+        {
+            PushInfo pushInfo = new PushInfo(frame.getHeaders(), frame.isClose());
+            streamListener = notifyOnPush(stream.getAssociatedStream().getStreamFrameListener(), stream, pushInfo);
+        }
+        else
+        {
+            SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.getPriority());
+            streamListener = notifyOnSyn(listener, stream, synInfo);
+        }
         stream.setStreamFrameListener(streamListener);
         flush();
         // The onSyn() listener may have sent a frame that closed the stream
@@ -680,9 +690,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         if (goAwayReceived.compareAndSet(false, true))
         {
-            //TODO: Find a better name for GoAwayReceivedInfo
-            GoAwayReceivedInfo goAwayReceivedInfo = new GoAwayReceivedInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
-            notifyOnGoAway(listener, goAwayReceivedInfo);
+            //TODO: Find a better name for GoAwayResultInfo
+            GoAwayResultInfo goAwayResultInfo = new GoAwayResultInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
+            notifyOnGoAway(listener, goAwayResultInfo);
             flush();
             // SPDY does not require to send back a response to a GO_AWAY.
             // We notified the application of the last good stream id and
@@ -752,6 +762,27 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             LOG.info("Exception while notifying listener " + listener, xx);
             throw xx;
+        }
+    }
+
+    private StreamFrameListener notifyOnPush(StreamFrameListener listener, Stream stream, PushInfo pushInfo)
+    {
+        try
+        {
+            if (listener == null)
+                return null;
+            LOG.debug("Invoking callback with {} on listener {}", pushInfo, listener);
+            return listener.onPush(stream, pushInfo);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+            return null;
+        }
+        catch (Error x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -839,14 +870,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private void notifyOnGoAway(SessionFrameListener listener, GoAwayReceivedInfo goAwayReceivedInfo)
+    private void notifyOnGoAway(SessionFrameListener listener, GoAwayResultInfo goAwayResultInfo)
     {
         try
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", goAwayReceivedInfo, listener);
-                listener.onGoAway(this, goAwayReceivedInfo);
+                LOG.debug("Invoking callback with {} on listener {}", goAwayResultInfo, listener);
+                listener.onGoAway(this, goAwayResultInfo);
             }
         }
         catch (Exception x)

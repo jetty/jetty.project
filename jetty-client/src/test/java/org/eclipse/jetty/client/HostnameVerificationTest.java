@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
@@ -32,16 +34,17 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.Assert.fail;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
 
 /**
- * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt section 3
- * .1) is configurable in SslContextFactory and works as expected.
+ * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
+ * section 3.1) is configurable in SslContextFactory and works as expected.
  */
 public class HostnameVerificationTest
 {
@@ -82,6 +85,14 @@ public class HostnameVerificationTest
         client.start();
     }
 
+    @After
+    public void tearDown() throws Exception
+    {
+        client.stop();
+        server.stop();
+        server.join();
+    }
+
     /**
      * This test is supposed to verify that hostname verification works as described in:
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
@@ -98,10 +109,20 @@ public class HostnameVerificationTest
             client.GET(uri);
             fail("sending request to client should have failed with an Exception!");
         }
-        catch (ExecutionException e)
+        catch (ExecutionException x)
         {
-            assertThat("We got a SSLHandshakeException as localhost doesn't match the hostname of the certificate",
-                    e.getCause().getCause(), instanceOf(SSLHandshakeException.class));
+            // The test may fail in 2 ways, since the CertificateException thrown because of the hostname
+            // verification failure is not rethrown immediately by the JDK SSL implementation, but only
+            // rethrown on the next read or write.
+            // Therefore this test may catch a SSLHandshakeException, or a ClosedChannelException.
+            // If it is the former, we verify that its cause is a CertificateException.
+
+            // ExecutionException wraps an EofException that wraps the SSLHandshakeException
+            Throwable cause = x.getCause().getCause();
+            if (cause instanceof SSLHandshakeException)
+                assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
+            else
+                assertThat(cause, instanceOf(ClosedChannelException.class));
         }
     }
 
@@ -114,7 +135,28 @@ public class HostnameVerificationTest
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
     {
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        String uri = "https://localhost:" + connector.getLocalPort() + "/";
+        try
+        {
+            client.GET(uri);
+        }
+        catch (ExecutionException e)
+        {
+            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+        }
+    }
+
+    /**
+     * This test has hostname verification disabled by setting trustAll to true and connecting,
+     * ssl handshake and sending the request should just work fine.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void trustAllDisablesHostnameVerificationTest() throws Exception
+    {
+        sslContextFactory.setTrustAll(true);
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
         try
         {

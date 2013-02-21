@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
@@ -85,5 +86,8 @@ public interface Connector extends LifeCycle, Graceful
      */
     public Object getTransport();
     
-
+    /**
+     * @return immutable collection of connected endpoints
+     */
+    public Collection<EndPoint> getConnectedEndPoints();
 }

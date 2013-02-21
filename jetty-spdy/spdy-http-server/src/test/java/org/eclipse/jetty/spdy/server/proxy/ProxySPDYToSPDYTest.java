@@ -281,10 +281,16 @@ public class ProxySPDYToSPDYTest
 
         final CountDownLatch pushSynLatch = new CountDownLatch(1);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+
+        Fields headers = new Fields();
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 pushSynLatch.countDown();
                 return new StreamFrameListener.Adapter()
@@ -298,14 +304,7 @@ public class ProxySPDYToSPDYTest
                     }
                 };
             }
-        }).get(5, TimeUnit.SECONDS);
 
-        Fields headers = new Fields();
-        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
-        final CountDownLatch replyLatch = new CountDownLatch(1);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
-        {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {

@@ -53,7 +53,7 @@ public class AnnotatedEventDriver extends EventDriver
         {
             this.policy.setMaxMessageSize(anno.maxMessageSize());
         }
-        if (anno.maxMessageSize() > 0)
+        if (anno.inputBufferSize() > 0)
         {
             this.policy.setInputBufferSize(anno.inputBufferSize());
         }

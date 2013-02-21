@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -366,6 +367,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                         }
                     });
 
+            // Make sure we provide the content *after* the request has been "sent".
             Thread.sleep(1000);
 
             try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
@@ -502,6 +504,48 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                             latch.countDown();
                     }
                 });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithOutputStream() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] data = new byte[512];
+        final CountDownLatch latch = new CountDownLatch(1);
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded() &&
+                                result.getResponse().getStatus() == 200 &&
+                                Arrays.equals(data, getContent()))
+                            latch.countDown();
+                    }
+                });
+
+        // Make sure we provide the content *after* the request has been "sent".
+        Thread.sleep(1000);
+
+        try (OutputStream output = content.getOutputStream())
+        {
+            output.write(data);
+        }
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

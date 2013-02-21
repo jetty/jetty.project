@@ -170,6 +170,7 @@ public abstract class EventDriver implements IncomingFrames
 
     public void openSession(WebSocketSession session)
     {
+        LOG.debug("openSession({})",session);
         this.session = session;
         this.onConnect();
     }

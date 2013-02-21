@@ -82,7 +82,7 @@ public class HttpRequest implements Request
         scheme = uri.getScheme();
         host = uri.getHost();
         port = client.normalizePort(scheme, uri.getPort());
-        path = uri.getPath();
+        path = uri.getRawPath();
         String query = uri.getRawQuery();
         if (query != null)
         {
@@ -293,6 +293,13 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onRequestContent(ContentListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
     public Request onRequestSuccess(SuccessListener listener)
     {
         this.requestListeners.add(listener);
@@ -468,8 +475,7 @@ public class HttpRequest implements Request
     public boolean abort(Throwable cause)
     {
         aborted = Objects.requireNonNull(cause);
-        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, cause))
-            return true;
+        // The conversation may be null if it is already completed
         HttpConversation conversation = client.getConversation(getConversationID(), false);
         return conversation != null && conversation.abort(cause);
     }
