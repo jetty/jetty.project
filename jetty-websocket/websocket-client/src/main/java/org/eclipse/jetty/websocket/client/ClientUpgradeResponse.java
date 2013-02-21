@@ -19,19 +19,32 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 public class ClientUpgradeResponse extends UpgradeResponse
 {
+    private ByteBuffer remainingBuffer;
+
     public ClientUpgradeResponse()
     {
         super();
+    }
+
+    public ByteBuffer getRemainingBuffer()
+    {
+        return remainingBuffer;
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
         throw new UnsupportedOperationException("Not supported on client implementation");
+    }
+
+    public void setRemainingBuffer(ByteBuffer remainingBuffer)
+    {
+        this.remainingBuffer = remainingBuffer;
     }
 }

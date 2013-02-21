@@ -180,6 +180,10 @@ public class UpgradeConnection extends AbstractConnection
                         validateResponse(resp);
                         notifyConnect(resp);
                         upgradeConnection(resp);
+                        if (buffer.hasRemaining())
+                        {
+                            LOG.debug("Has remaining client bytebuffer of {}",buffer.remaining());
+                        }
                         return false; // do no more reading
                     }
                 }

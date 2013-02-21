@@ -19,7 +19,9 @@
 package org.eclipse.jetty.websocket.client.io;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
@@ -41,13 +43,12 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     private static final Logger LOG = Log.getLogger(WebSocketClientConnection.class);
     private final ConnectPromise connectPromise;
     private final Masker masker;
-    private boolean connected;
+    private final AtomicBoolean opened = new AtomicBoolean(false);
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
     {
         super(endp,executor,connectPromise.getClient().getScheduler(),connectPromise.getClient().getPolicy(),connectPromise.getClient().getBufferPool());
         this.connectPromise = connectPromise;
-        this.connected = false;
         this.masker = connectPromise.getMasker();
         assert (this.masker != null);
     }
@@ -75,13 +76,20 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     @Override
     public void onOpen()
     {
-        if (!connected)
+        boolean beenOpened = opened.getAndSet(true);
+        if (!beenOpened)
         {
             WebSocketSession session = getSession();
             ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
             connectionManager.addSession(session);
             connectPromise.succeeded(session);
-            connected = true;
+
+            ByteBuffer extraBuf = connectPromise.getResponse().getRemainingBuffer();
+            if (extraBuf.hasRemaining())
+            {
+                LOG.debug("Parsing extra remaining buffer from UpgradeConnection");
+                getParser().parse(extraBuf);
+            }
         }
         super.onOpen();
     }

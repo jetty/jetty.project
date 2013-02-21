@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -121,6 +122,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    public static class Stats {
+        private AtomicLong countFillInterestedEvents = new AtomicLong(0);
+        private AtomicLong countOnFillableEvents = new AtomicLong(0);
+        private AtomicLong countFillableErrors = new AtomicLong(0);
+
+        public long getFillableErrorCount() {
+            return countFillableErrors.get();
+        }
+
+        public long getFillInterestedCount() {
+            return countFillInterestedEvents.get();
+        }
+
+        public long getOnFillableCount() {
+            return countOnFillableEvents.get();
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
 
     /**
@@ -141,11 +160,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private boolean flushing;
     private boolean isFilling;
     private IOState ioState;
+    private Stats stats = new Stats();
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,EXECUTE_ONFILLABLE); // TODO review if this is best. Specifically with MUX
-        endp.setIdleTimeout(policy.getIdleTimeout());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
@@ -244,6 +263,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.debug("Job not dispatched: {}",task);
         }
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        stats.countFillInterestedEvents.incrementAndGet();
+        super.fillInterested();
     }
 
     public void flush()
@@ -349,6 +375,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return session;
     }
 
+    public Stats getStats()
+    {
+        return stats;
+    }
+
     @Override
     public boolean isOpen()
     {
@@ -372,6 +403,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onFillable()
     {
         LOG.debug("{} onFillable()",policy.getBehavior());
+        stats.countOnFillableEvents.incrementAndGet();
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
@@ -396,6 +428,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    protected void onFillInterestedFailed(Throwable cause)
+    {
+        LOG.ignore(cause);
+        stats.countFillInterestedEvents.incrementAndGet();
+        super.onFillInterestedFailed(cause);
+    }
+
+    @Override
     public void onOpen()
     {
         super.onOpen();
@@ -409,7 +449,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         LOG.warn("Read Timeout");
 
-        if ((ioState.getState() == ConnectionState.CLOSING) || (ioState.getState() == ConnectionState.CLOSED))
+        IOState state = getIOState();
+        if ((state.getState() == ConnectionState.CLOSING) || (state.getState() == ConnectionState.CLOSED))
         {
             // close already initiated, extra timeouts not relevant
             // allow udnerlying connection and endpoint to disconnect on its own
