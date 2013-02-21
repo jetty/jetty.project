@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -99,6 +100,38 @@ public class ExternalSiteTest
         Assert.assertTrue(latch2.await(10, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testExternalSSLSite() throws Exception
+    {
+        client.stop();
+        client = new HttpClient(new SslContextFactory());
+        client.start();
+
+        String host = "api-3t.paypal.com";
+        int port = 443;
+
+        // Verify that we have connectivity
+        try
+        {
+            new Socket(host, port);
+        }
+        catch (IOException x)
+        {
+            Assume.assumeNoException(x);
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(host, port).scheme("https").path("/nvp").send(new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                    latch.countDown();
+            }
+        });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 
     @Test
     public void testExternalSiteWrongProtocol() throws Exception

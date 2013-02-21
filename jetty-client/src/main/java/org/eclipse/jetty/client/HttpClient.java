@@ -965,7 +965,7 @@ public class HttpClient extends ContainerLifeCycle
                 }
                 else
                 {
-                    SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
+                    SSLEngine engine = sslContextFactory.newSSLEngine(destination.getHost(), destination.getPort());
                     engine.setUseClientMode(true);
 
                     SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
