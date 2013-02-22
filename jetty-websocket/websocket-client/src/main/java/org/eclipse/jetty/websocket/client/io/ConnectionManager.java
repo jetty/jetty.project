@@ -176,7 +176,7 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        selector = new WebSocketClientSelectorManager(client);
+        selector = newWebSocketClientSelectorManager(client);
         selector.setSslContextFactory(client.getSslContextFactory());
         selector.setConnectTimeout(client.getConnectTimeout());
         addBean(selector);
