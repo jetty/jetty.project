@@ -176,7 +176,7 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        selector = new WebSocketClientSelectorManager(client.getBufferPool(),client.getExecutor(),client.getScheduler(),client.getPolicy());
+        selector = new WebSocketClientSelectorManager(client);
         selector.setSslContextFactory(client.getSslContextFactory());
         selector.setConnectTimeout(client.getConnectTimeout());
         addBean(selector);
@@ -207,6 +207,18 @@ public class ConnectionManager extends ContainerLifeCycle
     {
         // TODO Auto-generated method stub
         return false;
+    }
+
+    /**
+     * Factory method for new WebSocketClientSelectorManager (used by other projects like cometd)
+     * 
+     * @param client
+     *            the client used to create the WebSocketClientSelectorManager
+     * @return the new WebSocketClientSelectorManager
+     */
+    protected WebSocketClientSelectorManager newWebSocketClientSelectorManager(WebSocketClient client)
+    {
+        return new WebSocketClientSelectorManager(client);
     }
 
     public void removeSession(WebSocketSession session)
