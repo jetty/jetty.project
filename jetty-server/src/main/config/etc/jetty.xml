@@ -49,6 +49,15 @@
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
+    
+    <!-- =========================================================== -->
+    <!-- Add shared Scheduler instance                               -->
+    <!-- =========================================================== -->
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.util.thread.TimerScheduler.TimerScheduler"/>
+      </Arg>
+    </Call>
 
     <!-- =========================================================== -->
     <!-- Http Configuration.                                         -->
@@ -71,10 +80,8 @@
       <Set name="outputBufferSize">32768</Set>
       <Set name="requestHeaderSize">8192</Set>
       <Set name="responseHeaderSize">8192</Set>
-      
-      <!-- Uncomment to not send the server version as a header
-      <Set name="sendServerVersion">false</Set>
-      -->
+      <Set name="sendServerVersion">true</Set>
+      <Set name="sendDateHeader">false</Set>
       
       <!-- Uncomment to enable handling of X-Forwarded- style headers 
       <Call name="addCustomizer">

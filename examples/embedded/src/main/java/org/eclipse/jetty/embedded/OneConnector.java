@@ -19,27 +19,32 @@
 package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.ServerConnector;
 
-public class OneServletContext
+/* ------------------------------------------------------------ */
+/**
+ * A Jetty server with one connectors.
+ */
+public class OneConnector
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        // The Server
+        Server server = new Server();
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        server.setHandler(context);
-
-        // Server content from tmp
-        ServletHolder holder = context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/tmp/*");
-        holder.setInitParameter("resourceBase","/tmp");
-        holder.setInitParameter("pathInfoOnly","true");
+        // HTTP connector
+        ServerConnector http = new ServerConnector(server);
+        http.setHost("localhost");
+        http.setPort(8080);
+        http.setIdleTimeout(30000);
         
-        // A Dump Servlet
-        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
+        // Set the connector
+        server.addConnector(http);
 
+        // Set a handler
+        server.setHandler(new HelloHandler());
+
+        // Start the server
         server.start();
         server.join();
     }

@@ -81,8 +81,6 @@ public class SpdyServer
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(10000);
         server.addConnector(httpConnector);
-
-        
         
         // SSL configurations
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -99,8 +97,6 @@ public class SpdyServer
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-        
-        
 
 
         // Spdy Connector
