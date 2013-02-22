@@ -553,7 +553,7 @@ public class Parser
             if (payload == null)
             {
                 frame.assertValid();
-                payload = bufferPool.acquire(payloadLength,false);
+                payload = bufferPool.acquire(payloadLength,true);
                 BufferUtil.clearToFill(payload);
             }
 

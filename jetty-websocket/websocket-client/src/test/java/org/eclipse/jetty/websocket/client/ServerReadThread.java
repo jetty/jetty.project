@@ -72,7 +72,7 @@ public class ServerReadThread extends Thread
     public void run()
     {
         ByteBufferPool bufferPool = conn.getBufferPool();
-        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
+        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,true);
         BufferUtil.clearToFill(buf);
 
         int len = 0;
