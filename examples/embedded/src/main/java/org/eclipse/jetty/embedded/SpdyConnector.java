@@ -18,20 +18,23 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /**
- * A Jetty server with multiple connectors.
+ * A Jetty server with HTTP and SPDY connectors.
  */
-public class ManyConnectors
+public class SpdyConnector
 {
     public static void main(String[] args) throws Exception
     {
@@ -45,13 +48,12 @@ public class ManyConnectors
         HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");
         http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
 
         // HTTP connector
         ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));        
         http.setPort(8080);
-        http.setIdleTimeout(30000);
-        
+        server.addConnector(http);
+ 
         // SSL Context Factory for HTTPS and SPDY
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
@@ -61,16 +63,27 @@ public class ManyConnectors
         // HTTPS Configuration
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
+        
+        // SPDY versions
+        HTTPSPDYServerConnectionFactory spdy2 = 
+            new HTTPSPDYServerConnectionFactory(2,https_config);
 
-        // HTTPS connector
-        ServerConnector https = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,"http/1.1"),
-            new HttpConnectionFactory(https_config));
-        https.setPort(8443);
+        HTTPSPDYServerConnectionFactory spdy3 = 
+            new HTTPSPDYServerConnectionFactory(3,https_config,new ReferrerPushStrategy());
 
-        // Set the connectors
-        server.setConnectors(new Connector[] { http, https });
-
+        // NPN Factory
+        SPDYServerConnectionFactory.checkNPNAvailable();
+        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getDefaultProtocol());
+        npn.setDefaultProtocol(http.getDefaultProtocol());
+        
+        // SSL Factory
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
+        
+        // SPDY Connector
+        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http.getDefaultConnectionFactory());
+        spdyConnector.setPort(8443);
+        server.addConnector(spdyConnector);
+        
         // Set a handler
         server.setHandler(new HelloHandler());
 

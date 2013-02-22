@@ -29,47 +29,23 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /**
- * A Jetty server with multiple connectors.
+ * A Jetty server with one connectors.
  */
-public class ManyConnectors
+public class OneConnector
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../../jetty-distribution/target/distribution");
-        System.setProperty("jetty.home", jetty_home);
-
         // The Server
         Server server = new Server();
 
-        // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
-
         // HTTP connector
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));        
+        ServerConnector http = new ServerConnector(server);
+        http.setHost("localhost");
         http.setPort(8080);
         http.setIdleTimeout(30000);
         
-        // SSL Context Factory for HTTPS and SPDY
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-
-        // HTTPS Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
-
-        // HTTPS connector
-        ServerConnector https = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,"http/1.1"),
-            new HttpConnectionFactory(https_config));
-        https.setPort(8443);
-
         // Set the connectors
-        server.setConnectors(new Connector[] { http, https });
+        server.setConnectors(new Connector[] { http });
 
         // Set a handler
         server.setHandler(new HelloHandler());
