@@ -15,6 +15,8 @@
   <!-- =============================================================== -->
   <!-- Configure the webapp                                            -->
   <!-- =============================================================== -->
+ <!-- Only uncomment if you are not using etc/jetty-plus.xml from start.ini
+
   <Set name="configurationClasses">
     <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="serverDefault">
       <Arg><Ref refid="Server" /></Arg>
@@ -30,6 +32,7 @@
       </Call>
     </Call>
   </Set>
+ -->
 
   <Set name="contextPath">/test-jndi</Set>
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test-jndi.war</Set>
