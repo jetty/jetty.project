@@ -37,10 +37,8 @@ public class OneServletContext
         holder.setInitParameter("resourceBase","/tmp");
         holder.setInitParameter("pathInfoOnly","true");
         
-        // Serve some hello world servlets
-        context.addServlet(new ServletHolder(new HelloServlet()),"/*");
-        context.addServlet(new ServletHolder(new HelloServlet("Buongiorno Mondo")),"/it/*");
-        context.addServlet(new ServletHolder(new HelloServlet("Bonjour le Monde")),"/fr/*");
+        // A Dump Servlet
+        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
 
         server.start();
         server.join();

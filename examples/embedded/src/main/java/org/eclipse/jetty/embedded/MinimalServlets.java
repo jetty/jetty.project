@@ -36,12 +36,12 @@ public class MinimalServlets
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
 
-        handler.addServletWithMapping("org.eclipse.jetty.embedded.MinimalServlets$HelloServlet","/");
+        handler.addServletWithMapping(HelloServlet.class,"/*");
 
         server.start();
         server.join();
     }
-
+    
     public static class HelloServlet extends HttpServlet
     {
         @Override
