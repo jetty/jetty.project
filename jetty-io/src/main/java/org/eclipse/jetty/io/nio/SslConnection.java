@@ -406,7 +406,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                 // pass on ishut/oshut state
                 if (_endp.isOpen() && _endp.isInputShutdown() && !_inbound.hasContent())
-                    _engine.closeInbound();
+                    closeInbound();
 
                 if (_endp.isOpen() && _engine.isOutboundDone() && !_outbound.hasContent())
                     _endp.shutdownOutput();
@@ -426,6 +426,18 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 _progressed.set(true);
         }
         return some_progress;
+    }
+
+    private void closeInbound()
+    {
+        try
+        {
+            _engine.closeInbound();
+        }
+        catch (SSLException x)
+        {
+            _logger.debug(x);
+        }
     }
 
     private synchronized boolean wrap(final Buffer buffer) throws IOException
