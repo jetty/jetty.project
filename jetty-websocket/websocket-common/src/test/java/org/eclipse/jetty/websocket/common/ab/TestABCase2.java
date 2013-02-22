@@ -58,7 +58,7 @@ public class TestABCase2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(bytes.length + 32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -83,7 +83,7 @@ public class TestABCase2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -108,7 +108,7 @@ public class TestABCase2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(5);
 
         expected.put(new byte[]
                 { (byte)0x89, (byte)0x00 });
@@ -129,7 +129,7 @@ public class TestABCase2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -183,7 +183,7 @@ public class TestABCase2
             bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
         }
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(bytes.length + 32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -213,7 +213,7 @@ public class TestABCase2
     {
         byte[] bytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -241,7 +241,7 @@ public class TestABCase2
     @Test
     public void testParseEmptyPingCase2_1()
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(5);
 
         expected.put(new byte[]
                 { (byte)0x89, (byte)0x00 });
@@ -267,7 +267,7 @@ public class TestABCase2
         String message = "Hello, world!";
         byte[] messageBytes = message.getBytes();
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x89 });
@@ -298,7 +298,7 @@ public class TestABCase2
         byte[] bytes = new byte[126];
         Arrays.fill(bytes,(byte)0x00);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + Generator.OVERHEAD);
+        ByteBuffer expected = ByteBuffer.allocateDirect(bytes.length + Generator.OVERHEAD);
 
         byte b;
 

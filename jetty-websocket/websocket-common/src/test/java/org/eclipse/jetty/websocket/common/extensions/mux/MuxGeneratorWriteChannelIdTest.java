@@ -92,7 +92,7 @@ public class MuxGeneratorWriteChannelIdTest
     public void testReadChannelId()
     {
         System.err.printf("Running %s.%s - channelId: %,d%n",this.getClass().getName(),testname.getMethodName(),channelId);
-        ByteBuffer bbuf = ByteBuffer.allocate(10);
+        ByteBuffer bbuf = ByteBuffer.allocateDirect(10);
         generator.writeChannelId(bbuf,channelId);
         BufferUtil.flipToFlush(bbuf,0);
         byte actual[] = BufferUtil.toArray(bbuf);

@@ -49,7 +49,7 @@ public class TestABCase1_2
     {
         int length = 125;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -64,7 +64,7 @@ public class TestABCase1_2
         ByteBuffer actual = generator.generate(binaryFrame);
 
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -88,7 +88,7 @@ public class TestABCase1_2
     {
         int length = 126;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -102,7 +102,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -130,7 +130,7 @@ public class TestABCase1_2
     {
         int length = 127;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -145,7 +145,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -173,7 +173,7 @@ public class TestABCase1_2
     {
         int length = 128;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -187,7 +187,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -216,7 +216,7 @@ public class TestABCase1_2
     {
         int length = 65535;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -231,7 +231,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -256,7 +256,7 @@ public class TestABCase1_2
     {
         int length = 65536;
 
-        ByteBuffer bb = ByteBuffer.allocate(length);
+        ByteBuffer bb = ByteBuffer.allocateDirect(length);
 
         for ( int i = 0 ; i < length ; ++i)
         {
@@ -271,7 +271,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 11);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -300,7 +300,7 @@ public class TestABCase1_2
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(5);
 
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x00 });
@@ -315,7 +315,7 @@ public class TestABCase1_2
     {
         int length = 125;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -348,7 +348,7 @@ public class TestABCase1_2
     {
         int length = 126;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -382,7 +382,7 @@ public class TestABCase1_2
     {
         int length = 127;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -416,7 +416,7 @@ public class TestABCase1_2
     {
         int length = 128;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -450,7 +450,7 @@ public class TestABCase1_2
     {
         int length = 65535;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 5);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -486,7 +486,7 @@ public class TestABCase1_2
     {
         int length = 65536;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        ByteBuffer expected = ByteBuffer.allocateDirect(length + 11);
 
         expected.put(new byte[]
                 { (byte)0x82 });
@@ -521,7 +521,7 @@ public class TestABCase1_2
     public void testParseEmptyBinaryCase1_2_1()
     {
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        ByteBuffer expected = ByteBuffer.allocateDirect(5);
 
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x00 });

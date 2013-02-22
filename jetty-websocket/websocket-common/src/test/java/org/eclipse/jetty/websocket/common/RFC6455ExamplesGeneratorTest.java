@@ -21,9 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -41,12 +38,12 @@ public class RFC6455ExamplesGeneratorTest
         ByteBuffer actual1 = generator.generate(text1);
         ByteBuffer actual2 = generator.generate(text2);
 
-        ByteBuffer expected1 = ByteBuffer.allocate(5);
+        ByteBuffer expected1 = ByteBuffer.allocateDirect(5);
 
         expected1.put(new byte[]
                 { (byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c });
 
-        ByteBuffer expected2 = ByteBuffer.allocate(4);
+        ByteBuffer expected2 = ByteBuffer.allocateDirect(4);
 
         expected2.put(new byte[]
                 { (byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f });
@@ -70,7 +67,7 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer actual = gen.generate(pong);
 
-        ByteBuffer expected = ByteBuffer.allocate(11);
+        ByteBuffer expected = ByteBuffer.allocateDirect(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         expected.put(new byte[]
@@ -90,7 +87,7 @@ public class RFC6455ExamplesGeneratorTest
         Generator gen = new UnitGenerator();
         ByteBuffer actual = gen.generate(text);
 
-        ByteBuffer expected = ByteBuffer.allocate(11);
+        ByteBuffer expected = ByteBuffer.allocateDirect(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         expected.put(new byte[]
@@ -114,7 +111,7 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer actual = gen.generate(binary);
 
-        ByteBuffer expected = ByteBuffer.allocate(dataSize + FUDGE);
+        ByteBuffer expected = ByteBuffer.allocateDirect(dataSize + FUDGE);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
@@ -145,7 +142,7 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer actual = gen.generate(binary);
 
-        ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
+        ByteBuffer expected = ByteBuffer.allocateDirect(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
@@ -171,7 +168,7 @@ public class RFC6455ExamplesGeneratorTest
         Generator gen = new UnitGenerator();
         ByteBuffer actual = gen.generate(ping);
 
-        ByteBuffer expected = ByteBuffer.allocate(10);
+        ByteBuffer expected = ByteBuffer.allocateDirect(10);
         expected.put(new byte[]
                 { (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
         expected.flip(); // make readable
@@ -188,7 +185,7 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer actual = generator.generate(text);
 
-        ByteBuffer expected = ByteBuffer.allocate(10);
+        ByteBuffer expected = ByteBuffer.allocateDirect(10);
 
         expected.put(new byte[]
                 { (byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
