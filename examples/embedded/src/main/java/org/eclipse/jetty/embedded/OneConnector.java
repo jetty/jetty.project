@@ -18,14 +18,8 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /**
@@ -44,8 +38,8 @@ public class OneConnector
         http.setPort(8080);
         http.setIdleTimeout(30000);
         
-        // Set the connectors
-        server.setConnectors(new Connector[] { http });
+        // Set the connector
+        server.addConnector(http);
 
         // Set a handler
         server.setHandler(new HelloHandler());

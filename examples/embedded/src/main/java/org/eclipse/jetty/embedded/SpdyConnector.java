@@ -73,14 +73,16 @@ public class SpdyConnector
 
         // NPN Factory
         SPDYServerConnectionFactory.checkNPNAvailable();
-        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getDefaultProtocol());
+        NPNServerConnectionFactory npn = 
+            new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getDefaultProtocol());
         npn.setDefaultProtocol(http.getDefaultProtocol());
         
         // SSL Factory
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
         
         // SPDY Connector
-        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http.getDefaultConnectionFactory());
+        ServerConnector spdyConnector = 
+            new ServerConnector(server,ssl,npn,spdy3,spdy2,new HttpConnectionFactory(https_config));
         spdyConnector.setPort(8443);
         server.addConnector(spdyConnector);
         
