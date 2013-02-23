@@ -63,7 +63,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void failed(Throwable x)
         {
-            LOG.warn("Write flush failure",x);
+            LOG.debug("Write flush failure",x);
         }
 
         @Override
