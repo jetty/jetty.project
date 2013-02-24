@@ -51,7 +51,7 @@ public class TestABCase4
     @Test
     public void testParserControlOpCode11Case4_2_1()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x8b, 0x00 });
@@ -73,7 +73,7 @@ public class TestABCase4
     @Test
     public void testParserControlOpCode12WithPayloadCase4_2_2()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x8c, 0x01, 0x00 });
@@ -96,7 +96,7 @@ public class TestABCase4
     @Test
     public void testParserNonControlOpCode3Case4_1_1()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x83, 0x00 });
@@ -118,7 +118,7 @@ public class TestABCase4
     @Test
     public void testParserNonControlOpCode4WithPayloadCase4_1_2()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        ByteBuffer expected = ByteBuffer.allocateDirect(32);
 
         expected.put(new byte[]
                 { (byte)0x84, 0x01, 0x00 });

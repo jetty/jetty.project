@@ -83,7 +83,7 @@ public class DeflateCompressionMethod implements CompressionMethod
         public ByteBuffer process()
         {
             // prepare the output buffer
-            ByteBuffer buf = ByteBuffer.allocate(bufferSize);
+            ByteBuffer buf = ByteBuffer.allocateDirect(bufferSize);
             BufferUtil.clearToFill(buf);
 
             while (!deflater.finished())

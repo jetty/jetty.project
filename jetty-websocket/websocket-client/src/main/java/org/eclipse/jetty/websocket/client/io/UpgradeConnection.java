@@ -117,7 +117,7 @@ public class UpgradeConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
         BufferUtil.clear(buffer);
         boolean readMore = false;
         try

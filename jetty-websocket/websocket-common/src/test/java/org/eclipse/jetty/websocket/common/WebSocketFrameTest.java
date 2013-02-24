@@ -58,7 +58,7 @@ public class WebSocketFrameTest
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE).setFin(false);
         ByteBuffer actual = laxGenerator.generate(frame);
-        ByteBuffer expected = ByteBuffer.allocate(2);
+        ByteBuffer expected = ByteBuffer.allocateDirect(2);
         expected.put((byte)0x08);
         expected.put((byte)0x00);
 
@@ -70,7 +70,7 @@ public class WebSocketFrameTest
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setFin(false);
         ByteBuffer actual = laxGenerator.generate(frame);
-        ByteBuffer expected = ByteBuffer.allocate(2);
+        ByteBuffer expected = ByteBuffer.allocateDirect(2);
         expected.put((byte)0x09);
         expected.put((byte)0x00);
 
@@ -82,7 +82,7 @@ public class WebSocketFrameTest
     {
         CloseInfo close = new CloseInfo(StatusCode.NORMAL);
         ByteBuffer actual = strictGenerator.generate(close.asFrame());
-        ByteBuffer expected = ByteBuffer.allocate(4);
+        ByteBuffer expected = ByteBuffer.allocateDirect(4);
         expected.put((byte)0x88);
         expected.put((byte)0x02);
         expected.put((byte)0x03);
@@ -96,7 +96,7 @@ public class WebSocketFrameTest
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING);
         ByteBuffer actual = strictGenerator.generate(frame);
-        ByteBuffer expected = ByteBuffer.allocate(2);
+        ByteBuffer expected = ByteBuffer.allocateDirect(2);
         expected.put((byte)0x89);
         expected.put((byte)0x00);
 

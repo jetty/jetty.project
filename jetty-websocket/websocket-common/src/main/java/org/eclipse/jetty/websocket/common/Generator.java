@@ -222,7 +222,7 @@ public class Generator
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(windowSize,false);
+        ByteBuffer buffer = bufferPool.acquire(windowSize,true);
         BufferUtil.clearToFill(buffer);
         if (LOG.isDebugEnabled())
         {

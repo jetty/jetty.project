@@ -33,7 +33,7 @@ public class PingPayloadParserTest
     @Test
     public void testBasicPingParsing()
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        ByteBuffer buf = ByteBuffer.allocateDirect(16);
         BufferUtil.clearToFill(buf);
         buf.put(new byte[]
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });

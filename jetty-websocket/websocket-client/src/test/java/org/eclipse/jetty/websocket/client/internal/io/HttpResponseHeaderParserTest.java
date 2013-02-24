@@ -64,7 +64,7 @@ public class HttpResponseHeaderParserTest
         expected.add("");
 
         // Prepare Buffer
-        ByteBuffer buf = ByteBuffer.allocate(512);
+        ByteBuffer buf = ByteBuffer.allocateDirect(512);
         for (String line : expected)
         {
             appendUtf8(buf,line + "\r\n");
@@ -104,7 +104,7 @@ public class HttpResponseHeaderParserTest
         expected.add("");
 
         // Prepare Buffer
-        ByteBuffer buf = ByteBuffer.allocate(512);
+        ByteBuffer buf = ByteBuffer.allocateDirect(512);
         for (String line : expected)
         {
             appendUtf8(buf,line + "\r\n");

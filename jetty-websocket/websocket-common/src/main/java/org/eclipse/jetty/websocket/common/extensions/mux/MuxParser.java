@@ -243,7 +243,7 @@ public class MuxParser
     private void parseDataFramePayload(ByteBuffer buffer)
     {
         int capacity = buffer.remaining();
-        ByteBuffer payload = ByteBuffer.allocate(capacity);
+        ByteBuffer payload = ByteBuffer.allocateDirect(capacity);
         payload.put(buffer);
         BufferUtil.flipToFlush(payload,0);
         muxframe.setPayload(payload);
@@ -336,7 +336,7 @@ public class MuxParser
             throw new MuxException(err);
         }
 
-        ByteBuffer ret = ByteBuffer.allocate((int)size);
+        ByteBuffer ret = ByteBuffer.allocateDirect((int)size);
         BufferUtil.put(buffer,ret);
         BufferUtil.flipToFlush(ret,0);
         return ret;

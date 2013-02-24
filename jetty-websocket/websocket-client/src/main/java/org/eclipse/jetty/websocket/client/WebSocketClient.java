@@ -188,7 +188,7 @@ public class WebSocketClient extends ContainerLifeCycle
             cookieStore = new HttpCookieStore.Empty();
         }
 
-        this.connectionManager = new ConnectionManager(this);
+        this.connectionManager = newConnectionManager();
         addBean(this.connectionManager);
 
         super.doStart();
@@ -298,6 +298,16 @@ public class WebSocketClient extends ContainerLifeCycle
         }
         LOG.debug("extensions={}",extensions);
         return extensions;
+    }
+
+    /**
+     * Factory method for new ConnectionManager (used by other projects like cometd)
+     * 
+     * @return the ConnectionManager instance to use
+     */
+    protected ConnectionManager newConnectionManager()
+    {
+        return new ConnectionManager(this);
     }
 
     public void setBindAdddress(SocketAddress bindAddress)

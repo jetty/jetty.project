@@ -55,7 +55,7 @@
     <!-- =========================================================== -->
     <Call name="addBean">
       <Arg>
-        <New class="org.eclipse.jetty.util.thread.TimerScheduler.TimerScheduler"/>
+        <New class="org.eclipse.jetty.util.thread.TimerScheduler"/>
       </Arg>
     </Call>
 

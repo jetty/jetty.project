@@ -63,7 +63,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void failed(Throwable x)
         {
-            LOG.warn("Write flush failure",x);
+            LOG.debug("Write flush failure",x);
         }
 
         @Override
@@ -404,7 +404,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
         BufferUtil.clear(buffer);
         boolean readMore = false;
         try

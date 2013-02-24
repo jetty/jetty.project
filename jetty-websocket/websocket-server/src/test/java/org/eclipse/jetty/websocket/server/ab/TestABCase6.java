@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -299,9 +298,7 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
 
             fuzzer.send(new WebSocketFrame(OpCode.TEXT).setPayload(part1).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part2).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part3).setFin(true));
 
             fuzzer.expect(expect);
@@ -338,9 +335,7 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(new WebSocketFrame(OpCode.TEXT).setPayload(part1).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part2).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part3).setFin(true));
             fuzzer.expect(expect);
         }
@@ -360,7 +355,7 @@ public class TestABCase6 extends AbstractABCase
         // Disable Long Stacks from Parser (we know this test will throw an exception)
         enableStacks(Parser.class,false);
 
-        ByteBuffer payload = ByteBuffer.allocate(64);
+        ByteBuffer payload = ByteBuffer.allocateDirect(64);
         BufferUtil.clearToFill(payload);
         payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
         payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
@@ -394,12 +389,10 @@ public class TestABCase6 extends AbstractABCase
             part3.limit(splits[2]);
 
             fuzzer.send(part1); // the header + good utf
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(part2); // the bad UTF
 
             fuzzer.expect(expect);
 
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.sendExpectingIOException(part3); // the rest (shouldn't work)
         }
         finally
@@ -436,9 +429,7 @@ public class TestABCase6 extends AbstractABCase
             ByteBuffer net = fuzzer.asNetworkBuffer(send);
             fuzzer.send(net,6);
             fuzzer.send(net,11);
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(net,1);
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(net,100); // the rest
 
             fuzzer.expect(expect);

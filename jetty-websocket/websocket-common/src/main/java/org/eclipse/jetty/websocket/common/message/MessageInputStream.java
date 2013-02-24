@@ -45,7 +45,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     public MessageInputStream(AnnotatedEventDriver driver)
     {
         this.driver = driver;
-        this.buf = ByteBuffer.allocate(BUFFER_SIZE);
+        this.buf = ByteBuffer.allocateDirect(BUFFER_SIZE);
         BufferUtil.clearToFill(this.buf);
         size = 0;
         readPosition = this.buf.position();
