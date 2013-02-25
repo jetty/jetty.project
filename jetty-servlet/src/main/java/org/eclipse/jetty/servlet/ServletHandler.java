@@ -54,6 +54,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
 import org.eclipse.jetty.server.ServletResponseHttpWrapper;
@@ -476,10 +477,20 @@ public class ServletHandler extends ScopedHandler
             }
             else if (th instanceof ServletException)
             {
-                LOG.warn(th);
-                Throwable cause=((ServletException)th).getRootCause();
-                if (cause!=null)
+                if (th instanceof QuietServletException)
+                { 
+                    LOG.debug(th);
+                    LOG.warn(th.toString());
+                }
+                else
+                    LOG.warn(th);
+                while (th instanceof ServletException)
+                {
+                    Throwable cause=((ServletException)th).getRootCause();
+                    if (cause==null)
+                        break;
                     th=cause;
+                }
             }
             // handle or log exception
             else if (th instanceof EofException)
@@ -1392,6 +1403,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
@@ -1443,6 +1455,7 @@ public class ServletHandler extends ScopedHandler
 
         }
 
+        @Override
         public String toString()
         {
             if (_filterHolder!=null)
@@ -1471,6 +1484,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
@@ -1524,6 +1538,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             StringBuilder b = new StringBuilder();
@@ -1571,6 +1586,5 @@ public class ServletHandler extends ScopedHandler
         if (_contextHandler!=null)
             _contextHandler.destroyFilter(filter);
     }
-
 
 }
