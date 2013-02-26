@@ -25,8 +25,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
@@ -62,10 +62,26 @@ public class JspPropertyGroupServlet extends GenericServlet
     public void init() throws ServletException
     {            
         String jsp_name = "jsp";
-        ServletMapping servlet_mapping=_servletHandler.getServletMapping("*.jsp");
+        ServletMapping servlet_mapping =_servletHandler.getServletMapping("*.jsp");
         if (servlet_mapping!=null)
         {
             _starJspMapped=true;
+           
+            //now find the jsp servlet, ignoring the mapping that is for ourself
+            ServletMapping[] mappings = _servletHandler.getServletMappings();
+            for (ServletMapping m:mappings)
+            {
+                String[] paths = m.getPathSpecs();
+                if (paths!=null)
+                {
+                    for (String path:paths)
+                    {
+                        if ("*.jsp".equals(path) && !NAME.equals(m.getServletName()))
+                            servlet_mapping = m;
+                    }
+                }
+            }
+            
             jsp_name=servlet_mapping.getServletName();
         }
         _jspServlet=_servletHandler.getServlet(jsp_name);
@@ -79,7 +95,7 @@ public class JspPropertyGroupServlet extends GenericServlet
 
     @Override
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {   
+    {           
         Request request=(req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
 
         String servletPath=null;
@@ -103,11 +119,16 @@ public class JspPropertyGroupServlet extends GenericServlet
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         
         if (pathInContext.endsWith("/"))
+        {
             _dftServlet.getServlet().service(req,res);
+        }
         else if (_starJspMapped && pathInContext.toLowerCase().endsWith(".jsp"))
+        {
             _jspServlet.getServlet().service(req,res);
+        }
         else
         {
+         
             Resource resource = _contextHandler.getResource(pathInContext);
             if (resource!=null && resource.isDirectory())
                 _dftServlet.getServlet().service(req,res);
