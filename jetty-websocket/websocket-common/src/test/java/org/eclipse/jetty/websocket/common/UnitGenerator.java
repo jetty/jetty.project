@@ -46,7 +46,7 @@ public class UnitGenerator extends Generator
         {
             buflen += f.getPayloadLength() + Generator.OVERHEAD;
         }
-        ByteBuffer completeBuf = ByteBuffer.allocateDirect(buflen);
+        ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
         BufferUtil.clearToFill(completeBuf);
 
         // Generate frames

@@ -179,7 +179,7 @@ public class FrameCompressionExtensionTest
         compressor.finish();
 
         // Perform compression
-        ByteBuffer outbuf = ByteBuffer.allocateDirect(64);
+        ByteBuffer outbuf = ByteBuffer.allocate(64);
         BufferUtil.clearToFill(outbuf);
 
         while (!compressor.finished())

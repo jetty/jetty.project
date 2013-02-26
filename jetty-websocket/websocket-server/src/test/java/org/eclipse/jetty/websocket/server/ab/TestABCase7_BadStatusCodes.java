@@ -86,7 +86,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     @Test
     public void testBadStatusCode() throws Exception
     {
-        ByteBuffer payload = ByteBuffer.allocateDirect(256);
+        ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
         payload.putChar((char)statusCode);
         BufferUtil.flipToFlush(payload,0);
@@ -118,7 +118,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     @Test
     public void testBadStatusCodeWithReason() throws Exception
     {
-        ByteBuffer payload = ByteBuffer.allocateDirect(256);
+        ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
         payload.putChar((char)statusCode);
         payload.put(StringUtil.getBytes("Reason"));

@@ -81,7 +81,7 @@ public class HttpResponseHeaderParser
                 if (parseHeader(line))
                 {
                     // Finished parsing entire header
-                    ByteBuffer copy = ByteBuffer.allocateDirect(buf.remaining());
+                    ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
                     BufferUtil.put(buf,copy);
                     BufferUtil.flipToFlush(copy,0);
                     this.response.setRemainingBuffer(copy);

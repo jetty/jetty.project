@@ -53,7 +53,7 @@ public class TestABCase7_3
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(close.asFrame());
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(5);
+        ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x00 });
@@ -66,7 +66,7 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_1ParseEmptyClose()
     {
-        ByteBuffer expected = ByteBuffer.allocateDirect(5);
+        ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x00 });
@@ -100,7 +100,7 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_2Parse1BytePayloadClose()
     {
-        ByteBuffer expected = ByteBuffer.allocateDirect(32);
+        ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
                 { (byte)0x88, 0x01, 0x00 });
@@ -127,7 +127,7 @@ public class TestABCase7_3
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(close.asFrame());
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(5);
+        ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8 });
@@ -140,7 +140,7 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_3ParseCloseWithStatus()
     {
-        ByteBuffer expected = ByteBuffer.allocateDirect(5);
+        ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8  });
@@ -172,7 +172,7 @@ public class TestABCase7_3
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(close.asFrame());
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(32);
+        ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -194,7 +194,7 @@ public class TestABCase7_3
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(32);
+        ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -232,7 +232,7 @@ public class TestABCase7_3
 
         Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(close.asFrame());
-        ByteBuffer expected = ByteBuffer.allocateDirect(132);
+        ByteBuffer expected = ByteBuffer.allocate(132);
 
         byte messageBytes[] = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
 
@@ -262,7 +262,7 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(132);
+        ByteBuffer expected = ByteBuffer.allocate(132);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -301,7 +301,7 @@ public class TestABCase7_3
 
         WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE);
 
-        ByteBuffer bb = ByteBuffer.allocateDirect(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
+        ByteBuffer bb = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
 
         bb.putChar((char)1000);
         bb.put(messageBytes);
@@ -320,7 +320,7 @@ public class TestABCase7_3
         byte[] messageBytes = new byte[124];
         Arrays.fill(messageBytes,(byte)'*');
 
-        ByteBuffer expected = ByteBuffer.allocateDirect(256);
+        ByteBuffer expected = ByteBuffer.allocate(256);
 
         byte b;
 

@@ -479,7 +479,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
 
-        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,true);
+        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
         try
         {

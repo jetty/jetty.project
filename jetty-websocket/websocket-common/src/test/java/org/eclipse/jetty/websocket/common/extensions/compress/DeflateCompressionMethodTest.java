@@ -56,7 +56,7 @@ public class DeflateCompressionMethodTest
         method.compress().end();
 
         // decompress
-        ByteBuffer decompressed = ByteBuffer.allocateDirect(msg.length());
+        ByteBuffer decompressed = ByteBuffer.allocate(msg.length());
         LOG.debug("decompressed(a): {}",BufferUtil.toDetailString(decompressed));
         method.decompress().begin();
         method.decompress().input(compressed);
@@ -89,7 +89,7 @@ public class DeflateCompressionMethodTest
         CompressionMethod method = new DeflateCompressionMethod();
 
         // Decompressed Data Holder
-        ByteBuffer decompressed = ByteBuffer.allocateDirect(32);
+        ByteBuffer decompressed = ByteBuffer.allocate(32);
         BufferUtil.flipToFill(decompressed);
 
         // Perform Decompress on Buf 1

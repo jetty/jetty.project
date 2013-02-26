@@ -46,7 +46,7 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
                 while (!latch.await(10,TimeUnit.SECONDS))
                 {
                     System.err.println("Ping");
-                    ByteBuffer data = ByteBuffer.allocateDirect(3);
+                    ByteBuffer data = ByteBuffer.allocate(3);
                     data.put(new byte[]
                     { (byte)1, (byte)2, (byte)3 });
                     data.flip();

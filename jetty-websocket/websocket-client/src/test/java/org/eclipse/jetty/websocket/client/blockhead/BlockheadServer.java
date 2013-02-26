@@ -310,7 +310,7 @@ public class BlockheadServer
             LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
             int startCount = incomingFrames.size();
 
-            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,true);
+            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
             BufferUtil.clearToFill(buf);
             try
             {
@@ -403,7 +403,7 @@ public class BlockheadServer
         {
             LOG.debug("Entering echo thread");
 
-            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,true);
+            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
             BufferUtil.clearToFill(buf);
             long readBytes = 0;
             try

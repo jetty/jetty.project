@@ -57,7 +57,7 @@ public class MuxGenerator
 
     public void generate(long channelId, Frame frame, WriteCallback callback)
     {
-        ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,true);
+        ByteBuffer muxPayload = bufferPool.acquire(frame.getPayloadLength() + DATA_FRAME_OVERHEAD,false);
         BufferUtil.flipToFill(muxPayload);
 
         // start building mux payload
@@ -90,7 +90,7 @@ public class MuxGenerator
             return; // nothing to do
         }
 
-        ByteBuffer payload = bufferPool.acquire(CONTROL_BUFFER_SIZE,true);
+        ByteBuffer payload = bufferPool.acquire(CONTROL_BUFFER_SIZE,false);
         BufferUtil.flipToFill(payload);
 
         writeChannelId(payload,0); // control channel

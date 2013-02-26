@@ -404,7 +404,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
         try
