@@ -220,7 +220,7 @@ public class InputStreamResponseListener extends Response.Listener.Empty
                 else if (bytes != null)
                 {
                     if (index < bytes.length)
-                        return bytes[index++];
+                        return bytes[index++] & 0xFF;
                     length.addAndGet(-index);
                     bytes = null;
                     index = 0;
