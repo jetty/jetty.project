@@ -19,13 +19,9 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-<<<<<<< HEAD
-import java.util.HashSet;
-=======
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
->>>>>>> jetty-8
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -55,6 +51,8 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -118,26 +116,16 @@ import org.eclipse.jetty.util.thread.Timeout;
  * <dd>if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.</dd>
  * <p/>
  * <dt>ipWhitelist</dt>
-<<<<<<< HEAD
- *                      <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
- *
- * <dt>managedAttr</dt>
- *                      <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the
-=======
  * <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
  * <p/>
  * <dt>managedAttr</dt>
  * <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the
->>>>>>> jetty-8
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.</dd>
  * </dl>
  * </p>
  */
-<<<<<<< HEAD
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
-=======
->>>>>>> jetty-8
 public class DoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
@@ -190,8 +178,8 @@ public class DoSFilter implements Filter
     private volatile int _maxRequestsPerSec;
     private Queue<Continuation>[] _queue;
     private ContinuationListener[] _listeners;
-    private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<String, RateTracker>();
-    private final List<String> _whitelist = new CopyOnWriteArrayList<String>();
+    private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<>();
+    private final List<String> _whitelist = new CopyOnWriteArrayList<>();
     private final Timeout _requestTimeoutQ = new Timeout();
     private final Timeout _trackerTimeoutQ = new Timeout();
     private Thread _timerThread;
@@ -205,7 +193,7 @@ public class DoSFilter implements Filter
         _listeners = new ContinuationListener[getMaxPriority() + 1];
         for (int p = 0; p < _queue.length; p++)
         {
-            _queue[p] = new ConcurrentLinkedQueue<Continuation>();
+            _queue[p] = new ConcurrentLinkedQueue<>();
 
             final int priority = p;
             _listeners[p] = new ContinuationListener()
@@ -370,26 +358,15 @@ public class DoSFilter implements Filter
                 case -1:
                 {
                     // Reject this request
-<<<<<<< HEAD
-                    if (_insertHeaders)
-                        ((HttpServletResponse)response).addHeader("DoSFilter","unavailable");
-
-                    ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-=======
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "unavailable");
                     response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
->>>>>>> jetty-8
                     return;
                 }
                 case 0:
                 {
                     // fall through to throttle code
-<<<<<<< HEAD
-                    request.setAttribute(__TRACKER,tracker);
-=======
                     request.setAttribute(__TRACKER, tracker);
->>>>>>> jetty-8
                     break;
                 }
                 default:
@@ -398,26 +375,9 @@ public class DoSFilter implements Filter
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "delayed");
                     Continuation continuation = ContinuationSupport.getContinuation(request);
-<<<<<<< HEAD
-                    request.setAttribute(__TRACKER,tracker);
-                    if (_delayMs > 0)
-                        continuation.setTimeout(_delayMs);
-                    continuation.addContinuationListener(new ContinuationListener()
-                    {
-
-                        public void onComplete(Continuation continuation)
-                        {
-                        }
-
-                        public void onTimeout(Continuation continuation)
-                        {
-                        }
-                    });
-=======
                     request.setAttribute(__TRACKER, tracker);
                     if (delayMs > 0)
                         continuation.setTimeout(delayMs);
->>>>>>> jetty-8
                     continuation.suspend();
                     return;
                 }
@@ -713,23 +673,6 @@ public class DoSFilter implements Filter
     }
 
     /**
-<<<<<<< HEAD
-     * Initialize the IP address whitelist
-     */
-    protected void initWhitelist()
-    {
-        _whitelist.clear();
-        StringTokenizer tokenizer = new StringTokenizer(_whitelistStr, ",");
-        while (tokenizer.hasMoreTokens())
-            _whitelist.add(tokenizer.nextToken().trim());
-
-        LOG.info("Whitelisted IP addresses: {}", _whitelist.toString());
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-=======
->>>>>>> jetty-8
      * Get maximum number of requests from a connection per
      * second. Requests in excess of this are first delayed,
      * then throttled.
@@ -742,10 +685,6 @@ public class DoSFilter implements Filter
         return _maxRequestsPerSec;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get maximum number of requests from a connection per
      * second. Requests in excess of this are first delayed,
@@ -758,10 +697,6 @@ public class DoSFilter implements Filter
         _maxRequestsPerSec = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get delay (in milliseconds) that is applied to all requests
      * over the rate limit, before they are considered at all.
@@ -783,10 +718,6 @@ public class DoSFilter implements Filter
         _delayMs = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get maximum amount of time (in milliseconds) the filter will
      * blocking wait for the throttle semaphore.
@@ -799,10 +730,6 @@ public class DoSFilter implements Filter
         return _maxWaitMs;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set maximum amount of time (in milliseconds) the filter will
      * blocking wait for the throttle semaphore.
@@ -860,10 +787,6 @@ public class DoSFilter implements Filter
         _throttleMs = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get maximum amount of time (in milliseconds) to allow
      * the request to process.
@@ -876,10 +799,6 @@ public class DoSFilter implements Filter
         return _maxRequestMs;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set maximum amount of time (in milliseconds) to allow
      * the request to process.
@@ -904,10 +823,6 @@ public class DoSFilter implements Filter
         return _maxIdleTrackerMs;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set maximum amount of time (in milliseconds) to keep track
      * of request rates for a connection, before deciding that
@@ -920,10 +835,6 @@ public class DoSFilter implements Filter
         _maxIdleTrackerMs = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Check flag to insert the DoSFilter headers into the response.
      *
@@ -935,10 +846,6 @@ public class DoSFilter implements Filter
         return _insertHeaders;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set flag to insert the DoSFilter headers into the response.
      *
@@ -949,10 +856,6 @@ public class DoSFilter implements Filter
         _insertHeaders = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get flag to have usage rate tracked by session if a session exists.
      *
@@ -964,10 +867,6 @@ public class DoSFilter implements Filter
         return _trackSessions;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set flag to have usage rate tracked by session if a session exists.
      *
@@ -978,10 +877,6 @@ public class DoSFilter implements Filter
         _trackSessions = value;
     }
 
-<<<<<<< HEAD
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Get flag to have usage rate tracked by IP+port (effectively connection)
      * if session tracking is not used.
@@ -994,11 +889,6 @@ public class DoSFilter implements Filter
         return _remotePort;
     }
 
-<<<<<<< HEAD
-
-    /* ------------------------------------------------------------ */
-=======
->>>>>>> jetty-8
     /**
      * Set flag to have usage rate tracked by IP+port (effectively connection)
      * if session tracking is not used.
@@ -1013,6 +903,7 @@ public class DoSFilter implements Filter
     /**
      * @return whether this filter is enabled
      */
+    @ManagedAttribute("whether this filter is enabled")
     public boolean isEnabled()
     {
         return _enabled;
@@ -1052,20 +943,33 @@ public class DoSFilter implements Filter
      */
     public void setWhitelist(String value)
     {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (String address : value.split(","))
             addWhitelistAddress(result, address);
-        _whitelist.clear();
+        clearWhitelist();
         _whitelist.addAll(result);
         LOG.debug("Whitelisted IP addresses: {}", result);
     }
 
+    /**
+     * Clears the list of whitelisted IP addresses
+     */
+    @ManagedOperation("clears the list of IP addresses that will not be rate limited")
     public void clearWhitelist()
     {
         _whitelist.clear();
     }
 
-    public boolean addWhitelistAddress(String address)
+    /**
+     * Adds the given IP address, either in the form of a dotted decimal notation A.B.C.D
+     * or in the CIDR notation A.B.C.D/M, to the list of whitelisted IP addresses.
+     *
+     * @param address the address to add
+     * @return whether the address was added to the list
+     * @see #removeWhitelistAddress(String)
+     */
+    @ManagedOperation("adds an IP address that will not be rate limited")
+    public boolean addWhitelistAddress(@Name("address") String address)
     {
         return addWhitelistAddress(_whitelist, address);
     }
@@ -1083,6 +987,14 @@ public class DoSFilter implements Filter
         return false;
     }
 
+    /**
+     * Removes the given address from the list of whitelisted IP addresses.
+     *
+     * @param address the address to remove
+     * @return whether the address was removed from the list
+     * @see #addWhitelistAddress(List, String)
+     */
+    @ManagedOperation("removes an IP address that will not be rate limited")
     public boolean removeWhitelistAddress(String address)
     {
         return _whitelist.remove(address);
@@ -1099,12 +1011,7 @@ public class DoSFilter implements Filter
         transient protected final long[] _timestamps;
         transient protected int _next;
 
-<<<<<<< HEAD
-
-        public RateTracker(String id, int type,int maxRequestsPerSecond)
-=======
         public RateTracker(String id, int type, int maxRequestsPerSecond)
->>>>>>> jetty-8
         {
             _id = id;
             _type = type;
@@ -1147,15 +1054,9 @@ public class DoSFilter implements Filter
         public void valueUnbound(HttpSessionBindingEvent event)
         {
             //take the tracker out of the list of trackers
-<<<<<<< HEAD
-            if (_rateTrackers != null)
-                _rateTrackers.remove(_id);
-           if (LOG.isDebugEnabled()) LOG.debug("Tracker removed: "+_id);
-=======
             _rateTrackers.remove(_id);
             if (LOG.isDebugEnabled())
                 LOG.debug("Tracker removed: {}", getId());
->>>>>>> jetty-8
         }
 
         public void sessionWillPassivate(HttpSessionEvent se)
@@ -1172,10 +1073,6 @@ public class DoSFilter implements Filter
             LOG.warn("Unexpected session activation");
         }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> jetty-8
         public void expired()
         {
             long now = _trackerTimeoutQ.getNow();
@@ -1194,11 +1091,6 @@ public class DoSFilter implements Filter
         {
             return "RateTracker/" + _id + "/" + _type;
         }
-<<<<<<< HEAD
-
-
-=======
->>>>>>> jetty-8
     }
 
     class FixedRateTracker extends RateTracker

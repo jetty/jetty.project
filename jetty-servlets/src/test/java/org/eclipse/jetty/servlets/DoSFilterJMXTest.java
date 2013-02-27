@@ -24,12 +24,12 @@ import java.util.Set;
 import javax.management.Attribute;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
@@ -41,8 +41,7 @@ public class DoSFilterJMXTest
     public void testDoSFilterJMX() throws Exception
     {
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
-        connector.setPort(0);
+        Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
@@ -57,7 +56,6 @@ public class DoSFilterJMXTest
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
         server.addBean(mbeanContainer);
-        server.getContainer().addEventListener(mbeanContainer);
 
         server.start();
 
