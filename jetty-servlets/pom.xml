@@ -85,8 +85,20 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
+=======
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-servlet</artifactId>
+      <version>${project.version}</version>
+>>>>>>> jetty-8
       <scope>test</scope>
     </dependency>
   </dependencies>
