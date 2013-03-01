@@ -167,6 +167,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _endPoint.getRemoteAddress();
     }
 
+    @Override
+    public int getHeaderCacheSize()
+    {
+        return _configuration.getHeaderCacheSize();
+    }
+    
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet

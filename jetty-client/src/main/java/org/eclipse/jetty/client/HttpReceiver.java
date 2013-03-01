@@ -127,6 +127,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
+
+    @Override
+    public int getHeaderCacheSize()
+    {
+        // TODO get from configuration
+        return 256;
+    }
+
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {

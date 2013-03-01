@@ -926,5 +926,11 @@ public class HttpParserTest
         {
             return true;
         }
+
+        @Override
+        public int getHeaderCacheSize()
+        {
+            return 512;
+        }
     }
 }

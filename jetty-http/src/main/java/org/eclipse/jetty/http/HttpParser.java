@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
+    private static final int INITIAL_URI_LENGTH=256;
 
     // States
     public enum State
@@ -80,7 +81,7 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private ByteBuffer _uri=ByteBuffer.allocate(256); // Tune?
+    private ByteBuffer _uri=ByteBuffer.allocate(INITIAL_URI_LENGTH); // Tune?
     private byte _eol;
     private EndOfContent _endOfContent;
     private long _contentLength;
@@ -89,7 +90,7 @@ public class HttpParser
     private int _chunkPosition;
     private boolean _headResponse;
     private ByteBuffer _contentChunk;
-    private final Trie<HttpField> _connectionFields=new ArrayTernaryTrie<>(256);
+    private Trie<HttpField> _connectionFields;
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
@@ -512,6 +513,14 @@ public class HttpParser
                             badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Unknown Version");
                             return true;
                         }
+                        
+                        // Should we try to cache header fields?
+                        if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
+                        {
+                            int header_cache = _handler.getHeaderCacheSize();
+                            if (header_cache>0)
+                                _connectionFields=new ArrayTernaryTrie<>(header_cache);
+                        }
 
                         _eol=ch;
                         setState(State.HEADER);
@@ -592,7 +601,7 @@ public class HttpParser
                 break;
 
             case HOST:
-                add_to_connection_trie=_field==null;
+                add_to_connection_trie=_connectionFields!=null && _field==null;
                 _host=true;
                 String host=_valueString;
                 int port=0;
@@ -629,6 +638,12 @@ public class HttpParser
                     _requestHandler.parsedHostHeader(host,port);
                 
               break;
+              
+            case CONNECTION:
+                // Don't cache if not persistent
+                if (_valueString!=null && _valueString.indexOf("close")>=0)
+                    _connectionFields=null;
+                break;
 
             case AUTHORIZATION:
             case ACCEPT:
@@ -638,7 +653,7 @@ public class HttpParser
             case COOKIE:
             case CACHE_CONTROL:
             case USER_AGENT:
-                add_to_connection_trie=_field==null;
+                add_to_connection_trie=_connectionFields!=null && _field==null;
         }
     
         if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
@@ -786,7 +801,7 @@ public class HttpParser
                                 if (buffer.remaining()>6)
                                 {
                                     // Try a look ahead for the known header name and value.
-                                    _field=_connectionFields.getBest(buffer,-1,buffer.remaining());
+                                    _field=_connectionFields==null?null:_connectionFields.getBest(buffer,-1,buffer.remaining());
                                     if (_field==null)
                                         _field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
                                         
@@ -1396,6 +1411,11 @@ public class HttpParser
         public boolean earlyEOF();
 
         public void badMessage(int status, String reason);
+        
+        /* ------------------------------------------------------------ */
+        /** @return the size in bytes of the per parser header cache
+         */
+        public int getHeaderCacheSize();
     }
 
     public interface RequestHandler<T> extends HttpHandler<T>
