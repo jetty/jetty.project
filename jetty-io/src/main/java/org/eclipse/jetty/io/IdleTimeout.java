@@ -95,6 +95,7 @@ public abstract class IdleTimeout
         // If we have a new timeout, then check and reschedule
         if (idleTimeout>0 && isOpen())
             _idleTask.run();
+            
     }
 
     /** This method should be called when non-idle activity has taken place.
@@ -118,6 +119,13 @@ public abstract class IdleTimeout
     {
         if (_idleTimeout>0)
             _idleTask.run();
+    }
+    
+    public void onClose()
+    {
+        Scheduler.Task oldTimeout = _timeout.getAndSet(null);
+        if (oldTimeout != null)
+            oldTimeout.cancel();
     }
 
     protected void close()
