@@ -347,6 +347,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return ioState;
     }
 
+    @Override
+    public long getMaxIdleTimeout()
+    {
+        return getEndPoint().getIdleTimeout();
+    }
+
     public Parser getParser()
     {
         return parser;
@@ -566,6 +572,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             throw new IllegalArgumentException("Cannot have buffer size less than " + MIN_BUFFER_SIZE);
         }
         super.setInputBufferSize(inputBufferSize);
+    }
+
+    @Override
+    public void setMaxIdleTimeout(long ms)
+    {
+        getEndPoint().setIdleTimeout(ms);
     }
 
     @Override
