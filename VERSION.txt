@@ -1,4 +1,24 @@
-jetty-9.0.0-SNAPSHOT
+jetty-9.0.0-RC3 - 01 March 2013
+ + 400312 ServletContextListener.contextInitialized() is not called when added
+   in ServletContainerInitializer.onStartup
+ + 401531 StringIndexOutOfBoundsException for "/*" <url-pattern> of
+   <jsp-property-group> fix for multiple mappings to *.jsp
+ + 401641 Fixed MBean setter for String[]
+ + 401642 Less verbose INFOs
+ + 401643 Improved Authentication exception messages and provided quiet servlet
+   exception
+ + 401644 Dump does not login user already logged in
+ + 401651 Abort request if maxRequestsQueuedPerDestination is reached.
+ + 401777 InputStreamResponseListener CJK byte (>=128) cause EOF.
+ + 401908 Enhance DosFilter to allow dynamic configuration of attributes.
+ + 401966 Ensure OSGI WebApp as Service (WebAppContext) can be deployed only
+   through ServiceWebAppProvider
+ + 402075 Massive old gen growth when hit by lots of non persistent
+   connections.
+ + 402090 httpsender PendingState cause uncertain data send to server.
+ + 402148 Update Javadoc for WebSocketServlet for new API
+ + 402154 WebSocket / Session.setIdleTimeout(ms) should support in-place idle
+   timeout changes
 
 jetty-9.0.0.RC2 - 24 February 2013
  + Fix etc/jetty.xml TimerScheduler typo that is preventing normal startup
