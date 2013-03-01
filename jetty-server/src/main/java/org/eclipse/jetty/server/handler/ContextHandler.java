@@ -2327,6 +2327,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (!_enabled)
                 throw new UnsupportedOperationException();
             ContextHandler.this.addEventListener(t);
+            ContextHandler.this.restrictEventListener(t);
         }
 
         @Override

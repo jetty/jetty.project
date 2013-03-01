@@ -224,10 +224,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
 
-        //add a listener which will call the servletcontainerinitializers when appropriate
+        //add a bean which will call the servletcontainerinitializers when appropriate
         ServletContainerInitializerListener listener = new ServletContainerInitializerListener();
         listener.setWebAppContext(context);
-        context.addEventListener(listener);
+        context.addBean(listener, true);
     }
 
     
