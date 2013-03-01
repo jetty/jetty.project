@@ -59,7 +59,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private ExtensionFactory extensionFactory;
     private long maximumMessageSize;
     private String protocolVersion;
-    private long timeout;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
     private IncomingFrames incomingHandler;
@@ -165,12 +164,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     }
 
     /**
-     * The idle timeout in seconds
+     * The idle timeout in milliseconds
      */
     @Override
     public long getIdleTimeout()
     {
-        return timeout;
+        return connection.getMaxIdleTimeout();
     }
 
     @ManagedAttribute(readonly = true)
@@ -320,12 +319,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     }
 
     /**
-     * Set the timeout in seconds
+     * Set the timeout in milliseconds
      */
     @Override
-    public void setIdleTimeout(long seconds)
+    public void setIdleTimeout(long ms)
     {
-        this.timeout = seconds;
+        connection.setMaxIdleTimeout(ms);
     }
 
     @Override

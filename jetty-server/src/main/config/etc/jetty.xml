@@ -14,7 +14,7 @@
 <!--   java -jar start.jar -?                                        -->
 <!-- =============================================================== -->
 
-<!-- =============================================================== --> 
+<!-- =============================================================== -->
 <!-- Configure a Jetty Server instance with an ID "Server"           -->
 <!-- Other configuration files may also configure the "Server"       -->
 <!-- ID, in which case they are adding configuration to the same     -->
@@ -49,13 +49,13 @@
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
-    
+
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->
     <!-- =========================================================== -->
     <Call name="addBean">
       <Arg>
-        <New class="org.eclipse.jetty.util.thread.TimerScheduler"/>
+        <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler"/>
       </Arg>
     </Call>
 
@@ -83,14 +83,14 @@
       <Set name="sendServerVersion">true</Set>
       <Set name="sendDateHeader">false</Set>
       <Set name="headerCacheSize">512</Set>
-      
-      <!-- Uncomment to enable handling of X-Forwarded- style headers 
+
+      <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
         <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
       </Call>
       -->
     </New>
-    
+
 
     <!-- =========================================================== -->
     <!-- Set the default handler structure for the Server            -->
@@ -100,7 +100,7 @@
     <!-- DefaultHandler, which handles any requests not handled by   -->
     <!-- the context handlers.                                       -->
     <!-- Other handlers may be added to the "Handlers" collection,   -->
-    <!-- for example the jetty-requestlog.xml file adds the          --> 
+    <!-- for example the jetty-requestlog.xml file adds the          -->
     <!-- RequestLogHandler after the default handler                 -->
     <!-- =========================================================== -->
     <Set name="handler">

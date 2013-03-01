@@ -995,7 +995,7 @@ public class DoSFilter implements Filter
      * @see #addWhitelistAddress(List, String)
      */
     @ManagedOperation("removes an IP address that will not be rate limited")
-    public boolean removeWhitelistAddress(String address)
+    public boolean removeWhitelistAddress(@Name("address") String address)
     {
         return _whitelist.remove(address);
     }

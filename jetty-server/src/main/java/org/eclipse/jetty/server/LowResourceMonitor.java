@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 
 /* ------------------------------------------------------------ */
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * <p>An instance of this class will monitor all the connectors of a server (or a set of connectors
  * configured with {@link #setMonitoredConnectors(Collection)}) for a low resources state.
  * Low resources can be detected by:<ul>
- * <li>{@link ThreadPool#isLowOnThreads()} if {@link Connector#getExecutor()} is 
+ * <li>{@link ThreadPool#isLowOnThreads()} if {@link Connector#getExecutor()} is
  * an instance of {@link ThreadPool} and {@link #setMonitorThreads(boolean)} is true.<li>
  * <li>If {@link #setMaxMemory(long)} is non zero then low resources is detected if the JVMs
  * {@link Runtime} instance has {@link Runtime#totalMemory()} minus {@link Runtime#freeMemory()}
@@ -51,11 +51,11 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * of connections exceeds {@link #getMaxConnections()}</li>
  * </ul>
  * </p>
- * <p>Once low resources state is detected, the cause is logged and all existing connections returned 
- * by {@link Connector#getConnectedEndPoints()} have {@link EndPoint#setIdleTimeout(long)} set 
- * to {@link #getLowResourcesIdleTimeout()}.  New connections are not affected, however if the low 
- * resources state persists for more than {@link #getMaxLowResourcesTime()}, then the 
- * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is 
+ * <p>Once low resources state is detected, the cause is logged and all existing connections returned
+ * by {@link Connector#getConnectedEndPoints()} have {@link EndPoint#setIdleTimeout(long)} set
+ * to {@link #getLowResourcesIdleTimeout()}.  New connections are not affected, however if the low
+ * resources state persists for more than {@link #getMaxLowResourcesTime()}, then the
+ * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is
  * cleared, the idle timeout is reset to the connector default given by {@link Connector#getIdleTimeout()}.
  * </p>
  */
@@ -76,44 +76,44 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _cause;
     private String _reasons;
     private long _lowStarted;
-    
-    
+
+
     private final Runnable _monitor = new Runnable()
     {
         @Override
         public void run()
-        {            
+        {
             if (isRunning())
             {
                 monitor();
                 _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
             }
-        }   
+        }
     };
-    
+
     public LowResourceMonitor(@Name("server") Server server)
     {
         _server=server;
     }
-    
+
     @ManagedAttribute("Are the monitored connectors low on resources?")
     public boolean isLowOnResources()
     {
         return _low.get();
     }
-    
+
     @ManagedAttribute("The reason(s) the monitored connectors are low on resources")
     public String getLowResourcesReasons()
     {
         return _reasons;
     }
-    
+
     @ManagedAttribute("Get the timestamp in ms since epoch that low resources state started")
     public long getLowResourcesStarted()
     {
         return _lowStarted;
     }
-    
+
     @ManagedAttribute("The monitored connectors. If null then all server connectors are monitored")
     public Collection<Connector> getMonitoredConnectors()
     {
@@ -140,7 +140,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     }
 
     /**
-     * @param periodMS The period in ms to monitor for low resources 
+     * @param periodMS The period in ms to monitor for low resources
      */
     public void setPeriod(int periodMS)
     {
@@ -154,8 +154,8 @@ public class LowResourceMonitor extends AbstractLifeCycle
     }
 
     /**
-     * @param monitorThreads If true, check connectors executors to see if they are 
-     * {@link ThreadPool} instances that are low on threads. 
+     * @param monitorThreads If true, check connectors executors to see if they are
+     * {@link ThreadPool} instances that are low on threads.
      */
     public void setMonitorThreads(boolean monitorThreads)
     {
@@ -222,14 +222,14 @@ public class LowResourceMonitor extends AbstractLifeCycle
     protected void doStart() throws Exception
     {
         _scheduler = _server.getBean(Scheduler.class);
-        
+
         if (_scheduler==null)
         {
             _scheduler=new LRMScheduler();
             _scheduler.start();
         }
         super.doStart();
-        
+
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
 
@@ -240,24 +240,24 @@ public class LowResourceMonitor extends AbstractLifeCycle
             _scheduler.stop();
         super.doStop();
     }
-    
+
     protected Connector[] getMonitoredOrServerConnectors()
     {
         if (_monitoredConnectors!=null && _monitoredConnectors.length>0)
             return _monitoredConnectors;
         return _server.getConnectors();
     }
-    
+
     protected void monitor()
     {
         String reasons=null;
         String cause="";
         int connections=0;
-        
+
         for(Connector connector : getMonitoredOrServerConnectors())
         {
             connections+=connector.getConnectedEndPoints().size();
-            
+
             Executor executor = connector.getExecutor();
             if (executor instanceof ThreadPool)
             {
@@ -269,21 +269,21 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 }
             }
         }
-        
+
         if (_maxConnections>0 && connections>_maxConnections)
         {
             reasons=low(reasons,"Max Connections exceeded: "+connections+">"+_maxConnections);
             cause+="C";
         }
-        
+
         long memory=Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
         if (_maxMemory>0 && memory>_maxMemory)
         {
             reasons=low(reasons,"Max memory exceeded: "+memory+">"+_maxMemory);
             cause+="M";
         }
-        
-        
+
+
         if (reasons!=null)
         {
             // Log the reasons if there is any change in the cause
@@ -292,7 +292,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 LOG.warn("Low Resources: {}",reasons);
                 _cause=cause;
             }
-            
+
             // Enter low resources state?
             if (_low.compareAndSet(false,true))
             {
@@ -300,12 +300,12 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 _lowStarted=System.currentTimeMillis();
                 setLowResources();
             }
-           
+
             // Too long in low resources state?
             if (_maxLowResourcesTime>0 && (System.currentTimeMillis()-_lowStarted)>_maxLowResourcesTime)
                 setLowResources();
         }
-        else 
+        else
         {
             if (_low.compareAndSet(true,false))
             {
@@ -316,7 +316,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
             }
         }
     }
-    
+
     protected void setLowResources()
     {
         for(Connector connector : getMonitoredOrServerConnectors())
@@ -325,7 +325,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 endPoint.setIdleTimeout(_lowResourcesIdleTimeout);
         }
     }
-    
+
     protected void clearLowResources()
     {
         for(Connector connector : getMonitoredOrServerConnectors())
@@ -334,16 +334,16 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 endPoint.setIdleTimeout(connector.getIdleTimeout());
         }
     }
-    
+
     private String low(String reasons, String newReason)
     {
         if (reasons==null)
             return newReason;
         return reasons+", "+newReason;
     }
-    
-    
-    private static class LRMScheduler extends TimerScheduler
+
+
+    private static class LRMScheduler extends ScheduledExecutorScheduler
     {
     }
 }

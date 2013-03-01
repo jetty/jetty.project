@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,8 +38,8 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -83,7 +82,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
-    private final Scheduler scheduler = new TimerScheduler();
+    private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventDriverFactory eventDriverFactory;
@@ -308,7 +307,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.eclipse.jetty.websocket.server.WebSocketServletFactory#register(java.lang.Class)
      */
     @Override
@@ -349,7 +348,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
+     *
      * @param request
      *            The request to upgrade
      * @param response

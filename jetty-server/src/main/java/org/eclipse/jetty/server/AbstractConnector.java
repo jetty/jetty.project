@@ -48,8 +48,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  * </li>
  * <li>The {@link Scheduler} service is used to monitor the idle timeouts of all connections and is also made available
  * to the connections to time such things as asynchronous request timeouts.  The default is to use a new
- * {@link TimerScheduler} instance.
+ * {@link ScheduledExecutorScheduler} instance.
  * </li>
  * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
  * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
@@ -151,12 +151,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
-    
+
 
     /**
      * @param server The server this connector will be added to. Must not be null.
      * @param executor An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link TimerScheduler} instance.
+     * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link ScheduledExecutorScheduler} instance.
      * @param pool A buffer pool for this connector or null to either a {@link ByteBufferPool} set as a server bean or none set, the new  {@link ArrayByteBufferPool} instance.
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      * @param factories The Connection Factories to use.
@@ -173,7 +173,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _executor=executor!=null?executor:_server.getThreadPool();
         if (scheduler==null)
             scheduler=_server.getBean(Scheduler.class);
-        _scheduler=scheduler!=null?scheduler:new TimerScheduler();
+        _scheduler=scheduler!=null?scheduler:new ScheduledExecutorScheduler();
         if (pool==null)
             pool=_server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool!=null?pool:new ArrayByteBufferPool();
@@ -479,9 +479,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
     }
 
-    
-    
-    
+
+
+
 //    protected void connectionOpened(Connection connection)
 //    {
 //        _stats.connectionOpened();
@@ -512,7 +512,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         _endpoints.add(endp);
     }
-    
+
     protected void onEndPointClosed(EndPoint endp)
     {
         _endpoints.remove(endp);
