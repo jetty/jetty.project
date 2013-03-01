@@ -25,7 +25,6 @@ import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -42,7 +41,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 
 public class LikeJettyXml
 {
@@ -51,7 +50,7 @@ public class LikeJettyXml
         String jetty_home = System.getProperty("jetty.home","../../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
 
-        
+
         // === jetty.xml ===
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -61,7 +60,7 @@ public class LikeJettyXml
         Server server = new Server(threadPool);
 
         // Scheduler
-        server.addBean(new TimerScheduler());
+        server.addBean(new ScheduledExecutorScheduler());
 
         // HTTP Configuration
         HttpConfiguration http_config = new HttpConfiguration();
@@ -73,7 +72,7 @@ public class LikeJettyXml
         http_config.setSendServerVersion(true);
         http_config.setSendDateHeader(false);
         // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
-        
+
         // Handler Structure
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -84,21 +83,21 @@ public class LikeJettyXml
         server.setDumpAfterStart(false);
         server.setDumpBeforeStop(false);
         server.setStopAtShutdown(true);
-        
 
-        // === jetty-jmx.xml ===    
+
+        // === jetty-jmx.xml ===
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
- 
-        // === jetty-http.xml === 
+
+        // === jetty-http.xml ===
         ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));
         http.setPort(8080);
         http.setIdleTimeout(30000);
         server.addConnector(http);
 
-        
-        // === jetty-https.xml === 
+
+        // === jetty-https.xml ===
         // SSL Context Factory
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
@@ -114,11 +113,11 @@ public class LikeJettyXml
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-        
+
         // SSL HTTP Configuration
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
-        
+
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory,"http/1.1"),
@@ -141,15 +140,15 @@ public class LikeJettyXml
 
         deployer.addAppProvider(webapp_provider);
         server.addBean(deployer);
-        
 
-        // === jetty-stats.xml === 
+
+        // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(server.getHandler());
         server.setHandler(stats);
 
 
-        // === jetty-requestlog.xml === 
+        // === jetty-requestlog.xml ===
         NCSARequestLog requestLog = new NCSARequestLog();
         requestLog.setFilename(jetty_home + "/logs/jetty-yyyy_mm_dd.log");
         requestLog.setFilenameDateFormat("yyyy_MM_dd");
@@ -163,7 +162,7 @@ public class LikeJettyXml
         handlers.addHandler(requestLogHandler);
 
 
-        // === jetty-lowresources.xml === 
+        // === jetty-lowresources.xml ===
         LowResourceMonitor lowResourcesMonitor=new LowResourceMonitor(server);
         lowResourcesMonitor.setPeriod(1000);
         lowResourcesMonitor.setLowResourcesIdleTimeout(200);
@@ -173,8 +172,8 @@ public class LikeJettyXml
         lowResourcesMonitor.setMaxLowResourcesTime(5000);
         server.addBean(lowResourcesMonitor);
 
-        
-        // === test-realm.xml === 
+
+        // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_home + "/etc/realm.properties");
@@ -182,7 +181,7 @@ public class LikeJettyXml
         server.addBean(login);
 
 
-        // Start the server 
+        // Start the server
         server.start();
         server.join();
     }

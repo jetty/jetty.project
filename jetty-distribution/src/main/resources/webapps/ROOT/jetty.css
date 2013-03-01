@@ -3,6 +3,7 @@ BODY
   font-family: Arial, Helvetica, sans-serif;
   background-color: #FFFFFF;
   font-size: 10pt;
+  color: #666666;
 }
 
 img
@@ -11,6 +12,33 @@ img
 }
 
 
+div#header
+{
+  clear: both;
+  background-image: url('images/jetty-header.jpg');
+  background-repeat: no-repeat;
+  background-position: center;
+  height:200px;
+  border-bottom: 3px ridge #cccccc;
+  border-right: 3px ridge #cccccc;
+  border-top: 3px groove #cccccc;
+  border-left: 3px groove #cccccc;
+  width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div#content
+{
+  clear: both;
+  font-size: 10pt;
+  font-weight: normal;
+  color: #666666;
+  margin-top: 30px;
+  width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
  
 div#links table
 {
@@ -67,40 +95,23 @@ div#links h2
 }
 
 
-div#header
+
+div#blog
 {
-  clear: both;
-  background-image: url('images/jetty-header.jpg');
-  background-repeat: no-repeat;
-  background-position: center;
-  height:200px;
-  border-bottom: 3px ridge #cccccc;
-  border-right: 3px ridge #cccccc;
-  border-top: 3px groove #cccccc;
-  border-left: 3px groove #cccccc;
+  margin-top:  20px;
   width: 850px;
   margin-left: auto;
   margin-right: auto;
 }
 
-
-div#content
+div#blog iframe
 {
-  clear: both;
-  font-size: 10pt;
-  font-weight: normal;
-  color: #666666;
-  margin-top: 30px;
-  width: 850px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  height:350px;
+  border: 2px dotted #cccccc; 
 }
 
-div#content h1
-{
-  font-size: 14pt;
-  text-align:center;
-}
+
 
 div#footer
 {
@@ -113,6 +124,11 @@ div#footer
 
 
 
+h1
+{
+  font-size: 14pt;
+  text-align:center;
+}
 
 A:link 
 { 

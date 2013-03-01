@@ -191,7 +191,7 @@ public class ParserTest
     @Test
     public void testParseCase6_4_3()
     {
-        ByteBuffer payload = ByteBuffer.allocateDirect(64);
+        ByteBuffer payload = ByteBuffer.allocate(64);
         BufferUtil.clearToFill(payload);
         payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
         payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
@@ -205,9 +205,9 @@ public class ParserTest
 
         ByteBuffer buf = new UnitGenerator().generate(text);
 
-        ByteBuffer part1 = ByteBuffer.allocateDirect(17); // header + good
-        ByteBuffer part2 = ByteBuffer.allocateDirect(4); // invalid
-        ByteBuffer part3 = ByteBuffer.allocateDirect(10); // the rest (all good utf)
+        ByteBuffer part1 = ByteBuffer.allocate(17); // header + good
+        ByteBuffer part2 = ByteBuffer.allocate(4); // invalid
+        ByteBuffer part3 = ByteBuffer.allocate(10); // the rest (all good utf)
 
         BufferUtil.put(buf,part1);
         BufferUtil.put(buf,part2);
@@ -235,7 +235,7 @@ public class ParserTest
     @Test
     public void testParseNothing()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         // Put nothing in the buffer.
         buf.flip();
 

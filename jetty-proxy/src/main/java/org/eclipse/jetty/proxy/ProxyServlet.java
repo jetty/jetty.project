@@ -604,7 +604,7 @@ public class ProxyServlet extends HttpServlet
             if (!_prefix.startsWith("/"))
                 throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
 
-            _log.info(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override

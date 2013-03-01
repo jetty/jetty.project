@@ -110,7 +110,7 @@ public class Dump extends HttpServlet
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
-        if (!request.isUserInRole("user"))
+        if (request.getRemoteUser()==null)
         {
             try
             {

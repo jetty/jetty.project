@@ -42,7 +42,7 @@ public class RFC6455ExamplesParserTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
 
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -75,7 +75,7 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testSingleMaskedPongRequest()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         buf.put(new byte[]
@@ -98,7 +98,7 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testSingleMaskedTextMessage()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         buf.put(new byte[]
@@ -123,7 +123,7 @@ public class RFC6455ExamplesParserTest
     {
         int dataSize = 256;
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(dataSize + 10);
+        ByteBuffer buf = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
@@ -162,7 +162,7 @@ public class RFC6455ExamplesParserTest
     {
         int dataSize = 1024 * 64;
 
-        ByteBuffer buf = ByteBuffer.allocateDirect((dataSize + 10));
+        ByteBuffer buf = ByteBuffer.allocate((dataSize + 10));
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64 Kbytes binary message in a single unmasked frame
         buf.put(new byte[]
@@ -198,7 +198,7 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testSingleUnmaskedPingRequest()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Ping request
         buf.put(new byte[]
@@ -221,7 +221,7 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testSingleUnmaskedTextMessage()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(16);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame unmasked text message
         buf.put(new byte[]

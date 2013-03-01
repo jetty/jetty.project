@@ -367,7 +367,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_3_6() throws Exception
     {
-        ByteBuffer payload = ByteBuffer.allocateDirect(256);
+        ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
         payload.put((byte)0xE8);
         payload.put((byte)0x03);
@@ -408,7 +408,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_5_1() throws Exception
     {
-        ByteBuffer payload = ByteBuffer.allocateDirect(256);
+        ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
         payload.put((byte)0x03); // normal close
         payload.put((byte)0xE8);

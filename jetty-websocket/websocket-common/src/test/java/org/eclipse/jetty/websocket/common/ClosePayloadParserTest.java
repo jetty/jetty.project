@@ -37,12 +37,12 @@ public class ClosePayloadParserTest
         String expectedReason = "Game Over";
 
         byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
-        ByteBuffer payload = ByteBuffer.allocateDirect(utf.length + 2);
+        ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf,0,utf.length);
         payload.flip();
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(24);
+        ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)(0x80 | OpCode.CLOSE)); // fin + close
         buf.put((byte)(0x80 | payload.remaining()));
         MaskedByteBuffer.putMask(buf);

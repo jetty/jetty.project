@@ -88,7 +88,7 @@ public class MuxGeneratorWrite139SizeTest
     public void testWrite139Size()
     {
         System.err.printf("Running %s.%s - value: %,d%n",this.getClass().getName(),testname.getMethodName(),value);
-        ByteBuffer bbuf = ByteBuffer.allocateDirect(10);
+        ByteBuffer bbuf = ByteBuffer.allocate(10);
         generator.write139Size(bbuf,value);
         BufferUtil.flipToFlush(bbuf,0);
         byte actual[] = BufferUtil.toArray(bbuf);

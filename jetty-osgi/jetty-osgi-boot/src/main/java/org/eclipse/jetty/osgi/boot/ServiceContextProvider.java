@@ -94,6 +94,9 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
         if (context == null || serviceRef == null)
             return false;
         
+        if (context instanceof org.eclipse.jetty.webapp.WebAppContext)
+            return false; //the ServiceWebAppProvider will deploy it
+        
         String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
         if (watermark != null && !"".equals(watermark))
             return false;  //this service represents a contexthandler that has already been registered as a service by another of our deployers

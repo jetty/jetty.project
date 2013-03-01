@@ -93,10 +93,7 @@ public class WebSocketMinVersionTest
         }
         catch(IllegalStateException e) {
             String respHeader = e.getMessage();
-            Assert.assertThat("Response Header", respHeader, allOf(
-                    containsString("HTTP/1.1 400 Unsupported"),
-                    containsString("minVersion [8]"),
-                    containsString("[13, 8]")));
+            Assert.assertThat("Response Header", respHeader, containsString("HTTP/1.1 400 Unsupported websocket version specification"));
         }
         finally
         {

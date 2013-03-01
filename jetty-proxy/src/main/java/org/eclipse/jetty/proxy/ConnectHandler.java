@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,8 +51,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
@@ -163,7 +162,7 @@ public class ConnectHandler extends HandlerWrapper
         }
         if (scheduler == null)
         {
-            setScheduler(new TimerScheduler());
+            setScheduler(new ScheduledExecutorScheduler());
             addBean(getScheduler());
         }
         if (bufferPool == null)

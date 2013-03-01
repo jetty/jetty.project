@@ -112,6 +112,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
     }
 
     @Override
+    public long getMaxIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -203,6 +210,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
         {
             // TODO: Start reading again. (how?)
         }
+    }
+
+    @Override
+    public void setMaxIdleTimeout(long ms)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     @Override

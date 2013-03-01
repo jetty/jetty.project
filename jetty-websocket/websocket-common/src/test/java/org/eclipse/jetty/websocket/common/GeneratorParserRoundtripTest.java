@@ -44,7 +44,7 @@ public class GeneratorParserRoundtripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192,true);
+        ByteBuffer out = bufferPool.acquire(8192,false);
         try
         {
             // Generate Buffer
@@ -80,7 +80,7 @@ public class GeneratorParserRoundtripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192,true);
+        ByteBuffer out = bufferPool.acquire(8192,false);
         try
         {
             // Setup Frame

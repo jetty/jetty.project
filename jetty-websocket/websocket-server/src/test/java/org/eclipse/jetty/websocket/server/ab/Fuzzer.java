@@ -101,7 +101,7 @@ public class Fuzzer
         {
             buflen += f.getPayloadLength() + Generator.OVERHEAD;
         }
-        ByteBuffer buf = ByteBuffer.allocateDirect(buflen);
+        ByteBuffer buf = ByteBuffer.allocate(buflen);
         BufferUtil.clearToFill(buf);
 
         // Generate frames
@@ -271,7 +271,7 @@ public class Fuzzer
             {
                 buflen += f.getPayloadLength() + Generator.OVERHEAD;
             }
-            ByteBuffer buf = ByteBuffer.allocateDirect(buflen);
+            ByteBuffer buf = ByteBuffer.allocate(buflen);
             BufferUtil.clearToFill(buf);
 
             // Generate frames

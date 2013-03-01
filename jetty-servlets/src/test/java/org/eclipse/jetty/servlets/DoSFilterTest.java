@@ -18,17 +18,20 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
@@ -68,6 +71,21 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         int sleep = 250;
         exceeded = hitRateTracker(doSFilter,sleep);
         assertFalse("Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s",exceeded);
+    }
+
+    @Test
+    public void testWhitelist() throws Exception
+    {
+        DoSFilter filter = new DoSFilter();
+        List<String> whitelist = new ArrayList<String>();
+        whitelist.add("192.168.0.1");
+        whitelist.add("10.0.0.0/8");
+        Assert.assertTrue(filter.checkWhitelist(whitelist, "192.168.0.1"));
+        Assert.assertFalse(filter.checkWhitelist(whitelist, "192.168.0.2"));
+        Assert.assertFalse(filter.checkWhitelist(whitelist, "11.12.13.14"));
+        Assert.assertTrue(filter.checkWhitelist(whitelist, "10.11.12.13"));
+        Assert.assertTrue(filter.checkWhitelist(whitelist, "10.0.0.0"));
+        Assert.assertFalse(filter.checkWhitelist(whitelist, "0.0.0.0"));
     }
 
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException

@@ -217,8 +217,6 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         super.doStart();
-
-        LOG.info("Started {}", this);
     }
 
     protected SelectorManager newSelectorManager()
@@ -234,8 +232,6 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        LOG.debug("Stopping {}", this);
-
         cookieStore.removeAll();
         cookieStore = null;
         decoderFactories.clear();
@@ -251,8 +247,6 @@ public class HttpClient extends ContainerLifeCycle
         authenticationStore.clearAuthenticationResults();
 
         super.doStop();
-
-        LOG.info("Stopped {}", this);
     }
 
     /**

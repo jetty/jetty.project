@@ -175,7 +175,8 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
             }
             else
             {
-                throw new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded");
+                LOG.debug("Max queued exceeded {}", request);
+                abort(exchange, new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }
         else
@@ -208,7 +209,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
 
             if (next > maxConnections)
             {
-                LOG.debug("Max connections {} reached for {}", current, this);
+                LOG.debug("Max connections per destination {} exceeded for {}", current, this);
                 // Try again the idle connections
                 return idleConnections.poll();
             }

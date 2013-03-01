@@ -2097,6 +2097,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!_enabled)
                 throw new UnsupportedOperationException();
             ContextHandler.this.addEventListener(t);
+            ContextHandler.this.addProgrammaticListener(t);
         }
 
         @Override
