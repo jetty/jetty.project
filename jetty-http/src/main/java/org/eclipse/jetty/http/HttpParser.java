@@ -23,10 +23,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
-    private static final int INITIAL_URI_LENGTH=256;
+    static final int INITIAL_URI_LENGTH=256;
 
     // States
     public enum State
@@ -382,7 +380,7 @@ public class HttpParser
                                     badMessage(buffer,HttpStatus.REQUEST_URI_TOO_LONG_414,null);
                                     return true;
                                 }
-                                if (_uri.remaining()<len)
+                                if (_uri.remaining()<=len)
                                 {
                                     ByteBuffer uri = ByteBuffer.allocate(_uri.capacity()+2*len);
                                     _uri.flip();
