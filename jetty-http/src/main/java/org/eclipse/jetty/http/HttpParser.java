@@ -1279,7 +1279,6 @@ public class HttpParser
             }
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
-            e.printStackTrace();
             LOG.debug(e);
             badMessage(buffer,HttpStatus.BAD_REQUEST_400,null);
             return true;
