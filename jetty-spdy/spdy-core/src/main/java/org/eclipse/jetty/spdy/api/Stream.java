@@ -97,13 +97,13 @@ public interface Stream
 
     /**
      * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p> <p>Callers may pass a
-     * non-null completion callback to be notified of when the pushstream has been established.</p>
+     * non-null completion promise to be notified of when the pushstream has been established.</p>
      *
      * @param pushInfo the metadata to send on stream creation
-     * @param callback the completion callback that gets notified once the pushstream is established
+     * @param promise the completion promise that gets notified once the pushstream is established
      * @see #push(PushInfo)
      */
-    public void push(PushInfo pushInfo, Promise<Stream> callback);
+    public void push(PushInfo pushInfo, Promise<Stream> promise);
 
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p> <p>Callers may use the returned

@@ -311,6 +311,8 @@ public class ProxyHTTPToSPDYTest
                 Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
+                responseHeaders.put("content-length", String.valueOf(data.length));
+
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
                 stream.reply(replyInfo, new Callback.Adapter());
                 stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
@@ -437,6 +439,7 @@ public class ProxyHTTPToSPDYTest
                             Fields responseHeaders = new Fields();
                             responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
+                            responseHeaders.put("content-length", String.valueOf(data.length));
                             ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
                             stream.reply(replyInfo, new Callback.Adapter());
                             stream.data(new BytesDataInfo(data, true), new Callback.Adapter());

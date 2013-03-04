@@ -1350,6 +1350,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             bufferPool.release(buffer);
             IStream stream = getStream();
+            dataInfo.consume(size);
             flowControlStrategy.updateWindow(StandardSession.this, stream, -size);
             if (dataInfo.available() > 0)
             {
