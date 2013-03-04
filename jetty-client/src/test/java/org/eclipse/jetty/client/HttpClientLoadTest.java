@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
@@ -128,7 +128,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
         request.method(method);
 
-        boolean ssl = "https".equalsIgnoreCase(scheme);
+        boolean ssl = HttpScheme.HTTPS.is(scheme);
 
         // Choose randomly whether to close the connection on the client or on the server
         if (!ssl && random.nextBoolean())
