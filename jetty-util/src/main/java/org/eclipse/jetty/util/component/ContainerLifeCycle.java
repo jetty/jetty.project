@@ -139,7 +139,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         Collections.reverse(reverse);
         for (Bean b : reverse)
         {
-            if (b._bean instanceof Destroyable && b._managed==Managed.MANAGED)
+            if (b._bean instanceof Destroyable && (b._managed==Managed.MANAGED || b._managed==Managed.POJO))
             {
                 Destroyable d = (Destroyable)b._bean;
                 d.destroy();
@@ -447,6 +447,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (_beans.remove(bean))
         {
+            boolean managed=bean.isManaged();
             unmanage(bean);
 
             for (Container.Listener l:_listeners)
@@ -467,6 +468,19 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     }
                 }
             }
+            
+            if (managed && bean._bean instanceof Destroyable)
+            {
+                try
+                {
+                    ((Destroyable)bean._bean).destroy();
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+            
             return true;
         }
         return false;
