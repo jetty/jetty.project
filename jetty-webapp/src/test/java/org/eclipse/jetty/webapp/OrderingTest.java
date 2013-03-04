@@ -111,16 +111,7 @@ public class OrderingTest
         {
             return _name;
         }
-
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getOutputStream()
-         */
-        @Override
-        public OutputStream getOutputStream() throws IOException, SecurityException
-        {
-            return null;
-        }
-
+        
         /**
          * @see org.eclipse.jetty.util.resource.Resource#getURL()
          */

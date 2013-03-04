@@ -318,7 +318,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     }
 
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedStream#getOutputStream()
+     * @see org.eclipse.jetty.http.gzip.CompressedStream#createOutputStream()
      */
     public OutputStream getOutputStream()
     {

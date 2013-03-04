@@ -276,17 +276,6 @@ public class FileResource extends URLResource
     {
         return FileChannel.open(_file.toPath(),StandardOpenOption.READ);
     }
-    
-    /* --------------------------------------------------------- */
-    /**
-     * Returns an output stream to the resource
-     */
-    @Override
-    public OutputStream getOutputStream()
-        throws java.io.IOException, SecurityException
-    {
-        return new FileOutputStream(_file);
-    }
         
     /* --------------------------------------------------------- */
     /**

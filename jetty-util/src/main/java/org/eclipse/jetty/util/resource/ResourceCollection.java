@@ -364,22 +364,6 @@ public class ResourceCollection extends Resource
     
     /* ------------------------------------------------------------ */
     @Override
-    public OutputStream getOutputStream() throws IOException, SecurityException
-    {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
-        {
-            OutputStream os = r.getOutputStream();
-            if(os!=null)
-                return os;
-        }
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
     public URL getURL()
     {
         if(_resources==null)

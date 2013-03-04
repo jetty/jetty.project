@@ -234,17 +234,6 @@ public class URLResource extends Resource
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an output stream to the resource
-     */
-    @Override
-    public OutputStream getOutputStream()
-        throws java.io.IOException, SecurityException
-    {
-        throw new IOException( "Output not supported");
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Deletes the given resource
      */
     @Override
