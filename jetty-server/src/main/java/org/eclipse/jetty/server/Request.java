@@ -702,7 +702,12 @@ public class Request implements HttpServletRequest
     public String getLocalAddr()
     {
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getAddress().getHostAddress();
+        if (local==null)
+            return "";
+        InetAddress address = local.getAddress();
+        if (address==null)
+            return local.getHostString();
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -918,8 +923,15 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-
-        return remote==null?"":remote.getHostString();
+        
+        if (remote==null)
+            return "";
+        
+        InetAddress address = remote.getAddress();
+        if (address==null)
+            return remote.getHostString();
+        
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
