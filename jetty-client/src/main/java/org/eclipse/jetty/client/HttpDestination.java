@@ -485,7 +485,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)
-                    .header(HttpHeader.HOST.asString(), target)
+                    .header(HttpHeader.HOST, target)
                     .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
             connection.send(connect, new Response.CompleteListener()
             {

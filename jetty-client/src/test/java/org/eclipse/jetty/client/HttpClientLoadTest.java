@@ -38,6 +38,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -132,7 +133,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         // Choose randomly whether to close the connection on the client or on the server
         if (!ssl && random.nextBoolean())
-            request.header("Connection", "close");
+            request.header(HttpHeader.CONNECTION, "close");
         else if (!ssl && random.nextBoolean())
             request.header("X-Close", "true");
 

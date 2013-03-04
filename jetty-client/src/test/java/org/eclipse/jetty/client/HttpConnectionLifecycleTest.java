@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -185,7 +184,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override
@@ -245,7 +244,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override

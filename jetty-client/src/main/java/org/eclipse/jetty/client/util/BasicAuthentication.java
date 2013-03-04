@@ -99,7 +99,7 @@ public class BasicAuthentication implements Authentication
         public void apply(Request request)
         {
             if (request.getURI().toString().startsWith(uri.toString()))
-                request.header(HttpHeader.AUTHORIZATION.asString(), value);
+                request.header(HttpHeader.AUTHORIZATION, value);
         }
 
         @Override

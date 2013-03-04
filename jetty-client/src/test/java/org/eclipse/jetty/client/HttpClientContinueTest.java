@@ -84,7 +84,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(contents))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -124,7 +124,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         byte[] content2 = new byte[16384];
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content1, content2)
                 {
                     @Override
@@ -176,7 +176,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content1, content2))
                 .send(new BufferingResponseListener()
                 {
@@ -227,7 +227,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .method(HttpMethod.POST)
                 .path("/continue")
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content))
                 .send(new BufferingResponseListener()
                 {
@@ -276,7 +276,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .method(HttpMethod.POST)
                 .path("/redirect")
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content))
                 .send(new BufferingResponseListener()
                 {
@@ -322,7 +322,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content))
                 .send(new BufferingResponseListener()
                 {
@@ -369,7 +369,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(content))
                 .send(new BufferingResponseListener()
                 {
@@ -433,7 +433,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             final CountDownLatch latch = new CountDownLatch(1);
             client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
-            .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
             .content(new BytesContentProvider(content))
             .send(new BufferingResponseListener()
             {
@@ -480,7 +480,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {
@@ -529,7 +529,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(chunk1));
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {
@@ -602,7 +602,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .onRequestHeaders(new org.eclipse.jetty.client.api.Request.HeadersListener()
                 {
                     @Override
@@ -676,7 +676,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .header(HttpHeader.EXPECT.asString(), HttpHeaderValue.CONTINUE.asString())
+                .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(content)
                 .send(new BufferingResponseListener()
                 {

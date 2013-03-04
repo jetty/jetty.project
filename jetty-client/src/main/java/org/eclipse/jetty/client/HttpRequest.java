@@ -224,6 +224,16 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request header(HttpHeader header, String value)
+    {
+        if (value == null)
+            headers.remove(header);
+        else
+            headers.add(header, value);
+        return this;
+    }
+
+    @Override
     public Request attribute(String name, Object value)
     {
         attributes.put(name, value);
@@ -371,7 +381,7 @@ public class HttpRequest implements Request
     public Request content(ContentProvider content, String contentType)
     {
         if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
+            header(HttpHeader.CONTENT_TYPE, contentType);
         this.content = content;
         return this;
     }
@@ -386,7 +396,7 @@ public class HttpRequest implements Request
     public Request file(Path file, String contentType) throws IOException
     {
         if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
+            header(HttpHeader.CONTENT_TYPE, contentType);
         return content(new PathContentProvider(file));
     }
 
