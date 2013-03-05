@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -40,6 +41,7 @@ public class WriteBytesProvider implements Callback
 {
     private class FrameEntry
     {
+        protected final AtomicBoolean failed = new AtomicBoolean(false);
         protected final Frame frame;
         protected final Callback callback;
 
@@ -58,6 +60,14 @@ public class WriteBytesProvider implements Callback
             }
             return buffer;
         }
+
+        public void notifyFailure(Throwable t)
+        {
+            if (failed.getAndSet(true) == false)
+            {
+                notifySafeFailure(callback,t);
+            }
+        }
     }
 
     private static final Logger LOG = Log.getLogger(WriteBytesProvider.class);
@@ -72,7 +82,7 @@ public class WriteBytesProvider implements Callback
     private int bufferSize = 2048;
     /** Currently active frame */
     private FrameEntry active;
-    /** Failure state for the entire WriteBytesProvider */
+    /** Tracking for failure */
     private Throwable failure;
     /** The last requested buffer */
     private ByteBuffer buffer;
@@ -97,6 +107,17 @@ public class WriteBytesProvider implements Callback
         this.closed = new AtomicBoolean(false);
     }
 
+    /**
+     * Force closure of write bytes
+     */
+    public void close()
+    {
+        // Set queue closed, no new enqueue allowed.
+        this.closed.set(true);
+        // flush out backlog in queue
+        failAll(new EOFException("Connection has been disconnected"));
+    }
+
     public void enqueue(Frame frame, Callback callback)
     {
         Objects.requireNonNull(frame);
@@ -106,7 +127,7 @@ public class WriteBytesProvider implements Callback
             if (closed.get())
             {
                 // Closed for more frames.
-                LOG.debug("Write is closed: {}",frame,callback);
+                LOG.debug("Write is closed: {} {}",frame,callback);
                 if (callback != null)
                 {
                     callback.failed(new IOException("Write is closed"));
@@ -114,10 +135,11 @@ public class WriteBytesProvider implements Callback
                 return;
             }
 
-            if (isFailed())
+            if (failure != null)
             {
                 // no changes when failed
-                notifyFailure(callback);
+                LOG.debug("Write is in failure: {} {}",frame,callback);
+                notifySafeFailure(callback,failure);
                 return;
             }
 
@@ -143,28 +165,31 @@ public class WriteBytesProvider implements Callback
     {
         synchronized (this)
         {
-            if (isFailed())
+            // fail active (if set)
+            if (active != null)
             {
-                // already failed.
-                return;
+                active.notifyFailure(t);
             }
 
             failure = t;
 
+            // fail others
             for (FrameEntry fe : queue)
             {
-                notifyFailure(fe.callback);
+                fe.notifyFailure(t);
             }
 
             queue.clear();
 
             // notify flush callback
-            flushCallback.failed(failure);
+            flushCallback.failed(t);
         }
     }
 
     /**
-     * Write of ByteBuffer failed.
+     * Callback failure.
+     * <p>
+     * Conditions: for Endpoint.write() failure.
      * 
      * @param cause
      *            the cause of the failure
@@ -211,11 +236,6 @@ public class WriteBytesProvider implements Callback
         return buffer;
     }
 
-    public Throwable getFailure()
-    {
-        return failure;
-    }
-
     /**
      * Used to test for the final frame possible to be enqueued, the CLOSE frame.
      * 
@@ -229,24 +249,16 @@ public class WriteBytesProvider implements Callback
         }
     }
 
-    public boolean isFailed()
+    private void notifySafeFailure(Callback callback, Throwable t)
     {
-        return (failure != null);
-    }
-
-    /**
-     * Notify specific callback of failure.
-     * 
-     * @param callback
-     *            the callback to notify
-     */
-    private void notifyFailure(Callback callback)
-    {
-        if (callback == null)
+        try
         {
-            return;
+            callback.failed(t);
         }
-        callback.failed(failure);
+        catch (Throwable e)
+        {
+            LOG.warn("Uncaught exception",e);
+        }
     }
 
     /**
@@ -268,6 +280,8 @@ public class WriteBytesProvider implements Callback
     @Override
     public void succeeded()
     {
+        Callback successCallback = null;
+
         synchronized (this)
         {
             // Release the active byte buffer first
@@ -281,26 +295,27 @@ public class WriteBytesProvider implements Callback
             if (active.frame.remaining() <= 0)
             {
                 // All done with active FrameEntry
-                if (active.callback != null)
-                {
-                    try
-                    {
-                        // TODO: should probably have callback invoked in new thread as part of scheduler
-                        // notify of success
-                        active.callback.succeeded();
-                    }
-                    catch (Throwable t)
-                    {
-                        LOG.warn("Callback failure",t);
-                    }
-                }
-
-                // null it out
+                successCallback = active.callback;
+                // Forget active
                 active = null;
             }
 
             // notify flush callback
             flushCallback.succeeded();
+        }
+
+        // Notify success (outside of synchronize lock)
+        if (successCallback != null)
+        {
+            try
+            {
+                // notify of success
+                successCallback.succeeded();
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Callback failure",t);
+            }
         }
     }
 
@@ -310,10 +325,10 @@ public class WriteBytesProvider implements Callback
         StringBuilder b = new StringBuilder();
         b.append("WriteBytesProvider[");
         b.append("flushCallback=").append(flushCallback);
-        if (isFailed())
+        if (failure != null)
         {
-            b.append(",FAILURE=").append(failure.getClass().getName());
-            b.append(",").append(failure.getMessage());
+            b.append(",failure=").append(failure.getClass().getName());
+            b.append(":").append(failure.getMessage());
         }
         else
         {

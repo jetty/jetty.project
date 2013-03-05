@@ -113,7 +113,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public void close(int statusCode, String reason)
     {
         connection.close(statusCode,reason);
-        websocket.onClose(new CloseInfo(statusCode,reason));
+        notifyClose(statusCode,reason);
     }
 
     /**
@@ -125,7 +125,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         connection.disconnect();
 
         // notify of harsh disconnect
-        websocket.onClose(new CloseInfo(StatusCode.NO_CLOSE,"Harsh disconnect"));
+        notifyClose(StatusCode.NO_CLOSE,"Harsh disconnect");
     }
 
     @Override
@@ -151,6 +151,36 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         {
             out.append(outgoingHandler.toString()).append('\n');
         }
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        WebSocketSession other = (WebSocketSession)obj;
+        if (connection == null)
+        {
+            if (other.connection != null)
+            {
+                return false;
+            }
+        }
+        else if (!connection.equals(other.connection))
+        {
+            return false;
+        }
+        return true;
     }
 
     public LogicalConnection getConnection()
@@ -236,6 +266,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         return this.upgradeResponse;
     }
 
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + ((connection == null)?0:connection.hashCode());
+        return result;
+    }
+
     /**
      * Incoming Errors from Parser
      */
@@ -286,6 +325,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         URI requestURI = upgradeRequest.getRequestURI();
 
         return "wss".equalsIgnoreCase(requestURI.getScheme());
+    }
+
+    public void notifyClose(int statusCode, String reason)
+    {
+        websocket.onClose(new CloseInfo(statusCode,reason));
     }
 
     /**
