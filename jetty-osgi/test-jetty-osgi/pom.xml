@@ -19,7 +19,7 @@
     <felixversion>4.0.3</felixversion>
     <injection.bundle.version>1.0</injection.bundle.version>
     <runner.version>1.7.6</runner.version>
-    <npn-version>1.1.0.v20120525</npn-version>
+    <npn-version>1.1.2.v20130305</npn-version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -289,6 +289,13 @@
       <version>${npn-version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-npn</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
