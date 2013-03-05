@@ -268,3 +268,4 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         return s.toString();
     }
 }
+
