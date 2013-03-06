@@ -566,7 +566,6 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(2);
         Session session2 = startClient(version, address, null);
-        LOG.warn("REQUEST FOR PUSHED RESOURCES");
         session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override

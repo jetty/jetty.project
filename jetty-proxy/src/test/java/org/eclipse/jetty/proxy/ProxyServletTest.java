@@ -59,12 +59,15 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -179,21 +182,29 @@ public class ProxyServletTest
     @Test
     public void testServerException() throws Exception
     {
-        prepareProxy(new ProxyServlet());
-        prepareServer(new HttpServlet()
+        ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(true);
+        try
         {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            prepareProxy(new ProxyServlet());
+            prepareServer(new HttpServlet()
             {
-                throw new ServletException();
-            }
-        });
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+                {
+                    throw new ServletException("Expected Test Exception");
+                }
+            });
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        Assert.assertEquals(500, response.getStatus());
+            Assert.assertEquals(500, response.getStatus());
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(false);
+        }
     }
 
     @Test

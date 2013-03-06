@@ -77,8 +77,9 @@ public class TestJettyOSGiBootSpdy
         if (!checkNpnBoot.exists()) { throw new IllegalStateException("Unable to find the npn boot jar here: " + npnBoot); }
 
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + npnBoot));
-        res.add(CoreOptions.bootDelegationPackages("org.eclipse.jetty.npn"));
+       // res.add(CoreOptions.bootDelegationPackages("org.eclipse.jetty.npn"));
 
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-npn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-core").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-server").versionAsInProject().noStart());

@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -446,6 +447,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         catch (TimeoutException e)
         {
             throw new IOException(e);
+        }
+        catch (ClosedChannelException e)
+        {
+            throw new EofException(e);
         }
     }
 

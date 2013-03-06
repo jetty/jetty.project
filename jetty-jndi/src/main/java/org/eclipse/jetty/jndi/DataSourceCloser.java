@@ -58,6 +58,7 @@ public class DataSourceCloser implements Destroyable
         _shutdown=shutdownSQL;
     }
 
+    @Override
     public void destroy()
     {
         try

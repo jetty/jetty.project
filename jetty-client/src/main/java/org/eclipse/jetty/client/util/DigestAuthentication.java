@@ -262,7 +262,7 @@ public class DigestAuthentication implements Authentication
             }
             value.append(", response=\"").append(hashA3).append("\"");
 
-            request.header(HttpHeader.AUTHORIZATION.asString(), value.toString());
+            request.header(HttpHeader.AUTHORIZATION, value.toString());
         }
 
         private String nextNonceCount()

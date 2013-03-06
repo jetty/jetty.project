@@ -157,7 +157,7 @@ public class ShutdownMonitor extends Thread
             return;
         }
 
-        while (true)
+        while (serverSocket != null)
         {
             Socket socket = null;
             try
@@ -190,7 +190,9 @@ public class ShutdownMonitor extends Thread
                     // Shutdown Monitor
                     debug("Shutting down monitor");
                     close(socket);
+                    socket = null;
                     close(serverSocket);
+                    serverSocket = null;
 
                     if (exitVm)
                     {

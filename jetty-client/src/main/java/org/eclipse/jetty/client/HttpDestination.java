@@ -85,7 +85,9 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
                 new Address(proxyConfig.getHost(), proxyConfig.getPort()) : null;
 
-        hostField = new HttpField(HttpHeader.HOST, host + ":" + port);
+        if (!client.isDefaultPort(scheme, port))
+            host += ":" + port;
+        hostField = new HttpField(HttpHeader.HOST, host);
     }
 
     protected BlockingQueue<Connection> getIdleConnections()
@@ -462,7 +464,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
         public void succeeded(Connection connection)
         {
             boolean tunnel = isProxied() &&
-                    "https".equalsIgnoreCase(getScheme()) &&
+                    HttpScheme.HTTPS.is(getScheme()) &&
                     client.getSslContextFactory() != null;
             if (tunnel)
                 tunnel(connection);
@@ -483,7 +485,7 @@ public class HttpDestination implements Destination, AutoCloseable, Dumpable
                     .scheme(HttpScheme.HTTP.asString())
                     .method(HttpMethod.CONNECT)
                     .path(target)
-                    .header(HttpHeader.HOST.asString(), target)
+                    .header(HttpHeader.HOST, target)
                     .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
             connection.send(connect, new Response.CompleteListener()
             {

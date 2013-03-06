@@ -24,8 +24,10 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
@@ -45,7 +47,7 @@ public class ExternalSiteTest
     @Before
     public void prepare() throws Exception
     {
-        client = new HttpClient();
+        client = new HttpClient(new SslContextFactory());
         client.start();
     }
 
@@ -64,7 +66,7 @@ public class ExternalSiteTest
         // Verify that we have connectivity
         try
         {
-            new Socket(host, port);
+            new Socket(host, port).close();
         }
         catch (IOException x)
         {
@@ -113,7 +115,7 @@ public class ExternalSiteTest
         // Verify that we have connectivity
         try
         {
-            new Socket(host, port);
+            new Socket(host, port).close();
         }
         catch (IOException x)
         {
@@ -142,7 +144,7 @@ public class ExternalSiteTest
         // Verify that we have connectivity
         try
         {
-            new Socket(host, port);
+            new Socket(host, port).close();
         }
         catch (IOException x)
         {
@@ -178,5 +180,28 @@ public class ExternalSiteTest
                     });
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testExternalSiteRedirect() throws Exception
+    {
+        String host = "twitter.com";
+        int port = 443;
+
+        // Verify that we have connectivity
+        try
+        {
+            new Socket(host, port).close();
+        }
+        catch (IOException x)
+        {
+            Assume.assumeNoException(x);
+        }
+
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(HttpScheme.HTTPS.asString())
+                .path("/twitter")
+                .send();
+        Assert.assertEquals(200, response.getStatus());
     }
 }

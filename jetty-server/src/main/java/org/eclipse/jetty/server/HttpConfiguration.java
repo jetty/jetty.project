@@ -44,6 +44,7 @@ public class HttpConfiguration
     private int _outputBufferSize=32*1024;
     private int _requestHeaderSize=8*1024;
     private int _responseHeaderSize=8*1024;
+    private int _headerCacheSize=512;
     private int _securePort;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true; //send Server: header
@@ -78,6 +79,7 @@ public class HttpConfiguration
         _secureScheme=config._secureScheme;
         _sendDateHeader=config._sendDateHeader;
         _sendServerVersion=config._sendServerVersion;
+        _headerCacheSize=config._headerCacheSize;
     }
     
     /* ------------------------------------------------------------ */
@@ -124,7 +126,13 @@ public class HttpConfiguration
     {
         return _responseHeaderSize;
     }
-    
+
+    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    public int getHeaderCacheSize()
+    {
+        return _headerCacheSize;
+    }
+
     @ManagedAttribute("The port to which Integral or Confidential security constraints are redirected")
     public int getSecurePort()
     {
@@ -208,6 +216,15 @@ public class HttpConfiguration
     public void setResponseHeaderSize(int responseHeaderSize)
     {
         _responseHeaderSize = responseHeaderSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the header field cache size.
+     * @param headerCacheSize The size in bytes of the header field cache.
+     */
+    public void setHeaderCacheSize(int headerCacheSize)
+    {
+        _headerCacheSize = headerCacheSize;
     }
 
     /* ------------------------------------------------------------ */

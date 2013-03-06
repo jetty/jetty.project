@@ -29,7 +29,6 @@ import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,6 +54,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -476,7 +476,7 @@ public class HttpClient extends ContainerLifeCycle
     protected void send(final Request request, List<Response.ResponseListener> listeners)
     {
         String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!Arrays.asList("http", "https").contains(scheme))
+        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
         HttpDestination destination = destinationFor(scheme, request.getHost(), request.getPort());
@@ -903,8 +903,12 @@ public class HttpClient extends ContainerLifeCycle
 
     protected int normalizePort(String scheme, int port)
     {
-        return port > 0 ? port :
-                "https".equalsIgnoreCase(scheme) ? 443 : 80;
+        return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
+    }
+
+    protected boolean isDefaultPort(String scheme, int port)
+    {
+        return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
     }
 
     protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
@@ -949,7 +953,7 @@ public class HttpClient extends ContainerLifeCycle
             HttpDestination destination = callback.destination;
 
             SslContextFactory sslContextFactory = getSslContextFactory();
-            if ("https".equals(destination.getScheme()))
+            if (HttpScheme.HTTPS.is(destination.getScheme()))
             {
                 if (sslContextFactory == null)
                 {

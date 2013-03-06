@@ -58,7 +58,7 @@
                         <configuration>
                             <instructions>
                                 <Export-Package>org.eclipse.jetty.spdy.server;version="9.0"</Export-Package>
-                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <Import-Package>org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>
                           </configuration>
@@ -87,7 +87,7 @@
         <dependency>
             <groupId>org.eclipse.jetty.npn</groupId>
             <artifactId>npn-api</artifactId>
-            <version>${npn.version}</version>
+            <version>${npn.api.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

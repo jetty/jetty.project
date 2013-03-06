@@ -55,8 +55,6 @@ import org.junit.Test;
  */
 public class HttpConnectionTest
 {
-    private static final Logger LOG = Log.getLogger(HttpConnectionTest.class);
-
     private Server server;
     private LocalConnector connector;
 
