@@ -443,6 +443,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             // within the call to unhandle().
 
             final Server server=_server;
+            boolean was_continuation=_request._async.isContinuation();
             boolean handling=_request._async.handling() && server!=null && server.isRunning();
             while (handling)
             {
@@ -489,7 +490,15 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     }
                     else
                     {
-                        _request.setDispatcherType(DispatcherType.ASYNC);
+                        if (_request._async.isExpired()&&!was_continuation)
+                        {
+                            _response.setStatus(500,"Async Timeout");
+                            _request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(500));
+                            _request.setAttribute(Dispatcher.ERROR_MESSAGE, "Async Timeout");
+                            _request.setDispatcherType(DispatcherType.ERROR);
+                        }
+                        else
+                            _request.setDispatcherType(DispatcherType.ASYNC);
                         server.handleAsync(this);
                     }
                 }
@@ -530,6 +539,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 }
                 finally
                 {
+                    was_continuation=_request._async.isContinuation();
                     handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }
             }

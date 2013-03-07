@@ -1980,7 +1980,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend();
+        _async.startAsync();
         return _async;
     }
 
@@ -1989,7 +1989,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend(_context,servletRequest,servletResponse);
+        _async.startAsync(_context,servletRequest,servletResponse);
         return _async;
     }
 

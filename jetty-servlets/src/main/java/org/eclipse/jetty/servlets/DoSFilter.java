@@ -343,7 +343,6 @@ public class DoSFilter implements Filter
             }
 
             // We are over the limit.
-            LOG.warn("DOS ALERT: ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
 
             // So either reject it, delay it or throttle it
             long delayMs = getDelayMs();
@@ -353,6 +352,7 @@ public class DoSFilter implements Filter
                 case -1:
                 {
                     // Reject this request
+                    LOG.warn("DOS ALERT: Request rejected ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "unavailable");
                     response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
@@ -361,12 +361,14 @@ public class DoSFilter implements Filter
                 case 0:
                 {
                     // fall through to throttle code
+                    LOG.warn("DOS ALERT: Request throttled ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     request.setAttribute(__TRACKER, tracker);
                     break;
                 }
                 default:
                 {
                     // insert a delay before throttling the request
+                    LOG.warn("DOS ALERT: Request delayed="+delayMs+"ms ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "delayed");
                     Continuation continuation = ContinuationSupport.getContinuation(request);
@@ -647,6 +649,7 @@ public class DoSFilter implements Filter
 
     public void destroy()
     {
+        LOG.debug("Destroy {}",this);
         _running = false;
         _timerThread.interrupt();
         _requestTimeoutQ.cancelAll();

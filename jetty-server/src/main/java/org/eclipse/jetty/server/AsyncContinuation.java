@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
+import org.omg.CosNaming.IstringHelper;
 
 /* ------------------------------------------------------------ */
 /** Implementation of Continuation and AsyncContext interfaces
@@ -198,6 +199,11 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             return _initial;
         }
+    }
+    
+    public boolean isContinuation()
+    {
+        return _continuation;
     }
     
     /* ------------------------------------------------------------ */
@@ -525,8 +531,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
             }
         }
-            
-           
         
         synchronized (this)
         {
@@ -534,11 +538,12 @@ public class AsyncContinuation implements AsyncContext, Continuation
             {
                 case __ASYNCSTARTED:
                 case __ASYNCWAIT:
-                    if (_continuation) 
-                        dispatch();
-                   else
-                        // TODO maybe error dispatch?
-                        complete();
+                    dispatch();
+                    break;
+                    
+                default:
+                    if (!_continuation)
+                        _expired=false;
             }
         }
 
@@ -937,7 +942,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
 
     /* ------------------------------------------------------------ */
-    protected void suspend(final ServletContext context,
+    protected void startAsync(final ServletContext context,
             final ServletRequest request,
             final ServletResponse response)
     {
@@ -950,6 +955,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 _event._pathInContext = URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
             }
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void startAsync()
+    {
+        _responseWrapped=false;
+        _continuation=false;
+        doSuspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());  
     }
 
     
