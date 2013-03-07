@@ -117,17 +117,17 @@ public class ContainerLifeCycleTest
         a0.destroy();
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(2,stopped.get());
-        Assert.assertEquals(2,destroyed.get());
+        Assert.assertEquals(1,destroyed.get());
 
         a1.stop();
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(3,stopped.get());
-        Assert.assertEquals(2,destroyed.get());
+        Assert.assertEquals(1,destroyed.get());
 
         a1.destroy();
         Assert.assertEquals(3,started.get());
         Assert.assertEquals(3,stopped.get());
-        Assert.assertEquals(3,destroyed.get());
+        Assert.assertEquals(2,destroyed.get());
 
     }
 
