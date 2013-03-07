@@ -201,6 +201,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         checkValid();
         return _lastAccessed;
     }
+    
+    /* ------------------------------------------------------------- */
+    public void setLastAccessedTime(long time)
+    {
+        _lastAccessed = time;
+    }
 
     /* ------------------------------------------------------------- */
     public int getMaxInactiveInterval()
