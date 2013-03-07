@@ -35,12 +35,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -93,7 +93,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /**
      * Get the connect timeout
-     * 
+     *
      * @return the connect timeout (in milliseconds)
      */
     public long getConnectTimeout()
@@ -103,7 +103,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /**
      * Set the connect timeout (in milliseconds)
-     * 
+     *
      * @param milliseconds the number of milliseconds for the timeout
      */
     public void setConnectTimeout(long milliseconds)
@@ -317,7 +317,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
+        private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
@@ -364,7 +364,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (_runningChanges)
                     _changes.offer(change);
                 else
-                {       
+                {
                     // Otherwise we run the queued changes
                     runChanges();
                     // and then directly run the passed change
