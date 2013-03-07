@@ -230,7 +230,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
                 // handle inheritance
                 if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
-                    ((Container)b._bean).addBean(listener);
+                {
+                    if (b._bean instanceof ContainerLifeCycle)
+                         ((ContainerLifeCycle)b._bean).addBean(listener, false);
+                     else
+                         ((Container)b._bean).addBean(listener);
+                }
             }
         }
 
