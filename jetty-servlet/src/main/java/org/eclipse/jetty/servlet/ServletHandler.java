@@ -783,7 +783,7 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+_servlets.length);
+        holder.setName(className+"-"+(_servlets==null?0:_servlets.length));
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;

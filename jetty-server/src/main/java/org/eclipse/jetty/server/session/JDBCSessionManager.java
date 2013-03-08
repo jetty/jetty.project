@@ -278,6 +278,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                 return false;
             }
         }
+        
+
 
         /**
          * Exit from session
@@ -344,7 +346,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             return "Session rowId="+_rowId+",id="+getId()+",lastNode="+_lastNode+
                             ",created="+getCreationTime()+",accessed="+getAccessed()+
                             ",lastAccessed="+getLastAccessedTime()+",cookieSet="+_cookieSet+
-                            "lastSaved="+_lastSaved;
+                            ",lastSaved="+_lastSaved+",expiry="+_expiryTime;
         }
     }
 
@@ -454,8 +456,6 @@ public class JDBCSessionManager extends AbstractSessionManager
 
         synchronized (this)
         {
-            try
-            {
                 //check if we need to reload the session -
                 //as an optimization, don't reload on every access
                 //to reduce the load on the database. This introduces a window of
@@ -483,22 +483,31 @@ public class JDBCSessionManager extends AbstractSessionManager
                                 " difference="+(now - memSession._lastSaved));
                 }
 
-                if (memSession==null)
+                try
                 {
-                    LOG.debug("getSession("+idInCluster+"): no session in session map. Reloading session data from db.");
-                    session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    if (memSession==null)
+                    {
+                        LOG.debug("getSession("+idInCluster+"): no session in session map. Reloading session data from db.");
+                        session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    }
+                    else if ((now - memSession._lastSaved) >= (_saveIntervalSec * 1000L))
+                    {
+                        LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
+                        session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    }
+                    else
+                    {
+                        LOG.debug("getSession("+idInCluster+"): session in session map");
+                        session = memSession;
+                    }
                 }
-                else if ((now - memSession._lastSaved) >= (_saveIntervalSec * 1000L))
+                catch (Exception e)
                 {
-                    LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
-                    session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
-                }
-                else
-                {
-                    LOG.debug("getSession("+idInCluster+"): session in session map");
-                    session = memSession;
+                    LOG.warn("Unable to load session "+idInCluster, e);
+                    return null;
                 }
 
+                
                 //If we have a session
                 if (session != null)
                 {
@@ -508,13 +517,23 @@ public class JDBCSessionManager extends AbstractSessionManager
                         //if session doesn't expire, or has not already expired, update it and put it in this nodes' memory
                         if (session._expiryTime <= 0 || session._expiryTime > now)
                         {
-                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): lastNode="+session.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            if (LOG.isDebugEnabled()) 
+                                LOG.debug("getSession("+idInCluster+"): lastNode="+session.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            
                             session.setLastNode(getSessionIdManager().getWorkerName());                            
                             _sessions.put(idInCluster, session);
-                            session.didActivate();
-                            //TODO is this the best way to do this? Or do this on the way out using
-                            //the _dirty flag?
-                            updateSessionNode(session);
+                            
+                            //update in db: if unable to update, session will be scavenged later
+                            try
+                            {
+                                updateSessionNode(session);
+                                session.didActivate();
+                            }
+                            catch (Exception e)
+                            {
+                                LOG.warn("Unable to update freshly loaded session "+idInCluster, e);
+                                return null;
+                            }
                         }
                         else
                         {
@@ -533,12 +552,6 @@ public class JDBCSessionManager extends AbstractSessionManager
                 }
 
                 return session;
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to get session", e);
-                return null;
-            }
         }
     }
 
@@ -883,7 +896,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             _context.getContextHandler().handle(load);
 
         if (_exception.get()!=null)
+        {
+            //if the session could not be restored, take its id out of the pool of currently-in-use
+            //session ids
+            _jdbcSessionIdMgr.removeSession(id);
             throw _exception.get();
+        }
 
         return _reference.get();
     }

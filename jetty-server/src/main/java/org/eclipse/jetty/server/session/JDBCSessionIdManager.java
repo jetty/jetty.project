@@ -874,7 +874,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     statement = connection.prepareStatement(_deleteOldExpiredSessions);
                     statement.setLong(1, upperBound);
                     int rows = statement.executeUpdate();
-                    if (LOG.isDebugEnabled()) LOG.debug("Deleted "+rows+" rows");
+                    if (LOG.isDebugEnabled()) LOG.debug("Deleted "+rows+" rows of old sessions expired before "+upperBound);
                 }
             }
         }
