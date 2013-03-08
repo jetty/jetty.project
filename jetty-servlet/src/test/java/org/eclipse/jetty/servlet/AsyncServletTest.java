@@ -38,7 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -49,18 +49,17 @@ import org.junit.Test;
 
 public class AsyncServletTest 
 {    
-
     protected AsyncServlet _servlet=new AsyncServlet();
     protected int _port;
 
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
-    protected SelectChannelConnector _connector;
+    protected ServerConnector _connector;
 
     @Before
     public void setUp() throws Exception
     {
-        _connector = new SelectChannelConnector();
+        _connector = new ServerConnector(_server);
         _server.setConnectors(new Connector[]{ _connector });
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
@@ -378,7 +377,10 @@ public class AsyncServletTest
             System.err.println("failed on port "+port);
             e.printStackTrace();
             throw e;
-        }
+        }        
+        
+        // System.err.println(response);
+
         return response;
     }
     
@@ -396,6 +398,7 @@ public class AsyncServletTest
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
+            // System.err.println(request.getDispatcherType()+" "+request.getRequestURI());
             response.addHeader("history",request.getDispatcherType().toString());
             
             int read_before=0;
