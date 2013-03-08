@@ -1,7 +1,7 @@
 jetty-9.0.0.v20130306 - 06 March 2013
  + 399070 add updated version of npn-boot jar to start.ini
  + 399799 do not hold lock while calling invalidation listeners
- + 399967 Shutdown hook calls destroy
+ + 399967 Destroyables destroyed on undeploy and shutdown hook
  + 400312 ServletContextListener.contextInitialized() is not called when added
    in ServletContainerInitializer.onStartup
  + 401495 removed unused getOutputStream
