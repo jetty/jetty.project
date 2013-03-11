@@ -57,8 +57,8 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
     {
         _blockSize = blockSize;
         Block<T> block = newBlock();
-        MemoryUtils.putObjectVolatile(_blocks, HEAD_BLOCK_OFFSET, block);
-        MemoryUtils.putObjectVolatile(_blocks, TAIL_BLOCK_OFFSET, block);
+        MemoryUtils.volatilePutObject(_blocks, HEAD_BLOCK_OFFSET, block);
+        MemoryUtils.volatilePutObject(_blocks, TAIL_BLOCK_OFFSET, block);
     }
 
     public int getBlockSize()
@@ -68,12 +68,12 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
     protected Block<T> getHeadBlock()
     {
-        return MemoryUtils.getObjectVolatile(_blocks, HEAD_BLOCK_OFFSET);
+        return MemoryUtils.volatileGetObject(_blocks, HEAD_BLOCK_OFFSET);
     }
 
     protected Block<T> getTailBlock()
     {
-        return MemoryUtils.getObjectVolatile(_blocks, TAIL_BLOCK_OFFSET);
+        return MemoryUtils.volatileGetObject(_blocks, TAIL_BLOCK_OFFSET);
     }
 
     @Override
@@ -538,12 +538,12 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
         public int head()
         {
-            return MemoryUtils.getIntVolatile(indexes, headOffset);
+            return MemoryUtils.volatileGetInt(indexes, headOffset);
         }
 
         public int tail()
         {
-            return MemoryUtils.getIntVolatile(indexes, tailOffset);
+            return MemoryUtils.volatileGetInt(indexes, tailOffset);
         }
 
         public Object[] arrayCopy()

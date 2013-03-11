@@ -86,12 +86,12 @@ public class MemoryUtils
 
     public static int getIntegersPerCacheLine()
     {
-        return cacheLineBytes >> 2;
+        return getCacheLineBytes() >> 2;
     }
 
     public static int getLongsPerCacheLine()
     {
-        return cacheLineBytes >> 3;
+        return getCacheLineBytes() >> 3;
     }
 
     public static long arrayElementOffset(Class<?> arrayClass, int elementOffset)
@@ -101,32 +101,32 @@ public class MemoryUtils
         return base + scale * elementOffset;
     }
 
-    public static int getIntVolatile(Object array, long offset)
+    public static int volatileGetInt(Object array, long offset)
     {
         return unsafe.getIntVolatile(array, offset);
     }
 
-    public static long getLongVolatile(Object array, long offset)
+    public static long volatileGetLong(Object array, long offset)
     {
         return unsafe.getLongVolatile(array, offset);
     }
 
-    public static int getIntAndIncrement(Object array, long offset)
+    public static int getAndIncrementInt(Object array, long offset)
     {
         while (true)
         {
-            int current = getIntVolatile(array, offset);
+            int current = volatileGetInt(array, offset);
             int next = current + 1;
             if (compareAndSetInt(array, offset, current, next))
                 return current;
         }
     }
 
-    public static long getLongAndIncrement(Object array, long offset)
+    public static long getAndIncrementLong(Object array, long offset)
     {
         while (true)
         {
-            long current = getLongVolatile(array, offset);
+            long current = volatileGetLong(array, offset);
             long next = current + 1;
             if (compareAndSetLong(array, offset, current, next))
                 return current;
@@ -137,7 +137,7 @@ public class MemoryUtils
     {
         while (true)
         {
-            int current = getIntVolatile(array, offset);
+            int current = volatileGetInt(array, offset);
             int next = current + 1;
             if (compareAndSetInt(array, offset, current, next))
                 return next;
@@ -148,19 +148,19 @@ public class MemoryUtils
     {
         while (true)
         {
-            long current = getLongVolatile(array, offset);
+            long current = volatileGetLong(array, offset);
             long next = current + 1;
             if (compareAndSetLong(array, offset, current, next))
                 return next;
         }
     }
 
-    public static <R> R getObjectVolatile(Object array, long offset)
+    public static <R> R volatileGetObject(Object array, long offset)
     {
         return (R)unsafe.getObjectVolatile(array, offset);
     }
 
-    public static void putObjectVolatile(Object array, long offset, Object element)
+    public static void volatilePutObject(Object array, long offset, Object element)
     {
         unsafe.putOrderedObject(array, offset, element);
     }
