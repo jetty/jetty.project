@@ -25,11 +25,12 @@ package org.eclipse.jetty.websocket.api;
  */
 public class WebSocketAdapter implements WebSocketListener
 {
-    private Session session;
+    private volatile Session session;
 
     public RemoteEndpoint getRemote()
     {
-        return session.getRemote();
+        Session sess = this.session;
+        return sess == null?null:session.getRemote();
     }
 
     public Session getSession()
@@ -39,12 +40,14 @@ public class WebSocketAdapter implements WebSocketListener
 
     public boolean isConnected()
     {
-        return (session != null) && (session.isOpen());
+        Session sess = this.session;
+        return (sess != null) && (sess.isOpen());
     }
 
     public boolean isNotConnected()
     {
-        return (session == null) || (!session.isOpen());
+        Session sess = this.session;
+        return (sess == null) || (!sess.isOpen());
     }
 
     @Override

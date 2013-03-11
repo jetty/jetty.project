@@ -151,6 +151,13 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
+    public int getHeaderCacheSize()
+    {
+        // TODO get from configuration
+        return 256;
+    }
+
+    @Override
     public boolean earlyEOF()
     {
         // TODO

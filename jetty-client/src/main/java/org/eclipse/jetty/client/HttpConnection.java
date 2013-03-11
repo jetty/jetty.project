@@ -205,7 +205,7 @@ public class HttpConnection extends AbstractConnection implements Connection
                 }
                 case POST:
                 {
-                    request.header(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Type.FORM_ENCODED.asString());
+                    request.header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString());
                     request.content(new StringContentProvider(params.toString()));
                     break;
                 }

@@ -28,17 +28,20 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
 {
-    private static String SCHEME_REGEXP = "(^https?)";
-    private static String AUTHORITY_REGEXP = "([^/\\?#]+)";
+    private static final Logger LOG = Log.getLogger(RedirectProtocolHandler.class);
+    private static final String SCHEME_REGEXP = "(^https?)";
+    private static final String AUTHORITY_REGEXP = "([^/\\?#]+)";
     // The location may be relative so the scheme://authority part may be missing
-    private static String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
-    private static String PATH_REGEXP = "([^\\?#]*)";
-    private static String QUERY_REGEXP = "([^#]*)";
-    private static String FRAGMENT_REGEXP = "(.*)";
-    private static Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
+    private static final String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
+    private static final String PATH_REGEXP = "([^\\?#]*)";
+    private static final String QUERY_REGEXP = "([^#]*)";
+    private static final String FRAGMENT_REGEXP = "(.*)";
+    private static final Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
     private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirects";
 
     private final HttpClient client;
@@ -81,6 +84,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
             if (location != null)
             {
                 URI newURI = sanitize(location);
+                LOG.debug("Redirecting to {} (Location: {})", newURI, location);
                 if (newURI != null)
                 {
                     if (!newURI.isAbsolute())

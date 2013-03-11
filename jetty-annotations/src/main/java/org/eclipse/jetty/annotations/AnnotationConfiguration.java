@@ -20,6 +20,7 @@ package org.eclipse.jetty.annotations;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -29,6 +30,7 @@ import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -221,10 +223,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
 
 
-        //add a listener which will call the servletcontainerinitializers when appropriate
+        //add a bean which will call the servletcontainerinitializers when appropriate
         ServletContainerInitializerListener listener = new ServletContainerInitializerListener();
         listener.setWebAppContext(context);
-        context.addEventListener(listener);
+        context.addBean(listener, true);
     }
 
 

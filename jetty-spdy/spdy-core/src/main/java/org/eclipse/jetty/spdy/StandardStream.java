@@ -403,7 +403,7 @@ public class StandardStream implements IStream
         if (isLocallyClosed())
         {
             session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
-            throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a closed stream");
+            throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a locally closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
@@ -481,7 +481,7 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d windowSize=%db reset=%s prio=%d %s %s", getId(), session.getVersion(),
+        return String.format("stream=%d v%d windowSize=%d reset=%s prio=%d %s %s", getId(), session.getVersion(),
                 getWindowSize(), isReset(), priority, openState, closeState);
     }
 

@@ -77,146 +77,118 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected JDBCSessionIdManager _jdbcSessionIdMgr = null;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
 
+   
+
+
     /**
-     * SessionData
+     * Session
      *
-     * Persistable data about a session.
+     * Session instance.
      */
-    public class SessionData
+    public class Session extends AbstractSession
     {
-        private String _id;
-        private String _rowId;
-        private long _accessed;
-        private long _lastAccessed;
-        private long _maxIdleMs=-1;
+        private static final long serialVersionUID = 5208464051134226143L;
+        
+        /**
+         * If dirty, session needs to be (re)persisted
+         */
+        private boolean _dirty=false;
+        
+        
+        /**
+         * Time in msec since the epoch that a session cookie was set for this session
+         */
         private long _cookieSet;
-        private long _created;
-        private Map<String,Object> _attributes;
-        private String _lastNode;
-        private String _canonicalContext;
-        private long _lastSaved;
+        
+        
+        /**
+         * Time in msec since the epoch that the session will expire
+         */
         private long _expiryTime;
+        
+        
+        /**
+         * Time in msec since the epoch that the session was last persisted
+         */
+        private long _lastSaved;
+        
+        
+        /**
+         * Unique identifier of the last node to host the session
+         */
+        private String _lastNode;
+        
+        
+        /**
+         * Virtual host for context (used to help distinguish 2 sessions with same id on different contexts)
+         */
         private String _virtualHost;
-
-        public SessionData (String sessionId)
+        
+        
+        /**
+         * Unique row in db for session
+         */
+        private String _rowId;
+        
+        
+        /**
+         * Mangled context name (used to help distinguish 2 sessions with same id on different contexts)
+         */
+        private String _canonicalContext;
+        
+   
+        /**
+         * Session from a request.
+         *
+         * @param request
+         */
+        protected Session (HttpServletRequest request)
         {
-            _id=sessionId;
-            _created=System.currentTimeMillis();
-            _accessed = _created;
-            _attributes = new HashMap<String,Object>();
+            super(JDBCSessionManager.this,request);
+            int maxInterval=getMaxInactiveInterval();
+            _expiryTime = (maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
+            _virtualHost = JDBCSessionManager.getVirtualHost(_context);
+            _canonicalContext = canonicalize(_context.getContextPath());
             _lastNode = getSessionIdManager().getWorkerName();
-        }
-
-        public SessionData (String sessionId,Map<String,Object> attributes)
-        {
-            _id=sessionId;
-            _created=System.currentTimeMillis();
-            _accessed = _created;
-            _attributes = attributes;
-            _lastNode = getSessionIdManager().getWorkerName();
-        }
-
-        public synchronized String getId ()
-        {
-            return _id;
         }
         
-        public synchronized void setId (String id)
+        
+        /**
+         * Session restored from database
+         * @param sessionId
+         * @param rowId
+         * @param created
+         * @param accessed
+         */
+        protected Session (String sessionId, String rowId, long created, long accessed, long maxInterval)
         {
-            _id = id;
+            super(JDBCSessionManager.this, created, accessed, sessionId);
+            _rowId = rowId;
+            super.setMaxInactiveInterval((int)maxInterval); //restore the session's previous inactivity interval setting
+            _expiryTime = (maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
         }
-
-        public synchronized long getCreated ()
-        {
-            return _created;
-        }
-
-        protected synchronized void setCreated (long ms)
-        {
-            _created = ms;
-        }
-
-        public synchronized long getAccessed ()
-        {
-            return _accessed;
-        }
-
-        protected synchronized void setAccessed (long ms)
-        {
-            _accessed = ms;
-        }
-
-
-        public synchronized void setMaxIdleMs (long ms)
-        {
-            _maxIdleMs = ms;
-        }
-
-        public synchronized long getMaxIdleMs()
-        {
-            return _maxIdleMs;
-        }
-
-        public synchronized void setLastAccessed (long ms)
-        {
-            _lastAccessed = ms;
-        }
-
-        public synchronized long getLastAccessed()
-        {
-            return _lastAccessed;
-        }
-
-        public void setCookieSet (long ms)
-        {
-            _cookieSet = ms;
-        }
-
-        public synchronized long getCookieSet ()
-        {
-            return _cookieSet;
-        }
-
-        public synchronized void setRowId (String rowId)
-        {
-            _rowId=rowId;
-        }
-
+        
+        
         protected synchronized String getRowId()
         {
             return _rowId;
         }
-
-        protected synchronized Map<String,Object> getAttributeMap ()
+        
+        protected synchronized void setRowId(String rowId)
         {
-            return _attributes;
+            _rowId = rowId;
+        }
+        
+        public synchronized void setVirtualHost (String vhost)
+        {
+            _virtualHost=vhost;
         }
 
-        protected synchronized void setAttributeMap (Map<String,Object> map)
+        public synchronized String getVirtualHost ()
         {
-            _attributes = map;
+            return _virtualHost;
         }
-
-        public synchronized void setLastNode (String node)
-        {
-            _lastNode=node;
-        }
-
-        public synchronized String getLastNode ()
-        {
-            return _lastNode;
-        }
-
-        public synchronized void setCanonicalContext(String str)
-        {
-            _canonicalContext=str;
-        }
-
-        public synchronized String getCanonicalContext ()
-        {
-            return _canonicalContext;
-        }
-
+        
         public synchronized long getLastSaved ()
         {
             return _lastSaved;
@@ -236,121 +208,57 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             return _expiryTime;
         }
+        
 
-        public synchronized void setVirtualHost (String vhost)
+        public synchronized void setCanonicalContext(String str)
         {
-            _virtualHost=vhost;
+            _canonicalContext=str;
         }
 
-        public synchronized String getVirtualHost ()
+        public synchronized String getCanonicalContext ()
         {
-            return _virtualHost;
+            return _canonicalContext;
+        }
+        
+        public void setCookieSet (long ms)
+        {
+            _cookieSet = ms;
+        }
+
+        public synchronized long getCookieSet ()
+        {
+            return _cookieSet;
+        }
+
+        public synchronized void setLastNode (String node)
+        {
+            _lastNode=node;
+        }
+
+        public synchronized String getLastNode ()
+        {
+            return _lastNode;
         }
 
         @Override
-        public String toString ()
-        {
-            return "Session rowId="+_rowId+",id="+_id+",lastNode="+_lastNode+
-                            ",created="+_created+",accessed="+_accessed+
-                            ",lastAccessed="+_lastAccessed+",cookieSet="+_cookieSet+
-                            "lastSaved="+_lastSaved;
-        }
-    }
-
-
-
-    /**
-     * Session
-     *
-     * Session instance in memory of this node.
-     */
-    public class Session extends AbstractSession
-    {
-        private static final long serialVersionUID = 5208464051134226143L;
-        private final SessionData _data;
-        private boolean _dirty=false;
-       
-        
-        /**
-         * Session from a request.
-         *
-         * @param request
-         */
-        protected Session (HttpServletRequest request)
-        {
-            super(JDBCSessionManager.this,request);
-            _data = new SessionData(getClusterId(),getAttributeMap());
-            if (_dftMaxIdleSecs>0)
-                _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
-            _data.setCanonicalContext(canonicalize(_context.getContextPath()));
-            _data.setVirtualHost(getVirtualHost(_context));
-            int maxInterval=getMaxInactiveInterval();
-            _data.setExpiryTime(maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
-        }
-
-        /**
-         * Session restored in database.
-         * @param data
-         */
-        protected Session (long accessed, SessionData data)
-        {
-            super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
-            _data=data;
-            if (_dftMaxIdleSecs>0)
-                _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
-            addAttributes(_data.getAttributeMap());
-            _data.setAttributeMap(getAttributeMap());
-        }
-
-         @Override
         public void setAttribute (String name, Object value)
-         {
-             super.setAttribute(name, value);
-             _dirty=true;
-         }
-
-         @Override
-        public void removeAttribute (String name)
-         {
-             super.removeAttribute(name);
-             _dirty=true;
-         }
-
-
-
-         @Override
-         protected void setClusterId(String clusterId)
-         {
-             super.setClusterId(clusterId);
-             _data.setId(clusterId); 
-             _dirty = true;
-         }
-
-         @Override
-         protected void setNodeId(String nodeId)
-         {
-             _data.setLastNode(nodeId);
-             super.setNodeId(nodeId);
-             _dirty = true;
-         }
-
-        protected void save() throws Exception
         {
-            try
-            {
-                updateSession(_data);
-            }
-            finally
-            {
-                _dirty = false;
-            }
+            super.setAttribute(name, value);
+            _dirty=true;
         }
 
-         @Override
-         protected void cookieSet()
-         {
-             _data.setCookieSet(_data.getAccessed());
-         }
+        @Override
+        public void removeAttribute (String name)
+        {
+            super.removeAttribute(name);
+            _dirty=true;
+        }
+
+        @Override
+        protected void cookieSet()
+        {
+            _cookieSet = getAccessed();
+        }
 
         /**
          * Entry to session.
@@ -361,17 +269,46 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         protected boolean access(long time)
         {
-            if (super.access(time))
+            synchronized (this)
             {
-                _data.setLastAccessed(_data.getAccessed());
-                _data.setAccessed(time);
-
-                int maxInterval=getMaxInactiveInterval();
-                _data.setExpiryTime(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
-                return true;
+                if (super.access(time))
+                {
+                    int maxInterval=getMaxInactiveInterval();
+                    _expiryTime = (maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
+        
+        
+        
+
+
+        /** 
+         * Change the max idle time for this session. This recalculates the expiry time.
+         * @see org.eclipse.jetty.server.session.AbstractSession#setMaxInactiveInterval(int)
+         */
+        @Override
+        public void setMaxInactiveInterval(int secs)
+        {
+            synchronized (this)
+            {
+                super.setMaxInactiveInterval(secs);
+                int maxInterval=getMaxInactiveInterval();
+                _expiryTime = (maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
+                //force the session to be written out right now
+                try
+                {
+                    updateSessionAccessTime(this);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Problem saving changed max idle time for session "+ this, e);
+                }
+            }
+        }
+
 
         /**
          * Exit from session
@@ -380,38 +317,65 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         protected void complete()
         {
-            super.complete();
-            try
+            synchronized (this)
             {
-                if (_dirty)
+                super.complete();
+                try
                 {
-                    //The session attributes have changed, write to the db, ensuring
-                    //http passivation/activation listeners called
-                    willPassivate();
-                    updateSession(_data);
-                    didActivate();
+                    if (_dirty)
+                    {
+                        //The session attributes have changed, write to the db, ensuring
+                        //http passivation/activation listeners called
+                        willPassivate();                      
+                        updateSession(this);
+                        didActivate();
+                    }
+                    else if ((getAccessed() - _lastSaved) >= (getSaveInterval() * 1000L))
+                    {
+                        updateSessionAccessTime(this);
+                    }
                 }
-                else if ((_data._accessed - _data._lastSaved) >= (getSaveInterval() * 1000L))
+                catch (Exception e)
                 {
-                    updateSessionAccessTime(_data);
+                    LOG.warn("Problem persisting changed session data id="+getId(), e);
                 }
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Problem persisting changed session data id="+getId(), e);
-            }
-            finally
-            {
-                _dirty=false;
+                finally
+                {
+                    _dirty=false;
+                }
             }
         }
 
+        protected void save() throws Exception
+        {
+            synchronized (this)
+            {
+                try
+                {
+                    updateSession(this);
+                }
+                finally
+                {
+                    _dirty = false;
+                }
+            }
+        }
+        
         @Override
         protected void timeout() throws IllegalStateException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timing out session id="+getClusterId());
             super.timeout();
+        }
+        
+        @Override
+        public String toString ()
+        {
+            return "Session rowId="+_rowId+",id="+getId()+",lastNode="+_lastNode+
+                            ",created="+getCreationTime()+",accessed="+getAccessed()+
+                            ",lastAccessed="+getLastAccessedTime()+",cookieSet="+_cookieSet+
+                            ",maxInterval="+getMaxInactiveInterval()+",lastSaved="+_lastSaved+",expiry="+_expiryTime;
         }
     }
 
@@ -421,7 +385,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * ClassLoadingObjectInputStream
      *
-     *
+     * Used to persist the session attribute map
      */
     protected class ClassLoadingObjectInputStream extends ObjectInputStream
     {
@@ -448,8 +412,6 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
         }
     }
-
-
 
 
     /**
@@ -500,7 +462,7 @@ public class JDBCSessionManager extends AbstractSessionManager
 
 
     /**
-     * A session has been requested by it's id on this node.
+     * A session has been requested by its id on this node.
      *
      * Load the session by id AND context path from the database.
      * Multiple contexts may share the same session id (due to dispatching)
@@ -518,12 +480,11 @@ public class JDBCSessionManager extends AbstractSessionManager
     @Override
     public Session getSession(String idInCluster)
     {
-        Session session = (Session)_sessions.get(idInCluster);
+        Session session = null;
+        Session memSession = (Session)_sessions.get(idInCluster);
 
         synchronized (this)
         {
-            try
-            {
                 //check if we need to reload the session -
                 //as an optimization, don't reload on every access
                 //to reduce the load on the database. This introduces a window of
@@ -532,83 +493,94 @@ public class JDBCSessionManager extends AbstractSessionManager
                 //re-migrated to this node. This should be an extremely rare occurrence,
                 //as load-balancers are generally well-behaved and consistently send
                 //sessions to the same node, changing only iff that node fails.
-                SessionData data = null;
+                //Session data = null;
                 long now = System.currentTimeMillis();
                 if (LOG.isDebugEnabled())
                 {
-                    if (session==null)
+                    if (memSession==null)
                         LOG.debug("getSession("+idInCluster+"): not in session map,"+
                                 " now="+now+
-                                " lastSaved="+(session==null?0:session._data._lastSaved)+
+                                " lastSaved="+(memSession==null?0:memSession._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000L));
                     else
                         LOG.debug("getSession("+idInCluster+"): in session map, "+
                                 " now="+now+
-                                " lastSaved="+(session==null?0:session._data._lastSaved)+
+                                " lastSaved="+(memSession==null?0:memSession._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000L)+
-                                " lastNode="+session._data.getLastNode()+
+                                " lastNode="+memSession._lastNode+
                                 " thisNode="+getSessionIdManager().getWorkerName()+
-                                " difference="+(now - session._data._lastSaved));
+                                " difference="+(now - memSession._lastSaved));
                 }
 
-                if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000L)))
+                try
                 {
-                    LOG.debug("getSession("+idInCluster+"): no session in session map or stale session. Reloading session data from db.");
-                    data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
-                }
-                else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000L))
-                {
-                    LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
-                    data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
-                }
-                else
-                {
-                    LOG.debug("getSession("+idInCluster+"): session in session map");
-                    data = session._data;
-                }
-
-                if (data != null)
-                {
-                    if (!data.getLastNode().equals(getSessionIdManager().getWorkerName()) || session==null)
+                    if (memSession==null)
                     {
-                        //if the session has no expiry, or it is not already expired
-                        if (data._expiryTime <= 0 || data._expiryTime > now)
+                        LOG.debug("getSession("+idInCluster+"): no session in session map. Reloading session data from db.");
+                        session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    }
+                    else if ((now - memSession._lastSaved) >= (_saveIntervalSec * 1000L))
+                    {
+                        LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
+                        session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    }
+                    else
+                    {
+                        LOG.debug("getSession("+idInCluster+"): session in session map");
+                        session = memSession;
+                    }
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to load session "+idInCluster, e);
+                    return null;
+                }
+
+                
+                //If we have a session
+                if (session != null)
+                {
+                    //If the session was last used on a different node, or session doesn't exist on this node
+                    if (!session.getLastNode().equals(getSessionIdManager().getWorkerName()) || memSession==null)
+                    {
+                        //if session doesn't expire, or has not already expired, update it and put it in this nodes' memory
+                        if (session._expiryTime <= 0 || session._expiryTime > now)
                         {
-                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
-                            data.setLastNode(getSessionIdManager().getWorkerName());
-                            //session last used on a different node, or we don't have it in memory
-                            session = new Session(now,data);
+                            if (LOG.isDebugEnabled()) 
+                                LOG.debug("getSession("+idInCluster+"): lastNode="+session.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            
+                            session.setLastNode(getSessionIdManager().getWorkerName());                            
                             _sessions.put(idInCluster, session);
-                            session.didActivate();
-                            //TODO is this the best way to do this? Or do this on the way out using
-                            //the _dirty flag?
-                            updateSessionNode(data);
+                            
+                            //update in db: if unable to update, session will be scavenged later
+                            try
+                            {
+                                updateSessionNode(session);
+                                session.didActivate();
+                            }
+                            catch (Exception e)
+                            {
+                                LOG.warn("Unable to update freshly loaded session "+idInCluster, e);
+                                return null;
+                            }
                         }
                         else
                         {
-                            LOG.debug("getSession ({}): Session has expired", idInCluster);
-                            
+                            LOG.debug("getSession ({}): Session has expired", idInCluster);  
+                            session=null;
                         }
 
                     }
                     else
-                       LOG.debug("getSession({}): Session not stale {}", idInCluster,session._data);
-                    //session in db shares same id, but is not for this context
+                       LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
                 }
                 else
                 {
                     //No session in db with matching id and context path.
-                    session=null;
                     LOG.debug("getSession({}): No session in database matching id={}",idInCluster,idInCluster);
                 }
 
                 return session;
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to load session from database", e);
-                return null;
-            }
         }
     }
 
@@ -737,7 +709,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             try
             {
                 if (session != null)
-                    deleteSession(session._data);
+                    deleteSession(session);
             }
             catch (Exception e)
             {
@@ -768,9 +740,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         //then session data will be lost.
         try
         {
-            session.willPassivate();
-            storeSession(((JDBCSessionManager.Session)session)._data);
-            session.didActivate();
+            synchronized (session)
+            {
+                session.willPassivate();
+                storeSession(((JDBCSessionManager.Session)session));
+                session.didActivate();
+            }
         }
         catch (Exception e)
         {
@@ -889,17 +864,20 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @return the session data that was loaded
      * @throws Exception
      */
-    protected SessionData loadSession (final String id, final String canonicalContextPath, final String vhost)
+    protected Session loadSession (final String id, final String canonicalContextPath, final String vhost)
     throws Exception
     {
-        final AtomicReference<SessionData> _reference = new AtomicReference<SessionData>();
+        final AtomicReference<Session> _reference = new AtomicReference<Session>();
         final AtomicReference<Exception> _exception = new AtomicReference<Exception>();
         Runnable load = new Runnable()
         {
+            /** 
+             * @see java.lang.Runnable#run()
+             */
             @SuppressWarnings("unchecked")
             public void run()
             {
-                SessionData data = null;
+                Session session = null;
                 Connection connection=null;
                 PreparedStatement statement = null;
                 try
@@ -908,29 +886,34 @@ public class JDBCSessionManager extends AbstractSessionManager
                     statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
                     ResultSet result = statement.executeQuery();
                     if (result.next())
-                    {
-                        data = new SessionData(id);
-                        data.setRowId(result.getString(_jdbcSessionIdMgr._sessionTableRowId));
-                        data.setCookieSet(result.getLong("cookieTime"));
-                        data.setLastAccessed(result.getLong("lastAccessTime"));
-                        data.setAccessed (result.getLong("accessTime"));
-                        data.setCreated(result.getLong("createTime"));
-                        data.setLastNode(result.getString("lastNode"));
-                        data.setLastSaved(result.getLong("lastSavedTime"));
-                        data.setExpiryTime(result.getLong("expiryTime"));
-                        data.setCanonicalContext(result.getString("contextPath"));
-                        data.setVirtualHost(result.getString("virtualHost"));
-
+                    {                    
+                        long maxInterval = result.getLong("maxInterval");
+                        if (maxInterval == JDBCSessionIdManager.MAX_INTERVAL_NOT_SET)
+                        {
+                            maxInterval = getMaxInactiveInterval(); //if value not saved for maxInactiveInterval, use current value from sessionmanager
+                        }
+                        session = new Session(id, result.getString(_jdbcSessionIdMgr._sessionTableRowId), 
+                                                  result.getLong("createTime"), 
+                                                  result.getLong("accessTime"), 
+                                                  maxInterval);
+                        session.setCookieSet(result.getLong("cookieTime"));
+                        session.setLastAccessedTime(result.getLong("lastAccessTime"));
+                        session.setLastNode(result.getString("lastNode"));
+                        session.setLastSaved(result.getLong("lastSavedTime"));
+                        session.setExpiryTime(result.getLong("expiryTime"));
+                        session.setCanonicalContext(result.getString("contextPath"));
+                        session.setVirtualHost(result.getString("virtualHost"));
+                                           
                         InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, "map");
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
                         Object o = ois.readObject();
-                        data.setAttributeMap((Map<String,Object>)o);
+                        session.addAttributes((Map<String,Object>)o);
                         ois.close();
 
                         if (LOG.isDebugEnabled())
-                            LOG.debug("LOADED session "+data);
+                            LOG.debug("LOADED session "+session);
                     }
-                    _reference.set(data);
+                    _reference.set(session);
                 }
                 catch (Exception e)
                 {
@@ -953,7 +936,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             _context.getContextHandler().handle(load);
 
         if (_exception.get()!=null)
+        {
+            //if the session could not be restored, take its id out of the pool of currently-in-use
+            //session ids
+            _jdbcSessionIdMgr.removeSession(id);
             throw _exception.get();
+        }
 
         return _reference.get();
     }
@@ -964,10 +952,10 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @param data
      * @throws Exception
      */
-    protected void storeSession (SessionData data)
+    protected void storeSession (Session session)
     throws Exception
     {
-        if (data==null)
+        if (session==null)
             return;
 
         //put into the database
@@ -975,38 +963,40 @@ public class JDBCSessionManager extends AbstractSessionManager
         PreparedStatement statement = null;
         try
         {
-            String rowId = calculateRowId(data);
+            String rowId = calculateRowId(session);
 
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
             statement = connection.prepareStatement(_jdbcSessionIdMgr._insertSession);
             statement.setString(1, rowId); //rowId
-            statement.setString(2, data.getId()); //session id
-            statement.setString(3, data.getCanonicalContext()); //context path
-            statement.setString(4, data.getVirtualHost()); //first vhost
+            statement.setString(2, session.getId()); //session id
+            statement.setString(3, session.getCanonicalContext()); //context path
+            statement.setString(4, session.getVirtualHost()); //first vhost
             statement.setString(5, getSessionIdManager().getWorkerName());//my node id
-            statement.setLong(6, data.getAccessed());//accessTime
-            statement.setLong(7, data.getLastAccessed()); //lastAccessTime
-            statement.setLong(8, data.getCreated()); //time created
-            statement.setLong(9, data.getCookieSet());//time cookie was set
+            statement.setLong(6, session.getAccessed());//accessTime
+            statement.setLong(7, session.getLastAccessedTime()); //lastAccessTime
+            statement.setLong(8, session.getCreationTime()); //time created
+            statement.setLong(9, session.getCookieSet());//time cookie was set
             statement.setLong(10, now); //last saved time
-            statement.setLong(11, data.getExpiryTime());
+            statement.setLong(11, session.getExpiryTime());
+            statement.setLong(12, session.getMaxInactiveInterval());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(data.getAttributeMap());
+            oos.writeObject(session.getAttributeMap());
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+            statement.setBinaryStream(13, bais, bytes.length);//attribute map as blob
+           
 
             statement.executeUpdate();
-            data.setRowId(rowId); //set it on the in-memory data as well as in db
-            data.setLastSaved(now);
+            session.setRowId(rowId); //set it on the in-memory data as well as in db
+            session.setLastSaved(now);
 
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Stored session "+data);
+                LOG.debug("Stored session "+session);
         }
         finally
         {
@@ -1019,10 +1009,10 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Update data on an existing persisted session.
      *
-     * @param data
+     * @param data the session
      * @throws Exception
      */
-    protected void updateSession (SessionData data)
+    protected void updateSession (Session data)
     throws Exception
     {
         if (data==null)
@@ -1038,9 +1028,10 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setString(1, data.getId());
             statement.setString(2, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(3, data.getAccessed());//accessTime
-            statement.setLong(4, data.getLastAccessed()); //lastAccessTime
+            statement.setLong(4, data.getLastAccessedTime()); //lastAccessTime
             statement.setLong(5, now); //last saved time
             statement.setLong(6, data.getExpiryTime());
+            statement.setLong(7, data.getMaxInactiveInterval());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -1048,8 +1039,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             byte[] bytes = baos.toByteArray();
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
-            statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
-            statement.setString(8, data.getRowId()); //rowId
+            statement.setBinaryStream(8, bais, bytes.length);//attribute map as blob
+            statement.setString(9, data.getRowId()); //rowId
             statement.executeUpdate();
 
             data.setLastSaved(now);
@@ -1067,10 +1058,10 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Update the node on which the session was last seen to be my node.
      *
-     * @param data
+     * @param data the session
      * @throws Exception
      */
-    protected void updateSessionNode (SessionData data)
+    protected void updateSessionNode (Session data)
     throws Exception
     {
         String nodeId = getSessionIdManager().getWorkerName();
@@ -1097,10 +1088,10 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Persist the time the session was last accessed.
      *
-     * @param data
+     * @param data the session
      * @throws Exception
      */
-    private void updateSessionAccessTime (SessionData data)
+    private void updateSessionAccessTime (Session data)
     throws Exception
     {
         Connection connection = getConnection();
@@ -1112,10 +1103,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionAccessTime);
             statement.setString(1, getSessionIdManager().getWorkerName());
             statement.setLong(2, data.getAccessed());
-            statement.setLong(3, data.getLastAccessed());
+            statement.setLong(3, data.getLastAccessedTime());
             statement.setLong(4, now);
             statement.setLong(5, data.getExpiryTime());
-            statement.setString(6, data.getRowId());
+            statement.setLong(6, data.getMaxInactiveInterval());
+            statement.setString(7, data.getRowId());
+          
             statement.executeUpdate();
             data.setLastSaved(now);
             statement.close();
@@ -1139,7 +1132,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @param data
      * @throws Exception
      */
-    protected void deleteSession (SessionData data)
+    protected void deleteSession (Session data)
     throws Exception
     {
         Connection connection = getConnection();
@@ -1180,7 +1173,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @param data
      * @return
      */
-    private String calculateRowId (SessionData data)
+    private String calculateRowId (Session data)
     {
         String rowId = canonicalize(_context.getContextPath());
         rowId = rowId + "_" + getVirtualHost(_context);
@@ -1195,7 +1188,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * @return 0.0.0.0 if no virtual host is defined
      */
-    private String getVirtualHost (ContextHandler.Context context)
+    private static String getVirtualHost (ContextHandler.Context context)
     {
         String vhost = "0.0.0.0";
 
@@ -1215,7 +1208,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @param path
      * @return
      */
-    private String canonicalize (String path)
+    private static String canonicalize (String path)
     {
         if (path==null)
             return "";

@@ -702,7 +702,12 @@ public class Request implements HttpServletRequest
     public String getLocalAddr()
     {
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getAddress().getHostAddress();
+        if (local==null)
+            return "";
+        InetAddress address = local.getAddress();
+        if (address==null)
+            return local.getHostString();
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -918,8 +923,15 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-
-        return remote==null?"":remote.getHostString();
+        
+        if (remote==null)
+            return "";
+        
+        InetAddress address = remote.getAddress();
+        if (address==null)
+            return remote.getHostString();
+        
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -2096,11 +2108,11 @@ public class Request implements HttpServletRequest
         {
             _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
             if (_authentication == null)
-                throw new ServletException("Authentication failed for "+username+" in "+_authentication);
+                throw new Authentication.Failed("Authentication failed for username '"+username+"'");
         }
         else
         {
-            throw new ServletException("Already authenticated as "+_authentication);
+            throw new Authentication.Failed("Authenticated failed for username '"+username+"'. Already authenticated as "+_authentication);
         }
     }
 

@@ -81,6 +81,12 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     InetSocketAddress getLocalAddress();
 
     /**
+     * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
+     * @return the idle timeout in milliseconds
+     */
+    long getMaxIdleTimeout();
+
+    /**
      * The policy that the connection is running under.
      * @return the policy for the connection
      */
@@ -117,14 +123,15 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     boolean isReading();
 
     /**
-     * Set the read/write idle timeout for new operations (in milliseconds)
+     * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
      * <p>
      * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
      * New read/write actions will have this new idle timeout.
      * 
-     * @param ms idle timeout in milliseconds
+     * @param ms
+     *            the number of milliseconds of idle timeout
      */
-    public void setIdleTimeout(long ms);
+    void setMaxIdleTimeout(long ms);
 
     /**
      * Set where the connection should send the incoming frames to.

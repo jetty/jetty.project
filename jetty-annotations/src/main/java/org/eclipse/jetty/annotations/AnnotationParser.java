@@ -25,8 +25,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.jar.JarEntry;
 
 import org.eclipse.jetty.util.Loader;
@@ -50,7 +52,7 @@ public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
-    protected List<String> _parsedClassNames = new ArrayList<String>();    
+    protected Set<String> _parsedClassNames = new HashSet<String>();
     protected List<Handler> _handlers = new ArrayList<Handler>();
 
     public static String normalize (String name)

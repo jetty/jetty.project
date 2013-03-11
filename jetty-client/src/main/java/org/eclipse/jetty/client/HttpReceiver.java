@@ -127,6 +127,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
+
+    @Override
+    public int getHeaderCacheSize()
+    {
+        // TODO get from configuration
+        return 256;
+    }
+
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
@@ -204,9 +212,13 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     {
         try
         {
-            Map<String, List<String>> header = new HashMap<>(1);
-            header.put(field.getHeader().asString(), Collections.singletonList(field.getValue()));
-            connection.getHttpClient().getCookieManager().put(uri, header);
+            String value = field.getValue();
+            if (value != null)
+            {
+                Map<String, List<String>> header = new HashMap<>(1);
+                header.put(field.getHeader().asString(), Collections.singletonList(value));
+                connection.getHttpClient().getCookieManager().put(uri, header);
+            }
         }
         catch (IOException x)
         {

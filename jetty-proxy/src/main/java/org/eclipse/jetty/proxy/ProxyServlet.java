@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -397,14 +398,14 @@ public class ProxyServlet extends HttpServlet
 
         // Force the Host header if configured
         if (_hostHeader != null)
-            proxyRequest.header("Host", _hostHeader);
+            proxyRequest.header(HttpHeader.HOST, _hostHeader);
 
         // Add proxy headers
-        proxyRequest.header("Via", "http/1.1 " + _viaHost);
-        proxyRequest.header("X-Forwarded-For", request.getRemoteAddr());
-        proxyRequest.header("X-Forwarded-Proto", request.getScheme());
-        proxyRequest.header("X-Forwarded-Host", request.getHeader("Host"));
-        proxyRequest.header("X-Forwarded-Server", request.getLocalName());
+        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + _viaHost);
+        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
+        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
+        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
+        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
 
         proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
         {
@@ -604,7 +605,7 @@ public class ProxyServlet extends HttpServlet
             if (!_prefix.startsWith("/"))
                 throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
 
-            _log.info(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override

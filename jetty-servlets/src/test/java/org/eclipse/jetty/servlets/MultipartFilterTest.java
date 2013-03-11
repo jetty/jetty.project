@@ -568,8 +568,6 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
     }
-    
-    
 
     @Test
     public void testNoBody()
@@ -588,7 +586,7 @@ public class MultipartFilterTest
         
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getReason().startsWith("Missing content"));
+        assertTrue(response.getContent().indexOf("Missing content")>=0);
     }
 
     @Test
@@ -610,7 +608,7 @@ public class MultipartFilterTest
         
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getReason().startsWith("Missing initial"));
+        assertTrue(response.getContent().indexOf("Missing initial")>=0);
     }
     
   
@@ -633,7 +631,7 @@ public class MultipartFilterTest
         
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
-        assertTrue(response.getReason().startsWith("Missing initial"));
+        assertTrue(response.getContent().indexOf("Missing initial")>=0);
     }
 
     @Test

@@ -398,13 +398,6 @@ public abstract class Resource implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an output stream to the resource
-     */
-    public abstract OutputStream getOutputStream()
-        throws java.io.IOException, SecurityException;
-    
-    /* ------------------------------------------------------------ */
-    /**
      * Deletes the given resource
      */
     public abstract boolean delete()

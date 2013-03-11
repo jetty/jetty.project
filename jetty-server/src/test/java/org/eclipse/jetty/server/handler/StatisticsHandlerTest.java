@@ -421,6 +421,7 @@ public class StatisticsHandlerTest
             @Override
             public void onTimeout(AsyncEvent event) throws IOException
             {
+                event.getAsyncContext().complete();
             }
             
             @Override

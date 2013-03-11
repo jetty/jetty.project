@@ -329,6 +329,140 @@ public class ProxySPDYToSPDYTest
     }
 
     @Test
+    public void testSYNThenSPDYNestedPushIsReceived() throws Exception
+    {
+        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                Fields responseHeaders = new Fields();
+                responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+                responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
+                stream.reply(new ReplyInfo(responseHeaders, false), new Callback.Adapter());
+
+                final Fields pushHeaders = new Fields();
+                pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
+                stream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
+                {
+                    @Override
+                    public void succeeded(Stream pushStream)
+                    {
+                        pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/nestedpush");
+                        pushStream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Adapter<Stream>()
+                        {
+                            @Override
+                            public void succeeded(Stream pushStream)
+                            {
+                                pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/anothernestedpush");
+                                pushStream.push(new PushInfo(5, TimeUnit.SECONDS, pushHeaders, false), new Adapter<Stream>()
+                                {
+                                    @Override
+                                    public void succeeded(Stream pushStream)
+                                    {
+                                        pushStream.data(new BytesDataInfo(data, true), new Callback.Adapter());
+                                    }
+                                });
+                                pushStream.data(new BytesDataInfo(data, true), new Callback.Adapter());
+                            }
+                        });
+                        pushStream.data(new BytesDataInfo(data, true), new Callback.Adapter());
+                    }
+                });
+
+                stream.data(new BytesDataInfo(data, true), new Callback.Adapter());
+
+                return null;
+            }
+        }));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+
+        final CountDownLatch pushSynLatch = new CountDownLatch(3);
+        final CountDownLatch pushDataLatch = new CountDownLatch(3);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+
+        Fields headers = new Fields();
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            // onPush for 1st push stream
+            @Override
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+            {
+                pushSynLatch.countDown();
+                return new StreamFrameListener.Adapter()
+                {
+                    // onPush for 2nd nested push stream
+                    @Override
+                    public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+                    {
+                        pushSynLatch.countDown();
+                        return new Adapter()
+                        {
+                            // onPush for 3rd nested push stream
+                            @Override
+                            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+                            {
+                                pushSynLatch.countDown();
+                                return new Adapter()
+                                {
+                                    @Override
+                                    public void onData(Stream stream, DataInfo dataInfo)
+                                    {
+                                        dataInfo.consume(dataInfo.length());
+                                        if (dataInfo.isClose())
+                                            pushDataLatch.countDown();
+                                    }
+                                };
+                            }
+
+                            @Override
+                            public void onData(Stream stream, DataInfo dataInfo)
+                            {
+                                dataInfo.consume(dataInfo.length());
+                                if (dataInfo.isClose())
+                                    pushDataLatch.countDown();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        dataInfo.consume(dataInfo.length());
+                        if (dataInfo.isClose())
+                            pushDataLatch.countDown();
+                    }
+                };
+            }
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    dataLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(pushSynLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(pushDataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+
+        client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testPING() throws Exception
     {
         // PING is per hop, and it does not carry the information to which server to ping to

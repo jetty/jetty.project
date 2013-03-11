@@ -459,7 +459,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (web_app.getFile()!=null && web_app.getFile().isDirectory())
                 {
                     // Copy directory
-                    LOG.info("Copy " + web_app + " to " + extractedWebAppDir);
+                    LOG.debug("Copy " + web_app + " to " + extractedWebAppDir);
                     web_app.copyTo(extractedWebAppDir);
                 }
                 else
@@ -473,7 +473,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         //it hasn't been extracted before so extract it
                         extractionLock.createNewFile();
                         extractedWebAppDir.mkdir();
-                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
+                        LOG.debug("Extract " + web_app + " to " + extractedWebAppDir);
                         Resource jar_web_app = JarResource.newJarResource(web_app);
                         jar_web_app.copyTo(extractedWebAppDir);
                         extractionLock.delete();
@@ -486,7 +486,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
-                            LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
+                            LOG.debug("Extract " + web_app + " to " + extractedWebAppDir);
                             Resource jar_web_app = JarResource.newJarResource(web_app);
                             jar_web_app.copyTo(extractedWebAppDir);
                             extractionLock.delete();
@@ -530,7 +530,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     IO.delete(webInfLibDir);
                 webInfLibDir.mkdir();
 
-                LOG.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                LOG.debug("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
                 web_inf_lib.copyTo(webInfLibDir);
             }
 
@@ -541,7 +541,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (webInfClassesDir.exists())
                     IO.delete(webInfClassesDir);
                 webInfClassesDir.mkdir();
-                LOG.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                LOG.debug("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
                 web_inf_classes.copyTo(webInfClassesDir);
             }
 

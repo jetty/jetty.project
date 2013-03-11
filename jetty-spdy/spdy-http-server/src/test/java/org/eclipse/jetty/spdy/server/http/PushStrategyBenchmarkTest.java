@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -153,7 +153,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
             for (int i = 0; i < jsResources.length; ++i)
@@ -162,7 +162,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
             for (int i = 0; i < pngResources.length; ++i)
@@ -171,7 +171,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
 

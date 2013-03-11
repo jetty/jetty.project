@@ -65,19 +65,23 @@ class JarFileResource extends JarResource
         _list=null;
         _entry=null;
         _file=null;
-        
-        if ( _jarFile != null )
+        //if the jvm is not doing url caching, then the JarFiles will not be cached either,
+        //and so they are safe to close
+        if (!getUseCaches())
         {
-            try
+            if ( _jarFile != null )
             {
-                _jarFile.close();
-            }
-            catch ( IOException ioe )
-            {
-                LOG.ignore(ioe);
+                try
+                {
+                    LOG.debug("Closing JarFile "+_jarFile.getName());
+                    _jarFile.close();
+                }
+                catch ( IOException ioe )
+                {
+                    LOG.ignore(ioe);
+                }
             }
         }
-        
         _jarFile=null;
         super.release();
     }

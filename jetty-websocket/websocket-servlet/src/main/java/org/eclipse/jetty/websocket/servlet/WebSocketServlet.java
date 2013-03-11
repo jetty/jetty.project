@@ -42,15 +42,17 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * <pre>
  * package my.example;
  * 
- * import javax.servlet.http.HttpServletRequest;
- * import org.eclipse.jetty.websocket.WebSocket;
- * import org.eclipse.jetty.websocket.server.WebSocketServlet;
+ * import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+ * import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  * 
  * public class MyEchoServlet extends WebSocketServlet
  * {
  *     &#064;Override
- *     public void registerWebSockets(WebSocketServerFactory factory)
+ *     public void configure(WebSocketServletFactory factory)
  *     {
+ *         // set a 10 second idle timeout
+ *         factory.getPolicy().setIdleTimeout(10000);
+ *         // register my socket
  *         factory.register(MyEchoSocket.class);
  *     }
  * }

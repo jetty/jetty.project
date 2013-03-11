@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -45,17 +44,17 @@ public class WebSocketClientSelectorManager extends SelectorManager
     private final ByteBufferPool bufferPool;
     private SslContextFactory sslContextFactory;
 
-    public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, WebSocketPolicy policy)
+    public WebSocketClientSelectorManager(WebSocketClient client)
     {
-        super(executor,scheduler);
-        this.bufferPool = bufferPool;
-        this.policy = policy;
+        super(client.getExecutor(),client.getScheduler());
+        this.bufferPool = client.getBufferPool();
+        this.policy = client.getPolicy();
     }
 
     @Override
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
-        LOG.info("Connection Failed",ex);
+        LOG.debug("Connection Failed",ex);
         ConnectPromise connect = (ConnectPromise)attachment;
         connect.failed(ex);
     }

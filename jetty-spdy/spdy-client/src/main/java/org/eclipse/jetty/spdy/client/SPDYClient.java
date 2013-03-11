@@ -30,7 +30,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -50,8 +49,8 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class SPDYClient
 {
@@ -202,7 +201,7 @@ public class SPDYClient
             addBean(executor);
 
             if (scheduler == null)
-                scheduler = new TimerScheduler();
+                scheduler = new ScheduledExecutorScheduler();
             this.scheduler = scheduler;
             addBean(scheduler);
 

@@ -99,6 +99,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
+    public long getMaxIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -156,7 +163,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public void setIdleTimeout(long ms)
+    public void setMaxIdleTimeout(long ms)
     {
         // TODO Auto-generated method stub
 

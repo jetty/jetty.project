@@ -54,6 +54,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
 import org.eclipse.jetty.server.ServletResponseHttpWrapper;
@@ -476,10 +477,20 @@ public class ServletHandler extends ScopedHandler
             }
             else if (th instanceof ServletException)
             {
-                LOG.warn(th);
-                Throwable cause=((ServletException)th).getRootCause();
-                if (cause!=null)
+                if (th instanceof QuietServletException)
+                { 
+                    LOG.debug(th);
+                    LOG.warn(th.toString());
+                }
+                else
+                    LOG.warn(th);
+                while (th instanceof ServletException)
+                {
+                    Throwable cause=((ServletException)th).getRootCause();
+                    if (cause==null)
+                        break;
                     th=cause;
+                }
             }
             // handle or log exception
             else if (th instanceof EofException)
@@ -507,12 +518,12 @@ public class ServletHandler extends ScopedHandler
                 {
                     UnavailableException ue = (UnavailableException)th;
                     if (ue.isPermanent())
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND,th.getMessage());
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
                     else
-                        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,th.getMessage());
+                        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }
                 else
-                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,th.getMessage());
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
                 LOG.debug("Response already committed for handling "+th);
@@ -531,7 +542,7 @@ public class ServletHandler extends ScopedHandler
             {
                 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
                 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
                 LOG.debug("Response already committed for handling ",e);
@@ -772,7 +783,7 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+_servlets.length);
+        holder.setName(className+"-"+(_servlets==null?0:_servlets.length));
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;
@@ -1392,6 +1403,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
@@ -1443,6 +1455,7 @@ public class ServletHandler extends ScopedHandler
 
         }
 
+        @Override
         public String toString()
         {
             if (_filterHolder!=null)
@@ -1471,6 +1484,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
@@ -1524,6 +1538,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             StringBuilder b = new StringBuilder();
@@ -1571,6 +1586,5 @@ public class ServletHandler extends ScopedHandler
         if (_contextHandler!=null)
             _contextHandler.destroyFilter(filter);
     }
-
 
 }

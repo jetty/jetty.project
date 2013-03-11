@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>9.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -19,7 +19,7 @@
     <felixversion>4.0.3</felixversion>
     <injection.bundle.version>1.0</injection.bundle.version>
     <runner.version>1.7.6</runner.version>
-    <npn-version>1.1.0.v20120525</npn-version>
+    <npn-version>1.1.2.v20130305</npn-version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -289,6 +289,13 @@
       <version>${npn-version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-npn</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -324,6 +331,18 @@
       <artifactId>test-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>test-jetty-osgi-context</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>test-jetty-osgi-webapp</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

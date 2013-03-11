@@ -229,6 +229,12 @@ public class HttpTester
         }
         abstract public HttpGenerator.Info getInfo();
 
+        @Override
+        public int getHeaderCacheSize()
+        {
+            return 0;
+        }
+
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler<ByteBuffer>

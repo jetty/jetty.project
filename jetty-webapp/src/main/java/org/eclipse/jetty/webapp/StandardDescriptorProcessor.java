@@ -41,6 +41,9 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.servlet.JspPropertyGroupServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
@@ -1336,21 +1339,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         if (paths.size() > 0)
         {
-            String jspName = "jsp";
-            Map.Entry entry = context.getServletHandler().getHolderEntry("test.jsp");
-            if (entry != null)
+            ServletHandler handler = context.getServletHandler();
+            ServletHolder jsp_pg_servlet = handler.getServlet(JspPropertyGroupServlet.NAME);
+            if (jsp_pg_servlet==null)
             {
-                ServletHolder holder = (ServletHolder) entry.getValue();
-                jspName = holder.getName();
+                jsp_pg_servlet=new ServletHolder(JspPropertyGroupServlet.NAME,new JspPropertyGroupServlet(context,handler));
+                handler.addServlet(jsp_pg_servlet);
             }
 
-            if (jspName != null)
-            {
-                ServletMapping mapping = new ServletMapping();
-                mapping.setServletName(jspName);
-                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
-                context.getServletHandler().addServletMapping(mapping);
-            }
+            ServletMapping mapping = new ServletMapping();
+            mapping.setServletName(JspPropertyGroupServlet.NAME);
+            mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+            context.getServletHandler().addServletMapping(mapping);
         }
     }
 

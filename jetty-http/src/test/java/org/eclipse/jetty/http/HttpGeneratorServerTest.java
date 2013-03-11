@@ -91,6 +91,12 @@ public class HttpGeneratorServerTest
         {
             throw new IllegalStateException(reason);
         }
+
+        @Override
+        public int getHeaderCacheSize()
+        {
+            return 256;
+        }
     }
 
     private static class TR

@@ -20,10 +20,10 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -184,7 +184,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override
@@ -244,7 +244,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override
@@ -410,9 +410,11 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
 
             final CountDownLatch latch = new CountDownLatch(1);
+            ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
+            Arrays.fill(buffer.array(),(byte)'x');
             client.newRequest(host, port)
                     .scheme(scheme)
-                    .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
+                    .content(new ByteBufferContentProvider(buffer))
                     .send(new Response.Listener.Empty()
                     {
                         @Override
@@ -428,6 +430,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
+            server.stop();
         }
         finally
         {

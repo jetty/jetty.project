@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -725,7 +726,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     channel.register(_selector, SelectionKey.OP_CONNECT, this);
                 }
-                catch (ClosedChannelException x)
+                catch (ClosedSelectorException | ClosedChannelException x)
                 {
                     LOG.debug(x);
                 }

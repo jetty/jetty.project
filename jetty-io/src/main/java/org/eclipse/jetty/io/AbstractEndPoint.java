@@ -100,6 +100,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void onClose()
     {
+        super.onClose();
         LOG.debug("onClose {}",this);
         _writeFlusher.onClose();
         _fillInterest.onClose();

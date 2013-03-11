@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,10 +36,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ForkInvoker;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -59,10 +63,40 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 {
     private class FlushCallback implements Callback
     {
+        /**
+         * The Endpoint.write() failure path
+         */
         @Override
         public void failed(Throwable x)
         {
-            LOG.warn("Write flush failure",x);
+            LOG.debug("Write flush failure",x);
+
+            // Unable to write? can't notify other side of close, so disconnect.
+            // This is an ABNORMAL closure
+            String reason = "Websocket write failure";
+
+            if (x instanceof EOFException)
+            {
+                reason = "EOF";
+                Throwable cause = x.getCause();
+                if ((cause != null) && (StringUtil.isNotBlank(cause.getMessage())))
+                {
+                    reason = "EOF: " + cause.getMessage();
+                }
+            }
+            else
+            {
+                if (StringUtil.isNotBlank(x.getMessage()))
+                {
+                    reason = x.getMessage();
+                }
+            }
+
+            // Abnormal Close
+            reason = CloseStatus.trimMaxReasonLength(reason);
+            session.notifyClose(StatusCode.NO_CLOSE,reason);
+
+            disconnect(); // disconnect endpoint & connection
         }
 
         @Override
@@ -121,6 +155,28 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    public static class Stats
+    {
+        private AtomicLong countFillInterestedEvents = new AtomicLong(0);
+        private AtomicLong countOnFillableEvents = new AtomicLong(0);
+        private AtomicLong countFillableErrors = new AtomicLong(0);
+
+        public long getFillableErrorCount()
+        {
+            return countFillableErrors.get();
+        }
+
+        public long getFillInterestedCount()
+        {
+            return countFillInterestedEvents.get();
+        }
+
+        public long getOnFillableCount()
+        {
+            return countOnFillableEvents.get();
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
 
     /**
@@ -141,6 +197,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private boolean flushing;
     private boolean isFilling;
     private IOState ioState;
+    private Stats stats = new Stats();
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -245,18 +302,19 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Override
+    public void fillInterested()
+    {
+        stats.countFillInterestedEvents.incrementAndGet();
+        super.fillInterested();
+    }
+
     public void flush()
     {
         ByteBuffer buffer = null;
 
         synchronized (writeBytes)
         {
-            if (writeBytes.isFailed())
-            {
-                LOG.debug(".flush() - queue is in failed state");
-                return;
-            }
-
             if (flushing)
             {
                 return;
@@ -326,6 +384,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return ioState;
     }
 
+    @Override
+    public long getMaxIdleTimeout()
+    {
+        return getEndPoint().getIdleTimeout();
+    }
+
     public Parser getParser()
     {
         return parser;
@@ -354,6 +418,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return session;
     }
 
+    public Stats getStats()
+    {
+        return stats;
+    }
+
     @Override
     public boolean isOpen()
     {
@@ -366,17 +435,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return isFilling;
     }
 
+    /**
+     * Physical connection disconnect.
+     * <p>
+     * Not related to WebSocket close handshake.
+     */
     @Override
     public void onClose()
     {
         super.onClose();
         this.getIOState().setState(ConnectionState.CLOSED);
+        writeBytes.close();
     }
 
     @Override
     public void onFillable()
     {
         LOG.debug("{} onFillable()",policy.getBehavior());
+        stats.countOnFillableEvents.incrementAndGet();
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
@@ -401,6 +477,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    protected void onFillInterestedFailed(Throwable cause)
+    {
+        LOG.ignore(cause);
+        stats.countFillInterestedEvents.incrementAndGet();
+        super.onFillInterestedFailed(cause);
+    }
+
+    @Override
     public void onOpen()
     {
         super.onOpen();
@@ -414,16 +498,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         LOG.warn("Read Timeout");
 
-        if ((ioState.getState() == ConnectionState.CLOSING) || (ioState.getState() == ConnectionState.CLOSED))
+        IOState state = getIOState();
+        if ((state.getState() == ConnectionState.CLOSING) || (state.getState() == ConnectionState.CLOSED))
         {
             // close already initiated, extra timeouts not relevant
-            // allow udnerlying connection and endpoint to disconnect on its own
+            // allow underlying connection and endpoint to disconnect on its own
             return true;
         }
 
         // Initiate close - politely send close frame.
         // Note: it is not possible in 100% of cases during read timeout to send this close frame.
         session.close(StatusCode.NORMAL,"Idle Timeout");
+
+        // Force closure of writeBytes
+        writeBytes.close();
 
         return false;
     }
@@ -447,15 +535,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        if (!isOpen())
-        {
-            return;
-        }
-
-        synchronized (writeBytes)
-        {
-            writeBytes.enqueue(frame,WriteCallbackWrapper.wrap(callback));
-        }
+        writeBytes.enqueue(frame,WriteCallbackWrapper.wrap(callback));
 
         flush();
     }
@@ -474,7 +554,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 }
                 else if (filled < 0)
                 {
-                    LOG.debug("read - EOF Reached");
+                    LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
                     return -1;
                 }
                 else
@@ -532,10 +612,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void setInputBufferSize(int inputBufferSize)
     {
-        if(inputBufferSize < MIN_BUFFER_SIZE) {
+        if (inputBufferSize < MIN_BUFFER_SIZE)
+        {
             throw new IllegalArgumentException("Cannot have buffer size less than " + MIN_BUFFER_SIZE);
         }
         super.setInputBufferSize(inputBufferSize);
+    }
+
+    @Override
+    public void setMaxIdleTimeout(long ms)
+    {
+        getEndPoint().setIdleTimeout(ms);
     }
 
     @Override

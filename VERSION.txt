@@ -1,3 +1,95 @@
+jetty-9.0.0.v20130308 - 08 March 2013
+ + 399070 add updated version of npn-boot jar to start.ini
+ + 399799 do not hold lock while calling invalidation listeners
+ + 399967 Destroyables destroyed on undeploy and shutdown hook
+ + 400312 ServletContextListener.contextInitialized() is not called when added
+   in ServletContainerInitializer.onStartup
+ + 401495 removed unused getOutputStream
+ + 401531 StringIndexOutOfBoundsException for "/*" <url-pattern> of
+   <jsp-property-group> fix for multiple mappings to *.jsp
+ + 401641 Fixed MBean setter for String[]
+ + 401642 Less verbose INFOs
+ + 401643 Improved Authentication exception messages and provided quiet servlet
+   exception
+ + 401644 Dump does not login user already logged in
+ + 401651 Abort request if maxRequestsQueuedPerDestination is reached.
+ + 401777 InputStreamResponseListener CJK byte (>=128) cause EOF.
+ + 401904 fixed getRemoteAddr to return IP instead of hostname
+ + 401908 Enhance DosFilter to allow dynamic configuration of attributes.
+ + 401966 Ensure OSGI WebApp as Service (WebAppContext) can be deployed only
+   through ServiceWebAppProvider
+ + 402008 Websocket blocking write hangs when remote client dies (or is killed)
+   without going thru Close handshake
+ + 402048 org.eclipse.jetty.server.ShutdownMonitor doesn't stop after the jetty
+   server is stopped
+ + 402075 Massive old gen growth when hit by lots of non persistent
+   connections.
+ + 402090 httpsender PendingState cause uncertain data send to server.
+ + 402106 fixed URI resize in HttpParser
+ + 402148 Update Javadoc for WebSocketServlet for new API
+ + 402154 WebSocket / Session.setIdleTimeout(ms) should support in-place idle
+   timeout changes
+ + 402185 updated javascript mime-type
+ + 402277 spdy proxy: fix race condition in nested push streams initiated by
+   upstream server. Fix several other small proxy issues
+ + 402316 HttpReceiver and null pointer exception.
+ + 402341 Host with default port causes redirects loop.
+ + 402726 WebAppContext references old WebSocket packages in system and
+   server classes
+ + 402757 WebSocket client module can't be used with WebSocket server
+   module in the same WAR
+
+jetty-9.0.0.RC2 - 24 February 2013
+ + Fix etc/jetty.xml TimerScheduler typo that is preventing normal startup
+ + Fix etc/jetty-https.xml ExcludeCipherSuites typo that prevents SSL startup
+ + Fix websocket memory use
+
+jetty-9.0.0.RC1 - 22 February 2013
+ + 227244 Remove import of backport-util-concurrent Arrays class
+ + 362854 Continuation implementations may deadlock.
+ + 376273 Early EOF because of SSL Protocol Error on
+   https://api-3t.paypal.com/nvp.
+ + 381521 allow compress methods to be configured
+ + 388103 Add API for tracking down upload progress.
+ + 394064 ensure that JarFile instances are closed on JarFileResource.release()
+ + 398649 ServletContextListener.contextDestroyed() is not called on
+   ContextHandler unregistration
+ + 399463 add start.ini documentation for OPTIONS. Remove reference to
+   start_config
+ + 399520 Websocket Server Connection needs session idle timeouts
+ + 399535 Websocket-client connect should have configurable connect timeout
+ + 400014 Http async client DNS performance.
+ + 400040 NullPointerException in HttpGenerator.prepareBuffers
+ + 400184 SslContextFactory change. Disable hostname verification if trustAll
+   is set
+ + 400255 Using WebSocket.maxMessageSize results in IllegalArgumentException
+ + 400434 Add support for an OutputStream ContentProvider.
+ + 400457 Thread context classloader hierarchy not searched when finding
+   webapp's java:comp/env
+ + 400512 ClientUpgradeRequet.addExtension() should fail if extension is not
+   installed
+ + 400555 HttpProxyEngine: Add http version header in response
+ + 400631 Calling flush() on HttpServletResponse.getOutputStream() after last
+   byte of body causes EofException.
+ + 400734 NPE for redirects with relative location.
+ + 400738 ResourceHandler doesn't support range requests
+ + 400848 Redirect fails with non-encoded location URIs.
+ + 400849 Conversation hangs if non-first request fails when queued.
+ + 400859 limit max size of writes from cached content
+ + 400864 Added LowResourcesMonitor
+ + 401177 Make org.eclipse.jetty.websocket.api.WebSocketAdapter threadsafe
+ + 401183 Handle push streams in new method StreamFrameListener.onPush()
+   instead of SessionFrameListener.syn()
+ + 401211 Remove requirement for jetty-websocket.jar in WEB-INF/lib
+ + 401317 Make Safari 5.x websocket support minVersion level error more clear
+ + 401382 Prevent parseAvailable from parsing next chunk when previous has not
+   been consumed. Handle no content-type in chunked request.
+ + 401414 Hostname verification fails.
+ + 401427 WebSocket messages sent from onConnect fail to be read by jetty
+   websocket-client
+ + 401474 Performance problem in org.eclipse.jetty.annotation.AnnotationParser
+ + 401485 zip file closed exception
+
 jetty-9.0.0.RC0 - 01 February 2013
  + 362226 HttpConnection "wait" call causes thread resource exhaustion
  + 370384 jetty-aggregate not used in jetty-distribution

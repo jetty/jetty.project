@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
@@ -134,6 +135,13 @@ public interface Request
      * @return this request object
      */
     Request header(String name, String value);
+
+    /**
+     * @param header the header name
+     * @param value the value of the header
+     * @return this request object
+     */
+    Request header(HttpHeader header, String value);
 
     /**
      * @param name the name of the attribute

@@ -45,6 +45,7 @@ abstract public class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
+    private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[0];
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
     private static final State __WRITING = new WritingState();
@@ -243,7 +244,7 @@ abstract public class WriteFlusher
         private PendingState(ByteBuffer[] buffers, Callback callback)
         {
             super(StateType.PENDING);
-            _buffers = buffers;
+            _buffers = compact(buffers);
             _callback = callback;
         }
 
@@ -262,6 +263,44 @@ abstract public class WriteFlusher
         {
             if (_callback!=null)
                 _callback.succeeded();
+        }
+
+        /**
+         * Compacting the buffers is needed because the semantic of WriteFlusher is
+         * to write the buffers and if the caller sees that the buffer is consumed,
+         * then it can recycle it.
+         * If we do not compact, then it is possible that we store a consumed buffer,
+         * which is then recycled and refilled; when the WriteFlusher is invoked to
+         * complete the write, it will write the refilled bytes, garbling the content.
+         *
+         * @param buffers the buffers to compact
+         * @return the compacted buffers
+         */
+        private ByteBuffer[] compact(ByteBuffer[] buffers)
+        {
+            int length = buffers.length;
+
+            // Just one element, no need to compact
+            if (length < 2)
+                return buffers;
+
+            // How many still have content ?
+            int consumed = 0;
+            while (consumed < length && BufferUtil.isEmpty(buffers[consumed]))
+                ++consumed;
+
+            // All of them still have content, no need to compact
+            if (consumed == 0)
+                return buffers;
+
+            // None has content, return empty
+            if (consumed == length)
+                return EMPTY_BUFFERS;
+
+            int newLength = length - consumed;
+            ByteBuffer[] result = new ByteBuffer[newLength];
+            System.arraycopy(buffers, consumed, result, 0, newLength);
+            return result;
         }
     }
 
@@ -306,7 +345,7 @@ abstract public class WriteFlusher
                     if (updateState(__WRITING,pending))
                         onIncompleteFlushed();
                     else
-                        fail(new PendingState(buffers, callback));
+                        fail(pending);
                     return;
                 }
             }
