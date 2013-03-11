@@ -525,12 +525,12 @@ public class ServletHandler extends ScopedHandler
                 {
                     UnavailableException ue = (UnavailableException)th;
                     if (ue.isPermanent())
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND,th.getMessage());
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
                     else
-                        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,th.getMessage());
+                        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }
                 else
-                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,th.getMessage());
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
                 LOG.debug("Response already committed for handling "+th);
@@ -547,7 +547,7 @@ public class ServletHandler extends ScopedHandler
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION,e);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
                 LOG.debug("Response already committed for handling ",e);
