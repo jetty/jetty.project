@@ -160,10 +160,12 @@ public class JDBCSessionManager extends AbstractSessionManager
          * @param created
          * @param accessed
          */
-        protected Session (String sessionId, String rowId, long created, long accessed)
+        protected Session (String sessionId, String rowId, long created, long accessed, long maxInterval)
         {
             super(JDBCSessionManager.this, created, accessed, sessionId);
             _rowId = rowId;
+            super.setMaxInactiveInterval((int)maxInterval); //restore the session's previous inactivity interval setting
+            _expiryTime = (maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
         }
         
         
@@ -279,6 +281,33 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
         }
         
+        
+        
+
+
+        /** 
+         * Change the max idle time for this session. This recalculates the expiry time.
+         * @see org.eclipse.jetty.server.session.AbstractSession#setMaxInactiveInterval(int)
+         */
+        @Override
+        public void setMaxInactiveInterval(int secs)
+        {
+            synchronized (this)
+            {
+                super.setMaxInactiveInterval(secs);
+                int maxInterval=getMaxInactiveInterval();
+                _expiryTime = (maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
+                //force the session to be written out right now
+                try
+                {
+                    updateSessionAccessTime(this);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Problem saving changed max idle time for session "+ this, e);
+                }
+            }
+        }
 
 
         /**
@@ -346,7 +375,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             return "Session rowId="+_rowId+",id="+getId()+",lastNode="+_lastNode+
                             ",created="+getCreationTime()+",accessed="+getAccessed()+
                             ",lastAccessed="+getLastAccessedTime()+",cookieSet="+_cookieSet+
-                            ",lastSaved="+_lastSaved+",expiry="+_expiryTime;
+                            ",maxInterval="+getMaxInactiveInterval()+",lastSaved="+_lastSaved+",expiry="+_expiryTime;
         }
     }
 
@@ -842,6 +871,9 @@ public class JDBCSessionManager extends AbstractSessionManager
         final AtomicReference<Exception> _exception = new AtomicReference<Exception>();
         Runnable load = new Runnable()
         {
+            /** 
+             * @see java.lang.Runnable#run()
+             */
             @SuppressWarnings("unchecked")
             public void run()
             {
@@ -855,7 +887,15 @@ public class JDBCSessionManager extends AbstractSessionManager
                     ResultSet result = statement.executeQuery();
                     if (result.next())
                     {                    
-                        session = new Session(id, result.getString(_jdbcSessionIdMgr._sessionTableRowId), result.getLong("createTime"), result.getLong("accessTime"));
+                        long maxInterval = result.getLong("maxInterval");
+                        if (maxInterval == JDBCSessionIdManager.MAX_INTERVAL_NOT_SET)
+                        {
+                            maxInterval = getMaxInactiveInterval(); //if value not saved for maxInactiveInterval, use current value from sessionmanager
+                        }
+                        session = new Session(id, result.getString(_jdbcSessionIdMgr._sessionTableRowId), 
+                                                  result.getLong("createTime"), 
+                                                  result.getLong("accessTime"), 
+                                                  maxInterval);
                         session.setCookieSet(result.getLong("cookieTime"));
                         session.setLastAccessedTime(result.getLong("lastAccessTime"));
                         session.setLastNode(result.getString("lastNode"));
@@ -939,6 +979,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setLong(9, session.getCookieSet());//time cookie was set
             statement.setLong(10, now); //last saved time
             statement.setLong(11, session.getExpiryTime());
+            statement.setLong(12, session.getMaxInactiveInterval());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -946,7 +987,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+            statement.setBinaryStream(13, bais, bytes.length);//attribute map as blob
+           
 
             statement.executeUpdate();
             session.setRowId(rowId); //set it on the in-memory data as well as in db
@@ -989,6 +1031,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setLong(4, data.getLastAccessedTime()); //lastAccessTime
             statement.setLong(5, now); //last saved time
             statement.setLong(6, data.getExpiryTime());
+            statement.setLong(7, data.getMaxInactiveInterval());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -996,8 +1039,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             byte[] bytes = baos.toByteArray();
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
-            statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
-            statement.setString(8, data.getRowId()); //rowId
+            statement.setBinaryStream(8, bais, bytes.length);//attribute map as blob
+            statement.setString(9, data.getRowId()); //rowId
             statement.executeUpdate();
 
             data.setLastSaved(now);
@@ -1063,7 +1106,9 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setLong(3, data.getLastAccessedTime());
             statement.setLong(4, now);
             statement.setLong(5, data.getExpiryTime());
-            statement.setString(6, data.getRowId());
+            statement.setLong(6, data.getMaxInactiveInterval());
+            statement.setString(7, data.getRowId());
+          
             statement.executeUpdate();
             data.setLastSaved(now);
             statement.close();

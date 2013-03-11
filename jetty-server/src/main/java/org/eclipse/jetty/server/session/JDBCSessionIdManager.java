@@ -62,6 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class JDBCSessionIdManager extends AbstractSessionIdManager
 {
     final static Logger LOG = SessionHandler.LOG;
+    public final static int MAX_INTERVAL_NOT_SET = -999;
 
     protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
@@ -629,6 +630,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * Set up the tables in the database
      * @throws SQLException
      */
+    /**
+     * @throws SQLException
+     */
     private void prepareTables()
     throws SQLException
     {
@@ -671,8 +675,37 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
                                            " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime "+longType+", "+
                                            " lastAccessTime "+longType+", createTime "+longType+", cookieTime "+longType+", "+
-                                           " lastSavedTime "+longType+", expiryTime "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
+                                           " lastSavedTime "+longType+", expiryTime "+longType+", maxInterval "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
                 connection.createStatement().executeUpdate(_createSessionTable);
+            }
+            else
+            {
+                //session table exists, check it has maxinterval column
+                ResultSet colResult = null;
+                try
+                {
+                    colResult = metaData.getColumns(null, null,_dbAdaptor.convertIdentifier(_sessionTable), _dbAdaptor.convertIdentifier("maxInterval"));
+                }
+                catch (SQLException s)
+                {
+                    LOG.warn("Problem checking if "+_sessionTable+" table contains maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                    throw s;
+                }
+                
+                if (!colResult.next())
+                {
+                    try
+                    {
+                        //add the maxinterval column
+                        String longType = _dbAdaptor.getLongType();
+                        connection.createStatement().executeUpdate("alter table "+_sessionTable+" add maxInterval "+longType+" not null default "+MAX_INTERVAL_NOT_SET);
+                    }
+                    catch (SQLException s)
+                    {
+                        LOG.warn("Problem adding maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                        throw s;
+                    }
+                }  
             }
 
             //make some indexes on the JettySessions table
@@ -701,20 +734,20 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
             //set up some strings representing the statements for session manipulation
             _insertSession = "insert into "+_sessionTable+
-            " ("+_sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
-            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            " ("+_sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, maxInterval, map) "+
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             _deleteSession = "delete from "+_sessionTable+
             " where "+_sessionTableRowId+" = ?";
 
             _updateSession = "update "+_sessionTable+
-            " set sessionId = ?, lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
+            " set sessionId = ?, lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, maxInterval = ?, map = ? where "+_sessionTableRowId+" = ?";
 
             _updateSessionNode = "update "+_sessionTable+
             " set lastNode = ? where "+_sessionTableRowId+" = ?";
 
             _updateSessionAccessTime = "update "+_sessionTable+
-            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where "+_sessionTableRowId+" = ?";
+            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, maxInterval = ? where "+_sessionTableRowId+" = ?";
 
 
         }
