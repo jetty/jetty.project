@@ -74,7 +74,7 @@ public class InputStreamResponseListener extends Response.Listener.Empty
 {
     private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
     private static final byte[] EOF = new byte[0];
-    private static final byte[] CLOSE = new byte[0];
+    private static final byte[] CLOSED = new byte[0];
     private static final byte[] FAILURE = new byte[0];
     private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<>();
     private final AtomicLong length = new AtomicLong();
@@ -107,6 +107,10 @@ public class InputStreamResponseListener extends Response.Listener.Empty
     @Override
     public void onContent(Response response, ByteBuffer content)
     {
+        // Avoid buffering if the input stream is early closed.
+        if (closed)
+            return;
+
         int remaining = content.remaining();
         byte[] bytes = new byte[remaining];
         content.get(bytes);
@@ -156,10 +160,9 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         {
             synchronized (this)
             {
-                if (failure == null && !closed)
+                if (length.get() >= maxBufferSize && failure == null && !closed)
                     wait();
-                // Re-read the values for the return value
-                // as they may have changed while waiting.
+                // Re-read the values as they may have changed while waiting.
                 return failure == null && !closed;
             }
         }
@@ -256,7 +259,7 @@ public class InputStreamResponseListener extends Response.Listener.Empty
                 {
                     throw failure();
                 }
-                else if (bytes == CLOSE)
+                else if (bytes == CLOSED)
                 {
                     if (index < 0)
                         return -1;
@@ -264,17 +267,20 @@ public class InputStreamResponseListener extends Response.Listener.Empty
                 }
                 else if (bytes != null)
                 {
-                    if (index < bytes.length)
-                        return bytes[index++] & 0xFF;
-                    length.addAndGet(-index);
-                    bytes = null;
-                    index = 0;
+                    int result = bytes[index] & 0xFF;
+                    if (++index == bytes.length)
+                    {
+                        length.addAndGet(-index);
+                        bytes = null;
+                        index = 0;
+                        signal();
+                    }
+                    return result;
                 }
                 else
                 {
                     bytes = take();
                     LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
-                    signal();
                 }
             }
         }
@@ -302,8 +308,8 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         @Override
         public void close() throws IOException
         {
-            LOG.debug("Queuing close {}{}", CLOSE, "");
-            queue.offer(CLOSE);
+            LOG.debug("Queuing close {}{}", CLOSED, "");
+            queue.offer(CLOSED);
             closed = true;
             signal();
             super.close();
