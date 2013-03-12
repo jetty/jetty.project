@@ -32,6 +32,8 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.core.Is;
 import org.hamcrest.core.IsEqual;
 import org.junit.After;
@@ -44,6 +46,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -238,5 +241,49 @@ public class ProxyServletTest
         _client.send(exchange);
         exchange.waitForDone();
         assertThat(excepted.get(),equalTo(true));
+    }
+    
+    
+    @Test
+    public void testChunkedPut() throws Exception 
+    {
+        init(new HttpServlet() 
+        {
+            @Override
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException 
+            {
+                resp.setContentType("text/plain");
+                String message=IO.toString(req.getInputStream());
+                resp.getOutputStream().print(message);
+            }
+        });
+
+
+        Socket client = new Socket("localhost",_connector.getLocalPort());
+        client.setSoTimeout(1000000);
+        client.getOutputStream().write((
+                "PUT /proxy/test HTTP/1.1\r\n"+
+                "Host: localhost:"+_connector.getLocalPort()+"\r\n"+
+                "Transfer-Encoding: chunked\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "A\r\n"+
+                "0123456789\r\n"+
+                "9\r\n"+
+                "ABCDEFGHI\r\n"+
+                "8\r\n"+
+                "JKLMNOPQ\r\n"+
+                "7\r\n"+
+                "RSTUVWX\r\n"+
+                "2\r\n"+
+                "YZ\r\n"+
+                "0\r\n"
+                ).getBytes(StringUtil.__ISO_8859_1));
+                
+            
+        String response=IO.toString(client.getInputStream());
+        Assert.assertTrue(response.contains("200 OK"));
+        Assert.assertTrue(response.contains("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        
     }
 }

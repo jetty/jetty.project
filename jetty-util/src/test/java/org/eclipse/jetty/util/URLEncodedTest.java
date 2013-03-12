@@ -159,11 +159,38 @@ public class URLEncodedTest
     public void testBadEncoding() throws UnsupportedEncodingException
     {
         UrlEncoded url_encoded = new UrlEncoded();
-        url_encoded.decode("Name15=xx%zz", "UTF-8");
+        url_encoded.decode("Name15=xx%zzyy", "UTF-8");
         assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", "xx\ufffd", url_encoded.getString("Name15"));
+        assertEquals("encoded get", "xx\ufffdyy", url_encoded.getString("Name15"));
+
+        byte[] bad="Name=%FF%FF%FF".getBytes("UTF-8");
+        MultiMap<String> map = new MultiMap<String>();
+        UrlEncoded.decodeUtf8To(bad,0,bad.length,map);
+        assertEquals("encoded param size",1, map.size());
+        assertEquals("encoded get", "\ufffd\ufffd\ufffd", map.getString("Name"));
         
-        assertEquals("xxx",UrlEncoded.decodeString("xxx%u123",0,5,"UTF-8"));
+        url_encoded.clear();
+        url_encoded.decode("Name=%FF%FF%FF", "UTF-8");
+        assertEquals("encoded param size",1, url_encoded.size());
+        assertEquals("encoded get", "\ufffd\ufffd\ufffd", url_encoded.getString("Name"));
+        
+        url_encoded.clear();
+        url_encoded.decode("Name=%EF%EF%EF", "UTF-8");
+        assertEquals("encoded param size",1, url_encoded.size());
+        assertEquals("encoded get", "\ufffd\ufffd", url_encoded.getString("Name"));
+
+        assertEquals("x",UrlEncoded.decodeString("x",0,1,"UTF-8"));
+        assertEquals("x\ufffd",UrlEncoded.decodeString("x%",0,2,"UTF-8"));
+        assertEquals("x\ufffd",UrlEncoded.decodeString("x%2",0,3,"UTF-8"));
+        assertEquals("x ",UrlEncoded.decodeString("x%20",0,4,"UTF-8"));
+
+        assertEquals("xxx",UrlEncoded.decodeString("xxx",0,3,"UTF-8"));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%",0,4,"UTF-8"));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u",0,5,"UTF-8"));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u1",0,6,"UTF-8"));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u12",0,7,"UTF-8"));
+        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u123",0,8,"UTF-8"));
+        assertEquals("xxx\u1234",UrlEncoded.decodeString("xxx%u1234",0,9,"UTF-8"));
     }
     
     

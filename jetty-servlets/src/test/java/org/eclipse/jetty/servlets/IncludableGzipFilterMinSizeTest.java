@@ -107,7 +107,7 @@ public class IncludableGzipFilterMinSizeTest
 
         try {
             tester.start();
-            tester.assertIsResponseGzipCompressed("big_script.js");
+            tester.assertIsResponseGzipCompressed("GET","big_script.js");
         } finally {
             tester.stop();
         }

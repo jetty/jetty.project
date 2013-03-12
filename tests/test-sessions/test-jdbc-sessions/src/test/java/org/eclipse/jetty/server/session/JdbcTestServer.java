@@ -53,11 +53,7 @@ public class JdbcTestServer extends AbstractTestServer
         super(port, maxInactivePeriod, scavengePeriod, DEFAULT_CONNECTION_URL);
     }
     
-    public JdbcTestServer (int port, boolean optimize)
-    {
-        super(port);
-    }
-
+ 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
      */

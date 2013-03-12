@@ -225,8 +225,8 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until END state.
-     * This method will parse any remaining content in the current buffer. It does not care about the
-     * {@link #getState current state} of the parser.
+     * This method will parse any remaining content in the current buffer as long as there is
+     * no unconsumed content. It does not care about the {@link #getState current state} of the parser.
      * @see #parse
      * @see #parseNext
      */
@@ -235,7 +235,7 @@ public class HttpParser implements Parser
         boolean progress=parseNext()>0;
 
         // continue parsing
-        while (!isComplete() && _buffer!=null && _buffer.length()>0)
+        while (!isComplete() && _buffer!=null && _buffer.length()>0 && !_contentView.hasContent())
         {
             progress |= parseNext()>0;
         }

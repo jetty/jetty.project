@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -79,7 +80,7 @@ public class ShutdownThread extends Thread
         catch(Exception e)
         {
             LOG.ignore(e);
-            LOG.info("shutdown already commenced");
+            LOG.debug("shutdown already commenced");
         }
     }
     
@@ -130,6 +131,12 @@ public class ShutdownThread extends Thread
                 {
                     lifeCycle.stop();
                     LOG.debug("Stopped {}",lifeCycle);
+                }
+                
+                if (lifeCycle instanceof Destroyable)
+                {
+                    ((Destroyable)lifeCycle).destroy();
+                    LOG.debug("Destroyed {}",lifeCycle);
                 }
             }
             catch (Exception ex)

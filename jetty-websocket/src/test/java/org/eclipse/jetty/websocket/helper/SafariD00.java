@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.is;
 
 public class SafariD00
@@ -109,18 +111,30 @@ public class SafariD00
 
         // Read HTTP 101 Upgrade / Handshake Response
         InputStreamReader reader = new InputStreamReader(in);
+        StringBuilder respHeaders = new StringBuilder();
 
         LOG.debug("Reading http headers");
         int crlfs = 0;
         while (true)
         {
             int read = in.read();
+            respHeaders.append((char)read);
             if (read == '\r' || read == '\n')
                 ++crlfs;
             else
                 crlfs = 0;
             if (crlfs == 4)
                 break;
+        }
+        
+        if(respHeaders.toString().startsWith("HTTP/1.1 101 ") == false) {
+            String respLine = respHeaders.toString();
+            int idx = respLine.indexOf('\r');
+            if(idx > 0) {
+                respLine = respLine.substring(0,idx);
+            }
+            LOG.debug("Response Headers: {}",respHeaders.toString());
+            throw new IllegalStateException(respLine);
         }
 
         // Read expected handshake hixie bytes

@@ -65,6 +65,19 @@ class JarFileResource extends JarResource
         _list=null;
         _entry=null;
         _file=null;
+        
+        if ( _jarFile != null )
+        {
+            try
+            {
+                _jarFile.close();
+            }
+            catch ( IOException ioe )
+            {
+                LOG.ignore(ioe);
+            }
+        }
+        
         _jarFile=null;
         super.release();
     }
@@ -166,7 +179,7 @@ class JarFileResource extends JarResource
             if (jarFile!=null && _entry==null && !_directory)
             {
                 // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration e=jarFile.entries();
+                Enumeration<JarEntry> e=jarFile.entries();
                 while(e.hasMoreElements())
                 {
                     JarEntry entry = (JarEntry) e.nextElement();
@@ -301,12 +314,11 @@ class JarFileResource extends JarResource
             }
         }
         
-        Enumeration e=jarFile.entries();
+        Enumeration<JarEntry> e=jarFile.entries();
         String dir=_urlString.substring(_urlString.indexOf("!/")+2);
         while(e.hasMoreElements())
         {
-            
-            JarEntry entry = (JarEntry) e.nextElement();               
+            JarEntry entry = e.nextElement();               
             String name=entry.getName().replace('\\','/');               
             if(!name.startsWith(dir) || name.length()==dir.length())
             {
