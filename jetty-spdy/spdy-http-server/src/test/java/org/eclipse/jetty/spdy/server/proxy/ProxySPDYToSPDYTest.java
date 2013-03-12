@@ -62,6 +62,9 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToSPDYTest
 {
@@ -185,6 +188,40 @@ public class ProxySPDYToSPDYTest
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
 
         client.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
+    }
+@Test
+    public void testSYNThenRSTFromUpstreamServer() throws Exception
+    {
+        final String header = "foo";
+        InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                Fields requestHeaders = synInfo.getHeaders();
+                Assert.assertNotNull(requestHeaders.get("via"));
+                Assert.assertNotNull(requestHeaders.get(header));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
+                return null;
+            }
+        }));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()
+        {
+            @Override
+            public void onRst(Session session, RstInfo rstInfo)
+            {
+                resetLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
+        headers.put(header, "bar");
+        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter());
+
+        assertThat("reset is received by client", resetLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test
