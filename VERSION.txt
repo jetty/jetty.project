@@ -1,3 +1,5 @@
+jetty-7.6.11-SNAPSHOT
+
 jetty-7.6.10.v20130312 - 12 March 2013
  + 376273 Early EOF because of SSL Protocol Error on
    https://api-3t.paypal.com/nvp.
