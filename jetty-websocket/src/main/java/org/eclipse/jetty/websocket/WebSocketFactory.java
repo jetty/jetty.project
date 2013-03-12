@@ -230,6 +230,8 @@ public class WebSocketFactory extends AbstractLifeCycle
             // Old pre-RFC version specifications (header not present in RFC-6455)
             draft = request.getIntHeader("Sec-WebSocket-Draft");
         }
+        // Remember requested version for possible error message later
+        int requestedVersion = draft;
         AbstractHttpConnection http = AbstractHttpConnection.getCurrentConnection();
         if (http instanceof BlockingHttpConnection)
             throw new IllegalStateException("Websockets not supported on blocking connectors");
@@ -252,7 +254,7 @@ public class WebSocketFactory extends AbstractLifeCycle
             draft=Integer.MAX_VALUE;
         switch (draft)
         {
-            case -1: // unspecified draft/version
+            case -1: // unspecified draft/version (such as early OSX Safari 5.1 and iOS 5.x)
             case 0: // Old school draft/version
             {
                 connection = new WebSocketServletConnectionD00(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
@@ -283,7 +285,6 @@ public class WebSocketFactory extends AbstractLifeCycle
             }
             default:
             {
-                LOG.warn("Unsupported Websocket version: " + draft);
                 // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
                 // Using the examples as outlined
                 String versions="13";
@@ -295,7 +296,20 @@ public class WebSocketFactory extends AbstractLifeCycle
                     versions+=", 0";
                     
                 response.setHeader("Sec-WebSocket-Version", versions);
-                throw new HttpException(400, "Unsupported websocket version specification: " + draft);
+
+                // Make error clear for developer / end-user
+                StringBuilder err = new StringBuilder();
+                err.append("Unsupported websocket client version specification ");
+                if(requestedVersion >= 0) {
+                    err.append("[").append(requestedVersion).append("]");
+                } else {
+                    err.append("<Unspecified, likely a pre-draft version of websocket>");
+                }
+                err.append(", configured minVersion [").append(_minVersion).append("]");
+                err.append(", reported supported versions [").append(versions).append("]");
+                LOG.warn(err.toString()); // Log it
+                // use spec language for unsupported versions
+                throw new HttpException(400, "Unsupported websocket version specification"); // Tell client
             }
         }
 

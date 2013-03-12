@@ -201,6 +201,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         checkValid();
         return _lastAccessed;
     }
+    
+    /* ------------------------------------------------------------- */
+    public void setLastAccessedTime(long time)
+    {
+        _lastAccessed = time;
+    }
 
     /* ------------------------------------------------------------- */
     public int getMaxInactiveInterval()
@@ -307,16 +313,19 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _manager.removeSession(this,true);
 
         // Notify listeners and unbind values
+        boolean do_invalidate=false;
         synchronized (this)
         {
             if (!_invalid)
             {
                 if (_requests<=0)
-                    doInvalidate();
+                    do_invalidate=true;
                 else
                     _doInvalidate=true;
             }
         }
+        if (do_invalidate)
+            doInvalidate();
     }
 
     /* ------------------------------------------------------------- */

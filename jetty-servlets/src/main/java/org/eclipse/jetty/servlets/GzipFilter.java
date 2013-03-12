@@ -90,6 +90,8 @@ import org.eclipse.jetty.util.log.Logger;
  * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
  *
+ * methods                    Comma separated list of HTTP methods to compress. If not set, only GET requests are compressed.
+ * 
  * mimeTypes                  Comma separated list of mime types to compress. See description above.
  * 
  * excludedAgents             Comma separated list of user agents to exclude from compression. Does a 
@@ -127,6 +129,8 @@ public class GzipFilter extends UserAgentFilter
     protected int _minGzipSize=256;
     protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
     protected boolean _deflateNoWrap = true;
+
+    protected final Set<String> _methods=new HashSet<String>();
     protected Set<String> _excludedAgents;
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
@@ -165,6 +169,16 @@ public class GzipFilter extends UserAgentFilter
         tmp=filterConfig.getInitParameter("deflateNoWrap");
         if (tmp!=null)
             _deflateNoWrap=Boolean.parseBoolean(tmp);
+        
+        tmp=filterConfig.getInitParameter("methods");
+        if (tmp!=null)
+        {
+            StringTokenizer tok = new StringTokenizer(tmp,",",false);
+            while (tok.hasMoreTokens())
+                _methods.add(tok.nextToken().trim().toUpperCase());
+        }
+        else
+            _methods.add(HttpMethods.GET);
         
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp!=null)
@@ -235,9 +249,9 @@ public class GzipFilter extends UserAgentFilter
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
-        // If not a GET or an Excluded URI - no Vary because no matter what client, this URI is always excluded
+        // If not a supported method or it is an Excluded URI - no Vary because no matter what client, this URI is always excluded
         String requestURI = request.getRequestURI();
-        if (!HttpMethods.GET.equalsIgnoreCase(request.getMethod()) || isExcludedPath(requestURI))
+        if (!_methods.contains(request.getMethod()) || isExcludedPath(requestURI))
         {
             super.doFilter(request,response,chain);
             return;

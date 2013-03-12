@@ -946,7 +946,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (old_context != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || (DispatcherType.ERROR.equals(dispatch) && baseRequest.getAsyncContinuation().isExpired()))
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -2327,6 +2327,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (!_enabled)
                 throw new UnsupportedOperationException();
             ContextHandler.this.addEventListener(t);
+            ContextHandler.this.restrictEventListener(t);
         }
 
         @Override
