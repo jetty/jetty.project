@@ -27,6 +27,13 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Common functionality for a blocking version of {@link ConcurrentArrayQueue}.
+ *
+ * @see Unbounded
+ * @see Bounded
+ * @param <T>
+ */
 public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQueue<T> implements BlockingQueue<T>
 {
     private final Lock _lock = new ReentrantLock();
@@ -163,6 +170,11 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         signalProducers();
     }
 
+    /**
+     * An unbounded, blocking version of {@link ConcurrentArrayQueue}.
+     *
+     * @param <E>
+     */
     public static class Unbounded<E> extends ConcurrentArrayBlockingQueue<E>
     {
         private static final int HEAD_OFFSET = MemoryUtils.getLongsPerCacheLine() - 1;
@@ -245,6 +257,11 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         }
     }
 
+    /**
+     * A bounded, blocking version of {@link ConcurrentArrayQueue}.
+     *
+     * @param <E>
+     */
     public static class Bounded<E> extends ConcurrentArrayBlockingQueue<E>
     {
         private final AtomicInteger _size = new AtomicInteger();

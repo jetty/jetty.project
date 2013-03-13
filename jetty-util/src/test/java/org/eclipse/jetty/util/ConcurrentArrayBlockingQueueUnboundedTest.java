@@ -27,15 +27,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
-public class ConcurrentArrayBlockingQueueTest extends ConcurrentArrayQueueTest
+public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQueueTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     @Override
     protected ConcurrentArrayBlockingQueue<Integer> newConcurrentArrayQueue(int blockSize)
     {
-        return new ConcurrentArrayBlockingQueue<>(blockSize);
+        return new ConcurrentArrayBlockingQueue.Unbounded<>(blockSize);
     }
 
     @Test
