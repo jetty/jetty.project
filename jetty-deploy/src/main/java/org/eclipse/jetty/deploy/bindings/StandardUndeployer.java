@@ -32,12 +32,14 @@ public class StandardUndeployer implements AppLifeCycle.Binding
 {
     private static final Logger LOG = Log.getLogger(StandardUndeployer.class);
 
+    @Override
     public String[] getBindingTargets()
     {
         return new String[]
         { "undeploying" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();

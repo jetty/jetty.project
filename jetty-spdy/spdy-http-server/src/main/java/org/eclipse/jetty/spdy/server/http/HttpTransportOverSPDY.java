@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -198,6 +199,8 @@ public class HttpTransportOverSPDY implements HttpTransport
     {
         if (!stream.isUnidirectional())
             stream.reply(replyInfo, new Callback.Adapter());
+        else
+            stream.headers(new HeadersInfo(replyInfo.getHeaders(), replyInfo.isClose()), new Callback.Adapter());
 
         Fields responseHeaders = replyInfo.getHeaders();
         short version = stream.getSession().getVersion();
@@ -230,19 +233,17 @@ public class HttpTransportOverSPDY implements HttpTransport
 
     private Fields createRequestHeaders(Fields.Field scheme, Fields.Field host, Fields.Field uri, String pushResourcePath)
     {
-        final Fields requestHeaders = new Fields();
+        final Fields newRequestHeaders = new Fields(requestHeaders, false);
         short version = stream.getSession().getVersion();
-        requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        requestHeaders.put(scheme);
-        requestHeaders.put(host);
-        requestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
+        newRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        newRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        newRequestHeaders.put(scheme);
+        newRequestHeaders.put(host);
+        newRequestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
         String referrer = scheme.value() + "://" + host.value() + uri.value();
-        requestHeaders.put("referer", referrer);
-        // Remember support for gzip encoding
-        requestHeaders.put(requestHeaders.get("accept-encoding"));
-        requestHeaders.put("x-spdy-push", "true");
-        return requestHeaders;
+        newRequestHeaders.put("referer", referrer);
+        newRequestHeaders.put("x-spdy-push", "true");
+        return newRequestHeaders;
     }
 
     private Fields createPushHeaders(Fields.Field scheme, Fields.Field host, String pushResourcePath)
@@ -257,8 +258,6 @@ public class HttpTransportOverSPDY implements HttpTransport
             pushHeaders.put(scheme);
             pushHeaders.put(host);
         }
-        pushHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200");
-        pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
         return pushHeaders;
     }
 

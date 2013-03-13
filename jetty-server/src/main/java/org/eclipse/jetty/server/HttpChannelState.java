@@ -413,12 +413,12 @@ public class HttpChannelState implements AsyncContext
             {
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
+                    _expired=true;
                     aListeners=_asyncListeners;
                     break;
                 default:
                     return;
             }
-            _expired=true;
         }
 
         if (aListeners!=null)
@@ -436,23 +436,20 @@ public class HttpChannelState implements AsyncContext
             }
         }
 
-        boolean complete;
         synchronized (this)
         {
             switch(_state)
             {
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
-                    complete = true;
+                    _state=State.REDISPATCH;
                     break;
                 default:
-                    complete = false;
+                    _expired=false;
                     break;
             }
         }
-        if (complete)
-            complete();
-
+        
         scheduleDispatch();
     }
 
@@ -597,6 +594,14 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
+    public boolean isExpired()
+    {
+        synchronized (this)
+        {
+            return _expired;
+        }
+    }
+    
     public boolean isInitial()
     {
         synchronized(this)

@@ -537,7 +537,7 @@ case "$ACTION" in
 
     ;;
 
-  check)
+  check|status)
     echo "Checking arguments to Jetty: "
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_CONF     =  $JETTY_CONF"

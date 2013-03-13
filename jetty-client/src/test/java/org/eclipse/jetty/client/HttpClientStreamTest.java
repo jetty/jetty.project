@@ -60,7 +60,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -183,10 +182,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         {
             int read = input.read();
             assertTrue(read >= 0);
-            assertEquals(b & 0xFF, read);
+            Assert.assertEquals(b & 0xFF, read);
         }
 
-        assertEquals(-1, input.read());
+        Assert.assertEquals(-1, input.read());
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         Assert.assertNotNull(result);
@@ -274,7 +273,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response.getStatus());
 
-        stream.read();
+        stream.read(); // Throws
     }
 
     @Test
@@ -384,7 +383,6 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response.getStatus());
 
-        InputStream stream = listener.getInputStream();
         // Wait until we block
         Assert.assertTrue(waitLatch.await(5, TimeUnit.SECONDS));
         // Fail the response
@@ -393,6 +391,56 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         // Be sure we're not stuck waiting
         Assert.assertTrue(waitedLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInputStreamResponseListenerConsumingBeforeWaiting() throws Exception
+    {
+        final byte[] data = new byte[]{0, 1};
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(data.length);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(data);
+                output.flush();
+            }
+        });
+
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        InputStreamResponseListener listener = new InputStreamResponseListener(1)
+        {
+            @Override
+            protected boolean await()
+            {
+                // Consume everything just before waiting
+                InputStream stream = getInputStream();
+                consume(stream, data);
+                return super.await();
+            }
+
+            private void consume(InputStream stream, byte[] data)
+            {
+                try
+                {
+                    for (byte datum : data)
+                        Assert.assertEquals(datum, stream.read());
+                }
+                catch (IOException x)
+                {
+                    failure.compareAndSet(null, x);
+                }
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(listener);
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, result.getResponse().getStatus());
+        Assert.assertNull(failure.get());
     }
 
     @Test(expected = AsynchronousCloseException.class)
@@ -437,7 +485,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         latch.countDown();
 
-        input.read();
+        input.read(); // Throws
     }
 
     @Test(expected = AsynchronousCloseException.class)
@@ -479,14 +527,14 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);
 
-        for (byte b : data1)
-            input.read();
+        for (byte datum1 : data1)
+            Assert.assertEquals(datum1, input.read());
 
         input.close();
 
         latch.countDown();
 
-        input.read(); // throws
+        input.read(); // Throws
     }
 
     @Test
@@ -515,8 +563,8 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);
 
-        for (byte b : data)
-            input.read();
+        for (byte datum : data)
+            Assert.assertEquals(datum, input.read());
 
         // Read EOF
         Assert.assertEquals(-1, input.read());
