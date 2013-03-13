@@ -32,9 +32,9 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @see Unbounded
  * @see Bounded
- * @param <T>
+ * @param <E>
  */
-public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQueue<T> implements BlockingQueue<T>
+public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQueue<E> implements BlockingQueue<E>
 {
     private final Lock _lock = new ReentrantLock();
     private final Condition _consumer = _lock.newCondition();
@@ -45,28 +45,24 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
     }
 
     @Override
-    public T poll()
+    public E poll()
     {
-        T result = super.poll();
+        E result = super.poll();
         if (result != null && decrementAndGetSize() > 0)
-            signalProducer();
+            signalConsumer();
         return result;
     }
-
-    protected abstract int decrementAndGetSize();
-
-    protected abstract void signalProducer();
-
-    protected abstract void signalProducers();
 
     @Override
     public boolean remove(Object o)
     {
         boolean result = super.remove(o);
         if (result && decrementAndGetSize() > 0)
-            signalProducer();
+            signalConsumer();
         return result;
     }
+
+    protected abstract int decrementAndGetSize();
 
     protected void signalConsumer()
     {
@@ -83,11 +79,11 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
     }
 
     @Override
-    public T take() throws InterruptedException
+    public E take() throws InterruptedException
     {
         while (true)
         {
-            T result = poll();
+            E result = poll();
             if (result != null)
                 return result;
 
@@ -108,12 +104,12 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
     }
 
     @Override
-    public T poll(long timeout, TimeUnit unit) throws InterruptedException
+    public E poll(long timeout, TimeUnit unit) throws InterruptedException
     {
         long nanos = unit.toNanos(timeout);
         while (true)
         {
-            T result = poll();
+            E result = poll();
             if (result != null)
                 return result;
 
@@ -123,9 +119,9 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
             {
                 if (size() == 0)
                 {
-                    nanos = _consumer.awaitNanos(nanos);
                     if (nanos <= 0)
                         return null;
+                    nanos = _consumer.awaitNanos(nanos);
                 }
             }
             finally
@@ -136,13 +132,13 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
     }
 
     @Override
-    public int drainTo(Collection<? super T> c)
+    public int drainTo(Collection<? super E> c)
     {
         return drainTo(c, Integer.MAX_VALUE);
     }
 
     @Override
-    public int drainTo(Collection<? super T> c, int maxElements)
+    public int drainTo(Collection<? super E> c, int maxElements)
     {
         if (c == this)
             throw new IllegalArgumentException();
@@ -150,24 +146,13 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         int added = 0;
         while (added < maxElements)
         {
-            T element = poll();
+            E element = poll();
             if (element == null)
                 break;
             c.add(element);
             ++added;
         }
-
-        if (added > 0)
-            signalProducers();
-
         return added;
-    }
-
-    @Override
-    public void clear()
-    {
-        super.clear();
-        signalProducers();
     }
 
     /**
@@ -243,18 +228,6 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         {
             throw new UnsupportedOperationException();
         }
-
-        @Override
-        protected void signalProducer()
-        {
-            // Blocking put() and offer() not implemented, no need to signal them
-        }
-
-        @Override
-        protected void signalProducers()
-        {
-            // Blocking put() and offer() not implemented, no need to signal them
-        }
     }
 
     /**
@@ -283,9 +256,9 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         @Override
         public boolean offer(E item)
         {
+            int size = size();
             while (true)
             {
-                int size = size();
                 int nextSize = size + 1;
 
                 if (nextSize > _capacity)
@@ -301,10 +274,28 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
                     }
                     else
                     {
-                        decrementAndGetSize();
+                        size = decrementAndGetSize();
                     }
                 }
             }
+        }
+
+        @Override
+        public E poll()
+        {
+            E result = super.poll();
+            if (result != null)
+                signalProducer();
+            return result;
+        }
+
+        @Override
+        public boolean remove(Object o)
+        {
+            boolean result = super.remove(o);
+            if (result)
+                signalProducer();
+            return result;
         }
 
         @Override
@@ -362,9 +353,9 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
                 {
                     if (size() == _capacity)
                     {
-                        nanos = _producer.awaitNanos(nanos);
                         if (nanos <= 0)
                             return false;
+                        nanos = _producer.awaitNanos(nanos);
                     }
                 }
                 finally
@@ -379,7 +370,22 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
         }
 
         @Override
-        protected void signalProducer()
+        public int drainTo(Collection<? super E> c, int maxElements)
+        {
+            int result = super.drainTo(c, maxElements);
+            if (result > 0)
+                signalProducers();
+            return result;
+        }
+
+        @Override
+        public void clear()
+        {
+            super.clear();
+            signalProducers();
+        }
+
+        private void signalProducer()
         {
             final Lock lock = _lock;
             lock.lock();
@@ -393,8 +399,7 @@ public abstract class ConcurrentArrayBlockingQueue<T> extends ConcurrentArrayQue
             }
         }
 
-        @Override
-        protected void signalProducers()
+        private void signalProducers()
         {
             final Lock lock = _lock;
             lock.lock();

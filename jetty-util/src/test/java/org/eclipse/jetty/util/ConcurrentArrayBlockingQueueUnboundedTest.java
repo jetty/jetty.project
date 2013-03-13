@@ -49,8 +49,36 @@ public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQu
         ConcurrentArrayBlockingQueue<Integer> queue = newConcurrentArrayQueue(32);
         Integer item = 1;
         Assert.assertTrue(queue.offer(item));
-        Integer taken = queue.take();
-        Assert.assertSame(item, taken);
+        Integer result = queue.take();
+        Assert.assertSame(item, result);
+    }
+
+    @Test
+    public void testTimedPollOffer() throws Exception
+    {
+        final ConcurrentArrayBlockingQueue<Integer> queue = newConcurrentArrayQueue(32);
+
+        final long timeout = 1000;
+        final Integer item = 1;
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(timeout);
+                    queue.offer(item);
+                }
+                catch (InterruptedException x)
+                {
+                    x.printStackTrace();
+                }
+            }
+        }.start();
+
+        Integer result = queue.poll(2 * timeout, TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(result);
     }
 
     @Test
