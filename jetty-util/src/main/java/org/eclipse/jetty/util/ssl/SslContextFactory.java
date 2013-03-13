@@ -194,7 +194,7 @@ public class SslContextFactory extends AbstractLifeCycle
     private SSLContext _context;
 
     /** EndpointIdentificationAlgorithm - when set to "HTTPS" hostname verification will be enabled */
-    private String _endpointIdentificationAlgorithm = "HTTPS";
+    private String _endpointIdentificationAlgorithm = null;
 
     private boolean _trustAll;
 
