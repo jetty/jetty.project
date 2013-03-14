@@ -117,6 +117,10 @@ started()
   do
     sleep 4
     [ -z "$(grep STARTED $1)" ] || return 0
+    [ -z "$(grep STOPPED $1)" ] || return 1
+    [ -z "$(grep FAILED $1)" ] || return 1
+    local PID=$(head -n 1 "$1" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
   done
 
