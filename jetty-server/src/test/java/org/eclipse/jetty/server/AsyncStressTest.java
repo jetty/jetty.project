@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -90,7 +90,7 @@ public class AsyncStressTest
     @Test
     public void testAsync() throws Throwable
     {
-        if (Stress.isEnabled())
+        if (PropertyFlag.isEnabled("test.stress"))
         {
             doConnections(1600,240);
         }
