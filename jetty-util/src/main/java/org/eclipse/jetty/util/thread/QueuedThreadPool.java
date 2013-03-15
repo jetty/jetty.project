@@ -54,7 +54,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private final AtomicLong _lastShrink = new AtomicLong();
     private final ConcurrentLinkedQueue<Thread> _threads = new ConcurrentLinkedQueue<>();
     private final Object _joinLock = new Object();
-    private BlockingQueue<Runnable> _jobs;
+    private final BlockingQueue<Runnable> _jobs;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -80,10 +80,20 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     public QueuedThreadPool(int maxThreads, int minThreads, int idleTimeout)
     {
+        this(maxThreads, minThreads, 60000,null);
+    }
+
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue)
+    {
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
         setStopTimeout(5000);
+        
+        if (queue==null)
+            queue=new BlockingArrayQueue<Runnable>(_minThreads, _minThreads);
+        _jobs=queue;
+
     }
 
     @Override
@@ -91,9 +101,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         super.doStart();
         _threadsStarted.set(0);
-
-        if (_jobs == null)
-            setQueue(new BlockingArrayQueue<Runnable>(_minThreads, _minThreads));
 
         startThreads(_minThreads);
     }
@@ -602,7 +609,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      */
     public void setQueue(BlockingQueue<Runnable> queue)
     {
-        _jobs = queue;
+        throw new UnsupportedOperationException("Use constructor injection");
     }
 
     /**

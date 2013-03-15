@@ -104,7 +104,7 @@ public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQu
                         int sum = 0;
                         for (int j = 0; j < iterations * factor; ++j)
                             sum += queue.take();
-                        System.err.println("Taking reader " + reader + " completed: " + sum);
+                        //System.err.println("Taking reader " + reader + " completed: " + sum);
                         return sum;
                     }
                 }));
@@ -116,7 +116,7 @@ public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQu
                         int sum = 0;
                         for (int j = 0; j < iterations * factor; ++j)
                             sum += queue.poll(5, TimeUnit.SECONDS);
-                        System.err.println("Polling Reader " + reader + " completed: " + sum);
+                        //System.err.println("Polling Reader " + reader + " completed: " + sum);
                         return sum;
                     }
                 }));
@@ -131,7 +131,7 @@ public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQu
                     {
                         for (int j = 0; j < iterations; ++j)
                             queue.offer(1);
-                        System.err.println("Writer " + writer + " completed");
+                        //System.err.println("Writer " + writer + " completed");
                         return null;
                     }
                 });
