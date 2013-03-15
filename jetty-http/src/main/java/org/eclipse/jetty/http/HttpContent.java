@@ -112,16 +112,14 @@ public interface HttpContent
         @Override
         public ByteBuffer getIndirectBuffer()
         {
-            try
+            if (_resource.length()<=0 || _maxBuffer<_resource.length())
+                return null;
+            int length=(int)_resource.length();
+            byte[] array = new byte[length];
+
+            int offset=0;
+            try (InputStream in=_resource.getInputStream())
             {
-                if (_resource.length()<=0 || _maxBuffer<_resource.length())
-                    return null;
-                int length=(int)_resource.length();
-                byte[] array = new byte[length];
-
-                int offset=0;
-                InputStream in=_resource.getInputStream();
-
                 do
                 {
                     int filled=in.read(array,offset,length);
