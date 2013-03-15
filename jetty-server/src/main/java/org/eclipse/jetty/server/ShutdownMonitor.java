@@ -75,7 +75,7 @@ public class ShutdownMonitor extends Thread
 
         // Use values passed thru via /jetty-start/
         this.port = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
-        this.key = props.getProperty("STOP.KEY","eclipse");
+        this.key = props.getProperty("STOP.KEY",null);
         this.exitVm = true;
     }
 
