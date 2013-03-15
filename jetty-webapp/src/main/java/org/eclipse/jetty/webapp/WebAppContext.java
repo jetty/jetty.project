@@ -872,7 +872,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @return True if the classloader should delegate first to the parent
      * classloader (standard java behaviour) or false if the classloader
      * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
-     * spec recommendation).
+     * spec recommendation). Default is false or can be set by the system 
+     * property org.eclipse.jetty.server.webapp.parentLoaderPriority
      */
     @Override
     @ManagedAttribute(value="parent classloader given priority", readonly=true)
@@ -1104,7 +1105,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
-     * @param java2compliant The java2compliant to set.
+     * @param java2compliant True if the classloader should delegate first to the parent
+     * classloader (standard java behaviour) or false if the classloader
+     * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
+     * spec recommendation).  Default is false or can be set by the system 
+     * property org.eclipse.jetty.server.webapp.parentLoaderPriority
      */
     public void setParentLoaderPriority(boolean java2compliant)
     {
