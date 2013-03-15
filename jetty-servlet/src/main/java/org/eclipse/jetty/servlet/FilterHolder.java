@@ -97,7 +97,19 @@ public class FilterHolder extends Holder<Filter>
             super.stop();
             throw new IllegalStateException(msg);
         }
+    }
+    
+    
+    
 
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void initialize() throws Exception
+    {
+        super.initialize();
+        
         if (_filter==null)
         {
             try
@@ -122,6 +134,7 @@ public class FilterHolder extends Holder<Filter>
         LOG.debug("Filter.init {}",_filter);
         _filter.init(_config);
     }
+
 
     /* ------------------------------------------------------------ */
     @Override

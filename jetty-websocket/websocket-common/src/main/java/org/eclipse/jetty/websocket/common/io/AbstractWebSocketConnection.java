@@ -490,7 +490,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.warn("Read Timeout");
+        LOG.info("Read Timeout");
 
         IOState state = getIOState();
         if ((state.getState() == ConnectionState.CLOSING) || (state.getState() == ConnectionState.CLOSED))

@@ -280,7 +280,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _enabled = enabled;
     }
 
-
+    
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
@@ -319,7 +319,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
             _servlet = new SingleThreadedWrapper();
-
+     
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void initialize ()
+    throws Exception
+    {
+        super.initialize();
+        
         if (_extInstance || _initOnStartup)
         {
             try
@@ -335,7 +345,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
     }
-
+    
+    
     /* ------------------------------------------------------------ */
     public void doStop()
         throws Exception
