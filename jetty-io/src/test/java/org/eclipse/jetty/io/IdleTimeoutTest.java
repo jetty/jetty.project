@@ -22,7 +22,6 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.TimeoutException;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Before;
@@ -32,10 +31,10 @@ public class IdleTimeoutTest
 {
     volatile boolean _open;
     volatile TimeoutException _expired;
-    
+
     TimerScheduler _timer;
     IdleTimeout _timeout;
-    
+
     @Before
     public void setUp() throws Exception
     {
@@ -50,9 +49,9 @@ public class IdleTimeoutTest
             {
                 _expired=timeout;
             }
-            
+
             @Override
-            protected boolean isOpen()
+            public boolean isOpen()
             {
                 return _open;
             }
@@ -65,7 +64,7 @@ public class IdleTimeoutTest
     {
         _open=false;
         _timer.stop();
-        
+
     }
 
     @Test
@@ -76,10 +75,10 @@ public class IdleTimeoutTest
             Thread.sleep(100);
             _timeout.notIdle();
         }
-        
+
         Assert.assertNull(_expired);
     }
-    
+
     @Test
     public void testIdle() throws Exception
     {
@@ -91,7 +90,7 @@ public class IdleTimeoutTest
         Thread.sleep(1500);
         Assert.assertNotNull(_expired);
     }
-    
+
     @Test
     public void testClose() throws Exception
     {
@@ -104,7 +103,7 @@ public class IdleTimeoutTest
         Thread.sleep(1500);
         Assert.assertNull(_expired);
     }
-    
+
     @Test
     public void testClosed() throws Exception
     {
@@ -153,7 +152,7 @@ public class IdleTimeoutTest
         Thread.sleep(1000);
         Assert.assertNotNull(_expired);
     }
-    
-    
-    
+
+
+
 }
