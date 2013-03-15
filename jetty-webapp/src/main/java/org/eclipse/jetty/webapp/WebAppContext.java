@@ -656,6 +656,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Add to the list of Server classes.
      * @see #setServerClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
@@ -673,6 +674,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Prepend to the list of Server classes.
      * @see #setServerClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
@@ -703,6 +705,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Add to the list of System classes.
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @see #setSystemClasses(String[])
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
@@ -722,6 +725,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Prepend to the list of System classes.
      * @see #setSystemClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the system classes and order is thus
