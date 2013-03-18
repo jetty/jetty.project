@@ -220,13 +220,13 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
         @Override
         public void put(E element) throws InterruptedException
         {
-            throw new UnsupportedOperationException();
+            offer(element);
         }
 
         @Override
         public boolean offer(E element, long timeout, TimeUnit unit) throws InterruptedException
         {
-            throw new UnsupportedOperationException();
+            return offer(element);
         }
     }
 
@@ -256,9 +256,9 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
         @Override
         public boolean offer(E item)
         {
-            int size = size();
             while (true)
             {
+                int size = size();
                 int nextSize = size + 1;
 
                 if (nextSize > _capacity)
@@ -274,7 +274,7 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
                     }
                     else
                     {
-                        size = decrementAndGetSize();
+                        decrementAndGetSize();
                     }
                 }
             }
