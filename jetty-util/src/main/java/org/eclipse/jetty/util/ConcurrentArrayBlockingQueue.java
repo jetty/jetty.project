@@ -108,8 +108,11 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
     public E poll(long timeout, TimeUnit unit) throws InterruptedException
     {
         long nanos = unit.toNanos(timeout);
+        
         while (true)
         {
+            // TODO should reduce nanos if we spin here
+            
             E result = poll();
             if (result != null)
                 return result;
@@ -189,8 +192,8 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
 
         private int getAndIncrementSize()
         {
-            long sizeLeft = _sizes.get(SIZE_LEFT_OFFSET);
             long sizeRight = _sizes.getAndIncrement(SIZE_RIGHT_OFFSET);
+            long sizeLeft = _sizes.get(SIZE_LEFT_OFFSET);
             return (int)(sizeRight - sizeLeft);
         }
 

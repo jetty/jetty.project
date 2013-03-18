@@ -318,8 +318,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        // TODO private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
-        private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
+        private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;

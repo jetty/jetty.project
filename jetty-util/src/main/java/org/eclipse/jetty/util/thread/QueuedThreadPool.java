@@ -92,8 +92,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setStopTimeout(5000);
         
         if (queue==null)
-            queue=new BlockingArrayQueue<>(_minThreads,_minThreads);
-            // TODO queue=new ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
+            queue=new ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
         _jobs=queue;
 
     }
@@ -179,6 +178,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         {
             _joinLock.notifyAll();
         }
+        jobs.clear();
     }
 
     /**

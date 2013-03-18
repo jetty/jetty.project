@@ -88,7 +88,7 @@ public class ConcurrentArrayBlockingQueueUnboundedTest extends ConcurrentArrayQu
         int readerCount = 16;
         final int factor = 2;
         int writerCount = readerCount * factor;
-        final int iterations = 1024;
+        final int iterations = 4096;
         for (int runs = 0; runs < 16; ++runs)
         {
             ExecutorService executor = Executors.newFixedThreadPool(readerCount + writerCount);
