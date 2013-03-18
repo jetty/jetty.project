@@ -741,6 +741,7 @@ public class ServletHandler extends ScopedHandler
             try
             {
                 h.start();
+                h.initialize();
             }
             catch (Exception e)
             {

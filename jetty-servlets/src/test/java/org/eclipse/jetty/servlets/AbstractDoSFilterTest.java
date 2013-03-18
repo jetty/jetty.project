@@ -98,7 +98,9 @@ public abstract class AbstractDoSFilterTest
     public void startFilters() throws Exception
     {
         _dosFilter.start();
+        _dosFilter.initialize();
         _timeoutFilter.start();
+        _timeoutFilter.initialize();
     }
 
     @After

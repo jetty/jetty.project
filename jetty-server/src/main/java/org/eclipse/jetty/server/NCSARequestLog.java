@@ -55,6 +55,14 @@ import org.eclipse.jetty.util.log.Logger;
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     private static final Logger LOG = Log.getLogger(NCSARequestLog.class);
+    private static ThreadLocal<StringBuilder> _buffers = new ThreadLocal<StringBuilder>()
+            {
+                @Override
+                protected StringBuilder initialValue()
+                {
+                    return new StringBuilder(256);
+                }
+            };
 
     private String _filename;
     private boolean _extended;
@@ -468,7 +476,8 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             if (_fileOut == null)
                 return;
 
-            StringBuilder buf= new StringBuilder(256);
+            StringBuilder buf= _buffers.get();
+            buf.setLength(0);
 
             if (_logServer)
             {
@@ -584,22 +593,29 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             }
 
             buf.append(StringUtil.__LINE_SEPARATOR);
+            
             String log = buf.toString();
-            synchronized(this)
-            {
-                if (_writer==null)
-                    return;
-                _writer.write(log);
-                _writer.flush();
-            }
+            write(log);
         }
         catch (IOException e)
         {
             LOG.warn(e);
         }
-
     }
 
+    /* ------------------------------------------------------------ */
+    protected void write(String log) throws IOException 
+    {
+        synchronized(this)
+        {
+            if (_writer==null)
+                return;
+            _writer.write(log);
+            _writer.flush();
+        }
+    }
+
+    
     /* ------------------------------------------------------------ */
     /**
      * Writes extended request and response information to the output stream.
@@ -669,7 +685,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
         else
             _ignorePathMap = null;
 
-        _writer = new OutputStreamWriter(_out);
+        synchronized(this)
+        {
+            _writer = new OutputStreamWriter(_out);
+        }
         super.doStart();
     }
 

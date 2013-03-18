@@ -19,7 +19,7 @@
     <felixversion>4.0.3</felixversion>
     <injection.bundle.version>1.0</injection.bundle.version>
     <runner.version>1.7.6</runner.version>
-    <npn-version>1.1.2.v20130305</npn-version>
+    <npn-version>1.1.5.v20130313</npn-version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->

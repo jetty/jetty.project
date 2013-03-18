@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A collection of resources (dirs).
@@ -45,6 +48,7 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
+    private static final Logger LOG = Log.getLogger(ResourceCollection.class);
     private Resource[] _resources;
 
     /* ------------------------------------------------------------ */
@@ -167,20 +171,25 @@ public class ResourceCollection extends Resource
                     " argument must be a string containing one or more comma-separated resource strings.");
         }
         
-        _resources = new Resource[len];
+        List<Resource> resources = new ArrayList<>();
+        
         try
         {            
-            for(int i=0; tokenizer.hasMoreTokens(); i++)
+            while(tokenizer.hasMoreTokens())
             {
-                _resources[i] = Resource.newResource(tokenizer.nextToken().trim());
-                if(!_resources[i].exists() || !_resources[i].isDirectory())
-                    throw new IllegalArgumentException(_resources[i] + " is not an existing directory.");
+                Resource resource = Resource.newResource(tokenizer.nextToken().trim());
+                if(!resource.exists() || !resource.isDirectory())
+                    LOG.warn(" !exist "+resource);
+                else
+                    resources.add(resource);
             }
         }
         catch(Exception e)
         {
             throw new RuntimeException(e);
         }
+
+        _resources = resources.toArray(new Resource[resources.size()]);
     }
     
     /* ------------------------------------------------------------ */

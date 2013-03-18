@@ -82,6 +82,19 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _extInstance;
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Do any setup necessary after starting
+     * @throws Exception
+     */
+    public void initialize()
+    throws Exception
+    {
+        if (!isStarted())
+            throw new IllegalStateException("Not started: "+this);
+    }
 
     /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")

@@ -10,7 +10,7 @@
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
-    <jetty-setuid-version>1.0.0</jetty-setuid-version>
+    <jetty-setuid-version>1.0.1</jetty-setuid-version>
   </properties>
   <build>
     <plugins>
@@ -161,6 +161,8 @@
                   <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
                    <destFileName>libsetuid-linux.so</destFileName>
                 </artifactItem>
+
+		<!-- TODO readd once new version released 
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
                   <artifactId>libsetuid-osx</artifactId>
@@ -170,6 +172,7 @@
                   <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
                   <destFileName>libsetuid-osx.so</destFileName>
                 </artifactItem>
+		-->
               </artifactItems>
             </configuration>
           </execution>

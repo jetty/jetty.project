@@ -32,7 +32,9 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.servlets.gzip.GzipHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -155,7 +157,8 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
     private InetSocketAddress createServer() throws Exception
     {
-        return startHTTPServer(version, new AbstractHandler()
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -171,6 +174,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
+        return startHTTPServer(version, gzipHandler);
     }
 
     private Session sendMainRequestAndCSSRequest() throws Exception
@@ -240,6 +244,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
+        final CountDownLatch pushResponseHeaders = new CountDownLatch(1);
         Session session2 = startClient(version, serverAddress, null);
         session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
@@ -258,9 +263,18 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
+                    public void onHeaders(Stream stream, HeadersInfo headersInfo)
+                    {
+                        Fields headers = headersInfo.getHeaders();
+                        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version), "200 OK")
+                                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version),
+                                "HTTP/1.1") && validateHeader(headers, "content-encoding", "gzip"))
+                            pushResponseHeaders.countDown();
+                    }
+
+                    @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-
                         dataInfo.consume(dataInfo.length());
                         if (dataInfo.isClose())
                             pushDataLatch.countDown();
@@ -797,9 +811,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
     private void validateHeaders(Fields headers, CountDownLatch pushSynHeadersValid)
     {
-        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version), "200")
-                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1")
-                && validateUriHeader(headers))
+        if (validateUriHeader(headers))
             pushSynHeadersValid.countDown();
     }
 
@@ -808,7 +820,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields.Field header = headers.get(name);
         if (header != null && expectedValue.equals(header.value()))
             return true;
-        System.out.println(name + " not valid! " + headers);
+        System.out.println(name + " not valid! Expected: " + expectedValue + " headers received:" + headers);
         return false;
     }
 
@@ -842,6 +854,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields requestHeaders = new Fields();
         requestHeaders.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) " +
                 "Gecko/20100101 Firefox/16.0");
+        requestHeaders.put("accept-encoding", "gzip");
         requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
         requestHeaders.put(HTTPSPDYHeader.URI.name(version), resource);
         requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
