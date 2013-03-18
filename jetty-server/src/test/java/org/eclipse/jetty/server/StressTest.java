@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -130,35 +131,37 @@ public class StressTest
     }
 
     @Test
-    @Stress("Much threading")
     public void testNonPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX);
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
 
         doThreads(10,10,false);
-        Thread.sleep(1000);
-        doThreads(20,20,false);
-        Thread.sleep(1000);
-        doThreads(200,10,false);
-        Thread.sleep(1000);
-        doThreads(200,200,false);
+        if (PropertyFlag.isEnabled("test.stress"))
+        {
+            doThreads(20,20,false);
+            Thread.sleep(1000);
+            doThreads(200,10,false);
+            Thread.sleep(1000);
+            doThreads(200,200,false);
+        }
     }
 
     @Test
-    @Stress("Much threading")
     public void testPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX);
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
 
         doThreads(10,10,true);
-        Thread.sleep(1000);
-        doThreads(40,40,true);
-        Thread.sleep(1000);
-        doThreads(200,10,true);
-        Thread.sleep(1000);
-        doThreads(200,200,true);
+        if (PropertyFlag.isEnabled("test.stress"))
+        {
+            doThreads(40,40,true);
+            Thread.sleep(1000);
+            doThreads(200,10,true);
+            Thread.sleep(1000);
+            doThreads(200,200,true);
+        }
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable

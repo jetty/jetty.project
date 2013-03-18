@@ -25,6 +25,7 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.AsyncNCSARequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -152,7 +153,8 @@ public class SpdyServer
         login.setConfig(jetty_home + "/etc/realm.properties");
         server.addBean(login);
 
-        NCSARequestLog requestLog = new NCSARequestLog(jetty_home + "/logs/jetty-yyyy_mm_dd.log");
+        NCSARequestLog requestLog = new AsyncNCSARequestLog();
+        requestLog.setFilename(jetty_home + "/logs/jetty-yyyy_mm_dd.log");
         requestLog.setExtended(false);
         requestLogHandler.setRequestLog(requestLog);
 
