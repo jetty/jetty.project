@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -317,7 +318,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
+        // TODO private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
+        private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;

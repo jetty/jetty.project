@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.ConcurrentArrayBlockingQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -59,6 +60,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
         super(filename);
         if (queue==null)
             queue=new BlockingArrayQueue<String>(1024);
+            // TODO queue=new ConcurrentArrayBlockingQueue.Bounded<String>(1024);
         _queue=queue;
     }
 

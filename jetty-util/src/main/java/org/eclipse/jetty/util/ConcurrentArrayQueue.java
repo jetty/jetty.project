@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -55,11 +56,9 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
     };
 
     private static final int HEAD_OFFSET = MemoryUtils.getIntegersPerCacheLine() - 1;
-    private static final int TAIL_OFFSET = HEAD_OFFSET + MemoryUtils.getIntegersPerCacheLine();
-    private static final long HEAD_BLOCK_OFFSET = MemoryUtils.arrayElementOffset(Block[].class, HEAD_OFFSET);
-    private static final long TAIL_BLOCK_OFFSET = MemoryUtils.arrayElementOffset(Block[].class, TAIL_OFFSET);
+    private static final int TAIL_OFFSET = MemoryUtils.getIntegersPerCacheLine()*2 -1;
 
-    private final Block[] _blocks = new Block[TAIL_OFFSET + 1];
+    private final AtomicReferenceArray<Block<T>> _blocks = new AtomicReferenceArray<>(TAIL_OFFSET + 1);
     private final int _blockSize;
 
     public ConcurrentArrayQueue()
@@ -71,8 +70,8 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
     {
         _blockSize = blockSize;
         Block<T> block = newBlock();
-        MemoryUtils.volatilePutObject(_blocks, HEAD_BLOCK_OFFSET, block);
-        MemoryUtils.volatilePutObject(_blocks, TAIL_BLOCK_OFFSET, block);
+        _blocks.set(HEAD_OFFSET,block);
+        _blocks.set(TAIL_OFFSET,block);
     }
 
     public int getBlockSize()
@@ -82,12 +81,12 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
     protected Block<T> getHeadBlock()
     {
-        return MemoryUtils.volatileGetObject(_blocks, HEAD_BLOCK_OFFSET);
+        return _blocks.get(HEAD_OFFSET);
     }
 
     protected Block<T> getTailBlock()
     {
-        return MemoryUtils.volatileGetObject(_blocks, TAIL_BLOCK_OFFSET);
+        return _blocks.get(TAIL_OFFSET);
     }
 
     @Override
@@ -166,7 +165,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
     protected boolean casTailBlock(Block<T> current, Block<T> update)
     {
-        return MemoryUtils.compareAndSetObject(_blocks, TAIL_BLOCK_OFFSET, current, update);
+        return _blocks.compareAndSet(TAIL_OFFSET,current,update);
     }
 
     @Override
@@ -250,7 +249,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
     protected boolean casHeadBlock(Block<T> current, Block<T> update)
     {
-        return MemoryUtils.compareAndSetObject(_blocks, HEAD_BLOCK_OFFSET, current, update);
+        return _blocks.compareAndSet(HEAD_OFFSET,current,update);
     }
 
     @Override
@@ -507,12 +506,12 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
     protected static final class Block<E>
     {
-        private static final long headOffset = MemoryUtils.arrayElementOffset(int[].class, HEAD_OFFSET);
-        private static final long tailOffset = MemoryUtils.arrayElementOffset(int[].class, TAIL_OFFSET);
+        private static final int headOffset = MemoryUtils.getIntegersPerCacheLine()-1;
+        private static final int tailOffset = MemoryUtils.getIntegersPerCacheLine()*2-1;
 
         private final AtomicReferenceArray<Object> elements;
         private final AtomicReference<Block<E>> next = new AtomicReference<>();
-        private final int[] indexes = new int[TAIL_OFFSET + 1];
+        private final AtomicIntegerArray indexes = new AtomicIntegerArray(TAIL_OFFSET+1);
 
         protected Block(int blockSize)
         {
@@ -528,7 +527,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
         {
             boolean result = elements.compareAndSet(index, null, item);
             if (result)
-                MemoryUtils.incrementAndGetInt(indexes, tailOffset);
+                indexes.incrementAndGet(tailOffset);
             return result;
         }
 
@@ -536,7 +535,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
         {
             boolean result = elements.compareAndSet(index, item, REMOVED_ELEMENT);
             if (result && updateHead)
-                MemoryUtils.incrementAndGetInt(indexes, headOffset);
+                indexes.incrementAndGet(headOffset);
             return result;
         }
 
@@ -552,12 +551,12 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
         public int head()
         {
-            return MemoryUtils.volatileGetInt(indexes, headOffset);
+            return indexes.get(headOffset);
         }
 
         public int tail()
         {
-            return MemoryUtils.volatileGetInt(indexes, tailOffset);
+            return indexes.get(tailOffset);
         }
 
         public Object[] arrayCopy()

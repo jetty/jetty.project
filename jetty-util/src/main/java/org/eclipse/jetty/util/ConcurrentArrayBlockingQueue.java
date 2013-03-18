@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -162,12 +163,10 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
      */
     public static class Unbounded<E> extends ConcurrentArrayBlockingQueue<E>
     {
-        private static final int HEAD_OFFSET = MemoryUtils.getLongsPerCacheLine() - 1;
-        private static final int TAIL_OFFSET = HEAD_OFFSET + MemoryUtils.getLongsPerCacheLine();
-        private static final long SIZE_LEFT_OFFSET = MemoryUtils.arrayElementOffset(long[].class, HEAD_OFFSET);
-        private static final long SIZE_RIGHT_OFFSET = MemoryUtils.arrayElementOffset(long[].class, TAIL_OFFSET);
-
-        private final long[] _sizes = new long[TAIL_OFFSET + 1];
+        private static final int SIZE_LEFT_OFFSET = MemoryUtils.getLongsPerCacheLine() - 1;
+        private static final int SIZE_RIGHT_OFFSET = SIZE_LEFT_OFFSET + MemoryUtils.getLongsPerCacheLine();
+        
+        private final AtomicLongArray _sizes = new AtomicLongArray(SIZE_RIGHT_OFFSET+1);
 
         public Unbounded()
         {
@@ -190,24 +189,24 @@ public abstract class ConcurrentArrayBlockingQueue<E> extends ConcurrentArrayQue
 
         private int getAndIncrementSize()
         {
-            long sizeLeft = MemoryUtils.volatileGetLong(_sizes, SIZE_LEFT_OFFSET);
-            long sizeRight = MemoryUtils.getAndIncrementLong(_sizes, SIZE_RIGHT_OFFSET);
+            long sizeLeft = _sizes.get(SIZE_LEFT_OFFSET);
+            long sizeRight = _sizes.getAndIncrement(SIZE_RIGHT_OFFSET);
             return (int)(sizeRight - sizeLeft);
         }
 
         @Override
         protected int decrementAndGetSize()
         {
-            long sizeLeft = MemoryUtils.incrementAndGetLong(_sizes, SIZE_LEFT_OFFSET);
-            long sizeRight = MemoryUtils.volatileGetLong(_sizes, SIZE_RIGHT_OFFSET);
+            long sizeLeft = _sizes.incrementAndGet(SIZE_LEFT_OFFSET);
+            long sizeRight = _sizes.get(SIZE_RIGHT_OFFSET);
             return (int)(sizeRight - sizeLeft);
         }
 
         @Override
         public int size()
         {
-            long sizeLeft = MemoryUtils.volatileGetLong(_sizes, SIZE_LEFT_OFFSET);
-            long sizeRight = MemoryUtils.volatileGetLong(_sizes, SIZE_RIGHT_OFFSET);
+            long sizeLeft = _sizes.get(SIZE_LEFT_OFFSET);
+            long sizeRight = _sizes.get(SIZE_RIGHT_OFFSET);
             return (int)(sizeRight - sizeLeft);
         }
 
