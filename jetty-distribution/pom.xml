@@ -10,7 +10,7 @@
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
-    <jetty-setuid-version>1.0.0</jetty-setuid-version>
+    <jetty-setuid-version>1.0.1</jetty-setuid-version>
   </properties>
   <build>
     <plugins>
