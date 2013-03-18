@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.ConcurrentArrayBlockingQueue;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -92,7 +91,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setStopTimeout(5000);
         
         if (queue==null)
-            queue=new ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
+            queue=new BlockingArrayQueue<Runnable>(_minThreads, _minThreads);// TODO ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
         _jobs=queue;
 
     }
@@ -178,7 +177,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         {
             _joinLock.notifyAll();
         }
-        jobs.clear();
     }
 
     /**
