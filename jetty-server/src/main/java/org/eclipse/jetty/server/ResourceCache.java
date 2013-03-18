@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -75,6 +75,7 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
         _parent=parent;
+        _useFileMappedBuffer=useFileMappedBuffer;
         _etagSupported=etags;
     }
 
@@ -382,7 +383,8 @@ public class ResourceCache
             _key=pathInContext;
             _resource=resource;
 
-            _contentType=BufferUtil.toBuffer(_mimeTypes.getMimeByExtension(_resource.toString()));
+            String mimeType = _mimeTypes.getMimeByExtension(_resource.toString());
+            _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
             _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));

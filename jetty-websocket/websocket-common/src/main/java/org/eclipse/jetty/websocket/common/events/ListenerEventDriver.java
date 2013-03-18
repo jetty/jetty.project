@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,8 @@ package org.eclipse.jetty.websocket.common.events;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -35,8 +36,10 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
  */
 public class ListenerEventDriver extends EventDriver
 {
+    private static final Logger LOG = Log.getLogger(ListenerEventDriver.class);
     private final WebSocketListener listener;
     private MessageAppender activeMessage;
+    private boolean hasCloseBeenCalled = false;
 
     public ListenerEventDriver(WebSocketPolicy policy, WebSocketListener listener)
     {
@@ -70,6 +73,13 @@ public class ListenerEventDriver extends EventDriver
     @Override
     public void onClose(CloseInfo close)
     {
+        if (hasCloseBeenCalled)
+        {
+            // avoid duplicate close events (possible when using harsh Session.disconnect())
+            return;
+        }
+        hasCloseBeenCalled = true;
+
         int statusCode = close.getStatusCode();
         String reason = close.getReason();
         listener.onWebSocketClose(statusCode,reason);
@@ -83,9 +93,9 @@ public class ListenerEventDriver extends EventDriver
     }
 
     @Override
-    public void onException(WebSocketException e)
+    public void onError(Throwable cause)
     {
-        listener.onWebSocketException(e);
+        listener.onWebSocketError(cause);
     }
 
     @Override

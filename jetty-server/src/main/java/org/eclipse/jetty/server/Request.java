@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -70,7 +70,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
@@ -298,18 +297,42 @@ public class Request implements HttpServletRequest
                                 maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
                                 maxFormKeys = _context.getContextHandler().getMaxFormKeys();
                             }
-                            else
+                            
+                            if (maxFormContentSize < 0)
                             {
-                                Number size = (Number)_channel.getServer()
-                                        .getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                                maxFormContentSize = size == null?200000:size.intValue();
-                                Number keys = (Number)_channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                                maxFormKeys = keys == null?1000:keys.intValue();
+                                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                                if (obj == null)
+                                    maxFormContentSize = 200000;
+                                else if (obj instanceof Number)
+                                {                      
+                                    Number size = (Number)obj;
+                                    maxFormContentSize = size.intValue();
+                                }
+                                else if (obj instanceof String)
+                                {
+                                    maxFormContentSize = Integer.valueOf((String)obj);
+                                }
+                            }
+                            
+                            if (maxFormKeys < 0)
+                            {
+                                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                if (obj == null)
+                                    maxFormKeys = 1000;
+                                else if (obj instanceof Number)
+                                {
+                                    Number keys = (Number)obj;
+                                    maxFormKeys = keys.intValue();
+                                }
+                                else if (obj instanceof String)
+                                {
+                                    maxFormKeys = Integer.valueOf((String)obj);
+                                }
                             }
 
                             if (content_length > maxFormContentSize && maxFormContentSize > 0)
                             {
-                                throw new IllegalStateException("Form too large" + content_length + ">" + maxFormContentSize);
+                                throw new IllegalStateException("Form too large " + content_length + ">" + maxFormContentSize);
                             }
                             InputStream in = getInputStream();
 
@@ -690,7 +713,12 @@ public class Request implements HttpServletRequest
     public String getLocalAddr()
     {
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getAddress().getHostAddress();
+        if (local==null)
+            return "";
+        InetAddress address = local.getAddress();
+        if (address==null)
+            return local.getHostString();
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -906,8 +934,15 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-
-        return remote==null?"":remote.getHostString();
+        
+        if (remote==null)
+            return "";
+        
+        InetAddress address = remote.getAddress();
+        if (address==null)
+            return remote.getHostString();
+        
+        return address.getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -2084,11 +2119,11 @@ public class Request implements HttpServletRequest
         {
             _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
             if (_authentication == null)
-                throw new ServletException("Authentication failed for "+username+" in "+_authentication);
+                throw new Authentication.Failed("Authentication failed for username '"+username+"'");
         }
         else
         {
-            throw new ServletException("Already authenticated as "+_authentication);
+            throw new Authentication.Failed("Authenticated failed for username '"+username+"'. Already authenticated as "+_authentication);
         }
     }
 
@@ -2113,7 +2148,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8); //have to assume UTF-8 because we can't know otherwise
+        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8_CHARSET,-1); //have to assume UTF-8 because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2134,11 +2169,11 @@ public class Request implements HttpServletRequest
             {
                 StringBuilder overridden_query_string = new StringBuilder();
                 MultiMap<String> overridden_old_query = new MultiMap<>();
-                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding());//decode using any queryencoding set for the request
+                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding(),-1);//decode using any queryencoding set for the request
                 
                 
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8); //have to assume utf8 as we cannot know otherwise
+                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8_CHARSET,-1); //have to assume utf8 as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {

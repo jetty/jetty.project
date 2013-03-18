@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,12 @@
 
 package org.eclipse.jetty.jndi.java;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import java.util.Hashtable;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
@@ -34,10 +39,6 @@ import javax.naming.spi.ObjectFactory;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.junit.After;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 /**
  *
@@ -223,6 +224,15 @@ public class TestLocalJNDI
         assertEquals("333", (String)o);
         assertEquals("333", ic.lookup(name));
         ic.destroySubcontext("a");
+        try
+        {
+            ic.lookup("a");
+            fail("context a was not destroyed");
+        }
+        catch (NameNotFoundException e)
+        {
+            //expected
+        }
 
         name = parser.parse("");
         name.add("x");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,7 +64,7 @@ public class SynReplyTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
-                stream.reply(new ReplyInfo(new Fields(), true));
+                stream.reply(new ReplyInfo(new Fields(), true), new Callback.Adapter());
                 synLatch.countDown();
                 return null;
             }
@@ -94,7 +94,8 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0),
+                new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -102,7 +103,7 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isClosed());
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
 
@@ -147,7 +148,7 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertTrue(stream.isHalfClosed());
                         Assert.assertFalse(stream.isClosed());
 
-                        stream.reply(new ReplyInfo(true));
+                        stream.reply(new ReplyInfo(true), new Callback.Adapter());
                         Assert.assertTrue(stream.isClosed());
                         dataLatch.countDown();
                     }
@@ -168,14 +169,15 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0),
+                new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 replyLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
         stream.data(new BytesDataInfo(dataBytes, true));
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
@@ -199,13 +201,13 @@ public class SynReplyTest extends AbstractTest
             {
                 Assert.assertTrue(stream.isHalfClosed());
 
-                stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Callback.Adapter()
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(new StringDataInfo(5, TimeUnit.SECONDS, data1, false), new Callback.Adapter()
                 {
                     @Override
                     public void succeeded()
                     {
-                        stream.data(new StringDataInfo(data2, true));
+                        stream.data(new StringDataInfo(data2, true), new Adapter());
                     }
                 });
 
@@ -216,7 +218,7 @@ public class SynReplyTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch1 = new CountDownLatch(1);
         final CountDownLatch dataLatch2 = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             private AtomicInteger dataCount = new AtomicInteger();
 
@@ -264,7 +266,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+                session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -279,12 +281,12 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
-                }, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
+                }, new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream stream)
                     {
-                        stream.data(new StringDataInfo(serverData, true));
+                        stream.data(new StringDataInfo(serverData, true), new Callback.Adapter());
                     }
                 });
             }
@@ -299,8 +301,8 @@ public class SynReplyTest extends AbstractTest
             {
                 Assert.assertEquals(0, stream.getId() % 2);
 
-                stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(clientData, true));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(new StringDataInfo(clientData, true), new Callback.Adapter());
                 synLatch.countDown();
 
                 return new StreamFrameListener.Adapter()
@@ -336,8 +338,8 @@ public class SynReplyTest extends AbstractTest
             {
                 Assert.assertTrue(stream.isHalfClosed());
 
-                stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data, true));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.data(new StringDataInfo(data, true), new Callback.Adapter());
 
                 return null;
             }
@@ -364,8 +366,8 @@ public class SynReplyTest extends AbstractTest
                 dataLatch.countDown();
             }
         };
-        session.syn(new SynInfo(true), clientStreamFrameListener);
-        session.syn(new SynInfo(true), clientStreamFrameListener);
+        session.syn(new SynInfo(new Fields(), true), clientStreamFrameListener);
+        session.syn(new SynInfo(new Fields(), true), clientStreamFrameListener);
 
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));

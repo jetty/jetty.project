@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="645"
+   height="350"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="websocket-stack-extensions.svg"
+   inkscape:export-filename="/home/joakim/code/intalio/org.eclipse.jetty9.project/jetty-websocket/websocket-core/src/main/javadoc/org/eclipse/jetty/websocket/doc-files/websocket-stack-extensions.png"
+   inkscape:export-xdpi="111.63"
+   inkscape:export-ydpi="111.63">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.5972939"
+     inkscape:cx="332.46256"
+     inkscape:cy="171.52658"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     borderlayer="true">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3006"
+       empspacing="5"
+       dotted="true"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true"
+       spacingx="5px"
+       spacingy="5px" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Background"
+     sodipodi:insensitive="true">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none"
+       id="rect3046"
+       width="645"
+       height="350"
+       x="9.2142858e-07"
+       y="5.0000006e-07" />
+  </g>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-702.36218)">
+    <rect
+       y="952.36218"
+       x="40.000004"
+       height="70"
+       width="560"
+       id="rect3977"
+       style="fill:#bdbdbd;fill-opacity:1;stroke:none" />
+    <rect
+       style="fill:#d1d1d1;fill-opacity:1;stroke:none"
+       id="rect3975"
+       width="560"
+       height="170"
+       x="40.000004"
+       y="782.36218" />
+    <path
+       style="fill:none;stroke:#858585;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:4, 1;stroke-dashoffset:0"
+       d="m 25.000004,952.36217 594.999996,0"
+       id="path4004"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <rect
+       y="732.36218"
+       x="40.000004"
+       height="50"
+       width="560"
+       id="rect3973"
+       style="fill:#e7e7e7;fill-opacity:1;stroke:none" />
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path3999"
+       d="m 25.000004,782.36217 594.999996,0"
+       style="fill:none;stroke:#858585;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:4, 1;stroke-dashoffset:0" />
+    <g
+       transform="translate(24.999996,-35.000005)"
+       id="g4031">
+      <rect
+         style="fill:#caf3f6;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-opacity:1"
+         id="rect3008"
+         width="400"
+         height="25.000031"
+         x="25"
+         y="1047.3622" />
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="224.91454"
+         y="1063.7245"
+         id="text3778"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan3780"
+           x="224.91454"
+           y="1063.7245">Physical Connection</tspan></text>
+    </g>
+    <rect
+       style="fill:#caf3f6;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-opacity:1"
+       id="rect3797"
+       width="400"
+       height="25"
+       x="49.999996"
+       y="987.36218" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="249.91455"
+       y="1003.7245"
+       id="text3799"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3801"
+         x="249.91455"
+         y="1003.7245">Jetty I/O EndPoint</tspan></text>
+    <rect
+       y="927.36212"
+       x="49.999996"
+       height="59.999992"
+       width="400"
+       id="rect3805"
+       style="fill:#caf3f6;fill-opacity:1;stroke:#000000;stroke-width:0.99999988;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3807"
+       y="978.72449"
+       x="249.91455"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="978.72449"
+         x="249.91455"
+         id="tspan3809"
+         sodipodi:role="line">Jetty WebSocketConnection</tspan></text>
+    <rect
+       style="color:#000000;fill:#000000;fill-opacity:0.12328766;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.56470588;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3786"
+       width="190"
+       height="25"
+       x="60"
+       y="937.36218" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="149.31982"
+       y="954.86609"
+       id="text3815"
+       sodipodi:linespacing="125%"><tspan
+         id="tspan3822"
+         sodipodi:role="line"
+         x="149.31982"
+         y="954.86609">Parser</tspan></text>
+    <rect
+       y="937.36218"
+       x="250"
+       height="25"
+       width="190"
+       id="rect3788"
+       style="color:#000000;fill:#000000;fill-opacity:0.12328766;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.56470588;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3826"
+       y="954.95837"
+       x="314.03955"
+       style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         id="tspan3830"
+         y="954.95837"
+         x="314.03955"
+         sodipodi:role="line">Generator</tspan></text>
+    <rect
+       style="fill:#caf3f6;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-opacity:1"
+       id="rect3849"
+       width="400"
+       height="59.999996"
+       x="50"
+       y="742.36218" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="249.91455"
+       y="758.72449"
+       id="text3851"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3853"
+         x="249.91455"
+         y="758.72449">WebSocket Session</tspan></text>
+    <rect
+       style="fill:#caf3f6;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-opacity:1"
+       id="rect3865"
+       width="400"
+       height="25"
+       x="50"
+       y="717.36218" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="249.91455"
+       y="733.72449"
+       id="text3867"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3869"
+         x="249.91455"
+         y="733.72449">WebSocket POJO</tspan></text>
+    <rect
+       y="767.36218"
+       x="60"
+       height="25"
+       width="190"
+       id="rect3881"
+       style="color:#000000;fill:#000000;fill-opacity:0.12328766;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.56470588;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <text
+       transform="scale(0.9746794,1.0259784)"
+       sodipodi:linespacing="125%"
+       id="text3883"
+       y="765.2027"
+       x="158.80678"
+       style="font-size:13.64551163px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="765.2027"
+         x="158.80678"
+         sodipodi:role="line"
+         id="tspan3885">EventDriver</tspan></text>
+    <rect
+       style="fill:#000000;fill-opacity:0.12328766;stroke:#000000;stroke-width:1;stroke-opacity:0.56470588"
+       id="rect3905"
+       width="190"
+       height="25"
+       x="250"
+       y="767.36218" />
+    <text
+       transform="scale(0.97467941,1.0259784)"
+       xml:space="preserve"
+       style="font-size:13.64551163px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="353.74265"
+       y="765.2027"
+       id="text3907"
+       sodipodi:linespacing="125%"><tspan
+         id="tspan3909"
+         sodipodi:role="line"
+         x="353.74265"
+         y="765.2027">RemoteEndpoint</tspan></text>
+    <rect
+       y="812.36218"
+       x="49.999996"
+       height="104.99999"
+       width="400"
+       id="rect4036"
+       style="fill:#fdff14;fill-opacity:0.37442926;stroke:#87882d;stroke-width:0.99999994;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3979"
+       y="970.67273"
+       x="470"
+       style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="970.67273"
+         x="470"
+         id="tspan3981"
+         sodipodi:role="line">Network</tspan><tspan
+         id="tspan3983"
+         y="985.67273"
+         x="470"
+         sodipodi:role="line">(ByteBuffers)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3985"
+       y="802.36218"
+       x="470"
+       style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="802.36218"
+         x="470"
+         id="tspan3987"
+         sodipodi:role="line">Internal</tspan><tspan
+         id="tspan3989"
+         y="817.36218"
+         x="470"
+         sodipodi:role="line">(WebSocket Frame)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3991"
+       y="752.98816"
+       x="470"
+       style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="752.98816"
+         x="470"
+         id="tspan3993"
+         sodipodi:role="line">Message</tspan><tspan
+         id="tspan3995"
+         y="767.98816"
+         x="470"
+         sodipodi:role="line">(Text or Binary)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3867-0"
+       y="827.36218"
+       x="249.34033"
+       style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         y="827.36218"
+         x="249.34033"
+         id="tspan3869-0"
+         sodipodi:role="line">ExtensionStack</tspan></text>
+    <g
+       id="g4630"
+       transform="translate(0,10.000122)">
+      <rect
+         y="837.36218"
+         x="60"
+         height="20.000149"
+         width="380"
+         id="rect4588"
+         style="fill:#fdff14;fill-opacity:0.37442926;stroke:#87882d;stroke-width:0.99999994;stroke-opacity:1" />
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="249.91455"
+         y="851.22449"
+         id="text3867-0-6"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan3869-0-8"
+           x="249.91455"
+           y="851.22449">Message Compression Extension</tspan></text>
+    </g>
+    <g
+       id="g4635"
+       transform="translate(0,29.999997)">
+      <rect
+         style="fill:#fdff14;fill-opacity:0.37442926;stroke:#87882d;stroke-width:0.99999994;stroke-opacity:1"
+         id="rect4637"
+         width="380"
+         height="20.000149"
+         x="60"
+         y="837.36218" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text4639"
+         y="851.22449"
+         x="249.91455"
+         style="font-size:14px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="851.22449"
+           x="249.91455"
+           id="tspan4641"
+           sodipodi:role="line">Fragmentation Extension</tspan></text>
+    </g>
+    <g
+       id="g4648">
+      <path
+         style="fill:#f7d1d1;fill-opacity:1;stroke:#dd9191;stroke-width:1;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         d="m 95.031248,947.36218 0,-141.74193 7.656252,0 -17.656252,-18.25807 -17.6875,18.25807 7.6875,0 0,141.74193 20,0 z"
+         id="rect3934"
+         inkscape:connector-curvature="0" />
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-925.48132"
+         y="88.87793"
+         id="text3948"
+         sodipodi:linespacing="125%"
+         transform="matrix(0,-1,1,0,0,0)"><tspan
+           sodipodi:role="line"
+           id="tspan3950"
+           x="-925.48132"
+           y="88.87793">IncomingFrames</tspan></text>
+    </g>
+    <g
+       id="g4643">
+      <path
+         style="fill:#f7d1d1;fill-opacity:1;stroke:#dd9191;stroke-width:0.99999988;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         d="m 419.96875,947.3621 17.6875,-20.96294 -7.6875,0 0,-139.03698 -20,0 0,139.03698 -7.65625,0 17.65625,20.96294 z"
+         id="rect3954"
+         inkscape:connector-curvature="0" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3969"
+         y="-416.12207"
+         x="809.57794"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"
+         transform="matrix(0,1,-1,0,0,0)"><tspan
+           y="-416.12207"
+           x="809.57794"
+           id="tspan3971"
+           sodipodi:role="line">OutgoingFrames</tspan></text>
+    </g>
+  </g>
+</svg>

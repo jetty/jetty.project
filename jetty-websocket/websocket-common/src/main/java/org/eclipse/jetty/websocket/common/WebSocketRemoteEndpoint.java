@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,15 +21,15 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.WriteResult;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
  * Endpoint for Writing messages to the Remote websocket.
@@ -50,6 +50,23 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         this.outgoing = outgoing;
     }
 
+    private void blockingWrite(WebSocketFrame frame) throws IOException
+    {
+        Future<Void> fut = sendAsyncFrame(frame);
+        try
+        {
+            fut.get(); // block till done
+        }
+        catch (ExecutionException e)
+        {
+            throw new IOException("Failed to write bytes",e.getCause());
+        }
+        catch (InterruptedException e)
+        {
+            throw new IOException("Failed to write bytes",e);
+        }
+    }
+
     public InetSocketAddress getInetSocketAddress()
     {
         return connection.getRemoteAddress();
@@ -59,54 +76,48 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
      * Internal
      * 
      * @param frame
-     * @return
+     *            the frame to write
+     * @return the future for the network write of the frame
      */
-    private Future<WriteResult> sendAsyncFrame(WebSocketFrame frame)
+    private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
+        FutureWriteCallback future = new FutureWriteCallback();
         try
         {
-            connection.assertOutputOpen();
-            return outgoing.outgoingFrame(frame);
+            connection.getIOState().assertOutputOpen();
+            outgoing.outgoingFrame(frame,future);
         }
         catch (IOException e)
         {
-            return new FailedFuture(e);
+            future.writeFailed(e);
         }
+        return future;
     }
 
+    /**
+     * Blocking write of bytes.
+     */
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        connection.assertOutputOpen();
+        connection.getIOState().assertOutputOpen();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBytes({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
         }
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        outgoing.outgoingFrame(frame);
+        blockingWrite(frame);
     }
 
     @Override
-    public Future<WriteResult> sendBytesByFuture(ByteBuffer data)
+    public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBytesByFuture({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
         }
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
         return sendAsyncFrame(frame);
-    }
-
-    private void sendFrame(Frame frame)
-    {
-        try
-        {
-            outgoing.outgoingFrame(frame);
-        }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-        }
     }
 
     @Override
@@ -116,8 +127,8 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
         }
-        Frame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
-        outgoing.outgoingFrame(frame);
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
+        blockingWrite(frame);
     }
 
     @Override
@@ -127,43 +138,51 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendPartialString({}, {})",fragment,isLast);
         }
-        Frame frame = WebSocketFrame.text(fragment).setFin(isLast);
-        outgoing.outgoingFrame(frame);
+        WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
+        blockingWrite(frame);
     }
 
     @Override
-    public void sendPing(ByteBuffer applicationData)
+    public void sendPing(ByteBuffer applicationData) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Ping with {}",BufferUtil.toDetailString(applicationData));
+            LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
         }
-        Frame frame = WebSocketFrame.ping().setPayload(applicationData);
-        sendFrame(frame);
+        WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
+        blockingWrite(frame);
     }
 
     @Override
-    public void sendPong(ByteBuffer applicationData)
+    public void sendPong(ByteBuffer applicationData) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Pong with {}",BufferUtil.toDetailString(applicationData));
+            LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
         }
-        Frame frame = WebSocketFrame.pong().setPayload(applicationData);
-        sendFrame(frame);
+        WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
+        blockingWrite(frame);
     }
 
     @Override
     public void sendString(String text) throws IOException
     {
-        Frame frame = WebSocketFrame.text(text);
-        outgoing.outgoingFrame(frame);
+        WebSocketFrame frame = WebSocketFrame.text(text);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+        }
+        blockingWrite(WebSocketFrame.text(text));
     }
 
     @Override
-    public Future<WriteResult> sendStringByFuture(String text)
+    public Future<Void> sendStringByFuture(String text)
     {
         WebSocketFrame frame = WebSocketFrame.text(text);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+        }
         return sendAsyncFrame(frame);
     }
 }

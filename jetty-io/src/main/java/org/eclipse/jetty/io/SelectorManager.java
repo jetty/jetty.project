@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -57,11 +58,15 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    /**
+     * The default connect timeout, in milliseconds
+     */
+    public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
 
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
-    private long _connectTimeout = 15000;
+    private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -86,14 +91,24 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return scheduler;
     }
 
+    /**
+     * Get the connect timeout
+     * 
+     * @return the connect timeout (in milliseconds)
+     */
     public long getConnectTimeout()
     {
         return _connectTimeout;
     }
 
-    public void setConnectTimeout(long connectTimeout)
+    /**
+     * Set the connect timeout (in milliseconds)
+     * 
+     * @param milliseconds the number of milliseconds for the timeout
+     */
+    public void setConnectTimeout(long milliseconds)
     {
-        _connectTimeout = connectTimeout;
+        _connectTimeout = milliseconds;
     }
 
     /**
@@ -598,7 +613,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
 
             Selector selector = _selector;
-            if (selector != null)
+            if (selector != null && selector.isOpen())
             {
                 final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
                 dump.add(where);
@@ -711,7 +726,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     channel.register(_selector, SelectionKey.OP_CONNECT, this);
                 }
-                catch (ClosedChannelException x)
+                catch (ClosedSelectorException | ClosedChannelException x)
                 {
                     LOG.debug(x);
                 }

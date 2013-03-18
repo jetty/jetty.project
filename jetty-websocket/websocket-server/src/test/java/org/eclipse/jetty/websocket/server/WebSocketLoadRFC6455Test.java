@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -91,8 +93,9 @@ public class WebSocketLoadRFC6455Test
             WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
             // _endp=new SocketEndPoint(socket);
-            _generator = new UnitGenerator();
-            _parser = new Parser(policy);
+            ByteBufferPool bufferPool = new MappedByteBufferPool();
+            _generator = new Generator(policy,bufferPool);
+            _parser = new Parser(policy,bufferPool);
 
         }
 

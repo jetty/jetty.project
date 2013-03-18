@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,13 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
+/**
+ * A {@link ContentProvider} for {@link ByteBuffer}s.
+ * <p />
+ * The position and limit of the {@link ByteBuffer}s passed to the constructor are not modified,
+ * and each invocation of the {@link #iterator()} method returns a {@link ByteBuffer#slice() slice}
+ * of the original {@link ByteBuffer}.
+ */
 public class ByteBufferContentProvider implements ContentProvider
 {
     private final ByteBuffer[] buffers;

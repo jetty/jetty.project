@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -81,13 +81,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         _selector = selector;
         _key = key;
         setIdleTimeout(idleTimeout);
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        super.setIdleTimeout(idleTimeout);
-        scheduleIdleTimeout(idleTimeout);
     }
 
     @Override
@@ -187,10 +180,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     public void onOpen()
     {
         if (_open.compareAndSet(false, true))
-        {
             super.onOpen();
-            scheduleIdleTimeout(getIdleTimeout());
-        }
     }
 
     @Override
@@ -201,7 +191,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         // We do a best effort to print the right toString() and that's it.
         try
         {
-            boolean valid = _key.isValid();
+            boolean valid = _key!=null && _key.isValid();
             int keyInterests = valid ? _key.interestOps() : -1;
             int keyReadiness = valid ? _key.readyOps() : -1;
             return String.format("%s{io=%d,kio=%d,kro=%d}",

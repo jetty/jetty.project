@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -190,20 +190,6 @@ public abstract class Resource implements ResourceFactory
             }
         }
 
-        // Make sure that any special characters stripped really are ignorable.
-        String nurl=url.toString();
-        if (nurl.length()>0 &&  nurl.charAt(nurl.length()-1)!=resource.charAt(resource.length()-1))
-        {
-            if ((nurl.charAt(nurl.length()-1)!='/' ||
-                 nurl.charAt(nurl.length()-2)!=resource.charAt(resource.length()-1))
-                &&
-                (resource.charAt(resource.length()-1)!='/' ||
-                 resource.charAt(resource.length()-2)!=nurl.charAt(nurl.length()-1)
-                 ))
-            {
-                return new BadResource(url,"Trailing special characters stripped by URL in "+resource);
-            }
-        }
         return newResource(url);
     }
 
@@ -410,13 +396,6 @@ public abstract class Resource implements ResourceFactory
     public abstract ReadableByteChannel getReadableByteChannel()
         throws java.io.IOException;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Returns an output stream to the resource
-     */
-    public abstract OutputStream getOutputStream()
-        throws java.io.IOException, SecurityException;
-    
     /* ------------------------------------------------------------ */
     /**
      * Deletes the given resource

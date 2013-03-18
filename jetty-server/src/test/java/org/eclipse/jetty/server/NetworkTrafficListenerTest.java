@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,10 +56,10 @@ public class NetworkTrafficListenerTest
     public void initConnector(Handler handler) throws Exception
     {
         server = new Server();
-        server.setSendDateHeader(false);
-        server.setSendServerVersion(false);
 
         connector = new NetworkTrafficSelectChannelConnector(server);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +65,23 @@ class JarFileResource extends JarResource
         _list=null;
         _entry=null;
         _file=null;
+        //if the jvm is not doing url caching, then the JarFiles will not be cached either,
+        //and so they are safe to close
+        if (!getUseCaches())
+        {
+            if ( _jarFile != null )
+            {
+                try
+                {
+                    LOG.debug("Closing JarFile "+_jarFile.getName());
+                    _jarFile.close();
+                }
+                catch ( IOException ioe )
+                {
+                    LOG.ignore(ioe);
+                }
+            }
+        }
         _jarFile=null;
         super.release();
     }
@@ -303,12 +320,11 @@ class JarFileResource extends JarResource
                     throw new IllegalStateException();
         }
         
-        Enumeration e=jarFile.entries();
+        Enumeration<JarEntry> e=jarFile.entries();
         String dir=_urlString.substring(_urlString.indexOf("!/")+2);
         while(e.hasMoreElements())
         {
-            
-            JarEntry entry = (JarEntry) e.nextElement();               
+            JarEntry entry = e.nextElement();               
             String name=entry.getName().replace('\\','/');               
             if(!name.startsWith(dir) || name.length()==dir.length())
             {

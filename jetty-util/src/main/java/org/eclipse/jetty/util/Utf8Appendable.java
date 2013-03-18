@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,9 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -47,6 +50,7 @@ import java.nio.ByteBuffer;
  **/
 public abstract class Utf8Appendable
 {
+    protected static final Logger LOG = Log.getLogger(Utf8Appendable.class);
     public static final char REPLACEMENT = '\ufffd';
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
@@ -208,5 +212,44 @@ public abstract class Utf8Appendable
         {
             super("Not valid UTF8! "+reason);
         }
+    }
+
+    protected void checkState()
+    {
+        if (!isUtf8SequenceComplete())
+        {
+            _codep=0;
+            _state = UTF8_ACCEPT;
+            try
+            {
+                _appendable.append(REPLACEMENT);
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            throw new NotUtf8Exception("incomplete UTF8 sequence");
+        }
+    }
+    
+    public String toReplacedString()
+    {
+        if (!isUtf8SequenceComplete())
+        {
+            _codep=0;
+            _state = UTF8_ACCEPT;
+            try
+            {
+                _appendable.append(REPLACEMENT);
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            Throwable th= new NotUtf8Exception("incomplete UTF8 sequence");
+            LOG.warn(th.toString());
+            LOG.debug(th);
+        }
+        return _appendable.toString();
     }
 }

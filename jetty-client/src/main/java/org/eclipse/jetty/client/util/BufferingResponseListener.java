@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -88,7 +88,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
     {
         long newLength = buffer.length + content.remaining();
         if (newLength > maxLength)
-            throw new IllegalStateException("Buffering capacity exceeded");
+            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
 
         byte[] newBuffer = new byte[(int)newLength];
         System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);

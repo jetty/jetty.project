@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,8 +41,6 @@ import org.eclipse.jetty.util.log.Log;
  *
  * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful 
  * name than EmptyPromise</p>
- *  
- * @param <C> the type of the context object
  */
 public interface Callback
 {
@@ -61,8 +59,6 @@ public interface Callback
 
     /**
      * <p>Empty implementation of {@link Callback}</p>
-     *
-     * @param <C> the type of the context object
      */
     public static class Adapter implements Callback
     {

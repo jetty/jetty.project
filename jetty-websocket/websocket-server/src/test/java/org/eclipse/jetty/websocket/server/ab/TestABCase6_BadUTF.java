@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -169,18 +168,12 @@ public class TestABCase6_BadUTF extends AbstractABCase
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerClose();
+            fuzzer.expectServerClose(Fuzzer.NOT_CLEAN_CLOSE);
         }
         finally
         {
             fuzzer.close();
             enableStacks(Parser.class,true);
         }
-    }
-
-    private void enableStacks(Class<?> clazz, boolean enabled)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(!enabled);
     }
 }

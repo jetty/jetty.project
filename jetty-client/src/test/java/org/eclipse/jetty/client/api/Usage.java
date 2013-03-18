@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,20 +20,26 @@ package org.eclipse.jetty.client.api;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,9 +53,8 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        Future<ContentResponse> responseFuture = client.GET("http://localhost:8080/foo");
         // Block to get the response
-        Response response = responseFuture.get();
+        ContentResponse response = client.GET("http://localhost:8080/foo");
 
         // Verify response status code
         Assert.assertEquals(200, response.getStatus());
@@ -73,12 +78,10 @@ public class Usage
                 .param("a", "b")
                 .header("X-Header", "Y-value")
                 .agent("Jetty HTTP Client")
-                .idleTimeout(5000L);
+                .idleTimeout(5000, TimeUnit.MILLISECONDS)
+                .timeout(20, TimeUnit.SECONDS);
 
-        Future<ContentResponse> responseFuture = request.send();
-        // Block to get the response
-        Response response = responseFuture.get();
-
+        ContentResponse response = request.send();
         Assert.assertEquals(200, response.getStatus());
     }
 
@@ -98,7 +101,7 @@ public class Usage
             @Override
             public void onComplete(Result result)
             {
-                if (!result.isFailed())
+                if (result.isSucceeded())
                 {
                     responseRef.set(result.getResponse());
                     latch.countDown();
@@ -136,7 +139,7 @@ public class Usage
                     public void onSuccess(Request request)
                     {
                     }
-                }).send().get(5, TimeUnit.SECONDS);
+                }).send();
         Assert.assertEquals(200, response.getStatus());
     }
 
@@ -147,12 +150,14 @@ public class Usage
         client.start();
 
         // Create an explicit connection, and use try-with-resources to manage it
-        try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest("localhost", 8080);
 
-            // Asynchronous send but using BlockingResponseListener
-            BlockingResponseListener listener = new BlockingResponseListener(request);
+            // Asynchronous send but using FutureResponseListener
+            FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             // Wait for the response on the listener
             Response response = listener.get(5, TimeUnit.SECONDS);
@@ -169,7 +174,7 @@ public class Usage
         client.start();
 
         // One liner to upload files
-        Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send().get();
+        Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -181,10 +186,10 @@ public class Usage
         client.start();
 
         // Set a cookie to be sent in requests that match the cookie's domain
-        client.getCookieStore().addCookie(client.getDestination("http", "host", 8080), new HttpCookie("name", "value"));
+        client.getCookieStore().add(URI.create("http://host:8080/path"), new HttpCookie("name", "value"));
 
         // Send a request for the cookie's domain
-        Response response = client.newRequest("host", 8080).send().get();
+        Response response = client.newRequest("host", 8080).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -195,13 +200,13 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        String uri = "http://localhost:8080/secure";
+        URI uri = URI.create("http://localhost:8080/secure");
 
         // Setup Basic authentication credentials for TestRealm
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, "TestRealm", "username", "password"));
 
         // One liner to send the request
-        ContentResponse response = client.newRequest(uri).send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.newRequest(uri).timeout(5, TimeUnit.SECONDS).send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -218,8 +223,8 @@ public class Usage
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Follow redirects for this request only
                 .followRedirects(true)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
     }
@@ -269,9 +274,73 @@ public class Usage
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Provide the content as InputStream
                 .content(new InputStreamContentProvider(input))
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testRequestOutputStream() throws Exception
+    {
+        HttpClient client = new HttpClient();
+        client.start();
+
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        try (OutputStream output = content.getOutputStream())
+        {
+            client.newRequest("localhost", 8080)
+                    .content(content)
+                    .send(new Response.CompleteListener()
+                    {
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            Assert.assertEquals(200, result.getResponse().getStatus());
+                        }
+                    });
+
+            output.write(new byte[1024]);
+            output.write(new byte[512]);
+            output.write(new byte[256]);
+            output.write(new byte[128]);
+        }
+    }
+
+    @Test
+    public void testProxyUsage() throws Exception
+    {
+        // In proxies, we receive the headers but not the content, so we must be able to send the request with
+        // a lazy content provider that does not block request.send(...)
+
+        HttpClient client = new HttpClient();
+        client.start();
+
+        final AtomicBoolean sendContent = new AtomicBoolean(true);
+        DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
+        client.newRequest("localhost", 8080)
+                .content(async)
+                .send(new Response.Listener.Empty()
+                {
+                    @Override
+                    public void onBegin(Response response)
+                    {
+                        if (response.getStatus() == 404)
+                            sendContent.set(false);
+                    }
+                });
+
+        Thread.sleep(100);
+
+        if (sendContent.get())
+            async.offer(ByteBuffer.wrap(new byte[]{0}));
+
+        Thread.sleep(100);
+
+        if (sendContent.get())
+            async.offer(ByteBuffer.wrap(new byte[]{0}));
+
+        Thread.sleep(100);
+
+        async.close();
     }
 }

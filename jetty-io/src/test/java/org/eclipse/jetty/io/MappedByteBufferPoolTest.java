@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentMap;
-
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentMap;
+
+import org.eclipse.jetty.util.StringUtil;
+import org.junit.Test;
 
 public class MappedByteBufferPoolTest
 {
@@ -81,5 +83,34 @@ public class MappedByteBufferPoolTest
         bufferPool.clear();
 
         assertTrue(buffers.isEmpty());
+    }
+    
+    /**
+     * In a scenario where MappedByteBufferPool is being used improperly, such as releasing a buffer that wasn't created/acquired by the MappedByteBufferPool,
+     * an assertion is tested for.
+     */
+    @Test
+    public void testReleaseAssertion() throws Exception
+    {
+        int factor = 1024;
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor);
+
+        try
+        {
+            // Release a few small non-pool buffers
+            bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("Hello")));
+
+            /* NOTES: 
+             * 
+             * 1) This test will pass on command line maven build, as its surefire setup uses "-ea" already.
+             * 2) In Eclipse, goto the "Run Configuration" for this test case.
+             *    Select the "Arguments" tab, and make sure "-ea" is present in the text box titled "VM arguments"
+             */
+            fail("Expected java.lang.AssertionError, do you have '-ea' JVM command line option enabled?");
+        }
+        catch (java.lang.AssertionError e)
+        {
+            // Expected path.
+        }
     }
 }

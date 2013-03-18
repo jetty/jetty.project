@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,17 +35,15 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 public abstract class AbstractRemoveSessionTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
-    
-    
+
+
     @Test
     public void testRemoveSession() throws Exception
     {
@@ -58,16 +55,16 @@ public abstract class AbstractRemoveSessionTest
         context.addServlet(TestServlet.class, servletMapping);
         TestEventListener testListener = new TestEventListener();
         context.getSessionHandler().addEventListener(testListener);
-        server.start();
-        int port = server.getPort();
         try
         {
+            server.start();
+            int port = server.getPort();
+
             HttpClient client = new HttpClient();
             client.start();
             try
             {
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -76,22 +73,20 @@ public abstract class AbstractRemoveSessionTest
                 //ensure sessionCreated listener is called
                 assertTrue (testListener.isCreated());
 
-                //now delete the session       
+                //now delete the session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
                 assertTrue(testListener.isDestroyed());
-                
-                
+
+
                 // The session is not there anymore, but we present an old cookie
                 // The server creates a new session, we must ensure we released all locks
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
@@ -129,7 +124,7 @@ public abstract class AbstractRemoveSessionTest
             }
         }
     }
-    
+
     public static class TestEventListener implements HttpSessionListener
     {
         boolean wasCreated;
@@ -157,5 +152,5 @@ public abstract class AbstractRemoveSessionTest
         }
 
     }
-    
+
 }

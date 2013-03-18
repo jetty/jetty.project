@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,11 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -53,35 +51,27 @@ public class MessageCompressionExtension extends AbstractExtension
         }
 
         ByteBuffer data = frame.getPayload();
-        try
+        method.decompress().input(data);
+        while (!method.decompress().isDone())
         {
-            method.decompress().input(data);
-            while (!method.decompress().isDone())
+            ByteBuffer uncompressed = method.decompress().process();
+            if (uncompressed == null)
             {
-                ByteBuffer uncompressed = method.decompress().process();
-                if (uncompressed == null)
-                {
-                    continue;
-                }
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
-                if (!method.decompress().isDone())
-                {
-                    out.setFin(false);
-                }
-                out.setRsv1(false); // Unset RSV1 on decompressed frame
-                nextIncomingFrame(out);
+                continue;
             }
-
-            // reset only at the end of a message.
-            if (frame.isFin())
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
+            if (!method.decompress().isDone())
             {
-                method.decompress().end();
+                out.setFin(false);
             }
+            out.setRsv1(false); // Unset RSV1 on decompressed frame
+            nextIncomingFrame(out);
         }
-        finally
+
+        // reset only at the end of a message.
+        if (frame.isFin())
         {
-            // release original buffer (no longer needed)
-            getBufferPool().release(data);
+            method.decompress().end();
         }
     }
 
@@ -102,50 +92,41 @@ public class MessageCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
             // skip, cannot compress control frames.
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
-
-        Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
-        try
+        // deflate data
+        method.compress().input(data);
+        while (!method.compress().isDone())
         {
-            // deflate data
-            method.compress().input(data);
-            while (!method.compress().isDone())
+            ByteBuffer buf = method.compress().process();
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
+            out.setRsv1(true);
+            if (!method.compress().isDone())
             {
-                ByteBuffer buf = method.compress().process();
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
-                out.setRsv1(true);
-                if (!method.compress().isDone())
-                {
-                    out.setFin(false);
-                    future = nextOutgoingFrame(out);
-                }
-                else
-                {
-                    future = nextOutgoingFrame(out);
-                }
+                out.setFin(false);
+                // no callback for start/middle frames
+                nextOutgoingFrame(out,null);
             }
-
-            // reset only at end of message
-            if (frame.isFin())
+            else
             {
-                method.compress().end();
+                // pass through callback to last frame
+                nextOutgoingFrame(out,callback);
             }
         }
-        finally
-        {
-            // free original data buffer
-            getBufferPool().release(data);
-        }
 
-        return future;
+        // reset only at end of message
+        if (frame.isFin())
+        {
+            method.compress().end();
+        }
     }
 
     @Override

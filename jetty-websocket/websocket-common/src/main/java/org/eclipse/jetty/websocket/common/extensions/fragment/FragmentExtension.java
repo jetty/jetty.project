@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,10 @@
 package org.eclipse.jetty.websocket.common.extensions.fragment;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -53,12 +51,13 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
             // Cannot fragment Control Frames
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
 
         int length = frame.getPayloadLength();
@@ -71,7 +70,8 @@ public class FragmentExtension extends AbstractExtension
         if (maxLength <= 0)
         {
             // output original frame
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
 
         boolean continuation = false;
@@ -87,7 +87,8 @@ public class FragmentExtension extends AbstractExtension
             payload.limit(Math.min(payload.position() + maxLength,originalLimit));
             frag.setPayload(payload);
 
-            nextOutgoingFrame(frag);
+            // no callback for beginning and middle parts
+            nextOutgoingFrame(frag,null);
 
             length -= maxLength;
             opcode = OpCode.CONTINUATION;
@@ -104,7 +105,7 @@ public class FragmentExtension extends AbstractExtension
         payload.limit(originalLimit);
         frag.setPayload(payload);
 
-        return nextOutgoingFrame(frag);
+        nextOutgoingFrame(frag,callback);
     }
 
     @Override

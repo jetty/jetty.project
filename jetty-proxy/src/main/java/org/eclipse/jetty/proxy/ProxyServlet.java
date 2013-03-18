@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,11 +43,12 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.client.util.TimedResponseListener;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -210,7 +211,7 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>maxConnections</td>
      * <td>32768</td>
-     * <td>The max number of connection per address, see {@link HttpClient#setMaxConnectionsPerAddress(int)}</td>
+     * <td>The max number of connections per destination, see {@link HttpClient#setMaxConnectionsPerDestination(int)}</td>
      * </tr>
      * <tr>
      * <td>idleTimeout</td>
@@ -220,7 +221,7 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>timeout</td>
      * <td>60000</td>
-     * <td>The total timeout in milliseconds, see {@link TimedResponseListener}</td>
+     * <td>The total timeout in milliseconds, see {@link Request#timeout(long, TimeUnit)}</td>
      * </tr>
      * <tr>
      * <td>requestBufferSize</td>
@@ -246,6 +247,9 @@ public class ProxyServlet extends HttpServlet
         // Redirects must be proxied as is, not followed
         client.setFollowRedirects(false);
 
+        // Must not store cookies, otherwise cookies of different clients will mix
+        client.setCookieStore(new HttpCookieStore.Empty());
+
         String value = config.getInitParameter("maxThreads");
         if (value == null)
             value = "256";
@@ -260,7 +264,7 @@ public class ProxyServlet extends HttpServlet
         value = config.getInitParameter("maxConnections");
         if (value == null)
             value = "32768";
-        client.setMaxConnectionsPerAddress(Integer.parseInt(value));
+        client.setMaxConnectionsPerDestination(Integer.parseInt(value));
 
         value = config.getInitParameter("idleTimeout");
         if (value == null)
@@ -380,7 +384,7 @@ public class ProxyServlet extends HttpServlet
             // Remove hop-by-hop headers
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
-            
+
             if (_hostHeader!=null && lowerHeaderName.equals("host"))
                 continue;
 
@@ -394,14 +398,14 @@ public class ProxyServlet extends HttpServlet
 
         // Force the Host header if configured
         if (_hostHeader != null)
-            proxyRequest.header("Host", _hostHeader);
+            proxyRequest.header(HttpHeader.HOST, _hostHeader);
 
         // Add proxy headers
-        proxyRequest.header("Via", "http/1.1 " + _viaHost);
-        proxyRequest.header("X-Forwarded-For", request.getRemoteAddr());
-        proxyRequest.header("X-Forwarded-Proto", request.getScheme());
-        proxyRequest.header("X-Forwarded-Host", request.getHeader("Host"));
-        proxyRequest.header("X-Forwarded-Server", request.getLocalName());
+        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + _viaHost);
+        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
+        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
+        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
+        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
 
         proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
         {
@@ -458,13 +462,14 @@ public class ProxyServlet extends HttpServlet
                     System.lineSeparator(),
                     proxyRequest.getHeaders().toString().trim());
         }
-        
-        proxyRequest.send(new TimedResponseListener(getTimeout(), TimeUnit.MILLISECONDS, proxyRequest, new ProxyResponseListener(request, response)));
+
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
+        proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        for (HttpFields.Field field : proxyResponse.getHeaders())
+        for (HttpField field : proxyResponse.getHeaders())
         {
             String headerName = field.getName();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
@@ -600,7 +605,7 @@ public class ProxyServlet extends HttpServlet
             if (!_prefix.startsWith("/"))
                 throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
 
-            _log.info(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override

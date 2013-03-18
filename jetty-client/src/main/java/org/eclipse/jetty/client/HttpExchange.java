@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,21 +36,23 @@ public class HttpExchange
     private final AtomicInteger complete = new AtomicInteger();
     private final CountDownLatch terminate = new CountDownLatch(2);
     private final HttpConversation conversation;
-    private final HttpConnection connection;
+    private final HttpDestination destination;
     private final Request request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
-    private volatile boolean last;
+    private volatile HttpConnection connection;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
 
-    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, List<Response.ResponseListener> listeners)
+    public HttpExchange(HttpConversation conversation, HttpDestination destination, Request request, List<Response.ResponseListener> listeners)
     {
         this.conversation = conversation;
-        this.connection = connection;
+        this.destination = destination;
         this.request = request;
         this.listeners = listeners;
         this.response = new HttpResponse(request, listeners);
+        conversation.getExchanges().offer(this);
+        conversation.updateResponseListeners(null);
     }
 
     public HttpConversation getConversation()
@@ -83,25 +85,9 @@ public class HttpExchange
         return responseFailure;
     }
 
-    /**
-     * @return whether this exchange is the last in the conversation
-     */
-    public boolean isLast()
+    public void setConnection(HttpConnection connection)
     {
-        return last;
-    }
-
-    /**
-     * @param last whether this exchange is the last in the conversation
-     */
-    public void setLast(boolean last)
-    {
-        this.last = last;
-    }
-
-    public void receive()
-    {
-        connection.receive();
+        this.connection = connection;
     }
 
     public AtomicMarkableReference<Result> requestComplete(Throwable failure)
@@ -177,15 +163,7 @@ public class HttpExchange
             {
                 // Request and response completed
                 LOG.debug("{} complete", this);
-                if (isLast())
-                {
-                    HttpExchange first = conversation.getExchanges().peekFirst();
-                    List<Response.ResponseListener> listeners = first.getResponseListeners();
-                    for (Response.ResponseListener listener : listeners)
-                        if (listener instanceof Schedulable)
-                            ((Schedulable)listener).cancel();
-                    conversation.complete();
-                }
+                conversation.complete();
             }
             result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }
@@ -195,10 +173,23 @@ public class HttpExchange
 
     public boolean abort(Throwable cause)
     {
-        LOG.debug("Aborting {} reason {}", this, cause);
-        boolean aborted = connection.abort(this, cause);
-        LOG.debug("Aborted {}: {}", this, aborted);
-        return aborted;
+        if (destination.remove(this))
+        {
+            destination.abort(this, cause);
+            LOG.debug("Aborted while queued {}: {}", this, cause);
+            return true;
+        }
+        else
+        {
+            HttpConnection connection = this.connection;
+            // If there is no connection, this exchange is already completed
+            if (connection == null)
+                return false;
+
+            boolean aborted = connection.abort(cause);
+            LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
+            return aborted;
+        }
     }
 
     public void resetResponse(boolean success)
@@ -211,7 +202,9 @@ public class HttpExchange
 
     public void proceed(boolean proceed)
     {
-        connection.proceed(proceed);
+        HttpConnection connection = this.connection;
+        if (connection != null)
+            connection.proceed(proceed);
     }
 
     public void terminateRequest()

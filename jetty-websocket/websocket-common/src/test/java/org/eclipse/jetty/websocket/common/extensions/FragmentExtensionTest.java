@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ public class FragmentExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new MappedByteBufferPool());
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
@@ -156,7 +156,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = WebSocketFrame.text(section);
-            ext.outgoingFrame(frame);
+            ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
@@ -225,7 +225,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = WebSocketFrame.text(section);
-            ext.outgoingFrame(frame);
+            ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
@@ -282,7 +282,7 @@ public class FragmentExtensionTest
         String payload = "Are you there?";
         Frame ping = WebSocketFrame.ping().setPayload(payload);
 
-        ext.outgoingFrame(ping);
+        ext.outgoingFrame(ping,null);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);

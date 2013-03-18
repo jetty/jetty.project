@@ -3,13 +3,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>9.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
+    <jetty-setuid-version>1.0.1</jetty-setuid-version>
   </properties>
   <build>
     <plugins>
@@ -136,6 +137,63 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-setuid-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
+                  <artifactId>jetty-setuid-java</artifactId>
+                  <version>${jetty-setuid-version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
+                  <artifactId>libsetuid-linux</artifactId>
+                  <version>${jetty-setuid-version}</version>
+                  <type>so</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
+                   <destFileName>libsetuid-linux.so</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
+                  <artifactId>libsetuid-osx</artifactId>
+                  <version>${jetty-setuid-version}</version>
+                  <type>so</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
+                  <destFileName>libsetuid-osx.so</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-setuid-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
+                  <artifactId>jetty-setuid-java</artifactId>
+                  <version>${jetty-setuid-version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -162,7 +220,7 @@
             </configuration>
           </execution>
 
-            <execution>
+          <execution>
             <id>copy-orbit-servlet-api-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -180,60 +238,61 @@
                 </artifactItem>
               </artifactItems>
             </configuration>
-            </execution>
-            <execution>
-                <id>unpack-spdy</id>
-                <phase>process-resources</phase>
-                <goals>
-                    <goal>unpack-dependencies</goal>
-                </goals>
-                <configuration>
-                    <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-                    <classifier>config</classifier>
-                    <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-                    <excludes>META-INF/**</excludes>
-                    <outputDirectory>${assembly-directory}</outputDirectory>
-                </configuration>
-            </execution>
-            <execution>
-                <id>copy-lib-spdy-deps</id>
-                <phase>process-resources</phase>
-                <goals>
-                    <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                    <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-                    <includeTypes>jar</includeTypes>
-                    <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
-                </configuration>
-            </execution>
-            <execution>
-                <id>copy-orbit-lib-annotations-deps</id>
-                <phase>generate-resources</phase>
-                <goals>
-                    <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                    <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-                    <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
-                    <includeTypes>jar</includeTypes>
-                    <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
-                </configuration>
-            </execution>
-            <execution>
-                <id>copy-orbit-lib-jta-deps</id>
-                <phase>generate-resources</phase>
-                <goals>
-                    <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                    <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-                    <includeArtifactIds>javax.transaction</includeArtifactIds>
-                    <includeTypes>jar</includeTypes>
-                    <outputDirectory>${assembly-directory}/lib/jta</outputDirectory>
-                </configuration>
-            </execution>
-            <execution>
+          </execution>
+          <execution>
+            <id>unpack-spdy</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <classifier>config</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-spdy-deps</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-lib-annotations-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>copy-orbit-lib-jta-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.transaction</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-orbit-lib-jndi-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -339,7 +398,7 @@
       <artifactId>javax.security.auth.message</artifactId>
     </dependency>
 
-    <!--  jetty deps -->
+    <!-- jetty deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
@@ -377,85 +436,14 @@
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-proxy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jaas</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-rewrite</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-http-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-example-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.example-async-rest</groupId>
-      <artifactId>example-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
-      <version>${project.version}</version>
-    </dependency>
-    <!--
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -465,26 +453,55 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-policy</artifactId>
+      <artifactId>jetty-continuation</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-monitor</artifactId>
+      <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-overlay-deployer</artifactId>
+      <artifactId>jetty-jaas</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
-    -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-rewrite</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-http-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-example-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.example-async-rest</groupId>
+      <artifactId>example-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
   </dependencies>
 </project>

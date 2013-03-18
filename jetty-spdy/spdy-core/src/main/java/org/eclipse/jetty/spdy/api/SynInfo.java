@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.Fields;
 
 /**
  * <p>A container for SYN_STREAM frames metadata and data.</p>
  */
-public class SynInfo
+public class SynInfo extends Info
 {
     /**
-     * <p>Flag that indicates that this {@link DataInfo} is the last frame in the stream.</p>
+     * <p>Flag that indicates that this {@link SynInfo} is the last frame in the stream.</p>
      *
      * @see #isClose()
      * @see #getFlags()
@@ -38,18 +40,7 @@ public class SynInfo
     private final Fields headers;
 
     /**
-     * <p>Creates a new {@link SynInfo} instance with empty headers and the given close flag,
-     * not unidirectional, without associated stream, and with default priority.</p>
-     *
-     * @param close the value of the close flag
-     */
-    public SynInfo(boolean close)
-    {
-        this(new Fields(), close);
-    }
-
-    /**
-     * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag,
+     * <p>Creates a {@link SynInfo} instance with the given headers and the given close flag,
      * not unidirectional, without associated stream, and with default priority.</p>
      *
      * @param headers the {@link Fields}
@@ -57,23 +48,40 @@ public class SynInfo
      */
     public SynInfo(Fields headers, boolean close)
     {
-        this(headers, close, (byte)0);
+        this(0, TimeUnit.SECONDS, headers, close, (byte)0);
+        // either builder or setters for timeout
     }
 
     /**
      * <p>
-     * Creates a {@link ReplyInfo} instance with the given headers, the given close flag and with the given priority.
+     * Creates a {@link SynInfo} instance with the given headers, the given close flag and with the given priority.
      * </p>
-     *
      * @param headers
      *            the {@link Fields}
      * @param close
      *            the value of the close flag
      * @param priority
-     *            the priority
      */
     public SynInfo(Fields headers, boolean close, byte priority)
     {
+        this(0, TimeUnit.SECONDS, headers, close, priority);
+    }
+
+    /**
+     * <p>
+     * Creates a {@link SynInfo} instance with the given headers, the given close flag and with the given priority.
+     * </p>
+     * @param timeout the timeout value
+     * @param unit the TimeUnit of the timeout
+     * @param headers
+     *            the {@link Fields}
+     * @param close
+     *            the value of the close flag
+     * @param priority
+     */
+    public SynInfo(long timeout, TimeUnit unit, Fields headers, boolean close, byte priority)
+    {
+        super(timeout, unit);
         this.close = close;
         this.priority = priority;
         this.headers = headers;

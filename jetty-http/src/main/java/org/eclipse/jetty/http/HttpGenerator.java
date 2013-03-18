@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -542,7 +542,7 @@ public class HttpGenerator
 
         // default field values
         boolean has_server = false;
-        HttpFields.Field transfer_encoding=null;
+        HttpField transfer_encoding=null;
         boolean keep_alive=false;
         boolean close=false;
         boolean content_type=false;
@@ -551,11 +551,11 @@ public class HttpGenerator
         // Generate fields
         if (_info.getHttpFields() != null)
         {
-            for (HttpFields.Field field : _info.getHttpFields())
+            for (HttpField field : _info.getHttpFields())
             {
-                HttpHeader name = field.getHeader();
+                HttpHeader h = field.getHeader();
 
-                switch (name==null?HttpHeader.UNKNOWN:name)
+                switch (h==null?HttpHeader.UNKNOWN:h)
                 {
                     case CONTENT_LENGTH:
                         // handle specially below
@@ -648,7 +648,6 @@ public class HttpGenerator
                                     connection.append(split==null?field.getValue():split[i]);
                                 }
                             }
-
                         }
 
                         // Do NOT add yet!
@@ -666,15 +665,7 @@ public class HttpGenerator
                     }
 
                     default:
-                        if (name==null)
-                            field.putTo(header);
-                        else
-                        {
-                            header.put(name.getBytesColonSpace());
-                            field.putValueTo(header);
-                            header.put(CRLF);
-                        }
-
+                        field.putTo(header);
                 }
             }
         }
@@ -762,7 +753,6 @@ public class HttpGenerator
                 break;
 
             default:
-                // TODO - maybe allow forced chunking by setting te ???
                 break;
         }
 

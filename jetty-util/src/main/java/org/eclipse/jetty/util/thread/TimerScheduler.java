@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,11 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class TimerScheduler extends AbstractLifeCycle implements Scheduler
+
+/* ------------------------------------------------------------ */
+/** A scheduler based on the the JVM Timer class
+ */
+public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runnable
 {
     private static final Logger LOG = Log.getLogger(TimerScheduler.class);
 
@@ -39,22 +43,25 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
      */
 
     private final String _name;
+    private final boolean _daemon;
     private Timer _timer;
 
     public TimerScheduler()
     {
-        this(null);
+        this(null, false);
     }
 
-    public TimerScheduler(String name)
+    public TimerScheduler(String name, boolean daemon)
     {
-        _name=name;
+        _name = name;
+        _daemon = daemon;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        _timer=_name==null?new Timer():new Timer(_name);
+        _timer = _name == null ? new Timer() : new Timer(_name, _daemon);
+        run();
         super.doStart();
     }
 
@@ -63,18 +70,29 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
     {
         _timer.cancel();
         super.doStop();
-        _timer=null;
+        _timer = null;
     }
 
     @Override
     public Task schedule(final Runnable task, final long delay, final TimeUnit units)
     {
-        Timer timer=_timer;
-        if (timer==null)
-            throw new RejectedExecutionException("STOPPED: "+this);
-       SimpleTask t = new SimpleTask(task);
-       timer.schedule(t,units.toMillis(delay));
-       return t;
+        Timer timer = _timer;
+        if (timer == null)
+            throw new RejectedExecutionException("STOPPED: " + this);
+        SimpleTask t = new SimpleTask(task);
+        timer.schedule(t, units.toMillis(delay));
+        return t;
+    }
+
+    @Override
+    public void run()
+    {
+        Timer timer = _timer;
+        if (timer != null)
+        {
+            timer.purge();
+            schedule(this, 1, TimeUnit.SECONDS);
+        }
     }
 
     private static class SimpleTask extends TimerTask implements Task
@@ -83,7 +101,7 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
 
         private SimpleTask(Runnable runnable)
         {
-            _task=runnable;
+            _task = runnable;
         }
 
         @Override
@@ -95,7 +113,7 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while executing task "+_task,x);
+                LOG.debug("Exception while executing task " + _task, x);
             }
         }
 

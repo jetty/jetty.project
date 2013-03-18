@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Specialized {@link DataInfo} for {@link ByteBuffer} content.</p>
@@ -30,12 +31,12 @@ public class ByteBufferDataInfo extends DataInfo
 
     public ByteBufferDataInfo(ByteBuffer buffer, boolean close)
     {
-        this(buffer, close, false);
+        this(0, TimeUnit.SECONDS, buffer, close);
     }
 
-    public ByteBufferDataInfo(ByteBuffer buffer, boolean close, boolean compress)
+    public ByteBufferDataInfo(long timeout, TimeUnit unit, ByteBuffer buffer, boolean close)
     {
-        super(close, compress);
+        super(timeout, unit, close);
         this.buffer = buffer;
         this.length = buffer.remaining();
     }

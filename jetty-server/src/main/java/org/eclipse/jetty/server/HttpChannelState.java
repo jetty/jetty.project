@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -39,8 +38,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-/* ------------------------------------------------------------ */
-/** Implementation of AsyncContext interface that holds the state of request-response cycle.
+/**
+ * Implementation of AsyncContext interface that holds the state of request-response cycle.
  *
  * <table>
  * <tr><th>STATE</th><th colspan=6>ACTION</th></tr>
@@ -56,7 +55,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <tr><th align=right>COMPLETING:</th>    <td>COMPLETING</td>  <td></td>            <td></td>            <td></td>             <td></td>                <td>COMPLETED</td></tr>
  * <tr><th align=right>COMPLETED:</th>     <td></td>            <td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
  * </table>
- *
  */
 public class HttpChannelState implements AsyncContext
 {
@@ -78,12 +76,10 @@ public class HttpChannelState implements AsyncContext
         COMPLETED      // Request is complete
     }
 
-    /* ------------------------------------------------------------ */
     private final HttpChannel<?> _channel;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
 
-    /* ------------------------------------------------------------ */
     private State _state;
     private boolean _initial;
     private boolean _dispatched;
@@ -92,7 +88,6 @@ public class HttpChannelState implements AsyncContext
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncEventState _event;
 
-    /* ------------------------------------------------------------ */
     protected HttpChannelState(HttpChannel<?> channel)
     {
         _channel=channel;
@@ -100,7 +95,6 @@ public class HttpChannelState implements AsyncContext
         _initial=true;
     }
 
-    /* ------------------------------------------------------------ */
     public State getState()
     {
         synchronized(this)
@@ -109,7 +103,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void addListener(AsyncListener listener)
     {
@@ -121,7 +114,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void addListener(AsyncListener listener,ServletRequest request, ServletResponse response)
     {
@@ -134,7 +126,6 @@ public class HttpChannelState implements AsyncContext
     }
 
 
-    /* ------------------------------------------------------------ */
     @Override
     public void setTimeout(long ms)
     {
@@ -144,7 +135,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public long getTimeout()
     {
@@ -154,7 +144,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public AsyncEventState getAsyncEventState()
     {
         synchronized(this)
@@ -163,7 +152,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
@@ -173,7 +161,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String getStatusString()
     {
         synchronized (this)
@@ -185,7 +172,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the handling of the request should proceed
      */
@@ -228,10 +214,10 @@ public class HttpChannelState implements AsyncContext
 
             _responseWrapped=false;
             return true;
-            
+
         }
     }
-    /* ------------------------------------------------------------ */
+
     public void startAsync()
     {
         synchronized (this)
@@ -272,11 +258,7 @@ public class HttpChannelState implements AsyncContext
             }
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see javax.servlet.ServletRequest#suspend(long)
-     */
+
     public void startAsync(final ServletContext context,final ServletRequest request,final ServletResponse response)
     {
         synchronized (this)
@@ -319,7 +301,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void error(Throwable th)
     {
         synchronized (this)
@@ -329,7 +310,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has
@@ -382,11 +362,10 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void dispatch()
     {
-        boolean dispatch=false;
+        boolean dispatch;
         synchronized (this)
         {
             switch(_state)
@@ -417,10 +396,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see Continuation#isDispatched()
-     */
     public boolean isDispatched()
     {
         synchronized (this)
@@ -428,8 +403,7 @@ public class HttpChannelState implements AsyncContext
             return _dispatched;
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     protected void expired()
     {
         final List<AsyncListener> aListeners;
@@ -439,13 +413,12 @@ public class HttpChannelState implements AsyncContext
             {
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
+                    _expired=true;
                     aListeners=_asyncListeners;
                     break;
                 default:
-                    aListeners=null;
                     return;
             }
-            _expired=true;
         }
 
         if (aListeners!=null)
@@ -463,29 +436,28 @@ public class HttpChannelState implements AsyncContext
             }
         }
 
-
         synchronized (this)
         {
             switch(_state)
             {
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
-                    complete();
+                    _state=State.REDISPATCH;
+                    break;
+                default:
+                    _expired=false;
+                    break;
             }
         }
-
+        
         scheduleDispatch();
     }
 
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see javax.servlet.ServletRequest#complete()
-     */
     @Override
     public void complete()
     {
         // just like resume, except don't set _dispatched=true;
-        boolean dispatch=false;
+        boolean dispatch;
         synchronized (this)
         {
             switch(_state)
@@ -516,13 +488,11 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
     {
         try
         {
-            // TODO inject
             return clazz.newInstance();
         }
         catch(Exception e)
@@ -531,11 +501,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see javax.servlet.ServletRequest#complete()
-     */
     protected void completed()
     {
         final List<AsyncListener> aListeners;
@@ -549,7 +514,6 @@ public class HttpChannelState implements AsyncContext
                     break;
 
                 default:
-                    aListeners=null;
                     throw new IllegalStateException(this.getStatusString());
             }
         }
@@ -577,7 +541,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void recycle()
     {
         synchronized (this)
@@ -600,7 +563,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void cancel()
     {
         synchronized (this)
@@ -609,13 +571,11 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void scheduleDispatch()
     {
         _channel.execute(_channel);
     }
 
-    /* ------------------------------------------------------------ */
     protected void scheduleTimeout()
     {
         Scheduler scheduler = _channel.getScheduler();
@@ -623,7 +583,6 @@ public class HttpChannelState implements AsyncContext
             _event._timeout=scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS);
     }
 
-    /* ------------------------------------------------------------ */
     protected void cancelTimeout()
     {
         AsyncEventState event=_event;
@@ -635,10 +594,14 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see javax.servlet.ServletRequest#isInitial()
-     */
+    public boolean isExpired()
+    {
+        synchronized (this)
+        {
+            return _expired;
+        }
+    }
+    
     public boolean isInitial()
     {
         synchronized(this)
@@ -647,7 +610,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         synchronized(this)
@@ -666,7 +628,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     boolean isCompleting()
     {
         synchronized (this)
@@ -675,13 +636,12 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isAsync()
     {
         synchronized (this)
         {
             switch(_state)
-            {  
+            {
                 case ASYNCSTARTED:
                 case REDISPATCHING:
                 case ASYNCWAIT:
@@ -696,7 +656,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void dispatch(ServletContext context, String path)
     {
@@ -705,7 +664,6 @@ public class HttpChannelState implements AsyncContext
         dispatch();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void dispatch(String path)
     {
@@ -713,13 +671,11 @@ public class HttpChannelState implements AsyncContext
         dispatch();
     }
 
-    /* ------------------------------------------------------------ */
     public Request getBaseRequest()
     {
         return _channel.getRequest();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public ServletRequest getRequest()
     {
@@ -728,7 +684,6 @@ public class HttpChannelState implements AsyncContext
         return _channel.getRequest();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public ServletResponse getResponse()
     {
@@ -737,7 +692,6 @@ public class HttpChannelState implements AsyncContext
         return _channel.getResponse();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void start(final Runnable run)
     {
@@ -755,7 +709,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean hasOriginalRequestAndResponse()
     {
@@ -765,7 +718,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
     public ContextHandler getContextHandler()
     {
         final AsyncEventState event=_event;
@@ -774,11 +726,6 @@ public class HttpChannelState implements AsyncContext
         return null;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
-     */
     public ServletResponse getServletResponse()
     {
         if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
@@ -786,35 +733,21 @@ public class HttpChannelState implements AsyncContext
         return _channel.getResponse();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
-     */
     public Object getAttribute(String name)
     {
         return _channel.getRequest().getAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
-     */
     public void removeAttribute(String name)
     {
         _channel.getRequest().removeAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
-     */
     public void setAttribute(String name, Object attribute)
     {
         _channel.getRequest().setAttribute(name,attribute);
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public class AsyncTimeout implements Runnable
     {
         @Override
@@ -824,8 +757,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public class AsyncEventState extends AsyncEvent
     {
         final private ServletContext _suspendedContext;
@@ -838,7 +769,7 @@ public class HttpChannelState implements AsyncContext
         {
             super(HttpChannelState.this, request,response);
             _suspendedContext=context;
-            
+
             // Get the base request So we can remember the initial paths
             Request r=_channel.getRequest();
 
@@ -884,7 +815,6 @@ public class HttpChannelState implements AsyncContext
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @return The path in the context
          */

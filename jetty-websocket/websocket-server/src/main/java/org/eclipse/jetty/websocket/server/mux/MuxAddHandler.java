@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,14 @@ package org.eclipse.jetty.websocket.server.mux;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.extensions.mux.MuxChannel;
@@ -88,14 +90,14 @@ public class MuxAddHandler implements MuxAddServer
 
         HttpMethod method = HttpMethod.fromString(request.getMethod());
         HttpVersion version = HttpVersion.fromString(request.getHttpVersion());
-        httpChannel.startRequest(method,request.getMethod(),request.getRequestURI().toASCIIString(),version);
+        httpChannel.startRequest(method,request.getMethod(),BufferUtil.toBuffer(request.getRequestURI().toASCIIString()),version);
 
         for (String headerName : request.getHeaders().keySet())
         {
-            HttpHeader header = HttpHeader.lookAheadGet(headerName.getBytes(),0,headerName.length());
+            HttpHeader header = HttpHeader.CACHE.getBest(headerName.getBytes(),0,headerName.length());
             for (String value : request.getHeaders().get(headerName))
             {
-                httpChannel.parsedHeader(header,headerName,value);
+                httpChannel.parsedHeader(new HttpField(header,value));
             }
         }
 

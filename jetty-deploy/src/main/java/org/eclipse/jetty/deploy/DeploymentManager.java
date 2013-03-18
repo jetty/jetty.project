@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -134,7 +134,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void addApp(App app)
     {
-        LOG.info("Deployable added: " + app.getOriginId());
+        LOG.debug("Deployable added: {}",app.getOriginId());
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -405,7 +405,7 @@ public class DeploymentManager extends ContainerLifeCycle
                 if (! AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
                     requestAppGoal(entry.app,AppLifeCycle.UNDEPLOYED);
                 it.remove();
-                LOG.info("Deployable removed: " + entry.app);
+                LOG.debug("Deployable removed: {}",entry.app);
             }
         }
     }
@@ -564,7 +564,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
     public void undeployAll()
     {
-        LOG.info("Undeploy All");
+        LOG.debug("Undeploy All");
         for (AppEntry appentry : _apps)
         {
             requestAppGoal(appentry,"undeployed");

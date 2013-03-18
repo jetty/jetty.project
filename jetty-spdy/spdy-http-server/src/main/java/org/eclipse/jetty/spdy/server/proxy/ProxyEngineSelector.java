@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -33,14 +33,15 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link ProxyEngineSelector} is the main entry point for syn stream events of a jetty SPDY proxy. It receives the
- * syn stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
- * host and forwards the syn to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
+ * <p>{@link ProxyEngineSelector} is the main entry point for push stream events of a jetty SPDY proxy. It receives the
+ * push stream frames from the clients, checks if there's an appropriate {@link ProxyServerInfo} for the given target
+ * host and forwards the push to a {@link ProxyEngine} for the protocol defined in {@link ProxyServerInfo}.</p>
  *
  * <p>If no {@link ProxyServerInfo} can be found for the given target host or no {@link ProxyEngine} can be found for
  * the given protocol, it resets the client stream.</p>
@@ -49,14 +50,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    protected final Logger LOG = Log.getLogger(getClass());
     private final Map<String, ProxyServerInfo> proxyInfos = new ConcurrentHashMap<>();
     private final Map<String, ProxyEngine> proxyEngines = new ConcurrentHashMap<>();
 
     @Override
     public final StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
     {
-        logger.debug("C -> P {} on {}", clientSynInfo, clientStream);
+        LOG.debug("C -> P {} on {}", clientSynInfo, clientStream);
 
         final Session clientSession = clientStream.getSession();
         short clientVersion = clientSession.getVersion();
@@ -65,7 +66,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         Fields.Field hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
         if (hostHeader == null)
         {
-            logger.debug("No host header found: " + headers);
+            LOG.debug("No host header found: " + headers);
             rst(clientStream);
             return null;
         }
@@ -78,7 +79,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyServerInfo proxyServerInfo = getProxyServerInfo(host);
         if (proxyServerInfo == null)
         {
-            logger.debug("No matching ProxyServerInfo found for: " + host);
+            LOG.debug("No matching ProxyServerInfo found for: " + host);
             rst(clientStream);
             return null;
         }
@@ -87,23 +88,23 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyEngine proxyEngine = proxyEngines.get(protocol);
         if (proxyEngine == null)
         {
-            logger.debug("No matching ProxyEngine found for: " + protocol);
+            LOG.debug("No matching ProxyEngine found for: " + protocol);
             rst(clientStream);
             return null;
         }
-
+        LOG.debug("Forwarding request: {} -> {}", clientSynInfo, proxyServerInfo);
         return proxyEngine.proxy(clientStream, clientSynInfo, proxyServerInfo);
     }
 
     @Override
-    public void onPing(Session clientSession, PingInfo pingInfo)
+    public void onPing(Session clientSession, PingResultInfo pingResultInfo)
     {
         // We do not know to which upstream server
         // to send the PING so we just ignore it
     }
 
     @Override
-    public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+    public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo)
     {
         // TODO:
     }
@@ -153,7 +154,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo);
+        stream.getSession().rst(rstInfo, new Callback.Adapter());
     }
 
     public static class ProxyServerInfo
@@ -182,6 +183,16 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         public InetSocketAddress getAddress()
         {
             return address;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ProxyServerInfo{" +
+                    "protocol='" + protocol + '\'' +
+                    ", host='" + host + '\'' +
+                    ", address=" + address +
+                    '}';
         }
     }
 }

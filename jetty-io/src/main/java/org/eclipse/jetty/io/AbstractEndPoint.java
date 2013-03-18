@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,11 +94,13 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public void onOpen()
     {
         LOG.debug("onOpen {}",this);
+        super.onOpen();
     }
 
     @Override
     public void onClose()
     {
+        super.onClose();
         LOG.debug("onClose {}",this);
         _writeFlusher.onClose();
         _fillInterest.onClose();

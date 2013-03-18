@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,14 +35,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
-
-
-/**
- * AbstractSessionExpiryTest
- *
- *
- *
- */
 public abstract class AbstractSessionExpiryTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -59,7 +50,7 @@ public abstract class AbstractSessionExpiryTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testSessionNotExpired() throws Exception
     {
@@ -71,42 +62,42 @@ public abstract class AbstractSessionExpiryTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
 
+        HttpClient client = new HttpClient();
         try
         {
-            HttpClient client = new HttpClient();
+            server1.start();
+            int port1 = server1.getPort();
+
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            Future<ContentResponse> future = client.GET(url + "?action=init");
-            ContentResponse response = future.get();
+            ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-            
+
             //now stop the server
             server1.stop();
-            
+
             //start the server again, before the session times out
-            server1.start();            
+            server1.start();
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-            
-            //make another request, the session should not have expired            
+
+            //make another request, the session should not have expired
             Request request = client.newRequest(url + "?action=notexpired");
             request.getHeaders().add("Cookie", sessionCookie);
-            future = request.send();
-            ContentResponse response2 = future.get();
+            ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
         }
         finally
         {
+            client.stop();
             server1.stop();
         }
     }
@@ -132,30 +123,28 @@ public abstract class AbstractSessionExpiryTest
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            Future<ContentResponse> future = client.GET(url + "?action=init");
-            ContentResponse response1 = future.get();
+            ContentResponse response1 = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
             String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-            
+
             //now stop the server
             server1.stop();
-            
+
             //and wait until the expiry time has passed
             pause(inactivePeriod);
-            
+
             //restart the server
-            server1.start();            
+            server1.start();
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-            
+
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);
-            future = request.send();
-            ContentResponse response2 = future.get();
+            ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
         }
         finally
@@ -167,8 +156,6 @@ public abstract class AbstractSessionExpiryTest
     public static class TestServlet extends HttpServlet
     {
         public String originalId = null;
-        public String testId = null;
-        public String checkId = null;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -192,7 +179,7 @@ public abstract class AbstractSessionExpiryTest
                 assertTrue(session != null);
                 assertTrue(originalId.equals(session.getId()));
             }
-           
+
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -41,6 +40,7 @@ public class AnnotatedEventDriver extends EventDriver
 {
     private final EventMethods events;
     private MessageAppender activeMessage;
+    private boolean hasCloseBeenCalled = false;
 
     public AnnotatedEventDriver(WebSocketPolicy policy, Object websocket, EventMethods events)
     {
@@ -49,17 +49,13 @@ public class AnnotatedEventDriver extends EventDriver
 
         WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
         // Setup the policy
-        if (anno.maxBufferSize() > 0)
+        if (anno.maxMessageSize() > 0)
         {
-            this.policy.setBufferSize(anno.maxBufferSize());
+            this.policy.setMaxMessageSize(anno.maxMessageSize());
         }
-        if (anno.maxBinarySize() > 0)
+        if (anno.inputBufferSize() > 0)
         {
-            this.policy.setMaxBinaryMessageSize(anno.maxBinarySize());
-        }
-        if (anno.maxTextSize() > 0)
-        {
-            this.policy.setMaxTextMessageSize(anno.maxTextSize());
+            this.policy.setInputBufferSize(anno.inputBufferSize());
         }
         if (anno.maxIdleTime() > 0)
         {
@@ -109,6 +105,12 @@ public class AnnotatedEventDriver extends EventDriver
     @Override
     public void onClose(CloseInfo close)
     {
+        if (hasCloseBeenCalled)
+        {
+            // avoid duplicate close events (possible when using harsh Session.disconnect())
+            return;
+        }
+        hasCloseBeenCalled = true;
         if (events.onClose != null)
         {
             events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
@@ -125,11 +127,11 @@ public class AnnotatedEventDriver extends EventDriver
     }
 
     @Override
-    public void onException(WebSocketException e)
+    public void onError(Throwable cause)
     {
-        if (events.onException != null)
+        if (events.onError != null)
         {
-            events.onException.call(websocket,session,e);
+            events.onError.call(websocket,session,cause);
         }
     }
 

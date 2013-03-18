@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,27 +18,21 @@
 
 package org.eclipse.jetty.spdy.api;
 
-/**
- * <p>A container for PING frames data.</p>
- */
-public class PingInfo
-{
-    private final int pingId;
+import java.util.concurrent.TimeUnit;
 
-    /**
-     * <p>Creates a {@link PingInfo} with the given ping id</p>
-     * @param pingId the ping id
-     */
-    public PingInfo(int pingId)
+/**
+ * A PingInfo container. Currently adding nothing to it's base class, but serves to keep the api unchanged in
+ * future versions when we need to pass more info to the methods having a {@link PingInfo} parameter.
+ */
+public class PingInfo extends Info
+{
+    public PingInfo(long timeout, TimeUnit unit)
     {
-        this.pingId = pingId;
+        super(timeout, unit);
     }
 
-    /**
-     * @return the ping id
-     */
-    public int getPingId()
+    public PingInfo()
     {
-        return pingId;
+        this(0, TimeUnit.SECONDS);
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithRequest10() throws Exception
     {
         configureServer(new HelloWorldHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -70,7 +71,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: keep-alive\r\n"+
         "\r\n").getBytes("utf-8"));
         os.flush();
@@ -89,7 +90,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithRequest11() throws Exception
     {
         configureServer(new EchoHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -101,7 +102,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         byte[] contentB=content.getBytes("utf-8");
         os.write((
                 "POST /echo HTTP/1.1\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "content-type: text/plain; charset=utf-8\r\n"+
                 "content-length: "+contentB.length+"\r\n"+
         "\r\n").getBytes("utf-8"));
@@ -140,7 +141,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             }
 
         });
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -150,7 +151,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: close\r\n"+
         "\r\n").getBytes("utf-8"));
         os.flush();
@@ -177,7 +178,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 os.write((
                         "GET / HTTP/1.0\r\n"+
-                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                         "connection: keep-alive\r\n"+
                 "\r\n").getBytes("utf-8"));
                 os.flush();
@@ -214,7 +215,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             }
 
         });
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -224,7 +225,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: close\r\n"+
         "\r\n").getBytes("utf-8"));
         os.flush();
@@ -290,7 +291,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             }
 
         });
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -302,7 +303,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         byte[] contentB=content.getBytes("utf-8");
         os.write((
                 "POST /echo HTTP/1.1\r\n" +
-                        "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                        "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                         "content-type: text/plain; charset=utf-8\r\n" +
                         "content-length: " + contentB.length + "\r\n" +
                         "connection: close\r\n" +
@@ -329,7 +330,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 os.write((
                         "GET / HTTP/1.0\r\n"+
-                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                         "connection: keep-alive\r\n"+
                 "\r\n").getBytes("utf-8"));
                 os.flush();
@@ -349,7 +350,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleNoRequest() throws Exception
     {
         configureServer(new EchoHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
         assertFalse(client.isClosed());
@@ -377,7 +378,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithSlowRequest() throws Exception
     {
         configureServer(new EchoHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -389,7 +390,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         byte[] contentB=content.getBytes("utf-8");
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: keep-alive\r\n"+
                 "Content-Length: "+(contentB.length*20)+"\r\n"+
                 "Content-Type: text/plain\r\n"+
@@ -417,7 +418,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithSlowResponse() throws Exception
     {
         configureServer(new SlowResponseHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -427,7 +428,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: keep-alive\r\n"+
                 "Connection: close\r\n"+
         "\r\n").getBytes("utf-8"));
@@ -446,7 +447,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithWait() throws Exception
     {
         configureServer(new WaitHandler());
-        Socket client=newSocket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
@@ -456,7 +457,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         os.write((
                 "GET / HTTP/1.0\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
                 "connection: keep-alive\r\n"+
                 "Connection: close\r\n"+
         "\r\n").getBytes("utf-8"));

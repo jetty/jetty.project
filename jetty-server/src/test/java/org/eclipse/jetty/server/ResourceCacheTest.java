@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -229,6 +229,23 @@ public class ResourceCacheTest
         cache.flushCache();
     }
 
+    @Test
+    public void testNoextension() throws Exception
+    {
+        ResourceCollection rc = new ResourceCollection(new String[]{
+                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/four/"
+        });
+
+        Resource[] resources = rc.getResources();
+        MimeTypes mime = new MimeTypes();
+
+        ResourceCache cache = new ResourceCache(null,resources[0],mime,false,false);
+
+        assertEquals("4 - four", getContent(cache, "four.txt"));
+        assertEquals("4 - four (no extension)", getContent(cache, "four"));
+    }
+
+    
     static String getContent(Resource r, String path) throws Exception
     {
         StringBuilder buffer = new StringBuilder();

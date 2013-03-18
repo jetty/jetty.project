@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,10 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -109,8 +110,8 @@ public class MimeTypes
 
     /* ------------------------------------------------------------ */
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
-    public  final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
-    private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true);
+    public  final static Trie<MimeTypes.Type> CACHE= new ArrayTrie<>(512);
+    private final static Trie<ByteBuffer> TYPES= new ArrayTrie<ByteBuffer>(512);
     private final static Map<String,String> __dftMimeMap = new HashMap<String,String>();
     private final static Map<String,String> __encodings = new HashMap<String,String>();
 

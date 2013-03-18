@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,18 +52,19 @@ public abstract class AbstractInvalidationSessionTest
         String servletMapping = "/server";
         AbstractTestServer server1 = createServer(0);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
-        System.err.println("Port1="+port1);
+
+
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-            server2.start();
-            int port2=server2.getPort();
-            System.err.println("port2="+port2);
+
             try
             {
+                server2.start();
+                int port2=server2.getPort();
                 HttpClient client = new HttpClient();
                 QueuedThreadPool executor = new QueuedThreadPool();
                 client.setExecutor(executor);
@@ -76,9 +76,8 @@ public abstract class AbstractInvalidationSessionTest
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
                     // Create the session on node1
-                    Future<ContentResponse> future = client.GET(urls[0] + "?action=init");
-                    ContentResponse response1 = future.get();
-                    
+                    ContentResponse response1 = client.GET(urls[0] + "?action=init");
+
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -86,26 +85,24 @@ public abstract class AbstractInvalidationSessionTest
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     // Be sure the session is also present in node2
-                   
+
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
-                    request2.header("Cookie", sessionCookie);       
-                    future = request2.send();
-                    ContentResponse response2 = future.get();                   
+                    request2.header("Cookie", sessionCookie);
+                    ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
                     // Invalidate on node1
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     request1.header("Cookie", sessionCookie);
-                    future = request1.send();
+                    response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
 
                     pause();
-                    
+
                     // Be sure on node2 we don't see the session anymore
                     request2 = client.newRequest(urls[1] + "?action=test");
                     request2.header("Cookie", sessionCookie);
-                    future = request2.send();
-                    response2 = future.get();
+                    response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally

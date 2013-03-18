@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -132,6 +132,20 @@ public class HttpParserTest
     }
 
     @Test
+    public void testLongURLParse() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0\015\012" + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _h);
+    }
+    
+    @Test
     public void testConnect() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
@@ -146,19 +160,75 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHeaderParse() throws Exception
+    public void testHeaderParseDirect() throws Exception
+    {
+        ByteBuffer b0= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                        "Host: localhost\015\012" +
+                        "Header1: value1\015\012" +
+                        "Header 2  :   value 2a  \015\012" +
+                        "    value 2b  \015\012" +
+                        "Header3: \015\012" +
+                        "Header4 \015\012" +
+                        "  value4\015\012" +
+                        "Server5 : notServer\015\012" +
+                        "Host Header: notHost\015\012" +
+                        "Connection: close\015\012" +
+                        "Accept-Encoding: gzip, deflated\015\012" +
+                        "Accept: unknown\015\012" +
+                "\015\012");
+        ByteBuffer buffer = BufferUtil.allocateDirect(b0.capacity());
+        int pos=BufferUtil.flipToFill(buffer);
+        BufferUtil.put(b0,buffer);
+        BufferUtil.flipToFlush(buffer,pos);
+        
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
+        assertEquals("Header 2", _hdr[2]);
+        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header3", _hdr[3]);
+        assertEquals(null, _val[3]);
+        assertEquals("Header4", _hdr[4]);
+        assertEquals("value4", _val[4]);
+        assertEquals("Server5", _hdr[5]);
+        assertEquals("notServer", _val[5]);
+        assertEquals("Host Header", _hdr[6]);
+        assertEquals("notHost", _val[6]);
+        assertEquals("Connection", _hdr[7]);
+        assertEquals("close", _val[7]);
+        assertEquals("Accept-Encoding", _hdr[8]);
+        assertEquals("gzip, deflated", _val[8]);
+        assertEquals("Accept", _hdr[9]);
+        assertEquals("unknown", _val[9]);
+        assertEquals(9, _h);
+    }
+    
+    @Test
+    public void testHeaderParseCRLF() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
                 "GET / HTTP/1.0\015\012" +
                         "Host: localhost\015\012" +
                         "Header1: value1\015\012" +
                         "Header 2  :   value 2a  \015\012" +
-                        "                    value 2b  \015\012" +
+                        "    value 2b  \015\012" +
                         "Header3: \015\012" +
                         "Header4 \015\012" +
                         "  value4\015\012" +
                         "Server5 : notServer\015\012" +
                         "Host Header: notHost\015\012" +
+                        "Connection: close\015\012" +
+                        "Accept-Encoding: gzip, deflated\015\012" +
+                        "Accept: unknown\015\012" +
                 "\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
@@ -181,7 +251,61 @@ public class HttpParserTest
         assertEquals("notServer", _val[5]);
         assertEquals("Host Header", _hdr[6]);
         assertEquals("notHost", _val[6]);
-        assertEquals(6, _h);
+        assertEquals("Connection", _hdr[7]);
+        assertEquals("close", _val[7]);
+        assertEquals("Accept-Encoding", _hdr[8]);
+        assertEquals("gzip, deflated", _val[8]);
+        assertEquals("Accept", _hdr[9]);
+        assertEquals("unknown", _val[9]);
+        assertEquals(9, _h);
+    }
+
+    @Test
+    public void testHeaderParseLF() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\n" +
+                        "Host: localhost\n" +
+                        "Header1: value1\n" +
+                        "Header 2  :   value 2a  \n" +
+                        "    value 2b  \n" +
+                        "Header3: \n" +
+                        "Header4 \n" +
+                        "  value4\n" +
+                        "Server5 : notServer\n" +
+                        "Host Header: notHost\n" +
+                        "Connection: close\n" +
+                        "Accept-Encoding: gzip, deflated\n" +
+                        "Accept: unknown\n" +
+                "\n");
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
+        assertEquals("Header 2", _hdr[2]);
+        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header3", _hdr[3]);
+        assertEquals(null, _val[3]);
+        assertEquals("Header4", _hdr[4]);
+        assertEquals("value4", _val[4]);
+        assertEquals("Server5", _hdr[5]);
+        assertEquals("notServer", _val[5]);
+        assertEquals("Host Header", _hdr[6]);
+        assertEquals("notHost", _val[6]);
+        assertEquals("Connection", _hdr[7]);
+        assertEquals("close", _val[7]);
+        assertEquals("Accept-Encoding", _hdr[8]);
+        assertEquals("gzip, deflated", _val[8]);
+        assertEquals("Accept", _hdr[9]);
+        assertEquals("unknown", _val[9]);
+        assertEquals(9, _h);
     }
 
     @Test
@@ -732,14 +856,14 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
+        public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
         {
             request=true;
             _h= -1;
-            _hdr= new String[9];
-            _val= new String[9];
+            _hdr= new String[10];
+            _val= new String[10];
             _methodOrVersion= method;
-            _uriOrStatus= uri;
+            _uriOrStatus= BufferUtil.toUTF8String(uri);
             _versionOrReason= version==null?null:version.asString();
 
             fields=new HttpFields();
@@ -749,11 +873,11 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        public boolean parsedHeader(HttpField field)
         {
             //System.err.println("header "+name+": "+value);
-            _hdr[++_h]= name;
-            _val[_h]= value;
+            _hdr[++_h]= field.getName();
+            _val[_h]= field.getValue();
             return false;
         }
 
@@ -815,6 +939,12 @@ public class HttpParserTest
         public boolean earlyEOF()
         {
             return true;
+        }
+
+        @Override
+        public int getHeaderCacheSize()
+        {
+            return 512;
         }
     }
 }

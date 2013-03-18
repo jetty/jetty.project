@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,7 +49,9 @@ public class SPDYClientConnectionFactory
 
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
-        StandardSession session = new StandardSession(client.version, bufferPool, factory.getExecutor(), factory.getScheduler(), connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
+        StandardSession session = new StandardSession(client.version, bufferPool, factory.getExecutor(),
+                factory.getScheduler(), connection, endPoint, connection, 1, sessionPromise.listener, generator,
+                flowControlStrategy);
         session.setWindowSize(client.getInitialWindowSize());
         parser.addListener(session);
         sessionPromise.succeeded(session);

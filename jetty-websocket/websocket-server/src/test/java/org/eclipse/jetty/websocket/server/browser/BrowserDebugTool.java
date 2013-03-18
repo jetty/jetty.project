@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.common.extensions.compress.FrameCompressionExtension;
+import org.eclipse.jetty.websocket.common.extensions.compress.MessageCompressionExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -107,6 +109,12 @@ public class BrowserDebugTool implements WebSocketCreator
             public void configure(WebSocketServletFactory factory)
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
+
+                // Setup some extensions we want to test against
+                factory.getExtensionFactory().register("x-webkit-deflate-frame",FrameCompressionExtension.class);
+                factory.getExtensionFactory().register("permessage-compress",MessageCompressionExtension.class);
+
+                // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
             }
         };

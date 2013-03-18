@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.concurrent.Future;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -45,7 +44,7 @@ public abstract class AbstractServerCrossContextSessionTest
 {
 
     public abstract AbstractTestServer createServer(int port);
-    
+
     @Test
     public void testCrossContextDispatch() throws Exception
     {
@@ -57,17 +56,17 @@ public abstract class AbstractServerCrossContextSessionTest
         ctxA.addServlet(TestServletA.class, servletMapping);
         ServletContextHandler ctxB = server.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
-        server.start();
-        int port=server.getPort();
         try
         {
+            server.start();
+            int port=server.getPort();
+
             HttpClient client = new HttpClient();
             client.start();
             try
             {
                 // Perform a request, on server side a cross context dispatch will be done
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextA + servletMapping);
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextA + servletMapping);
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally

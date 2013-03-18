@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
@@ -36,11 +37,12 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -67,7 +69,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         this.connector = connector;
         this.configuration = configuration;
         this.endPoint = endPoint;
-        this.pushStrategy = pushStrategy==null?new PushStrategy.None():pushStrategy;
+        this.pushStrategy = pushStrategy == null ? new PushStrategy.None() : pushStrategy;
         this.stream = stream;
         this.requestHeaders = requestHeaders;
     }
@@ -76,17 +78,16 @@ public class HttpTransportOverSPDY implements HttpTransport
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("send  {} {} {} {} last={}",this,stream,info,BufferUtil.toDetailString(content),lastContent);
+            LOG.debug("send  {} {} {} {} last={}", this, stream, info, BufferUtil.toDetailString(content), lastContent);
 
         if (stream.isClosed() || stream.isReset())
         {
             EofException exception = new EofException("stream closed");
             callback.failed(exception);
-            LOG.warn("Committed response twice.", exception);
             return;
         }
         // new Throwable().printStackTrace();
-        
+
         // info==null content==null lastContent==false          should not happen
         // info==null content==null lastContent==true           signals no more content - complete
         // info==null content!=null lastContent==false          send data on committed response
@@ -95,14 +96,17 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content==null lastContent==true           reply, commit and complete
         // info!=null content!=null lastContent==false          reply, commit with content
         // info!=null content!=null lastContent==true           reply, commit with content and complete
-        
+
         boolean hasContent = BufferUtil.hasContent(content);
-        
-        if (info!=null)
+
+        if (info != null)
         {
-            if(!committed.compareAndSet(false, true)){
-                callback.failed(new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
-                        "Stream already committed!"));
+            if (!committed.compareAndSet(false, true))
+            {
+                StreamException exception = new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
+                        "Stream already committed!");
+                callback.failed(exception);
+                LOG.warn("Committed response twice.", exception);
                 return;
             }
             short version = stream.getSession().getVersion();
@@ -127,7 +131,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             {
                 for (int i = 0; i < fields.size(); ++i)
                 {
-                    HttpFields.Field field = fields.getField(i);
+                    HttpField field = fields.getField(i);
                     String name = field.getName();
                     String value = field.getValue();
                     headers.put(name, value);
@@ -136,7 +140,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
 
             boolean close = !hasContent && lastContent;
-            ReplyInfo reply = new ReplyInfo(headers,close);
+            ReplyInfo reply = new ReplyInfo(headers, close);
             reply(stream, reply);
         }
 
@@ -144,23 +148,25 @@ public class HttpTransportOverSPDY implements HttpTransport
         if (hasContent)
         {
             // Is the stream still open?
-            if (stream.isClosed()|| stream.isReset())
+            if (stream.isClosed() || stream.isReset())
                 // tell the callback about the EOF 
-                callback.failed(new EofException("stream closed")); 
-            else 
+                callback.failed(new EofException("stream closed"));
+            else
                 // send the data and let it call the callback
-                stream.data(new ByteBufferDataInfo(content, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
+                stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS, content, lastContent
+                ), callback);
         }
         // else do we need to close
         else if (lastContent)
         {
             // Are we closed ?
-            if (stream.isClosed()|| stream.isReset())
+            if (stream.isClosed() || stream.isReset())
                 // already closed by reply, so just tell callback we are complete
-                callback.succeeded(); 
+                callback.succeeded();
             else
                 // send empty data to close and let the send call the callback
-                stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, lastContent),endPoint.getIdleTimeout(),TimeUnit.MILLISECONDS,callback);
+                stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS,
+                        BufferUtil.EMPTY_BUFFER, lastContent), callback);
         }
         else
             // No data and no close so tell callback we are completed
@@ -171,7 +177,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
     {
-        send(info,content,lastContent,streamBlocker);
+        send(info, content, lastContent, streamBlocker);
         try
         {
             streamBlocker.block();
@@ -192,7 +198,9 @@ public class HttpTransportOverSPDY implements HttpTransport
     private void reply(Stream stream, ReplyInfo replyInfo)
     {
         if (!stream.isUnidirectional())
-            stream.reply(replyInfo);
+            stream.reply(replyInfo, new Callback.Adapter());
+        else
+            stream.headers(new HeadersInfo(replyInfo.getHeaders(), replyInfo.isClose()), new Callback.Adapter());
 
         Fields responseHeaders = replyInfo.getHeaders();
         short version = stream.getSession().getVersion();
@@ -210,7 +218,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                 final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
                 // TODO: handle the timeout better
-                stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
+                stream.push(new PushInfo(0, TimeUnit.MILLISECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
@@ -225,19 +233,17 @@ public class HttpTransportOverSPDY implements HttpTransport
 
     private Fields createRequestHeaders(Fields.Field scheme, Fields.Field host, Fields.Field uri, String pushResourcePath)
     {
-        final Fields requestHeaders = new Fields();
+        final Fields newRequestHeaders = new Fields(requestHeaders, false);
         short version = stream.getSession().getVersion();
-        requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-        requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        requestHeaders.put(scheme);
-        requestHeaders.put(host);
-        requestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
+        newRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        newRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        newRequestHeaders.put(scheme);
+        newRequestHeaders.put(host);
+        newRequestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
         String referrer = scheme.value() + "://" + host.value() + uri.value();
-        requestHeaders.put("referer", referrer);
-        // Remember support for gzip encoding
-        requestHeaders.put(requestHeaders.get("accept-encoding"));
-        requestHeaders.put("x-spdy-push", "true");
-        return requestHeaders;
+        newRequestHeaders.put("referer", referrer);
+        newRequestHeaders.put("x-spdy-push", "true");
+        return newRequestHeaders;
     }
 
     private Fields createPushHeaders(Fields.Field scheme, Fields.Field host, String pushResourcePath)
@@ -252,8 +258,6 @@ public class HttpTransportOverSPDY implements HttpTransport
             pushHeaders.put(scheme);
             pushHeaders.put(host);
         }
-        pushHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200");
-        pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
         return pushHeaders;
     }
 

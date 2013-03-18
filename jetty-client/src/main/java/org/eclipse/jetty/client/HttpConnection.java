@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,14 @@
 package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Authentication;
@@ -34,9 +35,10 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpConnection extends AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
     private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final HttpClient client;
@@ -105,11 +108,24 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     public void send(Request request, Response.CompleteListener listener)
     {
-        send(request, Collections.<Response.ResponseListener>singletonList(listener));
+        ArrayList<Response.ResponseListener> listeners = new ArrayList<>(2);
+        if (request.getTimeout() > 0)
+        {
+            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(request);
+            timeoutListener.schedule(client.getScheduler());
+            listeners.add(timeoutListener);
+        }
+        if (listener != null)
+            listeners.add(listener);
+
+        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpExchange exchange = new HttpExchange(conversation, getDestination(), request, listeners);
+        send(exchange);
     }
 
-    public void send(Request request, List<Response.ResponseListener> listeners)
+    public void send(HttpExchange exchange)
     {
+        Request request = exchange.getRequest();
         normalizeRequest(request);
 
         // Save the old idle timeout to restore it
@@ -117,14 +133,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         idleTimeout = endPoint.getIdleTimeout();
         endPoint.setIdleTimeout(request.getIdleTimeout());
 
-        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
-        setExchange(exchange);
-        conversation.getExchanges().offer(exchange);
-
-        for (Response.ResponseListener listener : listeners)
-            if (listener instanceof Schedulable)
-                ((Schedulable)listener).schedule(client.getScheduler());
+        // Associate the exchange to the connection
+        associate(exchange);
 
         sender.send(exchange);
     }
@@ -137,27 +147,27 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (request.getVersion() == null)
             request.version(HttpVersion.HTTP_1_1);
 
-        if (request.getAgent() == null)
-            request.agent(client.getUserAgent());
-
         if (request.getIdleTimeout() <= 0)
-            request.idleTimeout(client.getIdleTimeout());
+            request.idleTimeout(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
 
         HttpMethod method = request.getMethod();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
 
+        if (request.getAgent() == null)
+            headers.put(client.getUserAgentField());
+
         // Make sure the path is there
         String path = request.getPath();
-        if (path.matches("\\s*"))
+        if (path.trim().length() == 0)
         {
             path = "/";
             request.path(path);
         }
         if (destination.isProxied() && HttpMethod.CONNECT != request.getMethod())
         {
-            path = request.getURI();
+            path = request.getURI().toString();
             request.path(path);
         }
 
@@ -195,7 +205,7 @@ public class HttpConnection extends AbstractConnection implements Connection
                 }
                 case POST:
                 {
-                    request.header(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Type.FORM_ENCODED.asString());
+                    request.header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString());
                     request.content(new StringContentProvider(params.toString()));
                     break;
                 }
@@ -206,13 +216,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (version.getVersion() > 10)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
-            {
-                String value = request.getHost();
-                int port = request.getPort();
-                if (port > 0)
-                    value += ":" + port;
-                headers.put(HttpHeader.HOST, value);
-            }
+                headers.put(getDestination().getHostField());
         }
 
         // Add content headers
@@ -227,12 +231,12 @@ public class HttpConnection extends AbstractConnection implements Connection
             else
             {
                 if (!headers.containsKey(HttpHeader.TRANSFER_ENCODING.asString()))
-                    headers.put(HttpHeader.TRANSFER_ENCODING, "chunked");
+                    headers.put(CHUNKED_FIELD);
             }
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().findCookies(getDestination(), request.getPath());
+        List<HttpCookie> cookies = client.getCookieStore().get(request.getURI());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {
@@ -253,19 +257,9 @@ public class HttpConnection extends AbstractConnection implements Connection
 
         if (!headers.containsKey(HttpHeader.ACCEPT_ENCODING.asString()))
         {
-            Set<ContentDecoder.Factory> decoderFactories = client.getContentDecoderFactories();
-            if (!decoderFactories.isEmpty())
-            {
-                StringBuilder value = new StringBuilder();
-                for (Iterator<ContentDecoder.Factory> iterator = decoderFactories.iterator(); iterator.hasNext();)
-                {
-                    ContentDecoder.Factory decoderFactory = iterator.next();
-                    value.append(decoderFactory.getEncoding());
-                    if (iterator.hasNext())
-                        value.append(",");
-                }
-                headers.put(HttpHeader.ACCEPT_ENCODING, value.toString());
-            }
+            HttpField acceptEncodingField = client.getAcceptEncodingField();
+            if (acceptEncodingField != null)
+                headers.put(acceptEncodingField);
         }
     }
 
@@ -287,12 +281,21 @@ public class HttpConnection extends AbstractConnection implements Connection
         return exchange.get();
     }
 
-    protected void setExchange(HttpExchange exchange)
+    protected void associate(HttpExchange exchange)
     {
         if (!this.exchange.compareAndSet(null, exchange))
             throw new UnsupportedOperationException("Pipelined requests not supported");
-        else
-            LOG.debug("{} associated to {}", exchange, this);
+        exchange.setConnection(this);
+        LOG.debug("{} associated to {}", exchange, this);
+    }
+
+    protected HttpExchange disassociate()
+    {
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        if (exchange != null)
+            exchange.setConnection(null);
+        LOG.debug("{} disassociated from {}", exchange, this);
+        return exchange;
     }
 
     @Override
@@ -301,7 +304,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = getExchange();
         if (exchange != null)
         {
-            exchange.receive();
+            receive();
         }
         else
         {
@@ -318,7 +321,7 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     public void complete(HttpExchange exchange, boolean success)
     {
-        HttpExchange existing = this.exchange.getAndSet(null);
+        HttpExchange existing = disassociate();
         if (existing == exchange)
         {
             exchange.awaitTermination();
@@ -364,13 +367,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
-    public boolean abort(HttpExchange exchange, Throwable cause)
+    public boolean abort(Throwable cause)
     {
         // We want the return value to be that of the response
         // because if the response has already successfully
         // arrived then we failed to abort the exchange
-        sender.abort(exchange, cause);
-        return receiver.abort(exchange, cause);
+        sender.abort(cause);
+        return receiver.abort(cause);
     }
 
     public void proceed(boolean proceed)

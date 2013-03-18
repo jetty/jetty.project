@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,23 +33,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.TypeUtil;
 
+/**
+ * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
+ * <p />
+ * Applications should create objects of this class and add them to the
+ * {@link AuthenticationStore} retrieved from the {@link HttpClient}
+ * via {@link HttpClient#getAuthenticationStore()}.
+ */
 public class DigestAuthentication implements Authentication
 {
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
 
-    private final String uri;
+    private final URI uri;
     private final String realm;
     private final String user;
     private final String password;
 
-    public DigestAuthentication(String uri, String realm, String user, String password)
+    /**
+     * @param uri the URI to match for the authentication
+     * @param realm the realm to match for the authentication
+     * @param user the user that wants to authenticate
+     * @param password the password of the user
+     */
+    public DigestAuthentication(URI uri, String realm, String user, String password)
     {
         this.uri = uri;
         this.realm = realm;
@@ -57,12 +73,12 @@ public class DigestAuthentication implements Authentication
     }
 
     @Override
-    public boolean matches(String type, String uri, String realm)
+    public boolean matches(String type, URI uri, String realm)
     {
         if (!"digest".equalsIgnoreCase(type))
             return false;
 
-        if (!uri.startsWith(this.uri))
+        if (!uri.toString().startsWith(this.uri.toString()))
             return false;
 
         return this.realm.equals(realm);
@@ -165,7 +181,7 @@ public class DigestAuthentication implements Authentication
     private class DigestResult implements Result
     {
         private final AtomicInteger nonceCount = new AtomicInteger();
-        private final String uri;
+        private final URI uri;
         private final byte[] content;
         private final String realm;
         private final String user;
@@ -175,7 +191,7 @@ public class DigestAuthentication implements Authentication
         private final String qop;
         private final String opaque;
 
-        public DigestResult(String uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
+        public DigestResult(URI uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
         {
             this.uri = uri;
             this.content = content;
@@ -189,7 +205,7 @@ public class DigestAuthentication implements Authentication
         }
 
         @Override
-        public String getURI()
+        public URI getURI()
         {
             return uri;
         }
@@ -197,7 +213,7 @@ public class DigestAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (!request.getURI().startsWith(uri))
+            if (!request.getURI().toString().startsWith(uri.toString()))
                 return;
 
             MessageDigest digester = getMessageDigest(algorithm);
@@ -246,7 +262,7 @@ public class DigestAuthentication implements Authentication
             }
             value.append(", response=\"").append(hashA3).append("\"");
 
-            request.header(HttpHeader.AUTHORIZATION.asString(), value.toString());
+            request.header(HttpHeader.AUTHORIZATION, value.toString());
         }
 
         private String nextNonceCount()

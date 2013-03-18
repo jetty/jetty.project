@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -108,15 +109,15 @@ public class BalancerServletTest
 
     private int getServerPort(Server server)
     {
-        return ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
+        return server.getURI().getPort();
     }
 
     protected byte[] sendRequestToBalancer(String path) throws Exception
     {
         ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
                 .path(CONTEXT_PATH + SERVLET_PATH + path)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         return response.getContent();
     }
 

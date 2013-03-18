@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,11 +20,15 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.ServletException;
@@ -46,7 +51,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -72,7 +78,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/";
-        Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
+        Response response = client.GET(scheme + "://" + host + ":" + port + path);
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
@@ -86,14 +92,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         Assert.assertNotNull(connection);
 
-        client.getCookieStore().addCookie(destination, new HttpCookie("foo", "bar", null, path));
+        String uri = destination.getScheme() + "://" + destination.getHost() + ":" + destination.getPort();
+        client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
 
         client.stop();
 
         Assert.assertEquals(0, client.getDestinations().size());
         Assert.assertEquals(0, destination.getIdleConnections().size());
         Assert.assertEquals(0, destination.getActiveConnections().size());
-        Assert.assertEquals(0, client.getCookieStore().findCookies(destination, path).size());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
@@ -104,7 +110,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        client.GET(scheme + "://" + host + ":" + port).get(5, TimeUnit.SECONDS);
+        client.GET(scheme + "://" + host + ":" + port);
 
         List<Destination> destinations = client.getDestinations();
         Assert.assertNotNull(destinations);
@@ -121,7 +127,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
+        Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -141,7 +147,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -173,7 +179,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String value1 = "\u20AC";
         String paramValue1 = URLEncoder.encode(value1, "UTF-8");
         String query = paramName1 + "=" + paramValue1 + "&" + paramName2;
-        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -209,7 +215,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String paramValue12 = URLEncoder.encode(value12, "UTF-8");
         String paramValue2 = URLEncoder.encode(value2, "UTF-8");
         String query = paramName1 + "=" + paramValue11 + "&" + paramName1 + "=" + paramValue12 + "&" + paramName2 + "=" + paramValue2;
-        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query).get(5, TimeUnit.SECONDS);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -239,7 +245,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
-                .param(paramName, paramValue).send().get(5, TimeUnit.SECONDS);
+                .param(paramName, paramValue)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -271,7 +279,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
                 .param(paramName, paramValue)
                 .content(new BytesContentProvider(content))
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
@@ -279,11 +288,64 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    public void test_POST_WithContent_NotifiesRequestContentListener() throws Exception
+    {
+        final byte[] content = {0, 1, 2, 3};
+        start(new EmptyServerHandler());
+
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
+                .onRequestContent(new Request.ContentListener()
+                {
+                    @Override
+                    public void onContent(Request request, ByteBuffer buffer)
+                    {
+                        byte[] bytes = new byte[buffer.remaining()];
+                        buffer.get(bytes);
+                        if (!Arrays.equals(content, bytes))
+                            request.abort(new Exception());
+                    }
+                })
+                .content(new BytesContentProvider(content))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void test_POST_WithContent_TracksProgress() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final AtomicInteger progress = new AtomicInteger();
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
+                .onRequestContent(new Request.ContentListener()
+                {
+                    @Override
+                    public void onContent(Request request, ByteBuffer buffer)
+                    {
+                        byte[] bytes = new byte[buffer.remaining()];
+                        Assert.assertEquals(1, bytes.length);
+                        buffer.get(bytes);
+                        Assert.assertEquals(bytes[0], progress.getAndIncrement());
+                    }
+                })
+                .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(5, progress.get());
+    }
+
+    @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded() throws Exception
     {
         start(new EmptyServerHandler());
 
-        client.setMaxConnectionsPerAddress(1);
+        client.setMaxConnectionsPerDestination(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
@@ -343,7 +405,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        client.setMaxConnectionsPerAddress(1);
+        client.setMaxConnectionsPerDestination(1);
         final long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
@@ -571,8 +633,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
@@ -606,8 +668,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             client.newRequest(host, port)
                     .scheme(scheme)
-                    .idleTimeout(idleTimeout)
-                    .send().get(3 * idleTimeout, TimeUnit.MILLISECONDS);
+                    .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                    .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                    .send();
             Assert.fail();
         }
         catch (ExecutionException expected)
@@ -618,9 +681,113 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // Make another request without specifying the idle timeout, should not fail
         ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .send().get(3 * idleTimeout, TimeUnit.MILLISECONDS);
+                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testSendToIPv6Address() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
+                .scheme(scheme)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testHeaderProcessing() throws Exception
+    {
+        final String headerName = "X-Header-Test";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader(headerName, "X");
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseHeader(new Response.HeaderListener()
+                {
+                    @Override
+                    public boolean onHeader(Response response, HttpField field)
+                    {
+                        return !field.getName().equals(headerName);
+                    }
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(headerName));
+    }
+
+    @Test
+    public void test_HEAD_With_ResponseContentLength() throws Exception
+    {
+        final int length = 1024;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().write(new byte[length]);
+            }
+        });
+
+        // HEAD requests receive a Content-Length header, but do not
+        // receive the content so they must handle this case properly
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .method(HttpMethod.HEAD)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
+
+        // Perform a normal GET request to be sure the content is now read
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(length, response.getContent().length);
+    }
+
+    @Test
+    public void testConnectThrowsUnresolvedAddressException() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("idontexist", 80)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        Assert.assertTrue(result.getFailure() instanceof UnresolvedAddressException);
+                        latch.countDown();
+                    }
+                });
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 }

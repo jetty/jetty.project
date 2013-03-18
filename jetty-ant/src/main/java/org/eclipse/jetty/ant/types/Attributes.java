@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,14 +24,14 @@ import java.util.List;
 public class Attributes
 {
 
-    List _attributes = new ArrayList();
+    List<Attribute> _attributes = new ArrayList<Attribute>();
     
     public void addAttribute(Attribute attr )
     {
         _attributes.add(attr);
     }
     
-    public List getAttributes()
+    public List<Attribute> getAttributes()
     {
         return _attributes;
     }

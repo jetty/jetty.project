@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,17 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.Random;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -36,8 +37,45 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class BrowserSocket
 {
+    private static class WriteMany implements Runnable
+    {
+        private RemoteEndpoint remote;
+        private int size;
+        private int count;
+
+        public WriteMany(RemoteEndpoint remote, int size, int count)
+        {
+            this.remote = remote;
+            this.size = size;
+            this.count = count;
+        }
+
+        @Override
+        public void run()
+        {
+            char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+            int lettersLen = letters.length;
+            char randomText[] = new char[size];
+            Random rand = new Random(42);
+            String msg;
+
+            for (int n = 0; n < count; n++)
+            {
+                // create random text
+                for (int i = 0; i < size; i++)
+                {
+                    randomText[i] = letters[rand.nextInt(lettersLen)];
+                }
+                msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
+                remote.sendStringByFuture(msg);
+            }
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(BrowserSocket.class);
-    private WebSocketConnection connection;
+
+    private Session session;
+    private RemoteEndpoint remote;
     private final String userAgent;
     private final String requestedExtensions;
 
@@ -48,15 +86,17 @@ public class BrowserSocket
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session session)
     {
-        this.connection = conn;
+        LOG.info("Connect [{}]",session);
+        this.session = session;
+        this.remote = session.getRemote();
     }
 
     @OnWebSocketClose
     public void onDisconnect(int statusCode, String reason)
     {
-        this.connection = null;
+        this.session = null;
         LOG.info("Closed [{}, {}]",statusCode,reason);
     }
 
@@ -93,6 +133,39 @@ public class BrowserSocket
                     }
                     break;
                 }
+                case "many":
+                {
+                    String parts[] = val.split(",");
+                    int size = Integer.parseInt(parts[0]);
+                    int count = Integer.parseInt(parts[1]);
+
+                    writeManyAsync(size,count);
+                    break;
+                }
+                case "manythreads":
+                {
+                    String parts[] = val.split(",");
+                    int threadCount = Integer.parseInt(parts[0]);
+                    int size = Integer.parseInt(parts[1]);
+                    int count = Integer.parseInt(parts[2]);
+
+                    Thread threads[] = new Thread[threadCount];
+
+                    // Setup threads
+                    for (int n = 0; n < threadCount; n++)
+                    {
+                        threads[n] = new Thread(new WriteMany(remote,size,count),"WriteMany[" + n + "]");
+                    }
+
+                    // Execute threads
+                    for (Thread thread : threads)
+                    {
+                        thread.start();
+                    }
+
+                    // Drop out of this thread
+                    break;
+                }
                 case "time":
                 {
                     Calendar now = Calendar.getInstance();
@@ -108,33 +181,45 @@ public class BrowserSocket
         }
         else
         {
-            // echo it
+            // Not parameterized, echo it back
             writeMessage(message);
+        }
+    }
+
+    private void writeManyAsync(int size, int count)
+    {
+        char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+        int lettersLen = letters.length;
+        char randomText[] = new char[size];
+        Random rand = new Random(42);
+
+        for (int n = 0; n < count; n++)
+        {
+            // create random text
+            for (int i = 0; i < size; i++)
+            {
+                randomText[i] = letters[rand.nextInt(lettersLen)];
+            }
+            writeMessage("Many [%s]",String.valueOf(randomText));
         }
     }
 
     private void writeMessage(String message)
     {
-        if (this.connection == null)
+        if (this.session == null)
         {
             LOG.debug("Not connected");
             return;
         }
 
-        if (connection.isOpen() == false)
+        if (session.isOpen() == false)
         {
             LOG.debug("Not open");
             return;
         }
 
-        try
-        {
-            connection.write(message);
-        }
-        catch (IOException e)
-        {
-            LOG.info(e);
-        }
+        // Async write
+        remote.sendStringByFuture(message);
     }
 
     private void writeMessage(String format, Object... args)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -621,26 +622,24 @@ public class ObjectMBean implements DynamicMBean
         boolean convert = false;
 
         // determine if we should convert
-        Class<?> returnType = method.getReturnType();
+        Class<?> return_type = method.getReturnType();
 
-        if ( returnType.isArray() )
+        // get the component type
+        Class<?> component_type = return_type;
+        while ( component_type.isArray() )
         {
-            returnType = returnType.getComponentType();
+            component_type = component_type.getComponentType();
         }
            
         // Test to see if the returnType or any of its super classes are managed objects
-        convert = isAnnotationPresent(returnType, ManagedObject.class);       
+        convert = isAnnotationPresent(component_type, ManagedObject.class);       
         
         String uName = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
         Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
         LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,readonly,oClass,description);
 
-        Class<?> type = null;
         Method setter = null;
-
-        type = returnType;//method.getReturnType();
-
 
         // dig out a setter if one exists
         if (!readonly)
@@ -666,7 +665,7 @@ public class ObjectMBean implements DynamicMBean
                             continue;
                         }
                         setter = methods[m];
-                        if ( !type.equals(methods[m].getParameterTypes()[0]))
+                        if ( !component_type.equals(methods[m].getParameterTypes()[0]))
                         {
                             LOG.warn("Type conflict for mbean attr {} in {}", name, oClass);
                             continue;
@@ -684,8 +683,8 @@ public class ObjectMBean implements DynamicMBean
                         continue;
                     }
                     setter = methods[m];
-                    if ( !type.equals(methods[m].getParameterTypes()[0]))
-                    {
+                    if ( !return_type.equals(methods[m].getParameterTypes()[0]))
+                    {                            
                         LOG.warn("Type conflict for mbean attr {} in {}", name, oClass);
                         continue;
                     }
@@ -695,18 +694,18 @@ public class ObjectMBean implements DynamicMBean
 
         if (convert)
         {
-            if (type==null)
+            if (component_type==null)
             {
 	        LOG.warn("No mbean type for {} on {}", name, _managed.getClass());
 		return null;
 	    }
 
-            if (type.isPrimitive() && !type.isArray())
+            if (component_type.isPrimitive() && !component_type.isArray())
             {
 	        LOG.warn("Cannot convert mbean primative {}", name);
 		return null;
 	    }
-            LOG.debug("passed convert checks {} for type {}", name, type);
+            LOG.debug("passed convert checks {} for type {}", name, component_type);
         }
 
         try
@@ -720,7 +719,7 @@ public class ObjectMBean implements DynamicMBean
             {
                 _convert.add(name);
 
-                if (type.isArray())
+                if (component_type.isArray())
                 {
                     info= new MBeanAttributeInfo(name,OBJECT_NAME_ARRAY_CLASS,description,true,setter!=null,method.getName().startsWith("is"));
                 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,11 +21,13 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -53,7 +55,9 @@ public class Parser
         PAYLOAD
     }
 
-    private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
+    private static final Logger LOG = Log.getLogger(Parser.class);
+    private final WebSocketPolicy policy;
+    private final ByteBufferPool bufferPool;
 
     // State specific
     private State state = State.START;
@@ -77,12 +81,11 @@ public class Parser
     /** Is there an extension that processes invalid UTF8 text messages (such as compressed content) */
     private boolean isTextFrameValidated = true;
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
     private IncomingFrames incomingFramesHandler;
-    private WebSocketPolicy policy;
 
-    public Parser(WebSocketPolicy wspolicy)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
     {
+        this.bufferPool = bufferPool;
         this.policy = wspolicy;
     }
 
@@ -95,7 +98,7 @@ public class Parser
             // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
             throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
-        policy.assertValidPayloadLength((int)len);
+        policy.assertValidMessageSize((int)len);
 
         switch (frame.getOpCode())
         {
@@ -173,14 +176,21 @@ public class Parser
 
     protected void notifyFrame(final Frame f)
     {
-        if (LOG_FRAMES.isDebugEnabled())
-        {
-            LOG_FRAMES.debug("{} Read Frame: {}",policy.getBehavior(),f);
-        }
         if (LOG.isDebugEnabled())
         {
             LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
         }
+
+        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        {
+            // Parsing on server?
+            // Then you MUST make sure all incoming frames are masked!
+            if (f.isMasked() == false)
+            {
+                throw new ProtocolException("Client frames MUST be masked (RFC-6455)");
+            }
+        }
+
         if (incomingFramesHandler == null)
         {
             return;
@@ -542,9 +552,8 @@ public class Parser
         {
             if (payload == null)
             {
-                getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
-                payload = ByteBuffer.allocate(payloadLength);
+                payload = bufferPool.acquire(payloadLength,false);
                 BufferUtil.clearToFill(payload);
             }
 

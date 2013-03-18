@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,8 +38,8 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -52,7 +51,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -84,7 +82,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
-    private final Scheduler scheduler = new TimerScheduler();
+    private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventDriverFactory eventDriverFactory;
@@ -309,7 +307,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.eclipse.jetty.websocket.server.WebSocketServletFactory#register(java.lang.Class)
      */
     @Override
@@ -350,7 +348,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
+     *
      * @param request
      *            The request to upgrade
      * @param response
@@ -415,8 +413,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup Session
         WebSocketSession session = new WebSocketSession(request.getRequestURI(),driver,connection);
         session.setPolicy(getPolicy().clonePolicy());
-        session.setNegotiatedSubprotocol(response.getAcceptedSubProtocol());
-        session.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
+        session.setUpgradeRequest(request);
+        response.setExtensions(extensionStack.getNegotiatedExtensions());
+        session.setUpgradeResponse(response);
         connection.setSession(session);
 
         // Setup Incoming Routing
@@ -446,7 +445,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
+        request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);

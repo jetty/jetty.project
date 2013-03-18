@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.jndi;
 
 import java.lang.reflect.Method;
 import java.sql.Statement;
+
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -57,6 +58,7 @@ public class DataSourceCloser implements Destroyable
         _shutdown=shutdownSQL;
     }
 
+    @Override
     public void destroy()
     {
         try

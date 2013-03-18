@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,11 +20,9 @@ package org.eclipse.jetty.io;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -42,9 +40,7 @@ import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -59,6 +55,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         __sslCtxFactory.setKeyStorePassword("storepwd");
         __sslCtxFactory.setKeyManagerPassword("keypwd");
+        __sslCtxFactory.setEndpointIdentificationAlgorithm("");
         __sslCtxFactory.start();
     }
 
@@ -223,51 +220,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     public void testIdle() throws Exception
     {
         super.testIdle();
-    }
-
-    @Override
-    public void testBlockedReadIdle() throws Exception
-    {
-        Socket client = newClient();
-        OutputStream clientOutputStream = client.getOutputStream();
-
-        client.setSoTimeout(5000);
-
-        SocketChannel server = _connector.accept();
-        server.configureBlocking(false);
-
-        _manager.accept(server);
-
-        // Write client to server
-        clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
-
-        // Verify echo server to client
-        for (char c : "HelloWorld".toCharArray())
-        {
-            int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
-        }
-
-        assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
-        _lastEndPoint.setIdleTimeout(500);
-
-        // Write 8 and cause block waiting for 10
-        _blockAt=10;
-        clientOutputStream.write("12345678".getBytes("UTF-8"));
-        clientOutputStream.flush();
-
-        // read until idle shutdown received
-        long start=System.currentTimeMillis();
-        int b=client.getInputStream().read();
-        assertEquals(-1,b);
-        long idle=System.currentTimeMillis()-start;
-        assertTrue(idle>400);
-        assertTrue(idle<2000);
-
-        Thread.sleep(1000);
-
-        assertFalse(_lastEndPoint.isOpen());
     }
 
     @Test

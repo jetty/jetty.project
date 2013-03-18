@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -230,17 +230,6 @@ public class URLResource extends Resource
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Returns an output stream to the resource
-     */
-    @Override
-    public OutputStream getOutputStream()
-        throws java.io.IOException, SecurityException
-    {
-        throw new IOException( "Output not supported");
     }
 
     /* ------------------------------------------------------------ */

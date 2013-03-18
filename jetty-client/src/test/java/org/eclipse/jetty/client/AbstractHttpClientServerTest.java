@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,8 +30,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -63,6 +61,7 @@ public abstract class AbstractHttpClientServerTest
     {
         if (sslContextFactory != null)
         {
+            sslContextFactory.setEndpointIdentificationAlgorithm("");
             sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");

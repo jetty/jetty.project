@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -60,6 +61,7 @@ import org.eclipse.jetty.xml.XmlParser;
  * Note- this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
  * find all the listeners in tag libs and register them.
  */
+@Deprecated
 public class TagLibConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(TagLibConfiguration.class);
@@ -117,7 +119,8 @@ public class TagLibConfiguration extends AbstractConfiguration
                         loader = getClass().getClassLoader();
                     else
                         loader = loader.getParent();
-                    Class<?> clazz = loader.loadClass("org.apache.jasper.compiler.TldLocationsCache");
+                    //Choose a class that should be present if tlds are in use
+                    Class<?> clazz = loader.loadClass("org.apache.jasper.compiler.TagFileProcessor");
                     assert clazz!=null;
                     Collection<Resource> tld_resources = (Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
 

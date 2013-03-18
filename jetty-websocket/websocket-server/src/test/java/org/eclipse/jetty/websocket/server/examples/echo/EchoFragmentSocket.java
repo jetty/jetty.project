@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 public class EchoFragmentSocket
 {
     @OnWebSocketFrame
-    public void onFrame(WebSocketConnection conn, Frame frame)
+    public void onFrame(Session session, Frame frame)
     {
         if (frame.getType().isData())
         {
@@ -51,18 +52,19 @@ public class EchoFragmentSocket
         buf1.limit(half);
         buf2.position(half);
 
+        RemoteEndpoint remote = session.getRemote();
         try
         {
             switch (frame.getType())
             {
                 case BINARY:
-                    conn.write(buf1);
-                    conn.write(buf2);
+                    remote.sendBytesByFuture(buf1);
+                    remote.sendBytesByFuture(buf2);
                     break;
                 case TEXT:
                     // NOTE: This impl is not smart enough to split on a UTF8 boundary
-                    conn.write(BufferUtil.toUTF8String(buf1));
-                    conn.write(BufferUtil.toUTF8String(buf2));
+                    remote.sendStringByFuture(BufferUtil.toUTF8String(buf1));
+                    remote.sendStringByFuture(BufferUtil.toUTF8String(buf2));
                     break;
                 default:
                     throw new IOException("Unexpected frame type: " + frame.getType());

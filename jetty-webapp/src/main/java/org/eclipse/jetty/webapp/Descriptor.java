@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,10 +60,14 @@ public abstract class Descriptor
         
         if (_root == null)
         {
-            //boolean oldValidating = _processor.getParser().getValidating();
-            //_processor.getParser().setValidating(_validating);
-            _root = _parser.parse(_xml.getURL().toString());
-            //_processor.getParser().setValidating(oldValidating);
+            try
+            {
+                _root = _parser.parse(_xml.getInputStream());
+            }
+            finally
+            {
+                _xml.release();
+            }
         }
     }
     

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.Info;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -44,14 +47,18 @@ import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
- * clients into SPDY events for the servers.</p>
+ * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by clients into
+ * SPDY events for the servers.</p>
  */
 public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 {
-    private static final String STREAM_HANDLER_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.streamHandler";
+    private static final Logger LOG = Log.getLogger(SPDYProxyEngine.class);
+
+    private static final String STREAM_PROMISE_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.streamPromise";
     private static final String CLIENT_STREAM_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.proxy.clientStream";
 
     private final ConcurrentMap<String, Session> serverSessions = new ConcurrentHashMap<>();
@@ -106,9 +113,9 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
         SynInfo serverSynInfo = new SynInfo(headers, clientSynInfo.isClose());
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
-        StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
-        clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-        serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, handler);
+        StreamPromise promise = new StreamPromise(clientStream, serverSynInfo);
+        clientStream.setAttribute(STREAM_PROMISE_ATTRIBUTE, promise);
+        serverSession.syn(serverSynInfo, listener, promise);
         return this;
     }
 
@@ -126,9 +133,15 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     }
 
     @Override
+    public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+    {
+        throw new IllegalStateException("We shouldn't receive pushes from clients");
+    }
+
+    @Override
     public void onReply(Stream stream, ReplyInfo replyInfo)
     {
-        // Servers do not receive replies
+        throw new IllegalStateException("Servers do not receive replies");
     }
 
     @Override
@@ -141,7 +154,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     @Override
     public void onData(Stream clientStream, final DataInfo clientDataInfo)
     {
-        logger.debug("C -> P {} on {}", clientDataInfo, clientStream);
+        LOG.debug("C -> P {} on {}", clientDataInfo, clientStream);
 
         ByteBufferDataInfo serverDataInfo = new ByteBufferDataInfo(clientDataInfo.asByteBuffer(false), clientDataInfo.isClose())
         {
@@ -153,8 +166,8 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             }
         };
 
-        StreamHandler streamHandler = (StreamHandler)clientStream.getAttribute(STREAM_HANDLER_ATTRIBUTE);
-        streamHandler.data(serverDataInfo);
+        StreamPromise streamPromise = (StreamPromise)clientStream.getAttribute(STREAM_PROMISE_ATTRIBUTE);
+        streamPromise.data(serverDataInfo);
     }
 
     private Session produceSession(String host, short version, InetSocketAddress address)
@@ -166,11 +179,11 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             {
                 SPDYClient client = factory.newSPDYClient(version);
                 session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
-                logger.debug("Proxy session connected to {}", address);
+                LOG.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
-                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+                    session.goAway(new GoAwayInfo(), new Callback.Adapter());
                     session = existing;
                 }
             }
@@ -178,7 +191,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
         catch (Exception x)
         {
-            logger.debug(x);
+            LOG.debug(x);
             return null;
         }
     }
@@ -203,35 +216,104 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+        stream.getSession().rst(rstInfo, new Callback.Adapter());
+    }
+
+    private class ProxyPushStreamFrameListener implements StreamFrameListener
+    {
+        private PushStreamPromise pushStreamPromise;
+
+        private ProxyPushStreamFrameListener(PushStreamPromise pushStreamPromise)
+        {
+            this.pushStreamPromise = pushStreamPromise;
+        }
+
+        @Override
+        public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+        {
+            LOG.debug("S -> P pushed {} on {}. Opening new PushStream P -> C now.", pushInfo, stream);
+            PushStreamPromise newPushStreamPromise = new PushStreamPromise(stream, pushInfo);
+            this.pushStreamPromise.push(newPushStreamPromise);
+            return new ProxyPushStreamFrameListener(newPushStreamPromise);
+        }
+
+        @Override
+        public void onReply(Stream stream, ReplyInfo replyInfo)
+        {
+            // Push streams never send a reply
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void onHeaders(Stream stream, HeadersInfo headersInfo)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void onData(Stream serverStream, final DataInfo serverDataInfo)
+        {
+            LOG.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
+
+            ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
+            {
+                @Override
+                public void consume(int delta)
+                {
+                    super.consume(delta);
+                    serverDataInfo.consume(delta);
+                }
+            };
+
+            pushStreamPromise.data(clientDataInfo);
+        }
     }
 
     private class ProxyStreamFrameListener extends StreamFrameListener.Adapter
     {
-        private final Stream clientStream;
-        private volatile ReplyInfo replyInfo;
+        private final Stream receiverStream;
 
-        public ProxyStreamFrameListener(Stream clientStream)
+        public ProxyStreamFrameListener(Stream receiverStream)
         {
-            this.clientStream = clientStream;
+            this.receiverStream = receiverStream;
+        }
+
+        @Override
+        public StreamFrameListener onPush(Stream senderStream, PushInfo pushInfo)
+        {
+            LOG.debug("S -> P {} on {}");
+            PushInfo newPushInfo = convertPushInfo(pushInfo, senderStream, receiverStream);
+            PushStreamPromise pushStreamPromise = new PushStreamPromise(senderStream, newPushInfo);
+            receiverStream.push(newPushInfo, pushStreamPromise);
+            return new ProxyPushStreamFrameListener(pushStreamPromise);
         }
 
         @Override
         public void onReply(final Stream stream, ReplyInfo replyInfo)
         {
-            logger.debug("S -> P {} on {}", replyInfo, stream);
+            LOG.debug("S -> P {} on {}", replyInfo, stream);
+            final ReplyInfo clientReplyInfo = new ReplyInfo(convertHeaders(stream, receiverStream, replyInfo.getHeaders()),
+                    replyInfo.isClose());
+            reply(stream, clientReplyInfo);
+        }
 
-            short serverVersion = stream.getSession().getVersion();
-            Fields headers = new Fields(replyInfo.getHeaders(), false);
+        private void reply(final Stream stream, final ReplyInfo clientReplyInfo)
+        {
+            receiverStream.reply(clientReplyInfo, new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    LOG.debug("P -> C {} from {} to {}", clientReplyInfo, stream, receiverStream);
+                }
 
-            addResponseProxyHeaders(stream, headers);
-            customizeResponseHeaders(stream, headers);
-            short clientVersion = this.clientStream.getSession().getVersion();
-            convert(serverVersion, clientVersion, headers);
-
-            this.replyInfo = new ReplyInfo(headers, replyInfo.isClose());
-            if (replyInfo.isClose())
-                reply(stream);
+                @Override
+                public void failed(Throwable x)
+                {
+                    LOG.debug(x);
+                    rst(receiverStream);
+                }
+            });
         }
 
         @Override
@@ -244,165 +326,146 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         @Override
         public void onData(final Stream stream, final DataInfo dataInfo)
         {
-            logger.debug("S -> P {} on {}", dataInfo, stream);
-
-            if (replyInfo != null)
-            {
-                if (dataInfo.isClose())
-                    replyInfo.getHeaders().put("content-length", String.valueOf(dataInfo.available()));
-                reply(stream);
-            }
+            LOG.debug("S -> P {} on {}", dataInfo, stream);
             data(stream, dataInfo);
         }
 
-        private void reply(final Stream stream)
+        private void data(final Stream stream, final DataInfo serverDataInfo)
         {
-            final ReplyInfo replyInfo = this.replyInfo;
-            this.replyInfo = null;
-            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
+            final ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
+            {
+                @Override
+                public void consume(int delta)
+                {
+                    super.consume(delta);
+                    serverDataInfo.consume(delta);
+                }
+            };
+
+            receiverStream.data(clientDataInfo, new Callback() //TODO: timeout???
             {
                 @Override
                 public void succeeded()
                 {
-                    logger.debug("P -> C {} from {} to {}", replyInfo, stream, clientStream);
+                    LOG.debug("P -> C {} from {} to {}", clientDataInfo, stream, receiverStream);
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    logger.debug(x);
-                    rst(clientStream);
-                }
-            });
-        }
-
-        private void data(final Stream stream, final DataInfo dataInfo)
-        {
-            clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    dataInfo.consume(dataInfo.length());
-                    logger.debug("P -> C {} from {} to {}", dataInfo, stream, clientStream);
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    logger.debug(x);
-                    rst(clientStream);
+                    LOG.debug(x);
+                    rst(receiverStream);
                 }
             });
         }
     }
 
     /**
-     * <p>{@link StreamHandler} implements the forwarding of DATA frames from the client to the server.</p>
-     * <p>Instances of this class buffer DATA frames sent by clients and send them to the server.
-     * The buffering happens between the send of the SYN_STREAM to the server (where DATA frames may arrive
-     * from the client before the SYN_STREAM has been fully sent), and between DATA frames, if the client
-     * is a fast producer and the server a slow consumer, or if the client is a SPDY v2 client (and hence
-     * without flow control) while the server is a SPDY v3 server (and hence with flow control).</p>
+     * <p>{@link StreamPromise} implements the forwarding of DATA frames from the client to the server and vice
+     * versa.</p> <p>Instances of this class buffer DATA frames sent by clients and send them to the server. The
+     * buffering happens between the send of the SYN_STREAM to the server (where DATA frames may arrive from the client
+     * before the SYN_STREAM has been fully sent), and between DATA frames, if the client is a fast producer and the
+     * server a slow consumer, or if the client is a SPDY v2 client (and hence without flow control) while the server is
+     * a SPDY v3 server (and hence with flow control).</p>
      */
-    private class StreamHandler implements Promise<Stream>
+    private class StreamPromise implements Promise<Stream>
     {
-        private final Queue<DataInfoHandler> queue = new LinkedList<>();
-        private final Stream clientStream;
-        private final SynInfo serverSynInfo;
-        private Stream serverStream;
+        private final Queue<DataInfoCallback> queue = new LinkedList<>();
+        private final Stream senderStream;
+        private final Info info;
+        private Stream receiverStream;
 
-        private StreamHandler(Stream clientStream, SynInfo serverSynInfo)
+        private StreamPromise(Stream senderStream, Info info)
         {
-            this.clientStream = clientStream;
-            this.serverSynInfo = serverSynInfo;
+            this.senderStream = senderStream;
+            this.info = info;
         }
 
         @Override
-        public void succeeded(Stream serverStream)
+        public void succeeded(Stream stream)
         {
-            logger.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
+            LOG.debug("P -> S {} from {} to {}", info, senderStream, stream);
 
-            serverStream.setAttribute(CLIENT_STREAM_ATTRIBUTE, clientStream);
+            stream.setAttribute(CLIENT_STREAM_ATTRIBUTE, senderStream);
 
-            DataInfoHandler dataInfoHandler;
+            DataInfoCallback dataInfoCallback;
             synchronized (queue)
             {
-                this.serverStream = serverStream;
-                dataInfoHandler = queue.peek();
-                if (dataInfoHandler != null)
+                this.receiverStream = stream;
+                dataInfoCallback = queue.peek();
+                if (dataInfoCallback != null)
                 {
-                    if (dataInfoHandler.flushing)
+                    if (dataInfoCallback.flushing)
                     {
-                        logger.debug("SYN completed, flushing {}, queue size {}", dataInfoHandler.dataInfo, queue.size());
-                        dataInfoHandler = null;
+                        LOG.debug("SYN completed, flushing {}, queue size {}", dataInfoCallback.dataInfo, queue.size());
+                        dataInfoCallback = null;
                     }
                     else
                     {
-                        dataInfoHandler.flushing = true;
-                        logger.debug("SYN completed, queue size {}", queue.size());
+                        dataInfoCallback.flushing = true;
+                        LOG.debug("SYN completed, queue size {}", queue.size());
                     }
                 }
                 else
                 {
-                    logger.debug("SYN completed, queue empty");
+                    LOG.debug("SYN completed, queue empty");
                 }
             }
-            if (dataInfoHandler != null)
-                flush(serverStream, dataInfoHandler);
+            if (dataInfoCallback != null)
+                flush(stream, dataInfoCallback);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            logger.debug(x);
-            rst(clientStream);
+            LOG.debug(x);
+            rst(senderStream);
         }
 
         public void data(DataInfo dataInfo)
         {
-            Stream serverStream;
-            DataInfoHandler dataInfoHandler = null;
-            DataInfoHandler item = new DataInfoHandler(dataInfo);
+            Stream receiverStream;
+            DataInfoCallback dataInfoCallbackToFlush = null;
+            DataInfoCallback dataInfoCallBackToQueue = new DataInfoCallback(dataInfo);
             synchronized (queue)
             {
-                queue.offer(item);
-                serverStream = this.serverStream;
-                if (serverStream != null)
+                queue.offer(dataInfoCallBackToQueue);
+                receiverStream = this.receiverStream;
+                if (receiverStream != null)
                 {
-                    dataInfoHandler = queue.peek();
-                    if (dataInfoHandler.flushing)
+                    dataInfoCallbackToFlush = queue.peek();
+                    if (dataInfoCallbackToFlush.flushing)
                     {
-                        logger.debug("Queued {}, flushing {}, queue size {}", dataInfo, dataInfoHandler.dataInfo, queue.size());
-                        serverStream = null;
+                        LOG.debug("Queued {}, flushing {}, queue size {}", dataInfo, dataInfoCallbackToFlush.dataInfo, queue.size());
+                        receiverStream = null;
                     }
                     else
                     {
-                        dataInfoHandler.flushing = true;
-                        logger.debug("Queued {}, queue size {}", dataInfo, queue.size());
+                        dataInfoCallbackToFlush.flushing = true;
+                        LOG.debug("Queued {}, queue size {}", dataInfo, queue.size());
                     }
                 }
                 else
                 {
-                    logger.debug("Queued {}, SYN incomplete, queue size {}", dataInfo, queue.size());
+                    LOG.debug("Queued {}, SYN incomplete, queue size {}", dataInfo, queue.size());
                 }
             }
-            if (serverStream != null)
-                flush(serverStream, dataInfoHandler);
+            if (receiverStream != null)
+                flush(receiverStream, dataInfoCallbackToFlush);
         }
 
-        private void flush(Stream serverStream, DataInfoHandler dataInfoHandler)
+        private void flush(Stream receiverStream, DataInfoCallback dataInfoCallback)
         {
-            logger.debug("P -> S {} on {}", dataInfoHandler.dataInfo, serverStream);
-            serverStream.data(dataInfoHandler.dataInfo, getTimeout(), TimeUnit.MILLISECONDS,dataInfoHandler);
+            LOG.debug("P -> S {} on {}", dataInfoCallback.dataInfo, receiverStream);
+            receiverStream.data(dataInfoCallback.dataInfo, dataInfoCallback); //TODO: timeout???
         }
 
-        private class DataInfoHandler implements Callback
+        private class DataInfoCallback implements Callback
         {
             private final DataInfo dataInfo;
             private boolean flushing;
 
-            private DataInfoHandler(DataInfo dataInfo)
+            private DataInfoCallback(DataInfo dataInfo)
             {
                 this.dataInfo = dataInfo;
             }
@@ -411,59 +474,90 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             public void succeeded()
             {
                 Stream serverStream;
-                DataInfoHandler dataInfoHandler;
+                DataInfoCallback dataInfoCallback;
                 synchronized (queue)
                 {
-                    serverStream = StreamHandler.this.serverStream;
+                    serverStream = StreamPromise.this.receiverStream;
                     assert serverStream != null;
-                    dataInfoHandler = queue.poll();
-                    assert dataInfoHandler == this;
-                    dataInfoHandler = queue.peek();
-                    if (dataInfoHandler != null)
+                    dataInfoCallback = queue.poll();
+                    assert dataInfoCallback == this;
+                    dataInfoCallback = queue.peek();
+                    if (dataInfoCallback != null)
                     {
-                        assert !dataInfoHandler.flushing;
-                        dataInfoHandler.flushing = true;
-                        logger.debug("Completed {}, queue size {}", dataInfo, queue.size());
+                        assert !dataInfoCallback.flushing;
+                        dataInfoCallback.flushing = true;
+                        LOG.debug("Completed {}, queue size {}", dataInfo, queue.size());
                     }
                     else
                     {
-                        logger.debug("Completed {}, queue empty", dataInfo);
+                        LOG.debug("Completed {}, queue empty", dataInfo);
                     }
                 }
-                if (dataInfoHandler != null)
-                    flush(serverStream, dataInfoHandler);
+                if (dataInfoCallback != null)
+                    flush(serverStream, dataInfoCallback);
             }
 
             @Override
             public void failed(Throwable x)
             {
-                logger.debug(x);
-                rst(clientStream);
+                LOG.debug(x);
+                rst(senderStream);
+            }
+        }
+
+        public Stream getSenderStream()
+        {
+            return senderStream;
+        }
+
+        public Info getInfo()
+        {
+            return info;
+        }
+
+        public Stream getReceiverStream()
+        {
+            synchronized (queue)
+            {
+                return receiverStream;
             }
         }
     }
 
-    private class ProxySessionFrameListener extends SessionFrameListener.Adapter implements StreamFrameListener
+    private class PushStreamPromise extends StreamPromise
     {
-        @Override
-        public StreamFrameListener onSyn(Stream serverStream, SynInfo serverSynInfo)
+        private volatile PushStreamPromise pushStreamPromise;
+
+        private PushStreamPromise(Stream senderStream, PushInfo pushInfo)
         {
-            logger.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
-
-            Fields headers = new Fields(serverSynInfo.getHeaders(), false);
-
-            addResponseProxyHeaders(serverStream, headers);
-            customizeResponseHeaders(serverStream, headers);
-            Stream clientStream = (Stream)serverStream.getAssociatedStream().getAttribute(CLIENT_STREAM_ATTRIBUTE);
-            convert(serverStream.getSession().getVersion(), clientStream.getSession().getVersion(), headers);
-
-            StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
-            serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
-            clientStream.syn(new SynInfo(headers, serverSynInfo.isClose()), getTimeout(), TimeUnit.MILLISECONDS, handler);
-
-            return this;
+            super(senderStream, pushInfo);
         }
 
+        @Override
+        public void succeeded(Stream receiverStream)
+        {
+            super.succeeded(receiverStream);
+
+            LOG.debug("P -> C PushStreamPromise.succeeded() called with pushStreamPromise: {}", pushStreamPromise);
+
+            PushStreamPromise promise = pushStreamPromise;
+            if (promise != null)
+                receiverStream.push(convertPushInfo((PushInfo)getInfo(), getSenderStream(), receiverStream), pushStreamPromise);
+        }
+
+        public void push(PushStreamPromise pushStreamPromise)
+        {
+            Stream receiverStream = getReceiverStream();
+
+            if (receiverStream != null)
+                receiverStream.push(convertPushInfo((PushInfo)getInfo(), getSenderStream(), receiverStream), pushStreamPromise);
+            else
+                this.pushStreamPromise = pushStreamPromise;
+        }
+    }
+
+    private class ProxySessionFrameListener extends SessionFrameListener.Adapter
+    {
         @Override
         public void onRst(Session serverSession, RstInfo serverRstInfo)
         {
@@ -475,46 +569,31 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 {
                     Session clientSession = clientStream.getSession();
                     RstInfo clientRstInfo = new RstInfo(clientStream.getId(), serverRstInfo.getStreamStatus());
-                    clientSession.rst(clientRstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Callback.Adapter());
+                    clientSession.rst(clientRstInfo, new Callback.Adapter());
                 }
             }
         }
 
         @Override
-        public void onGoAway(Session serverSession, GoAwayInfo goAwayInfo)
+        public void onGoAway(Session serverSession, GoAwayResultInfo goAwayResultInfo)
         {
             serverSessions.values().remove(serverSession);
         }
+    }
 
-        @Override
-        public void onReply(Stream stream, ReplyInfo replyInfo)
-        {
-            // Push streams never send a reply
-        }
+    private PushInfo convertPushInfo(PushInfo pushInfo, Stream from, Stream to)
+    {
+        Fields headersToConvert = pushInfo.getHeaders();
+        Fields headers = convertHeaders(from, to, headersToConvert);
+        return new PushInfo(getTimeout(), TimeUnit.MILLISECONDS, headers, pushInfo.isClose());
+    }
 
-        @Override
-        public void onHeaders(Stream stream, HeadersInfo headersInfo)
-        {
-            throw new UnsupportedOperationException(); //TODO
-        }
-
-        @Override
-        public void onData(Stream serverStream, final DataInfo serverDataInfo)
-        {
-            logger.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
-
-            ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
-            {
-                @Override
-                public void consume(int delta)
-                {
-                    super.consume(delta);
-                    serverDataInfo.consume(delta);
-                }
-            };
-
-            StreamHandler handler = (StreamHandler)serverStream.getAttribute(STREAM_HANDLER_ATTRIBUTE);
-            handler.data(clientDataInfo);
-        }
+    private Fields convertHeaders(Stream from, Stream to, Fields headersToConvert)
+    {
+        Fields headers = new Fields(headersToConvert, false);
+        addResponseProxyHeaders(from, headers);
+        customizeResponseHeaders(from, headers);
+        convert(from.getSession().getVersion(), to.getSession().getVersion(), headers);
+        return headers;
     }
 }

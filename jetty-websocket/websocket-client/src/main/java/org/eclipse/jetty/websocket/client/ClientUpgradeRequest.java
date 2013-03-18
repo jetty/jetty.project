@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,13 +21,17 @@ package org.eclipse.jetty.websocket.client;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -39,6 +43,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public class ClientUpgradeRequest extends UpgradeRequest
 {
     private final static Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
+    private final static int MAX_KEYS = -1; // maximum number of parameter keys to decode
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -59,7 +64,6 @@ public class ClientUpgradeRequest extends UpgradeRequest
     }
 
     private final String key;
-    private CookieStore cookieStore;
 
     public ClientUpgradeRequest()
     {
@@ -67,7 +71,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         this.key = genRandomKey();
     }
 
-    public ClientUpgradeRequest(URI requestURI)
+    protected ClientUpgradeRequest(URI requestURI)
     {
         super(requestURI);
         this.key = genRandomKey();
@@ -182,16 +186,6 @@ public class ClientUpgradeRequest extends UpgradeRequest
         request.append("\r\n");
         return request.toString();
     }
-    
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        if(cookieStore != null) {
-            return cookieStore.get(getRequestURI());
-        }
-        
-        return super.getCookies();
-    }
 
     private final String genRandomKey()
     {
@@ -200,18 +194,51 @@ public class ClientUpgradeRequest extends UpgradeRequest
         return new String(B64Code.encode(bytes));
     }
 
-    public CookieStore getCookieStore()
-    {
-        return cookieStore;
-    }
-
     public String getKey()
     {
         return key;
     }
 
-    public void setCookieStore(CookieStore cookieStore)
+    public void setCookiesFrom(CookieStore cookieStore)
     {
-        this.cookieStore = cookieStore;
+        if (cookieStore == null)
+        {
+            return;
+        }
+
+        setCookies(cookieStore.get(getRequestURI()));
+    }
+
+    @Override
+    public void setRequestURI(URI uri)
+    {
+        super.setRequestURI(uri);
+
+        // parse parameter map
+        Map<String, String[]> pmap = new HashMap<>();
+
+        String query = uri.getQuery();
+
+        if (StringUtil.isNotBlank(query))
+        {
+            MultiMap<String> params = new MultiMap<String>();
+            UrlEncoded.decodeTo(uri.getQuery(),params,"UTF-8",MAX_KEYS);
+
+            for (String key : params.keySet())
+            {
+                List<String> values = params.getValues(key);
+                if (values == null)
+                {
+                    pmap.put(key,new String[0]);
+                }
+                else
+                {
+                    int len = values.size();
+                    pmap.put(key,values.toArray(new String[len]));
+                }
+            }
+
+            super.setParameterMap(pmap);
+        }
     }
 }

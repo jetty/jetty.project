@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 
 /**
@@ -31,12 +33,9 @@ import org.osgi.framework.Bundle;
  */
 public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
-
-    private static boolean identifiedOsgiImpl = false;
+    private static final Logger LOG = Log.getLogger(BundleClassLoaderHelper.class);
     
-    private static Class BundleWiringClass = null;
-    private static Method BundleWiringClass_getClassLoader_method = null;
-    private static Method BundleClass_adapt_method = null;
+    private static boolean identifiedOsgiImpl = false;
 
     private static boolean isEquinox = false;
 
@@ -45,40 +44,19 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static void init(Bundle bundle)
     {
         identifiedOsgiImpl = true;
-        
         try
         {
-        	BundleWiringClass = bundle.getClass().getClassLoader().loadClass("org.osgi.framework.wiring.BundleWiring");
-        	if (BundleWiringClass != null)
-        	{
-        		BundleWiringClass_getClassLoader_method = BundleWiringClass.getDeclaredMethod("getClassLoader", new Class[] {});
-        		BundleClass_adapt_method = bundle.getClass().getDeclaredMethod("adapt", new Class[] { Class.class });
-        		BundleClass_adapt_method.setAccessible(true);
-        		return;
-        	}
+            isEquinox = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost") != null;
         }
         catch (Throwable t)
         {
-        	//nevermind: an older version of OSGi where BundleWiring is not availble
-        	//t.printStackTrace();
-        }
-        
-        if (!bundle.getClass().getName().startsWith("org.apache.felix"))
-        {
-	        try
-	        {
-	            isEquinox = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost") != null;
-	        }
-	        catch (Throwable t)
-	        {
-	            isEquinox = false;
-	        }
+            isEquinox = false;
         }
         if (!isEquinox)
         {
             try
             {
-                isFelix = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl") != null;
+                isFelix = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl") != null;  
             }
             catch (Throwable t2)
             {
@@ -95,8 +73,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      */
     public ClassLoader getBundleClassLoader(Bundle bundle)
     {
-    	//Older OSGi implementations:
         String bundleActivator = (String) bundle.getHeaders().get("Bundle-Activator");
+       
         if (bundleActivator == null)
         {
             bundleActivator = (String) bundle.getHeaders().get("Jetty-ClassInBundle");
@@ -109,9 +87,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             }
             catch (ClassNotFoundException e)
             {
-                // should not happen as we are called if the bundle is started
-                // anyways.
-                e.printStackTrace();
+                LOG.warn(e);
             }
         }
         // resort to introspection
@@ -119,27 +95,16 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             init(bundle);
         }
-    	//This works for OSGi 4.2 and more recent. Aka version 1.6
-    	//It is using ava reflection to execute:
-    	//(BundleClassLoader) bundle.adapt(BundleWiring.class).getClassLoader()
-    	if (BundleClass_adapt_method != null && BundleWiringClass_getClassLoader_method != null)
-    	{
-    		try
-    		{
-    			Object bundleWiring = BundleClass_adapt_method.invoke(bundle, BundleWiringClass);
-    			return (ClassLoader)BundleWiringClass_getClassLoader_method.invoke(bundleWiring, new Object[] {});
-    		}
-    		catch (Throwable t)
-    		{
-    			t.printStackTrace();
-    			return null;
-    		}
-    	}
         if (isEquinox)
         {
             return internalGetEquinoxBundleClassLoader(bundle);
         }
-        else if (isFelix) { return internalGetFelixBundleClassLoader(bundle); }
+        else if (isFelix) 
+        { 
+            return internalGetFelixBundleClassLoader(bundle); 
+        }
+        
+        LOG.warn("No classloader found for bundle "+bundle.getSymbolicName());
         return null;
     }
 
@@ -169,8 +134,9 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (Throwable t)
         {
-            t.printStackTrace();
+            LOG.warn(t);
         }
+        LOG.warn("No classloader for equinox platform for bundle "+bundle.getSymbolicName());
         return null;
     }
 
@@ -178,65 +144,152 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 
     private static Field Felix_ModuleImpl_m_classLoader_field;
     
-    private static Field Felix_BundleImpl_m_revisions_field;
+    private static Method Felix_adapt_method;
     
+    private static Method Felix_bundle_wiring_getClassLoader_method;
+    
+    private static Class Felix_bundleWiringClazz;
+
+    private static Boolean isFelix403 = null;
 
     private static ClassLoader internalGetFelixBundleClassLoader(Bundle bundle)
     {
-        // assume felix:
-        try
+        //firstly, try to find classes matching a newer version of felix
+        initFelix403(bundle);
+      
+        if (isFelix403.booleanValue())
         {
-        	// now get the current module from the bundle.
-            // and return the private field m_classLoader of ModuleImpl
-            if (Felix_BundleImpl_m_modules_field == null)
-            {
-                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField("m_modules");
-                Felix_BundleImpl_m_modules_field.setAccessible(true);
-            }
-
-            // Figure out which version of the modules is exported
-            Object currentModuleImpl;
             try
             {
-                Object[] moduleArray = (Object[]) Felix_BundleImpl_m_modules_field.get(bundle);
-                currentModuleImpl = moduleArray[moduleArray.length - 1];
+                Object wiring = Felix_adapt_method.invoke(bundle, new Object[] {Felix_bundleWiringClazz});
+                ClassLoader cl = (ClassLoader)Felix_bundle_wiring_getClassLoader_method.invoke(wiring);
+                return cl;
             }
-            catch (Throwable t2)
+            catch (Exception e)
             {
-                @SuppressWarnings("unchecked")
+                LOG.warn(e);
+                return null;
+            }
+        }
+
+
+        // Fallback to trying earlier versions of felix.     
+        if (Felix_BundleImpl_m_modules_field == null)
+        {
+            try
+            {
+                Class bundleImplClazz = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl");  
+                Felix_BundleImpl_m_modules_field = bundleImplClazz.getDeclaredField("m_modules");
+                Felix_BundleImpl_m_modules_field.setAccessible(true);
+            }
+            catch (ClassNotFoundException e)
+            {
+                LOG.warn(e);
+            }
+            catch (NoSuchFieldException e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+        // Figure out which version of the modules is exported
+        Object currentModuleImpl;
+        try
+        {
+            Object[] moduleArray = (Object[]) Felix_BundleImpl_m_modules_field.get(bundle);
+            currentModuleImpl = moduleArray[moduleArray.length - 1];
+        }
+        catch (Throwable t2)
+        {
+            try
+            {
                 List<Object> moduleArray = (List<Object>) Felix_BundleImpl_m_modules_field.get(bundle);
                 currentModuleImpl = moduleArray.get(moduleArray.size() - 1);
             }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+                return null;
+            }
+        }
 
-            if (Felix_ModuleImpl_m_classLoader_field == null && currentModuleImpl != null)
+        if (Felix_ModuleImpl_m_classLoader_field == null && currentModuleImpl != null)
+        {
+            try
             {
                 Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl").getDeclaredField("m_classLoader");
                 Felix_ModuleImpl_m_classLoader_field.setAccessible(true);
             }
-            // first make sure that the classloader is ready:
-            // the m_classLoader field must be initialized by the
-            // ModuleImpl.getClassLoader() private method.
-            ClassLoader cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
-            if (cl == null)
+            catch (ClassNotFoundException e)
             {
-                // looks like it was not ready:
-                // the m_classLoader field must be initialized by the
-                // ModuleImpl.getClassLoader() private method.
-                // this call will do that.
-                bundle.loadClass("java.lang.Object");
-                cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
-                return cl;
-            }
-            else
+                LOG.warn(e);
+                return null;
+            }   
+            catch (NoSuchFieldException e)
             {
-                return cl;
+                LOG.warn(e);
+                return null;
             }
         }
-        catch (Throwable t)
+        // first make sure that the classloader is ready:
+        // the m_classLoader field must be initialized by the
+        // ModuleImpl.getClassLoader() private method.
+        ClassLoader cl = null;
+        try
         {
-            t.printStackTrace();
+            cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
+            if (cl != null)
+                return cl;
         }
-        return null;
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return null;
+        }
+        
+        // looks like it was not ready:
+        // the m_classLoader field must be initialized by the
+        // ModuleImpl.getClassLoader() private method.
+        // this call will do that.
+        try
+        {
+            bundle.loadClass("java.lang.Object");
+            cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
+            return cl;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return null;
+        }
     }
 
+
+    private static void initFelix403 (Bundle bundle)
+    {
+        //see if the version of Felix is a new one
+        if (isFelix403 == null)
+        {
+            try
+            {
+                Class bundleImplClazz = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl");
+                Felix_bundleWiringClazz = bundle.getClass().getClassLoader().loadClass("org.osgi.framework.wiring.BundleWiring");
+                Felix_adapt_method = bundleImplClazz.getDeclaredMethod("adapt", new Class[] {Class.class});
+                Felix_adapt_method.setAccessible(true);
+                Felix_bundle_wiring_getClassLoader_method = Felix_bundleWiringClazz.getDeclaredMethod("getClassLoader");
+                Felix_bundle_wiring_getClassLoader_method.setAccessible(true);
+                isFelix403 = Boolean.TRUE;
+            }
+            catch (ClassNotFoundException e)
+            {
+                LOG.warn("Felix 4.x classes not found in environment");
+                isFelix403 = Boolean.FALSE;
+            }
+            catch (NoSuchMethodException e)
+            { 
+                LOG.warn("Felix 4.x classes not found in environment");
+                isFelix403 = Boolean.FALSE;
+            }           
+        }
+    }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,26 @@ public class CloseStatus
 {
     private static final int MAX_CONTROL_PAYLOAD = 125;
     private static final int MAX_REASON_PHRASE = MAX_CONTROL_PAYLOAD - 2;
+
+    /**
+     * Convenience method for trimming a long reason phrase at the maximum reason phrase length.
+     * 
+     * @param reason
+     *            the proposed reason phrase
+     * @return the reason phrase (trimmed if needed)
+     */
+    public static String trimMaxReasonLength(String reason)
+    {
+        if (reason.length() > MAX_REASON_PHRASE)
+        {
+            return reason.substring(0,MAX_REASON_PHRASE);
+        }
+        else
+        {
+            return reason;
+        }
+    }
+
     private int code;
     private String phrase;
 

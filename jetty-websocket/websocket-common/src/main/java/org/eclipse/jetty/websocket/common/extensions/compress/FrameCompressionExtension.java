@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,11 +19,9 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
 
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -35,10 +33,10 @@ import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
  */
 public class FrameCompressionExtension extends AbstractExtension
 {
-    private DeflateCompressionMethod method;
+    private CompressionMethod method = new DeflateCompressionMethod();
 
     @Override
-    public void incomingFrame(Frame frame)
+    public synchronized void incomingFrame(Frame frame)
     {
         if (frame.getType().isControl() || !frame.isRsv1())
         {
@@ -48,29 +46,21 @@ public class FrameCompressionExtension extends AbstractExtension
         }
 
         ByteBuffer data = frame.getPayload();
-        try
+        method.decompress().input(data);
+        while (!method.decompress().isDone())
         {
-            method.decompress().input(data);
-            while (!method.decompress().isDone())
+            ByteBuffer uncompressed = method.decompress().process();
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
+            if (!method.decompress().isDone())
             {
-                ByteBuffer uncompressed = method.decompress().process();
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
-                if (!method.decompress().isDone())
-                {
-                    out.setFin(false);
-                }
-                out.setRsv1(false); // Unset RSV1 on decompressed frame
-                nextIncomingFrame(out);
+                out.setFin(false);
             }
+            out.setRsv1(false); // Unset RSV1 on decompressed frame
+            nextIncomingFrame(out);
+        }
 
-            // reset on every frame.
-            // method.decompress().end();
-        }
-        finally
-        {
-            // release original buffer (no longer needed)
-            getBufferPool().release(data);
-        }
+        // reset on every frame.
+        // method.decompress().end();
     }
 
     /**
@@ -94,52 +84,43 @@ public class FrameCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public synchronized void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
         {
             // skip, cannot compress control frames.
-            return nextOutgoingFrame(frame);
+            nextOutgoingFrame(frame,callback);
+            return;
         }
-
-        Future<WriteResult> future = null;
 
         ByteBuffer data = frame.getPayload();
-        try
+
+        // deflate data
+        method.compress().input(data);
+        while (!method.compress().isDone())
         {
-            // deflate data
-            method.compress().input(data);
-            while (!method.compress().isDone())
+            ByteBuffer buf = method.compress().process();
+            WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
+            out.setRsv1(true);
+            if (!method.compress().isDone())
             {
-                ByteBuffer buf = method.compress().process();
-                WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
-                out.setRsv1(true);
-                if (!method.compress().isDone())
-                {
-                    out.setFin(false);
-                }
-
-                future = nextOutgoingFrame(out);
+                out.setFin(false);
+                nextOutgoingFrame(frame,null); // no callback for start/end frames
             }
-
-            // reset on every frame.
-            method.compress().end();
-        }
-        finally
-        {
-            // free original data buffer
-            getBufferPool().release(data);
+            else
+            {
+                nextOutgoingFrame(out,callback); // pass thru callback
+            }
         }
 
-        return future;
+        // reset on every frame.
+        method.compress().end();
     }
 
     @Override
     public void setConfig(ExtensionConfig config)
     {
         super.setConfig(config);
-
-        method = new DeflateCompressionMethod();
     }
 
     @Override

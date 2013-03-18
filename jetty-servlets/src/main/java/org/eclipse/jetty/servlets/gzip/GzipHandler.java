@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -66,6 +67,7 @@ public class GzipHandler extends HandlerWrapper
     protected Set<String> _excluded;
     protected int _bufferSize = 8192;
     protected int _minGzipSize = 256;
+    protected String _vary = "Accept-Encoding, User-Agent";
 
     /* ------------------------------------------------------------ */
     /**
@@ -157,6 +159,31 @@ public class GzipHandler extends HandlerWrapper
             while (tok.hasMoreTokens())
                 _excluded.add(tok.nextToken());
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The value of the Vary header set if a response can be compressed.
+     */
+    public String getVary()
+    {
+        return _vary;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the value of the Vary header sent with responses that could be compressed.  
+     * <p>
+     * By default it is set to 'Accept-Encoding, User-Agent' since IE6 is excluded by 
+     * default from the excludedAgents. If user-agents are not to be excluded, then 
+     * this can be set to 'Accept-Encoding'.  Note also that shared caches may cache 
+     * many copies of a resource that is varied by User-Agent - one per variation of the 
+     * User-Agent, unless the cache does some normalization of the UA string.
+     * @param vary The value of the Vary header set if a response can be compressed.
+     */
+    public void setVary(String vary)
+    {
+        _vary = vary;
     }
 
     /* ------------------------------------------------------------ */
@@ -295,7 +322,7 @@ public class GzipHandler extends HandlerWrapper
             @Override
             protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
-                return new AbstractCompressedStream("gzip",request,this)
+                return new AbstractCompressedStream("gzip",request,this,_vary)
                 {
                     @Override
                     protected DeflaterOutputStream createStream() throws IOException

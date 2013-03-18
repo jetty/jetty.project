@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,29 +29,18 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** Simple Jetty FileServer.
  * This is a simple example of Jetty configured as a FileServer.
- * 
- * File server Usage - java org.eclipse.jetty.server.example.FileServer [ port [
- * docroot ]]
- * 
- * @see FileServerXml for the equivalent example done in XML configuration.
- * @author gregw
- * 
  */
 public class FileServer
 {
-    private static final Logger LOG = Log.getLogger(FileServer.class);
-
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(args.length == 0?8080:Integer.parseInt(args[0]));
+        Server server = new Server(8080);
 
         ResourceHandler resource_handler = new ResourceHandler();
         resource_handler.setDirectoriesListed(true);
         resource_handler.setWelcomeFiles(new String[]{ "index.html" });
-
-        resource_handler.setResourceBase(args.length == 2?args[1]:".");
-        LOG.info("serving " + resource_handler.getBaseResource());
-        
+        resource_handler.setResourceBase(".");
+                
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });
         server.setHandler(handlers);

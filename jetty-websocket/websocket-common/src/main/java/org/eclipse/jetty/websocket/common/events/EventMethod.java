@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public class EventMethod
@@ -45,7 +45,7 @@ public class EventMethod
 
     protected Class<?> pojo;
     protected Method method;
-    private boolean hasConnection = false;
+    private boolean hasSession = false;
     private boolean isStreaming = false;
     private Class<?>[] paramTypes;
 
@@ -120,7 +120,7 @@ public class EventMethod
 
     private void identifyPresentParamTypes()
     {
-        this.hasConnection = false;
+        this.hasSession = false;
         this.isStreaming = false;
 
         if (paramTypes == null)
@@ -130,9 +130,9 @@ public class EventMethod
 
         for (Class<?> paramType : paramTypes)
         {
-            if (WebSocketConnection.class.isAssignableFrom(paramType))
+            if (Session.class.isAssignableFrom(paramType))
             {
-                this.hasConnection = true;
+                this.hasSession = true;
             }
             if (Reader.class.isAssignableFrom(paramType) || InputStream.class.isAssignableFrom(paramType))
             {
@@ -141,9 +141,9 @@ public class EventMethod
         }
     }
 
-    public boolean isHasConnection()
+    public boolean isHasSession()
     {
-        return hasConnection;
+        return hasSession;
     }
 
     public boolean isStreaming()

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -118,9 +118,9 @@ public class HttpTester
             }
         }
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        public boolean parsedHeader(HttpField field)
         {
-            put(name,value);
+            put(field.getName(),field.getValue());
             return false;
         }
 
@@ -229,6 +229,12 @@ public class HttpTester
         }
         abstract public HttpGenerator.Info getInfo();
 
+        @Override
+        public int getHeaderCacheSize()
+        {
+            return 0;
+        }
+
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler<ByteBuffer>
@@ -237,10 +243,10 @@ public class HttpTester
         private String _uri;
 
         @Override
-        public boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion version)
+        public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion version)
         {
             _method=methodString;
-            _uri=uri;
+            _uri=BufferUtil.toUTF8String(uri);
             _version=version;
             return false;
         }

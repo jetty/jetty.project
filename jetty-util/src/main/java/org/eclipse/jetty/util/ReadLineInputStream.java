@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,7 +51,11 @@ public class ReadLineInputStream extends BufferedInputStream
             int b=super.read();
             if (b==-1)
             {
+                int m=markpos;
                 markpos=-1;
+                if (pos>m)
+                    return new String(buf,m,pos-m,StringUtil.__UTF8_CHARSET);
+
                 return null;
             }
             

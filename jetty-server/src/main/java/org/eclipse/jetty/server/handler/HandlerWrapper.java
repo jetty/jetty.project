@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -121,23 +121,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
         expandHandler(_handler,list,byClass);
-    }
-
-    /* ------------------------------------------------------------ */
-    public <H extends Handler> H getNestedHandlerByClass(Class<H> byclass)
-    {
-        HandlerWrapper h=this;
-        while (h!=null)
-        {
-            if (byclass.isInstance(h))
-                return (H)h;
-            Handler w = h.getHandler();
-            if (w instanceof HandlerWrapper)
-                h=(HandlerWrapper)w;
-            else break;
-        }
-        return null;
-
     }
 
     /* ------------------------------------------------------------ */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,15 +19,22 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 public class ClientUpgradeResponse extends UpgradeResponse
 {
+    private ByteBuffer remainingBuffer;
+
     public ClientUpgradeResponse()
     {
         super();
+    }
+
+    public ByteBuffer getRemainingBuffer()
+    {
+        return remainingBuffer;
     }
 
     @Override
@@ -36,15 +43,8 @@ public class ClientUpgradeResponse extends UpgradeResponse
         throw new UnsupportedOperationException("Not supported on client implementation");
     }
 
-    public void validateWebSocketHash(String expectedHash) throws UpgradeException
+    public void setRemainingBuffer(ByteBuffer remainingBuffer)
     {
-        String respHash = getHeader("Sec-WebSocket-Accept");
-
-        setSuccess(true);
-        if (expectedHash.equals(respHash) == false)
-        {
-            setSuccess(false);
-            throw new UpgradeException("Invalid Sec-WebSocket-Accept hash");
-        }
+        this.remainingBuffer = remainingBuffer;
     }
 }

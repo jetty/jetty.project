@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,9 @@
 //
 
 package org.eclipse.jetty.client;
+
+import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.log.Log;
@@ -35,18 +38,27 @@ public class RequestNotifier
 
     public void notifyQueued(Request request)
     {
-        for (Request.QueuedListener listener : request.getRequestListeners(Request.QueuedListener.class))
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.QueuedListener)
+                notifyQueued((Request.QueuedListener)listener, request);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
             notifyQueued(listener, request);
-        for (Request.Listener listener : client.getRequestListeners())
-            notifyQueued(listener, request);
+        }
     }
 
     private void notifyQueued(Request.QueuedListener listener, Request request)
     {
         try
         {
-            if (listener != null)
-                listener.onQueued(request);
+            listener.onQueued(request);
         }
         catch (Exception x)
         {
@@ -56,18 +68,27 @@ public class RequestNotifier
 
     public void notifyBegin(Request request)
     {
-        for (Request.BeginListener listener : request.getRequestListeners(Request.BeginListener.class))
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.BeginListener)
+                notifyBegin((Request.BeginListener)listener, request);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
             notifyBegin(listener, request);
-        for (Request.Listener listener : client.getRequestListeners())
-            notifyBegin(listener, request);
+        }
     }
 
     private void notifyBegin(Request.BeginListener listener, Request request)
     {
         try
         {
-            if (listener != null)
-                listener.onBegin(request);
+            listener.onBegin(request);
         }
         catch (Exception x)
         {
@@ -77,18 +98,87 @@ public class RequestNotifier
 
     public void notifyHeaders(Request request)
     {
-        for (Request.HeadersListener listener : request.getRequestListeners(Request.HeadersListener.class))
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.HeadersListener)
+                notifyHeaders((Request.HeadersListener)listener, request);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
             notifyHeaders(listener, request);
-        for (Request.Listener listener : client.getRequestListeners())
-            notifyHeaders(listener, request);
+        }
     }
 
     private void notifyHeaders(Request.HeadersListener listener, Request request)
     {
         try
         {
-            if (listener != null)
-                listener.onHeaders(request);
+            listener.onHeaders(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyCommit(Request request)
+    {
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.CommitListener)
+                notifyCommit((Request.CommitListener)listener, request);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
+            notifyCommit(listener, request);
+        }
+    }
+
+    private void notifyCommit(Request.CommitListener listener, Request request)
+    {
+        try
+        {
+            listener.onCommit(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyContent(Request request, ByteBuffer content)
+    {
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.ContentListener)
+                notifyContent((Request.ContentListener)listener, request, content);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
+            notifyContent(listener, request, content);
+        }
+    }
+
+    private void notifyContent(Request.ContentListener listener, Request request, ByteBuffer content)
+    {
+        try
+        {
+            listener.onContent(request, content);
         }
         catch (Exception x)
         {
@@ -98,18 +188,27 @@ public class RequestNotifier
 
     public void notifySuccess(Request request)
     {
-        for (Request.SuccessListener listener : request.getRequestListeners(Request.SuccessListener.class))
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.SuccessListener)
+                notifySuccess((Request.SuccessListener)listener, request);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
             notifySuccess(listener, request);
-        for (Request.Listener listener : client.getRequestListeners())
-            notifySuccess(listener, request);
+        }
     }
 
     private void notifySuccess(Request.SuccessListener listener, Request request)
     {
         try
         {
-            if (listener != null)
-                listener.onSuccess(request);
+            listener.onSuccess(request);
         }
         catch (Exception x)
         {
@@ -119,18 +218,27 @@ public class RequestNotifier
 
     public void notifyFailure(Request request, Throwable failure)
     {
-        for (Request.FailureListener listener : request.getRequestListeners(Request.FailureListener.class))
+        // Optimized to avoid allocations of iterator instances
+        List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
+        for (int i = 0; i < requestListeners.size(); ++i)
+        {
+            Request.RequestListener listener = requestListeners.get(i);
+            if (listener instanceof Request.FailureListener)
+                notifyFailure((Request.FailureListener)listener, request, failure);
+        }
+        List<Request.Listener> listeners = client.getRequestListeners();
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Request.Listener listener = listeners.get(i);
             notifyFailure(listener, request, failure);
-        for (Request.Listener listener : client.getRequestListeners())
-            notifyFailure(listener, request, failure);
+        }
     }
 
     private void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
     {
         try
         {
-            if (listener != null)
-                listener.onFailure(request, failure);
+            listener.onFailure(request, failure);
         }
         catch (Exception x)
         {

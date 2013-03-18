@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>9.0.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
@@ -82,6 +82,16 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jaas</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -89,13 +99,6 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jsp</artifactId>
         <version>${project.version}</version>
-        <exclusions>
-          <!-- tlds must be found in jar on path, not inside runner jar -->
-          <exclusion>
-             <groupId>org.eclipse.jetty.orbit</groupId>
-             <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
   </dependencies>
 </project>

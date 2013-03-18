@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,10 +37,8 @@ public class OneServletContext
         holder.setInitParameter("resourceBase","/tmp");
         holder.setInitParameter("pathInfoOnly","true");
         
-        // Serve some hello world servlets
-        context.addServlet(new ServletHolder(new HelloServlet()),"/*");
-        context.addServlet(new ServletHolder(new HelloServlet("Buongiorno Mondo")),"/it/*");
-        context.addServlet(new ServletHolder(new HelloServlet("Bonjour le Monde")),"/fr/*");
+        // A Dump Servlet
+        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
 
         server.start();
         server.join();

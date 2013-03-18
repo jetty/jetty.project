@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,16 +20,14 @@ package org.eclipse.jetty.websocket.common;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
@@ -62,11 +60,13 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         ByteBuffer buf = generator.generate(frame);
         captured.add(buf.slice());
-
-        return FinishedFuture.INSTANCE;
+        if (callback != null)
+        {
+            callback.writeSuccess();
+        }
     }
 }

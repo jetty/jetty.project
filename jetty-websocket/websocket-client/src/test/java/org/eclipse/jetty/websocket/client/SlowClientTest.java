@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
@@ -41,14 +42,14 @@ public class SlowClientTest
     public TestTracker tt = new TestTracker();
 
     private BlockheadServer server;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
 
     @Before
-    public void startFactory() throws Exception
+    public void startClient() throws Exception
     {
-        factory = new WebSocketClientFactory();
-        factory.getPolicy().setIdleTimeout(60000);
-        factory.start();
+        client = new WebSocketClient();
+        client.getPolicy().setIdleTimeout(60000);
+        client.start();
     }
 
     @Before
@@ -59,9 +60,9 @@ public class SlowClientTest
     }
 
     @After
-    public void stopFactory() throws Exception
+    public void stopClient() throws Exception
     {
-        factory.stop();
+        client.stop();
     }
 
     @After
@@ -74,14 +75,11 @@ public class SlowClientTest
     @Slow
     public void testClientSlowToSend() throws Exception
     {
-        // final Exchanger<String> exchanger = new Exchanger<String>();
         TrackingSocket tsocket = new TrackingSocket();
-        // tsocket.messageExchanger = exchanger;
-        WebSocketClient client = factory.newWebSocketClient(tsocket);
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
-        Future<ClientUpgradeResponse> future = client.connect(wsUri);
+        Future<Session> future = client.connect(tsocket,wsUri);
 
         ServerConnection sconnection = server.accept();
         sconnection.setSoTimeout(60000);
@@ -99,10 +97,9 @@ public class SlowClientTest
         // Have client write slowly.
         int messageCount = 1000;
 
-        ClientWriteThread writer = new ClientWriteThread(tsocket.getConnection());
+        ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
-        // writer.setExchanger(exchanger);
         writer.setSlowness(10);
         writer.start();
         writer.join();
@@ -111,9 +108,9 @@ public class SlowClientTest
         Assert.assertThat("Frame Receive Count",reader.getFrameCount(),is(messageCount));
 
         // Close
-        tsocket.getConnection().close(StatusCode.NORMAL,"Done");
+        tsocket.getSession().close(StatusCode.NORMAL,"Done");
 
-        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
+        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(3,TimeUnit.MINUTES));
         tsocket.assertCloseCode(StatusCode.NORMAL);
 
         reader.cancel(); // stop reading

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,26 +18,31 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import junit.framework.Assert;
+
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class WebAppContextTest
 {
@@ -47,7 +52,7 @@ public class WebAppContextTest
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertNull(wac.getConfigurations());
+        Assert.assertEquals(0,wac.getConfigurations().length);
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -62,7 +67,7 @@ public class WebAppContextTest
         String[] classNames = {"x.y.z"};
 
         Server server = new Server();
-        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
+        server.setAttribute(Configuration.ATTR, classNames);
 
         //test an explicitly set classnames list overrides that from the server
         WebAppContext wac = new WebAppContext();
@@ -76,6 +81,14 @@ public class WebAppContextTest
         //test if no explicit classnames, they come from the server
         WebAppContext wac2 = new WebAppContext();
         wac2.setServer(server);
+        try
+        {
+            wac2.loadConfigurations();
+        }
+        catch(Exception e)
+        {
+            Log.getRootLogger().ignore(e);
+        }
         assertTrue(Arrays.equals(classNames, wac2.getConfigurationClasses()));
     }
 
@@ -90,7 +103,7 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
-        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
+        server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
     }
@@ -103,13 +116,8 @@ public class WebAppContextTest
         server.setHandler(context);
         server.start();
 
-        // When
         ServletContext ctx = context.getServletContext();
-
-        // Then
-        // This passes:
         assertNotNull(ctx.getRealPath("/doesnotexist"));
-        // This fails:
         assertNotNull(ctx.getRealPath("/doesnotexist/"));
     }
 
@@ -182,7 +190,37 @@ public class WebAppContextTest
         assertTrue(context.isProtectedTarget("/meta-inf/readme.txt"));
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
-
+    
+    
+    @Test
+    public void testNullPath() throws Exception
+    {
+        Server server = new Server(0);
+        HandlerList handlers = new HandlerList();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(Resource.newResource("./src/test/webapp"));
+        context.setContextPath("/");
+        server.setHandler(handlers);
+        handlers.addHandler(contexts);
+        contexts.addHandler(context);
+        
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        
+        server.start();
+        try
+        {
+            String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+            Assert.assertTrue(response.indexOf("200 OK")>=0);
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
+    
     class ServletA extends GenericServlet
     {
         @Override

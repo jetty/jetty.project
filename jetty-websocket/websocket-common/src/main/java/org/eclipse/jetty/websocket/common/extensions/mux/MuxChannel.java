@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,10 +26,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -40,11 +36,13 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
+import org.eclipse.jetty.websocket.common.io.IOState;
 
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
  */
-public class MuxChannel implements WebSocketConnection, LogicalConnection, IncomingFrames, SuspendToken
+public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendToken
 {
     private static final Logger LOG = Log.getLogger(MuxChannel.class);
 
@@ -53,7 +51,7 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     private final AtomicBoolean inputClosed;
     private final AtomicBoolean outputClosed;
     private final AtomicBoolean suspendToken;
-    private ConnectionState connectionState;
+    private IOState ioState;
     private WebSocketPolicy policy;
     private WebSocketSession session;
     private IncomingFrames incoming;
@@ -66,24 +64,11 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         this.policy = muxer.getPolicy().clonePolicy();
 
         this.suspendToken = new AtomicBoolean(false);
-        this.connectionState = ConnectionState.CONNECTING;
+        this.ioState = new IOState();
+        ioState.setState(ConnectionState.CONNECTING);
 
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
-    }
-
-    @Override
-    public void assertInputOpen() throws IOException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void assertOutputOpen() throws IOException
-    {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -96,21 +81,14 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     public void close(int statusCode, String reason)
     {
         CloseInfo close = new CloseInfo(statusCode,reason);
-        try
-        {
-            outgoingFrame(close.asFrame());
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Unable to issue Close",e);
-            disconnect();
-        }
+        // TODO: disconnect callback?
+        outgoingFrame(close.asFrame(),null);
     }
 
     @Override
     public void disconnect()
     {
-        this.connectionState = ConnectionState.CLOSED;
+        this.ioState.setState(ConnectionState.CLOSED);
         // TODO: disconnect the virtual end-point?
     }
 
@@ -120,10 +98,24 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     }
 
     @Override
+    public IOState getIOState()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
     public InetSocketAddress getLocalAddress()
     {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public long getMaxIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
     }
 
     @Override
@@ -139,28 +131,9 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
     }
 
     @Override
-    public URI getRequestURI()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public WebSocketSession getSession()
     {
         return session;
-    }
-
-    @Override
-    public ConnectionState getState()
-    {
-        return this.connectionState;
-    }
-
-    @Override
-    public String getSubProtocol()
-    {
-        return this.subProtocol;
     }
 
     /**
@@ -183,25 +156,13 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
 
     public boolean isActive()
     {
-        return (getState() != ConnectionState.CLOSED);
-    }
-
-    @Override
-    public boolean isInputClosed()
-    {
-        return inputClosed.get();
+        return (ioState.isOpen());
     }
 
     @Override
     public boolean isOpen()
     {
         return isActive() && muxer.isOpen();
-    }
-
-    @Override
-    public boolean isOutputClosed()
-    {
-        return outputClosed.get();
     }
 
     @Override
@@ -212,61 +173,34 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
 
     public void onClose()
     {
-        this.connectionState = ConnectionState.CLOSED;
-    }
-
-    @Override
-    public void onCloseHandshake(boolean incoming, CloseInfo close)
-    {
-        boolean in = inputClosed.get();
-        boolean out = outputClosed.get();
-        if (incoming)
-        {
-            in = true;
-            this.inputClosed.set(true);
-        }
-        else
-        {
-            out = true;
-            this.outputClosed.set(true);
-        }
-
-        LOG.debug("onCloseHandshake({},{}), input={}, output={}",incoming,close,in,out);
-
-        if (in && out)
-        {
-            LOG.debug("Close Handshake satisfied, disconnecting");
-            this.disconnect();
-        }
-
-        if (close.isHarsh())
-        {
-            LOG.debug("Close status code was harsh, disconnecting");
-            this.disconnect();
-        }
+        this.ioState.setState(ConnectionState.CLOSED);
     }
 
     public void onOpen()
     {
-        this.connectionState = ConnectionState.OPEN;
+        this.ioState.setState(ConnectionState.OPEN);
+    }
+
+    /**
+     * Internal
+     * 
+     * @param frame the frame to write
+     * @return the future for the network write of the frame
+     */
+    private Future<Void> outgoingAsyncFrame(WebSocketFrame frame)
+    {
+        FutureWriteCallback future = new FutureWriteCallback();
+        outgoingFrame(frame,future);
+        return future;
     }
 
     /**
      * Frames destined for the Muxer
      */
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        return muxer.output(channelId,frame);
-    }
-
-    /**
-     * Ping frame destined for the Muxer
-     */
-    @Override
-    public void ping(ByteBuffer buf) throws IOException
-    {
-        outgoingFrame(WebSocketFrame.ping().setPayload(buf));
+        muxer.output(channelId,frame,callback);
     }
 
     @Override
@@ -276,6 +210,13 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         {
             // TODO: Start reading again. (how?)
         }
+    }
+
+    @Override
+    public void setMaxIdleTimeout(long ms)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     @Override
@@ -302,32 +243,5 @@ public class MuxChannel implements WebSocketConnection, LogicalConnection, Incom
         suspendToken.set(true);
         // TODO: how to suspend reading?
         return this;
-    }
-
-    /**
-     * Generate a binary message, destined for Muxer
-     */
-    @Override
-    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
-    {
-        return outgoingFrame(WebSocketFrame.binary().setPayload(buf,offset,len));
-    }
-
-    /**
-     * Generate a binary message, destined for Muxer
-     */
-    @Override
-    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
-    {
-        return outgoingFrame(WebSocketFrame.binary().setPayload(buffer));
-    }
-
-    /**
-     * Generate a text message, destined for Muxer
-     */
-    @Override
-    public Future<WriteResult> write(String message) throws IOException
-    {
-        return outgoingFrame(WebSocketFrame.text(message));
     }
 }

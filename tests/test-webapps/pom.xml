@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>9.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
@@ -46,5 +46,6 @@
     <module>test-mock-resources</module>
     <module>test-servlet-spec</module>
     <module>test-jaas-webapp</module>
+    <module>test-jndi-webapp</module>
   </modules>
 </project>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -45,6 +48,9 @@ public class ServletWebSocketRequest extends UpgradeRequest
         // Copy Request Line Details
         setMethod(request.getMethod());
         setHttpVersion(request.getProtocol());
+
+        // Copy parameters
+        super.setParameterMap(request.getParameterMap());
 
         // Copy Cookies
         cookieMap = new HashMap<String, String>();
@@ -95,6 +101,51 @@ public class ServletWebSocketRequest extends UpgradeRequest
         }
     }
 
+    public Principal getPrincipal()
+    {
+        return req.getUserPrincipal();
+    }
+
+    public StringBuffer getRequestURL()
+    {
+        return req.getRequestURL();
+    }
+
+    public Map<String, Object> getServletAttributes()
+    {
+        Map<String, Object> attributes = new HashMap<String, Object>();
+
+        for (String name : Collections.list(req.getAttributeNames()))
+        {
+            attributes.put(name,req.getAttribute(name));
+        }
+
+        return attributes;
+    }
+
+    public Map<String, List<String>> getServletParameters()
+    {
+        Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+
+        for (String name : Collections.list(req.getParameterNames()))
+        {
+            parameters.put(name,Collections.unmodifiableList(Arrays.asList(req.getParameterValues(name))));
+        }
+
+        return parameters;
+    }
+
+    /**
+     * Return the HttpSession if it exists.
+     * <p>
+     * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
+     */
+    @Override
+    public Object getSession()
+    {
+        return this.req.getSession();
+    }
+
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
@@ -114,7 +165,7 @@ public class ServletWebSocketRequest extends UpgradeRequest
         return protocols;
     }
 
-    public void setAttribute(String name, Object o)
+    public void setServletAttribute(String name, Object o)
     {
         this.req.setAttribute(name,o);
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -54,7 +53,7 @@ public abstract class AbstractLocalSessionScavengingTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testLocalSessionsScavenging() throws Exception
     {
@@ -64,16 +63,18 @@ public abstract class AbstractLocalSessionScavengingTest
         int scavengePeriod = 2;
         AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
+
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-            server2.start();
-            int port2 = server2.getPort();
+
             try
             {
+                server2.start();
+                int port2 = server2.getPort();
                 HttpClient client = new HttpClient();
                 client.start();
                 try
@@ -83,30 +84,27 @@ public abstract class AbstractLocalSessionScavengingTest
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
                     // Create the session on node1
-                    Future<ContentResponse> future = client.GET(urls[0] + "?action=init");
-                    ContentResponse response1 = future.get();
+                    ContentResponse response1 = client.GET(urls[0] + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                    // Be sure the session is also present in node2                    
+                    // Be sure the session is also present in node2
                     org.eclipse.jetty.client.api.Request request = client.newRequest(urls[1] + "?action=test");
                     request.header("Cookie", sessionCookie);
-                    future = request.send();
-                    ContentResponse response2 = future.get();            
+                    ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                    
-                    
+
+
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
                     pause(scavengePeriod);
-                    
+
                     // Check that node1 does not have any local session cached
                     request = client.newRequest(urls[0] + "?action=check");
                     request.header("Cookie", sessionCookie);
-                    future = request.send();
-                    response1 = future.get();
+                    response1 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
 
 
@@ -117,8 +115,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     // Check that node2 does not have any local session cached
                     request = client.newRequest(urls[1] + "?action=check");
                     request.header("Cookie", sessionCookie);
-                    future = request.send();
-                    response2 = future.get();
+                    response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }
                 finally

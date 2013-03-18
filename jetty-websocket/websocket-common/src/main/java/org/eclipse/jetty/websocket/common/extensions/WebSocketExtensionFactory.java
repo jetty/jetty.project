@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,8 +43,10 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 
         register("identity",IdentityExtension.class);
         register("fragment",FragmentExtension.class);
-        register("x-webkit-deflate-frame",FrameCompressionExtension.class);
-        register("permessage-compress",MessageCompressionExtension.class);
+        /* FIXME: Disabled due to bug report - http://bugs.eclipse.org/395444 
+         * register("x-webkit-deflate-frame",FrameCompressionExtension.class);
+         * register("permessage-compress",MessageCompressionExtension.class);
+         */
     }
 
     @Override

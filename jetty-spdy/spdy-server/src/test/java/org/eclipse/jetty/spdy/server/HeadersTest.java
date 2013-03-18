@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,14 +44,14 @@ public class HeadersTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersInfo headersInfo)
                     {
                         Assert.assertTrue(stream.isHalfClosed());
-                        stream.headers(new HeadersInfo(new Fields(), true));
+                        stream.headers(new HeadersInfo(new Fields(), true), new Callback.Adapter());
                         Assert.assertTrue(stream.isClosed());
                     }
                 };
@@ -60,7 +61,7 @@ public class HeadersTest extends AbstractTest
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -68,7 +69,7 @@ public class HeadersTest extends AbstractTest
                 Fields headers = new Fields();
                 headers.put("foo", "bar");
                 headers.put("baz", "woo");
-                stream.headers(new HeadersInfo(headers, true));
+                stream.headers(new HeadersInfo(headers, true), new Callback.Adapter());
                 Assert.assertTrue(stream.isHalfClosed());
             }
 

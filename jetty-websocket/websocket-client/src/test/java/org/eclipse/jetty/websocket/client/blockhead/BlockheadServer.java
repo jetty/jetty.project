@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,10 +33,12 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,8 +51,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.junit.Assert;
 
@@ -71,7 +73,7 @@ import org.junit.Assert;
  */
 public class BlockheadServer
 {
-    public static class ServerConnection implements IncomingFrames, OutgoingFrames
+    public static class ServerConnection implements IncomingFrames, OutgoingFrames, Runnable
     {
         private final int BUFFER_SIZE = 8192;
         private final Socket socket;
@@ -82,13 +84,15 @@ public class BlockheadServer
         private final Generator generator;
         private final AtomicInteger parseCount;
         private final WebSocketExtensionFactory extensionRegistry;
+        private final AtomicBoolean echoing = new AtomicBoolean(false);
+        private Thread echoThread;
 
         /** Set to true to disable timeouts (for debugging reasons) */
         private boolean debug = false;
         private OutputStream out;
         private InputStream in;
 
-        private IncomingFrames incoming = this;
+        private Map<String, String> extraResponseHeaders = new HashMap<>();
         private OutgoingFrames outgoing = this;
 
         public ServerConnection(Socket socket)
@@ -97,10 +101,18 @@ public class BlockheadServer
             this.incomingFrames = new IncomingFramesCapture();
             this.policy = WebSocketPolicy.newServerPolicy();
             this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
-            this.parser = new Parser(policy);
+            this.parser = new Parser(policy,bufferPool);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
             this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        }
+
+        /**
+         * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
+         */
+        public void addResponseHeader(String rawkey, String rawvalue)
+        {
+            extraResponseHeaders.put(rawkey,rawvalue);
         }
 
         public void close() throws IOException
@@ -210,22 +222,76 @@ public class BlockheadServer
         }
 
         @Override
-        public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+        public void outgoingFrame(Frame frame, WriteCallback callback)
         {
             ByteBuffer buf = generator.generate(frame);
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
             }
-            BufferUtil.writeTo(buf,out);
-            out.flush();
 
-            if (frame.getType().getOpCode() == OpCode.CLOSE)
+            try
             {
-                disconnect();
+                BufferUtil.writeTo(buf,out);
+                out.flush();
+                if (callback != null)
+                {
+                    callback.writeSuccess();
+                }
+
+                if (frame.getType().getOpCode() == OpCode.CLOSE)
+                {
+                    disconnect();
+                }
+            }
+            catch (Throwable t)
+            {
+                if (callback != null)
+                {
+                    callback.writeFailed(t);
+                }
+            }
+        }
+
+        public List<ExtensionConfig> parseExtensions(List<String> requestLines)
+        {
+            List<ExtensionConfig> extensionConfigs = new ArrayList<>();
+
+            Pattern patExts = Pattern.compile("^Sec-WebSocket-Extensions: (.*)$",Pattern.CASE_INSENSITIVE);
+
+            Matcher mat;
+            for (String line : requestLines)
+            {
+                mat = patExts.matcher(line);
+                if (mat.matches())
+                {
+                    // found extensions
+                    String econf = mat.group(1);
+                    ExtensionConfig config = ExtensionConfig.parse(econf);
+                    extensionConfigs.add(config);
+                }
             }
 
-            return null; // FIXME: need future for server send?
+            return extensionConfigs;
+        }
+
+        public String parseWebSocketKey(List<String> requestLines)
+        {
+            String key = null;
+
+            Pattern patKey = Pattern.compile("^Sec-WebSocket-Key: (.*)$",Pattern.CASE_INSENSITIVE);
+
+            Matcher mat;
+            for (String line : requestLines)
+            {
+                mat = patKey.matcher(line);
+                if (mat.matches())
+                {
+                    key = mat.group(1);
+                }
+            }
+
+            return key;
         }
 
         public int read(ByteBuffer buf) throws IOException
@@ -307,27 +373,11 @@ public class BlockheadServer
             return request.toString();
         }
 
-        public void respond(String rawstr) throws IOException
+        public List<String> readRequestLines() throws IOException
         {
-            LOG.debug("respond(){}{}","\n",rawstr);
-            getOutputStream().write(rawstr.getBytes());
-            flush();
-        }
+            LOG.debug("Reading client request header");
+            List<String> lines = new ArrayList<>();
 
-        public void setSoTimeout(int ms) throws SocketException
-        {
-            socket.setSoTimeout(ms);
-        }
-
-        public void upgrade() throws IOException
-        {
-            List<ExtensionConfig> extensionConfigs = new ArrayList<>();
-
-            Pattern patExts = Pattern.compile("^Sec-WebSocket-Extensions: (.*)$",Pattern.CASE_INSENSITIVE);
-            Pattern patKey = Pattern.compile("^Sec-WebSocket-Key: (.*)$",Pattern.CASE_INSENSITIVE);
-
-            Matcher mat;
-            String key = "not sent";
             BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
             for (String line = in.readLine(); line != null; line = in.readLine())
             {
@@ -335,92 +385,155 @@ public class BlockheadServer
                 {
                     break;
                 }
-
-                // Check for extensions
-                mat = patExts.matcher(line);
-                if (mat.matches())
-                {
-                    // found extensions
-                    String econf = mat.group(1);
-                    ExtensionConfig config = ExtensionConfig.parse(econf);
-                    extensionConfigs.add(config);
-                    continue;
-                }
-
-                // Check for Key
-                mat = patKey.matcher(line);
-                if (mat.matches())
-                {
-                    key = mat.group(1);
-                }
+                lines.add(line);
             }
 
-            // Init extensions
-            List<Extension> extensions = new ArrayList<>();
-            for (ExtensionConfig config : extensionConfigs)
+            return lines;
+        }
+
+        public void respond(String rawstr) throws IOException
+        {
+            LOG.debug("respond(){}{}","\n",rawstr);
+            getOutputStream().write(rawstr.getBytes());
+            flush();
+        }
+
+        @Override
+        public void run()
+        {
+            LOG.debug("Entering echo thread");
+
+            ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
+            BufferUtil.clearToFill(buf);
+            long readBytes = 0;
+            try
             {
-                Extension ext = extensionRegistry.newInstance(config);
-                extensions.add(ext);
+                while (echoing.get())
+                {
+                    BufferUtil.clearToFill(buf);
+                    long len = read(buf);
+                    if (len > 0)
+                    {
+                        readBytes += len;
+                        LOG.debug("Read {} bytes",len);
+                        BufferUtil.flipToFlush(buf,0);
+                        parser.parse(buf);
+                    }
+
+                    try
+                    {
+                        TimeUnit.MILLISECONDS.sleep(20);
+                    }
+                    catch (InterruptedException gnore)
+                    {
+                        /* ignore */
+                    }
+                }
             }
+            catch (IOException e)
+            {
+                LOG.debug("Exception during echo loop",e);
+            }
+            finally
+            {
+                LOG.debug("Read {} bytes",readBytes);
+                bufferPool.release(buf);
+            }
+        }
+
+        public void setSoTimeout(int ms) throws SocketException
+        {
+            socket.setSoTimeout(ms);
+        }
+
+        public void startEcho()
+        {
+            if (echoThread != null)
+            {
+                throw new IllegalStateException("Echo thread already declared!");
+            }
+            echoThread = new Thread(this,"BlockheadServer/Echo");
+            echoing.set(true);
+            echoThread.start();
+        }
+
+        public void stopEcho()
+        {
+            echoing.set(false);
+        }
+
+        public void upgrade() throws IOException
+        {
+            List<String> requestLines = readRequestLines();
+            List<ExtensionConfig> extensionConfigs = parseExtensions(requestLines);
+            String key = parseWebSocketKey(requestLines);
+
+            LOG.debug("Client Request Extensions: {}",extensionConfigs);
+            LOG.debug("Client Request Key: {}",key);
+
+            Assert.assertThat("Request: Sec-WebSocket-Key",key,notNullValue());
+
+            // collect extensions configured in response header
+            ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
+            extensionStack.negotiate(extensionConfigs);
 
             // Start with default routing
-            incoming = this;
-            outgoing = this;
+            extensionStack.setNextIncoming(this);
+            extensionStack.setNextOutgoing(this);
 
-            // Connect extensions
-            // FIXME
-            // if (!extensions.isEmpty())
-            // {
-            // generator.configureFromExtensions(extensions);
-            //
-            // Iterator<Extension> extIter;
-            // // Connect outgoings
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextOutgoingFrames(outgoing);
-            // outgoing = ext;
-            // }
-            //
-            // // Connect incomings
-            // Collections.reverse(extensions);
-            // extIter = extensions.iterator();
-            // while (extIter.hasNext())
-            // {
-            // Extension ext = extIter.next();
-            // ext.setNextIncomingFrames(incoming);
-            // incoming = ext;
-            // }
-            // }
+            // Configure Parser / Generator
+            extensionStack.configure(parser);
+            extensionStack.configure(generator);
+
+            // Start Stack
+            try
+            {
+                extensionStack.start();
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Unable to start Extension Stack");
+            }
 
             // Configure Parser
-            parser.setIncomingFramesHandler(incoming);
+            parser.setIncomingFramesHandler(extensionStack);
 
             // Setup Response
             StringBuilder resp = new StringBuilder();
             resp.append("HTTP/1.1 101 Upgrade\r\n");
+            resp.append("Connection: upgrade\r\n");
             resp.append("Sec-WebSocket-Accept: ");
             resp.append(AcceptHash.hashKey(key)).append("\r\n");
-            if (!extensions.isEmpty())
+            if (!extensionStack.hasNegotiatedExtensions())
             {
                 // Respond to used extensions
                 resp.append("Sec-WebSocket-Extensions: ");
                 boolean delim = false;
-                for (Extension ext : extensions)
+                for (ExtensionConfig ext : extensionStack.getNegotiatedExtensions())
                 {
                     if (delim)
                     {
                         resp.append(", ");
                     }
-                    resp.append(ext.getConfig().getParameterizedName());
+                    resp.append(ext.getParameterizedName());
                     delim = true;
                 }
                 resp.append("\r\n");
             }
+            if (extraResponseHeaders.size() > 0)
+            {
+                for (Map.Entry<String, String> xheader : extraResponseHeaders.entrySet())
+                {
+                    resp.append(xheader.getKey());
+                    resp.append(": ");
+                    resp.append(xheader.getValue());
+                    resp.append("\r\n");
+                }
+            }
             resp.append("\r\n");
 
             // Write Response
+            LOG.debug("Response: {}",resp.toString());
             write(resp.toString().getBytes());
         }
 
@@ -437,7 +550,7 @@ public class BlockheadServer
         public void write(Frame frame) throws IOException
         {
             LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.outgoingFrame(frame);
+            outgoing.outgoingFrame(frame,null);
         }
 
         public void write(int b) throws IOException
@@ -510,10 +623,10 @@ public class BlockheadServer
 
     public void start() throws IOException
     {
-        serverSocket = new ServerSocket();
         InetAddress addr = InetAddress.getByName("localhost");
+        serverSocket = new ServerSocket();
         InetSocketAddress endpoint = new InetSocketAddress(addr,0);
-        serverSocket.bind(endpoint);
+        serverSocket.bind(endpoint,1);
         int port = serverSocket.getLocalPort();
         String uri = String.format("ws://%s:%d/",addr.getHostAddress(),port);
         wsUri = URI.create(uri);

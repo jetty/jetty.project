@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -96,7 +97,19 @@ public class FilterHolder extends Holder<Filter>
             super.stop();
             throw new IllegalStateException(msg);
         }
+    }
+    
+    
+    
 
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void initialize() throws Exception
+    {
+        super.initialize();
+        
         if (_filter==null)
         {
             try
@@ -121,6 +134,7 @@ public class FilterHolder extends Holder<Filter>
         LOG.debug("Filter.init {}",_filter);
         _filter.init(_config);
     }
+
 
     /* ------------------------------------------------------------ */
     @Override

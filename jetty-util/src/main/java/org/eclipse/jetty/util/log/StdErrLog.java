@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -532,7 +532,7 @@ public class StdErrLog extends AbstractLogger
     {
         long now = System.currentTimeMillis();
         int ms=(int)(now%1000);
-        String d = _dateCache.format(now);
+        String d = _dateCache.now();
         tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }

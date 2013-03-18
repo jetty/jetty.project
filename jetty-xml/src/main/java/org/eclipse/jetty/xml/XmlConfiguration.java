@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -685,7 +685,7 @@ public class XmlConfiguration
                 oClass = obj.getClass();
             if (oClass == null)
                 throw new IllegalArgumentException(node.toString());
-
+            
             int size = 0;
             int argIndex = node.size();
             for (int i = 0; i < node.size(); i++)
@@ -763,10 +763,13 @@ public class XmlConfiguration
             {
                 Object o = node.get(i);
 
-                XmlParser.Node argNode = (XmlParser.Node)o;
                 if (o instanceof String)
+                {
                     continue;
-
+                }
+                
+                XmlParser.Node argNode = (XmlParser.Node)o;
+                
                 String namedAttribute = argNode.getAttribute("name");
                 Object value=value(obj,(XmlParser.Node)o);
                 if (namedAttribute != null)
@@ -807,10 +810,12 @@ public class XmlConfiguration
          */
         private Object refObj(Object obj, XmlParser.Node node) throws Exception
         {
-            String id = node.getAttribute("id");
-            obj = _idMap.get(id);
+            String refid = node.getAttribute("refid");
+            if (refid==null)
+                refid = node.getAttribute("id");
+            obj = _idMap.get(refid);
             if (obj == null && node.size()>0)
-                throw new IllegalStateException("No object for id=" + id);
+                throw new IllegalStateException("No object for refid=" + refid);
             configure(obj,node,0);
             return obj;
         }

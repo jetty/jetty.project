@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,6 +51,15 @@ public interface StreamFrameListener extends EventListener
     public void onHeaders(Stream stream, HeadersInfo headersInfo);
 
     /**
+     * <p>Callback invoked when a push syn has been received on a stream.</p>
+     *
+     * @param stream the push stream just created
+     * @param pushInfo
+     * @return a listener for stream events or null if there is no interest in being notified of stream events
+     */
+    public StreamFrameListener onPush(Stream stream, PushInfo pushInfo);
+
+    /**
      * <p>Callback invoked when data bytes are received on a stream.</p>
      * <p>Implementers should be read or consume the content of the
      * {@link DataInfo} before this method returns.</p>
@@ -73,6 +82,12 @@ public interface StreamFrameListener extends EventListener
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
+        }
+
+        @Override
+        public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+        {
+            return null;
         }
 
         @Override

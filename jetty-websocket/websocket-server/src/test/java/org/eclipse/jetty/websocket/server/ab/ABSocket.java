@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -35,7 +35,7 @@ public class ABSocket
 {
     private static Logger LOG = Log.getLogger(ABSocket.class);
 
-    private WebSocketConnection conn;
+    private Session session;
 
     private String abbreviate(String message)
     {
@@ -52,20 +52,14 @@ public class ABSocket
         LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
 
         // echo the message back.
-        try
-        {
-            this.conn.write(buf,offset,len);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
+        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
+        this.session.getRemote().sendBytesByFuture(data);
     }
 
     @OnWebSocketConnect
-    public void onOpen(WebSocketConnection conn)
+    public void onOpen(Session sess)
     {
-        this.conn = conn;
+        this.session = sess;
     }
 
     @OnWebSocketMessage
@@ -84,13 +78,6 @@ public class ABSocket
         }
 
         // echo the message back.
-        try
-        {
-            this.conn.write(message);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
+        this.session.getRemote().sendStringByFuture(message);
     }
 }

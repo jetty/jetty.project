@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.EventListener;
 import java.util.List;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
@@ -76,10 +77,16 @@ public interface Response
      */
     boolean abort(Throwable cause);
 
+    /**
+     * Common, empty, super-interface for response listeners
+     */
     public interface ResponseListener extends EventListener
     {
     }
 
+    /**
+     * Listener for the response begin event.
+     */
     public interface BeginListener extends ResponseListener
     {
         /**
@@ -93,6 +100,25 @@ public interface Response
         public void onBegin(Response response);
     }
 
+    /**
+     * Listener for a response header event.
+     */
+    public interface HeaderListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked when a response header has been received,
+         * returning whether the header should be processed or not.
+         *
+         * @param response the response containing the response line data and the headers so far
+         * @param field the header received
+         * @return true to process the header, false to skip processing of the header
+         */
+        public boolean onHeader(Response response, HttpField field);
+    }
+
+    /**
+     * Listener for the response headers event.
+     */
     public interface HeadersListener extends ResponseListener
     {
         /**
@@ -103,6 +129,9 @@ public interface Response
         public void onHeaders(Response response);
     }
 
+    /**
+     * Listener for the response content events.
+     */
     public interface ContentListener extends ResponseListener
     {
         /**
@@ -116,6 +145,9 @@ public interface Response
         public void onContent(Response response, ByteBuffer content);
     }
 
+    /**
+     * Listener for the response succeeded event.
+     */
     public interface SuccessListener extends ResponseListener
     {
         /**
@@ -126,6 +158,9 @@ public interface Response
         public void onSuccess(Response response);
     }
 
+    /**
+     * Listener for the response failure event.
+     */
     public interface FailureListener extends ResponseListener
     {
         /**
@@ -137,6 +172,9 @@ public interface Response
         public void onFailure(Response response, Throwable failure);
     }
 
+    /**
+     * Listener for the request and response completed event.
+     */
     public interface CompleteListener extends ResponseListener
     {
         /**
@@ -157,9 +195,9 @@ public interface Response
     }
 
     /**
-     * Listener for response events
+     * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -169,6 +207,12 @@ public interface Response
             @Override
             public void onBegin(Response response)
             {
+            }
+
+            @Override
+            public boolean onHeader(Response response, HttpField field)
+            {
+                return true;
             }
 
             @Override

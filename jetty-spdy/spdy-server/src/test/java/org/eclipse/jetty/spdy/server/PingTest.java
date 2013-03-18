@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,58 +37,70 @@ public class PingTest extends AbstractTest
     @Test
     public void testPingPong() throws Exception
     {
-        final AtomicReference<PingInfo> ref = new AtomicReference<>();
+        final AtomicReference<PingResultInfo> ref = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onPing(Session session, PingInfo pingInfo)
+            public void onPing(Session session, PingResultInfo pingInfo)
             {
                 ref.set(pingInfo);
                 latch.countDown();
             }
         };
         Session session = startClient(startServer(null), clientSessionFrameListener);
-        PingInfo pingInfo = session.ping().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(1, pingInfo.getPingId() % 2);
+        PingResultInfo pingResultInfo = session.ping(new PingInfo(5, TimeUnit.SECONDS));
+        Assert.assertEquals(1, pingResultInfo.getPingId() % 2);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        PingInfo pongInfo = ref.get();
+        PingResultInfo pongInfo = ref.get();
         Assert.assertNotNull(pongInfo);
-        Assert.assertEquals(pingInfo.getPingId(), pongInfo.getPingId());
+        Assert.assertEquals(pingResultInfo.getPingId(), pongInfo.getPingId());
     }
 
     @Test
     public void testServerPingPong() throws Exception
     {
-        final CountDownLatch pingLatch = new CountDownLatch(1);
+        final CountDownLatch pingReceived = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
-            public volatile int pingId;
+            private final CountDownLatch pingSent = new CountDownLatch(1);
+            private int pingId;
 
             @Override
             public void onConnect(Session session)
             {
-                session.ping(0, TimeUnit.MILLISECONDS, new Promise.Adapter<PingInfo>()
+                session.ping(new PingInfo(), new Promise.Adapter<PingResultInfo>()
                 {
                     @Override
-                    public void succeeded(PingInfo pingInfo)
+                    public void succeeded(PingResultInfo pingInfo)
                     {
                         pingId = pingInfo.getPingId();
+                        pingSent.countDown();
                     }
                 });
             }
 
             @Override
-            public void onPing(Session session, PingInfo pingInfo)
+            public void onPing(Session session, PingResultInfo pingInfo)
             {
-                Assert.assertEquals(0, pingInfo.getPingId() % 2);
-                Assert.assertEquals(pingId, pingInfo.getPingId());
-                pingLatch.countDown();
+                try
+                {
+                    // This callback may be notified before the promise above,
+                    // so make sure we wait here to know the pingId
+                    Assert.assertTrue(pingSent.await(5, TimeUnit.SECONDS));
+                    Assert.assertEquals(0, pingInfo.getPingId() % 2);
+                    Assert.assertEquals(pingId, pingInfo.getPingId());
+                    pingReceived.countDown();
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         };
         startClient(startServer(serverSessionFrameListener), null);
 
-        Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(pingReceived.await(5, TimeUnit.SECONDS));
     }
 }

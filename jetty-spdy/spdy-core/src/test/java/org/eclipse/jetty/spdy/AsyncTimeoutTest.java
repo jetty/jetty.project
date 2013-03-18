@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -58,7 +59,8 @@ public class AsyncTimeoutTest
         Scheduler scheduler = new TimerScheduler();
         scheduler.start(); // TODO need to use jetty lifecycles better here
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
+                null, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -76,7 +78,7 @@ public class AsyncTimeoutTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), null, timeout, unit, new Promise.Adapter<Stream>()
+        session.syn(new SynInfo(timeout, unit, new Fields(), true, (byte)0), null, new Promise.Adapter<Stream>()
         {
             @Override
             public void failed(Throwable x)
@@ -100,7 +102,8 @@ public class AsyncTimeoutTest
         Scheduler scheduler = new TimerScheduler();
         scheduler.start();
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
+                null, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             protected void write(ByteBuffer buffer, Callback callback)
@@ -119,9 +122,9 @@ public class AsyncTimeoutTest
             }
         };
 
-        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Adapter()
+        stream.data(new StringDataInfo(timeout, unit, "data", true), new Callback.Adapter()
         {
             @Override
             public void failed(Throwable x)

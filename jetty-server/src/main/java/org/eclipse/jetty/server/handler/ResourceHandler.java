@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -64,7 +63,6 @@ public class ResourceHandler extends HandlerWrapper
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
     String _cacheControl;
-    boolean _aliases;
     boolean _directory;
     boolean _etags;
 
@@ -84,28 +82,6 @@ public class ResourceHandler extends HandlerWrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return True if resource aliases are allowed.
-     */
-    public boolean isAliases()
-    {
-        return _aliases;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set if resource aliases (eg symlink, 8.3 names, case insensitivity) are allowed.
-     * Allowing aliases can significantly increase security vulnerabilities.
-     * If this handler is deployed inside a ContextHandler, then the
-     * {@link ContextHandler#isAliases()} takes precedent.
-     * @param aliases True if aliases are supported.
-     */
-    public void setAliases(boolean aliases)
-    {
-        _aliases = aliases;
     }
 
     /* ------------------------------------------------------------ */
@@ -151,12 +127,6 @@ public class ResourceHandler extends HandlerWrapper
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
-
-        if (_context!=null)
-            _aliases=_context.isAliases();
-
-        if (!_aliases && !FileResource.getCheckAliases())
-            throw new IllegalStateException("Alias checking disabled");
 
         super.doStart();
     }
@@ -404,12 +374,6 @@ public class ResourceHandler extends HandlerWrapper
                 super.handle(target, baseRequest, request, response);
                 return;
             }
-        }
-
-        if (!_aliases && resource.getAlias()!=null)
-        {
-            LOG.info(resource+" aliased to "+resource.getAlias());
-            return;
         }
 
         // We are going to serve something

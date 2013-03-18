@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,8 @@
 
 package examples;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.common.events.EventCapture;
 
 public class AdapterConnectCloseSocket extends WebSocketAdapter
@@ -33,8 +33,8 @@ public class AdapterConnectCloseSocket extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session sess)
     {
-        capture.add("onWebSocketConnect(%s)",connection);
+        capture.add("onWebSocketConnect(%s)",sess);
     }
 }

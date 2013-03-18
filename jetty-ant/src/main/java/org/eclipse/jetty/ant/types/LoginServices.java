@@ -25,20 +25,22 @@ import java.util.List;
 import org.eclipse.jetty.security.LoginService;
 
 /**
+ * LoginServices
+ * 
  * Specifies a jetty configuration <loginServices/> element for Ant build file.
  *
  */
 public class LoginServices
 {
 
-    private List loginServices = new ArrayList();
+    private List<LoginService> loginServices = new ArrayList<LoginService>();
 
     public void add(LoginService service)
     {
         loginServices.add(service);
     }
 
-    public List getLoginServices()
+    public List<LoginService> getLoginServices()
     {
         return loginServices;
     }

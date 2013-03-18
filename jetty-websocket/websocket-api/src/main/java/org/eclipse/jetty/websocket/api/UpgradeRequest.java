@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.api;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ public class UpgradeRequest
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private List<HttpCookie> cookies = new ArrayList<>();
     private Map<String, List<String>> headers = new HashMap<>();
+    private Map<String, String[]> parameters = new HashMap<>();
     private Object session;
     private String httpVersion;
     private String method;
@@ -168,10 +170,14 @@ public class UpgradeRequest
         return getHeader("Origin");
     }
 
+    /**
+     * Returns a map of the query parameters of the request.
+     * 
+     * @return a unmodifiable map of query parameters of the request.
+     */
     public Map<String, String[]> getParameterMap()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.unmodifiableMap(parameters);
     }
 
     public String getQueryString()
@@ -238,11 +244,17 @@ public class UpgradeRequest
         this.method = method;
     }
 
+    protected void setParameterMap(Map<String, String[]> parameters)
+    {
+        this.parameters.clear();
+        this.parameters.putAll(parameters);
+    }
+
     public void setRequestURI(URI uri)
     {
         this.requestURI = uri;
         this.host = this.requestURI.getHost();
-        // TODO: parse parameters
+        this.parameters.clear();
     }
 
     public void setSession(Object session)

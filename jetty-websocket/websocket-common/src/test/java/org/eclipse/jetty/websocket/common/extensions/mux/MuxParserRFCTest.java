@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,12 +36,9 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.common.extensions.mux.AbstractMuxExtension;
-import org.eclipse.jetty.websocket.common.extensions.mux.MuxParser;
-import org.eclipse.jetty.websocket.common.extensions.mux.MuxedFrame;
-import org.eclipse.jetty.websocket.common.extensions.mux.Muxer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -59,8 +56,8 @@ public class MuxParserRFCTest
     private LinkedList<WebSocketFrame> asFrames(byte[] buf)
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        Parser parser = new Parser(policy);
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        Parser parser = new UnitParser(policy);
         parser.setIncomingFramesHandler(capture);
         List<? extends AbstractExtension> muxList = Collections.singletonList(new DummyMuxExtension());
         parser.configureFromExtensions(muxList);

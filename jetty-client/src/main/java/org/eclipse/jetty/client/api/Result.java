@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,11 +85,19 @@ public class Result
     }
 
     /**
+     * @return whether both the request and the response succeeded
+     */
+    public boolean isSucceeded()
+    {
+        return getFailure() == null;
+    }
+
+    /**
      * @return whether either the response or the request failed
      */
     public boolean isFailed()
     {
-        return getFailure() != null;
+        return !isSucceeded();
     }
 
     /**

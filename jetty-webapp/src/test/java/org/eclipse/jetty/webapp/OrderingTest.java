@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,9 +35,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
 import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * OrderingTest
@@ -111,16 +111,7 @@ public class OrderingTest
         {
             return _name;
         }
-
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getOutputStream()
-         */
-        @Override
-        public OutputStream getOutputStream() throws IOException, SecurityException
-        {
-            return null;
-        }
-
+        
         /**
          * @see org.eclipse.jetty.util.resource.Resource#getURL()
          */

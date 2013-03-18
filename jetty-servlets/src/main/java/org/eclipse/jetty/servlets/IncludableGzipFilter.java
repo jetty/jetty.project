@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -69,14 +70,41 @@ public class IncludableGzipFilter extends GzipFilter
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
-        if (compressionType.equals(GZIP))
+        if (compressionType==null)
         {
             wrappedResponse = new IncludableResponseWrapper(request,response)
             {
                 @Override
                 protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,this)
+                    return new AbstractCompressedStream(null,request,this,_vary)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return null;
+                        }
+
+                        @Override
+                        protected void setHeader(String name, String value)
+                        {
+                            super.setHeader(name, value);
+                            HttpServletResponse response = (HttpServletResponse)getResponse();
+                            if (!response.containsHeader(name))
+                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
+                        }
+                    };
+                }
+            };
+        }
+        else if (compressionType.equals(GZIP))
+        {
+            wrappedResponse = new IncludableResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,this,_vary)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
@@ -103,7 +131,7 @@ public class IncludableGzipFilter extends GzipFilter
                 @Override
                 protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
                 {
-                    return new AbstractCompressedStream(compressionType,request,this)
+                    return new AbstractCompressedStream(compressionType,request,this,_vary)
                     {
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException

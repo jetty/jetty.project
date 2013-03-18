@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-project</artifactId>
-        <version>9.0.0-SNAPSHOT</version>
+        <version>9.0.1-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,7 +13,8 @@
     <name>Jetty :: SPDY :: Parent</name>
 
     <properties>
-        <npn.version>1.1.0.v20120525</npn.version>
+        <npn.version>1.1.5.v20130313</npn.version>
+        <npn.api.version>1.1.0.v20120525</npn.api.version>
     </properties>
 
     <modules>

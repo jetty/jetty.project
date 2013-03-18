@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,32 +18,28 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
-import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 
 public class ClientWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ClientWriteThread.class);
-    private final WebSocketConnection conn;
-    private Exchanger<String> exchanger;
+    private final Session session;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
 
-    public ClientWriteThread(WebSocketConnection conn)
+    public ClientWriteThread(Session session)
     {
-        this.conn = conn;
-    }
-
-    public Exchanger<String> getExchanger()
-    {
-        return exchanger;
+        this.session = session;
     }
 
     public String getMessage()
@@ -68,15 +64,13 @@ public class ClientWriteThread extends Thread
 
         try
         {
+            LOG.debug("Writing {} messages to connection {}",messageCount);
+            LOG.debug("Artificial Slowness {} ms",slowness);
+            Future<Void> lastMessage = null;
+            RemoteEndpoint remote = session.getRemote();
             while (m.get() < messageCount)
             {
-                conn.write(message);
-
-                if (exchanger != null)
-                {
-                    // synchronized on exchange
-                    exchanger.exchange(message);
-                }
+                lastMessage = remote.sendStringByFuture(message + "/" + m.get() + "/");
 
                 m.incrementAndGet();
 
@@ -85,16 +79,13 @@ public class ClientWriteThread extends Thread
                     TimeUnit.MILLISECONDS.sleep(slowness);
                 }
             }
+            // block on write of last message
+            lastMessage.get(2,TimeUnit.MINUTES); // block on write
         }
-        catch (InterruptedException | IOException e)
+        catch (InterruptedException | ExecutionException | TimeoutException e)
         {
             LOG.warn(e);
         }
-    }
-
-    public void setExchanger(Exchanger<String> exchanger)
-    {
-        this.exchanger = exchanger;
     }
 
     public void setMessage(String message)

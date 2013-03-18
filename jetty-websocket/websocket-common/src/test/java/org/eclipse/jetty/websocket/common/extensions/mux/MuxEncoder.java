@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,11 +20,10 @@ package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.mux.MuxControlBlock;
-import org.eclipse.jetty.websocket.common.extensions.mux.MuxGenerator;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 
 /**
@@ -54,11 +53,12 @@ public class MuxEncoder
 
     public void frame(long channelId, WebSocketFrame frame) throws IOException
     {
-        this.generator.generate(channelId,frame);
+        this.generator.generate(channelId,frame,null);
     }
 
     public void op(MuxControlBlock op) throws IOException
     {
-        this.generator.generate(op);
+        WriteCallback callback = null;
+        this.generator.generate(callback,op);
     }
 }

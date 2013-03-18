@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class TestABCase2 extends AbstractABCase
 {
     /**
@@ -232,13 +236,16 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_5() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         byte payload[] = new byte[126]; // intentionally too big
-        Arrays.fill(payload,(byte)0xFE);
+        Arrays.fill(payload,(byte)'5');
 
         List<WebSocketFrame> send = new ArrayList<>();
         // trick websocket frame into making extra large payload for ping
         send.add(WebSocketFrame.binary(payload).setOpCode(OpCode.PING));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.5").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -253,6 +260,7 @@ public class TestABCase2 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -264,15 +272,15 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_6() throws Exception
     {
         byte payload[] = new byte[125];
-        Arrays.fill(payload,(byte)0xFE);
+        Arrays.fill(payload,(byte)'6');
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(WebSocketFrame.ping().setPayload(payload));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(WebSocketFrame.pong().setPayload(payload));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+        expect.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
         try

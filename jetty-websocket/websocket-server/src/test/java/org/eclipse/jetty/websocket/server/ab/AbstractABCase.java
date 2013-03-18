@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -87,6 +88,12 @@ public abstract class AbstractABCase
 
     @Rule
     public TestName testname = new TestName();
+
+    protected void enableStacks(Class<?> clazz, boolean enabled)
+    {
+        StdErrLog log = StdErrLog.getLogger(clazz);
+        log.setHideStacks(!enabled);
+    }
 
     public Generator getLaxGenerator()
     {

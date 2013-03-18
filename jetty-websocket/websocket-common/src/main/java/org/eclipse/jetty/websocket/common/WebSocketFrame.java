@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -243,6 +244,72 @@ public class WebSocketFrame implements Frame
         setPayload(payload);
     }
 
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        WebSocketFrame other = (WebSocketFrame)obj;
+        if (continuation != other.continuation)
+        {
+            return false;
+        }
+        if (continuationIndex != other.continuationIndex)
+        {
+            return false;
+        }
+        if (data == null)
+        {
+            if (other.data != null)
+            {
+                return false;
+            }
+        }
+        else if (!data.equals(other.data))
+        {
+            return false;
+        }
+        if (fin != other.fin)
+        {
+            return false;
+        }
+        if (!Arrays.equals(mask,other.mask))
+        {
+            return false;
+        }
+        if (masked != other.masked)
+        {
+            return false;
+        }
+        if (opcode != other.opcode)
+        {
+            return false;
+        }
+        if (rsv1 != other.rsv1)
+        {
+            return false;
+        }
+        if (rsv2 != other.rsv2)
+        {
+            return false;
+        }
+        if (rsv3 != other.rsv3)
+        {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * The number of fragments this frame consists of.
      * <p>
@@ -327,6 +394,24 @@ public class WebSocketFrame implements Frame
     public Type getType()
     {
         return type;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + (continuation?1231:1237);
+        result = (prime * result) + continuationIndex;
+        result = (prime * result) + ((data == null)?0:data.hashCode());
+        result = (prime * result) + (fin?1231:1237);
+        result = (prime * result) + Arrays.hashCode(mask);
+        result = (prime * result) + (masked?1231:1237);
+        result = (prime * result) + opcode;
+        result = (prime * result) + (rsv1?1231:1237);
+        result = (prime * result) + (rsv2?1231:1237);
+        result = (prime * result) + (rsv3?1231:1237);
+        return result;
     }
 
     @Override
@@ -564,7 +649,7 @@ public class WebSocketFrame implements Frame
         {
             if (buf.remaining() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
-                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length. (was " + buf.remaining() + " bytes)");
             }
         }
 

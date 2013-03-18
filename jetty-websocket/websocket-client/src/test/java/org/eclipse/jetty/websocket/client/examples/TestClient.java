@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,10 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.common.OpCode;
 
 /**
@@ -42,11 +42,6 @@ public class TestClient
 {
     public class TestSocket extends WebSocketAdapter
     {
-        public void disconnect() throws Exception
-        {
-            super.getConnection().close();
-        }
-
         @Override
         public void onWebSocketBinary(byte[] payload, int offset, int len)
         {
@@ -59,11 +54,11 @@ public class TestClient
         }
 
         @Override
-        public void onWebSocketConnect(WebSocketConnection connection)
+        public void onWebSocketConnect(Session session)
         {
             if (_verbose)
             {
-                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),connection,connection.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),session,session.getClass().getSimpleName());
             }
         }
 
@@ -177,17 +172,16 @@ public class TestClient
         }
 
         TestClient[] client = new TestClient[clients];
-
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-
+        WebSocketClient wsclient = new WebSocketClient();
         try
         {
+            wsclient.start();
             __start = System.currentTimeMillis();
             protocol = protocol == null?"echo":protocol;
 
             for (int i = 0; i < clients; i++)
             {
-                client[i] = new TestClient(factory,host,port,protocol,60000);
+                client[i] = new TestClient(wsclient,host,port,protocol,60000);
                 client[i].open();
             }
 
@@ -254,7 +248,7 @@ public class TestClient
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get() / 1000000.0,__messagesReceived.get() == 0?0.0:(__totalTime.get()
                     / __messagesReceived.get() / 1000000.0),__maxDuration.get() / 1000000.0);
 
-            factory.stop();
+            wsclient.stop();
         }
     }
 
@@ -280,12 +274,12 @@ public class TestClient
     int _messageBytes;
     int _frames;
     byte _opcode = -1;
-    private WebSocketClientFactory factory;
+    private WebSocketClient client;
     private TestSocket socket;
 
-    public TestClient(WebSocketClientFactory factory, String host, int port, String protocol, int timeoutMS) throws Exception
+    public TestClient(WebSocketClient client, String host, int port, String protocol, int timeoutMS) throws Exception
     {
-        this.factory = factory;
+        this.client = client;
         _host = host;
         _port = port;
         _protocol = protocol;
@@ -295,17 +289,16 @@ public class TestClient
     private void disconnect()
     {
         // TODO Auto-generated method stub
-
     }
 
     private void open() throws Exception
     {
-        WebSocketClient client = factory.newWebSocketClient(socket);
         client.getPolicy().setIdleTimeout(_timeout);
-        client.getUpgradeRequest().setSubProtocols(_protocol);
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols(_protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + _host + ":" + _port + "/");
-        client.connect(wsUri).get(10,TimeUnit.SECONDS);
+        client.connect(socket,wsUri,request).get(10,TimeUnit.SECONDS);
     }
 
     private void send(byte op, byte[] data, int fragment)

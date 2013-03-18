@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -677,10 +677,28 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET));
     }
+    
+    public static ByteBuffer toDirectBuffer(String s)
+    {
+        byte[] bytes=s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
+    }
 
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
         return ByteBuffer.wrap(s.getBytes(charset));
+    }
+    
+    public static ByteBuffer toDirectBuffer(String s, Charset charset)
+    {
+        byte[] bytes=s.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
     }
 
     /**
@@ -759,7 +777,7 @@ public class BufferUtil
         if (buffer.hasArray())
             buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
         else
-            buf.append("?");
+            buf.append(Integer.toHexString(buf.hashCode()));
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");

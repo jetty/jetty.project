@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -36,15 +42,8 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -99,7 +98,9 @@ public abstract class AbstractDoSFilterTest
     public void startFilters() throws Exception
     {
         _dosFilter.start();
+        _dosFilter.initialize();
         _timeoutFilter.start();
+        _timeoutFilter.initialize();
     }
 
     @After
@@ -183,8 +184,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
 
-        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(2,count(responses,"DoSFilter: delayed"));
+        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
     }
 
     @Test

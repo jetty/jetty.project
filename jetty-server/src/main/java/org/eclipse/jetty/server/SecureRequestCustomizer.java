@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,11 +26,10 @@ import javax.net.ssl.SSLSession;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
-import org.eclipse.jetty.server.ssl.ServletSSL;
-import org.eclipse.jetty.server.ssl.SslCertificates;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
@@ -99,10 +98,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 certs=cachedInfo.getCerts();
                 idStr=cachedInfo.getIdStr();
             }
-            else
+            else 
             {
-                keySize=new Integer(ServletSSL.deduceKeyLength(cipherSuite));
-                certs=SslCertificates.getCertChain(sslSession);
+                keySize=new Integer(SslContextFactory.deduceKeyLength(cipherSuite));
+                certs=SslContextFactory.getCertChain(sslSession);
                 byte[] bytes = sslSession.getId();
                 idStr = TypeUtil.toHexString(bytes);
                 cachedInfo=new CachedInfo(keySize,certs,idStr);

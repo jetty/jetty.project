@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -134,7 +135,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         // will be consumed. When the copy is consumed, we consume also the
         // original, so the implementation can send a window update.
         ByteBuffer copyByteBuffer = dataInfo.asByteBuffer(false);
-        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose(), dataInfo.isCompress())
+        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose())
         {
             @Override
             public void consume(int delta)
@@ -170,10 +171,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         HttpMethod httpMethod = HttpMethod.fromString(methodHeader.value());
         HttpVersion httpVersion = HttpVersion.fromString(versionHeader.value());
-        String uriString = uriHeader.value();
+        
+        // TODO should handle URI as byte buffer as some bad clients send WRONG encodings in query string
+        // that  we have to deal with
+        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.value());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriString, httpVersion);
-        startRequest(httpMethod, httpMethod.asString(), uriString, httpVersion);
+        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.value(), httpVersion);
+        startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
@@ -186,7 +190,6 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         for (Fields.Field header : headers)
         {
             String name = header.name();
-            HttpHeader httpHeader = HttpHeader.CACHE.get(name);
 
             // Skip special SPDY headers, unless it's the "host" header
             HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(stream.getSession().getVersion(), name);
@@ -213,7 +216,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                     // Spec says headers must be single valued
                     String value = header.value();
                     LOG.debug("HTTP > {}: {}", name, value);
-                    parsedHeader(httpHeader, name, value);
+                    parsedHeader(new HttpField(name,value));
                     break;
                 }
             }

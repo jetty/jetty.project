@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -34,6 +42,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
+
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.NetworkConnector;
@@ -54,14 +63,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test the effects of Gzip filtering when in the context of HTTP/1.1 Pipelining.
@@ -119,15 +120,7 @@ public class GzipWithPipeliningTest
         // Start Server
         server.start();
 
-        NetworkConnector conn = (NetworkConnector)server.getConnectors()[0];
-        String host = conn.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = conn.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
-        // System.out.printf("Server URI: %s%n",serverUri);
+        serverUri = server.getURI();
     }
 
     @After

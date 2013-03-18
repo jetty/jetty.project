@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +60,8 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
         configureServer(new HelloWorldHandler());
 
-        Socket client = newSocket(HOST,_connector.getLocalPort());
+        URI uri = _server.getURI();
+        Socket client = newSocket(uri.getHost(),uri.getPort());
         try
         {
             OutputStream os = client.getOutputStream();
@@ -101,7 +103,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
                 String request =
                         "GET /data?writes=1&block=16&id="+pipeline+" HTTP/1.1\r\n"+
-                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "host: "+uri.getHost()+":"+uri.getPort()+"\r\n"+
                         "user-agent: testharness/1.0 (blah foo/bar)\r\n"+
                         "accept-encoding: nothing\r\n"+
                         "cookie: aaa=1234567890\r\n"+
@@ -135,7 +137,8 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        Socket client = newSocket(HOST,_connector.getLocalPort());
+        URI uri = _server.getURI();
+        Socket client = newSocket(uri.getHost(),uri.getPort());
         try
         {
             OutputStream os = client.getOutputStream();
@@ -148,7 +151,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
             os.write((
                 "POST /echo?charset=utf-8 HTTP/1.1\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "host: "+uri.getHost()+":"+uri.getPort()+"\r\n"+
                 "content-type: text/plain; charset=utf-8\r\n"+
                 "content-length: "+bytes.length+"\r\n"+
                 "\r\n"

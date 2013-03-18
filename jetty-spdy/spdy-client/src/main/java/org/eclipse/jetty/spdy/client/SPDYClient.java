@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,14 +41,16 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class SPDYClient
 {
@@ -199,7 +201,7 @@ public class SPDYClient
             addBean(executor);
 
             if (scheduler == null)
-                scheduler = new TimerScheduler();
+                scheduler = new ScheduledExecutorScheduler();
             this.scheduler = scheduler;
             addBean(scheduler);
 
@@ -265,7 +267,7 @@ public class SPDYClient
         private void closeConnections()
         {
             for (Session session : sessions)
-                session.goAway();
+                session.goAway(new GoAwayInfo(), new Callback.Adapter());
             sessions.clear();
         }
 

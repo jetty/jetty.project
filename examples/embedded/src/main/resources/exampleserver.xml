@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
- 
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
 <Configure id="ExampleServer" class="org.eclipse.jetty.server.Server">
 
   <Set name="connectors">
     <Array type="org.eclipse.jetty.server.Connector">
       <Item>
         <New class="org.eclipse.jetty.server.ServerConnector">
-          <Arg><Ref id="ExampleServer"/></Arg>
+          <Arg><Ref refid="ExampleServer"/></Arg>
           <Set name="port">8080</Set>
         </New>
       </Item>
@@ -27,7 +27,7 @@
       <Set name="handlers">
         <Array type="org.eclipse.jetty.server.Handler">
           <Item>
-            <Ref id="context" />
+            <Ref refid="context" />
           </Item>
           <Item>
             <New class="org.eclipse.jetty.server.handler.DefaultHandler" />

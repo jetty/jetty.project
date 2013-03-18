@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,11 @@
 
 package examples.echo;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WriteResult;
 
 /**
  * Example EchoSocket using Listener.
@@ -34,7 +30,7 @@ import org.eclipse.jetty.websocket.api.WriteResult;
 public class ListenerEchoSocket implements WebSocketListener
 {
     private static final Logger LOG = Logger.getLogger(ListenerEchoSocket.class.getName());
-    private WebSocketConnection outbound;
+    private Session outbound;
 
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
@@ -49,15 +45,15 @@ public class ListenerEchoSocket implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        this.outbound = connection;
+        this.outbound = session;
     }
 
     @Override
-    public void onWebSocketException(WebSocketException error)
+    public void onWebSocketError(Throwable cause)
     {
-        LOG.log(Level.WARNING,"onWebSocketException",error);
+        LOG.log(Level.WARNING,"onWebSocketError",cause);
     }
 
     @Override
@@ -68,14 +64,6 @@ public class ListenerEchoSocket implements WebSocketListener
             return;
         }
 
-        try
-        {
-            @SuppressWarnings("unused")
-            Future<WriteResult> future = outbound.write(message);
-        }
-        catch (IOException e)
-        {
-            LOG.log(Level.WARNING,"unable to echo message: " + message,e);
-        }
+        outbound.getRemote().sendStringByFuture(message);
     }
 }

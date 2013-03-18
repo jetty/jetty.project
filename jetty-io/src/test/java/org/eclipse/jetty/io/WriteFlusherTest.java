@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -57,13 +58,11 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class WriteFlusherTest
 {
-    @Mock
-    private EndPoint _endPointMock;
-
-    private WriteFlusher _flusher;
-
     private final AtomicBoolean _flushIncomplete = new AtomicBoolean(false);
     private final ExecutorService executor = Executors.newFixedThreadPool(16);
+    @Mock
+    private EndPoint _endPointMock;
+    private WriteFlusher _flusher;
     private ByteArrayEndPoint _endp;
 
     @Before
@@ -398,6 +397,34 @@ public class WriteFlusherTest
             assertThat("callback failed", callback.isFailed(), is(true));
         }
         assertThat("callback completed", callback.isDone(), is(true));
+    }
+
+    @Test
+    public void testPendingWriteDoesNotStoreConsumedBuffers() throws Exception
+    {
+        int toWrite = _endp.getOutput().capacity();
+        byte[] chunk1 = new byte[toWrite / 2];
+        Arrays.fill(chunk1, (byte)1);
+        ByteBuffer buffer1 = ByteBuffer.wrap(chunk1);
+        byte[] chunk2 = new byte[toWrite];
+        Arrays.fill(chunk1, (byte)2);
+        ByteBuffer buffer2 = ByteBuffer.wrap(chunk2);
+
+        _flusher.write(new Callback.Adapter(), buffer1, buffer2);
+        assertTrue(_flushIncomplete.get());
+        assertFalse(buffer1.hasRemaining());
+
+        // Reuse buffer1
+        buffer1.clear();
+        Arrays.fill(chunk1, (byte)3);
+        int remaining1 = buffer1.remaining();
+
+        // Complete the write
+        _endp.takeOutput();
+        _flusher.completeWrite();
+
+        // Make sure buffer1 is unchanged
+        assertEquals(remaining1, buffer1.remaining());
     }
 
     private class ExposingStateCallback extends FutureCallback

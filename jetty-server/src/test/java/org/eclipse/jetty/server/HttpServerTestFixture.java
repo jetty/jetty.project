@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.Socket;
+import java.net.URI;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -42,9 +43,9 @@ public class HttpServerTestFixture
 {    // Useful constants
     protected static final long PAUSE=10L;
     protected static final int LOOPS=50;
-    protected static final String HOST="localhost";
 
     protected Server _server;
+    protected URI _serverURI;
     protected NetworkConnector _connector;
     protected String _scheme="http";
 
@@ -69,6 +70,7 @@ public class HttpServerTestFixture
         _server.addConnector(_connector);
         _server.setHandler(new HandlerWrapper());
         _server.start();
+        _serverURI = _server.getURI();
     }
 
     @After

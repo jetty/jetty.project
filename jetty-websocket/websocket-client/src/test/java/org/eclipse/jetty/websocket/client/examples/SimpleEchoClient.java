@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,27 +23,26 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 
 /**
  * Example of a simple Echo Client.
  */
 public class SimpleEchoClient
 {
-    @WebSocket
+    @WebSocket(maxMessageSize = 64 * 1024)
     public static class SimpleEchoSocket
     {
         private final CountDownLatch closeLatch;
         @SuppressWarnings("unused")
-        private WebSocketConnection conn;
+        private Session session;
 
         public SimpleEchoSocket()
         {
@@ -59,25 +58,25 @@ public class SimpleEchoClient
         public void onClose(int statusCode, String reason)
         {
             System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
-            this.conn = null;
+            this.session = null;
             this.closeLatch.countDown(); // trigger latch
         }
 
         @OnWebSocketConnect
-        public void onConnect(WebSocketConnection conn)
+        public void onConnect(Session session)
         {
-            System.out.printf("Got connect: %s%n",conn);
-            this.conn = conn;
+            System.out.printf("Got connect: %s%n",session);
+            this.session = session;
             try
             {
-                Future<WriteResult> fut;
-                fut = conn.write("Hello");
+                Future<Void> fut;
+                fut = session.getRemote().sendStringByFuture("Hello");
                 fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
-                fut = conn.write("Thanks for the conversation.");
+                fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
                 fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
-                conn.close(StatusCode.NORMAL,"I'm done");
+                session.close(StatusCode.NORMAL,"I'm done");
             }
             catch (Throwable t)
             {
@@ -100,16 +99,17 @@ public class SimpleEchoClient
             destUri = args[0];
         }
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = new WebSocketClient();
         SimpleEchoSocket socket = new SimpleEchoSocket();
         try
         {
-            factory.start();
-            WebSocketClient client = factory.newWebSocketClient(socket);
+            client.start();
+
             URI echoUri = new URI(destUri);
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            // request.addExtensions("x-webkit-deflate-frame");
+            client.connect(socket,echoUri,request);
             System.out.printf("Connecting to : %s%n",echoUri);
-            client.getUpgradeRequest().addExtensions("x-webkit-deflate-frame");
-            client.connect(echoUri);
 
             // wait for closed socket connection.
             socket.awaitClose(5,TimeUnit.SECONDS);
@@ -122,7 +122,7 @@ public class SimpleEchoClient
         {
             try
             {
-                factory.stop();
+                client.stop();
             }
             catch (Exception e)
             {

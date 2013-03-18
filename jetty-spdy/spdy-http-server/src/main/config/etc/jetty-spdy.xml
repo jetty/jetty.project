@@ -24,6 +24,18 @@
     <Set name="KeyManagerPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
     <Set name="TrustStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
     <Set name="TrustStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+    <Set name="EndpointIdentificationAlgorithm"></Set>
+    <Set name="ExcludeCipherSuites">
+      <Array type="String">
+        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+      </Array>
+    </Set>
   </New>
 
   <!-- =========================================================== -->
@@ -39,7 +51,7 @@
   <!-- session information                                         -->
   <!-- =========================================================== -->
   <New id="tlsHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg><Ref id="httpConfig"/></Arg>
+    <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
     </Call>
@@ -105,7 +117,7 @@
   <Call id="sslConnector" name="addConnector">
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
-        <Arg name="server"><Ref id="Server" /></Arg>
+        <Arg name="server"><Ref refid="Server" /></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
 
@@ -113,7 +125,7 @@
             <Item>
               <New class="org.eclipse.jetty.server.SslConnectionFactory">
                 <Arg name="next">npn</Arg>
-                <Arg name="sslContextFactory"><Ref id="sslContextFactory" /></Arg>
+                <Arg name="sslContextFactory"><Ref refid="sslContextFactory" /></Arg>
               </New>
             </Item>
 
@@ -133,8 +145,8 @@
             <Item>
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">3</Arg>
-                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
-                <Arg name="pushStrategy"><Ref id="pushStrategy"/></Arg>
+                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
+                <Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg>
               </New>
             </Item>
 
@@ -142,14 +154,14 @@
             <Item>
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">2</Arg>
-                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
+                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
               </New>
             </Item>
 
             <!-- HTTP Connection factory -->
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                <Arg name="config"><Ref id="tlsHttpConfig" /></Arg>
+                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
               </New>
             </Item>
           </Array>

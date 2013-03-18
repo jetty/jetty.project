@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,12 +32,14 @@ public class StandardUndeployer implements AppLifeCycle.Binding
 {
     private static final Logger LOG = Log.getLogger(StandardUndeployer.class);
 
+    @Override
     public String[] getBindingTargets()
     {
         return new String[]
         { "undeploying" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();

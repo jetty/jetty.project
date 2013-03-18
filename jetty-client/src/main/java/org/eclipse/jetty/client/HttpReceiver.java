@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,21 +19,23 @@
 package org.eclipse.jetty.client;
 
 import java.io.EOFException;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -49,13 +51,11 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final HttpParser parser = new HttpParser(this);
     private final HttpConnection connection;
-    private final ResponseNotifier responseNotifier;
     private ContentDecoder decoder;
 
     public HttpReceiver(HttpConnection connection)
     {
         this.connection = connection;
-        this.responseNotifier = new ResponseNotifier(connection.getHttpClient());
     }
 
     public void receive()
@@ -127,6 +127,14 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
+
+    @Override
+    public int getHeaderCacheSize()
+    {
+        // TODO get from configuration
+        return 256;
+    }
+
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
@@ -139,51 +147,30 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
 
+                parser.setHeadResponse(exchange.getRequest().getMethod() == HttpMethod.HEAD);
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
-                HttpExchange initialExchange = conversation.getExchanges().peekFirst();
                 HttpClient client = connection.getHttpClient();
                 ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
-                Response.Listener handlerListener = protocolHandler == null ? null : protocolHandler.getResponseListener();
-                if (handlerListener == null)
+                Response.Listener handlerListener = null;
+                if (protocolHandler != null)
                 {
-                    exchange.setLast(true);
-                    if (initialExchange == exchange)
-                    {
-                        conversation.setResponseListeners(exchange.getResponseListeners());
-                    }
-                    else
-                    {
-                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
-                        listeners.addAll(initialExchange.getResponseListeners());
-                        conversation.setResponseListeners(listeners);
-                    }
-                }
-                else
-                {
+                    handlerListener = protocolHandler.getResponseListener();
                     LOG.debug("Found protocol handler {}", protocolHandler);
-                    if (initialExchange == exchange)
-                    {
-                        conversation.setResponseListeners(Collections.<Response.ResponseListener>singletonList(handlerListener));
-                    }
-                    else
-                    {
-                        List<Response.ResponseListener> listeners = new ArrayList<>(exchange.getResponseListeners());
-                        listeners.add(handlerListener);
-                        conversation.setResponseListeners(listeners);
-                    }
                 }
+                exchange.getConversation().updateResponseListeners(handlerListener);
 
                 LOG.debug("Receiving {}", response);
-                responseNotifier.notifyBegin(conversation.getResponseListeners(), response);
+                ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+                notifier.notifyBegin(conversation.getResponseListeners(), response);
             }
         }
         return false;
     }
 
     @Override
-    public boolean parsedHeader(HttpHeader header, String name, String value)
+    public boolean parsedHeader(HttpField field)
     {
         if (updateState(State.RECEIVE, State.RECEIVE))
         {
@@ -191,27 +178,52 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
             // The exchange may be null if it failed concurrently
             if (exchange != null)
             {
-                exchange.getResponse().getHeaders().add(name, value);
-                switch (name.toLowerCase(Locale.ENGLISH))
+                HttpConversation conversation = exchange.getConversation();
+                HttpResponse response = exchange.getResponse();
+                ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+                boolean process = notifier.notifyHeader(conversation.getResponseListeners(), response, field);
+                if (process)
                 {
-                    case "set-cookie":
-                    case "set-cookie2":
+                    response.getHeaders().add(field);
+                    HttpHeader fieldHeader = field.getHeader();
+                    if (fieldHeader != null)
                     {
-                        CookieStore cookieStore = connection.getHttpClient().getCookieStore();
-                        HttpDestination destination = connection.getDestination();
-                        List<HttpCookie> cookies = HttpCookieParser.parseCookies(value);
-                        for (HttpCookie cookie : cookies)
-                            cookieStore.addCookie(destination, cookie);
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        switch (fieldHeader)
+                        {
+                            case SET_COOKIE:
+                            case SET_COOKIE2:
+                            {
+                                storeCookie(exchange.getRequest().getURI(), field);
+                                break;
+                            }
+                            default:
+                            {
+                                break;
+                            }
+                        }
                     }
                 }
             }
         }
         return false;
+    }
+
+    private void storeCookie(URI uri, HttpField field)
+    {
+        try
+        {
+            String value = field.getValue();
+            if (value != null)
+            {
+                Map<String, List<String>> header = new HashMap<>(1);
+                header.put(field.getHeader().asString(), Collections.singletonList(value));
+                connection.getHttpClient().getCookieManager().put(uri, header);
+            }
+        }
+        catch (IOException x)
+        {
+            LOG.debug(x);
+        }
     }
 
     @Override
@@ -226,7 +238,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
                 LOG.debug("Headers {}", response);
-                responseNotifier.notifyHeaders(conversation.getResponseListeners(), response);
+                ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+                notifier.notifyHeaders(conversation.getResponseListeners(), response);
 
                 Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
                 if (contentEncodings != null)
@@ -268,7 +281,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     LOG.debug("{} {}: {} bytes", decoder, response, buffer.remaining());
                 }
 
-                responseNotifier.notifyContent(conversation.getResponseListeners(), response, buffer);
+                ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+                notifier.notifyContent(conversation.getResponseListeners(), response, buffer);
             }
         }
         return false;
@@ -302,15 +316,15 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
         HttpResponse response = exchange.getResponse();
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-        responseNotifier.notifySuccess(listeners, response);
+        ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+        notifier.notifySuccess(listeners, response);
         LOG.debug("Received {}", response);
 
         Result result = completion.getReference();
         if (result != null)
         {
             connection.complete(exchange, !result.isFailed());
-
-            responseNotifier.notifyComplete(listeners, result);
+            notifier.notifyComplete(listeners, result);
         }
 
         return true;
@@ -344,7 +358,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
         HttpResponse response = exchange.getResponse();
         HttpConversation conversation = exchange.getConversation();
-        responseNotifier.notifyFailure(conversation.getResponseListeners(), response, failure);
+        ResponseNotifier notifier = connection.getDestination().getResponseNotifier();
+        notifier.notifyFailure(conversation.getResponseListeners(), response, failure);
         LOG.debug("Failed {} {}", response, failure);
 
         Result result = completion.getReference();
@@ -352,7 +367,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             connection.complete(exchange, false);
 
-            responseNotifier.notifyComplete(conversation.getResponseListeners(), result);
+            notifier.notifyComplete(conversation.getResponseListeners(), result);
         }
 
         return true;
@@ -387,7 +402,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new TimeoutException());
     }
 
-    public boolean abort(HttpExchange exchange, Throwable cause)
+    public boolean abort(Throwable cause)
     {
         return fail(cause);
     }

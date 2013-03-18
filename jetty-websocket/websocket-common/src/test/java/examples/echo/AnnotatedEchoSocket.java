@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,32 +18,23 @@
 
 package examples.echo;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Example EchoSocket using Annotations.
  */
-@WebSocket(maxTextSize = 64 * 1024)
+@WebSocket(maxMessageSize = 64 * 1024)
 public class AnnotatedEchoSocket
 {
     @OnWebSocketMessage
-    public void onText(WebSocketConnection conn, String message)
+    public void onText(Session session, String message)
     {
-        if (conn.isOpen())
+        if (session.isOpen())
         {
             return;
         }
-        try
-        {
-            conn.write(message);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        session.getRemote().sendStringByFuture(message);
     }
 }

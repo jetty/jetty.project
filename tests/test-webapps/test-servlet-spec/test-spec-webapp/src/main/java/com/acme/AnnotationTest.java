@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,27 +19,26 @@
 package com.acme;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
+import javax.annotation.security.DeclareRoles;
+import javax.annotation.security.RunAs;
 import javax.naming.InitialContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;
-import javax.annotation.Resource;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.security.RunAs;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.annotation.WebInitParam;
-import javax.annotation.security.DeclareRoles;
 
 /**
  * AnnotationTest
@@ -245,6 +244,14 @@ public class AnnotationTest extends HttpServlet
             out.println("<h2>Complete Servlet Registration</h2>");
             Boolean complete = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.complete");
             out.println("<br/><b>Result: "+(complete.booleanValue()?"PASS":"FAIL")+"</b>");
+            
+            out.println("<h2>ServletContextListener Programmatic Registration from ServletContainerInitializer</h2>");
+            Boolean programmaticListener = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerTest");
+            out.println("<br/><b>Result: "+(programmaticListener.booleanValue()?"PASS":"FAIL")+"</b>");
+            
+            out.println("<h2>ServletContextListener Programmatic Registration Prevented from ServletContextListener</h2>");
+            Boolean programmaticListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerRegoTest");
+            out.println("<br/><b>Result: "+(programmaticListenerPrevention.booleanValue()?"PASS":"FAIL")+"</b>");
             
             out.println("<h2>@PostConstruct Callback</h2>");
             out.println("<pre>");

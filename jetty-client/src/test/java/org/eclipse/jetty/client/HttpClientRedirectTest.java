@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,9 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,7 +63,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/303/localhost/done")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -72,7 +76,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/303/localhost/302/localhost/done")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -84,7 +89,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/303/127.0.0.1/302/localhost/done")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -97,7 +103,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .method(HttpMethod.HEAD)
                 .path("/301/localhost/done")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -112,7 +119,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     .scheme(scheme)
                     .method(HttpMethod.POST)
                     .path("/301/localhost/done")
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             fail();
         }
         catch (ExecutionException x)
@@ -134,7 +142,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 .method(HttpMethod.POST)
                 .path("/307/localhost/done")
                 .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -151,7 +160,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
                     .path("/303/localhost/302/localhost/done")
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             fail();
         }
         catch (ExecutionException x)
@@ -170,7 +180,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/303/localhost/done?close=true")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -183,10 +194,67 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .followRedirects(false)
                 .path("/303/localhost/done?close=true")
-                .send().get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         Assert.assertNotNull(response);
         Assert.assertEquals(303, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRelativeLocation() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/done?relative=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testAbsoluteURIPathWithSpaces() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/a+space?decode=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRelativeURIPathWithSpaces() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/a+space?relative=true&decode=true")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRedirectFailed() throws Exception
+    {
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path("/303/doesNotExist/done")
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(UnresolvedAddressException.class));
+        }
     }
 
     private class RedirectHandler extends AbstractHandler
@@ -202,10 +270,17 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 response.setStatus(status);
 
                 String host = paths[2];
-                response.setHeader("Location", request.getScheme() + "://" + host + ":" + request.getServerPort() + "/" + paths[3]);
+                String path = paths[3];
+                boolean relative = Boolean.parseBoolean(request.getParameter("relative"));
+                String location = relative ? "" : request.getScheme() + "://" + host + ":" + request.getServerPort();
+                location += "/" + path;
 
-                String close = request.getParameter("close");
-                if (Boolean.parseBoolean(close))
+                if (Boolean.parseBoolean(request.getParameter("decode")))
+                    location = URLDecoder.decode(location, "UTF-8");
+
+                response.setHeader("Location", location);
+
+                if (Boolean.parseBoolean(request.getParameter("close")))
                     response.setHeader("Connection", "close");
             }
             catch (NumberFormatException x)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -34,6 +42,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
@@ -47,14 +56,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class GzipTester
 {
@@ -73,18 +74,18 @@ public class GzipTester
         // DOES NOT WORK IN WINDOWS - this.testdir.ensureEmpty();
     }
 
-    public void assertIsResponseGzipCompressed(String filename) throws Exception
+    public HttpTester.Response assertIsResponseGzipCompressed(String method, String filename) throws Exception
     {
-        assertIsResponseGzipCompressed(filename,filename);
+        return assertIsResponseGzipCompressed(method,filename,filename);
     }
 
-    public void assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
+    public HttpTester.Response assertIsResponseGzipCompressed(String method, String requestedFilename, String serverFilename) throws Exception
     {
         // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
-        request.setMethod("GET");
+        request.setMethod(method);
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
@@ -135,6 +136,8 @@ public class GzipTester
             IO.close(in);
             IO.close(bais);
         }
+        
+        return response;
     }
 
     /**
@@ -235,10 +238,10 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public void assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
+    public HttpTester.Response assertIsResponseNotGzipCompressed(String method, String filename, int expectedFilesize, int status) throws Exception
     {
         String uri = "/context/"+filename;
-        HttpTester.Response response = executeRequest(uri);
+        HttpTester.Response response = executeRequest(method,uri);
         assertResponseHeaders(expectedFilesize,status,response);
 
         // Assert that the contents are what we expect.
@@ -250,6 +253,8 @@ public class GzipTester
             String actual = readResponse(response);
             Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
         }
+        
+        return response;
     }
     
 
@@ -264,10 +269,10 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public void assertIsResponseNotGzipCompressedAndEqualToExpectedString(String expectedResponse, int expectedFilesize, int status) throws Exception
+    public void assertIsResponseNotGzipCompressedAndEqualToExpectedString(String method,String expectedResponse, int expectedFilesize, int status) throws Exception
     {
         String uri = "/context/";
-        HttpTester.Response response = executeRequest(uri);
+        HttpTester.Response response = executeRequest(method,uri);
         assertResponseHeaders(expectedFilesize,status,response);
 
         String actual = readResponse(response);
@@ -283,16 +288,17 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public void assertIsResponseNotGzipCompressed(int expectedFilesize, int status) throws Exception
+    public void assertIsResponseNotGzipCompressed(String method,int expectedFilesize, int status) throws Exception
     {
         String uri = "/context/";
-        HttpTester.Response response = executeRequest(uri);
+        HttpTester.Response response = executeRequest(method,uri);
         assertResponseHeaders(expectedFilesize,status,response);
     }
 
     private void assertResponseHeaders(int expectedFilesize, int status, HttpTester.Response response)
     {
         Assert.assertThat("Response.status",response.getStatus(),is(status));
+        Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
         if (expectedFilesize != (-1))
         {
             Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
@@ -306,13 +312,13 @@ public class GzipTester
         Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
     }
 
-    private HttpTester.Response executeRequest(String uri) throws IOException, Exception
+    private HttpTester.Response executeRequest(String method, String uri) throws IOException, Exception
     {
         //System.err.printf("[GzipTester] requesting %s%n",uri);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
-        request.setMethod("GET");
+        request.setMethod(method);
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
@@ -451,6 +457,7 @@ public class GzipTester
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         FilterHolder holder = tester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
+        holder.setInitParameter("vary","Accept-Encoding");
         return holder;
     }
 

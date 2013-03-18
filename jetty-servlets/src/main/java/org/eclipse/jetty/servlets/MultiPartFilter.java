@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,15 +24,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -50,6 +49,9 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 
 /* ------------------------------------------------------------ */
 /**
@@ -77,6 +79,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
     public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private File tempdir;
@@ -275,11 +278,13 @@ public class MultiPartFilter implements Filter
         @Override
         public Map<String, String[]> getParameterMap()
         {
-            Map<String, String[]> cmap = new HashMap<>();
-
-            for ( String key : _params.keySet() )
+            Map<String, String[]> cmap = new HashMap<String,String[]>();
+            
+            for ( Object key : _params.keySet() )
             {
-                cmap.put(key,getParameterValues(key));
+                String[] a = LazyList.toStringArray(getParameter((String)key));
+                cmap.put((String)key,a);
+
             }
 
             return Collections.unmodifiableMap(cmap);

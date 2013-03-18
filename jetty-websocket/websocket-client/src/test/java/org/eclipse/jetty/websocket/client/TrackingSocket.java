@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
 
 /**
@@ -47,6 +47,7 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
+    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
 
     public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
@@ -94,13 +95,12 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException
     {
-        int startCount = messageQueue.size();
         long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
         long now = System.currentTimeMillis();
         long expireOn = now + msDur;
-        LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
+        LOG.debug("Await Message.. Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
-        while (messageQueue.size() < (startCount + expectedMessageCount))
+        while (messageQueue.size() < expectedMessageCount)
         {
             try
             {
@@ -116,6 +116,11 @@ public class TrackingSocket extends WebSocketAdapter
                         messageQueue.size()));
             }
         }
+    }
+
+    public void clear()
+    {
+        messageQueue.clear();
     }
 
     @Override
@@ -136,10 +141,17 @@ public class TrackingSocket extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        super.onWebSocketConnect(connection);
+        super.onWebSocketConnect(session);
         openLatch.countDown();
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        LOG.debug("onWebSocketError",cause);
+        Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
     }
 
     @Override
@@ -174,6 +186,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
+        LOG.debug("Waiting for message");
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
 }

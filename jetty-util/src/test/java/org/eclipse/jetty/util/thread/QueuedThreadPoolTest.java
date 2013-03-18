@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -75,7 +75,7 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(5);
         tp.setMaxThreads(10);
-        tp.setMaxIdleTimeMs(1000);
+        tp.setIdleTimeout(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
         tp.start();
@@ -174,7 +174,7 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(2);
         tp.setMaxThreads(10);
-        tp.setMaxIdleTimeMs(400);
+        tp.setIdleTimeout(400);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
         tp.start();

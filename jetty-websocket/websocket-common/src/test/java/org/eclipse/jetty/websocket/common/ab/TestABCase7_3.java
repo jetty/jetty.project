@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -34,16 +36,14 @@ import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
+import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 public class TestABCase7_3
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testCase7_3_1GenerateEmptyClose()
@@ -73,7 +73,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -107,10 +107,10 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(expected);
+        parser.parseQuietly(expected);
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 
@@ -147,7 +147,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -205,7 +205,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -275,7 +275,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
@@ -345,10 +345,10 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new Parser(policy);
+        UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parse(expected);
+        parser.parseQuietly(expected);
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 

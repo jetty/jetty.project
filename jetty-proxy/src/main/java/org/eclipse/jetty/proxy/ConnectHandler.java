@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,8 +51,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
@@ -162,7 +162,7 @@ public class ConnectHandler extends HandlerWrapper
         }
         if (scheduler == null)
         {
-            setScheduler(new TimerScheduler());
+            setScheduler(new ScheduledExecutorScheduler());
             addBean(getScheduler());
         }
         if (bufferPool == null)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,14 +20,25 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Parser;
 
 public class UnitParser extends Parser
 {
     public UnitParser()
     {
-        super(WebSocketPolicy.newServerPolicy());
+        this(WebSocketPolicy.newServerPolicy());
+    }
+
+    public UnitParser(ByteBufferPool bufferPool, WebSocketPolicy policy)
+    {
+        super(policy, bufferPool);
+    }
+
+    public UnitParser(WebSocketPolicy policy)
+    {
+        this(new MappedByteBufferPool(), policy);
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)
@@ -36,6 +47,24 @@ public class UnitParser extends Parser
         byte arr[] = new byte[len];
         buf.get(arr,0,len);
         this.parse(ByteBuffer.wrap(arr));
+    }
+
+    /**
+     * Parse a buffer, but do so in a quiet fashion, squelching stacktraces if encountered.
+     * <p>
+     * Use if you know the parse will cause an exception and just don't wnat to make the test console all noisy.
+     */
+    public void parseQuietly(ByteBuffer buf)
+    {
+        try
+        {
+            LogShush.disableStacks(Parser.class);
+            parse(buf);
+        }
+        finally
+        {
+            LogShush.enableStacks(Parser.class);
+        }
     }
 
     public void parseSlowly(ByteBuffer buf, int segmentSize)

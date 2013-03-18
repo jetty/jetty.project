@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -97,16 +96,20 @@ public abstract class AbstractWebAppObjectInSessionTest
 
         AbstractTestServer server1 = createServer(0);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
-        server1.start();
-        int port1 = server1.getPort();
+
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
+            
             AbstractTestServer server2 = createServer(0);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
-            server2.start();
-            int port2 = server2.getPort();
+
             try
             {
+                server2.start();
+                int port2 = server2.getPort();
+                
                 HttpClient client = new HttpClient();
                 client.start();
                 try
@@ -114,9 +117,8 @@ public abstract class AbstractWebAppObjectInSessionTest
                     // Perform one request to server1 to create a session
                     Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     request.method(HttpMethod.GET);
-                    
-                    Future<ContentResponse> future = request.send();
-                    ContentResponse response = future.get();
+
+                    ContentResponse response = request.send();
                     assertEquals( HttpServletResponse.SC_OK, response.getStatus());
                     String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -127,8 +129,7 @@ public abstract class AbstractWebAppObjectInSessionTest
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                     request2.method(HttpMethod.GET);
                     request2.header("Cookie", sessionCookie);
-                    future = request2.send();
-                    ContentResponse response2 = future.get();
+                    ContentResponse response2 = request2.send();
 
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 }

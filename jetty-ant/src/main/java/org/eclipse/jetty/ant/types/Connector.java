@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.ant.types;
 
+/**
+ * Connector
+ *
+ *
+ */
 public class Connector
 {
     private int port;

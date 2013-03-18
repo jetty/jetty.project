@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>9.0.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jsp</artifactId>
@@ -17,42 +17,84 @@
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.servlet.jsp</artifactId>
       <version>2.2.0.v201112011158</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- JSP Impl -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>org.apache.jasper.glassfish</artifactId>
        <version>2.2.2.v201112011158</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- JSTL Api -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>javax.servlet.jsp.jstl</artifactId>
        <version>1.2.0.v201105211821</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- JSTL Impl -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
        <version>1.2.0.v201112081803</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- EL Api -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.el</artifactId>
       <version>2.2.0.v201108011116</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- EL Impl -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>com.sun.el</artifactId>
       <version>2.2.0.v201108011116</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>org.eclipse.jdt.core</artifactId>
       <version>3.7.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>

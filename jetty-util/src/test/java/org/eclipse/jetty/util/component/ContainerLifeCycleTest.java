@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import org.junit.Test;
 
 public class ContainerLifeCycleTest
 {
+
 
     @Test
     public void testStartStopDestroy() throws Exception
@@ -500,6 +501,33 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(c0,parent.poll());
         Assert.assertEquals(c00,child.poll());
         
+    }
+
+    private final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
+    {
+        public @Override void beanRemoved(Container p, Object c){}
+
+        public @Override void beanAdded(Container p, Object c) {}
+
+        public @Override String toString() {return "inherited";}
+    }
+    
+    @Test
+    public void testInheritedListener() throws Exception
+    {
+        ContainerLifeCycle c0 = new ContainerLifeCycle() { public @Override String toString() {return "c0";}};
+        ContainerLifeCycle c00 = new ContainerLifeCycle() { public @Override String toString() {return "c00";}};
+        ContainerLifeCycle c01 = new ContainerLifeCycle() { public @Override String toString() {return "c01";}};
+        Container.InheritedListener inherited= new InheritedListenerLifeCycle();
+
+        c0.addBean(c00);
+        c0.start();
+        c0.addBean(inherited);
+        c0.addBean(c01);
+
+        Assert.assertTrue(c0.isManaged(inherited));
+        Assert.assertFalse(c00.isManaged(inherited));
+        Assert.assertFalse(c01.isManaged(inherited));
     }
 
     String trim(String s) throws IOException

@@ -19,14 +19,10 @@
 package org.eclipse.jetty.ant;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 
@@ -48,23 +44,10 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
     /** Web application root directory. */
     private File webAppBaseDir;
 
-    /** Web application web.xml file. */
-    private File webXmlFile;
 
-    private File webDefaultXmlFile;
-
-    public AntWebXmlConfiguration() throws ClassNotFoundException
+    public AntWebXmlConfiguration()
     {
-    }
-
-    public File getWebDefaultXmlFile()
-    {
-        return this.webDefaultXmlFile;
-    }
-
-    public void setWebDefaultXmlFile(File webDefaultXmlfile)
-    {
-        this.webDefaultXmlFile = webDefaultXmlfile;
+        super();
     }
 
     public void setClassPathFiles(List classPathFiles)
@@ -77,48 +60,6 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
         this.webAppBaseDir = webAppBaseDir;
     }
 
-    public void setWebXmlFile(File webXmlFile)
-    {
-        this.webXmlFile = webXmlFile;
-
-        if (webXmlFile.exists())
-        {
-            TaskLog.log("web.xml file = " + webXmlFile);
-        }
-    }
-
-    /**
-     * Adds classpath files into web application classloader, and
-     * sets web.xml and base directory for the configured web application.
-     *
-     * @see WebXmlConfiguration#configure(WebAppContext)
-     */
-    public void configure(WebAppContext context) throws Exception
-    {
-        if (context.isStarted())
-        {
-            TaskLog.log("Cannot configure webapp after it is started");
-            return;
-        }
 
 
-        if (webXmlFile.exists())
-        {
-            context.setDescriptor(webXmlFile.getCanonicalPath());
-        }
-
-        super.configure(context);
-
-        Iterator filesIterator = classPathFiles.iterator();
-
-        while (filesIterator.hasNext())
-        {
-            File classPathFile = (File) filesIterator.next();
-            if (classPathFile.exists())
-            {
-                ((WebAppClassLoader) context.getClassLoader())
-                        .addClassPath(classPathFile.getCanonicalPath());
-            }
-        }
-    }
 }

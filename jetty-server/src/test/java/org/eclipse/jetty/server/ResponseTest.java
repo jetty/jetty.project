@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -35,8 +29,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
-
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -61,32 +55,37 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class ResponseTest
 {
     private Server _server;
-    private HttpChannel<?> _channel;
-    private Scheduler _scheduler;
+    private HttpChannel<ByteBuffer> _channel;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _scheduler = new TimerScheduler();
+        Scheduler _scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
-        LocalConnector connector = new LocalConnector(_server,null,_scheduler,null,1,new HttpConnectionFactory(config));
+        LocalConnector connector = new LocalConnector(_server,null, _scheduler,null,1,new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
+        _channel = new HttpChannel<>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
             {
             }
-            
+
             @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
@@ -435,7 +434,7 @@ public class ResponseTest
                 {"http://myhost:8888/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
                 {"/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
                 {"./location;jsessionid=12345?name=value","http://myhost:8888/path/location;jsessionid=12345?name=value"},
-                
+
                 // From cookie
                 {"/other/location","http://myhost:8888/other/location"},
                 {"/other/l%20cation", "http://myhost:8888/other/l%20cation"},
@@ -533,7 +532,7 @@ public class ResponseTest
             socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
             socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
             socket.getOutputStream().flush();
-                        
+
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
             String line = reader.readLine();
             Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
@@ -577,11 +576,11 @@ public class ResponseTest
 
         assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
     }
-    
-    
+
+
     @Test
     public void testCookiesWithReset() throws Exception
-    { 
+    {
         Response response = newResponse();
 
         Cookie cookie=new Cookie("name","value");
@@ -590,14 +589,14 @@ public class ResponseTest
         cookie.setSecure(true);
         cookie.setComment("comment__HTTP_ONLY__");
         response.addCookie(cookie);
-        
+
         Cookie cookie2=new Cookie("name2", "value2");
         cookie2.setDomain("domain");
         cookie2.setPath("/path");
         response.addCookie(cookie2);
 
         //keep the cookies
-        response.reset(true);        
+        response.reset(true);
 
         Enumeration<String> set = response.getHttpFields().getValues("Set-Cookie");
 
@@ -606,12 +605,25 @@ public class ResponseTest
         assertEquals(2, list.size());
         assertTrue(list.contains("name=value;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment"));
         assertTrue(list.contains("name2=value2;Path=/path;Domain=domain"));
-        
+
         //get rid of the cookies
         response.reset();
-        
+
         set = response.getHttpFields().getValues("Set-Cookie");
         assertFalse(set.hasMoreElements());
+    }
+
+    @Test
+    public void testFlushAfterFullContent() throws Exception
+    {
+        Response response = _channel.getResponse();
+        byte[] data = new byte[]{(byte)0xCA, (byte)0xFE};
+        ServletOutputStream output = response.getOutputStream();
+        response.setContentLength(data.length);
+        // Write the whole content
+        output.write(data);
+        // Must not throw
+        output.flush();
     }
 
     private Response newResponse()

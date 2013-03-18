@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,10 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.events.EventCapture;
@@ -37,9 +38,15 @@ public class AnnotatedTextSocket
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session sess)
     {
-        capture.add("onConnect(%s)", conn);
+        capture.add("onConnect(%s)",sess);
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        capture.add("onError(%s: %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
 
     @OnWebSocketMessage
@@ -47,5 +54,4 @@ public class AnnotatedTextSocket
     {
         capture.add("onText(%s)",capture.q(message));
     }
-
 }

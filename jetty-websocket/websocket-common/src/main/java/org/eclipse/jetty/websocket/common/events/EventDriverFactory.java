@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,11 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -58,6 +59,11 @@ public class EventDriverFactory
     private static final ParamList validCloseParams;
 
     /**
+     * Parameter list for &#064;OnWebSocketError
+     */
+    private static final ParamList validErrorParams;
+
+    /**
      * Parameter list for &#064;OnWebSocketFrame
      */
     private static final ParamList validFrameParams;
@@ -70,27 +76,31 @@ public class EventDriverFactory
     static
     {
         validConnectParams = new ParamList();
-        validConnectParams.addParams(WebSocketConnection.class);
+        validConnectParams.addParams(Session.class);
 
         validCloseParams = new ParamList();
         validCloseParams.addParams(int.class,String.class);
-        validCloseParams.addParams(WebSocketConnection.class,int.class,String.class);
+        validCloseParams.addParams(Session.class,int.class,String.class);
+
+        validErrorParams = new ParamList();
+        validErrorParams.addParams(Throwable.class);
+        validErrorParams.addParams(Session.class,Throwable.class);
 
         validTextParams = new ParamList();
         validTextParams.addParams(String.class);
-        validTextParams.addParams(WebSocketConnection.class,String.class);
+        validTextParams.addParams(Session.class,String.class);
         validTextParams.addParams(Reader.class);
-        validTextParams.addParams(WebSocketConnection.class,Reader.class);
+        validTextParams.addParams(Session.class,Reader.class);
 
         validBinaryParams = new ParamList();
         validBinaryParams.addParams(byte[].class,int.class,int.class);
-        validBinaryParams.addParams(WebSocketConnection.class,byte[].class,int.class,int.class);
+        validBinaryParams.addParams(Session.class,byte[].class,int.class,int.class);
         validBinaryParams.addParams(InputStream.class);
-        validBinaryParams.addParams(WebSocketConnection.class,InputStream.class);
+        validBinaryParams.addParams(Session.class,InputStream.class);
 
         validFrameParams = new ParamList();
         validFrameParams.addParams(Frame.class);
-        validFrameParams.addParams(WebSocketConnection.class,Frame.class);
+        validFrameParams.addParams(Session.class,Frame.class);
     }
 
     private ConcurrentHashMap<Class<?>, EventMethods> cache;
@@ -309,6 +319,14 @@ public class EventDriverFactory
                     assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
                     assertUnset(events.onClose,OnWebSocketClose.class,method);
                     events.onClose = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketError.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketError.class,validErrorParams);
+                    assertUnset(events.onError,OnWebSocketError.class,method);
+                    events.onError = new EventMethod(pojo,method);
                     continue;
                 }
 

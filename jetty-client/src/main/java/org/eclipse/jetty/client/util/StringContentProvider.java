@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,14 @@ package org.eclipse.jetty.client.util;
 
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.client.api.ContentProvider;
+
+/**
+ * A {@link ContentProvider} for strings.
+ * <p />
+ * It is possible to specify, at the constructor, an encoding used to convert
+ * the string into bytes, by default UTF-8.
+ */
 public class StringContentProvider extends BytesContentProvider
 {
     public StringContentProvider(String content)

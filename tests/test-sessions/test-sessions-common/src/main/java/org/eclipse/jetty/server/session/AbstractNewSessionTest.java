@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -54,7 +53,7 @@ public abstract class AbstractNewSessionTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testNewSession() throws Exception
     {
@@ -64,16 +63,16 @@ public abstract class AbstractNewSessionTest
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port=server.getPort();
+
         try
         {
+            server.start();
+            int port=server.getPort();
             HttpClient client = new HttpClient();
             client.start();
             try
             {
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -87,8 +86,7 @@ public abstract class AbstractNewSessionTest
                 // The server creates a new session, we must ensure we released all locks
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally

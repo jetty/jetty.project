@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,18 +32,24 @@ import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StandardSession;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.FlowControlStrategyFactory;
 import org.eclipse.jetty.spdy.client.SPDYConnection;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
+    private static final Logger LOG = Log.getLogger(SPDYServerConnectionFactory.class);
+
     // This method is placed here so as to provide a check for NPN before attempting to load any
     // NPN classes.
     public static void checkNPNAvailable()
@@ -51,15 +57,15 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         try
         {
             Class<?> npn = ClassLoader.getSystemClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
-            if (npn.getClassLoader()!=null)
+            if (npn.getClassLoader() != null)
                 throw new IllegalStateException("NextProtoNego must be on JVM boot path");
         }
         catch (ClassNotFoundException e)
         {
-            throw new IllegalStateException("No NextProtoNego on boot path",e);
+            throw new IllegalStateException("No NextProtoNego on boot path", e);
         }
     }
-    
+
     private final short version;
     private final ServerSessionFrameListener listener;
     private int initialWindowSize;
@@ -70,9 +76,9 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         this(version, null);
     }
 
-    public SPDYServerConnectionFactory(int version,  ServerSessionFrameListener listener)
+    public SPDYServerConnectionFactory(int version, ServerSessionFrameListener listener)
     {
-        super("spdy/"+version);
+        super("spdy/" + version);
         this.version = (short)version;
         this.listener = listener;
         setInitialWindowSize(65536);
@@ -96,20 +102,21 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(connector.getByteBufferPool(), compressionFactory.newCompressor());
 
-        ServerSessionFrameListener listener = provideServerSessionFrameListener(connector,endPoint);
-        SPDYConnection connection = new ServerSPDYConnection(connector,endPoint, parser, listener, getInputBufferSize());
+        ServerSessionFrameListener listener = provideServerSessionFrameListener(connector, endPoint);
+        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener, getInputBufferSize());
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
-        StandardSession session = new StandardSession(getVersion(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connection, connection, 2, listener, generator, flowControlStrategy);
-        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddress()); // TODO: make this available through API
+        StandardSession session = new StandardSession(getVersion(), connector.getByteBufferPool(),
+                connector.getExecutor(), connector.getScheduler(), connection, endPoint, connection, 2, listener,
+                generator, flowControlStrategy);
         session.setWindowSize(getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
 
         sessionOpened(session);
 
-        return configure(connection,connector,endPoint);
+        return configure(connection, connector, endPoint);
     }
 
     protected FlowControlStrategy newFlowControlStrategy(short version)
@@ -149,7 +156,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     void closeSessions()
     {
         for (Session session : sessions)
-            session.goAway();
+            session.goAway(new GoAwayInfo(), new Callback.Adapter());
         sessions.clear();
     }
 
@@ -170,9 +177,9 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         private final ServerSessionFrameListener listener;
         private final AtomicBoolean connected = new AtomicBoolean();
 
-        private ServerSPDYConnection(Connector connector,EndPoint endPoint, Parser parser, ServerSessionFrameListener listener, int bufferSize)
+        private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser, ServerSessionFrameListener listener, int bufferSize)
         {
-            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(),bufferSize);
+            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(), bufferSize);
             this.listener = listener;
         }
 

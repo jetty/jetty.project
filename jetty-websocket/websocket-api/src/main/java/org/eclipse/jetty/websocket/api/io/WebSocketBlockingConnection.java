@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,25 +19,23 @@
 package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 
 /**
- * For working with the {@link WebSocketConnection} in a blocking technique.
+ * For working with the {@link Session} in a blocking technique.
  * <p>
  * This is an end-user accessible class.
  */
 public class WebSocketBlockingConnection
 {
-    private final WebSocketConnection conn;
+    private final RemoteEndpoint remote;
 
-    public WebSocketBlockingConnection(WebSocketConnection conn)
+    public WebSocketBlockingConnection(Session session)
     {
-        this.conn = conn;
+        this.remote = session.getRemote();
     }
 
     /**
@@ -47,23 +45,8 @@ public class WebSocketBlockingConnection
      */
     public void write(byte[] data, int offset, int length) throws IOException
     {
-        try
-        {
-            Future<WriteResult> blocker = conn.write(data,offset,length);
-            WriteResult result = blocker.get(); // block till finished
-            if (result.getException() != null)
-            {
-                throw new WebSocketException(result.getException());
-            }
-        }
-        catch (InterruptedException e)
-        {
-            throw new IOException("Blocking write failed",e);
-        }
-        catch (ExecutionException e)
-        {
-            throw new WebSocketException(e.getCause());
-        }
+        ByteBuffer buf = ByteBuffer.wrap(data,offset,length);
+        remote.sendBytes(buf);
     }
 
     /**
@@ -73,22 +56,6 @@ public class WebSocketBlockingConnection
      */
     public void write(String message) throws IOException
     {
-        try
-        {
-            Future<WriteResult> blocker = conn.write(message);
-            WriteResult result = blocker.get(); // block till finished
-            if (result.getException() != null)
-            {
-                throw new WebSocketException(result.getException());
-            }
-        }
-        catch (InterruptedException e)
-        {
-            throw new IOException("Blocking write failed",e);
-        }
-        catch (ExecutionException e)
-        {
-            throw new WebSocketException(e.getCause());
-        }
+        remote.sendString(message);
     }
 }

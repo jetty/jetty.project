@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.zip.DeflaterOutputStream;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 public abstract class AbstractCompressedStream extends ServletOutputStream
 {
     private final String _encoding;
+    protected final String _vary;
     protected final CompressedResponseWrapper _wrapper;
     protected final HttpServletResponse _response;
     protected OutputStream _out;
@@ -52,12 +54,13 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      * Instantiates a new compressed stream.
      *
      */
-    public AbstractCompressedStream(String encoding,HttpServletRequest request, CompressedResponseWrapper wrapper)
+    public AbstractCompressedStream(String encoding,HttpServletRequest request, CompressedResponseWrapper wrapper,String vary)
             throws IOException
     {
         _encoding=encoding;
         _wrapper = wrapper;
         _response = (HttpServletResponse)wrapper.getResponse();
+        _vary=vary;
         
         if (_wrapper.getMinCompressSize()==0)
             doCompress();
@@ -106,7 +109,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         {
             long length=_wrapper.getContentLength();
             if (length > 0 && length < _wrapper.getMinCompressSize())
-                doNotCompress();
+                doNotCompress(false);
             else
                 doCompress();
         }
@@ -137,13 +140,14 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                     _wrapper.setContentLength(length);
                 }
                 if (length < _wrapper.getMinCompressSize())
-                    doNotCompress();
+                    doNotCompress(false);
                 else
                     doCompress();
             }
             else if (_out == null)
             {
-                doNotCompress();
+                // No output
+                doNotCompress(false);
             }
 
             if (_compressedOutputStream != null)
@@ -168,7 +172,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             {
                 long length=_wrapper.getContentLength();
                 if (length > 0 && length < _wrapper.getMinCompressSize())
-                    doNotCompress();
+                    doNotCompress(false);
                 else
                     doCompress();
             }
@@ -226,23 +230,30 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             if (_response.isCommitted())
                 throw new IllegalStateException();
 
-            setHeader("Content-Encoding", _encoding);
-            if (_response.containsHeader("Content-Encoding"))
+            if (_encoding!=null)
             {
-                _out=_compressedOutputStream=createStream();
-
-                if (_bOut!=null)
+            setHeader("Content-Encoding", _encoding);
+                if (_response.containsHeader("Content-Encoding"))
                 {
-                    _out.write(_bOut.getBuf(),0,_bOut.getCount());
-                    _bOut=null;
+                    setHeader("Vary",_vary);
+                    _out=_compressedOutputStream=createStream();
+                    if (_out!=null)
+                    {
+                        if (_bOut!=null)
+                        {
+                            _out.write(_bOut.getBuf(),0,_bOut.getCount());
+                            _bOut=null;
+                        }
+
+                        String etag=_wrapper.getETag();
+                        if (etag!=null)
+                            setHeader("ETag",etag.substring(0,etag.length()-1)+'-'+_encoding+'"');
+                        return;
+                    }
                 }
-                
-                String etag=_wrapper.getETag();
-                if (etag!=null)
-                    setHeader("ETag",etag.substring(0,etag.length()-1)+'-'+_encoding+'"');
             }
-            else
-                doNotCompress();
+            
+            doNotCompress(true); // Send vary as it could have been compressed if encoding was present
         }
     }
 
@@ -252,12 +263,14 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public void doNotCompress() throws IOException
+    public void doNotCompress(boolean sendVary) throws IOException
     {
         if (_compressedOutputStream != null)
             throw new IllegalStateException("Compressed output stream is already assigned.");
         if (_out == null || _bOut != null)
         {
+            if (sendVary)
+                setHeader("Vary",_vary);
             if (_wrapper.getETag()!=null)
                 setHeader("ETag",_wrapper.getETag());
                 
@@ -289,7 +302,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         {
             long length=_wrapper.getContentLength();
             if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
-                doNotCompress();
+                doNotCompress(false);
             else if (lengthToWrite > _wrapper.getMinCompressSize())
                 doCompress();
             else
@@ -299,14 +312,14 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         {
             long length=_wrapper.getContentLength();
             if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
-                doNotCompress();
+                doNotCompress(false);
             else if (lengthToWrite >= (_bOut.getBuf().length - _bOut.getCount()))
                 doCompress();
         }
     }
 
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedStream#getOutputStream()
+     * @see org.eclipse.jetty.http.gzip.CompressedStream#createOutputStream()
      */
     public OutputStream getOutputStream()
     {

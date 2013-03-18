@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,7 +77,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static final String REQUEST2_HEADER =
             "POST / HTTP/1.0\n" +
                     "Host: localhost\n" +
-                    "Content-Type: text/xml;charset=ISO-8859-1\n" +
+                    "Content-Type: text/xml; charset=ISO-8859-1\n" +
                     "Content-Length: ";
     protected static final String REQUEST2_CONTENT =
             "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
@@ -103,7 +103,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     + "</nimbus>\n";
     protected static final String RESPONSE2 =
             "HTTP/1.1 200 OK\n" +
-                    "Content-Type: text/xml;charset=ISO-8859-1\n" +
+                    "Content-Type: text/xml; charset=ISO-8859-1\n" +
                     "Content-Length: " + RESPONSE2_CONTENT.getBytes().length + "\n" +
                     "Server: Jetty(" + Server.getVersion() + ")\n" +
                     "\n" +
@@ -118,7 +118,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
@@ -149,7 +149,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
@@ -185,14 +185,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                throw new ServletException("TEST handler exception");
+                throw new QuietServletException("TEST handler exception");
             }
         });
 
         StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
         request.append("Host: localhost\r\n\r\n");
 
-        Socket client = newSocket(HOST, _connector.getLocalPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
         try
@@ -246,7 +246,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         request.append("Content-length: 6\n\n");
         request.append("foo");
 
-        Socket client = newSocket(HOST, _connector.getLocalPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
         os.write(request.toString().getBytes());
@@ -269,7 +269,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
@@ -317,7 +317,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -337,7 +337,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -367,7 +367,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -396,7 +396,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -426,7 +426,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         byte[] bytes = REQUEST2.getBytes();
         for (int i = 0; i < LOOPS; i++)
         {
-            try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
                 OutputStream os = client.getOutputStream();
 
@@ -474,7 +474,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Sort the list
             Arrays.sort(points);
 
-            try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
                 OutputStream os = client.getOutputStream();
 
@@ -505,7 +505,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Sort the list
             Arrays.sort(points);
 
-            try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
                 OutputStream os = client.getOutputStream();
 
@@ -537,7 +537,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         String test = encoding[e] + "x" + b + "x" + w + "x" + c;
                         try
                         {
-                            URL url = new URL(_scheme + "://" + HOST + ":" + _connector.getLocalPort() + "/?writes=" + w + "&block=" + b + (e == 0 ? "" : ("&encoding=" + encoding[e])) + (c == 0 ? "&chars=true" : ""));
+                            URL url = new URL(_scheme + "://" + _serverURI.getHost() + ":" + _serverURI.getPort() + "/?writes=" + w + "&block=" + b + (e == 0 ? "" : ("&encoding=" + encoding[e])) + (c == 0 ? "&chars=true" : ""));
 
                             InputStream in = (InputStream)url.getContent();
                             String response = IO.toString(in, e == 0 ? null : encoding[e]);
@@ -562,14 +562,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new DataHandler());
 
         long start = System.currentTimeMillis();
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "GET /data?writes=1024&block=256 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "connection: close\r\n" +
                             "content-type: unknown\r\n" +
                             "content-length: 30\r\n" +
@@ -624,14 +624,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         long start = System.currentTimeMillis();
         int total = 0;
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "GET /data?writes=256&block=1024 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "connection: close\r\n" +
                             "content-type: unknown\r\n" +
                             "\r\n"
@@ -665,7 +665,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new BigBlockHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             client.setSoTimeout(20000);
 
@@ -674,10 +674,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             os.write((
                     "GET /r1 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "\r\n" +
                             "GET /r2 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
             ).getBytes());
@@ -797,7 +797,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         //for (int pipeline=1;pipeline<32;pipeline++)
         for (int pipeline = 1; pipeline < 32; pipeline++)
         {
-            try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
                 client.setSoTimeout(5000);
                 OutputStream os = client.getOutputStream();
@@ -807,7 +807,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 for (int i = 1; i < pipeline; i++)
                     request +=
                             "GET /data?writes=1&block=16&id=" + i + " HTTP/1.1\r\n" +
-                                    "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                                    "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                                     "user-agent: testharness/1.0 (blah foo/bar)\r\n" +
                                     "accept-encoding: nothing\r\n" +
                                     "cookie: aaa=1234567890\r\n" +
@@ -815,7 +815,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 request +=
                         "GET /data?writes=1&block=16 HTTP/1.1\r\n" +
-                                "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                                "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                                 "user-agent: testharness/1.0 (blah foo/bar)\r\n" +
                                 "accept-encoding: nothing\r\n" +
                                 "cookie: aaa=bbbbbb\r\n" +
@@ -844,14 +844,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testRecycledWriters() throws Exception
     {
         configureServer(new EchoHandler());
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n").getBytes("iso-8859-1"));
@@ -862,7 +862,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
@@ -876,7 +876,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             byte[] contentB = content.getBytes("utf-8");
             os.write((
                     "POST /echo?charset=utf-16 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
@@ -928,28 +928,28 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler(false));
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "POST /R1 HTTP/1.1\015\012" +
-                            "Host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\015\012" +
                             "123456789\n" +
 
                             "HEAD /R1 HTTP/1.1\015\012" +
-                            "Host: " + HOST + ":" + _connector.getLocalPort() + "\015\012" +
+                            "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\015\012" +
                             "123456789\n" +
 
                             "POST /R1 HTTP/1.1\015\012" +
-                            "Host: " + HOST + ":" + _connector.getLocalPort() + "\015\012" +
+                            "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "Connection: close\015\012" +
@@ -960,6 +960,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
             String in = IO.toString(is);
+            System.err.println(in);
 
             int index = in.indexOf("123456789");
             assertTrue(index > 0);
@@ -975,14 +976,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n").getBytes("iso-8859-1"));
@@ -993,7 +994,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
@@ -1007,7 +1008,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             byte[] contentB = content.getBytes("utf-16");
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-16\r\n" +
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
@@ -1029,7 +1030,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
@@ -1037,7 +1038,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Send a request with chunked input and expect 100
             os.write((
                     "GET / HTTP/1.1\r\n" +
-                            "Host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             "Expect: 100-continue\r\n" +
                             "Connection: Keep-Alive\r\n" +
@@ -1065,7 +1066,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         CommittedErrorHandler handler = new CommittedErrorHandler();
         configureServer(handler);
 
-        Socket client = newSocket(HOST, _connector.getLocalPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         try
         {
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
@@ -1075,7 +1076,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Send a request
             os.write(("GET / HTTP/1.1\r\n" +
-                    "Host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "\r\n"
             ).getBytes());
             os.flush();
@@ -1205,14 +1206,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         AvailableHandler ah = new AvailableHandler();
         configureServer(ah);
 
-        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
             os.write((
                     "GET /data?writes=1024&block=256 HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "connection: close\r\n" +
                             "content-type: unknown\r\n" +
                             "content-length: 30\r\n" +
@@ -1250,7 +1251,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        try (Socket client1 = newSocket(HOST, _connector.getLocalPort()); Socket client2 = newSocket(HOST, _connector.getLocalPort()))
+        try (Socket client1 = newSocket(_serverURI.getHost(), _serverURI.getPort()); Socket client2 = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os1 = client1.getOutputStream();
             OutputStream os2 = client2.getOutputStream();
@@ -1344,7 +1345,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 new String(fill);
         final byte[] bytes = content.getBytes();
 
-        Socket client = newSocket(HOST, _connector.getLocalPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
 
         new Thread()
@@ -1404,7 +1405,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(suspend);
 
         long start = System.currentTimeMillis();
-        Socket client = newSocket(HOST, _connector.getLocalPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(5000);
         try
         {
@@ -1413,7 +1414,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // write an initial request
             os.write((
                     "GET / HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "\r\n"
             ).getBytes());
             os.flush();
@@ -1423,7 +1424,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // write an pipelined request
             os.write((
                     "GET / HTTP/1.1\r\n" +
-                            "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
             ).getBytes());

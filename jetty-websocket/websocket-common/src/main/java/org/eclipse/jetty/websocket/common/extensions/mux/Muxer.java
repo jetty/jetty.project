@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -190,7 +189,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         LOG.warn(muxe);
         try
         {
-            generator.generate(drop);
+            generator.generate(null,drop);
         }
         catch (IOException ioe)
         {
@@ -384,13 +383,13 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
     /**
      * Outgoing frame, without mux encapsulated payload.
      */
-    public Future<WriteResult> output(long channelId, Frame frame) throws IOException
+    public void output(long channelId, Frame frame, WriteCallback callback)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({}, {})",channelId,frame);
+            LOG.debug("output({}, {})",channelId,frame,callback);
         }
-        return generator.generate(channelId,frame);
+        generator.generate(channelId,frame,callback);
     }
 
     /**
@@ -402,7 +401,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
      */
     public void output(MuxControlBlock op) throws IOException
     {
-        generator.generate(op);
+        generator.generate(null,op);
     }
 
     public void setAddClient(MuxAddClient addClient)

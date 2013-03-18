@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -183,7 +184,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override
@@ -243,7 +244,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST.asString(), null);
+                        request.header(HttpHeader.HOST, null);
                     }
 
                     @Override
@@ -409,9 +410,11 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
 
             final CountDownLatch latch = new CountDownLatch(1);
+            ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
+            Arrays.fill(buffer.array(),(byte)'x');
             client.newRequest(host, port)
                     .scheme(scheme)
-                    .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
+                    .content(new ByteBufferContentProvider(buffer))
                     .send(new Response.Listener.Empty()
                     {
                         @Override
@@ -427,6 +430,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
+            server.stop();
         }
         finally
         {
@@ -452,8 +456,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .send()
-                .get(5, TimeUnit.SECONDS);
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(200, response.getStatus());
 

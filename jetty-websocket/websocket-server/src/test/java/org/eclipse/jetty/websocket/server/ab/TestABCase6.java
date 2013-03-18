@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Test;
@@ -356,6 +357,9 @@ public class TestABCase6 extends AbstractABCase
     @Slow
     public void testCase6_4_3() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         ByteBuffer payload = ByteBuffer.allocate(64);
         BufferUtil.clearToFill(payload);
         payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
@@ -396,10 +400,11 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.expect(expect);
 
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(part3); // the rest (shouldn't work)
+            fuzzer.sendExpectingIOException(part3); // the rest (shouldn't work)
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -411,6 +416,9 @@ public class TestABCase6 extends AbstractABCase
     @Slow
     public void testCase6_4_4() throws Exception
     {
+        // Disable Long Stacks from Parser (we know this test will throw an exception)
+        enableStacks(Parser.class,false);
+
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -437,6 +445,7 @@ public class TestABCase6 extends AbstractABCase
         }
         finally
         {
+            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

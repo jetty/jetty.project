@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -220,7 +220,7 @@ public class SelectChannelEndPointTest
     {
         Socket client = newClient();
 
-        client.setSoTimeout(600000); // TODO: restore to smaller value
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -425,6 +425,7 @@ public class SelectChannelEndPointTest
     public void testBlockedReadIdle() throws Exception
     {
         Socket client = newClient();
+        InputStream clientInputStream = client.getInputStream();
         OutputStream clientOutputStream = client.getOutputStream();
 
         client.setSoTimeout(5000);
@@ -440,7 +441,7 @@ public class SelectChannelEndPointTest
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
         {
-            int b = client.getInputStream().read();
+            int b = clientInputStream.read();
             assertTrue(b > 0);
             assertEquals(c, (char)b);
         }
@@ -456,7 +457,7 @@ public class SelectChannelEndPointTest
 
         // read until idle shutdown received
         long start = System.currentTimeMillis();
-        int b = client.getInputStream().read();
+        int b = clientInputStream.read();
         assertEquals('E', b);
         long idle = System.currentTimeMillis() - start;
         assertTrue(idle > idleTimeout / 2);
@@ -464,10 +465,12 @@ public class SelectChannelEndPointTest
 
         for (char c : "E: 12345678".toCharArray())
         {
-            b = client.getInputStream().read();
+            b = clientInputStream.read();
             assertTrue(b > 0);
             assertEquals(c, (char)b);
         }
+        b = clientInputStream.read();
+        assertEquals(-1,b);
 
         // But endpoint is still open.
         if(_lastEndPoint.isOpen())

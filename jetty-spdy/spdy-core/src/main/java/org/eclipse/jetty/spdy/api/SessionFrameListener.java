@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,7 @@ public interface SessionFrameListener extends EventListener
      * <p>Application code should implement this method and reply to the stream creation, eventually
      * sending data:</p>
      * <pre>
-     * public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+     * public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
      * {
      *     // Do something with the metadata contained in synInfo
      *
@@ -52,7 +52,7 @@ public interface SessionFrameListener extends EventListener
      * </pre>
      * <p>Alternatively, if the stream creation requires reading data sent from the other peer:</p>
      * <pre>
-     * public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+     * public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
      * {
      *     // Do something with the metadata contained in synInfo
      *
@@ -98,17 +98,17 @@ public interface SessionFrameListener extends EventListener
      * <p>Callback invoked when a ping request has completed its round-trip.</p>
      *
      * @param session the session
-     * @param pingInfo the metadata received
+     * @param pingResultInfo the metadata received
      */
-    public void onPing(Session session, PingInfo pingInfo);
+    public void onPing(Session session, PingResultInfo pingResultInfo);
 
     /**
      * <p>Callback invoked when the other peer signals that it is closing the connection.</p>
      *
      * @param session the session
-     * @param goAwayInfo the metadata sent
+     * @param goAwayResultInfo the metadata sent
      */
-    public void onGoAway(Session session, GoAwayInfo goAwayInfo);
+    public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo);
 
     /**
      * <p>Callback invoked when an exception is thrown during the processing of an event on a
@@ -118,6 +118,7 @@ public interface SessionFrameListener extends EventListener
      * @param x the exception that caused the event processing failure
      */
     public void onException(Throwable x);
+
 
     /**
      * <p>Empty implementation of {@link SessionFrameListener}</p>
@@ -143,12 +144,12 @@ public interface SessionFrameListener extends EventListener
         }
 
         @Override
-        public void onPing(Session session, PingInfo pingInfo)
+        public void onPing(Session session, PingResultInfo pingResultInfo)
         {
         }
 
         @Override
-        public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+        public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo)
         {
         }
 

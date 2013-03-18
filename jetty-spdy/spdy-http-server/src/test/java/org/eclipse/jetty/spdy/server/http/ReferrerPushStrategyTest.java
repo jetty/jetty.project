@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,10 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.servlets.gzip.GzipHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -43,7 +46,11 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -104,39 +111,14 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         sendMainRequestAndCSSRequest();
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
-        Session session = startClient(version, serverAddress, new SessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
-
-                assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
-                assertThat("URI header ends with css", synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .value().endsWith
-                                ("" +
-                                        ".css"),
-                        is(true));
-                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
-                return new StreamFrameListener.Adapter()
-                {
-
-                    @Override
-                    public void onData(Stream stream, DataInfo dataInfo)
-                    {
-                        dataInfo.consume(dataInfo.length());
-                        pushDataLatch.countDown();
-                    }
-                };
-            }
-        });
-        // Send main request. That should initiate the push syn's which get reset by the client
-        sendRequest(session, mainRequestHeaders);
+        Session session = startClient(version, serverAddress, null);
+        // Send main request. That should initiate the push push's which get reset by the client
+        sendRequest(session, mainRequestHeaders, pushSynHeadersValid, pushDataLatch);
 
         assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
-        assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
 
-        sendRequest(session, associatedCSSRequestHeaders);
+        sendRequest(session, associatedCSSRequestHeaders, pushSynHeadersValid, pushDataLatch);
     }
 
     @Test
@@ -154,7 +136,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         // Sleep for pushPeriod This should prevent application.js from being mapped as pushResource
         Thread.sleep(referrerPushPeriod + 1);
-        sendRequest(session, associatedJSRequestHeaders);
+        sendRequest(session, associatedJSRequestHeaders, null, null);
 
         run2ndClientRequests(false, true);
     }
@@ -168,14 +150,15 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         Session session = sendMainRequestAndCSSRequest();
 
-        sendRequest(session, associatedJSRequestHeaders);
+        sendRequest(session, associatedJSRequestHeaders, null, null);
 
         run2ndClientRequests(false, true);
     }
 
     private InetSocketAddress createServer() throws Exception
     {
-        return startHTTPServer(version, new AbstractHandler()
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -191,24 +174,50 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
+        return startHTTPServer(version, gzipHandler);
     }
 
     private Session sendMainRequestAndCSSRequest() throws Exception
     {
         Session session = startClient(version, serverAddress, null);
 
-        sendRequest(session, mainRequestHeaders);
-        sendRequest(session, associatedCSSRequestHeaders);
+        sendRequest(session, mainRequestHeaders, null, null);
+        sendRequest(session, associatedCSSRequestHeaders, null, null);
 
         return session;
     }
 
-    private void sendRequest(Session session, Fields requestHeaders) throws InterruptedException
+    private void sendRequest(Session session, Fields requestHeaders, final CountDownLatch pushSynHeadersValid,
+                             final CountDownLatch pushDataLatch) throws InterruptedException
     {
         final CountDownLatch dataReceivedLatch = new CountDownLatch(1);
         final CountDownLatch received200OKLatch = new CountDownLatch(1);
         session.syn(new SynInfo(requestHeaders, true), new StreamFrameListener.Adapter()
         {
+            @Override
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+            {
+                validateHeaders(pushInfo.getHeaders(), pushSynHeadersValid);
+
+                assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
+                assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
+                        .value().endsWith
+                                ("" +
+                                        ".css"),
+                        is(true));
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
+                return new StreamFrameListener.Adapter()
+                {
+
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        dataInfo.consume(dataInfo.length());
+                        pushDataLatch.countDown();
+                    }
+                };
+            }
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -224,7 +233,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 if (dataInfo.isClose())
                     dataReceivedLatch.countDown();
             }
-        });
+        }, new Promise.Adapter<Stream>());
         Assert.assertTrue(received200OKLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataReceivedLatch.await(5, TimeUnit.SECONDS));
     }
@@ -235,16 +244,18 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
-        Session session2 = startClient(version, serverAddress, new SessionFrameListener.Adapter()
+        final CountDownLatch pushResponseHeaders = new CountDownLatch(1);
+        Session session2 = startClient(version, serverAddress, null);
+        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 if (validateHeaders)
-                    validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
+                    validateHeaders(pushInfo.getHeaders(), pushSynHeadersValid);
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
-                assertThat("URI header ends with css", synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
+                assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
                         .value().endsWith
                                 ("" +
                                         ".css"),
@@ -252,18 +263,25 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
+                    public void onHeaders(Stream stream, HeadersInfo headersInfo)
+                    {
+                        Fields headers = headersInfo.getHeaders();
+                        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version), "200 OK")
+                                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version),
+                                "HTTP/1.1") && validateHeader(headers, "content-encoding", "gzip"))
+                            pushResponseHeaders.countDown();
+                    }
+
+                    @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-
                         dataInfo.consume(dataInfo.length());
                         if (dataInfo.isClose())
                             pushDataLatch.countDown();
                     }
                 };
             }
-        });
-        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -286,8 +304,10 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         else
             assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
         if (validateHeaders)
-            assertThat("Push syn headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
+            assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
     }
+
+    private static final Logger LOG = Log.getLogger(ReferrerPushStrategyTest.class);
 
     @Test
     public void testAssociatedResourceIsPushed() throws Exception
@@ -323,16 +343,17 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         });
         Assert.assertTrue(mainResourceLatch.await(5, TimeUnit.SECONDS));
 
-        sendRequest(session1, createHeaders(cssResource));
+        sendRequest(session1, createHeaders(cssResource), null, null);
 
         // Create another client, and perform the same request for the main resource, we expect the css being pushed
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, null);
+        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 Assert.assertTrue(stream.isUnidirectional());
                 return new StreamFrameListener.Adapter()
@@ -346,9 +367,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     }
                 };
             }
-        });
-        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -449,13 +468,15 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, null);
+        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 Assert.assertTrue(stream.isUnidirectional());
-                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith(".css"));
+                Assert.assertTrue(pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith("" +
+                        ".css"));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -467,9 +488,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     }
                 };
             }
-        });
-        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -560,14 +579,30 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(2);
-        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, null);
+        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 Assert.assertTrue(stream.isUnidirectional());
                 return new StreamFrameListener.Adapter()
                 {
+                    @Override
+                    public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+                    {
+                        return new Adapter()
+                        {
+                            @Override
+                            public void onData(Stream stream, DataInfo dataInfo)
+                            {
+                                dataInfo.consume(dataInfo.length());
+                                if (dataInfo.isClose())
+                                    pushDataLatch.countDown();
+                            }
+                        };
+                    }
+
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
@@ -577,9 +612,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     }
                 };
             }
-        });
-        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
-        {
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -778,9 +811,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
     private void validateHeaders(Fields headers, CountDownLatch pushSynHeadersValid)
     {
-        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version), "200")
-                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1")
-                && validateUriHeader(headers))
+        if (validateUriHeader(headers))
             pushSynHeadersValid.countDown();
     }
 
@@ -789,7 +820,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields.Field header = headers.get(name);
         if (header != null && expectedValue.equals(header.value()))
             return true;
-        System.out.println(name + " not valid! " + headers);
+        System.out.println(name + " not valid! Expected: " + expectedValue + " headers received:" + headers);
         return false;
     }
 
@@ -823,6 +854,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields requestHeaders = new Fields();
         requestHeaders.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) " +
                 "Gecko/20100101 Firefox/16.0");
+        requestHeaders.put("accept-encoding", "gzip");
         requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
         requestHeaders.put(HTTPSPDYHeader.URI.name(version), resource);
         requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");

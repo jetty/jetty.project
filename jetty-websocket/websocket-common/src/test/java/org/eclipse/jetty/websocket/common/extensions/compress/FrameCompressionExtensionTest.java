@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class FrameCompressionExtensionTest
 {
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
@@ -63,7 +64,7 @@ public class FrameCompressionExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new Parser(policy);
+        Parser parser = new UnitParser(policy);
         parser.configureFromExtensions(Collections.singletonList(ext));
         parser.setIncomingFramesHandler(ext);
 
@@ -91,7 +92,7 @@ public class FrameCompressionExtensionTest
 
     private void assertOutgoing(String text, String expectedHex) throws IOException
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         FrameCompressionExtension ext = new FrameCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
@@ -109,9 +110,19 @@ public class FrameCompressionExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = WebSocketFrame.text(text);
-        ext.outgoingFrame(frame);
+        ext.outgoingFrame(frame,null);
 
         capture.assertBytes(0,expectedHex);
+    }
+
+    @Test
+    public void testBlockheadClient_HelloThere()
+    {
+        // Captured from Blockhead Client - "Hello" then "There" via unit test
+        String hello = "c1 87 00 00 00 00 f2 48  cd c9 c9 07 00".replaceAll("\\s*","");
+        String there = "c1 87 00 00 00 00 0a c9  48 2d 4a 05 00".replaceAll("\\s*","");
+        byte rawbuf[] = TypeUtil.fromHexString(hello + there);
+        assertIncoming(rawbuf,"Hello","There");
     }
 
     @Test
@@ -120,6 +131,16 @@ public class FrameCompressionExtensionTest
         // Captured from Chrome 20.x - "Hello" (sent from browser/client)
         byte rawbuf[] = TypeUtil.fromHexString("c187832b5c11716391d84a2c5c");
         assertIncoming(rawbuf,"Hello");
+    }
+
+    @Test
+    public void testChrome20_HelloThere()
+    {
+        // Captured from Chrome 20.x - "Hello" then "There" (sent from browser/client)
+        String hello = "c1 87 7b 19 71 db 89 51  bc 12 b2 1e 71".replaceAll("\\s*","");
+        String there = "c1 87 59 ed c8 f4 53 24  80 d9 13 e8 c8".replaceAll("\\s*","");
+        byte rawbuf[] = TypeUtil.fromHexString(hello + there);
+        assertIncoming(rawbuf,"Hello","There");
     }
 
     @Test
@@ -167,7 +188,6 @@ public class FrameCompressionExtensionTest
             int len = compressor.deflate(out,0,out.length,Deflater.SYNC_FLUSH);
             if (len > 0)
             {
-                System.err.printf("Compressed %,d bytes%n",len);
                 outbuf.put(out,0,len);
             }
         }
@@ -185,8 +205,34 @@ public class FrameCompressionExtensionTest
         String expected = "CaCc4bCbB70200"; // what pywebsocket produces
         // String expected = "CbCc4bCbB70200"; // what java produces
 
-        System.out.printf("Compressed data: %s%n",actual);
         Assert.assertThat("Compressed data",actual,is(expected));
+    }
+
+    @Test
+    public void testGeneratedTwoFrames() throws IOException
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+
+        FrameCompressionExtension ext = new FrameCompressionExtension();
+        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setPolicy(policy);
+
+        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
+        ext.setConfig(config);
+
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        boolean validating = true;
+        Generator generator = new Generator(policy,bufferPool,validating);
+        generator.configureFromExtensions(Collections.singletonList(ext));
+
+        OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
+        ext.setNextOutgoingFrames(capture);
+
+        ext.outgoingFrame(WebSocketFrame.text("Hello"),null);
+        ext.outgoingFrame(WebSocketFrame.text("There"),null);
+
+        capture.assertBytes(0,"c107f248cdc9c90700");
+        capture.assertBytes(1,"c1070ac9482d4a0500");
     }
 
     @Test
@@ -214,7 +260,7 @@ public class FrameCompressionExtensionTest
     {
         // Captured from PyWebSocket - "Hello" (echo from server)
         byte rawbuf[] = TypeUtil.fromHexString("c107f248cdc9c90700");
-        assertIncoming(rawbuf, "Hello");
+        assertIncoming(rawbuf,"Hello");
     }
 
     @Test
@@ -230,17 +276,25 @@ public class FrameCompressionExtensionTest
     public void testPyWebSocketServer_Medium()
     {
         // Captured from PyWebSocket - "stackoverflow" (echo from server)
-        byte rawbuf[]=TypeUtil.fromHexString("c10f2a2e494ccece2f4b2d4acbc92f0700");
-        assertIncoming(rawbuf, "stackoverflow");
+        byte rawbuf[] = TypeUtil.fromHexString("c10f2a2e494ccece2f4b2d4acbc92f0700");
+        assertIncoming(rawbuf,"stackoverflow");
     }
 
     /**
-     * Make sure that the server generated compressed form for "Hello" is
-     * consistent with what PyWebSocket creates.
+     * Make sure that the server generated compressed form for "Hello" is consistent with what PyWebSocket creates.
      */
     @Test
     public void testServerGeneratedHello() throws IOException
     {
-        assertOutgoing("Hello", "c107f248cdc9c90700");
+        assertOutgoing("Hello","c107f248cdc9c90700");
+    }
+
+    /**
+     * Make sure that the server generated compressed form for "There" is consistent with what PyWebSocket creates.
+     */
+    @Test
+    public void testServerGeneratedThere() throws IOException
+    {
+        assertOutgoing("There","c1070ac9482d4a0500");
     }
 }

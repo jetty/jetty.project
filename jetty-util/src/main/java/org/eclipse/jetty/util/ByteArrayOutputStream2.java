@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 
 /* ------------------------------------------------------------ */
 /** ByteArrayOutputStream with public internals
@@ -46,4 +47,8 @@ public class ByteArrayOutputStream2 extends ByteArrayOutputStream
         buf[count++]=(byte)b;
     }
     
+    public String toString(Charset charset)
+    {
+        return new String(buf, 0, count, charset);
+    }
 }

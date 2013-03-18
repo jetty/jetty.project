@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -30,7 +29,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -160,9 +159,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      * 
      * @return list of negotiated extensions
      */
-    public List<String> getNegotiatedExtensions()
+    public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        List<String> ret = new ArrayList<>();
+        List<ExtensionConfig> ret = new ArrayList<>();
         if (extensions == null)
         {
             return ret;
@@ -170,7 +169,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
         for (Extension ext : extensions)
         {
-            ret.add(ext.getConfig().getParameterizedName());
+            ret.add(ext.getConfig());
         }
         return ret;
     }
@@ -185,6 +184,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     public OutgoingFrames getNextOutgoing()
     {
         return nextOutgoing;
+    }
+
+    public boolean hasNegotiatedExtensions()
+    {
+        return (this.extensions != null) && (this.extensions.size() > 0);
     }
 
     @Override
@@ -214,6 +218,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         for (ExtensionConfig config : configs)
         {
             Extension ext = factory.newInstance(config);
+            if (ext == null)
+            {
+                // Extension not present on this side
+                continue;
+            }
             extensions.add(ext);
             LOG.debug("Adding Extension: {}",ext);
         }
@@ -222,9 +231,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        return nextOutgoing.outgoingFrame(frame);
+        nextOutgoing.outgoingFrame(frame,callback);
     }
 
     public void setNextIncoming(IncomingFrames nextIncoming)
@@ -240,6 +249,23 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public String toString()
     {
-        return String.format("ExtensionStack[extensions=%s]",extensions);
+        StringBuilder s = new StringBuilder();
+        s.append("ExtensionStack[");
+        s.append("extensions=[");
+        boolean delim = false;
+        for (Extension ext : extensions)
+        {
+            if (delim)
+            {
+                s.append(',');
+            }
+            s.append(ext.getName());
+            delim = true;
+        }
+        s.append("],incoming=").append(this.nextIncoming.getClass().getName());
+        s.append(",outgoing=").append(this.nextOutgoing.getClass().getName());
+        s.append("]");
+        return s.toString();
     }
 }
+

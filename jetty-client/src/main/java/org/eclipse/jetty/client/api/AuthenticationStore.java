@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.client.api;
+
+import java.net.URI;
 
 /**
  * A store for {@link Authentication}s and {@link Authentication.Result}s.
@@ -48,7 +50,7 @@ public interface AuthenticationStore
      * @param realm the authentication realm
      * @return the authentication that matches the given parameters, or null
      */
-    public Authentication findAuthentication(String type, String uri, String realm);
+    public Authentication findAuthentication(String type, URI uri, String realm);
 
     /**
      * @param result the {@link Authentication.Result} to add
@@ -72,5 +74,5 @@ public interface AuthenticationStore
      * @param uri the request URI
      * @return the {@link Authentication.Result} that matches the given URI, or null
      */
-    public Authentication.Result findAuthenticationResult(String uri);
+    public Authentication.Result findAuthenticationResult(URI uri);
 }

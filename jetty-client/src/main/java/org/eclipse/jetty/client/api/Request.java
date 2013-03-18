@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,14 +19,20 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
@@ -36,7 +42,7 @@ import org.eclipse.jetty.util.Fields;
  * various attributes such as the path, the headers, the content, etc.</p>
  * <p>You can create {@link Request} objects via {@link HttpClient#newRequest(String)} and
  * you can send them using either {@link #send()} for a blocking semantic, or
- * {@link #send(Response.Listener)} for an asynchronous semantic.</p>
+ * {@link #send(Response.CompleteListener)} for an asynchronous semantic.</p>
  *
  * @see Response
  */
@@ -93,7 +99,7 @@ public interface Request
     /**
      * @return the full URI of this request such as "http://host:port/path"
      */
-    String getURI();
+    URI getURI();
 
     /**
      * @return the HTTP version of this request, such as "HTTP/1.1"
@@ -131,6 +137,13 @@ public interface Request
     Request header(String name, String value);
 
     /**
+     * @param header the header name
+     * @param value the value of the header
+     * @return this request object
+     */
+    Request header(HttpHeader header, String value);
+
+    /**
      * @param name the name of the attribute
      * @param value the value of the attribute
      * @return this request object
@@ -152,6 +165,12 @@ public interface Request
      * @return this request object
      */
     Request content(ContentProvider content);
+
+    /**
+     * @param content the content provider of this request
+     * @return this request object
+     */
+    Request content(ContentProvider content, String contentType);
 
     /**
      * Shortcut method to specify a file as a content for this request, with the default content type of
@@ -185,15 +204,28 @@ public interface Request
     Request agent(String agent);
 
     /**
-     * @return the idle timeout for this request
+     * @return the idle timeout for this request, in milliseconds
      */
     long getIdleTimeout();
 
     /**
      * @param timeout the idle timeout for this request
+     * @param unit the idle timeout unit
      * @return this request object
      */
-    Request idleTimeout(long timeout);
+    Request idleTimeout(long timeout, TimeUnit unit);
+
+    /**
+     * @return the total timeout for this request, in milliseconds
+     */
+    long getTimeout();
+
+    /**
+     * @param timeout the total timeout for the request/response conversation
+     * @param unit the timeout unit
+     * @return this request object
+     */
+    Request timeout(long timeout, TimeUnit unit);
 
     /**
      * @return whether this request follows redirects
@@ -237,6 +269,18 @@ public interface Request
     Request onRequestHeaders(HeadersListener listener);
 
     /**
+     * @param listener a listener for request commit event
+     * @return this request object
+     */
+    Request onRequestCommit(CommitListener listener);
+
+    /**
+     * @param listener a listener for request content events
+     * @return this request object
+     */
+    Request onRequestContent(ContentListener listener);
+
+    /**
      * @param listener a listener for request success event
      * @return this request object
      */
@@ -253,6 +297,12 @@ public interface Request
      * @return this request object
      */
     Request onResponseBegin(Response.BeginListener listener);
+
+    /**
+     * @param listener a listener for response header event
+     * @return this request object
+     */
+    Request onResponseHeader(Response.HeaderListener listener);
 
     /**
      * @param listener a listener for response headers event
@@ -279,21 +329,21 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
-     * Sends this request and returns a {@link Future} that can be used to wait for the
-     * request and the response to be completed (either with a success or a failure).
+     * Sends this request and returns the response.
      * <p />
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
+     * <p />
      * For example, this method is not appropriate to download big files from a server; consider using
-     * {@link #send(Response.Listener)} instead, passing your own {@link Response.Listener} or a utility
+     * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
      * <p />
-     * The future will return when {@link Response.Listener#onComplete(Result)} is invoked.
+     * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
-     * @return a {@link Future} to wait on for request and response completion
-     * @see Response.Listener#onComplete(Result)
+     * @return a {@link ContentResponse} for this request
+     * @see Response.CompleteListener#onComplete(Result)
      */
-    Future<ContentResponse> send();
+    ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
 
     /**
      * Sends this request and asynchronously notifies the given listener for response events.
@@ -319,10 +369,16 @@ public interface Request
      */
     Throwable getAbortCause();
 
+    /**
+     * Common, empty, super-interface for request listeners.
+     */
     public interface RequestListener extends EventListener
     {
     }
 
+    /**
+     * Listener for the request queued event.
+     */
     public interface QueuedListener extends RequestListener
     {
         /**
@@ -333,6 +389,9 @@ public interface Request
         public void onQueued(Request request);
     }
 
+    /**
+     * Listener for the request begin event.
+     */
     public interface BeginListener extends RequestListener
     {
         /**
@@ -344,7 +403,24 @@ public interface Request
         public void onBegin(Request request);
     }
 
+    /**
+     * Listener for the request headers event.
+     */
     public interface HeadersListener extends RequestListener
+    {
+        /**
+         * Callback method invoked when the request headers (and perhaps small content) are ready to be sent.
+         * The request has been converted into bytes, but not yet sent to the server, and further modifications
+         * to the request may have no effect.
+         * @param request the request that is about to be committed
+         */
+        public void onHeaders(Request request);
+    }
+
+    /**
+     * Listener for the request committed event.
+     */
+    public interface CommitListener extends RequestListener
     {
         /**
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
@@ -352,9 +428,25 @@ public interface Request
          * request may have no effect.
          * @param request the request that has been committed
          */
-        public void onHeaders(Request request);
+        public void onCommit(Request request);
     }
 
+    /**
+     * Listener for the request content event.
+     */
+    public interface ContentListener extends RequestListener
+    {
+        /**
+         * Callback method invoked when a chunk of request content has been sent successfully.
+         * Changes to bytes in the given buffer have no effect, as the content has already been sent.
+         * @param request the request that has been committed
+         */
+        public void onContent(Request request, ByteBuffer content);
+    }
+
+    /**
+     * Listener for the request succeeded event.
+     */
     public interface SuccessListener extends RequestListener
     {
         /**
@@ -365,6 +457,9 @@ public interface Request
         public void onSuccess(Request request);
     }
 
+    /**
+     * Listener for the request failed event.
+     */
     public interface FailureListener extends RequestListener
     {
         /**
@@ -376,9 +471,9 @@ public interface Request
     }
 
     /**
-     * Listener for all request events
+     * Listener for all request events.
      */
-    public interface Listener extends QueuedListener, BeginListener, HeadersListener, SuccessListener, FailureListener
+    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -397,6 +492,16 @@ public interface Request
 
             @Override
             public void onHeaders(Request request)
+            {
+            }
+
+            @Override
+            public void onCommit(Request request)
+            {
+            }
+
+            @Override
+            public void onContent(Request request, ByteBuffer content)
             {
             }
 

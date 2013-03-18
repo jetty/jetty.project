@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,14 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,9 +42,13 @@ public class ResponseNotifier
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.BeginListener)
                 notifyBegin((Response.BeginListener)listener, response);
+        }
     }
 
     private void notifyBegin(Response.BeginListener listener, Response response)
@@ -57,11 +63,41 @@ public class ResponseNotifier
         }
     }
 
+    public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
+    {
+        boolean result = true;
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
+            if (listener instanceof Response.HeaderListener)
+                result &= notifyHeader((Response.HeaderListener)listener, response, field);
+        }
+        return result;
+    }
+
+    private boolean notifyHeader(Response.HeaderListener listener, Response response, HttpField field)
+    {
+        try
+        {
+            return listener.onHeader(response, field);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.HeadersListener)
                 notifyHeaders((Response.HeadersListener)listener, response);
+        }
     }
 
     private void notifyHeaders(Response.HeadersListener listener, Response response)
@@ -78,10 +114,13 @@ public class ResponseNotifier
 
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.ContentListener)
                 notifyContent((Response.ContentListener)listener, response, buffer);
-
+        }
     }
 
     private void notifyContent(Response.ContentListener listener, Response response, ByteBuffer buffer)
@@ -98,9 +137,13 @@ public class ResponseNotifier
 
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.SuccessListener)
                 notifySuccess((Response.SuccessListener)listener, response);
+        }
     }
 
     private void notifySuccess(Response.SuccessListener listener, Response response)
@@ -117,9 +160,13 @@ public class ResponseNotifier
 
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.FailureListener)
                 notifyFailure((Response.FailureListener)listener, response, failure);
+        }
     }
 
     private void notifyFailure(Response.FailureListener listener, Response response, Throwable failure)
@@ -136,9 +183,13 @@ public class ResponseNotifier
 
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
-        for (Response.ResponseListener listener : listeners)
+        // Optimized to avoid allocations of iterator instances
+        for (int i = 0; i < listeners.size(); ++i)
+        {
+            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.CompleteListener)
                 notifyComplete((Response.CompleteListener)listener, result);
+        }
     }
 
     private void notifyComplete(Response.CompleteListener listener, Result result)
@@ -156,6 +207,12 @@ public class ResponseNotifier
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
         notifyBegin(listeners, response);
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        {
+            HttpField field = iterator.next();
+            if (!notifyHeader(listeners, response, field))
+                iterator.remove();
+        }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
@@ -173,6 +230,12 @@ public class ResponseNotifier
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         notifyBegin(listeners, response);
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        {
+            HttpField field = iterator.next();
+            if (!notifyHeader(listeners, response, field))
+                iterator.remove();
+        }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
             notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));

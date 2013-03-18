@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -192,7 +192,8 @@ public class HttpURITest
        /* 1*/ {"/path/%69nfo","/path/info", "UTF-8"},
        /* 2*/ {"http://host/path/%69nfo","/path/info", "UTF-8"},
        /* 3*/ {"http://host/path/%69nf%c2%a4","/path/inf\u00a4", "UTF-8"},
-       /* 4*/ {"http://host/path/%E5", "/path/\u00e5", "ISO-8859-1"}
+       /* 4*/ {"http://host/path/%E5", "/path/\u00e5", "ISO-8859-1"},
+       /* 5*/ {"/foo/%u30ED/bar%3Fabc%3D123%26xyz%3D456","/foo/\u30ed/bar?abc=123&xyz=456","UTF-8"}
     };
 
     @Test
@@ -204,10 +205,11 @@ public class HttpURITest
         {
             uri.parse(encoding_tests[t][0]);
             assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath(encoding_tests[t][2]));
-
+            
+            if ("UTF-8".equalsIgnoreCase(encoding_tests[t][2]))
+                assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath());
         }
     }
-    
     
     @Test
     public void testNoPercentEncodingOfQueryUsingNonUTF8() throws Exception
@@ -310,7 +312,7 @@ public class HttpURITest
     @Test
     public void testUnicodeErrors() throws UnsupportedEncodingException
     {
-        String uri="http://server/path?invalid=data%u2021here";
+        String uri="http://server/path?invalid=data%uXXXXhere%u000";
         try
         {
             URLDecoder.decode(uri,"UTF-8");

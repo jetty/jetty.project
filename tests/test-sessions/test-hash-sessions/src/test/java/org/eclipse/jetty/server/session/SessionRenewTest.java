@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionManager;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SessionRenewTest extends AbstractSessionRenewTest
@@ -40,10 +41,17 @@ public class SessionRenewTest extends AbstractSessionRenewTest
                 File tmpDir = new File(System.getProperty("java.io.tmpdir"), "hash-session-renew-test");
                 tmpDir.deleteOnExit();
                 tmpDir.mkdirs();
-                sessionManager.setStoreDirectory(tmpDir);
+                try
+                {
+                    sessionManager.setStoreDirectory(tmpDir);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
                 return sessionManager;
             }
-            
+
         };
     }
 

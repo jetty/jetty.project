@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -57,7 +57,7 @@ public class Starter
 
     private JettyServer server;
     private JettyWebAppContext webApp;
-    private Monitor monitor;
+
     
     private int stopPort=0;
     private String stopKey=null;
@@ -120,7 +120,7 @@ public class Starter
     {
         LOG.debug("Starting Jetty Server ...");
 
-        this.server = new JettyServer();
+        this.server = JettyServer.getInstance();
 
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
@@ -131,7 +131,10 @@ public class Starter
         if (connectors == null|| connectors.length == 0)
         {
             //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            connectors = new Connector[] { this.server.createDefaultConnector(System.getProperty(PORT_SYSPROPERTY, null)) };
+            MavenServerConnector httpConnector = new MavenServerConnector();
+            String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
+            httpConnector.setPort(Integer.parseInt(tmp.trim()));
+            connectors = new Connector[] {httpConnector};
             this.server.setConnectors(connectors);
         }
 
@@ -169,7 +172,10 @@ public class Starter
         System.err.println("STOP PORT="+stopPort+", STOP KEY="+stopKey);
         if(stopPort>0 && stopKey!=null)
         {
-            monitor = new Monitor(stopPort, stopKey, new Server[]{server}, true);
+            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+            monitor.setPort(stopPort);
+            monitor.setKey(stopKey);
+            monitor.setExitVm(true);
         }
     }
     
@@ -372,9 +378,6 @@ public class Starter
      */
     public void run() throws Exception
     {
-        if (monitor != null)
-            monitor.start();
-
         LOG.info("Started Jetty Server");
         server.start();  
     }
@@ -491,9 +494,9 @@ public class Starter
      */
     public static final void main(String[] args)
     {
-       if (args == null)
+        if (args == null)
            System.exit(1);
-
+       
        Starter starter = null;
        try
        {

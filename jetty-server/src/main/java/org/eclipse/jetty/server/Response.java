@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -99,16 +100,17 @@ public class Response implements HttpServletResponse
     private String _characterEncoding;
     private String _contentType;
     private OutputType _outputType = OutputType.NONE;
-    private PrintWriter _writer;
+    private ResponseWriter _writer;
     private long _contentLength = -1;
+    
 
-    public Response(HttpChannel channel, HttpOutput out)
+    public Response(HttpChannel<?> channel, HttpOutput out)
     {
         _channel = channel;
         _out = out;
     }
 
-    protected HttpChannel getHttpChannel()
+    protected HttpChannel<?> getHttpChannel()
     {
         return _channel;
     }
@@ -121,7 +123,6 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _contentType = null;
-        _writer = null;
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _out.reset();
@@ -333,8 +334,10 @@ public class Response implements HttpServletResponse
         setStatus(code);
         _reason=message;
 
+        Request request = _channel.getRequest();
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         if (message==null)
-            message=HttpStatus.getMessage(code);
+            message=cause==null?HttpStatus.getMessage(code):cause.toString();
 
         // If we are allowed to have a body
         if (code!=SC_NO_CONTENT &&
@@ -342,7 +345,6 @@ public class Response implements HttpServletResponse
             code!=SC_PARTIAL_CONTENT &&
             code>=SC_OK)
         {
-            Request request = _channel.getRequest();
 
             ErrorHandler error_handler = null;
             ContextHandler.Context context = request.getContext();
@@ -382,7 +384,6 @@ public class Response implements HttpServletResponse
                 writer.write(Integer.toString(code));
                 writer.write(' ');
                 if (message==null)
-                    message=HttpStatus.getMessage(code);
                 writer.write(message);
                 writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
                 writer.write(Integer.toString(code));
@@ -632,12 +633,20 @@ public class Response implements HttpServletResponse
         if (sc <= 0)
             throw new IllegalArgumentException();
         if (!isIncluding())
+        {
             _status = sc;
+            _reason = null;
+        }
     }
 
     @Override
     @Deprecated
     public void setStatus(int sc, String sm)
+    {
+        setStatusWithReason(sc,sm);
+    }
+    
+    public void setStatusWithReason(int sc, String sm)
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
@@ -682,7 +691,7 @@ public class Response implements HttpServletResponse
         if (_outputType == OutputType.STREAM)
             throw new IllegalStateException("STREAM");
 
-        if (_writer == null)
+        if (_outputType == OutputType.NONE)
         {
             /* get encoding from Content-Type header */
             String encoding = _characterEncoding;
@@ -693,20 +702,19 @@ public class Response implements HttpServletResponse
                     encoding = StringUtil.__ISO_8859_1;
                 setCharacterEncoding(encoding);
             }
-
-            if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
-            {
-                _writer = new PrintWriter(new Iso88591HttpWriter(_out));
-            }
-            else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
-            {
-                _writer = new PrintWriter(new Utf8HttpWriter(_out));
-            }
+            
+            if (_writer != null && _writer.isFor(encoding))
+                _writer.reopen();
             else
             {
-                _writer = new PrintWriter(new EncodingHttpWriter(_out, encoding));
+                if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
+                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),encoding);
+                else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),encoding);
+                else
+                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),encoding);
             }
-
+            
             // Set the output type at the end, because setCharacterEncoding() checks for it
             _outputType = OutputType.WRITER;
         }
@@ -798,7 +806,11 @@ public class Response implements HttpServletResponse
                     if (_contentType != null)
                     {
                         _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                        HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                        if (field!=null)
+                            _fields.put(field);
+                        else
+                            _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                     }
                 }
             }
@@ -809,7 +821,11 @@ public class Response implements HttpServletResponse
                 if (_contentType != null)
                 {
                     _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
-                    _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                    HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                    if (field!=null)
+                        _fields.put(field);
+                    else
+                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
         }
@@ -863,7 +879,11 @@ public class Response implements HttpServletResponse
                 _characterEncoding = charset;
             }
 
-            _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+            HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+            if (field!=null)
+                _fields.put(field);
+            else
+                _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
         }
     }
 
@@ -945,7 +965,6 @@ public class Response implements HttpServletResponse
     public void resetForForward()
     {
         resetBuffer();
-        _writer = null;
         _outputType = OutputType.NONE;
     }
 
@@ -1038,6 +1057,29 @@ public class Response implements HttpServletResponse
     {
         return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
     }
+    
 
-  
+    private static class ResponseWriter extends PrintWriter
+    {
+        private final String _encoding;
+        private final HttpWriter _httpWriter;
+        
+        public ResponseWriter(HttpWriter httpWriter,String encoding)
+        {
+            super(httpWriter);
+            _httpWriter=httpWriter;
+            _encoding=encoding;
+        }
+
+        public boolean isFor(String encoding)
+        {
+            return _encoding.equalsIgnoreCase(encoding);
+        }
+        
+        protected void reopen()
+        {
+            super.clearError();
+            out=_httpWriter;
+        }
+    }
 }

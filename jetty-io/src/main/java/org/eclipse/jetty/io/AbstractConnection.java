@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExecutorCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -39,6 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
+    
+    public static final boolean EXECUTE_ONFILLABLE=true;
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
@@ -46,82 +47,22 @@ public abstract class AbstractConnection implements Connection
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback _readCallback;
+    private final boolean _executeOnfillable;
     private int _inputBufferSize=2048;
 
-    public AbstractConnection(EndPoint endp, Executor executor)
+    protected AbstractConnection(EndPoint endp, Executor executor)
     {
-        this(endp,executor,true);
+        this(endp,executor,EXECUTE_ONFILLABLE);
     }
     
-    public AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnfillable)
+    protected AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnfillable)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endp;
         _executor = executor;
-        _readCallback = new ExecutorCallback(executor,0)
-        {
-            @Override
-            public void succeeded()
-            {
-                if (executeOnfillable)
-                    super.succeeded();
-                else
-                    onCompleted();
-            }
-            
-            @Override
-            protected void onCompleted()
-            {
-                if (_state.compareAndSet(State.INTERESTED,State.FILLING))
-                {
-                    try
-                    {
-                        onFillable();
-                    }
-                    finally
-                    {
-                        loop:while(true)
-                        {
-                            switch(_state.get())
-                            {
-                                case IDLE:
-                                case INTERESTED:
-                                    throw new IllegalStateException();
-
-                                case FILLING:
-                                    if (_state.compareAndSet(State.FILLING,State.IDLE))
-                                        break loop;
-                                    break;
-
-                                case FILLING_INTERESTED:
-                                    if (_state.compareAndSet(State.FILLING_INTERESTED,State.INTERESTED))
-                                    {
-                                        getEndPoint().fillInterested(_readCallback);
-                                        break loop;
-                                    }
-                                    break;
-                            }
-                        }
-
-                    }
-                }
-                else
-                    LOG.warn(new Throwable());
-            }
-
-            @Override
-            protected void onFailed(Throwable x)
-            {
-                onFillInterestedFailed(x);
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("AC.ExReadCB@%x", AbstractConnection.this.hashCode());
-            }
-        };
+        _readCallback = new ReadCallback();
+        _executeOnfillable=executeOnfillable;
     }
 
     @Override
@@ -216,8 +157,6 @@ public abstract class AbstractConnection implements Connection
         return true;
     }
 
-    // TODO remove this when open/close refactored
-    final AtomicReference<Throwable> _opened = new AtomicReference<>(null);
     @Override
     public void onOpen()
     {
@@ -225,12 +164,6 @@ public abstract class AbstractConnection implements Connection
 
         for (Listener listener : listeners)
             listener.onOpened(this);
-
-        if (!_opened.compareAndSet(null,new Throwable()))
-        {
-            LOG.warn("ALREADY OPENED ", _opened.get());
-            LOG.warn("EXTRA OPEN AT ",new Throwable());
-        }
     }
 
     @Override
@@ -294,4 +227,67 @@ public abstract class AbstractConnection implements Connection
     {
         IDLE, INTERESTED, FILLING, FILLING_INTERESTED
     }
+    
+    private class ReadCallback implements Callback, Runnable
+    {
+        @Override
+        public void run()
+        {
+            if (_state.compareAndSet(State.INTERESTED,State.FILLING))
+            {
+                try
+                {
+                    onFillable();
+                }
+                finally
+                {
+                    loop:while(true)
+                    {
+                        switch(_state.get())
+                        {
+                            case IDLE:
+                            case INTERESTED:
+                                throw new IllegalStateException();
+
+                            case FILLING:
+                                if (_state.compareAndSet(State.FILLING,State.IDLE))
+                                    break loop;
+                                break;
+
+                            case FILLING_INTERESTED:
+                                if (_state.compareAndSet(State.FILLING_INTERESTED,State.INTERESTED))
+                                {
+                                    getEndPoint().fillInterested(_readCallback);
+                                    break loop;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+            else
+                LOG.warn(new Throwable());
+        }
+        
+        @Override
+        public void succeeded()
+        {
+            if (_executeOnfillable)
+                _executor.execute(this);
+            else
+                run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("AC.ExReadCB@%x", AbstractConnection.this.hashCode());
+        }
+    };
 }

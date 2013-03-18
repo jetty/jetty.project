@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,8 @@
 package org.eclipse.jetty.maven.plugin;
 
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -38,15 +36,27 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyServer extends org.eclipse.jetty.server.Server
 {
-    public static int DEFAULT_PORT = 8080;
-    public static int DEFAULT_MAX_IDLE_TIME = 30000;
-  
+    public static final JettyServer __instance = new JettyServer();
+    
+    /**
+     * Singleton instance
+     * @return
+     */
+    public static JettyServer getInstance()
+    {
+        return __instance;
+    }
 
+    
     private RequestLog requestLog;
     private ContextHandlerCollection contexts;
     
     
-    public JettyServer()
+    
+    /**
+     * 
+     */
+    private JettyServer()
     {
         super();
         setStopAtShutdown(true);
@@ -109,19 +119,4 @@ public class JettyServer extends org.eclipse.jetty.server.Server
             }
         }  
     }
-    
-    
-    
-    
-    public Connector createDefaultConnector(String portnum) throws Exception
-    {
-        ServerConnector connector = new ServerConnector(this);
-        int port = ((portnum==null||portnum.equals(""))?DEFAULT_PORT:Integer.parseInt(portnum.trim()));
-        connector.setPort(port);
-       // connector.setMaxIdleTime(DEFAULT_MAX_IDLE_TIME);
-        
-        return connector;
-    }
-    
- 
 }

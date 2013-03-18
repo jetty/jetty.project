@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
@@ -80,6 +81,19 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     public boolean isInstance()
     {
         return _extInstance;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Do any setup necessary after starting
+     * @throws Exception
+     */
+    public void initialize()
+    throws Exception
+    {
+        if (!isStarted())
+            throw new IllegalStateException("Not started: "+this);
     }
 
     /* ------------------------------------------------------------ */

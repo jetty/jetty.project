@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
  */
 public abstract class EventDriver implements IncomingFrames
 {
-    protected final Logger LOG;
+    private static final Logger LOG = Log.getLogger(EventDriver.class);
     protected final WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
@@ -51,7 +51,6 @@ public abstract class EventDriver implements IncomingFrames
     {
         this.policy = policy;
         this.websocket = websocket;
-        this.LOG = Log.getLogger(websocket.getClass());
     }
 
     public WebSocketPolicy getPolicy()
@@ -78,7 +77,7 @@ public abstract class EventDriver implements IncomingFrames
             terminateConnection(close.getStatusCode(),close.getMessage());
         }
 
-        onException(e);
+        onError(e);
     }
 
     @Override
@@ -103,25 +102,28 @@ public abstract class EventDriver implements IncomingFrames
                     // notify user websocket pojo
                     onClose(close);
 
-                    // respond
-                    session.close(close.getStatusCode(),close.getReason());
-
                     // process handshake
-                    session.getConnection().onCloseHandshake(true,close);
+                    if (session.getConnection().getIOState().onCloseHandshake(true))
+                    {
+                        // handshake resolved, disconnect.
+                        session.getConnection().disconnect();
+                    }
+                    else
+                    {
+                        // respond
+                        session.close(close.getStatusCode(),close.getReason());
+                    }
 
                     return;
                 }
                 case OpCode.PING:
                 {
-                    ByteBuffer pongBuf = ByteBuffer.allocate(frame.getPayloadLength());
-                    if (frame.getPayloadLength() > 0)
+                    byte pongBuf[] = new byte[0];
+                    if (frame.hasPayload())
                     {
-                        // Copy payload
-                        BufferUtil.clearToFill(pongBuf);
-                        BufferUtil.put(frame.getPayload(),pongBuf);
-                        BufferUtil.flipToFlush(pongBuf,0);
+                        pongBuf = BufferUtil.toArray(frame.getPayload());
                     }
-                    session.getRemote().sendPong(pongBuf);
+                    session.getRemote().sendPong(ByteBuffer.wrap(pongBuf));
                     break;
                 }
                 case OpCode.BINARY:
@@ -158,7 +160,7 @@ public abstract class EventDriver implements IncomingFrames
 
     public abstract void onConnect();
 
-    public abstract void onException(WebSocketException e);
+    public abstract void onError(Throwable t);
 
     public abstract void onFrame(Frame frame);
 
@@ -166,9 +168,11 @@ public abstract class EventDriver implements IncomingFrames
 
     public abstract void onTextMessage(String message);
 
-    public void setSession(WebSocketSession session)
+    public void openSession(WebSocketSession session)
     {
+        LOG.debug("openSession({})",session);
         this.session = session;
+        this.onConnect();
     }
 
     protected void terminateConnection(int statusCode, String rawreason)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,12 +37,14 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -86,7 +88,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         HttpClient httpClient = new HttpClient();
         // Simulate browsers, that open 6 connection per origin
-        httpClient.setMaxConnectionsPerAddress(6);
+        httpClient.setMaxConnectionsPerDestination(6);
         httpClient.start();
         benchmarkHTTP(httpClient);
         httpClient.stop();
@@ -97,7 +99,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         Session session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
         // Second push strategy
         pushStrategy = new ReferrerPushStrategy();
@@ -105,7 +107,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         connector.setDefaultProtocol(factory.getProtocol());
         session = startClient(version, address, new ClientSessionFrameListener());
         benchmarkSPDY(pushStrategy, session);
-        session.goAway().get(5, TimeUnit.SECONDS);
+        session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 
     private void benchmarkHTTP(HttpClient httpClient) throws Exception
@@ -141,7 +143,8 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             ++result;
             ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
                     .path(primaryPath)
-                    .send().get(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             Assert.assertEquals(200, response.getStatus());
 
             for (int i = 0; i < cssResources.length; ++i)
@@ -150,7 +153,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
             for (int i = 0; i < jsResources.length; ++i)
@@ -159,7 +162,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
             for (int i = 0; i < pngResources.length; ++i)
@@ -168,7 +171,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 ++result;
                 httpClient.newRequest("localhost", connector.getLocalPort())
                         .path(path)
-                        .header("Referer", referrer)
+                        .header(HttpHeader.REFERER, referrer)
                         .send(new TestListener());
             }
 

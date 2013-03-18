@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,12 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
+/**
+ * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
+ * <p />
+ * It is possible to specify, at the constructor, a buffer size used to read content from the
+ * stream, by default 4096 bytes.
+ */
 public class PathContentProvider implements ContentProvider
 {
     private final Path filePath;

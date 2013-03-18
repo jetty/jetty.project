@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,9 +28,12 @@ import javax.inject.Inject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
+import org.ops4j.pax.exam.MavenUtils;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.ops4j.pax.exam.options.MavenUrlReference.VersionResolver;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 
@@ -38,7 +41,8 @@ import org.osgi.framework.BundleContext;
  * Default OSGi setup integration test
  */
 @RunWith( JUnit4TestRunner.class )
-public class TestJettyOSGiBootCore extends AbstractTestOSGi {
+public class TestJettyOSGiBootCore
+{
  
     public static int DEFAULT_JETTY_HTTP_PORT = 9876;
      
@@ -48,8 +52,10 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
     @Configuration
     public Option[] config()
     {
+        VersionResolver resolver = MavenUtils.asInProject();
+        System.err.println(resolver.getVersion("org.eclipse.jetty", "jetty-server"));
         ArrayList<Option> options = new ArrayList<Option>();
-        addMoreOSGiContainers(options);
+        TestOSGiUtil.addMoreOSGiContainers(options);
         options.addAll(provisionCoreJetty());
         options.add(CoreOptions.junitBundles());
         options.addAll(httpServiceJetty());
@@ -73,7 +79,8 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
  
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
  
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart());
+        //res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "javax.servlet" ).artifactId( "javax.servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart());  
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlet" ).versionAsInProject().noStart());  
@@ -90,7 +97,7 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().noStart());
+       
         return res;
     }
      
@@ -103,9 +110,14 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
     }
      
     @Test
-    public void assertAllBundlesActiveOrResolved()
+    public void assertAllBundlesActiveOrResolved() throws Exception
     {
-        assertAllBundlesActiveOrResolved(bundleContext);
+        //TestOSGiUtil.debugBundles(bundleContext);
+        //Bundle bootBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
+        //TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(bootBundle);
+        Bundle httpservicebundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.httpservice");
+        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(httpservicebundle);
+        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
      
     /**
@@ -115,7 +127,7 @@ public class TestJettyOSGiBootCore extends AbstractTestOSGi {
     @Test
     public void testHttpService() throws Exception
     {
-        testHttpServiceGreetings(bundleContext, "http", DEFAULT_JETTY_HTTP_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_JETTY_HTTP_PORT);
     }
          
      

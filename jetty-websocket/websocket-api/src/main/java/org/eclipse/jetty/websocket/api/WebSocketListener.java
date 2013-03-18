@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,29 +48,28 @@ public interface WebSocketListener
     void onWebSocketClose(int statusCode, String reason);
 
     /**
-     * A WebSocketConnection has connected successfully and is ready to be used.
+     * A WebSocket {@link Session} has connected successfully and is ready to be used.
      * <p>
-     * Note: It is a good idea to track this connection as a field in your object so that you can write messages back.
+     * Note: It is a good idea to track this session as a field in your object so that you can write messages back via the {@link RemoteEndpoint}
      * 
-     * @param connection
-     *            the connection to use to send messages on.
+     * @param session
+     *            the websocket session.
      */
-    void onWebSocketConnect(WebSocketConnection connection);
+    void onWebSocketConnect(Session session);
 
     /**
      * A WebSocket exception has occurred.
      * <p>
+     * This is a way for the internal implementation to notify of exceptions occured during the processing of websocket.
+     * <p>
      * Usually this occurs from bad / malformed incoming packets. (example: bad UTF8 data, frames that are too big, violations of the spec)
      * <p>
-     * This will result in the {@link WebSocketConnection} being closed by the implementing side.
-     * <p>
-     * Note: you will receive no {@link #onWebSocketClose(int, String)} as this condition results in the API calling
-     * {@link WebSocketConnection#close(int, String)} for you.
+     * This will result in the {@link Session} being closed by the implementing side.
      * 
      * @param error
      *            the error that occurred.
      */
-    void onWebSocketException(WebSocketException error);
+    void onWebSocketError(Throwable cause);
 
     /**
      * A WebSocket Text frame was received.

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.spdy.api;
-
-import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
@@ -48,11 +46,11 @@ public class ServerUsageTest
                 Fields replyHeaders = new Fields();
                 replyHeaders.put(synHeaders.get("host"));
                 // Sends a reply
-                stream.reply(new ReplyInfo(replyHeaders, false));
+                stream.reply(new ReplyInfo(replyHeaders, false), new Callback.Adapter());
 
                 // Sends data
                 StringDataInfo dataInfo = new StringDataInfo("foo", false);
-                stream.data(dataInfo);
+                stream.data(dataInfo, new Callback.Adapter());
                 // Stream is now closed
                 return null;
             }
@@ -77,7 +75,7 @@ public class ServerUsageTest
                 //
                 // However, the API may allow to initiate the stream
 
-                session.syn(new SynInfo(false), null, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
+                session.syn(new SynInfo(new Fields(), false), null, new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream stream)
@@ -87,7 +85,7 @@ public class ServerUsageTest
                         // the client sends a rst frame.
                         // We have to atomically set some flag on the stream to signal it's closed
                         // and any operation on it will throw
-                        stream.headers(new HeadersInfo(new Fields(), true));
+                        stream.headers(new HeadersInfo(new Fields(), true), new Callback.Adapter());
                     }
                 });
             }
@@ -104,16 +102,16 @@ public class ServerUsageTest
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
                 // Need to send the reply first
-                stream.reply(new ReplyInfo(false));
+                stream.reply(new ReplyInfo(false), new Callback.Adapter());
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Fields(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Promise.Adapter<Stream>()
+                session.syn(new SynInfo(new Fields(), false, (byte)0), null, new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
-                        pushStream.data(new StringDataInfo("foo", false));
+                        pushStream.data(new StringDataInfo("foo", false), new Callback.Adapter());
                     }
                 });
                 return null;

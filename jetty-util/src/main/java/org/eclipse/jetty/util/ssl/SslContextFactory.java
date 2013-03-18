@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -35,20 +34,23 @@ import java.security.cert.Certificate;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -94,14 +96,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
-                "SunX509" : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
+                KeyManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
+
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.TrustManagerFactory.algorithm") == null ?
-                "SunX509" : Security.getProperty("ssl.TrustManagerFactory.algorithm"));
-
-    /** Default value for the keystore location path. */
-    public static final String DEFAULT_KEYSTORE_PATH =
-        System.getProperty("user.home") + File.separator + ".keystore";
+                TrustManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.TrustManagerFactory.algorithm"));
 
     /** String name of key password property. */
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
@@ -111,6 +110,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** Excluded protocols. */
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
+
     /** Included protocols. */
     private Set<String> _includeProtocols = null;
 
@@ -144,9 +144,6 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _needClientAuth = false;
     /** Set to true if client certificate authentication is desired */
     private boolean _wantClientAuth = false;
-
-    /** Set to true if renegotiation is allowed */
-    private boolean _allowRenegotiate = true;
 
     /** Keystore password */
     private transient Password _keyStorePassword;
@@ -196,6 +193,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /** SSL context */
     private SSLContext _context;
 
+    /** EndpointIdentificationAlgorithm - when set to "HTTPS" hostname verification will be enabled */
+    private String _endpointIdentificationAlgorithm = null;
+
     private boolean _trustAll;
 
     /**
@@ -204,7 +204,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory()
     {
-        _trustAll=true;
+        this(false);
     }
 
     /**
@@ -215,7 +215,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(boolean trustAll)
     {
-        _trustAll=trustAll;
+        setTrustAll(trustAll);
     }
 
     /**
@@ -744,6 +744,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setTrustAll(boolean trustAll)
     {
         _trustAll = trustAll;
+        if(trustAll)
+            setEndpointIdentificationAlgorithm(null);
     }
 
     /**
@@ -816,6 +818,16 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /**
+     * When set to "HTTPS" hostname verification will be enabled
+     *
+     * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
+     */
+    public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
+    {
+        this._endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
+    }
+
+    /**
      * Override this method to provide alternate way to load a keystore.
      *
      * @return the key store instance
@@ -823,7 +835,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadKeyStore() throws Exception
     {
-        return _keyStore != null ? _keyStore : getKeyStore(_keyStoreInputStream,
+        return _keyStore != null ? _keyStore : CertificateUtils.getKeyStore(_keyStoreInputStream,
                 _keyStorePath, _keyStoreType, _keyStoreProvider,
                 _keyStorePassword==null? null: _keyStorePassword.toString());
     }
@@ -836,32 +848,9 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadTrustStore() throws Exception
     {
-        return _trustStore != null ? _trustStore : getKeyStore(_trustStoreInputStream,
+        return _trustStore != null ? _trustStore : CertificateUtils.getKeyStore(_trustStoreInputStream,
                 _trustStorePath, _trustStoreType,  _trustStoreProvider,
                 _trustStorePassword==null? null: _trustStorePassword.toString());
-    }
-
-    /**
-     * Loads keystore using an input stream or a file path in the same
-     * order of precedence.
-     *
-     * Required for integrations to be able to override the mechanism
-     * used to load a keystore in order to provide their own implementation.
-     *
-     * @param storeStream keystore input stream
-     * @param storePath path of keystore file
-     * @param storeType keystore type
-     * @param storeProvider keystore provider
-     * @param storePassword keystore password
-     * @return created keystore
-     * @throws Exception if the keystore cannot be obtained
-     *
-     * @deprecated
-     */
-    @Deprecated
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
-    {
-        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
     }
 
     /**
@@ -1031,8 +1020,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
 
         // Remove any excluded protocols
-        if (_excludeProtocols != null)
-            selected_protocols.removeAll(_excludeProtocols);
+        selected_protocols.removeAll(_excludeProtocols);
 
         return selected_protocols.toArray(new String[selected_protocols.size()]);
     }
@@ -1062,8 +1050,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
 
         // Remove any excluded ciphers
-        if (_excludeCipherSuites != null)
-            selected_ciphers.removeAll(_excludeCipherSuites);
+        selected_ciphers.removeAll(_excludeCipherSuites);
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
@@ -1269,18 +1256,6 @@ public class SslContextFactory extends AbstractLifeCycle
         return socket;
     }
 
-    public SSLEngine newSSLEngine(String host, int port)
-    {
-        if (!isRunning())
-            throw new IllegalStateException("!STARTED");
-        SSLContext context = _context;
-        SSLEngine sslEngine=isSessionCachingEnabled()
-            ? context.createSSLEngine(host, port)
-            : context.createSSLEngine();
-        customize(sslEngine);
-        return sslEngine;
-    }
-
     public SSLEngine newSSLEngine()
     {
         if (!isRunning())
@@ -1290,8 +1265,29 @@ public class SslContextFactory extends AbstractLifeCycle
         return sslEngine;
     }
 
+    public SSLEngine newSSLEngine(String host, int port)
+    {
+        if (!isRunning())
+            throw new IllegalStateException("!STARTED");
+        SSLEngine sslEngine=isSessionCachingEnabled()
+            ? _context.createSSLEngine(host, port)
+            : _context.createSSLEngine();
+        customize(sslEngine);
+        return sslEngine;
+    }
+
+    public SSLEngine newSSLEngine(InetSocketAddress address)
+    {
+        // Must use the hostName, not the hostAddress, to allow correct host name verification
+        return address != null ? newSSLEngine(address.getAddress().getHostName(), address.getPort()) : newSSLEngine();
+    }
+
     public void customize(SSLEngine sslEngine)
     {
+        SSLParameters sslParams = sslEngine.getSSLParameters();
+        sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
+        sslEngine.setSSLParameters(sslParams);
+
         if (getWantClientAuth())
             sslEngine.setWantClientAuth(getWantClientAuth());
         if (getNeedClientAuth())
@@ -1304,9 +1300,89 @@ public class SslContextFactory extends AbstractLifeCycle
         sslEngine.setEnabledProtocols(selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols()));
     }
 
-    public SSLEngine newSSLEngine(InetSocketAddress address)
+    public static X509Certificate[] getCertChain(SSLSession sslSession)
     {
-        return address != null ? newSSLEngine(address.getAddress().getHostAddress(), address.getPort()) : newSSLEngine();
+        try
+        {
+            javax.security.cert.X509Certificate javaxCerts[]=sslSession.getPeerCertificateChain();
+            if (javaxCerts==null||javaxCerts.length==0)
+                return null;
+
+            int length=javaxCerts.length;
+            X509Certificate[] javaCerts=new X509Certificate[length];
+
+            java.security.cert.CertificateFactory cf=java.security.cert.CertificateFactory.getInstance("X.509");
+            for (int i=0; i<length; i++)
+            {
+                byte bytes[]=javaxCerts[i].getEncoded();
+                ByteArrayInputStream stream=new ByteArrayInputStream(bytes);
+                javaCerts[i]=(X509Certificate)cf.generateCertificate(stream);
+            }
+
+            return javaCerts;
+        }
+        catch (SSLPeerUnverifiedException pue)
+        {
+            return null;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(Log.EXCEPTION,e);
+            return null;
+        }
+    }
+
+    /**
+     * Given the name of a TLS/SSL cipher suite, return an int representing it effective stream
+     * cipher key strength. i.e. How much entropy material is in the key material being fed into the
+     * encryption routines.
+     *
+     * <p>
+     * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
+     * Version 1.0, Appendix C. CipherSuite definitions:
+     *
+     * <pre>
+     *                         Effective
+     *     Cipher       Type    Key Bits
+     *
+     *     NULL       * Stream     0
+     *     IDEA_CBC     Block    128
+     *     RC2_CBC_40 * Block     40
+     *     RC4_40     * Stream    40
+     *     RC4_128      Stream   128
+     *     DES40_CBC  * Block     40
+     *     DES_CBC      Block     56
+     *     3DES_EDE_CBC Block    168
+     * </pre>
+     *
+     * @param cipherSuite String name of the TLS cipher suite.
+     * @return int indicating the effective key entropy bit-length.
+     */
+    public static int deduceKeyLength(String cipherSuite)
+    {
+        // Roughly ordered from most common to least common.
+        if (cipherSuite == null)
+            return 0;
+        else if (cipherSuite.contains("WITH_AES_256_"))
+            return 256;
+        else if (cipherSuite.contains("WITH_RC4_128_"))
+            return 128;
+        else if (cipherSuite.contains("WITH_AES_128_"))
+            return 128;
+        else if (cipherSuite.contains("WITH_RC4_40_"))
+            return 40;
+        else if (cipherSuite.contains("WITH_3DES_EDE_CBC_"))
+            return 168;
+        else if (cipherSuite.contains("WITH_IDEA_CBC_"))
+            return 128;
+        else if (cipherSuite.contains("WITH_RC2_CBC_40_"))
+            return 40;
+        else if (cipherSuite.contains("WITH_DES40_CBC_"))
+            return 40;
+        else if (cipherSuite.contains("WITH_DES_CBC_"))
+            return 56;
+        else
+            return 0;
     }
 
     @Override

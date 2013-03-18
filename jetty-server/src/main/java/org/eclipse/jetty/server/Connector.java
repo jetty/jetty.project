@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
@@ -63,7 +64,7 @@ public interface Connector extends LifeCycle, Graceful
     public ConnectionFactory getConnectionFactory(String nextProtocol);
     
 
-    public <T extends ConnectionFactory> T getConnectionFactory(Class<T> factoryType);
+    public <T> T getConnectionFactory(Class<T> factoryType);
     
     /**
      * @return the default {@link ConnectionFactory} associated with the default protocol name
@@ -84,5 +85,9 @@ public interface Connector extends LifeCycle, Graceful
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
     public Object getTransport();
-
+    
+    /**
+     * @return immutable collection of connected endpoints
+     */
+    public Collection<EndPoint> getConnectedEndPoints();
 }

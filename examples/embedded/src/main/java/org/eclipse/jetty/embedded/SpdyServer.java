@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,6 +72,7 @@ public class SpdyServer
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());
+        config.setSendServerVersion(true);
         
         
         // Http Connector
@@ -80,8 +81,6 @@ public class SpdyServer
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(10000);
         server.addConnector(httpConnector);
-
-        
         
         // SSL configurations
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -98,8 +97,6 @@ public class SpdyServer
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-        
-        
 
 
         // Spdy Connector
@@ -160,7 +157,6 @@ public class SpdyServer
         requestLogHandler.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
-        server.setSendServerVersion(true);
 
         server.start();
         server.dumpStdErr();

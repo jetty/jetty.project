@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -200,7 +200,7 @@ public class Generator
      * @param frame
      * @return
      */
-    public ByteBuffer generate(Frame frame)
+    public synchronized ByteBuffer generate(Frame frame)
     {
         int bufferSize = frame.getPayloadLength() + OVERHEAD;
         return generate(bufferSize,frame);
@@ -210,26 +210,29 @@ public class Generator
      * Generate, into a ByteBuffer, no more than bufferSize of contents from the frame. If the frame exceeds the bufferSize, then multiple calls to
      * {@link #generate(int, WebSocketFrame)} are required to obtain each window of ByteBuffer to complete the frame.
      */
-    public ByteBuffer generate(int windowSize, Frame frame)
+    public synchronized ByteBuffer generate(int windowSize, Frame frame)
     {
         if (windowSize < OVERHEAD)
         {
             throw new IllegalArgumentException("Cannot have windowSize less than " + OVERHEAD);
         }
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{} Generate: {}",behavior,frame);
-        }
+        LOG.debug("{} Generate: {} (windowSize {})",behavior,frame,windowSize);
 
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(windowSize,true);
+        ByteBuffer buffer = bufferPool.acquire(windowSize,false);
         BufferUtil.clearToFill(buffer);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Acquired Buffer (windowSize={}): {}",windowSize,BufferUtil.toDetailString(buffer));
+        }
         // since the buffer from the pool can exceed the window size, artificially
         // limit the buffer to the window size.
-        buffer.limit(buffer.position() + windowSize);
+        int newlimit = Math.min(buffer.position() + windowSize,buffer.limit());
+        buffer.limit(newlimit);
+        LOG.debug("Buffer limited: {}",buffer);
 
         if (frame.remaining() == frame.getPayloadLength())
         {
@@ -364,7 +367,16 @@ public class Generator
         }
 
         BufferUtil.flipToFlush(buffer,0);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Generated Buffer: {}",BufferUtil.toDetailString(buffer));
+        }
         return buffer;
+    }
+
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
     }
 
     public boolean isRsv1InUse()

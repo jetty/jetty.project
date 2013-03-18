@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,6 +60,16 @@ public class DateCache
     private static Timer __timer;
     
 
+    public static Timer getTimer()
+    {
+        synchronized (DateCache.class)
+        {
+            if (__timer==null)
+                __timer=new Timer("DateCache",true);
+            return __timer;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static class Tick
@@ -94,11 +104,10 @@ public class DateCache
         
         synchronized (DateCache.class)
         {
-            if (__timer==null)
-                __timer=new Timer("DateCache@"+Integer.toHexString(hashCode()),true);
-
-            Date start = new Date((2+(System.currentTimeMillis()/1000))*1000);
-            __timer.scheduleAtFixedRate(new TimerTask()
+            long now=System.currentTimeMillis();
+            long tick=1000*((now/1000)+1)-now;
+            formatNow();
+            getTimer().scheduleAtFixedRate(new TimerTask()
             {
                 @Override
                 public void run()
@@ -106,7 +115,7 @@ public class DateCache
                     formatNow();
                 }
             },
-            start,
+            tick,
             1000);
         }
     }
@@ -264,7 +273,7 @@ public class DateCache
     }
     
     /* ------------------------------------------------------------ */
-    private void formatNow()
+    protected void formatNow()
     {
         long now = System.currentTimeMillis();
         long seconds = now / 1000;

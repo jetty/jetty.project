@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,9 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
@@ -64,8 +67,8 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
     {
         start(new LoadHandler());
 
-        client.setMaxConnectionsPerAddress(32768);
-        client.setMaxQueueSizePerAddress(1024 * 1024);
+        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setDispatchIO(false);
 
         Random random = new Random();
@@ -113,23 +116,24 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
-    private void test(Random random, final CountDownLatch latch, final List<String> failures)
+    private void test(Random random, final CountDownLatch latch, final List<String> failures) throws InterruptedException
     {
         int maxContentLength = 64 * 1024;
 
         // Choose a random destination
         String host = random.nextBoolean() ? "localhost" : "127.0.0.1";
-        Request request = client.newRequest(host, connector.getLocalPort()).scheme(scheme);
+        URI uri = URI.create(scheme + "://" + host + ":" + connector.getLocalPort());
+        Request request = client.newRequest(uri);
 
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
         request.method(method);
 
-        boolean ssl = "https".equalsIgnoreCase(scheme);
+        boolean ssl = HttpScheme.HTTPS.is(scheme);
 
         // Choose randomly whether to close the connection on the client or on the server
         if (!ssl && random.nextBoolean())
-            request.header("Connection", "close");
+            request.header(HttpHeader.CONNECTION, "close");
         else if (!ssl && random.nextBoolean())
             request.header("X-Close", "true");
 
@@ -147,6 +151,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 break;
         }
 
+        final CountDownLatch requestLatch = new CountDownLatch(1);
         request.send(new Response.Listener.Empty()
         {
             private final AtomicInteger contentLength = new AtomicInteger();
@@ -175,9 +180,11 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 }
                 if (contentLength.get() != 0)
                     failures.add("Content length mismatch " + contentLength);
+                requestLatch.countDown();
                 latch.countDown();
             }
         });
+        requestLatch.await(5, TimeUnit.SECONDS);
     }
 
     private class LoadHandler extends AbstractHandler

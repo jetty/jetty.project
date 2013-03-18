@@ -1,23 +1,20 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-    <!-- ================================================================= -->
-    <!-- Enable annotations - configure deployment steps for every web app -->
-    <!-- ================================================================= -->
-    <Call name="setAttribute">
-      <Arg>org.eclipse.jetty.webapp.configuration</Arg>
+  <!-- =========================================================== -->
+  <!-- Add annotation Configuring classes to all webapps for this Server -->
+  <!-- =========================================================== -->
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="addBefore">
+      <Arg name="beforeClass">org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Arg>
       <Arg>
-          <Array type="java.lang.String">
-               <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
-               <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
-               <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
-               <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
-               <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
-               <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-          </Array>
+        <Array type="String">
+          <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+        </Array>
       </Arg>
     </Call>
+  </Call>
 
 </Configure>

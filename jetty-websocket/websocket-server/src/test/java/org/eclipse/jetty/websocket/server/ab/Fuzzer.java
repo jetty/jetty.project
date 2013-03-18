@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
@@ -48,6 +49,13 @@ import org.junit.Assert;
  */
 public class Fuzzer
 {
+    public static enum CloseState
+    {
+        OPEN,
+        REMOTE_INITIATED,
+        LOCAL_INITIATED
+    }
+
     public static enum SendMode
     {
         BULK,
@@ -57,6 +65,9 @@ public class Fuzzer
 
     private static final int KBYTE = 1024;
     private static final int MBYTE = KBYTE * KBYTE;
+
+    public static final boolean CLEAN_CLOSE = true;
+    public static final boolean NOT_CLEAN_CLOSE = false;
 
     private static final Logger LOG = Log.getLogger(Fuzzer.class);
 
@@ -76,9 +87,7 @@ public class Fuzzer
 
         int bigMessageSize = 20 * MBYTE;
 
-        policy.setMaxPayloadSize(bigMessageSize);
-        policy.setMaxTextMessageSize(bigMessageSize);
-        policy.setMaxBinaryMessageSize(bigMessageSize);
+        policy.setMaxMessageSize(bigMessageSize);
 
         this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();
@@ -98,7 +107,7 @@ public class Fuzzer
         // Generate frames
         for (WebSocketFrame f : send)
         {
-            f.setMask(MASK); // make sure we have mask set
+            setClientMask(f);
             BufferUtil.put(generator.generate(f),buf);
         }
         BufferUtil.flipToFlush(buf,0);
@@ -115,6 +124,7 @@ public class Fuzzer
         if (!client.isConnected())
         {
             client.connect();
+            client.addHeader("X-TestCase: " + testname + "\r\n");
             client.sendStandardRequest();
             client.expectUpgradeResponse();
         }
@@ -122,12 +132,13 @@ public class Fuzzer
 
     public void expect(List<WebSocketFrame> expect) throws IOException, TimeoutException
     {
-        expect(expect,TimeUnit.SECONDS,5);
+        expect(expect,TimeUnit.SECONDS,10);
     }
 
     public void expect(List<WebSocketFrame> expect, TimeUnit unit, int duration) throws IOException, TimeoutException
     {
         int expectedCount = expect.size();
+        LOG.debug("expect() {} frame(s)",expect.size());
 
         // Read frames
         IncomingFramesCapture capture = client.readFrames(expect.size(),unit,duration);
@@ -172,10 +183,51 @@ public class Fuzzer
         // TODO Should test for no more frames. success if connection closed.
     }
 
-    public void expectServerClose() throws IOException
+    public void expectServerClose(boolean wasClean) throws IOException, InterruptedException
     {
-        int val = client.read();
-        Assert.assertThat("Should have detected EOF",val,is(-1));
+        // we expect that the close handshake to have occurred and the server should have closed the connection
+        try
+        {
+            @SuppressWarnings("unused")
+            int val = client.read();
+
+            Assert.fail("Server has not closed socket");
+        }
+        catch (SocketException e)
+        {
+
+        }
+
+        IOState ios = client.getIOState();
+
+        if (wasClean)
+        {
+            Assert.assertTrue(ios.wasRemoteCloseInitiated());
+            Assert.assertTrue(ios.wasCleanClose());
+        }
+        else
+        {
+            Assert.assertTrue(ios.wasRemoteCloseInitiated());
+        }
+
+    }
+
+    public CloseState getCloseState()
+    {
+        IOState ios = client.getIOState();
+
+        if (ios.wasLocalCloseInitiated())
+        {
+            return CloseState.LOCAL_INITIATED;
+        }
+        else if (ios.wasRemoteCloseInitiated())
+        {
+            return CloseState.REMOTE_INITIATED;
+        }
+        else
+        {
+            return CloseState.OPEN;
+        }
     }
 
     public SendMode getSendMode()
@@ -225,12 +277,14 @@ public class Fuzzer
             // Generate frames
             for (WebSocketFrame f : send)
             {
-                f.setMask(MASK); // make sure we have mask set
+                setClientMask(f);
+                ByteBuffer rawbytes = generator.generate(f);
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("payload: {}",BufferUtil.toDetailString(f.getPayload()));
+                    LOG.debug("frame: {}",f);
+                    LOG.debug("bytes: {}",BufferUtil.toDetailString(rawbytes));
                 }
-                BufferUtil.put(generator.generate(f),buf);
+                BufferUtil.put(rawbytes,buf);
             }
             BufferUtil.flipToFlush(buf,0);
 
@@ -283,6 +337,33 @@ public class Fuzzer
             // before it has a chance to finish writing out the
             // remaining frame octets
             Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
+        }
+    }
+
+    public void sendExpectingIOException(ByteBuffer part3)
+    {
+        try
+        {
+            send(part3);
+            Assert.fail("Expected a IOException on this send");
+        }
+        catch (IOException ignore)
+        {
+            // Send, but expect the send to fail with a IOException.
+            // Usually, this is a SocketException("Socket Closed") condition.
+        }
+    }
+
+    private void setClientMask(WebSocketFrame f)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            f.setMask(new byte[]
+            { 0x00, 0x00, 0x00, 0x00 });
+        }
+        else
+        {
+            f.setMask(MASK); // make sure we have mask set
         }
     }
 

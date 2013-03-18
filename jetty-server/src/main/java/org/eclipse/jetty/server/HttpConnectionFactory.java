@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,13 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
+
+/* ------------------------------------------------------------ */
+/** A Connection Factory for HTTP Connections.
+ * <p>Accepts connections either directly or via SSL and/or NPN chained connection factories.  The accepted 
+ * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
+ * default or passed in to the constructor.
+ */
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;

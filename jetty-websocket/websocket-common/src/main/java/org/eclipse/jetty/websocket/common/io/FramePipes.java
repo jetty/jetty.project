@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -33,7 +28,6 @@ public class FramePipes
 {
     private static class In2Out implements IncomingFrames
     {
-        private static final Logger LOG = Log.getLogger(FramePipes.In2Out.class);
         private OutgoingFrames outgoing;
 
         public In2Out(OutgoingFrames outgoing)
@@ -50,14 +44,7 @@ public class FramePipes
         @Override
         public void incomingFrame(Frame frame)
         {
-            try
-            {
-                this.outgoing.outgoingFrame(frame);
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
+            this.outgoing.outgoingFrame(frame,null);
         }
     }
 
@@ -71,11 +58,9 @@ public class FramePipes
         }
 
         @Override
-        public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+        public void outgoingFrame(Frame frame, WriteCallback callback)
         {
             this.incoming.incomingFrame(frame);
-
-            return null; // FIXME: should return completed future.
         }
     }
 
@@ -88,5 +73,4 @@ public class FramePipes
     {
         return new In2Out(outgoing);
     }
-
 }

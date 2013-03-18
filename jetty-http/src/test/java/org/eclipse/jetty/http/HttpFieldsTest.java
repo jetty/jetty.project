@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -138,14 +138,11 @@ public class HttpFieldsTest
         BufferUtil.flipToFill(buffer);
         header.putTo(buffer);
         BufferUtil.flipToFlush(buffer,0);
-        String out = BufferUtil.toString(buffer);
+        String out = BufferUtil.toString(buffer).toLowerCase();
 
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
-        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
-
-
-
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase()));
+        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase()));
     }
 
     @Test
@@ -181,6 +178,7 @@ public class HttpFieldsTest
                 matches++;
         }
         assertEquals(3, matches);
+
 
         e = header.getValues("name1");
         assertEquals(true, e.hasMoreElements());
@@ -514,8 +512,8 @@ public class HttpFieldsTest
 
         for (int i=0;i<7;i++)
         {
-            assertFalse(""+i,header.getField(""+i).contains("xyz"));
-            assertEquals(""+i,i>=4,header.getField(""+i).contains("def"));
+            assertFalse(""+i,header.contains(""+i,"xyz"));
+            assertEquals(""+i,i>=4,header.contains(""+i,"def"));
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,17 +31,12 @@ import javax.servlet.http.HttpSession;
 
 import junit.framework.Assert;
 
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Ignore;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractNewSessionTest
@@ -60,7 +56,7 @@ public abstract class AbstractSessionCookieTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     @Ignore("failing because an http cookie with null value is coming over as \"null\"")
     public void testSessionCookie() throws Exception
@@ -71,37 +67,36 @@ public abstract class AbstractSessionCookieTest
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        server.start();
-        int port=server.getPort();
+
         try
         {
+            server.start();
+            int port=server.getPort();
+            
             HttpClient client = new HttpClient();
             client.start();
             try
             {
-              
-                Future<ContentResponse> future = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                ContentResponse response = future.get();
+
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+
                 String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 //sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
-                //pause(scavengePeriod); 
+                //pause(scavengePeriod);
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check-cookie");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
-                
+                response = request.send();
+
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=null-cookie");
                 request.header("Cookie", sessionCookie);
-                future = request.send();
-                response = future.get();
+                response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
@@ -129,21 +124,21 @@ public abstract class AbstractSessionCookieTest
             else if ("check-cookie".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                                
+
                 assertTrue(session != null);
-                
+
                 //request.getSession(true);
             }
             else if ("null-cookie".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                
+
                 assertEquals(1, request.getCookies().length);
-                
+
                 Assert.assertFalse("null".equals(request.getCookies()[0].getValue()));
-                
+
                 assertTrue(session == null);
-                
+
             }
             else
             {

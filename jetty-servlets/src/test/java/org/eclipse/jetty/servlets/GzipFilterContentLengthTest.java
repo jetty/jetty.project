@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlets;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
@@ -111,7 +112,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseGzipCompressed(testfile.getName());
+            tester.assertIsResponseGzipCompressed("GET",testfile.getName());
         }
         finally
         {
@@ -131,7 +132,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed(testfile.getName(),filesize,HttpStatus.OK_200);
+            tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
         }
         finally
         {

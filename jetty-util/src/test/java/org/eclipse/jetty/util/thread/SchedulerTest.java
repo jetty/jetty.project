@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,15 +42,12 @@ import org.junit.runners.Parameterized;
 @RunWith(value = Parameterized.class)
 public class SchedulerTest
 {
-    private static final BenchmarkHelper benchmark = new BenchmarkHelper();
-    private static final Executor executor = Executors.newFixedThreadPool(256);
-
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new TimerScheduler()}/*,
-            {new ScheduledExecutionServiceScheduler()},
+            {new TimerScheduler()},
+            {new ScheduledExecutorScheduler()}/*,
             {new ConcurrentScheduler(0)},
             {new ConcurrentScheduler(1500)},
             {new ConcurrentScheduler(executor,1500)}*/
@@ -60,8 +55,7 @@ public class SchedulerTest
         return Arrays.asList(data);
     }
 
-    // Scheduler _scheduler=new SimpleScheduler();
-    Scheduler _scheduler;
+    private Scheduler _scheduler;
 
     public SchedulerTest(Scheduler scheduler)
     {
@@ -98,7 +92,6 @@ public class SchedulerTest
         Assert.assertFalse(task.cancel());
         Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
         Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
-
     }
 
     @Test
@@ -179,7 +172,7 @@ public class SchedulerTest
     public void testTaskThrowsException() throws Exception
     {
         long delay = 500;
-        Scheduler.Task task=_scheduler.schedule(new Runnable()
+        _scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
@@ -218,6 +211,7 @@ public class SchedulerTest
     public void testBenchmark() throws Exception
     {
         schedule(2000,10000,2000,50);
+        BenchmarkHelper benchmark = new BenchmarkHelper();
         benchmark.startStatistics();
         System.err.println(_scheduler);
         schedule(2000,30000,2000,50);
@@ -226,7 +220,6 @@ public class SchedulerTest
 
     private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception
     {
-        final Random random = new Random(1);
         Thread[] test = new Thread[threads];
 
         final AtomicInteger schedules = new AtomicInteger();
@@ -242,6 +235,7 @@ public class SchedulerTest
                 {
                     try
                     {
+                        Random random = new Random();
                         long now = System.currentTimeMillis();
                         long start=now;
                         long end=start+duration;
@@ -301,7 +295,6 @@ public class SchedulerTest
                     {
                         e.printStackTrace();
                     }
-
                 }
             };
         }
@@ -311,10 +304,6 @@ public class SchedulerTest
 
         for (Thread thread : test)
             thread.join();
-
-        // System.err.println(schedules);
-        // System.err.println(executions);
-        // System.err.println(cancellations);
 
         // there were some executions and cancellations
         Assert.assertThat(executions.getCount(),Matchers.greaterThan(0L));
@@ -333,7 +322,4 @@ public class SchedulerTest
         // No cancellations long after expected executions
         Assert.assertThat(cancellations.getMax(),Matchers.lessThan(500L));
     }
-
-
-
 }

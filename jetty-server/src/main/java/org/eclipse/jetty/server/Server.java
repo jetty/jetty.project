@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,18 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -34,15 +39,22 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.validation.Schema;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -73,11 +85,10 @@ public class Server extends HandlerWrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
-    private boolean _sendServerVersion = true; //send Server: header
-    private boolean _sendDateHeader = false; //send Date: header
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private HttpField _dateField;
 
 
     /* ------------------------------------------------------------ */
@@ -89,6 +100,8 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     /** Convenience constructor
      * Creates server and a {@link ServerConnector} at the passed port.
+     * @param port The port of a network HTTP connector (or 0 for a randomly allocated port).
+     * @see NetworkConnector#getLocalPort()
      */
     public Server(@Name("port")int port)
     {
@@ -159,7 +172,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the connectors.
      */
-    @ManagedAttribute("connectors for this server")
+    @ManagedAttribute(value="connectors for this server", readonly=true)
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);
@@ -257,13 +270,20 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
 
+    /* ------------------------------------------------------------ */
+    public HttpField getDateField()
+    {
+        return _dateField;
+    }
 
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
-        if (getStopAtShutdown())
+        if (getStopAtShutdown()) {
             ShutdownThread.register(this);
+            ShutdownMonitor.getInstance().start(); // initialize
+        }
 
         LOG.info("jetty-"+getVersion());
         HttpGenerator.setServerVersion(getVersion());
@@ -296,6 +316,25 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpAfterStart())
             dumpStdErr();
 
+        
+        // use DateCache timer for Date field reformat
+        final HttpFields.DateGenerator date = new HttpFields.DateGenerator();
+        long now=System.currentTimeMillis();
+        long tick=1000*((now/1000)+1)-now;
+        _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+        DateCache.getTimer().scheduleAtFixedRate(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                long now=System.currentTimeMillis();
+                _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+                if (!isRunning())
+                    this.cancel();
+            }
+        },tick,1000);
+        
+        
         mex.ifExceptionThrow();
     }
 
@@ -398,7 +437,7 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("REQUEST "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
 
         if ("*".equals(target))
         {
@@ -459,7 +498,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("REQUEST "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
             handle(target, baseRequest, request, response);
             LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
@@ -492,32 +531,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         updateBean(_sessionIdManager,sessionIdManager);
         _sessionIdManager=sessionIdManager;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setSendServerVersion (boolean sendServerVersion)
-    {
-        _sendServerVersion = sendServerVersion;
-    }
-
-    /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, include the server version in HTTP headers")
-    public boolean getSendServerVersion()
-    {
-        return _sendServerVersion;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setSendDateHeader(boolean sendDateHeader)
-    {
-        _sendDateHeader = sendDateHeader;
-    }
-
-    /* ------------------------------------------------------------ */
-    @ManagedAttribute("if true, include the date in HTTP headers")
-    public boolean getSendDateHeader()
-    {
-        return _sendDateHeader;
     }
 
     /* ------------------------------------------------------------ */
@@ -577,6 +590,49 @@ public class Server extends HandlerWrapper implements Attributes
         _attributes.setAttribute(name, attribute);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
+     */
+    public URI getURI()
+    {
+        NetworkConnector connector=null;
+        for (Connector c: _connectors)
+        {
+            if (c instanceof NetworkConnector)
+            {
+                connector=(NetworkConnector)c;
+                break;
+            }
+        }
+            
+        if (connector==null)
+            return null;
+        
+        ContextHandler context = getChildHandlerByClass(ContextHandler.class);
+
+        try
+        {
+            String scheme=connector.getDefaultConnectionFactory().getProtocol().startsWith("SSL-")?"https":"http";
+
+            String host=connector.getHost();
+            if (context!=null && context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                host=context.getVirtualHosts()[0];
+            if (host==null)
+                host=InetAddress.getLocalHost().getHostAddress();
+            
+            String path=context==null?null:context.getContextPath();
+            if (path==null)
+                path="/";
+            return new URI(scheme,null,host,connector.getLocalPort(),path,null,null);
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e);
+            return null;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

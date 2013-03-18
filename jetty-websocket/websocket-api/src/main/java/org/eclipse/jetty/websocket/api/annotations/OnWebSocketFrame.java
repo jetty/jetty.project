@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 
 /**
  * (ADVANCED) Annotation for tagging methods to receive frame events.
@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
  * Note: <code>methodName</code> can be any name you want to use.
  * <ol>
  * <li><code>public void methodName({@link WebSocketFrame} frame)</code></li>
- * <li><code>public void methodName({@link WebSocketConnection} conn, {@link WebSocketFrame} frame)</code></li>
+ * <li><code>public void methodName({@link Session} session, {@link WebSocketFrame} frame)</code></li>
  * </ol>
  */
 @Documented

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@ package examples;
 import java.io.InputStream;
 import java.io.Reader;
 
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
@@ -42,9 +42,9 @@ public class AnnotatedStreamingSocket
     }
 
     @OnWebSocketConnect
-    public void onConnect(WebSocketConnection conn)
+    public void onConnect(Session sess)
     {
-        capture.add("onConnect(%s)",conn);
+        capture.add("onConnect(%s)",sess);
     }
 
     @OnWebSocketFrame

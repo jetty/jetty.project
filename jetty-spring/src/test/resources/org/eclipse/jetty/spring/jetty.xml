@@ -31,8 +31,6 @@
     </property>
 
     <property name="stopAtShutdown" value="true"/>
-    <property name="sendServerVersion" value="true"/>
-    <property name="sendDateHeader" value="true"/>
     <property name="stopTimeout" value="1000"/>
     <property name="dumpAfterStart" value="true"/>
     <property name="dumpBeforeStop" value="false"/>

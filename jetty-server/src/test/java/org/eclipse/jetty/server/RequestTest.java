@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -935,6 +936,7 @@ public class RequestTest
     @Test
     public void testHashDOS() throws Exception
     {
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
         LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
@@ -979,11 +981,18 @@ public class RequestTest
         "\r\n"+
         buf;
 
-        long start=System.currentTimeMillis();
-        String response = _connector.getResponses(request);
-        assertTrue(response.contains("200 OK"));
-        long now=System.currentTimeMillis();
-        assertTrue((now-start)<5000);
+        try
+        {
+            long start=System.currentTimeMillis();
+            String response = _connector.getResponses(request);
+            assertTrue(response.contains("Form too many keys"));
+            long now=System.currentTimeMillis();
+            assertTrue((now-start)<5000);
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
     }
 
 

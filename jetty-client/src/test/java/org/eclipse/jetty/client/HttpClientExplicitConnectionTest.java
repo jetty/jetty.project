@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,9 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,10 +44,12 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         start(new EmptyServerHandler());
 
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
-        try (Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS))
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        destination.newConnection(futureConnection);
+        try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
-            BlockingResponseListener listener = new BlockingResponseListener(request);
+            FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
@@ -66,9 +69,11 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         start(new EmptyServerHandler());
 
         Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
-        Connection connection = destination.newConnection().get(5, TimeUnit.SECONDS);
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        destination.newConnection(futureConnection);
+        Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
         Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
-        BlockingResponseListener listener = new BlockingResponseListener(request);
+        FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 

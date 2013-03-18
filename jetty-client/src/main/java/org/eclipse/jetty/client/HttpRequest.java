@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,14 +29,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -57,11 +59,13 @@ public class HttpRequest implements Request
     private final long conversation;
     private final String host;
     private final int port;
+    private URI uri;
     private String scheme;
     private String path;
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
+    private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
     private volatile Throwable aborted;
@@ -75,10 +79,10 @@ public class HttpRequest implements Request
     {
         this.client = client;
         this.conversation = conversation;
-        scheme(uri.getScheme());
+        scheme = uri.getScheme();
         host = uri.getHost();
-        port = uri.getPort();
-        path(uri.getPath());
+        port = client.normalizePort(scheme, uri.getPort());
+        path = uri.getRawPath();
         String query = uri.getRawQuery();
         if (query != null)
         {
@@ -88,6 +92,7 @@ public class HttpRequest implements Request
                 param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
             }
         }
+        this.uri = buildURI();
         followRedirects(client.isFollowRedirects());
     }
 
@@ -120,6 +125,7 @@ public class HttpRequest implements Request
     public Request scheme(String scheme)
     {
         this.scheme = scheme;
+        this.uri = buildURI();
         return this;
     }
 
@@ -158,19 +164,14 @@ public class HttpRequest implements Request
     public Request path(String path)
     {
         this.path = path;
+        this.uri = buildURI();
         return this;
     }
 
     @Override
-    public String getURI()
+    public URI getURI()
     {
-        String scheme = getScheme();
-        String result = scheme + "://" + getHost();
-        int port = getPort();
-        result += "http".equals(scheme) && port != 80 ? ":" + port : "";
-        result += "https".equals(scheme) && port != 443 ? ":" + port : "";
-        result += getPath();
-        return result;
+        return uri;
     }
 
     @Override
@@ -223,6 +224,16 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request header(HttpHeader header, String value)
+    {
+        if (value == null)
+            headers.remove(header);
+        else
+            headers.add(header, value);
+        return this;
+    }
+
+    @Override
     public Request attribute(String name, Object value)
     {
         attributes.put(name, value);
@@ -244,9 +255,14 @@ public class HttpRequest implements Request
     @Override
     public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
+        // This method is invoked often in a request/response conversation,
+        // so we avoid allocation if there is no need to filter.
+        if (type == null)
+            return (List<T>)requestListeners;
+
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
-            if (type == null || type.isInstance(listener))
+            if (type.isInstance(listener))
                 result.add((T)listener);
         return result;
     }
@@ -280,6 +296,20 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onRequestCommit(CommitListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onRequestContent(ContentListener listener)
+    {
+        this.requestListeners.add(listener);
+        return this;
+    }
+
+    @Override
     public Request onRequestSuccess(SuccessListener listener)
     {
         this.requestListeners.add(listener);
@@ -295,6 +325,13 @@ public class HttpRequest implements Request
 
     @Override
     public Request onResponseBegin(Response.BeginListener listener)
+    {
+        this.responseListeners.add(listener);
+        return this;
+    }
+
+    @Override
+    public Request onResponseHeader(Response.HeaderListener listener)
     {
         this.responseListeners.add(listener);
         return this;
@@ -337,6 +374,14 @@ public class HttpRequest implements Request
     @Override
     public Request content(ContentProvider content)
     {
+        return content(content, null);
+    }
+
+    @Override
+    public Request content(ContentProvider content, String contentType)
+    {
+        if (contentType != null)
+            header(HttpHeader.CONTENT_TYPE, contentType);
         this.content = content;
         return this;
     }
@@ -351,15 +396,9 @@ public class HttpRequest implements Request
     public Request file(Path file, String contentType) throws IOException
     {
         if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
+            header(HttpHeader.CONTENT_TYPE, contentType);
         return content(new PathContentProvider(file));
     }
-
-//    @Override
-//    public Request decoder(ContentDecoder decoder)
-//    {
-//        return this;
-//    }
 
     @Override
     public boolean isFollowRedirects()
@@ -381,34 +420,72 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request idleTimeout(long timeout)
+    public Request idleTimeout(long timeout, TimeUnit unit)
     {
-        this.idleTimeout = timeout;
+        this.idleTimeout = unit.toMillis(timeout);
         return this;
     }
 
     @Override
-    public Future<ContentResponse> send()
+    public long getTimeout()
     {
-        BlockingResponseListener listener = new BlockingResponseListener(this);
-        send(listener);
-        return listener;
+        return timeout;
+    }
+
+    @Override
+    public Request timeout(long timeout, TimeUnit unit)
+    {
+        this.timeout = unit.toMillis(timeout);
+        return this;
+    }
+
+    @Override
+    public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
+    {
+        FutureResponseListener listener = new FutureResponseListener(this);
+        send(this, listener);
+
+        long timeout = getTimeout();
+        if (timeout <= 0)
+            return listener.get();
+
+        try
+        {
+            return listener.get(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException | TimeoutException x)
+        {
+            // Differently from the Future, the semantic of this method is that if
+            // the send() is interrupted or times out, we abort the request.
+            abort(x);
+            throw x;
+        }
     }
 
     @Override
     public void send(Response.CompleteListener listener)
     {
+        if (getTimeout() > 0)
+        {
+            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(this);
+            timeoutListener.schedule(client.getScheduler());
+            responseListeners.add(timeoutListener);
+        }
+        send(this, listener);
+    }
+
+    private void send(Request request, Response.CompleteListener listener)
+    {
         if (listener != null)
             responseListeners.add(listener);
-        client.send(this, responseListeners);
+        client.send(request, responseListeners);
     }
 
     @Override
     public boolean abort(Throwable cause)
     {
         aborted = Objects.requireNonNull(cause);
-        if (client.provideDestination(getScheme(), getHost(), getPort()).abort(this, cause))
-            return true;
+        // The conversation may be null if it is already completed
         HttpConversation conversation = client.getConversation(getConversationID(), false);
         return conversation != null && conversation.abort(cause);
     }
@@ -417,6 +494,15 @@ public class HttpRequest implements Request
     public Throwable getAbortCause()
     {
         return aborted;
+    }
+
+    private URI buildURI()
+    {
+        String path = getPath();
+        URI result = URI.create(path);
+        if (!result.isAbsolute())
+            result = URI.create(getScheme() + "://" + getHost() + ":" + getPort() + path);
+        return result;
     }
 
     @Override

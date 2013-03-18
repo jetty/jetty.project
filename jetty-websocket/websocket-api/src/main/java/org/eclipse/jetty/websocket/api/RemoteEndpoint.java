@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,9 @@ import java.util.concurrent.Future;
 public interface RemoteEndpoint
 {
     /**
-     * Send a binary message, returning when all of the message has been transmitted.
+     * Send a binary message, returning when all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
      * 
      * @param data
      *            the message to be sent
@@ -43,7 +45,7 @@ public interface RemoteEndpoint
      *            handler that will be notified of progress
      * @return the Future object representing the send operation.
      */
-    Future<WriteResult> sendBytesByFuture(ByteBuffer data);
+    Future<Void> sendBytesByFuture(ByteBuffer data);
 
     /**
      * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the message in order. Non-final pieces are
@@ -70,7 +72,7 @@ public interface RemoteEndpoint
      * @param applicationData
      *            the data to be carried in the ping request
      */
-    void sendPing(ByteBuffer applicationData);
+    void sendPing(ByteBuffer applicationData) throws IOException;
 
     /**
      * Allows the developer to send an unsolicited Pong message containing the given application data in order to serve as a unidirectional heartbeat for the
@@ -79,10 +81,12 @@ public interface RemoteEndpoint
      * @param applicationData
      *            the application data to be carried in the pong response.
      */
-    void sendPong(ByteBuffer applicationData);
+    void sendPong(ByteBuffer applicationData) throws IOException;
 
     /**
-     * Send a text message, blocking until all of the message has been transmitted.
+     * Send a text message, blocking until all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
      * 
      * @param text
      *            the message to be sent
@@ -100,5 +104,5 @@ public interface RemoteEndpoint
      *            the handler which will be notified of progress
      * @return the Future object representing the send operation.
      */
-    Future<WriteResult> sendStringByFuture(String text);
+    Future<Void> sendStringByFuture(String text);
 }

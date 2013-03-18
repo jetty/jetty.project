@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>Consuming the data bytes can be done only via {@link #consumeInto(ByteBuffer)} or by a combination
  * of {@link #readInto(ByteBuffer)} and {@link #consume(int)} (possibly at different times).</p>
  */
-public abstract class DataInfo
+public abstract class DataInfo extends Info
 {
     /**
      * <p>Flag that indicates that this {@link DataInfo} is the last frame in the stream.</p>
@@ -50,17 +51,9 @@ public abstract class DataInfo
      * @see #getFlags()
      */
     public final static byte FLAG_CLOSE = 1;
-    /**
-     * <p>Flag that indicates that this {@link DataInfo}'s data is compressed.</p>
-     *
-     * @see #isCompress()
-     * @see #getFlags()
-     */
-    public final static byte FLAG_COMPRESS = 2;
 
     private final AtomicInteger consumed = new AtomicInteger();
     private boolean close;
-    private boolean compress;
 
     /**
      * <p>Creates a new {@link DataInfo} with the given close flag and no compression flag.</p>
@@ -73,33 +66,16 @@ public abstract class DataInfo
     }
 
     /**
-     * <p>Creates a new {@link DataInfo} with the given close flag and given compression flag.</p>
+     * <p>Creates a new {@link DataInfo} with the given close flag and no compression flag.</p>
      *
-     * @param close    the close flag
-     * @param compress the compress flag
+     * @param timeout
+     * @param unit
+     * @param close the value of the close flag
      */
-    public DataInfo(boolean close, boolean compress)
+    protected DataInfo(long timeout, TimeUnit unit, boolean close)
     {
-        setClose(close);
-        setCompress(compress);
-    }
-
-    /**
-     * @return the value of the compress flag
-     * @see #setCompress(boolean)
-     */
-    public boolean isCompress()
-    {
-        return compress;
-    }
-
-    /**
-     * @param compress the value of the compress flag
-     * @see #isCompress()
-     */
-    public void setCompress(boolean compress)
-    {
-        this.compress = compress;
+        super(timeout, unit);
+        this.close = close;
     }
 
     /**
@@ -123,13 +99,10 @@ public abstract class DataInfo
     /**
      * @return the close and compress flags as integer
      * @see #FLAG_CLOSE
-     * @see #FLAG_COMPRESS
      */
     public byte getFlags()
     {
-        byte flags = isClose() ? FLAG_CLOSE : 0;
-        flags |= isCompress() ? FLAG_COMPRESS : 0;
-        return flags;
+        return isClose() ? FLAG_CLOSE : 0;
     }
 
     /**
@@ -275,6 +248,6 @@ public abstract class DataInfo
     @Override
     public String toString()
     {
-        return String.format("DATA @%x available=%d consumed=%d close=%b compress=%b", hashCode(), available(), consumed(), isClose(), isCompress());
+        return String.format("DATA @%x available=%d consumed=%d close=%b", hashCode(), available(), consumed(), isClose());
     }
 }

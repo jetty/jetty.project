@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,20 +54,21 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.server.helper.FinishedFuture;
+import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
@@ -104,11 +105,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private int version = 13; // default to RFC-6455
     private String protocols;
     private List<String> extensions = new ArrayList<>();
+    private List<String> headers = new ArrayList<>();
     private byte[] clientmask = new byte[]
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
     private AtomicInteger parseCount;
     private OutgoingFrames outgoing = this;
+    private boolean eof = false;
+    private ExtensionStack extensionStack;
+    private IOState ioState;
+    private CountDownLatch disconnectedLatch = new CountDownLatch(1);
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -124,21 +130,33 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             scheme = "https";
         }
-        this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
+        this.destHttpURI = new URI(scheme,destWebsocketURI.getUserInfo(),destWebsocketURI.getHost(),destWebsocketURI.getPort(),destWebsocketURI.getPath(),
+                destWebsocketURI.getQuery(),destWebsocketURI.getFragment());
 
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
-        this.parser = new Parser(policy);
+        this.parser = new Parser(policy,bufferPool);
         this.parseCount = new AtomicInteger(0);
 
         this.incomingFrames = new IncomingFramesCapture();
 
         this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
+        this.ioState = new IOState();
     }
 
     public void addExtensions(String xtension)
     {
         this.extensions.add(xtension);
+    }
+
+    public void addHeader(String header)
+    {
+        this.headers.add(header);
+    }
+
+    public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException
+    {
+        return disconnectedLatch.await(timeout,unit);
     }
 
     public void clearCaptured()
@@ -162,9 +180,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         try
         {
             CloseInfo close = new CloseInfo(statusCode,message);
-            WebSocketFrame frame = close.asFrame();
-            LOG.debug("Issuing: {}",frame);
-            write(frame);
+
+            if (ioState.onCloseHandshake(false))
+            {
+                this.disconnect();
+            }
+            else
+            {
+                WebSocketFrame frame = close.asFrame();
+                LOG.debug("Issuing: {}",frame);
+                write(frame);
+            }
         }
         catch (IOException e)
         {
@@ -188,6 +214,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         LOG.debug("disconnect");
         IO.close(in);
         IO.close(out);
+        disconnectedLatch.countDown();
         if (socket != null)
         {
             try
@@ -227,12 +254,12 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         // collect extensions configured in response header
         List<ExtensionConfig> configs = getExtensionConfigs(respHeader);
-        ExtensionStack extensionStack = new ExtensionStack(this.extensionFactory);
+        extensionStack = new ExtensionStack(this.extensionFactory);
         extensionStack.negotiate(configs);
 
         // Start with default routing
-        extensionStack.setNextIncoming(this);
-        extensionStack.setNextOutgoing(this);
+        extensionStack.setNextIncoming(this); // the websocket layer
+        extensionStack.setNextOutgoing(outgoing); // the network layer
 
         // Configure Parser / Generator
         extensionStack.configure(parser);
@@ -250,6 +277,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         // configure parser
         parser.setIncomingFramesHandler(extensionStack);
+        ioState.setState(ConnectionState.OPEN);
+
+        LOG.debug("outgoing = {}",outgoing);
+        LOG.debug("incoming = {}",extensionStack);
 
         return respHeader;
     }
@@ -289,6 +320,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return destHttpURI;
     }
 
+    public IOState getIOState()
+    {
+        return ioState;
+    }
+
     public String getProtocols()
     {
         return protocols;
@@ -304,12 +340,18 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return destWebsocketURI;
     }
 
+    /**
+     * Errors received (after extensions)
+     */
     @Override
     public void incomingError(WebSocketException e)
     {
         incomingFrames.incomingError(e);
     }
 
+    /**
+     * Frames received (after extensions)
+     */
     @Override
     public void incomingFrame(Frame frame)
     {
@@ -319,6 +361,20 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             LOG.info("Client parsed {} frames",count);
         }
+
+        if (frame.getType() == Frame.Type.CLOSE)
+        {
+            CloseInfo close = new CloseInfo(frame);
+            if (ioState.onCloseHandshake(true))
+            {
+                this.disconnect();
+            }
+            else
+            {
+                close(close.getStatusCode(),close.getReason());
+            }
+        }
+
         WebSocketFrame copy = new WebSocketFrame(frame);
         incomingFrames.incomingFrame(copy);
     }
@@ -358,22 +414,38 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame) throws IOException
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         ByteBuffer buf = generator.generate(frame);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
         }
-        BufferUtil.writeTo(buf,out);
-        out.flush();
+        try
+        {
+            BufferUtil.writeTo(buf,out);
+            out.flush();
+            if (callback != null)
+            {
+                callback.writeSuccess();
+            }
+        }
+        catch (IOException e)
+        {
+            if (callback != null)
+            {
+                callback.writeFailed(e);
+            }
+        }
+        finally
+        {
+            bufferPool.release(buf);
+        }
 
         if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             disconnect();
         }
-
-        return FinishedFuture.INSTANCE;
     }
 
     public int read() throws IOException
@@ -383,6 +455,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public int read(ByteBuffer buf) throws IOException
     {
+        if (eof)
+        {
+            throw new EOFException("Hit EOF");
+        }
         int len = 0;
         int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
@@ -390,7 +466,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             b = in.read();
             if (b == (-1))
             {
-                throw new EOFException("Hit EOF");
+                eof = true;
+                break;
             }
             buf.put((byte)b);
             len++;
@@ -401,7 +478,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
-        int startCount = incomingFrames.size();
 
         ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
@@ -412,16 +488,33 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             long expireOn = now + msDur;
             LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
+            long iter = 0;
+
             int len = 0;
-            while (incomingFrames.size() < (startCount + expectedCount))
+            while (incomingFrames.size() < expectedCount)
             {
                 BufferUtil.clearToFill(buf);
                 len = read(buf);
                 if (len > 0)
                 {
-                    LOG.debug("Read {} bytes",len);
                     BufferUtil.flipToFlush(buf,0);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Read {} bytes: {}",len,BufferUtil.toDetailString(buf));
+                    }
                     parser.parse(buf);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                    {
+                        iter++;
+                        if ((iter % 10000000) == 0)
+                        {
+                            LOG.debug("10,000,000 reads of zero length");
+                            iter = 0;
+                        }
+                    }
                 }
 
                 if (!debug && (System.currentTimeMillis() > expireOn))
@@ -464,7 +557,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public void sendStandardRequest() throws IOException
     {
         StringBuilder req = new StringBuilder();
-        req.append("GET /chat HTTP/1.1\r\n");
+        req.append("GET ");
+        req.append(destHttpURI.getPath());
+        if (StringUtil.isNotBlank(destHttpURI.getQuery()))
+        {
+            req.append('?').append(destHttpURI.getQuery());
+        }
+        req.append(" HTTP/1.1\r\n");
         req.append("Host: ").append(destHttpURI.getHost());
         if (destHttpURI.getPort() > 0)
         {
@@ -473,6 +572,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         req.append("\r\n");
         req.append("Upgrade: websocket\r\n");
         req.append("Connection: Upgrade\r\n");
+        for (String header : headers)
+        {
+            req.append(header);
+        }
         req.append("Sec-WebSocket-Key: ").append(REQUEST_HASH_KEY).append("\r\n");
         req.append("Sec-WebSocket-Origin: ").append(destWebsocketURI.toASCIIString()).append("\r\n");
         if (StringUtil.isNotBlank(protocols))
@@ -545,10 +648,21 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public void write(WebSocketFrame frame) throws IOException
     {
+        if (!ioState.isOpen())
+        {
+            return;
+        }
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-        frame.setMask(clientmask);
-        // DEBUG frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
-        outgoing.outgoingFrame(frame);
+        if (LOG.isDebugEnabled())
+        {
+            frame.setMask(new byte[]
+            { 0x00, 0x00, 0x00, 0x00 });
+        }
+        else
+        {
+            frame.setMask(clientmask);
+        }
+        extensionStack.outgoingFrame(frame,null);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

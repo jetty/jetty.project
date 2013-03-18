@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +36,15 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface Authentication
 {
+    /* ------------------------------------------------------------ */
+    public static class Failed extends QuietServletException
+    {
+       public Failed(String message)
+       {
+           super(message);
+       }
+    }
+    
     /* ------------------------------------------------------------ */
     /** A successful Authentication with User information.
      */

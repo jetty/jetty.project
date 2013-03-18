@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,12 +21,9 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -40,11 +37,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -52,25 +50,22 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 @ManagedObject
-public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketConnection, IncomingFrames
+public class WebSocketSession extends ContainerLifeCycle implements Session, IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
     private ExtensionFactory extensionFactory;
-    private boolean active = false;
     private long maximumMessageSize;
-    private long inactiveTime;
-    private List<String> negotiatedExtensions = new ArrayList<>();
     private String protocolVersion;
-    private String negotiatedSubprotocol;
-    private long timeout;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private WebSocketPolicy policy;
+    private UpgradeRequest upgradeRequest;
+    private UpgradeResponse upgradeResponse;
 
     public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -90,7 +85,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         String query = requestURI.getQuery();
         if (StringUtil.isNotBlank(query))
         {
-            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8);
+            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8_CHARSET,-1);
         }
 
         for (String name : params.keySet())
@@ -109,15 +104,28 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public void close(CloseStatus closeStatus) throws IOException
+    public void close(CloseStatus closeStatus)
     {
-        connection.close(closeStatus.getCode(),closeStatus.getPhrase());
+        this.close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
         connection.close(statusCode,reason);
+        notifyClose(statusCode,reason);
+    }
+
+    /**
+     * Harsh disconnect
+     */
+    @Override
+    public void disconnect()
+    {
+        connection.disconnect();
+
+        // notify of harsh disconnect
+        notifyClose(StatusCode.NO_CLOSE,"Harsh disconnect");
     }
 
     @Override
@@ -145,6 +153,36 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         }
     }
 
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        WebSocketSession other = (WebSocketSession)obj;
+        if (connection == null)
+        {
+            if (other.connection != null)
+            {
+                return false;
+            }
+        }
+        else if (!connection.equals(other.connection))
+        {
+            return false;
+        }
+        return true;
+    }
+
     public LogicalConnection getConnection()
     {
         return connection;
@@ -153,6 +191,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
+    }
+
+    /**
+     * The idle timeout in milliseconds
+     */
+    @Override
+    public long getIdleTimeout()
+    {
+        return connection.getMaxIdleTimeout();
     }
 
     @ManagedAttribute(readonly = true)
@@ -171,18 +218,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     public long getMaximumMessageSize()
     {
         return maximumMessageSize;
-    }
-
-    @Override
-    public List<String> getNegotiatedExtensions()
-    {
-        return negotiatedExtensions;
-    }
-
-    @Override
-    public String getNegotiatedSubprotocol()
-    {
-        return negotiatedSubprotocol;
     }
 
     @ManagedAttribute(readonly = true)
@@ -204,12 +239,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public String getQueryString()
-    {
-        return getRequestURI().getQuery();
-    }
-
-    @Override
     public RemoteEndpoint getRemote()
     {
         if (!isOpen())
@@ -226,24 +255,24 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public URI getRequestURI()
+    public UpgradeRequest getUpgradeRequest()
     {
-        return requestURI;
+        return this.upgradeRequest;
     }
 
     @Override
-    public String getSubProtocol()
+    public UpgradeResponse getUpgradeResponse()
     {
-        return getNegotiatedSubprotocol();
+        return this.upgradeResponse;
     }
 
-    /**
-     * The timeout in seconds
-     */
     @Override
-    public long getTimeout()
+    public int hashCode()
     {
-        return timeout;
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + ((connection == null)?0:connection.hashCode());
+        return result;
     }
 
     /**
@@ -252,7 +281,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public void incomingError(WebSocketException e)
     {
-        if (connection.isInputClosed())
+        if (connection.getIOState().isInputClosed())
         {
             return; // input is closed
         }
@@ -266,7 +295,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     @Override
     public void incomingFrame(Frame frame)
     {
-        if (connection.isInputClosed())
+        if (connection.getIOState().isInputClosed())
         {
             return; // input is closed
         }
@@ -276,21 +305,31 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     }
 
     @Override
-    public boolean isActive()
-    {
-        return active;
-    }
-
-    @Override
     public boolean isOpen()
     {
-        return isActive();
+        if (this.connection == null)
+        {
+            return false;
+        }
+        return this.connection.isOpen();
     }
 
     @Override
     public boolean isSecure()
     {
-        return getRequestURI().getScheme().equalsIgnoreCase("wss");
+        if (upgradeRequest == null)
+        {
+            throw new IllegalStateException("No valid UpgradeRequest yet");
+        }
+
+        URI requestURI = upgradeRequest.getRequestURI();
+
+        return "wss".equalsIgnoreCase(requestURI.getScheme());
+    }
+
+    public void notifyClose(int statusCode, String reason)
+    {
+        websocket.onClose(new CloseInfo(statusCode,reason));
     }
 
     /**
@@ -300,36 +339,22 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
      */
     public void open()
     {
-        if (isOpen())
+        if (remote != null)
         {
-            throw new WebSocketException("Cannot Open WebSocketSession, Already open");
+            // already opened
+            return;
         }
 
         // Connect remote
         remote = new WebSocketRemoteEndpoint(connection,outgoingHandler);
 
-        // Activate Session
-        this.active = true;
-
         // Open WebSocket
-        websocket.setSession(this);
-        websocket.onConnect();
+        websocket.openSession(this);
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}",dump());
+            LOG.debug("open -> {}",dump());
         }
-    }
-
-    @Override
-    public void ping(ByteBuffer buf) throws IOException
-    {
-        remote.sendPing(buf);
-    }
-
-    public void setActive(boolean active)
-    {
-        this.active = active;
     }
 
     public void setExtensionFactory(ExtensionFactory extensionFactory)
@@ -337,21 +362,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.extensionFactory = extensionFactory;
     }
 
+    /**
+     * Set the timeout in milliseconds
+     */
+    @Override
+    public void setIdleTimeout(long ms)
+    {
+        connection.setMaxIdleTimeout(ms);
+    }
+
     @Override
     public void setMaximumMessageSize(long length)
     {
         this.maximumMessageSize = length;
-    }
-
-    public void setNegotiatedExtensions(List<String> negotiatedExtensions)
-    {
-        this.negotiatedExtensions.clear();
-        this.negotiatedExtensions.addAll(negotiatedExtensions);
-    }
-
-    public void setNegotiatedSubprotocol(String negotiatedSubprotocol)
-    {
-        this.negotiatedSubprotocol = negotiatedSubprotocol;
     }
 
     public void setOutgoingHandler(OutgoingFrames outgoing)
@@ -364,13 +387,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         this.policy = policy;
     }
 
-    /**
-     * Set the timeout in seconds
-     */
-    @Override
-    public void setTimeout(long seconds)
+    public void setUpgradeRequest(UpgradeRequest request)
     {
-        this.timeout = seconds;
+        this.upgradeRequest = request;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse response)
+    {
+        this.upgradeResponse = response;
     }
 
     @Override
@@ -386,29 +410,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketSession[");
         builder.append("websocket=").append(websocket);
+        builder.append(",behavior=").append(policy.getBehavior());
         builder.append(",connection=").append(connection);
         builder.append(",remote=").append(remote);
         builder.append(",incoming=").append(incomingHandler);
         builder.append(",outgoing=").append(outgoingHandler);
         builder.append("]");
         return builder.toString();
-    }
-
-    @Override
-    public Future<WriteResult> write(byte[] buf, int offset, int len) throws IOException
-    {
-        return remote.sendBytesByFuture(ByteBuffer.wrap(buf,offset,len));
-    }
-
-    @Override
-    public Future<WriteResult> write(ByteBuffer buffer) throws IOException
-    {
-        return remote.sendBytesByFuture(buffer);
-    }
-
-    @Override
-    public Future<WriteResult> write(String message) throws IOException
-    {
-        return remote.sendStringByFuture(message);
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,10 +21,9 @@ package org.eclipse.jetty.websocket.common;
 import static org.hamcrest.Matchers.*;
 
 import java.util.LinkedList;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.WriteResult;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.Assert;
@@ -83,11 +82,13 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public Future<WriteResult> outgoingFrame(Frame frame)
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         WebSocketFrame copy = new WebSocketFrame(frame);
         frames.add(copy);
-
-        return FinishedFuture.INSTANCE;
+        if (callback != null)
+        {
+            callback.writeSuccess();
+        }
     }
 }

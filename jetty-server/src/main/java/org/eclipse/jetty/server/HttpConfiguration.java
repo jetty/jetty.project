@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,8 +44,12 @@ public class HttpConfiguration
     private int _outputBufferSize=32*1024;
     private int _requestHeaderSize=8*1024;
     private int _responseHeaderSize=8*1024;
+    private int _headerCacheSize=512;
     private int _securePort;
     private String _secureScheme = HttpScheme.HTTPS.asString();
+    private boolean _sendServerVersion = true; //send Server: header
+    private boolean _sendDateHeader = false; //send Date: header
+    
 
     public interface Customizer
     {
@@ -73,6 +77,9 @@ public class HttpConfiguration
         _responseHeaderSize=config._responseHeaderSize;
         _securePort=config._securePort;
         _secureScheme=config._secureScheme;
+        _sendDateHeader=config._sendDateHeader;
+        _sendServerVersion=config._sendServerVersion;
+        _headerCacheSize=config._headerCacheSize;
     }
     
     /* ------------------------------------------------------------ */
@@ -119,7 +126,13 @@ public class HttpConfiguration
     {
         return _responseHeaderSize;
     }
-    
+
+    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    public int getHeaderCacheSize()
+    {
+        return _headerCacheSize;
+    }
+
     @ManagedAttribute("The port to which Integral or Confidential security constraints are redirected")
     public int getSecurePort()
     {
@@ -130,6 +143,28 @@ public class HttpConfiguration
     public String getSecureScheme()
     {
         return _secureScheme;
+    }
+
+    public void setSendServerVersion (boolean sendServerVersion)
+    {
+        _sendServerVersion = sendServerVersion;
+    }
+
+    @ManagedAttribute("if true, include the server version in HTTP headers")
+    public boolean getSendServerVersion()
+    {
+        return _sendServerVersion;
+    }
+
+    public void setSendDateHeader(boolean sendDateHeader)
+    {
+        _sendDateHeader = sendDateHeader;
+    }
+
+    @ManagedAttribute("if true, include the date in HTTP headers")
+    public boolean getSendDateHeader()
+    {
+        return _sendDateHeader;
     }
     
     /* ------------------------------------------------------------ */
@@ -181,6 +216,15 @@ public class HttpConfiguration
     public void setResponseHeaderSize(int responseHeaderSize)
     {
         _responseHeaderSize = responseHeaderSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the header field cache size.
+     * @param headerCacheSize The size in bytes of the header field cache.
+     */
+    public void setHeaderCacheSize(int headerCacheSize)
+    {
+        _headerCacheSize = headerCacheSize;
     }
 
     /* ------------------------------------------------------------ */

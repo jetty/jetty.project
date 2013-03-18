@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -31,14 +32,17 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 public class WebSocketServerConnection extends AbstractWebSocketConnection
 {
     private final WebSocketServerFactory factory;
-    private boolean connected;
+    private final AtomicBoolean opened = new AtomicBoolean(false);
 
     public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool,
             WebSocketServerFactory factory)
     {
         super(endp,executor,scheduler,policy,bufferPool);
+        if (policy.getIdleTimeout() > 0)
+        {
+            endp.setIdleTimeout(policy.getIdleTimeout());
+        }
         this.factory = factory;
-        this.connected = false;
     }
 
     @Override
@@ -63,12 +67,19 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     @Override
     public void onOpen()
     {
-        if (!connected)
+        boolean beenOpened = opened.getAndSet(true);
+        if (!beenOpened)
         {
             factory.sessionOpened(getSession());
-            connected = true;
         }
         super.onOpen();
+    }
+
+    @Override
+    public void onWriteWebSocketClose()
+    {
+        // as server, always disconnect if writing close
+        disconnect();
     }
 
     @Override

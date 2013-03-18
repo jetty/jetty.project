@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -166,6 +167,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _endPoint.getRemoteAddress();
     }
 
+    @Override
+    public int getHeaderCacheSize()
+    {
+        return _configuration.getHeaderCacheSize();
+    }
+    
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -190,7 +197,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 // TODO: break this dependency with HttpGenerator
                 boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue"); // TODO: better message
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
     }
@@ -246,7 +253,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     }
                     else
                     {
-                        _request.setDispatcherType(DispatcherType.ASYNC);
+                        if (_request.getHttpChannelState().isExpired())
+                        {
+                            _request.setDispatcherType(DispatcherType.ERROR);
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
+                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
+                            _response.setStatusWithReason(500,"Async Timeout");
+                        }
+                        else
+                            _request.setDispatcherType(DispatcherType.ASYNC);
                         getServer().handleAsync(this);
                     }
                 }
@@ -372,7 +388,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
+    public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
     {
         _expect = false;
         _expect100Continue = false;
@@ -383,9 +399,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         _request.setMethod(httpMethod, method);
 
         if (httpMethod == HttpMethod.CONNECT)
-            _uri.parseConnect(uri);
+            _uri.parseConnect(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
         else
-            _uri.parse(uri);
+            _uri.parse(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
         _request.setUri(_uri);
 
         String path;
@@ -402,7 +418,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
+        {
             info = "/";
+            _request.setRequestURI("");
+        }
         _request.setPathInfo(info);
         _version = version == null ? HttpVersion.HTTP_0_9 : version;
         _request.setHttpVersion(_version);
@@ -411,8 +430,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean parsedHeader(HttpHeader header, String name, String value)
+    public boolean parsedHeader(HttpField field)
     {
+        HttpHeader header=field.getHeader();
+        String value=field.getValue();
         if (value == null)
             value = "";
         if (header != null)
@@ -467,8 +488,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     break;
             }
         }
-        if (name != null)
-            _request.getHttpFields().add(name, value);
+        
+        if (field.getName()!=null)
+            _request.getHttpFields().add(field);
         return false;
     }
 
@@ -490,13 +512,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 break;
 
             case HTTP_1_0:
-                if (getServer().getSendDateHeader())
-                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+                if (_configuration.getSendDateHeader())
+                    _response.getHttpFields().put(_connector.getServer().getDateField());
                 break;
 
             case HTTP_1_1:
-                if (getServer().getSendDateHeader())
-                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+                if (_configuration.getSendDateHeader())
+                    _response.getHttpFields().put(_connector.getServer().getDateField());
 
                 if (_expect)
                 {
@@ -629,7 +651,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             ResponseInfo info = _response.newResponseInfo();
             boolean committed = commitResponse(info, content, complete);
             if (!committed)
-                throw new IOException("Concurrent commit"); // TODO: better message
+                throw new IOException("Concurrent commit");
         }
     }
 

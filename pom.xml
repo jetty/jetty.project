@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.0.0-SNAPSHOT</version>
+  <version>9.0.1-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -225,13 +225,49 @@
           </dependency>
         </dependencies>
       </plugin>
+      <plugin>
+        <inherited>false</inherited>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <version>1.10.b1</version>
+        <configuration>
+          <header>header-template.txt</header>
+          <failIfMissing>true</failIfMissing>
+          <aggregate>true</aggregate>
+          <strictCheck>true</strictCheck>
+          <properties>
+             <copyright-range>${project.inceptionYear}-2013</copyright-range>
+          </properties>
+          <mapping>
+            <java>DOUBLESLASH_STYLE</java>
+          </mapping>
+          <includes>
+            <include>**/*.java</include>
+          </includes>
+          <excludes>
+            <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+            <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
+            <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+            <exclude>jetty-ant/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-headers</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.7</version>
+          <version>1.0.9</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -272,7 +308,7 @@
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2012 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2013 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
             </instructions>
           </configuration>
@@ -324,7 +360,7 @@
                 <head>Apache XBean:</head>
               </tag>
             </tags>
-            </configuration>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -366,7 +402,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>2.3.2</version>
+        <version>2.5.2</version>
       </plugin>
     </plugins>
   </reporting>
@@ -414,13 +450,10 @@
     <module>jetty-nosql</module>
     <module>examples</module>
     <module>tests</module>
-    <module>aggregates/jetty-all</module>
     <module>jetty-distribution</module>
+    <module>jetty-runner</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
-    <module>tests</module>
-
-    <module>jetty-runner</module>
     <module>jetty-rhttp</module>
     <module>jetty-http-spi</module>
     -->
@@ -571,15 +604,17 @@
   <!--
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
+    > mvn -Paggregate-site javadoc:aggregate jxr:jxr
+    then
     > mvn -N site:deploy
     or
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
     <profile>
-      <id>release</id>
+      <id>eclipse-release</id>
       <modules>
-        <module>jetty-aggregate</module>
+        <module>aggregates/jetty-all</module>
       </modules>
     </profile>
     <profile>
@@ -649,8 +684,8 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://java.sun.com/javase/6/docs/api/</link>
-                <link>http://java.sun.com/javaee/6/docs/api</link>
+                <link>http://docs.oracle.com/javase/6/docs/api/</link>
+                <link>http://docs.oracle.com/javaee/6/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
               <tags>
@@ -660,51 +695,22 @@
                   <head />
                 </tag>
               </tags>
+              <header>
+                <![CDATA[
+                    <script type="text/javascript">
+                      var _gaq = _gaq || [];
+                      _gaq.push(['_setAccount', 'UA-1149868-7']);
+                      _gaq.push(['_trackPageview']);
+                      (function() {
+                        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+                      })();
+                   </script>
+                ]]>
+              </header>           
             </configuration>
           </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>license-check</id>
-      <build>
-        <plugins>
-          <plugin>
-          <inherited>false</inherited>
-          <groupId>com.mycila.maven-license-plugin</groupId>
-          <artifactId>maven-license-plugin</artifactId>
-          <version>1.10.b1</version>
-          <configuration>
-            <header>header-template.txt</header>
-            <failIfMissing>true</failIfMissing>
-            <aggregate>true</aggregate>
-            <strictCheck>true</strictCheck>
-            <properties>
-               <copyright-range>${project.inceptionYear}-2012</copyright-range>
-            </properties>
-            <mapping>
-              <java>DOUBLESLASH_STYLE</java>
-            </mapping>
-            <includes>
-              <include>**/*.java</include>
-            </includes>
-            <excludes>
-              <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
-              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
-              <exlcude>jetty-ant/**</exlcude> <!-- short term, need to add support to accept additional copyrights -->
-            </excludes>
-          </configuration>
-          <executions>
-            <execution>
-              <id>check-headers</id>
-              <phase>verify</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
         </plugins>
       </build>
     </profile>

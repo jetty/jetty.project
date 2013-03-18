@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */
@@ -479,7 +479,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
         if (mappings == null)
         {
-            mappings = new StringMap<>();
+            mappings = new HashMap<String,RoleInfo>();
             _constraintMap.put(mapping.getPathSpec(),mappings);
         }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);

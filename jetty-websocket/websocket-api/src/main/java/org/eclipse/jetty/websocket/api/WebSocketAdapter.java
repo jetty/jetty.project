@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
-
 /**
  * Default implementation of the {@link WebSocketListener}.
  * <p>
@@ -27,27 +25,29 @@ import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
  */
 public class WebSocketAdapter implements WebSocketListener
 {
-    private WebSocketConnection connection;
-    private WebSocketBlockingConnection blocking;
+    private volatile Session session;
 
-    public WebSocketBlockingConnection getBlockingConnection()
+    public RemoteEndpoint getRemote()
     {
-        return blocking;
+        Session sess = this.session;
+        return sess == null?null:session.getRemote();
     }
 
-    public WebSocketConnection getConnection()
+    public Session getSession()
     {
-        return connection;
+        return session;
     }
 
     public boolean isConnected()
     {
-        return (connection != null) && (connection.isOpen());
+        Session sess = this.session;
+        return (sess != null) && (sess.isOpen());
     }
 
     public boolean isNotConnected()
     {
-        return (connection == null) || (!connection.isOpen());
+        Session sess = this.session;
+        return (sess == null) || (!sess.isOpen());
     }
 
     @Override
@@ -59,18 +59,17 @@ public class WebSocketAdapter implements WebSocketListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        this.connection = null;
+        this.session = null;
     }
 
     @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
+    public void onWebSocketConnect(Session sess)
     {
-        this.connection = connection;
-        this.blocking = new WebSocketBlockingConnection(this.connection);
+        this.session = sess;
     }
 
     @Override
-    public void onWebSocketException(WebSocketException error)
+    public void onWebSocketError(Throwable cause)
     {
         /* do nothing */
     }

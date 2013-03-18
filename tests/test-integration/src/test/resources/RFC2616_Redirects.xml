@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <!-- =========================================================== -->
-    <!-- Configure Rewrite Handler                                   --> 
+    <!-- Configure Rewrite Handler                                   -->
     <!-- =========================================================== -->
     <Get id="oldhandler" name="handler"/>
 
     <Set name="handler">
      <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-     
-      <Set name="handler"><Ref id="oldhandler"/></Set>
+
+      <Set name="handler"><Ref refid="oldhandler"/></Set>
       <Set name="rewriteRequestURI">true</Set>
       <Set name="rewritePathInfo">false</Set>
       <Set name="originalPathAttribute">requestedPath</Set>
@@ -19,7 +19,7 @@
           <Array type="org.eclipse.jetty.rewrite.handler.Rule">
 
             <!-- add a response rule -->
-            <!-- 
+            <!--
             <Item>
               <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
                 <Set name="pattern">/rewrite/session/</Set>
@@ -30,7 +30,7 @@
              -->
 
             <!-- add a simple redirect -->
-            <!-- 
+            <!--
             <Item>
               <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
                 <Set name="pattern">/redirect/*</Set>
@@ -50,5 +50,5 @@
         </Set>
       </New>
     </Set>
- 
+
 </Configure>

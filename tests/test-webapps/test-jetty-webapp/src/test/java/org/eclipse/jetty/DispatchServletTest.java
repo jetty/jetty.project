@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty;
 
-import com.acme.DispatchServlet;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.acme.DispatchServlet;
 
 /**
  * Simple tests against DispatchServlet.
@@ -136,8 +139,7 @@ public class DispatchServletTest
                     response.startsWith("HTTP/1.1 413 "));
 
             assertFalse(msg + " should not be code 500.", response.startsWith("HTTP/1.1 500 "));
-
-            assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
+            assertThat(response,Matchers.startsWith("HTTP/1.1 403 "));
         }
     }
 }

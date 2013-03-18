@@ -24,13 +24,14 @@ import java.net.URI;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class JettyAntTaskTest
 {
     
-    
-    @Test
+    @Ignore
+    //@Test
     public void testConnectorTask() throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("connector-test.xml").getAbsolutePath());
@@ -47,5 +48,27 @@ public class JettyAntTaskTest
         
         build.stop();
     }
+
+
+    @Test
+    @Ignore("need to update connector")
+    public void testWebApp () throws Exception
+    {
+        AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("webapp-test.xml").getAbsolutePath());
+      
+        build.start();
+        
+        URI uri = new URI("http://" + build.getJettyHost() + ":" + build.getJettyPort() + "/");
+        
+        HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
+        
+        connection.connect();
+        
+        Assert.assertEquals(200,connection.getResponseCode());
+        
+        System.err.println("Stop build!");
+        build.stop();
+    }
+
    
 }

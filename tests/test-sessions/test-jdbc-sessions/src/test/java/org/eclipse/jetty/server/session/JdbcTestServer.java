@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,11 +53,7 @@ public class JdbcTestServer extends AbstractTestServer
         super(port, maxInactivePeriod, scavengePeriod, DEFAULT_CONNECTION_URL);
     }
     
-    public JdbcTestServer (int port, boolean optimize)
-    {
-        super(port);
-    }
-
+ 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
      */
@@ -81,6 +77,7 @@ public class JdbcTestServer extends AbstractTestServer
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
+            //System.err.println("new jdbcidmgr inst="+idManager);
             return idManager;
         }
     }

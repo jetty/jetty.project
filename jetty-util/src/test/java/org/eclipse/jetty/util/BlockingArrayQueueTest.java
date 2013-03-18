@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,71 +18,68 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashSet;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AdvancedRunner.class)
 public class BlockingArrayQueueTest
 {
-
     @Test
     public void testWrap() throws Exception
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3);
 
-        assertEquals(0,queue.size());
+        Assert.assertEquals(0, queue.size());
 
-        for (int i=0;i<3;i++)
+        for (int i=0;i<queue.getMaxCapacity();i++)
         {
             queue.offer("one");
-            assertEquals(1,queue.size());
+            Assert.assertEquals(1, queue.size());
 
             queue.offer("two");
-            assertEquals(2,queue.size());
+            Assert.assertEquals(2, queue.size());
 
             queue.offer("three");
-            assertEquals(3,queue.size());
+            Assert.assertEquals(3, queue.size());
 
-            assertEquals("one",queue.get(0));
-            assertEquals("two",queue.get(1));
-            assertEquals("three",queue.get(2));
+            Assert.assertEquals("one", queue.get(0));
+            Assert.assertEquals("two", queue.get(1));
+            Assert.assertEquals("three", queue.get(2));
 
-            assertEquals("[one, two, three]",queue.toString());
+            Assert.assertEquals("[one, two, three]", queue.toString());
 
-            assertEquals("one",queue.poll());
-            assertEquals(2,queue.size());
+            Assert.assertEquals("one", queue.poll());
+            Assert.assertEquals(2, queue.size());
 
-            assertEquals("two",queue.poll());
-            assertEquals(1,queue.size());
+            Assert.assertEquals("two", queue.poll());
+            Assert.assertEquals(1, queue.size());
 
-            assertEquals("three",queue.poll());
-            assertEquals(0,queue.size());
+            Assert.assertEquals("three", queue.poll());
+            Assert.assertEquals(0, queue.size());
 
 
             queue.offer("xxx");
-            assertEquals(1,queue.size());
-            assertEquals("xxx",queue.poll());
-            assertEquals(0,queue.size());
-
+            Assert.assertEquals(1, queue.size());
+            Assert.assertEquals("xxx", queue.poll());
+            Assert.assertEquals(0, queue.size());
         }
-
     }
 
     @Test
     public void testRemove() throws Exception
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,3);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3,3);
 
         queue.add("0");
         queue.add("x");
@@ -96,23 +93,36 @@ public class BlockingArrayQueueTest
         }
 
         for (int i=0;i<99;i++)
-            assertEquals(i+"!",queue.get(i));
+            Assert.assertEquals(i + "!", queue.get(i));
+    }
+
+    @Test
+    public void testLimit() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1,0,1);
+
+        String element = "0";
+        Assert.assertTrue(queue.add(element));
+        Assert.assertFalse(queue.offer("1"));
+
+        Assert.assertEquals(element, queue.poll());
+        Assert.assertTrue(queue.add(element));
     }
 
     @Test
     public void testGrow() throws Exception
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,2);
-        assertEquals(3,queue.getCapacity());
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3,2);
+        Assert.assertEquals(3, queue.getCapacity());
 
         queue.add("a");
         queue.add("a");
-        assertEquals(2,queue.size());
-        assertEquals(3,queue.getCapacity());
+        Assert.assertEquals(2, queue.size());
+        Assert.assertEquals(3, queue.getCapacity());
         queue.add("a");
         queue.add("a");
-        assertEquals(4,queue.size());
-        assertEquals(5,queue.getCapacity());
+        Assert.assertEquals(4, queue.size());
+        Assert.assertEquals(5, queue.getCapacity());
 
         int s=5;
         int c=5;
@@ -120,25 +130,25 @@ public class BlockingArrayQueueTest
 
         for (int t=0;t<100;t++)
         {
-            assertEquals(s,queue.size());
-            assertEquals(c,queue.getCapacity());
+            Assert.assertEquals(s, queue.size());
+            Assert.assertEquals(c, queue.getCapacity());
 
             for (int i=queue.size();i-->0;)
                 queue.poll();
-            assertEquals(0,queue.size());
-            assertEquals(c,queue.getCapacity());
+            Assert.assertEquals(0, queue.size());
+            Assert.assertEquals(c, queue.getCapacity());
 
             for (int i=queue.getCapacity();i-->0;)
                 queue.add("a");
             queue.add("a");
-            assertEquals(s+1,queue.size());
-            assertEquals(c+2,queue.getCapacity());
+            Assert.assertEquals(s + 1, queue.size());
+            Assert.assertEquals(c + 2, queue.getCapacity());
 
             queue.poll();
             queue.add("a");
             queue.add("a");
-            assertEquals(s+2,queue.size());
-            assertEquals(c+2,queue.getCapacity());
+            Assert.assertEquals(s + 2, queue.size());
+            Assert.assertEquals(c + 2, queue.getCapacity());
 
             s+=2;
             c+=2;
@@ -151,7 +161,7 @@ public class BlockingArrayQueueTest
     {
         final String[] data=new String[4];
 
-        final BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
 
         Thread thread = new Thread()
         {
@@ -168,8 +178,8 @@ public class BlockingArrayQueueTest
                 }
                 catch(Exception e)
                 {
-                    assertTrue(false);
                     e.printStackTrace();
+                    Assert.fail();
                 }
             }
         };
@@ -183,14 +193,11 @@ public class BlockingArrayQueueTest
         queue.offer("two");
         thread.join();
 
-        assertEquals("zero",data[0]);
-        assertEquals("one",data[1]);
-        assertEquals("two",data[2]);
-        assertEquals(null,data[3]);
-
+        Assert.assertEquals("zero", data[0]);
+        Assert.assertEquals("one", data[1]);
+        Assert.assertEquals("two", data[2]);
+        Assert.assertEquals(null, data[3]);
     }
-
-    volatile boolean _running;
 
     @Test
     @Slow
@@ -199,19 +206,17 @@ public class BlockingArrayQueueTest
         final int THREADS=50;
         final int LOOPS=1000;
 
-        final BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<Integer>(1+THREADS*LOOPS);
+        final BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>(1+THREADS*LOOPS);
 
-        final ConcurrentLinkedQueue<Integer> produced=new ConcurrentLinkedQueue<Integer>();
-        final ConcurrentLinkedQueue<Integer> consumed=new ConcurrentLinkedQueue<Integer>();
+        final ConcurrentLinkedQueue<Integer> produced=new ConcurrentLinkedQueue<>();
+        final ConcurrentLinkedQueue<Integer> consumed=new ConcurrentLinkedQueue<>();
 
-
-        _running=true;
+        final AtomicBoolean running = new AtomicBoolean(true);
 
         // start consumers
         final CyclicBarrier barrier0 = new CyclicBarrier(THREADS+1);
         for (int i=0;i<THREADS;i++)
         {
-            final Integer id = new Integer(i);
             new Thread()
             {
                 @Override
@@ -222,7 +227,7 @@ public class BlockingArrayQueueTest
                     setPriority(getPriority()-1);
                     try
                     {
-                        while(_running)
+                        while(running.get())
                         {
                             int r=1+random.nextInt(10);
                             if (r%2==0)
@@ -267,7 +272,7 @@ public class BlockingArrayQueueTest
         final CyclicBarrier barrier1 = new CyclicBarrier(THREADS+1);
         for (int i=0;i<THREADS;i++)
         {
-            final Integer id = new Integer(i);
+            final int id = i;
             new Thread()
             {
                 @Override
@@ -278,7 +283,7 @@ public class BlockingArrayQueueTest
                     {
                         for (int j=0;j<LOOPS;j++)
                         {
-                            Integer msg = new Integer(random.nextInt());
+                            Integer msg = random.nextInt();
                             produced.add(msg);
                             if (!queue.offer(msg))
                                 throw new Exception(id+" FULL! "+queue.size());
@@ -313,12 +318,178 @@ public class BlockingArrayQueueTest
             Thread.sleep(500);
             size=queue.size();
         }
-        _running=false;
+        running.set(false);
         barrier0.await();
 
-        HashSet<Integer> prodSet = new HashSet<Integer>(produced);
-        HashSet<Integer> consSet = new HashSet<Integer>(consumed);
+        HashSet<Integer> prodSet = new HashSet<>(produced);
+        HashSet<Integer> consSet = new HashSet<>(consumed);
 
-        assertEquals(prodSet,consSet);
+        Assert.assertEquals(prodSet, consSet);
+    }
+
+    @Test
+    public void testRemoveObjectFromEmptyQueue()
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        Assert.assertFalse(queue.remove("SOMETHING"));
+    }
+
+    @Test
+    public void testRemoveObjectWithWrappedTail() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(6);
+        // Wrap the tail
+        for (int i = 0; i < queue.getMaxCapacity(); ++i)
+            queue.offer("" + i);
+        // Advance the head
+        queue.poll();
+        // Remove from the middle
+        Assert.assertTrue(queue.remove("2"));
+
+        // Advance the tail
+        Assert.assertTrue(queue.offer("A"));
+        Assert.assertTrue(queue.offer("B"));
+        queue.poll();
+        // Remove from the middle
+        Assert.assertTrue(queue.remove("3"));
+    }
+
+    @Test
+    public void testRemoveObject() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+
+        String element1 = "A";
+        Assert.assertTrue(queue.offer(element1));
+        Assert.assertTrue(queue.remove(element1));
+
+        for (int i = 0; i < queue.getMaxCapacity() - 1; ++i)
+        {
+            queue.offer("" + i);
+            queue.poll();
+        }
+        String element2 = "B";
+        Assert.assertTrue(queue.offer(element2));
+        Assert.assertTrue(queue.offer(element1));
+        Assert.assertTrue(queue.remove(element1));
+
+        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+
+        Assert.assertTrue(queue.remove(element2));
+        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+
+        queue.clear();
+
+        for (int i = 0; i < queue.getMaxCapacity(); ++i)
+            queue.offer("" + i);
+
+        Assert.assertTrue(queue.remove("" + (queue.getMaxCapacity() - 1)));
+    }
+
+    @Test
+    public void testRemoveWithMaxCapacityOne() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
+
+        String element = "A";
+        Assert.assertTrue(queue.offer(element));
+        Assert.assertTrue(queue.remove(element));
+
+        Assert.assertTrue(queue.offer(element));
+        Assert.assertEquals(element, queue.remove(0));
+    }
+
+    @Test
+    public void testIteratorWithModification() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        int count = queue.getMaxCapacity() - 1;
+        for (int i = 0; i < count; ++i)
+            queue.offer("" + i);
+
+        int sum = 0;
+        for (String element : queue)
+        {
+            ++sum;
+            // Concurrent modification, must not change the iterator
+            queue.remove(element);
+        }
+
+        Assert.assertEquals(count, sum);
+        Assert.assertTrue(queue.isEmpty());
+    }
+
+    @Test
+    public void testListIterator() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        String element1 = "A";
+        String element2 = "B";
+        queue.offer(element1);
+        queue.offer(element2);
+
+        ListIterator<String> iterator = queue.listIterator();
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        String element = iterator.next();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.next();
+        Assert.assertEquals(element2, element);
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element2, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+    }
+
+    @Test
+    public void testListIteratorWithWrappedHead() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
+        // This sequence of offers and polls wraps the head around the array
+        queue.offer("0");
+        queue.offer("1");
+        queue.offer("2");
+        queue.offer("3");
+        queue.poll();
+        queue.poll();
+
+        String element1 = queue.get(0);
+        String element2 = queue.get(1);
+
+        ListIterator<String> iterator = queue.listIterator();
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        String element = iterator.next();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.next();
+        Assert.assertEquals(element2, element);
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element2, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(iterator.hasPrevious());
+
+        element = iterator.previous();
+        Assert.assertEquals(element1, element);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertFalse(iterator.hasPrevious());
     }
 }

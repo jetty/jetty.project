@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -45,9 +44,9 @@ import org.junit.Test;
 
 /**
  * AbstractSessionInvalidateAndCreateTest
- * 
- * This test verifies that invalidating an existing session and creating 
- * a new session within the scope of a single request will expire the 
+ *
+ * This test verifies that invalidating an existing session and creating
+ * a new session within the scope of a single request will expire the
  * newly created session correctly (removed from the server and session listeners called).
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=377610
  */
@@ -56,24 +55,24 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     public class MySessionListener implements HttpSessionListener
     {
         List<String> destroys;
-        
+
         public void sessionCreated(HttpSessionEvent e)
         {
-            
+
         }
 
         public void sessionDestroyed(HttpSessionEvent e)
         {
             if (destroys == null)
-                destroys = new ArrayList<String>();
-            
+                destroys = new ArrayList<>();
+
             destroys.add((String)e.getSession().getAttribute("identity"));
         }
     }
-    
+
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
-    
-    
+
+
 
     public void pause(int scavengePeriod)
     {
@@ -86,7 +85,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testSessionScavenge() throws Exception
     {
@@ -101,10 +100,12 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         context.addServlet(holder, servletMapping);
         MySessionListener listener = new MySessionListener();
         context.getSessionHandler().addEventListener(listener);
-        server.start();
-        int port1 = server.getPort();
+    
         try
         {
+            server.start();
+            int port1 = server.getPort();
+            
             HttpClient client = new HttpClient();
             client.start();
             try
@@ -113,8 +114,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
 
                 // Create the session
-                Future<ContentResponse> future = client.GET(url + "?action=init");
-                ContentResponse response1 = future.get();
+                ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                 String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -125,8 +125,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 request2.header("Cookie", sessionCookie);
-                future = request2.send();
-                ContentResponse response2 = future.get();
+                ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
                 // Wait for the scavenger to run, waiting 2.5 times the scavenger period
@@ -169,21 +168,21 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 if (session != null)
                 {
                     session.invalidate();
-                    
+
                     //now make a new session
                     session = request.getSession(true);
                     session.setAttribute("identity", "session2");
                     session.setAttribute("listener", new HttpSessionBindingListener()
                     {
-                        
+
                         public void valueUnbound(HttpSessionBindingEvent event)
                         {
                             unbound = true;
                         }
-                        
+
                         public void valueBound(HttpSessionBindingEvent event)
                         {
-                            
+
                         }
                     });
                 }
