@@ -19,21 +19,18 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint;
 import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
 
-public class JsrRemoteEndpoint implements RemoteEndpoint
+public class JsrAsyncRemote implements RemoteEndpoint.Async
 {
+
     private final org.eclipse.jetty.websocket.api.RemoteEndpoint jettyRemote;
-    
-    protected JsrRemoteEndpoint(org.eclipse.jetty.websocket.api.RemoteEndpoint endpoint)
+
+    protected JsrAsyncRemote(org.eclipse.jetty.websocket.api.RemoteEndpoint endpoint)
     {
         this.jettyRemote = endpoint;
     }
@@ -46,13 +43,6 @@ public class JsrRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
-    public long getAsyncSendTimeout()
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
     public boolean getBatchingAllowed()
     {
         // TODO Auto-generated method stub
@@ -60,75 +50,44 @@ public class JsrRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
-    public OutputStream getSendStream() throws IOException
+    public long getSendTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public Future<Void> sendBinary(ByteBuffer data)
+    {
+        return jettyRemote.sendBytesByFuture(data);
+    }
+
+    @Override
+    public void sendBinary(ByteBuffer data, SendHandler handler)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public Future<Void> sendObject(Object data)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public Writer getSendWriter() throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void sendBytes(ByteBuffer data) throws IOException
-    {
-        jettyRemote.sendBytes(data);
-    }
-
-    @Override
-    public void sendBytesByCompletion(ByteBuffer data, SendHandler completion)
-    {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public Future<SendResult> sendBytesByFuture(ByteBuffer data)
-    {
-        Future<Void> jettyFuture = jettyRemote.sendBytesByFuture(data);
-        return new JsrSendResultFuture(jettyFuture);
-    }
-
-    @Override
-    public void sendObject(Object o) throws IOException, EncodeException
+    public void sendObject(Object data, SendHandler handler)
     {
         // TODO Auto-generated method stub
 
-    }
-
-    @Override
-    public void sendObjectByCompletion(Object o, SendHandler handler)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public Future<SendResult> sendObjectByFuture(Object o)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void sendPartialBytes(ByteBuffer partialByte, boolean isLast) throws IOException
-    {
-        jettyRemote.sendPartialBytes(partialByte,isLast);
-    }
-
-    @Override
-    public void sendPartialString(String partialMessage, boolean isLast) throws IOException
-    {
-        jettyRemote.sendPartialString(partialMessage,isLast);
     }
 
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException, IllegalArgumentException
     {
         jettyRemote.sendPing(applicationData);
+
     }
 
     @Override
@@ -138,36 +97,26 @@ public class JsrRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
-    public void sendString(String text) throws IOException
+    public Future<Void> sendText(String text)
     {
-        jettyRemote.sendString(text);
+        return jettyRemote.sendStringByFuture(text);
     }
 
     @Override
-    public void sendStringByCompletion(String text, SendHandler completion)
+    public void sendText(String text, SendHandler handler)
     {
         // TODO Auto-generated method stub
-
     }
 
     @Override
-    public Future<SendResult> sendStringByFuture(String text)
-    {
-        Future<Void> jettyFuture = jettyRemote.sendStringByFuture(text);
-        return new JsrSendResultFuture(jettyFuture);
-    }
-
-    @Override
-    public void setAsyncSendTimeout(long timeoutmillis)
+    public void setBatchingAllowed(boolean allowed) throws IOException
     {
         // TODO Auto-generated method stub
-
     }
 
     @Override
-    public void setBatchingAllowed(boolean allowed)
+    public void setSendTimeout(long timeoutmillis)
     {
         // TODO Auto-generated method stub
-
     }
 }

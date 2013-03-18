@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -31,6 +32,11 @@ public class FruitBinaryEncoder implements Encoder.Binary<Fruit>
     public static final byte FRUIT_ID_BYTE = (byte)0xAF;
     // the number of bytes to store a string (1 int)
     public static final int STRLEN_STORAGE = 4;
+
+    @Override
+    public void destroy()
+    {
+    }
 
     @Override
     public ByteBuffer encode(Fruit fruit) throws EncodeException
@@ -47,6 +53,11 @@ public class FruitBinaryEncoder implements Encoder.Binary<Fruit>
         buf.flip();
 
         return buf;
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 
     private void putString(ByteBuffer buf, String str)

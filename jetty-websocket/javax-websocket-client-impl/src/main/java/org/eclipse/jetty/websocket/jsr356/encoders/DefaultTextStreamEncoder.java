@@ -24,7 +24,7 @@ import java.io.Writer;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 
-public class DefaultTextStreamEncoder implements Encoder.TextStream<String>
+public class DefaultTextStreamEncoder extends AbstractEncoder implements Encoder.TextStream<String>
 {
     @Override
     public void encode(String message, Writer writer) throws EncodeException, IOException

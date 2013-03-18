@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class InvalidOpenIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter type int)
      */
-    @WebSocketOpen
+    @OnOpen
     public void onOpen(int value)
     {
         openLatch.countDown();

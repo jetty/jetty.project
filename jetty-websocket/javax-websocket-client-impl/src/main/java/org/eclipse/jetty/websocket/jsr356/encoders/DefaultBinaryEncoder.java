@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 
-public class DefaultBinaryEncoder implements Encoder.Binary<ByteBuffer>
+public class DefaultBinaryEncoder extends AbstractEncoder implements Encoder.Binary<ByteBuffer>
 {
     @Override
     public ByteBuffer encode(ByteBuffer message) throws EncodeException

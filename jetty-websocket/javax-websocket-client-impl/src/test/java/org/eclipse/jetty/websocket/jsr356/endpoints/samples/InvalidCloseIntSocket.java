@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketClose;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnClose;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class InvalidCloseIntSocket extends TrackingSocket
 {
     /**
      * Invalid Close Method Declaration (parameter type int)
      */
-    @WebSocketClose
+    @OnClose
     public void onClose(int statusCode)
     {
         closeLatch.countDown();

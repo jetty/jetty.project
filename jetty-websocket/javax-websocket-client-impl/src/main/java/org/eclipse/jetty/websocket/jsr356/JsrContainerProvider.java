@@ -30,14 +30,9 @@ public class JsrContainerProvider extends ContainerProvider
         websocketContainer = new JettyWebSocketContainer();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected <T> T getContainer(Class<T> containerClass)
+    protected WebSocketContainer getContainer()
     {
-        if (WebSocketContainer.class.isAssignableFrom(containerClass))
-        {
-            return (T)websocketContainer;
-        }
-        return null;
+        return websocketContainer;
     }
 }

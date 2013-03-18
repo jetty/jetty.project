@@ -21,14 +21,14 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfiguration;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketClose;
-import javax.websocket.WebSocketError;
-import javax.websocket.WebSocketMessage;
-import javax.websocket.WebSocketOpen;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrMethodParameters.Param;
 
 /**
- * Scanner for javax.websocket {@link WebSocketEndpoint &#064;WebSocketEndpoint} and {@link WebSocketClient &#064;WebSocketClient} annotated websockets
+ * Scanner for javax.websocket {@link WebSocketEndpoint &#064;WebSocketEndpoint} and {@link ClientEndpoint &#064;ClientEndpoint} annotated websockets
  */
 public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<JsrAnnotatedMetadata>
 {
@@ -56,7 +56,7 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
     {
         validOpenParams = new ParamList();
         validOpenParams.addParams(Session.class);
-        validOpenParams.addParams(EndpointConfiguration.class);
+        validOpenParams.addParams(EndpointConfig.class);
 
         validCloseParams = new ParamList();
         validCloseParams.addParams(Session.class);
@@ -76,10 +76,10 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
     {
         this.pojo = websocket;
 
-        WebSocketClient anno = websocket.getAnnotation(WebSocketClient.class);
+        ClientEndpoint anno = websocket.getAnnotation(ClientEndpoint.class);
         if (anno == null)
         {
-            throw new InvalidWebSocketException("Unsupported WebSocket object, missing @" + WebSocketClient.class + " annotation");
+            throw new InvalidWebSocketException("Unsupported WebSocket object, missing @" + ClientEndpoint.class + " annotation");
         }
 
         this.encoders = new Encoders(anno.encoders());
@@ -145,37 +145,37 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
     {
         LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
 
-        if (isAnnotation(annotation,WebSocketOpen.class))
+        if (isAnnotation(annotation,OnOpen.class))
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            assertValidJsrSignature(method,WebSocketOpen.class,validOpenParams);
-            assertUnset(metadata.onOpen,WebSocketOpen.class,method);
+            assertValidJsrSignature(method,OnOpen.class,validOpenParams);
+            assertUnset(metadata.onOpen,OnOpen.class,method);
             metadata.onOpen = new CallableMethod(pojo,method);
             return;
         }
 
-        if (isAnnotation(annotation,WebSocketClose.class))
+        if (isAnnotation(annotation,OnClose.class))
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            assertValidJsrSignature(method,WebSocketClose.class,validCloseParams);
-            assertUnset(metadata.onClose,WebSocketClose.class,method);
+            assertValidJsrSignature(method,OnClose.class,validCloseParams);
+            assertUnset(metadata.onClose,OnClose.class,method);
             metadata.onClose = new CallableMethod(pojo,method);
             return;
         }
 
-        if (isAnnotation(annotation,WebSocketError.class))
+        if (isAnnotation(annotation,OnError.class))
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            assertValidJsrSignature(method,WebSocketError.class,validErrorParams);
-            assertUnset(metadata.onError,WebSocketError.class,method);
+            assertValidJsrSignature(method,OnError.class,validErrorParams);
+            assertUnset(metadata.onError,OnError.class,method);
             metadata.onError = new CallableMethod(pojo,method);
             return;
         }
 
-        if (isAnnotation(annotation,WebSocketMessage.class))
+        if (isAnnotation(annotation,OnMessage.class))
         {
             assertIsPublicNonStatic(method);
 
@@ -183,7 +183,7 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
             if (callable.isTextFormat())
             {
                 // TEXT
-                assertUnset(metadata.onText,WebSocketMessage.class,method);
+                assertUnset(metadata.onText,OnMessage.class,method);
                 metadata.onText = callable;
                 return;
             }
@@ -191,7 +191,7 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
             if (callable.isBinaryFormat())
             {
                 // BINARY
-                assertUnset(metadata.onBinary,WebSocketMessage.class,method);
+                assertUnset(metadata.onBinary,OnMessage.class,method);
                 metadata.onBinary = callable;
                 return;
             }
@@ -199,7 +199,7 @@ public class JsrAnnotatedClientScanner extends AbstractMethodAnnotationScanner<J
             if (callable.isPongFormat())
             {
                 // PONG
-                assertUnset(metadata.onPong,WebSocketMessage.class,method);
+                assertUnset(metadata.onPong,OnMessage.class,method);
                 metadata.onPong = callable;
                 return;
             }

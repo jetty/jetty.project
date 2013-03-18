@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 
-public class DefaultTextEncoder implements Encoder.Text<String>
+public class DefaultTextEncoder extends AbstractEncoder implements Encoder.Text<String>
 {
     @Override
     public String encode(String message) throws EncodeException

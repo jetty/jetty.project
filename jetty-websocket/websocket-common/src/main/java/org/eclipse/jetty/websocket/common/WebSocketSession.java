@@ -192,7 +192,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         return extensionFactory;
     }
 
+    /**
      * The idle timeout in milliseconds
+     */
     @Override
     public long getIdleTimeout()
     {
@@ -360,12 +362,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public void setIdleTimeout(long ms)
     {
         connection.setMaxIdleTimeout(ms);
-    }
-
-    @Override
-    public void setMaximumMessageSize(long length)
-    {
-        this.maximumMessageSize = length;
     }
 
     public void setOutgoingHandler(OutgoingFrames outgoing)

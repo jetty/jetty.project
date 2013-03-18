@@ -20,12 +20,23 @@ package org.eclipse.jetty.websocket.jsr356.samples;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
 public class FruitTextEncoder implements Encoder.Text<Fruit>
 {
     @Override
+    public void destroy()
+    {
+    }
+
+    @Override
     public String encode(Fruit fruit) throws EncodeException
     {
         return String.format("%s|%s",fruit.name,fruit.color);
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +29,8 @@ import java.util.Set;
 import javax.websocket.CloseReason;
 import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
-import javax.websocket.RemoteEndpoint;
+import javax.websocket.RemoteEndpoint.Async;
+import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
@@ -45,7 +45,8 @@ public class JsrSession implements Session
     private final String id;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
-    private JsrRemoteEndpoint remote;
+    private JsrAsyncRemote asyncRemote;
+    private JsrBasicRemote basicRemote;
 
     protected JsrSession(JettyWebSocketContainer container, WebSocketSession session, String id)
     {
@@ -61,9 +62,35 @@ public class JsrSession implements Session
     }
 
     @Override
+    public void close() throws IOException
+    {
+        jettySession.close();
+    }
+
+    @Override
     public void close(CloseReason closeStatus) throws IOException
     {
         jettySession.close(closeStatus.getCloseCode().getCode(),closeStatus.getReasonPhrase());
+    }
+
+    @Override
+    public Async getAsyncRemote()
+    {
+        if (asyncRemote == null)
+        {
+            asyncRemote = new JsrAsyncRemote(jettySession.getRemote());
+        }
+        return asyncRemote;
+    }
+
+    @Override
+    public Basic getBasicRemote()
+    {
+        if (basicRemote == null)
+        {
+            basicRemote = new JsrBasicRemote(jettySession.getRemote());
+        }
+        return basicRemote;
     }
 
     @Override
@@ -82,6 +109,13 @@ public class JsrSession implements Session
     public int getMaxBinaryMessageBufferSize()
     {
         return jettySession.getPolicy().getMaxBinaryMessageSize();
+    }
+
+    @Override
+    public long getMaxIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
     }
 
     @Override
@@ -132,6 +166,12 @@ public class JsrSession implements Session
     }
 
     @Override
+    public String getProtocolVersion()
+    {
+        return jettySession.getProtocolVersion();
+    }
+
+    @Override
     public String getQueryString()
     {
         return jettySession.getUpgradeRequest().getRequestURI().getQuery();
@@ -149,7 +189,6 @@ public class JsrSession implements Session
         return jettySession.getUpgradeRequest().getRequestURI();
     }
 
-    @Override
     public long getTimeout()
     {
         return jettySession.getIdleTimeout();
@@ -170,6 +209,18 @@ public class JsrSession implements Session
     }
 
     @Override
+    public boolean isOpen()
+    {
+        return jettySession.isOpen();
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return jettySession.isSecure();
+    }
+
+    @Override
     public void removeMessageHandler(MessageHandler handler)
     {
         // TODO Auto-generated method stub
@@ -184,49 +235,21 @@ public class JsrSession implements Session
     }
 
     @Override
-    public void setMaxTextMessageBufferSize(int length)
+    public void setMaxIdleTimeout(long milliseconds)
     {
         // TODO Auto-generated method stub
 
     }
 
     @Override
+    public void setMaxTextMessageBufferSize(int length)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
     public void setTimeout(long milliseconds)
     {
         jettySession.setIdleTimeout(milliseconds);
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        jettySession.close();
-    }
-
-    @Override
-    public String getProtocolVersion()
-    {
-        return jettySession.getProtocolVersion();
-    }
-
-    @Override
-    public RemoteEndpoint getRemote()
-    {
-        if (remote == null)
-        {
-            remote = new JsrRemoteEndpoint(jettySession.getRemote());
-        }
-        return remote;
-    }
-
-    @Override
-    public boolean isOpen()
-    {
-        return jettySession.isOpen();
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return jettySession.isSecure();
     }
 }

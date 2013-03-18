@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketOpen;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicOpenSessionSocket extends TrackingSocket
 {
-    @WebSocketOpen
+    @OnOpen
     public void onOpen(Session session)
     {
         openLatch.countDown();

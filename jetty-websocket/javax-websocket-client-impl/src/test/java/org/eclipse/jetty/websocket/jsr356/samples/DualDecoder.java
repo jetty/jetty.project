@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -73,6 +74,11 @@ public class DualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit>
         return fruit;
     }
 
+    @Override
+    public void destroy()
+    {
+    }
+
     private String getUTF8String(ByteBuffer buf)
     {
         int strLen = buf.getInt();
@@ -81,6 +87,11 @@ public class DualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit>
         String str = BufferUtil.toUTF8String(slice);
         buf.position(buf.position() + strLen);
         return str;
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 
     @Override

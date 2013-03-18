@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import javax.websocket.WebSocketClose;
-import javax.websocket.WebSocketError;
-import javax.websocket.WebSocketMessage;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 
@@ -31,27 +31,27 @@ import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 public class JsrAnnotatedMetadata
 {
     /**
-     * Callable for &#064;{@link WebSocketOpen} annotation
+     * Callable for &#064;{@link OnOpen} annotation
      */
     public CallableMethod onOpen;
     /**
-     * Callable for &#064;{@link WebSocketClose} annotation
+     * Callable for &#064;{@link OnClose} annotation
      */
     public CallableMethod onClose;
     /**
-     * Callable for &#064;{@link WebSocketError} annotation
+     * Callable for &#064;{@link OnError} annotation
      */
     public CallableMethod onError;
     /**
-     * Callable for &#064;{@link WebSocketMessage} annotation dealing with Text Message Format
+     * Callable for &#064;{@link OnMessage} annotation dealing with Text Message Format
      */
     public CallableMethod onText;
     /**
-     * Callable for &#064;{@link WebSocketMessage} annotation dealing with Binary Message Format
+     * Callable for &#064;{@link OnMessage} annotation dealing with Binary Message Format
      */
     public CallableMethod onBinary;
     /**
-     * Callable for &#064;{@link WebSocketMessage} annotation dealing with Pong Message Format
+     * Callable for &#064;{@link OnMessage} annotation dealing with Pong Message Format
      */
     public CallableMethod onPong;
 }

@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketError;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnError;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class InvalidErrorExceptionSocket extends TrackingSocket
 {
     /**
      * Invalid Error Method Declaration (parameter type Exception)
      */
-    @WebSocketError
+    @OnError
     public void onError(Exception e)
     {
         /* no impl */

@@ -22,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.websocket.DecodeException;
+import javax.websocket.EndpointConfig;
 
 public class FruitDecoder implements ExtDecoder<Fruit>
 {
@@ -42,6 +43,16 @@ public class FruitDecoder implements ExtDecoder<Fruit>
         fruit.color = mat.group(2);
 
         return fruit;
+    }
+
+    @Override
+    public void destroy()
+    {
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 
     @Override

@@ -24,7 +24,7 @@ import javax.websocket.Decoder;
 /**
  * Default implementation of the {@link Text} Message to {@link Short} decoder
  */
-public class ShortDecoder implements Decoder.Text<Short>
+public class ShortDecoder extends AbstractDecoder implements Decoder.Text<Short>
 {
     @Override
     public Short decode(String s) throws DecodeException

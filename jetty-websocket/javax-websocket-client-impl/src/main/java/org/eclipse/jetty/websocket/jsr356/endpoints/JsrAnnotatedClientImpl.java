@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.websocket.WebSocketClient;
+import javax.websocket.ClientEndpoint;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 
 /**
- * {@link EventDriverImpl} for {@link WebSocketClient &#064;WebSocketClient} annotated classes
+ * {@link EventDriverImpl} for {@link ClientEndpoint &#064;ClientEndpoint} annotated classes
  */
 public class JsrAnnotatedClientImpl implements EventDriverImpl
 {
@@ -39,10 +39,10 @@ public class JsrAnnotatedClientImpl implements EventDriverImpl
     {
         Class<?> websocketClass = websocket.getClass();
 
-        WebSocketClient wsclient = websocketClass.getAnnotation(WebSocketClient.class);
+        ClientEndpoint wsclient = websocketClass.getAnnotation(ClientEndpoint.class);
         if (wsclient == null)
         {
-            throw new InvalidWebSocketException("Cannot handle @WebSocketClient annotations here");
+            throw new InvalidWebSocketException("Cannot handle @ClientEndpoint annotations here");
         }
 
         JsrAnnotatedMetadata metadata = cache.get(websocketClass);
@@ -59,12 +59,12 @@ public class JsrAnnotatedClientImpl implements EventDriverImpl
     @Override
     public String describeRule()
     {
-        return "class annotated with @" + WebSocketClient.class.getName();
+        return "class annotated with @" + ClientEndpoint.class.getName();
     }
 
     @Override
     public boolean supports(Object websocket)
     {
-        return (websocket.getClass().getAnnotation(WebSocketClient.class) != null);
+        return (websocket.getClass().getAnnotation(ClientEndpoint.class) != null);
     }
 }

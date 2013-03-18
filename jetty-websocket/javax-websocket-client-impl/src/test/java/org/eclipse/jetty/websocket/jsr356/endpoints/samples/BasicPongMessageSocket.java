@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
 import javax.websocket.PongMessage;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketMessage;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicPongMessageSocket extends TrackingSocket
 {
-    @WebSocketMessage
+    @OnMessage
     public void onPong(PongMessage pong)
     {
         addEvent("onPong(%s)",pong);

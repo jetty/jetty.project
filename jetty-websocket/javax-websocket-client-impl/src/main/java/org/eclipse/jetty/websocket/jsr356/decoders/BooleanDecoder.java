@@ -26,7 +26,7 @@ import javax.websocket.Decoder;
  * <p>
  * Note: delegates to {@link Boolean#parseBoolean(String)} and will only support "true" and "false" as boolean values.
  */
-public class BooleanDecoder implements Decoder.Text<Boolean>
+public class BooleanDecoder extends AbstractDecoder implements Decoder.Text<Boolean>
 {
     @Override
     public Boolean decode(String s) throws DecodeException

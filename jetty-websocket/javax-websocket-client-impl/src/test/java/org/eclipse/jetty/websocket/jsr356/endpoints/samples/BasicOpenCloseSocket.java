@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketClose;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.OnClose;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicOpenCloseSocket extends TrackingSocket
 {
-    @WebSocketOpen
+    @OnOpen
     public void onOpen() {
         openLatch.countDown();
     }
     
-    @WebSocketClose
+    @OnClose
     public void onClose(CloseReason close) {
         this.closeReason = close;
         closeLatch.countDown();

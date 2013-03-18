@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
 import javax.websocket.Session;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketClose;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicCloseSessionReasonSocket extends TrackingSocket
 {
-    @WebSocketClose
+    @OnClose
     public void onClose(Session session, CloseReason reason)
     {
         addEvent("onClose(%s,%s)",session,reason);

@@ -24,7 +24,7 @@ import javax.websocket.Encoder;
 /**
  * Default encoder for {@link Short} to {@link Text} Message encoder
  */
-public class ShortEncoder implements Encoder.Text<Short>
+public class ShortEncoder extends AbstractEncoder implements Encoder.Text<Short>
 {
     @Override
     public String encode(Short object) throws EncodeException

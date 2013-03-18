@@ -18,47 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
-/**
- * Default implementation of the Text Message to {@link Float} decoder
- */
-public class FloatDecoder extends AbstractDecoder implements Decoder.Text<Float>
+public class AbstractDecoder implements Decoder
 {
     @Override
-    public Float decode(String s) throws DecodeException
+    public void destroy()
     {
-        try
-        {
-            Float val = Float.parseFloat(s);
-            if (val.isNaN())
-            {
-                throw new DecodeException(s,"NaN");
-            }
-            return val;
-        }
-        catch (NumberFormatException e)
-        {
-            throw new DecodeException(s,"Unable to parse float",e);
-        }
     }
 
     @Override
-    public boolean willDecode(String s)
+    public void init(EndpointConfig config)
     {
-        if (s == null)
-        {
-            return false;
-        }
-        try
-        {
-            Float val = Float.parseFloat(s);
-            return (!val.isNaN());
-        }
-        catch (NumberFormatException e)
-        {
-            return false;
-        }
     }
 }

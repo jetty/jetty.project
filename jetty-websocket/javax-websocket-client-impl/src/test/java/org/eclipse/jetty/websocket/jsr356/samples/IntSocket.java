@@ -20,20 +20,21 @@ package org.eclipse.jetty.websocket.jsr356.samples;
 
 import java.io.IOException;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.EncodeException;
+import javax.websocket.OnMessage;
 import javax.websocket.Session;
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketMessage;
 
-@WebSocketClient(decoders = { DualDecoder.class })
+@ClientEndpoint(decoders =
+{ DualDecoder.class })
 public class IntSocket
 {
-    @WebSocketMessage
+    @OnMessage
     public void onInt(Session session, int value)
     {
         try
         {
-            session.getRemote().sendObject(value);
+            session.getBasicRemote().sendObject(value);
         }
         catch (IOException | EncodeException e)
         {

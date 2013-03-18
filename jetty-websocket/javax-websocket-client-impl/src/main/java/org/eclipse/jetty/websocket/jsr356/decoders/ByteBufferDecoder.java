@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
-public class ByteBufferDecoder implements Decoder.Binary<ByteBuffer>
+public class ByteBufferDecoder extends AbstractDecoder implements Decoder.Binary<ByteBuffer>
 {
     @Override
     public ByteBuffer decode(ByteBuffer bytes) throws DecodeException

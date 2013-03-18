@@ -18,19 +18,21 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Set;
 
-import javax.websocket.ClientEndpointConfiguration;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
+import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 public class JettyWebSocketContainer implements WebSocketContainer
 {
     @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfiguration cec, URI path) throws DeploymentException
+    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
         // TODO Auto-generated method stub
         return null;
@@ -38,6 +40,20 @@ public class JettyWebSocketContainer implements WebSocketContainer
 
     @Override
     public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Session connectToServer(Object annotatedEndpointInstance, URI path) throws DeploymentException, IOException
     {
         // TODO Auto-generated method stub
         return null;
@@ -58,6 +74,13 @@ public class JettyWebSocketContainer implements WebSocketContainer
     }
 
     @Override
+    public long getDefaultMaxSessionIdleTimeout()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
         // TODO Auto-generated method stub
@@ -65,17 +88,10 @@ public class JettyWebSocketContainer implements WebSocketContainer
     }
 
     @Override
-    public Set<String> getInstalledExtensions()
+    public Set<Extension> getInstalledExtensions()
     {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    @Override
-    public long getMaxSessionIdleTimeout()
-    {
-        // TODO Auto-generated method stub
-        return 0;
     }
 
     @Override
@@ -93,21 +109,14 @@ public class JettyWebSocketContainer implements WebSocketContainer
     }
 
     @Override
+    public void setDefaultMaxSessionIdleTimeout(long timeout)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void setMaxSessionIdleTimeout(long timeout)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void setMaxTextMessageBufferSize(long max)
     {
         // TODO Auto-generated method stub
 

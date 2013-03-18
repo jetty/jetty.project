@@ -24,7 +24,7 @@ import javax.websocket.Decoder;
 /**
  * Default implementation of the {@link Text} Message to {@link Byte} decoder
  */
-public class ByteDecoder implements Decoder.Text<Byte>
+public class ByteDecoder extends AbstractDecoder implements Decoder.Text<Byte>
 {
     @Override
     public Byte decode(String s) throws DecodeException

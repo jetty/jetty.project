@@ -24,7 +24,7 @@ import javax.websocket.Encoder;
 /**
  * Default encoder for {@link Float} to {@link Text} Message encoder
  */
-public class FloatEncoder implements Encoder.Text<Float>
+public class FloatEncoder extends AbstractEncoder implements Encoder.Text<Float>
 {
     @Override
     public String encode(Float object) throws EncodeException

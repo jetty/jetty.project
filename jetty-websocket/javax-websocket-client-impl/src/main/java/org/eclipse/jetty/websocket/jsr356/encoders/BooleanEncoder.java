@@ -24,7 +24,7 @@ import javax.websocket.Encoder;
 /**
  * Default encoder for {@link Boolean} to {@link Text} Message encoder
  */
-public class BooleanEncoder implements Encoder.Text<Boolean>
+public class BooleanEncoder extends AbstractEncoder implements Encoder.Text<Boolean>
 {
     @Override
     public String encode(Boolean object) throws EncodeException

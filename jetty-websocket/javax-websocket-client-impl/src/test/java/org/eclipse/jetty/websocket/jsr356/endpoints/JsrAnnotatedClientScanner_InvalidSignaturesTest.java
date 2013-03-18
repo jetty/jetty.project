@@ -25,9 +25,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import javax.websocket.WebSocketClose;
-import javax.websocket.WebSocketError;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -59,13 +59,13 @@ public class JsrAnnotatedClientScanner_InvalidSignaturesTest
         List<Class<?>[]> data = new ArrayList<>();
 
         // @formatter:off
-        data.add(new Class<?>[]{ InvalidCloseIntSocket.class, WebSocketClose.class });
-        data.add(new Class<?>[]{ InvalidErrorErrorSocket.class, WebSocketError.class });
-        data.add(new Class<?>[]{ InvalidErrorExceptionSocket.class, WebSocketError.class });
-        data.add(new Class<?>[]{ InvalidErrorIntSocket.class, WebSocketError.class });
-        data.add(new Class<?>[]{ InvalidOpenCloseReasonSocket.class, WebSocketOpen.class });
-        data.add(new Class<?>[]{ InvalidOpenIntSocket.class, WebSocketOpen.class });
-        data.add(new Class<?>[]{ InvalidOpenSessionIntSocket.class, WebSocketOpen.class });
+        data.add(new Class<?>[]{ InvalidCloseIntSocket.class, OnClose.class });
+        data.add(new Class<?>[]{ InvalidErrorErrorSocket.class, OnError.class });
+        data.add(new Class<?>[]{ InvalidErrorExceptionSocket.class, OnError.class });
+        data.add(new Class<?>[]{ InvalidErrorIntSocket.class, OnError.class });
+        data.add(new Class<?>[]{ InvalidOpenCloseReasonSocket.class, OnOpen.class });
+        data.add(new Class<?>[]{ InvalidOpenIntSocket.class, OnOpen.class });
+        data.add(new Class<?>[]{ InvalidOpenSessionIntSocket.class, OnOpen.class });
         // @formatter:on
 
         // TODO: invalid return types

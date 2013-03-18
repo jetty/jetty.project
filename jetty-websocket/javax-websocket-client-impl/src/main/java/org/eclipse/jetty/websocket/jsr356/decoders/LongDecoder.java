@@ -24,7 +24,7 @@ import javax.websocket.Decoder;
 /**
  * Default implementation of the Text Message to {@link Long} decoder
  */
-public class LongDecoder implements Decoder.Text<Long>
+public class LongDecoder extends AbstractDecoder implements Decoder.Text<Long>
 {
 
     @Override

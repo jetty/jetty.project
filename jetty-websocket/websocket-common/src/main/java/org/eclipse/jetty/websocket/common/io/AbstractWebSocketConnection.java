@@ -604,12 +604,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public void setIdleTimeout(long ms)
-    {
-        getEndPoint().setIdleTimeout(ms);
-    }
-
-    @Override
     public void setInputBufferSize(int inputBufferSize)
     {
         if (inputBufferSize < MIN_BUFFER_SIZE)

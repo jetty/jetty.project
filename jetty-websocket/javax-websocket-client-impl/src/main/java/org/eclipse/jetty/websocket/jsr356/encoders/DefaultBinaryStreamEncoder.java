@@ -27,7 +27,7 @@ import javax.websocket.Encoder;
 
 import org.eclipse.jetty.util.BufferUtil;
 
-public class DefaultBinaryStreamEncoder implements Encoder.BinaryStream<ByteBuffer>
+public class DefaultBinaryStreamEncoder extends AbstractEncoder implements Encoder.BinaryStream<ByteBuffer>
 {
     @Override
     public void encode(ByteBuffer message, OutputStream out) throws EncodeException, IOException

@@ -16,20 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
+package org.eclipse.jetty.websocket.jsr356.encoders;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
-
-@ClientEndpoint
-public class BasicTextMessageStringSocket extends TrackingSocket
+public abstract class AbstractEncoder implements Encoder
 {
-    @OnMessage
-    public void onText(String message)
+    @Override
+    public void destroy()
     {
-        addEvent("onText(%s)",message);
-        dataLatch.countDown();
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 }

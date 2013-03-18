@@ -24,7 +24,7 @@ import javax.websocket.Encoder;
 /**
  * Default encoder for {@link Byte} to {@link Text} Message encoder
  */
-public class ByteEncoder implements Encoder.Text<Byte>
+public class ByteEncoder extends AbstractEncoder implements Encoder.Text<Byte>
 {
     @Override
     public String encode(Byte object) throws EncodeException

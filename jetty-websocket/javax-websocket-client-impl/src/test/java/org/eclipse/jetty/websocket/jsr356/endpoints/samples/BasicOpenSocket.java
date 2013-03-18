@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketOpen;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicOpenSocket extends TrackingSocket
 {
-    @WebSocketOpen
+    @OnOpen
     public void onOpen()
     {
         openLatch.countDown();

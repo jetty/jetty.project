@@ -20,15 +20,15 @@ package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
 import java.nio.ByteBuffer;
 
-import javax.websocket.WebSocketClient;
-import javax.websocket.WebSocketMessage;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@WebSocketClient
+@ClientEndpoint
 public class BasicBinaryMessageByteBufferSocket extends TrackingSocket
 {
-    @WebSocketMessage
+    @OnMessage
     public void onBinary(ByteBuffer data)
     {
         addEvent("onBinary(%s)",data);
