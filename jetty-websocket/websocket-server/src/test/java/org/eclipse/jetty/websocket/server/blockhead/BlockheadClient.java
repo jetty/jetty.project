@@ -330,6 +330,39 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return protocols;
     }
 
+    public String getRequestHost()
+    {
+        if (destHttpURI.getPort() > 0)
+        {
+            return String.format("%s:%d",destHttpURI.getHost(),destHttpURI.getPort());
+        }
+        else
+        {
+            return destHttpURI.getHost();
+        }
+    }
+
+    public String getRequestPath()
+    {
+        StringBuilder path = new StringBuilder();
+        path.append(destHttpURI.getPath());
+        if (StringUtil.isNotBlank(destHttpURI.getQuery()))
+        {
+            path.append('?').append(destHttpURI.getQuery());
+        }
+        return path.toString();
+    }
+
+    public String getRequestWebSocketKey()
+    {
+        return REQUEST_HASH_KEY;
+    }
+
+    public String getRequestWebSocketOrigin()
+    {
+        return destWebsocketURI.toASCIIString();
+    }
+
     public int getVersion()
     {
         return version;
@@ -557,27 +590,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public void sendStandardRequest() throws IOException
     {
         StringBuilder req = new StringBuilder();
-        req.append("GET ");
-        req.append(destHttpURI.getPath());
-        if (StringUtil.isNotBlank(destHttpURI.getQuery()))
-        {
-            req.append('?').append(destHttpURI.getQuery());
-        }
-        req.append(" HTTP/1.1\r\n");
-        req.append("Host: ").append(destHttpURI.getHost());
-        if (destHttpURI.getPort() > 0)
-        {
-            req.append(':').append(destHttpURI.getPort());
-        }
-        req.append("\r\n");
+        req.append("GET ").append(getRequestPath()).append(" HTTP/1.1\r\n");
+        req.append("Host: ").append(getRequestHost()).append("\r\n");
         req.append("Upgrade: websocket\r\n");
         req.append("Connection: Upgrade\r\n");
         for (String header : headers)
         {
             req.append(header);
         }
-        req.append("Sec-WebSocket-Key: ").append(REQUEST_HASH_KEY).append("\r\n");
-        req.append("Sec-WebSocket-Origin: ").append(destWebsocketURI.toASCIIString()).append("\r\n");
+        req.append("Sec-WebSocket-Key: ").append(getRequestWebSocketKey()).append("\r\n");
+        req.append("Sec-WebSocket-Origin: ").append(getRequestWebSocketOrigin()).append("\r\n");
         if (StringUtil.isNotBlank(protocols))
         {
             req.append("Sec-WebSocket-Protocol: ").append(protocols).append("\r\n");
