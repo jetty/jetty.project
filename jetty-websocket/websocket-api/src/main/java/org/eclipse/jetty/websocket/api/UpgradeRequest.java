@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -86,7 +87,7 @@ public class UpgradeRequest
 
     public String getHeader(String name)
     {
-        List<String> values = headers.get(name);
+        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
         // no value list
         if (values == null)
         {
@@ -120,7 +121,7 @@ public class UpgradeRequest
 
     public int getHeaderInt(String name)
     {
-        List<String> values = headers.get(name);
+        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
         // no value list
         if (values == null)
         {
@@ -190,6 +191,13 @@ public class UpgradeRequest
         return requestURI;
     }
 
+    /**
+     * Access the Servlet HTTP Session (if present)
+     * <p>
+     * Note: Never present on a Client UpgradeRequest.
+     * 
+     * @return the Servlet HTTPSession on server side UpgradeRequests
+     */
     public Object getSession()
     {
         return session;
@@ -224,14 +232,14 @@ public class UpgradeRequest
 
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name,values);
+        headers.put(name.toLowerCase(Locale.ENGLISH),values);
     }
 
     public void setHeader(String name, String value)
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        setHeader(name,values);
+        setHeader(name.toLowerCase(Locale.ENGLISH),values);
     }
 
     public void setHttpVersion(String httpVersion)
