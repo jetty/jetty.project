@@ -190,35 +190,6 @@ public class WebSocketServletRFCTest
         }
     }
 
-    @Test
-    @Ignore("Need a better idle timeout test")
-    public void testIdle() throws Exception
-    {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("onConnect");
-        client.setTimeout(TimeUnit.MILLISECONDS,800);
-        try
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            client.sleep(TimeUnit.SECONDS,1);
-
-            client.write(WebSocketFrame.text("Hello"));
-
-            // now wait for the server to time out
-            // should be 2 frames, the TextFrame echo, and then the Close on disconnect
-            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.SECONDS,2);
-            Assert.assertThat("frames[0].opcode",capture.getFrames().get(0).getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("frames[1].opcode",capture.getFrames().get(1).getOpCode(),is(OpCode.CLOSE));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
