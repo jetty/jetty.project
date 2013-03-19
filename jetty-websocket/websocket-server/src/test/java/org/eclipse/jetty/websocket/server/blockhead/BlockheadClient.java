@@ -29,7 +29,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -202,10 +204,14 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     {
         InetAddress destAddr = InetAddress.getByName(destHttpURI.getHost());
         int port = destHttpURI.getPort();
-        socket = new Socket(destAddr,port);
+
+        SocketAddress endpoint = new InetSocketAddress(destAddr,port);
+
+        socket = new Socket();
+        socket.setSoTimeout(timeout);
+        socket.connect(endpoint);
 
         out = socket.getOutputStream();
-        socket.setSoTimeout(timeout);
         in = socket.getInputStream();
     }
 

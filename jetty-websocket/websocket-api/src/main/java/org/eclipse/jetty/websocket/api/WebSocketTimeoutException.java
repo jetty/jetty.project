@@ -16,17 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.extensions;
-
-import org.eclipse.jetty.websocket.api.WebSocketException;
+package org.eclipse.jetty.websocket.api;
 
 /**
- * Interface for dealing with Incoming Frames.
+ * Exception thrown to indicate a connection I/O timeout.
  */
-public interface IncomingFrames
+public class WebSocketTimeoutException extends WebSocketException
 {
-    // TODO: JSR-356 change to Throwable
-    public void incomingError(WebSocketException e);
+    private static final long serialVersionUID = -6145098200250676673L;
 
-    public void incomingFrame(Frame frame);
+    public WebSocketTimeoutException(String message)
+    {
+        super(message);
+    }
+
+    public WebSocketTimeoutException(String message, Throwable cause)
+    {
+        super(message,cause);
+    }
+
+    public WebSocketTimeoutException(Throwable cause)
+    {
+        super(cause);
+    }
 }
