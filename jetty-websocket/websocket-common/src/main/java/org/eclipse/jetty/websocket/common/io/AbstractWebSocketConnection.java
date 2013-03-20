@@ -104,7 +104,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void succeeded()
         {
-            // Lets process the next set of bytes...
             AbstractWebSocketConnection.this.complete(writeBytes);
         }
     }
@@ -288,11 +287,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
         }
         CloseInfo close = new CloseInfo(statusCode,reason);
-        // TODO: create DisconnectCallback?
         outgoingFrame(close.asFrame(),new OnCloseCallback());
     }
 
-    private void execute(Runnable task)
+    protected void execute(Runnable task)
     {
         try
         {
