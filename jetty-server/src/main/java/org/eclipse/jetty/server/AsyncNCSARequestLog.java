@@ -18,15 +18,13 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.ConcurrentArrayBlockingQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 
 /* ------------------------------------------------------------ */
@@ -118,7 +116,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
     }
 
     @Override
-    protected void write(String log) throws IOException
+    public void write(String log) throws IOException
     {
         if (!_queue.offer(log))
         {
