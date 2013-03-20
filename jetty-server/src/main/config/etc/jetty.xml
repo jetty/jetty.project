@@ -44,14 +44,14 @@
     <!-- =========================================================== -->
     <Arg name="threadpool">
       <New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Arg name="minThreads">10</Arg>
-        <Arg name="maxThreads">200</Arg>
-        <Arg name="idleTimeout">60000</Arg>
-        <Arg name="queue">
+        <Arg name="minThreads" type="int">10</Arg>
+        <Arg name="maxThreads" type="int">200</Arg>
+        <Arg name="idleTimeout" type="int">60000</Arg>
+        <!-- Arg >
           <New class="org.eclipse.jetty.util.ConcurrentArrayBlockingQueue$Unbounded">
-            <Arg>32</Arg>
+            <Arg type='int'>32</Arg>
           </New>
-        </Arg> 
+        </Arg --> 
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
