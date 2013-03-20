@@ -68,11 +68,18 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     public void onOpen()
     {
         boolean beenOpened = opened.getAndSet(true);
+        super.onOpen();
         if (!beenOpened)
         {
-            factory.sessionOpened(getSession());
+            execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    factory.sessionOpened(getSession());
+                }
+            });
         }
-        super.onOpen();
     }
 
     @Override
