@@ -146,7 +146,8 @@ public class ShutdownMonitor
         {
             if (isAlive())
             {
-                System.err.printf("ShutdownMonitorThread already started");
+                if (DEBUG)
+                    System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
             }
 
