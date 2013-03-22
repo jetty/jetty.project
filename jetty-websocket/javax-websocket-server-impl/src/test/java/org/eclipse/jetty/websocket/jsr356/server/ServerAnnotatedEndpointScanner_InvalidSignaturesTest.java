@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.*;
 
@@ -32,6 +32,7 @@ import javax.websocket.OnOpen;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorErrorSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorExceptionSocket;
@@ -46,12 +47,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test {@link JsrAnnotatedClientScanner} against various simple, single method annotated classes with invalid signatures.
+ * Test {@link JsrAnnotatedServerScanner} against various simple, single method annotated classes with invalid signatures.
  */
 @RunWith(Parameterized.class)
-public class JsrAnnotatedClientScanner_InvalidSignaturesTest
+public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
 {
-    private static final Logger LOG = Log.getLogger(JsrAnnotatedClientScanner_InvalidSignaturesTest.class);
+    private static final Logger LOG = Log.getLogger(ServerAnnotatedEndpointScanner_InvalidSignaturesTest.class);
 
     @Parameters
     public static Collection<Class<?>[]> data()
@@ -81,7 +82,7 @@ public class JsrAnnotatedClientScanner_InvalidSignaturesTest
     // The annotation class expected to be mentioned in the error message
     private Class<? extends Annotation> expectedAnnoClass;
 
-    public JsrAnnotatedClientScanner_InvalidSignaturesTest(Class<?> pojo, Class<? extends Annotation> expectedAnnotation)
+    public ServerAnnotatedEndpointScanner_InvalidSignaturesTest(Class<?> pojo, Class<? extends Annotation> expectedAnnotation)
     {
         this.pojo = pojo;
         this.expectedAnnoClass = expectedAnnotation;
@@ -90,7 +91,9 @@ public class JsrAnnotatedClientScanner_InvalidSignaturesTest
     @Test
     public void testScan_InvalidSignature()
     {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(pojo);
+        JsrServerMetadata metadata = new JsrServerMetadata(pojo);
+        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        
         try
         {
             scanner.scan();

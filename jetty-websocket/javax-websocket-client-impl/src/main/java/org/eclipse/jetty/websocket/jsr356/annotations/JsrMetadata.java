@@ -16,56 +16,79 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.annotation.Annotation;
+import java.util.LinkedList;
 
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 
-import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
-/**
- * Represents the metadata associated with Annotation discovery of a specific class.
- */
-public class JsrAnnotatedMetadata
+public abstract class JsrMetadata<T extends Annotation>
 {
-    public Class<?> pojo;
-    public Class<? extends Annotation> classAnnotation;
+    public final Class<?> pojo;
     public Decoders decoders;
     public Encoders encoders;
 
     /**
      * Callable for &#064;{@link OnOpen} annotation
      */
-    public CallableMethod onOpen;
+    public ParameterizedMethod onOpen;
 
     /**
      * Callable for &#064;{@link OnClose} annotation
      */
-    public CallableMethod onClose;
+    public ParameterizedMethod onClose;
 
     /**
      * Callable for &#064;{@link OnError} annotation
      */
-    public CallableMethod onError;
+    public ParameterizedMethod onError;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Text Message Format
      */
-    public CallableMethod onText;
+    public ParameterizedMethod onText;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Binary Message Format
      */
-    public CallableMethod onBinary;
+    public ParameterizedMethod onBinary;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Pong Message Format
      */
-    public CallableMethod onPong;
+    public ParameterizedMethod onPong;
+
+    protected JsrMetadata(Class<?> websocket)
+    {
+        this.pojo = websocket;
+    }
+
+    public void customizeParamsOnClose(LinkedList<IJsrParamId> params)
+    {
+        /* do nothing */
+    }
+
+    public void customizeParamsOnError(LinkedList<IJsrParamId> params)
+    {
+        /* do nothing */
+    }
+
+    public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
+    {
+        /* do nothing */
+    }
+
+    public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
+    {
+        /* do nothing */
+    }
+
+    public abstract T getAnnotation();
 }

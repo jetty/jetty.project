@@ -23,12 +23,13 @@ import static org.hamcrest.Matchers.*;
 import javax.websocket.CloseReason;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSocket;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JsrAnnotatedClientScannerTest
+public class ClientAnnotatedEndpointScannerTest
 {
     private void assertHasCallable(String msg, CallableMethod callable, Class<?>... expectedParameters)
     {
@@ -46,8 +47,9 @@ public class JsrAnnotatedClientScannerTest
     @Test
     public void testScan_BasicOpenClose()
     {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(BasicOpenCloseSocket.class);
-        JsrAnnotatedMetadata metadata = scanner.scan();
+        JsrClientMetadata metadata = new JsrClientMetadata(BasicOpenCloseSocket.class);
+        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 
@@ -58,8 +60,9 @@ public class JsrAnnotatedClientScannerTest
     @Test
     public void testScan_BasicSessionOpenClose()
     {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(BasicOpenCloseSessionSocket.class);
-        JsrAnnotatedMetadata metadata = scanner.scan();
+        JsrClientMetadata metadata = new JsrClientMetadata(BasicOpenCloseSessionSocket.class);
+        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 

@@ -30,6 +30,19 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 public class JsrEndpointEventDriver implements EventDriver
 {
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public WebSocketSession getSession()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     @Override
     public void incomingError(WebSocketException e)
@@ -43,20 +56,6 @@ public class JsrEndpointEventDriver implements EventDriver
     {
         // TODO Auto-generated method stub
 
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public WebSocketSession getSession()
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     @Override
@@ -121,5 +120,4 @@ public class JsrEndpointEventDriver implements EventDriver
         // TODO Auto-generated method stub
 
     }
-
 }

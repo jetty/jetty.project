@@ -22,17 +22,19 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
+import org.eclipse.jetty.websocket.jsr356.decoders.Decoders.DecoderRef;
 import org.eclipse.jetty.websocket.jsr356.utils.DeploymentTypeUtils;
 
-public class Decoders
+public class Decoders implements Iterable<DecoderRef>
 {
-    private static class DecoderRef
+    public static class DecoderRef
     {
         Class<?> type;
         Class<? extends Decoder> decoder;
@@ -41,6 +43,16 @@ public class Decoders
         {
             this.type = type;
             this.decoder = decoder;
+        }
+
+        public Class<? extends Decoder> getDecoder()
+        {
+            return decoder;
+        }
+
+        public Class<?> getType()
+        {
+            return type;
         }
     }
 
@@ -187,5 +199,11 @@ public class Decoders
         {
             throw new ConfigurationException("Unable to instantiate Decoder: " + decoderClass,e);
         }
+    }
+
+    @Override
+    public Iterator<DecoderRef> iterator()
+    {
+        return decoders.iterator();
     }
 }

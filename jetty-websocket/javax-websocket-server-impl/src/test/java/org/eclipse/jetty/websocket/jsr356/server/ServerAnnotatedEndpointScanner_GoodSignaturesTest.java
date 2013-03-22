@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.*;
 
@@ -31,20 +31,22 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseSessionReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSessionThrowableSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicPongMessageSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedMetadata;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSessionReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionThrowableSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,10 +54,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test {@link JsrAnnotatedClientScanner} against various valid, simple, 1 method annotated classes with valid signatures.
+ * Test {@link JsrAnnotatedServerScanner} against various valid, simple, 1 method annotated classes with valid signatures.
  */
 @RunWith(Parameterized.class)
-public class JsrAnnotatedClientScanner_GoodSignaturesTest
+public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
 {
     public static class Case
     {
@@ -126,7 +128,7 @@ public class JsrAnnotatedClientScanner_GoodSignaturesTest
 
     private Case testcase;
 
-    public JsrAnnotatedClientScanner_GoodSignaturesTest(Case testcase)
+    public ServerAnnotatedEndpointScanner_GoodSignaturesTest(Case testcase)
     {
         this.testcase = testcase;
     }
@@ -134,8 +136,9 @@ public class JsrAnnotatedClientScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        JsrAnnotatedClientScanner scanner = new JsrAnnotatedClientScanner(testcase.pojo);
-        JsrAnnotatedMetadata metadata = scanner.scan();
+        JsrServerMetadata metadata = new JsrServerMetadata(testcase.pojo);
+        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 
