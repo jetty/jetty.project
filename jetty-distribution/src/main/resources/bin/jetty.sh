@@ -116,9 +116,9 @@ started()
   for T in 1 2 3 4 5 6 7 9 10 11 12 13 14 15 
   do
     sleep 4
-    [ -z "$(grep STARTED $1)" ] || return 0
-    [ -z "$(grep STOPPED $1)" ] || return 1
-    [ -z "$(grep FAILED $1)" ] || return 1
+    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
+    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
+    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
@@ -336,13 +336,17 @@ then
 fi
 
 #####################################################
-# Find a PID for the pid file
+# Find a pid and state file
 #####################################################
 if [ -z "$JETTY_PID" ] 
 then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
-JETTY_STATE=$(dirname $JETTY_PID)/jetty.state
+
+if [ -z "$JETTY_STATE" ] 
+then
+  JETTY_STATE=$JETTY_HOME/jetty.state
+fi
 JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 
