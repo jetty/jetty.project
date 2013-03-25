@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.monitor.triggers;
 
 import java.util.Arrays;
@@ -24,6 +23,7 @@ import java.util.List;
 
 import org.eclipse.jetty.monitor.jmx.EventState;
 import org.eclipse.jetty.monitor.jmx.EventTrigger;
+
 
 
 /* ------------------------------------------------------------ */

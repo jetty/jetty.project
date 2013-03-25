@@ -106,7 +106,6 @@ public class AttrEventTriggerTest
         _counter = _handler.getRequestCounter();
         _server.addBean(_counter);
 
-        //_server.addLifeCycleListener(mBeanContainer);
         _server.start();
 
         startClient();
