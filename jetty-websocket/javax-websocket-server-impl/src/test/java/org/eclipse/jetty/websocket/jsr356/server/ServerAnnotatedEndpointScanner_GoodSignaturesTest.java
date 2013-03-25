@@ -32,6 +32,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.annotations.ParameterizedMethod;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedMetadata;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSessionSocket;
@@ -86,12 +87,12 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     public static Collection<Case[]> data() throws Exception
     {
         List<Case[]> data = new ArrayList<>();
-        Field fOpen = findFieldRef(JsrAnnotatedMetadata.class,"onOpen");
-        Field fClose = findFieldRef(JsrAnnotatedMetadata.class,"onClose");
-        Field fError = findFieldRef(JsrAnnotatedMetadata.class,"onError");
-        Field fText = findFieldRef(JsrAnnotatedMetadata.class,"onText");
-        Field fBinary = findFieldRef(JsrAnnotatedMetadata.class,"onBinary");
-        Field fPong = findFieldRef(JsrAnnotatedMetadata.class,"onPong");
+        Field fOpen = findFieldRef(JsrServerMetadata.class,"onOpen");
+        Field fClose = findFieldRef(JsrServerMetadata.class,"onClose");
+        Field fError = findFieldRef(JsrServerMetadata.class,"onError");
+        Field fText = findFieldRef(JsrServerMetadata.class,"onText");
+        Field fBinary = findFieldRef(JsrServerMetadata.class,"onBinary");
+        Field fPong = findFieldRef(JsrServerMetadata.class,"onPong");
 
         // @formatter:off
         // -- Open Events
@@ -142,7 +143,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 
-        CallableMethod cm = (CallableMethod)testcase.metadataField.get(metadata);
+        ParameterizedMethod cm = (ParameterizedMethod)testcase.metadataField.get(metadata);
         Assert.assertThat(testcase.metadataField.toString(),cm,notNullValue());
         int len = testcase.expectedParameters.length;
         for (int i = 0; i < len; i++)

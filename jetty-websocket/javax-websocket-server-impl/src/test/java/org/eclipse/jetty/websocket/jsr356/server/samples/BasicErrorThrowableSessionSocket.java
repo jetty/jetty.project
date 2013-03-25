@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.samples;
 
-import javax.websocket.ClientEndpoint;
 import javax.websocket.OnError;
 import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ClientEndpoint
+@ServerEndpoint(value="/basic")
 public class BasicErrorThrowableSessionSocket extends TrackingSocket
 {
     @OnError
