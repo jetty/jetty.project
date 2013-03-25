@@ -120,6 +120,8 @@ public class InputStreamContentProvider implements ContentProvider
                     if (failure == null)
                     {
                         failure = x;
+                        // Signal we have more content to cause a call to
+                        // next() which will throw NoSuchElementException.
                         return true;
                     }
                     return false;
