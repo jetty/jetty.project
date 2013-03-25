@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpDestination implements Destination, AutoCloseable, Dumpable
+public class HttpDestination implements Destination, Closeable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 

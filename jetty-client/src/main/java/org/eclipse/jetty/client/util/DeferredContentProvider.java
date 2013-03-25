@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -77,7 +78,7 @@ import org.eclipse.jetty.client.api.Response;
  * }
  * </pre>
  */
-public class DeferredContentProvider implements AsyncContentProvider, AutoCloseable
+public class DeferredContentProvider implements AsyncContentProvider, Closeable
 {
     private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
 
