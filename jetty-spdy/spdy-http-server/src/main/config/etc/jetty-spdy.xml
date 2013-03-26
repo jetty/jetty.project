@@ -71,7 +71,7 @@
   <!-- specific connection factory types for all configuration     -->
   <!-- that may be set here.                                       -->
   <!-- =========================================================== -->
-  <Call id="sslConnector" name="addConnector">
+  <Call id="spdyConnector" name="addConnector">
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
