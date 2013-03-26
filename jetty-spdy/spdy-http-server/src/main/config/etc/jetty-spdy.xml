@@ -2,60 +2,17 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- ============================================================= -->
-<!-- Configure the Jetty Server instance with an ID "Server"       -->
-<!-- by adding a SPDY connector.                                   -->
+<!-- Configure a SPDY connector.                                   -->
 <!-- This configuration must be used in conjunction with jetty.xml -->
-<!-- It should not be used with jetty-https.xml as this connector  -->
-<!-- can provide both HTTPS and SPDY connections                   -->
+<!-- and jetty-ssl.xml                                             -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-  <!-- =========================================================== -->
-  <!-- Setup the SSL Context factory used to establish all TLS     -->
-  <!-- Connections and session.                                    -->
-  <!--                                                             -->
-  <!-- Consult the javadoc of o.e.j.util.ssl.SslContextFactory     -->
-  <!-- o.e.j.server.HttpConnectionFactory for all configuration    -->
-  <!-- that may be set here.                                       -->
-  <!-- =========================================================== -->
-  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-    <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
-    <Set name="KeyStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
-    <Set name="KeyManagerPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
-    <Set name="TrustStorePath"><Property name="jetty.home" default="." />/etc/keystore</Set>
-    <Set name="TrustStorePassword">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
-    <Set name="EndpointIdentificationAlgorithm"></Set>
-    <Set name="ExcludeCipherSuites">
-      <Array type="String">
-        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
-        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
-      </Array>
-    </Set>
-  </New>
 
   <!-- =========================================================== -->
   <!-- Enables NPN debugging on System.err                         -->
   <!-- ===========================================================
    <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
   -->
-
-  <!-- =========================================================== -->
-  <!-- Create a TLS specific HttpConfiguration based on the        -->
-  <!-- common HttpConfiguration defined in jetty.xml               -->
-  <!-- Add a SecureRequestCustomizer to extract certificate and    -->
-  <!-- session information                                         -->
-  <!-- =========================================================== -->
-  <New id="tlsHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg><Ref refid="httpConfig"/></Arg>
-    <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
-    </Call>
-  </New>
 
   <!-- =========================================================== -->
   <!-- Create a push strategy which can be used by reference by    -->
@@ -145,7 +102,7 @@
             <Item>
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">3</Arg>
-                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
+                <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
                 <Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg>
               </New>
             </Item>
@@ -154,21 +111,21 @@
             <Item>
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">2</Arg>
-                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
+                <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
               </New>
             </Item>
 
             <!-- HTTP Connection factory -->
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                <Arg name="config"><Ref refid="tlsHttpConfig" /></Arg>
+                <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
               </New>
             </Item>
           </Array>
         </Arg>
 
         <Set name="host"><Property name="jetty.host" /></Set>
-        <Set name="port"><Property name="jetty.tls.port" default="8443" /></Set>
+        <Set name="port"><Property name="jetty.spdy.port" default="8443" /></Set>
         <Set name="idleTimeout">30000</Set>
       </New>
     </Arg>
