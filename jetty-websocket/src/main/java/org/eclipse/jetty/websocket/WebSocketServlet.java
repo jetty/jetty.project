@@ -40,10 +40,10 @@ import org.eclipse.jetty.util.log.Logger;
  * The initParameter "maxIdleTime" can be used to set the time in ms
  * that a websocket may be idle before closing.
  * <p/>
- * The initParameter "maxTextMessagesSize" can be used to set the size in characters
+ * The initParameter "maxTextMessageSize" can be used to set the size in characters
  * that a websocket may be accept before closing.
  * <p/>
- * The initParameter "maxBinaryMessagesSize" can be used to set the size in bytes
+ * The initParameter "maxBinaryMessageSize" can be used to set the size in bytes
  * that a websocket may be accept before closing.
  * <p/>
  * The initParameter "minVersion" can be used to set the minimum protocol version
