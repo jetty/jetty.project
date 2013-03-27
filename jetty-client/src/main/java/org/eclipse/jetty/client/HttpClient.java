@@ -207,7 +207,8 @@ public class HttpClient extends ContainerLifeCycle
 
         handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
-        handlers.add(new AuthenticationProtocolHandler(this));
+        handlers.add(new WWWAuthenticationProtocolHandler(this));
+        handlers.add(new ProxyAuthenticationProtocolHandler(this));
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 

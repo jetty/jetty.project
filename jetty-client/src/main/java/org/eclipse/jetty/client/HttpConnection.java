@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
@@ -251,7 +252,8 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.getURI());
+        URI authenticationURI = destination.isProxied() ? destination.getProxyURI() : request.getURI();
+        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(authenticationURI);
         if (authnResult != null)
             authnResult.apply(request);
 
