@@ -471,7 +471,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                         // Will eventually throw ArrayIndexOutOfBounds
                         return data[index++];
                     }
-                }))
+                }, data.length / 2))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
     }

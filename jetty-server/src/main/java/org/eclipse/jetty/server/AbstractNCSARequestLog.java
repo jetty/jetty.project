@@ -84,6 +84,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      *
      * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response)
      */
+    @Override
     public void log(Request request, Response response)
     {
         try

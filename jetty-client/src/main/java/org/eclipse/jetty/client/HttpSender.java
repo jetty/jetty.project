@@ -300,8 +300,7 @@ public class HttpSender implements AsyncContentProvider.Listener
                     }
                     case SHUTDOWN_OUT:
                     {
-                        EndPoint endPoint = connection.getEndPoint();
-                        endPoint.shutdownOutput();
+                        shutdownOutput();
                         break;
                     }
                     case CONTINUE:
@@ -524,6 +523,8 @@ public class HttpSender implements AsyncContentProvider.Listener
                 break;
         }
 
+        shutdownOutput();
+
         exchange.terminateRequest();
 
         HttpDestination destination = connection.getDestination();
@@ -549,6 +550,11 @@ public class HttpSender implements AsyncContentProvider.Listener
         }
 
         return true;
+    }
+
+    private void shutdownOutput()
+    {
+        connection.getEndPoint().shutdownOutput();
     }
 
     public boolean abort(Throwable cause)

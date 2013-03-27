@@ -569,8 +569,13 @@ public class Scanner extends AbstractLifeCycle
             if (f.isDirectory() && (depth<_scanDepth || _scanDepth==-1 || _scanDirs.contains(f)))
             {
                 File[] files = f.listFiles();
-                for (int i=0;i<files.length;i++)
-                    scanFile(files[i], scanInfoMap,depth+1);
+                if (files != null)
+                {
+                    for (int i=0;i<files.length;i++)
+                        scanFile(files[i], scanInfoMap,depth+1);
+                }
+                else
+                    LOG.warn("Error listing files in directory {}", f);
             }
         }
         catch (IOException e)

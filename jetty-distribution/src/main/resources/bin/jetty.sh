@@ -52,7 +52,7 @@
 #
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
-# JETTY_PORT
+# JETTY_PORT (Deprecated - use JETTY_ARGS)
 #   Override the default port for Jetty servers. If not set then the
 #   default value in the xml configuration file will be used. The java
 #   system property "jetty.port" will be set to this value for use in
@@ -76,6 +76,8 @@
 #   
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
+#   For example
+#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
@@ -116,9 +118,9 @@ started()
   for T in 1 2 3 4 5 6 7 9 10 11 12 13 14 15 
   do
     sleep 4
-    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
-    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
-    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
+    [ -z "$(grep STARTED $1)" ] || return 0
+    [ -z "$(grep STOPPED $1)" ] || return 1
+    [ -z "$(grep FAILED $1)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
@@ -336,17 +338,13 @@ then
 fi
 
 #####################################################
-# Find a pid and state file
+# Find a PID for the pid file
 #####################################################
 if [ -z "$JETTY_PID" ] 
 then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
-
-if [ -z "$JETTY_STATE" ] 
-then
-  JETTY_STATE=$JETTY_HOME/jetty.state
-fi
+JETTY_STATE=$(dirname $JETTY_PID)/jetty.state
 JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 

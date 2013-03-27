@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.io.Closeable;
+
 import org.eclipse.jetty.util.Promise;
 
 /**
@@ -28,7 +30,7 @@ import org.eclipse.jetty.util.Promise;
  * may be created by applications that want to do their own connection management via
  * {@link Destination#newConnection(Promise)} and {@link Connection#close()}.
  */
-public interface Connection extends AutoCloseable
+public interface Connection extends Closeable
 {
     /**
      * Sends a request with an associated response listener.
