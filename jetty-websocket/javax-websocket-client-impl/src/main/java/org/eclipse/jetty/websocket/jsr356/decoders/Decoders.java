@@ -29,33 +29,10 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders.DecoderRef;
 import org.eclipse.jetty.websocket.jsr356.utils.DeploymentTypeUtils;
 
 public class Decoders implements Iterable<DecoderRef>
 {
-    public static class DecoderRef
-    {
-        Class<?> type;
-        Class<? extends Decoder> decoder;
-
-        public DecoderRef(Class<?> type, Class<? extends Decoder> decoder)
-        {
-            this.type = type;
-            this.decoder = decoder;
-        }
-
-        public Class<? extends Decoder> getDecoder()
-        {
-            return decoder;
-        }
-
-        public Class<?> getType()
-        {
-            return type;
-        }
-    }
-
     public static List<ParameterizedType> getDecoderInterfaces(Class<? extends Decoder> decoder)
     {
         List<ParameterizedType> ret = new ArrayList<>();
@@ -156,9 +133,15 @@ public class Decoders implements Iterable<DecoderRef>
         // verify that we are not adding a duplicate
         for (DecoderRef ref : decoders)
         {
-            if (DeploymentTypeUtils.isAssignableClass(handler,ref.type))
+            if (DeploymentTypeUtils.isAssignableClass(handler,ref.getType()))
             {
-                throw new ConfigurationException("Duplicate Decoder handling for type " + ref.type + ": found in " + ref.decoder + " and " + decoder);
+                StringBuilder err = new StringBuilder();
+                err.append("Duplicate Decoder handling for type ");
+                err.append(ref.getType());
+                err.append(": found in ");
+                err.append(ref.getDecoder()).append(" and ");
+                err.append(decoder);
+                throw new ConfigurationException(err.toString());
             }
         }
         // add entry
@@ -180,9 +163,9 @@ public class Decoders implements Iterable<DecoderRef>
 
         for (DecoderRef ref : decoders)
         {
-            if (DeploymentTypeUtils.isAssignable(targetType,ref.type))
+            if (DeploymentTypeUtils.isAssignable(targetType,ref.getType()))
             {
-                return instantiate(ref.decoder);
+                return instantiate(ref.getDecoder());
             }
         }
 

@@ -35,20 +35,19 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 public class JsrSession implements Session
 {
     private final JettyWebSocketContainer container;
     /** Jetty API Session Impl */
-    private final WebSocketSession jettySession;
+    private final org.eclipse.jetty.websocket.api.Session jettySession;
     private final String id;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    protected JsrSession(JettyWebSocketContainer container, WebSocketSession session, String id)
+    public JsrSession(JettyWebSocketContainer container, org.eclipse.jetty.websocket.api.Session session, String id)
     {
         this.container = container;
         this.jettySession = session;

@@ -107,7 +107,7 @@ public class EventDriverFactory
         {
             if (impl.supports(websocket))
             {
-                return impl.create(websocket,policy);
+                return impl.create(websocket,policy.clonePolicy());
             }
         }
 

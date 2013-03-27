@@ -28,8 +28,8 @@ import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdBinaryDecoder;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdTextDecoder;
+import org.eclipse.jetty.websocket.jsr356.decoders.DecoderRef;
 import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders.DecoderRef;
 import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
 public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>

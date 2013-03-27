@@ -18,21 +18,33 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
-public class JsrContainerProvider extends ContainerProvider
+/**
+ * Jetty Echo Socket
+ */
+public class EchoSocket extends WebSocketAdapter
 {
-    private final JettyWebSocketContainer websocketContainer;
+    private static final Logger LOG = Log.getLogger(EchoSocket.class);
 
-    public JsrContainerProvider()
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        websocketContainer = new JettyWebSocketContainer();
+        getRemote().sendBytesByFuture(BufferUtil.toBuffer(payload,offset,len));
     }
 
     @Override
-    protected WebSocketContainer getContainer()
+    public void onWebSocketError(Throwable cause)
     {
-        return websocketContainer;
+        LOG.warn(cause);
+    }
+
+    @Override
+    public void onWebSocketText(String message)
+    {
+        getRemote().sendStringByFuture(message);
     }
 }

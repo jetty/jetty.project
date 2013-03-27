@@ -31,39 +31,60 @@ import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
 public abstract class JsrMetadata<T extends Annotation>
 {
+    /**
+     * The actual class that this metadata belongs to
+     */
     public final Class<?> pojo;
+
+    /**
+     * Decoders declared as part of annotations
+     */
     public Decoders decoders;
+
+    /**
+     * Encoders declared as part of annotations
+     */
     public Encoders encoders;
 
     /**
-     * Callable for &#064;{@link OnOpen} annotation
+     * Callable for &#064;{@link OnOpen} annotation.
      */
-    public ParameterizedMethod onOpen;
+    public OnOpenCallable onOpen;
 
     /**
      * Callable for &#064;{@link OnClose} annotation
      */
-    public ParameterizedMethod onClose;
+    public OnCloseCallable onClose;
 
     /**
      * Callable for &#064;{@link OnError} annotation
      */
-    public ParameterizedMethod onError;
+    public OnErrorCallable onError;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Text Message Format
      */
-    public ParameterizedMethod onText;
+    public OnMessageTextCallable onText;
+
+    /**
+     * Callable for &#064;{@link OnMessage} annotation dealing with Text Streaming Message Format
+     */
+    public OnMessageTextStreamCallable onTextStream;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Binary Message Format
      */
-    public ParameterizedMethod onBinary;
+    public OnMessageBinaryCallable onBinary;
+
+    /**
+     * Callable for &#064;{@link OnMessage} annotation dealing with Binary Streaming Message Format
+     */
+    public OnMessageBinaryStreamCallable onBinaryStream;
 
     /**
      * Callable for &#064;{@link OnMessage} annotation dealing with Pong Message Format
      */
-    public ParameterizedMethod onPong;
+    public OnMessagePongCallable onPong;
 
     protected JsrMetadata(Class<?> websocket)
     {

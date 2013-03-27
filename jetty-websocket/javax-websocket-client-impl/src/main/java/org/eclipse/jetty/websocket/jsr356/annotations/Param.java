@@ -20,10 +20,31 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 public class Param
 {
+    /**
+     * The various roles of the known parameters.
+     */
+    public static enum Role
+    {
+        SESSION,
+        ENDPOINT_CONFIG,
+        CLOSE_REASON,
+        ERROR_CAUSE,
+        MESSAGE_TEXT,
+        MESSAGE_TEXT_STREAM,
+        MESSAGE_BINARY,
+        MESSAGE_BINARY_STREAM,
+        MESSAGE_PONG,
+        MESSAGE_PARTIAL_FLAG,
+        PATH_PARAM
+    }
+
     public int index;
     public Class<?> type;
-    private boolean valid = false;
-    private String pathParamVariable = null;
+    /*
+     * The bound role for this parameter.
+     */
+    public Role role = null;
+    private String pathParamName = null;
 
     public Param(int idx, Class<?> type)
     {
@@ -31,23 +52,28 @@ public class Param
         this.type = type;
     }
 
-    public String getPathParamVariable()
+    public void bind(Role role)
     {
-        return this.pathParamVariable;
+        this.role = role;
+    }
+
+    public String getPathParamName()
+    {
+        return this.pathParamName;
     }
 
     public boolean isValid()
     {
-        return valid;
+        return this.role != null;
     }
 
-    public void setPathParamVariable(String name)
+    public void setPathParamName(String name)
     {
-        this.pathParamVariable = name;
+        this.pathParamName = name;
     }
 
-    public void setValid(boolean flag)
+    public void unbind()
     {
-        this.valid = flag;
+        this.role = null;
     }
 }

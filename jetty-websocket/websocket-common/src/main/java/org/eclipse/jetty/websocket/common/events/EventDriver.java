@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.common.events;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -44,6 +46,12 @@ public interface EventDriver extends IncomingFrames
     public void onError(Throwable t);
 
     public void onFrame(Frame frame);
+
+    public void onInputStream(InputStream stream);
+
+    public void onPong(ByteBuffer buffer);
+
+    public void onReader(Reader reader);
 
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException;
 

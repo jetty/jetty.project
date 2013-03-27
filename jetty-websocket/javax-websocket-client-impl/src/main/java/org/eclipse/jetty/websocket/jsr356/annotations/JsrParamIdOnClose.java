@@ -23,6 +23,7 @@ import javax.websocket.OnClose;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Param handling for &#064;{@link OnClose} parameters.
@@ -32,10 +33,17 @@ public class JsrParamIdOnClose implements IJsrParamId
     public static final IJsrParamId INSTANCE = new JsrParamIdOnClose();
 
     @Override
-    public boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException
+    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (type.isAssignableFrom(CloseReason.class) || type.isAssignableFrom(Session.class))
+        if (param.type.isAssignableFrom(Session.class))
         {
+            param.bind(Role.SESSION);
+            return true;
+        }
+
+        if (param.type.isAssignableFrom(CloseReason.class))
+        {
+            param.bind(Role.CLOSE_REASON);
             return true;
         }
         return false;

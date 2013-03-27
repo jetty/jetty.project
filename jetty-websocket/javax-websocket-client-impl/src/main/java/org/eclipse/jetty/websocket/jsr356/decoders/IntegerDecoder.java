@@ -26,6 +26,7 @@ import javax.websocket.Decoder;
  */
 public class IntegerDecoder extends AbstractDecoder implements Decoder.Text<Integer>
 {
+    public static final IntegerDecoder INSTANCE = new IntegerDecoder();
 
     @Override
     public Integer decode(String s) throws DecodeException

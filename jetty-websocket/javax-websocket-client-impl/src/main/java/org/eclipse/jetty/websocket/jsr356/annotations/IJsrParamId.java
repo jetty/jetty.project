@@ -28,19 +28,16 @@ public interface IJsrParamId
     /**
      * Process the potential parameter.
      * <p>
-     * Primary purpose is to indicate if this is a valid parameter or not by returning true for a known valid parameter type, false for a parameter type that
-     * was not handled by this IJsrParamId. And throwing a InvalidSignatureException if the parameter violates a rule that the IJsrParamId is aware of.
+     * If known to be a valid parameter, bind a role to it.
      * 
-     * @param type
-     *            the parameter type being processed
-     * @param method
-     *            the method this type belongs to
-     * @param metadata
-     *            the metadata for this pojo
+     * @param param
+     *            the parameter being processed
+     * @param callable
+     *            the callable this param belongs to (used to obtain extra state about the callable that might impact decision making)
      * 
      * @return true if processed, false if not processed
      * @throws InvalidSignatureException
      *             if a violation of the signature rules occurred
      */
-    boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException;
+    boolean process(Param param, JsrCallable callable) throws InvalidSignatureException;
 }

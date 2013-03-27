@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrMethod.MessageType;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.decoders.PongMessageDecoder;
 
 public class JsrParamIdPong extends JsrParamIdOnMessage implements IJsrParamId
@@ -29,13 +29,13 @@ public class JsrParamIdPong extends JsrParamIdOnMessage implements IJsrParamId
     public static final IJsrParamId INSTANCE = new JsrParamIdPong();
 
     @Override
-    public boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException
+    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (type.isAssignableFrom(PongMessage.class))
+        if (param.type.isAssignableFrom(PongMessage.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.PONG);
-            method.setMessageDecoder(PongMessageDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_PONG);
+            callable.setDecoder(new PongMessageDecoder());
             return true;
         }
         return false;

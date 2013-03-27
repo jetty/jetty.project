@@ -22,8 +22,8 @@ import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrMethod.MessageType;
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders.DecoderRef;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
+import org.eclipse.jetty.websocket.jsr356.decoders.DecoderRef;
 
 /**
  * Param handling for Binary &#064;{@link OnMessage} parameters declared as {@link Decoder}s of type {@link Decoder.Binary} or {@link Decoder.BinaryStream}
@@ -38,13 +38,13 @@ public class JsrParamIdBinaryDecoder extends JsrParamIdOnMessage implements IJsr
     }
 
     @Override
-    public boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException
+    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (type.isAssignableFrom(ref.getType()))
+        if (param.type.isAssignableFrom(ref.getType()))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.BINARY);
-            method.setMessageDecoder(ref.getDecoder());
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_BINARY);
+            callable.setDecoder(ref.getDecoder());
             return true;
         }
         return false;

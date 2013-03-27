@@ -26,6 +26,8 @@ import javax.websocket.Decoder;
  */
 public class DoubleDecoder extends AbstractDecoder implements Decoder.Text<Double>
 {
+    public static final DoubleDecoder INSTANCE = new DoubleDecoder();
+
     @Override
     public Double decode(String s) throws DecodeException
     {

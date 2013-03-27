@@ -28,6 +28,8 @@ import javax.websocket.Decoder;
  */
 public class BooleanDecoder extends AbstractDecoder implements Decoder.Text<Boolean>
 {
+    public static final BooleanDecoder INSTANCE = new BooleanDecoder();
+
     @Override
     public Boolean decode(String s) throws DecodeException
     {

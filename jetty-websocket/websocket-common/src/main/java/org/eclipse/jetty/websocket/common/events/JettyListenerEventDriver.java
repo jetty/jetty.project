@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.common.events;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
@@ -102,6 +104,18 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     public void onFrame(Frame frame)
     {
         /* ignore, not supported by WebSocketListener */
+    }
+
+    @Override
+    public void onInputStream(InputStream stream)
+    {
+        /* not supported in Listener mode (yet) */
+    }
+
+    @Override
+    public void onReader(Reader reader)
+    {
+        /* not supported in Listener mode (yet) */
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotationScanner;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
 
 public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<JsrMetadata<?>>
 {
@@ -65,45 +66,21 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         metadata.customizeParamsOnMessage(paramsOnMessage);
     }
 
-    private ParameterizedMethod establishCallable(JsrMetadata<?> metadata, Class<?> pojo, Method method, List<IJsrParamId> paramIds,
-            Class<? extends Annotation> methodAnnotationClass)
+    private void assertNotDuplicate(JsrCallable callable, Class<? extends Annotation> methodAnnotationClass, Class<?> pojo, Method method)
     {
-        ParameterizedMethod jpm = new ParameterizedMethod(pojo,method);
-
-        // Identify all of the parameters
-        for (Param param : jpm)
+        if (callable != null)
         {
-            if (!identifyParam(param,jpm,metadata,paramIds))
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Encountered invalid parameter <");
-                err.append(param.type.getName());
-                err.append("> on @");
-                err.append(methodAnnotationClass.getSimpleName());
-                err.append(" annotated method: ");
-                err.append(jpm.getFullyQualifiedMethodName());
+            // Duplicate annotation detected
+            StringBuilder err = new StringBuilder();
+            err.append("Encountered duplicate method annotations @");
+            err.append(methodAnnotationClass.getSimpleName());
+            err.append(" on ");
+            err.append(MethodUtils.toString(pojo,callable.getMethod()));
+            err.append(" and ");
+            err.append(MethodUtils.toString(pojo,method));
 
-                throw new InvalidSignatureException(err.toString());
-            }
+            throw new InvalidSignatureException(err.toString());
         }
-
-        return jpm;
-    }
-
-    private boolean identifyParam(Param param, ParameterizedMethod jpm, JsrMetadata<?> metadata2, List<IJsrParamId> paramIds)
-    {
-        for (IJsrParamId paramId : paramIds)
-        {
-            if (paramId.process(param.type,jpm,metadata))
-            {
-                // identified the parameter
-                param.setValid(true);
-                return true;
-            }
-        }
-
-        // Didn't pass any of the param ids
-        return false;
     }
 
     @Override
@@ -115,7 +92,10 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            metadata.onOpen = establishCallable(metadata,pojo,method,paramsOnOpen,OnOpen.class);
+            assertNotDuplicate(metadata.onOpen,OnOpen.class,pojo,method);
+            OnOpenCallable onopen = new OnOpenCallable(pojo,method);
+            visitMethod(onopen,pojo,method,paramsOnOpen,OnOpen.class);
+            metadata.onOpen = onopen;
             return;
         }
 
@@ -123,7 +103,10 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            metadata.onClose = establishCallable(metadata,pojo,method,paramsOnClose,OnClose.class);
+            assertNotDuplicate(metadata.onClose,OnClose.class,pojo,method);
+            OnCloseCallable onclose = new OnCloseCallable(pojo,method);
+            visitMethod(onclose,pojo,method,paramsOnClose,OnClose.class);
+            metadata.onClose = onclose;
             return;
         }
 
@@ -131,7 +114,10 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            metadata.onError = establishCallable(metadata,pojo,method,paramsOnError,OnError.class);
+            assertNotDuplicate(metadata.onError,OnError.class,pojo,method);
+            OnErrorCallable onerror = new OnErrorCallable(pojo,method);
+            visitMethod(onerror,pojo,method,paramsOnError,OnError.class);
+            metadata.onError = onerror;
             return;
         }
 
@@ -139,25 +125,25 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            ParameterizedMethod msgMethod = establishCallable(metadata,pojo,method,paramsOnMessage,OnMessage.class);
-            switch (msgMethod.getMessageType())
-            {
-                case TEXT:
-                    metadata.onText = msgMethod;
-                    break;
-                case BINARY:
-                    metadata.onBinary = msgMethod;
-                    break;
-                case PONG:
-                    metadata.onPong = msgMethod;
-                    break;
-                default:
-                    StringBuilder err = new StringBuilder();
-                    err.append("Invalid @OnMessage method signature,");
-                    err.append(" Missing type TEXT, BINARY, or PONG parameter: ");
-                    err.append(msgMethod.getFullyQualifiedMethodName());
-                    throw new InvalidSignatureException(err.toString());
-            }
+            // ParameterizedMethod msgMethod = establishCallable(metadata,pojo,method,paramsOnMessage,OnMessage.class);
+            // switch (msgMethod.getMessageType())
+            // {
+            // case TEXT:
+            // metadata.onText = msgMethod;
+            // break;
+            // case BINARY:
+            // metadata.onBinary = msgMethod;
+            // break;
+            // case PONG:
+            // metadata.onPong = msgMethod;
+            // break;
+            // default:
+            // StringBuilder err = new StringBuilder();
+            // err.append("Invalid @OnMessage method signature,");
+            // err.append(" Missing type TEXT, BINARY, or PONG parameter: ");
+            // err.append(msgMethod.getFullyQualifiedMethodName());
+            // throw new InvalidSignatureException(err.toString());
+            // }
         }
     }
 
@@ -165,5 +151,41 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
     {
         scanMethodAnnotations(metadata,metadata.pojo);
         return metadata;
+    }
+
+    private void visitMethod(JsrCallable callable, Class<?> pojo, Method method, LinkedList<IJsrParamId> paramIds,
+            Class<? extends Annotation> methodAnnotationClass)
+    {
+        // Identify all of the parameters
+        for (Param param : callable.getParams())
+        {
+            if (!visitParam(callable,param,paramIds))
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("Encountered unknown parameter type <");
+                err.append(param.type.getName());
+                err.append("> on @");
+                err.append(methodAnnotationClass.getSimpleName());
+                err.append(" annotated method: ");
+                err.append(MethodUtils.toString(pojo,method));
+
+                throw new InvalidSignatureException(err.toString());
+            }
+        }
+    }
+
+    private boolean visitParam(JsrCallable callable, Param param, List<IJsrParamId> paramIds)
+    {
+        for (IJsrParamId paramId : paramIds)
+        {
+            if (paramId.process(param,callable))
+            {
+                // Successfully identified
+                return true;
+            }
+        }
+
+        // Failed identification as a known parameter
+        return false;
     }
 }

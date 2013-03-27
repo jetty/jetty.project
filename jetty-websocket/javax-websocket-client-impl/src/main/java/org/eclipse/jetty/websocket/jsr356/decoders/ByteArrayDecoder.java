@@ -27,6 +27,8 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class ByteArrayDecoder extends AbstractDecoder implements Decoder.Binary<byte[]>
 {
+    public static final ByteArrayDecoder INSTANCE = new ByteArrayDecoder();
+
     @Override
     public byte[] decode(ByteBuffer bytes) throws DecodeException
     {
@@ -38,5 +40,4 @@ public class ByteArrayDecoder extends AbstractDecoder implements Decoder.Binary<
     {
         return true;
     }
-
 }

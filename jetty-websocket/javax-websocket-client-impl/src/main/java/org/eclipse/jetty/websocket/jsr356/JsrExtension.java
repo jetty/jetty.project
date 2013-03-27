@@ -32,7 +32,7 @@ public class JsrExtension implements Extension
     {
         private String name;
         private String value;
-        
+
         private JsrParameter(String key, String value)
         {
             this.name = key;
@@ -51,10 +51,13 @@ public class JsrExtension implements Extension
             return this.value;
         }
     }
-    
+
     private final String name;
     private List<Parameter> parameters;
 
+    /**
+     * A configured extension
+     */
     public JsrExtension(ExtensionConfig cfg)
     {
         this.name = cfg.getName();
@@ -63,9 +66,17 @@ public class JsrExtension implements Extension
         {
             for (Map.Entry<String, String> entry : cfg.getParameters().entrySet())
             {
-                parameters.add(new JsrParameter(entry.getKey(), entry.getValue()));
+                parameters.add(new JsrParameter(entry.getKey(),entry.getValue()));
             }
         }
+    }
+
+    /**
+     * A potential (unconfigured) extension
+     */
+    public JsrExtension(String name)
+    {
+        this.name = name;
     }
 
     @Override

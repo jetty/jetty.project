@@ -141,6 +141,11 @@ public class WebSocketClient extends ContainerLifeCycle
         // Setup Driver for user provided websocket
         EventDriver driver = eventDriverFactory.wrap(websocket);
 
+        if (driver == null)
+        {
+            throw new IllegalStateException("Unable to identify as websocket object: " + websocket.getClass().getName());
+        }
+
         // Create the appropriate (physical vs virtual) connection task
         ConnectPromise promise = manager.connect(this,driver,request);
 
@@ -211,6 +216,16 @@ public class WebSocketClient extends ContainerLifeCycle
         LOG.info("Stopped {}",this);
     }
 
+    /**
+     * Return the number of milliseconds for a timeout of an attempted write operation.
+     * 
+     * @return number of milliseconds for timeout of an attempted write operation
+     */
+    public long getAsyncWriteTimeout()
+    {
+        return this.policy.getAsyncWriteTimeout();
+    }
+
     public SocketAddress getBindAddress()
     {
         return bindAddress;
@@ -257,6 +272,26 @@ public class WebSocketClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the maximum size for buffering of a binary message.
+     * 
+     * @return the maximum size of a binary message buffer.
+     */
+    public int getMaxBinaryMessageBufferSize()
+    {
+        return this.policy.getMaxBinaryMessageBufferSize();
+    }
+
+    /**
+     * Get the maximum size for a binary message.
+     * 
+     * @return the maximum size of a binary message.
+     */
+    public long getMaxBinaryMessageSize()
+    {
+        return this.policy.getMaxBinaryMessageSize();
+    }
+
+    /**
      * Get the max idle timeout for new connections.
      * 
      * @return the max idle timeout in milliseconds for new connections.
@@ -264,6 +299,26 @@ public class WebSocketClient extends ContainerLifeCycle
     public long getMaxIdleTimeout()
     {
         return this.policy.getIdleTimeout();
+    }
+
+    /**
+     * Get the maximum size for buffering of a text message.
+     * 
+     * @return the maximum size of a text message buffer.
+     */
+    public int getMaxTextMessageBufferSize()
+    {
+        return this.policy.getMaxTextMessageBufferSize();
+    }
+
+    /**
+     * Get the maximum size for a text message.
+     * 
+     * @return the maximum size of a text message.
+     */
+    public long getMaxTextMessageSize()
+    {
+        return this.policy.getMaxTextMessageSize();
     }
 
     public WebSocketPolicy getPolicy()
@@ -315,6 +370,11 @@ public class WebSocketClient extends ContainerLifeCycle
         return new ConnectionManager(this);
     }
 
+    public void setAsyncWriteTimeout(long ms)
+    {
+        this.policy.setAsyncWriteTimeout(ms);
+    }
+
     public void setBindAdddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
@@ -355,6 +415,11 @@ public class WebSocketClient extends ContainerLifeCycle
         this.masker = masker;
     }
 
+    public void setMaxBinaryMessageBufferSize(int max)
+    {
+        this.policy.setMaxBinaryMessageBufferSize(max);
+    }
+
     /**
      * Set the max idle timeout for new connections.
      * <p>
@@ -366,5 +431,10 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setMaxIdleTimeout(long milliseconds)
     {
         this.policy.setIdleTimeout(milliseconds);
+    }
+
+    public void setMaxTextMessageBufferSize(int max)
+    {
+        this.policy.setMaxTextMessageBufferSize(max);
     }
 }

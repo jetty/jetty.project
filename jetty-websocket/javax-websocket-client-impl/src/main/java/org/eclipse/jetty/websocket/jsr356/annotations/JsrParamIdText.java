@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrMethod.MessageType;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.decoders.BooleanDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.CharacterDecoder;
@@ -41,98 +40,78 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
     public static final IJsrParamId INSTANCE = new JsrParamIdText();
 
     @Override
-    public boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException
+    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
         // String for whole message
-        if (type.isAssignableFrom(String.class))
+        if (param.type.isAssignableFrom(String.class))
         {
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(StringDecoder.class);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(StringDecoder.INSTANCE);
             return true;
         }
 
         // Java primitive or class equivalent to receive the whole message converted to that type
-        if (type.isAssignableFrom(Boolean.class))
+        if (param.type.isAssignableFrom(Boolean.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(BooleanDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(BooleanDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Byte.class))
+        if (param.type.isAssignableFrom(Byte.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(ByteDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(ByteDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Character.class))
+        if (param.type.isAssignableFrom(Character.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(CharacterDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(CharacterDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Double.class))
+        if (param.type.isAssignableFrom(Double.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(DoubleDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(DoubleDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Float.class))
+        if (param.type.isAssignableFrom(Float.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(FloatDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(FloatDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Integer.class))
+        if (param.type.isAssignableFrom(Integer.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(IntegerDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(IntegerDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Long.class))
+        if (param.type.isAssignableFrom(Long.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(LongDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(LongDecoder.INSTANCE);
             return true;
         }
-        if (type.isAssignableFrom(Short.class))
+        if (param.type.isAssignableFrom(Short.class))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(ShortDecoder.class);
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT);
+            callable.setDecoder(ShortDecoder.INSTANCE);
             return true;
         }
 
         // Boolean (for indicating partial message support)
-        if (type.isAssignableFrom(Boolean.TYPE))
+        if (param.type.isAssignableFrom(Boolean.TYPE))
         {
-            Class<? extends Decoder> decoder = method.getMessageDecoder();
-            if (decoder == null)
-            {
-                // specific decoder technique not identified yet
-                method.enablePartialMessageSupport();
-            }
-            else
-            {
-                if (decoder.isAssignableFrom(StringDecoder.class))
-                {
-                    method.enablePartialMessageSupport();
-                }
-                else
-                {
-                    StringBuilder err = new StringBuilder();
-                    err.append("Unable to support boolean <");
-                    err.append(type.getName()).append("> as partial message indicator ");
-                    err.append("in conjunction with a non-String text message parameter.");
-                    throw new InvalidSignatureException(err.toString());
-                }
-            }
+            param.bind(Role.MESSAGE_PARTIAL_FLAG);
             return true;
         }
 

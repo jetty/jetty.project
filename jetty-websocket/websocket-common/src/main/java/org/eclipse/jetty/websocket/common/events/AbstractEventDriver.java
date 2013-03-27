@@ -119,12 +119,18 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                 }
                 case OpCode.PING:
                 {
-                    byte pongBuf[] = new byte[0];
+                    ByteBuffer pongBuf;
                     if (frame.hasPayload())
                     {
-                        pongBuf = BufferUtil.toArray(frame.getPayload());
+                        pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
+                        BufferUtil.put(frame.getPayload(),pongBuf);
                     }
-                    session.getRemote().sendPong(ByteBuffer.wrap(pongBuf));
+                    else
+                    {
+                        pongBuf = ByteBuffer.allocate(0);
+                    }
+                    onPong(pongBuf);
+                    session.getRemote().sendPong(pongBuf);
                     break;
                 }
                 case OpCode.BINARY:
@@ -151,6 +157,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         {
             unhandled(t);
         }
+    }
+
+    @Override
+    public void onPong(ByteBuffer buffer)
+    {
+        /* TODO: provide annotation in future */
     }
 
     @Override

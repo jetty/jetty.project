@@ -26,6 +26,8 @@ import javax.websocket.Decoder;
  */
 public class FloatDecoder extends AbstractDecoder implements Decoder.Text<Float>
 {
+    public static final FloatDecoder INSTANCE = new FloatDecoder();
+
     @Override
     public Float decode(String s) throws DecodeException
     {

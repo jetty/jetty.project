@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -95,6 +97,27 @@ public class JsrEndpointEventDriver implements EventDriver
 
     @Override
     public void onFrame(Frame frame)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onInputStream(InputStream stream)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onPong(ByteBuffer buffer)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onReader(Reader reader)
     {
         // TODO Auto-generated method stub
 

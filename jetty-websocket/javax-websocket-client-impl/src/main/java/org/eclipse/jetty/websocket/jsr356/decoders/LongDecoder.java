@@ -26,6 +26,7 @@ import javax.websocket.Decoder;
  */
 public class LongDecoder extends AbstractDecoder implements Decoder.Text<Long>
 {
+    public static final LongDecoder INSTANCE = new LongDecoder();
 
     @Override
     public Long decode(String s) throws DecodeException

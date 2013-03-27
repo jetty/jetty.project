@@ -26,6 +26,8 @@ import javax.websocket.Decoder;
  */
 public class ShortDecoder extends AbstractDecoder implements Decoder.Text<Short>
 {
+    public static final ShortDecoder INSTANCE = new ShortDecoder();
+
     @Override
     public Short decode(String s) throws DecodeException
     {

@@ -16,22 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.annotations;
+package org.eclipse.jetty.websocket.jsr356.utils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
-import javax.websocket.Decoder;
-
-import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-
-public class ParameterizedMethod extends CallableMethod implements IJsrMethod, Iterable<Param>
+public final class MethodUtils
 {
-    static StringBuilder appendTypeName(StringBuilder sb, Type type, boolean ellipses)
+    private static StringBuilder appendTypeName(StringBuilder sb, Type type, boolean ellipses)
     {
         if (type instanceof Class<?>)
         {
@@ -76,35 +69,11 @@ public class ParameterizedMethod extends CallableMethod implements IJsrMethod, I
         return sb;
     }
 
-    private List<Param> methodParams = new ArrayList<>();
-    private MessageType messageType = MessageType.UNKNOWN;
-
-    public ParameterizedMethod(Class<?> pojo, Method method)
-    {
-        super(pojo,method);
-
-        Class<?> ptypes[] = method.getParameterTypes();
-        int len = ptypes.length;
-        for (int i = 0; i < len; i++)
-        {
-            methodParams.add(new Param(i,ptypes[i]));
-        }
-    }
-
-    @Override
-    public void enablePartialMessageSupport()
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public String getFullyQualifiedMethodName()
+    public static String toString(Class<?> pojo, Method method)
     {
         StringBuilder str = new StringBuilder();
-        str.append(getPojo().getName());
+        str.append(pojo.getName());
         str.append("  ");
-        Method method = getMethod();
         // method modifiers
         int mod = method.getModifiers() & Modifier.methodModifiers();
         if (mod != 0)
@@ -135,44 +104,5 @@ public class ParameterizedMethod extends CallableMethod implements IJsrMethod, I
 
         // TODO: show exceptions?
         return str.toString();
-    }
-
-    @Override
-    public Class<? extends Decoder> getMessageDecoder()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public MessageType getMessageType()
-    {
-        return this.messageType;
-    }
-
-    @Override
-    public boolean isPartialMessageSupportEnabled()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public Iterator<Param> iterator()
-    {
-        return methodParams.iterator();
-    }
-
-    @Override
-    public void setMessageDecoder(Class<? extends Decoder> decoderClass)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void setMessageType(MessageType type)
-    {
-        this.messageType = type;
     }
 }

@@ -26,6 +26,8 @@ import javax.websocket.Decoder;
  */
 public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Character>
 {
+    public static final CharacterDecoder INSTANCE = new CharacterDecoder();
+
     @Override
     public Character decode(String s) throws DecodeException
     {

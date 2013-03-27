@@ -18,12 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import javax.websocket.Endpoint;
+
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
+import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 
 public class JsrEndpointImpl implements EventDriverImpl
 {
+    public JsrEndpointImpl(JettyWebSocketContainer jettyWebSocketContainer)
+    {
+        // TODO Auto-generated constructor stub
+    }
 
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy)
@@ -42,8 +49,6 @@ public class JsrEndpointImpl implements EventDriverImpl
     @Override
     public boolean supports(Object websocket)
     {
-        // TODO Auto-generated method stub
-        return false;
+        return (websocket instanceof Endpoint);
     }
-
 }

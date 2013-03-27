@@ -31,8 +31,8 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
-import org.eclipse.jetty.websocket.jsr356.annotations.ParameterizedMethod;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;
@@ -142,7 +142,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 
-        ParameterizedMethod cm = (ParameterizedMethod)testcase.metadataField.get(metadata);
+        JsrCallable cm = (JsrCallable)testcase.metadataField.get(metadata);
         Assert.assertThat(testcase.metadataField.toString(),cm,notNullValue());
         int len = testcase.expectedParameters.length;
         for (int i = 0; i < len; i++)

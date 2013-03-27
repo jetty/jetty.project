@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
  * Support class for reading text message data as an Reader.
@@ -32,13 +32,13 @@ import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
  */
 public class MessageReader extends Reader implements MessageAppender
 {
-    private final JettyAnnotatedEventDriver driver;
+    private final EventDriver driver;
     private final Utf8StringBuilder utf;
     private int size;
     private boolean finished;
     private boolean needsNotification;
 
-    public MessageReader(JettyAnnotatedEventDriver driver)
+    public MessageReader(EventDriver driver)
     {
         this.driver = driver;
         this.utf = new Utf8StringBuilder();

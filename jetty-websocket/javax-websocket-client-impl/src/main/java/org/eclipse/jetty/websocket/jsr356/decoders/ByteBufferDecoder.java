@@ -25,6 +25,8 @@ import javax.websocket.Decoder;
 
 public class ByteBufferDecoder extends AbstractDecoder implements Decoder.Binary<ByteBuffer>
 {
+    public static final ByteBufferDecoder INSTANCE = new ByteBufferDecoder();
+
     @Override
     public ByteBuffer decode(ByteBuffer bytes) throws DecodeException
     {

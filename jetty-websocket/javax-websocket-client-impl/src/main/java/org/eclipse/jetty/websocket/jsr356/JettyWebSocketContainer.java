@@ -20,7 +20,11 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -29,96 +33,171 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrClientEndpointImpl;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointImpl;
+
 public class JettyWebSocketContainer implements WebSocketContainer
 {
-    @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    private static final Logger LOG = Log.getLogger(JettyWebSocketContainer.class);
+    private WebSocketClient client;
+    private AtomicLong idgen = new AtomicLong(0);
+
+    public JettyWebSocketContainer()
     {
-        // TODO Auto-generated method stub
-        return null;
+        client = new WebSocketClient();
+        client.getEventDriverFactory().addImplementation(new JsrEndpointImpl(this));
+        client.getEventDriverFactory().addImplementation(new JsrClientEndpointImpl(this));
+
+        try
+        {
+            client.start();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
+        }
+    }
+
+    private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
+    {
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,config);
+        ClientUpgradeRequest req = new ClientUpgradeRequest();
+        if (config != null)
+        {
+            for (Extension ext : config.getExtensions())
+            {
+                req.addExtensions(new JsrExtensionConfig(ext));
+            }
+
+            if (config.getPreferredSubprotocols().size() > 0)
+            {
+                req.setSubProtocols(config.getPreferredSubprotocols());
+            }
+        }
+        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req);
+        try
+        {
+            org.eclipse.jetty.websocket.api.Session sess = futSess.get();
+            return new JsrSession(this,sess,getNextId());
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new IOException("Connect failure",e);
+        }
     }
 
     @Override
-    public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException
+    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        try
+        {
+            Object websocket = endpointClass.newInstance();
+            return connect(websocket,cec,path);
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new DeploymentException("Unable to instantiate websocket: " + endpointClass,e);
+        }
+    }
+
+    @Override
+    public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException, IOException
+    {
+        try
+        {
+            Object websocket = annotatedEndpointClass.newInstance();
+            return connect(websocket,null,path);
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new DeploymentException("Unable to instantiate websocket: " + annotatedEndpointClass,e);
+        }
     }
 
     @Override
     public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return connect(endpointInstance,cec,path);
     }
 
     @Override
     public Session connectToServer(Object annotatedEndpointInstance, URI path) throws DeploymentException, IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return connect(annotatedEndpointInstance,null,path);
     }
 
     @Override
     public long getDefaultAsyncSendTimeout()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return client.getAsyncWriteTimeout();
     }
 
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return client.getMaxBinaryMessageBufferSize();
     }
 
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return client.getMaxIdleTimeout();
     }
 
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return client.getMaxTextMessageBufferSize();
     }
 
     @Override
     public Set<Extension> getInstalledExtensions()
     {
-        // TODO Auto-generated method stub
-        return null;
+        Set<Extension> ret = new HashSet<>();
+        ExtensionFactory extensions = client.getExtensionFactory();
+
+        for (String name : extensions.getExtensionNames())
+        {
+            ret.add(new JsrExtension(name));
+        }
+
+        return ret;
+    }
+
+    public String getNextId()
+    {
+        return String.format("websocket-%d",idgen.incrementAndGet());
     }
 
     @Override
     public void setAsyncSendTimeout(long timeoutmillis)
     {
-        // TODO Auto-generated method stub
-
+        client.setAsyncWriteTimeout(timeoutmillis);
     }
 
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-        // TODO Auto-generated method stub
-
+        // TODO: add safety net for policy assertions
+        client.setMaxBinaryMessageBufferSize(max);
     }
 
     @Override
     public void setDefaultMaxSessionIdleTimeout(long timeout)
     {
-        // TODO Auto-generated method stub
-
+        client.setMaxIdleTimeout(timeout);
     }
 
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-        // TODO Auto-generated method stub
-
+        // TODO: add safety net for policy assertions
+        client.setMaxTextMessageBufferSize(max);
     }
 }

@@ -22,8 +22,8 @@ import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrMethod.MessageType;
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders.DecoderRef;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
+import org.eclipse.jetty.websocket.jsr356.decoders.DecoderRef;
 
 /**
  * Param handling for Text &#064;{@link OnMessage} parameters declared as {@link Decoder}s of type {@link Decoder.Text} or {@link Decoder.TextStream}
@@ -38,13 +38,13 @@ public class JsrParamIdTextDecoder extends JsrParamIdOnMessage implements IJsrPa
     }
 
     @Override
-    public boolean process(Class<?> type, IJsrMethod method, JsrMetadata<?> metadata) throws InvalidSignatureException
+    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (type.isAssignableFrom(ref.getType()))
+        if (param.type.isAssignableFrom(ref.getType()))
         {
-            assertPartialMessageSupportDisabled(type,method);
-            method.setMessageType(MessageType.TEXT);
-            method.setMessageDecoder(ref.getDecoder());
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_TEXT_STREAM);
+            callable.setDecoder(ref.getDecoder());
             return true;
         }
         return false;
