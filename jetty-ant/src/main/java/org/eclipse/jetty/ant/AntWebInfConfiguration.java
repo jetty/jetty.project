@@ -66,7 +66,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
         {
             public void matched(URI uri) throws Exception
             {
-                context.getMetaData().addContainerJar(Resource.newResource(uri));
+                context.getMetaData().addContainerResource(Resource.newResource(uri));
             }      
         };
         ClassLoader loader = context.getClassLoader();
