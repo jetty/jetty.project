@@ -26,13 +26,20 @@ import java.nio.ByteBuffer;
 import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint;
 
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
+import org.eclipse.jetty.websocket.common.message.MessageWriter;
+
 public class JsrBasicRemote implements RemoteEndpoint.Basic
 {
+    private final WebSocketSession jettySession;
     private final org.eclipse.jetty.websocket.api.RemoteEndpoint jettyRemote;
+    private boolean batchingAllowed = false;
 
-    protected JsrBasicRemote(org.eclipse.jetty.websocket.api.RemoteEndpoint endpoint)
+    protected JsrBasicRemote(WebSocketSession session)
     {
-        this.jettyRemote = endpoint;
+        this.jettySession = session;
+        this.jettyRemote = jettySession.getRemote();
     }
 
     @Override
@@ -44,29 +51,25 @@ public class JsrBasicRemote implements RemoteEndpoint.Basic
     @Override
     public boolean getBatchingAllowed()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return batchingAllowed;
     }
 
     @Override
     public OutputStream getSendStream() throws IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new MessageOutputStream(jettySession);
     }
 
     @Override
     public Writer getSendWriter() throws IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new MessageWriter(jettySession);
     }
 
     @Override
     public void sendBinary(ByteBuffer data) throws IOException
     {
-        // TODO Auto-generated method stub
-
+        jettyRemote.sendBytes(data);
     }
 
     @Override
@@ -78,8 +81,7 @@ public class JsrBasicRemote implements RemoteEndpoint.Basic
     @Override
     public void sendObject(Object o) throws IOException, EncodeException
     {
-        // TODO Auto-generated method stub
-
+        // TODO Find appropriate Encoder and encode for output
     }
 
     @Override
@@ -97,8 +99,7 @@ public class JsrBasicRemote implements RemoteEndpoint.Basic
     @Override
     public void sendText(String text) throws IOException
     {
-        // TODO Auto-generated method stub
-
+        jettyRemote.sendString(text);
     }
 
     @Override
@@ -110,7 +111,6 @@ public class JsrBasicRemote implements RemoteEndpoint.Basic
     @Override
     public void setBatchingAllowed(boolean allowed)
     {
-        // TODO Auto-generated method stub
-
+        this.batchingAllowed = allowed;
     }
 }

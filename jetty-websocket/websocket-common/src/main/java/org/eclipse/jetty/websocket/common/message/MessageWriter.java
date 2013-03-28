@@ -21,45 +21,35 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.Writer;
 
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 public class MessageWriter extends Writer
 {
-    private final LogicalConnection connection;
-    private final OutgoingFrames outgoing;
+    private final WebSocketSession session;
+    private final int bufferSize;
 
-    public MessageWriter(LogicalConnection connection, OutgoingFrames outgoing)
+    public MessageWriter(WebSocketSession session)
     {
-        this.connection = connection;
-        this.outgoing = outgoing;
+        this.session = session;
+        this.bufferSize = session.getPolicy().getMaxTextMessageBufferSize();
     }
 
     @Override
     public void close() throws IOException
     {
-        // TODO Auto-generated method stub
-
+        // TODO finish sending whatever in the buffer with FIN=true
+        // TODO or just send an empty buffer with FIN=true
     }
 
     @Override
     public void flush() throws IOException
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    public boolean isClosed()
-    {
-        // TODO Auto-generated method stub
-        return false;
+        // TODO flush whatever is in the buffer with FIN=false
     }
 
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException
     {
-        // TODO Auto-generated method stub
-
+        // TODO buffer up to limit, flush once buffer reached.
     }
-
 }

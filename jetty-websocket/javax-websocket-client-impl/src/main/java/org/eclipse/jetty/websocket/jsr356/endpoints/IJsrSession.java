@@ -16,42 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.annotations;
+package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import java.lang.reflect.Method;
-
-import javax.websocket.OnError;
 import javax.websocket.Session;
 
 /**
- * Callable for {@link OnError} annotated methods
+ * Used to tag and expose JSR based EventDriver's that expose the JSR {@link Session}
  */
-public class OnErrorCallable extends JsrCallable
+public interface IJsrSession
 {
-    private int idxThrowable = -1;
-
-    public OnErrorCallable(Class<?> pojo, Method method)
-    {
-        super(pojo,method);
-    }
-
-    public OnErrorCallable(OnErrorCallable copy)
-    {
-        super(copy);
-        this.idxThrowable = copy.idxThrowable;
-    }
-
-    public void call(Object endpoint, Throwable cause)
-    {
-        // Throwable is a mandatory parameter
-        super.args[idxThrowable] = cause;
-        super.call(endpoint,super.args);
-    }
-
-    @Override
-    public void init(Session session)
-    {
-        idxThrowable = findIndexForRole(Param.Role.ERROR_CAUSE);
-        super.init(session);
-    }
+    public Session getJsrSession();
 }

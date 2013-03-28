@@ -34,7 +34,7 @@ public abstract class JsrCallable extends CallableMethod
     protected final Object[] args;
     protected int idxSession = -1;
     // Optional decoder (used for OnMessage)
-    private Decoder decoder;
+    protected Decoder decoder;
 
     public JsrCallable(Class<?> pojo, Method method)
     {
@@ -51,12 +51,16 @@ public abstract class JsrCallable extends CallableMethod
         args = new Object[len];
     }
 
-    protected void copyTo(JsrCallable copy)
+    /**
+     * Copy Constructor
+     */
+    public JsrCallable(JsrCallable copy)
     {
-        copy.decoder = this.decoder;
-        copy.idxSession = this.idxSession;
-        System.arraycopy(this.params,0,copy.params,0,params.length);
-        System.arraycopy(this.args,0,copy.args,0,args.length);
+        this(copy.getPojo(),copy.getMethod());
+        this.decoder = copy.decoder;
+        this.idxSession = copy.idxSession;
+        System.arraycopy(copy.params,0,this.params,0,params.length);
+        System.arraycopy(copy.args,0,this.args,0,args.length);
     }
 
     /**
@@ -105,7 +109,7 @@ public abstract class JsrCallable extends CallableMethod
         return params;
     }
 
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         // Default the session.
         // Session is an optional parameter (always)
@@ -117,7 +121,8 @@ public abstract class JsrCallable extends CallableMethod
 
         // Default the path parameters
         // PathParam's are optional parameters (always)
-        if (pathParams != null)
+        Map<String, String> pathParams = session.getPathParameters();
+        if ((pathParams != null) && (pathParams.size() > 0))
         {
             for (Param param : params)
             {

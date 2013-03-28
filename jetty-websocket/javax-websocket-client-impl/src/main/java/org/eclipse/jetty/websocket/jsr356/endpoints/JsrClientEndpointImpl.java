@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 
 public class JsrClientEndpointImpl implements EventDriverImpl
 {
@@ -52,22 +53,21 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         }
 
         Class<?> endpointClass = endpoint.getClass();
-        JsrClientMetadata metadata = cache.get(endpointClass);
-        if (metadata == null)
+        // Get the base metadata for this class
+        JsrClientMetadata basemetadata = cache.get(endpointClass);
+        if (basemetadata == null)
         {
-            metadata = new JsrClientMetadata(endpointClass);
-            AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+            basemetadata = new JsrClientMetadata(endpointClass);
+            AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(basemetadata);
             scanner.scan();
-            cache.put(endpointClass,metadata);
+            cache.put(endpointClass,basemetadata);
         }
 
-        // The potential decoders
-
-        if (config != null)
-        {
-
-        }
-        return new JsrClientAnnotatedEventDriver(container,policy,endpoint,metadata);
+        // At this point we have a base metadata, now we need to copy it for
+        // this specific instance of the WebSocket Endpoint (as we will be
+        // modifying the metadata)
+        JsrEvents events = new JsrEvents(basemetadata);
+        return new JsrClientAnnotatedEventDriver(container,policy,endpoint,events);
     }
 
     @Override
@@ -79,7 +79,16 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     @Override
     public boolean supports(Object websocket)
     {
-        ClientEndpoint anno = websocket.getClass().getAnnotation(ClientEndpoint.class);
+        Object endpoint = websocket;
+
+        if (endpoint instanceof ConfiguredEndpoint)
+        {
+            // unwrap
+            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
+            endpoint = ce.getEndpoint();
+        }
+
+        ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
         return (anno != null);
     }
 }

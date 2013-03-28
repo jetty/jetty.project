@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import javax.websocket.DecodeException;
 import javax.websocket.OnMessage;
@@ -40,6 +39,14 @@ public class OnMessagePongCallable extends OnMessageCallable
         super(pojo,method);
     }
 
+    /**
+     * Copy Constructor
+     */
+    public OnMessagePongCallable(OnMessageCallable copy)
+    {
+        super(copy);
+    }
+
     public void call(Object endpoint, ByteBuffer buf) throws DecodeException
     {
         super.args[idxMessageObject] = new JsrPongMessage(buf);
@@ -47,10 +54,10 @@ public class OnMessagePongCallable extends OnMessageCallable
     }
 
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_PONG);
         assertRoleRequired(idxMessageObject,"Pong Message Object");
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

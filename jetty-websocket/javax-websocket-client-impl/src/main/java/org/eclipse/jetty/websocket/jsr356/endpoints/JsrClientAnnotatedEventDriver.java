@@ -25,11 +25,12 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.Decoder.Text;
 import javax.websocket.MessageHandler;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -43,21 +44,29 @@ import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 
-public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implements EventDriver
+public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implements EventDriver, IJsrSession
 {
+    private static final Logger LOG = Log.getLogger(JsrClientAnnotatedEventDriver.class);
     private final JettyWebSocketContainer container;
-    private final JsrClientMetadata events;
+    private final JsrEvents events;
     private boolean hasCloseBeenCalled = false;
     private JsrSession jsrsession;
     private ClientEndpointConfig endpointconfig;
     private MessageAppender activeMessage;
 
-    public JsrClientAnnotatedEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Object websocket, JsrClientMetadata metadata)
+    public JsrClientAnnotatedEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Object websocket, JsrEvents events)
     {
         super(policy,websocket);
         this.container = container;
-        this.events = metadata;
+        this.events = events;
+    }
+
+    @Override
+    public Session getJsrSession()
+    {
+        return this.jsrsession;
     }
 
     /**
@@ -66,17 +75,24 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onBinaryFrame({}, {})",BufferUtil.toDetailString(buffer),fin);
+            LOG.debug("events.onBinary={}",events.hasBinary());
+            LOG.debug("events.onBinaryStream={}",events.hasBinaryStream());
+        }
         boolean handled = false;
 
-        if (events.onBinary != null)
+        if (events.hasBinary())
         {
             handled = true;
-            if (events.onBinary.isPartialMessageSupported())
+            if (events.isBinaryPartialSupported())
             {
+                LOG.debug("Partial Binary Message: fin={}",fin);
                 // Partial Message Support (does not use messageAppender)
                 try
                 {
-                    events.onBinary.call(websocket,buffer,fin);
+                    events.callBinary(websocket,buffer,fin);
                 }
                 catch (DecodeException e)
                 {
@@ -89,28 +105,34 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
                 // Whole Message Support
                 if (activeMessage == null)
                 {
+                    LOG.debug("Whole Binary Message");
                     activeMessage = new SimpleBinaryMessage(this);
                 }
             }
         }
 
-        if (events.onBinaryStream != null)
+        if (events.hasBinaryStream())
         {
             handled = true;
             // Streaming Message Support
             if (activeMessage == null)
             {
+                LOG.debug("Binary Message InputStream");
                 activeMessage = new MessageInputStream(this);
             }
         }
 
+        LOG.debug("handled = {}",handled);
+
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
         {
+            LOG.debug("Appending Binary Message");
             activeMessage.appendMessage(buffer);
 
             if (fin)
             {
+                LOG.debug("Binary Message Complete");
                 activeMessage.messageComplete();
                 activeMessage = null;
             }
@@ -123,15 +145,15 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onBinaryMessage(byte[] data)
     {
-        if (events.onBinary == null)
+        if (LOG.isDebugEnabled())
         {
-            // not interested in text events
-            return;
+            LOG.debug("onBinary({})",data);
         }
 
         try
         {
-            events.onBinary.call(websocket,ByteBuffer.wrap(data),false);
+            // FIN is always true here
+            events.callBinary(websocket,ByteBuffer.wrap(data),true);
         }
         catch (DecodeException e)
         {
@@ -148,28 +170,19 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
             return;
         }
         hasCloseBeenCalled = true;
-        if (events.onClose != null)
-        {
-            events.onClose.call(websocket,close);
-        }
+        events.callClose(websocket,close);
     }
 
     @Override
     public void onConnect()
     {
-        if (events.onOpen != null)
-        {
-            events.onOpen.call(websocket,endpointconfig);
-        }
+        events.callOpen(websocket,endpointconfig);
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        if (events.onError != null)
-        {
-            events.onError.call(websocket,cause);
-        }
+        events.callError(websocket,cause);
     }
 
     private void onFatalError(Throwable t)
@@ -187,15 +200,9 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onInputStream(InputStream stream)
     {
-        if (events.onBinaryStream == null)
-        {
-            // not interested in text events
-            return;
-        }
-
         try
         {
-            events.onBinaryStream.call(websocket,stream);
+            events.callBinaryStream(websocket,stream);
         }
         catch (DecodeException | IOException e)
         {
@@ -206,15 +213,9 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onReader(Reader reader)
     {
-        if (events.onTextStream == null)
-        {
-            // not interested in text events
-            return;
-        }
-
         try
         {
-            events.onTextStream.call(websocket,reader);
+            events.callTextStream(websocket,reader);
         }
         catch (DecodeException | IOException e)
         {
@@ -228,18 +229,26 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onTextFrame({}, {})",BufferUtil.toDetailString(buffer),fin);
+            LOG.debug("events.hasText={}",events.hasText());
+            LOG.debug("events.hasTextStream={}",events.hasTextStream());
+        }
+
         boolean handled = false;
 
-        if (events.onText != null)
+        if (events.hasText())
         {
             handled = true;
-            if (events.onText.isPartialMessageSupported())
+            if (events.isTextPartialSupported())
             {
+                LOG.debug("Partial Text Message: fin={}",fin);
                 // Partial Message Support (does not use messageAppender)
                 try
                 {
                     String text = BufferUtil.toUTF8String(buffer);
-                    events.onText.call(websocket,text,fin);
+                    events.callText(websocket,text,fin);
                 }
                 catch (DecodeException e)
                 {
@@ -252,28 +261,34 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
                 // Whole Message Support
                 if (activeMessage == null)
                 {
+                    LOG.debug("Whole Text Message");
                     activeMessage = new SimpleTextMessage(this);
                 }
             }
         }
 
-        if (events.onTextStream != null)
+        if (events.hasTextStream())
         {
             handled = true;
             // Streaming Message Support
             if (activeMessage == null)
             {
+                LOG.debug("Text Message Writer");
                 activeMessage = new MessageReader(this);
             }
         }
 
+        LOG.debug("handled = {}",handled);
+
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
         {
+            LOG.debug("Appending Text Message");
             activeMessage.appendMessage(buffer);
 
             if (fin)
             {
+                LOG.debug("Text Message Complete");
                 activeMessage.messageComplete();
                 activeMessage = null;
             }
@@ -286,25 +301,16 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void onTextMessage(String message)
     {
-        if (events.onText == null)
-        {
-            // not interested in text events
-            return;
-        }
+        LOG.debug("onText({})",message);
 
-        Decoder.Text<?> decoder = (Text<?>)events.onText.getDecoder();
         try
         {
-            decoder.init(endpointconfig);
-            events.onText.call(websocket,jsrsession,decoder.decode(message));
+            // FIN is always true here
+            events.callText(websocket,message,true);
         }
         catch (DecodeException e)
         {
             onFatalError(e);
-        }
-        finally
-        {
-            decoder.destroy();
         }
     }
 
@@ -314,5 +320,12 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
         super.openSession(session);
         String id = container.getNextId();
         this.jsrsession = new JsrSession(container,session,id);
+        this.events.init(jsrsession);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[websocket=%s]",this.getClass().getSimpleName(),websocket);
     }
 }

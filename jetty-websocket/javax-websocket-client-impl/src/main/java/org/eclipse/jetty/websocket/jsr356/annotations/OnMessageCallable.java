@@ -25,7 +25,7 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
 
-public abstract class OnMessageCallable extends JsrCallable
+public class OnMessageCallable extends JsrCallable
 {
     protected int idxPartialMessageFlag = -1;
     protected int idxMessageObject = -1;
@@ -34,6 +34,14 @@ public abstract class OnMessageCallable extends JsrCallable
     public OnMessageCallable(Class<?> pojo, Method method)
     {
         super(pojo,method);
+    }
+
+    public OnMessageCallable(OnMessageCallable copy)
+    {
+        super(copy);
+        this.idxPartialMessageFlag = copy.idxPartialMessageFlag;
+        this.idxMessageObject = copy.idxMessageObject;
+        this.messageRole = copy.messageRole;
     }
 
     protected void assertDecoderRequired()
@@ -62,6 +70,39 @@ public abstract class OnMessageCallable extends JsrCallable
             err.append(MethodUtils.toString(pojo,method));
             throw new InvalidSignatureException(err.toString());
         }
+    }
+
+    private int findMessageObjectIndex()
+    {
+        int index = -1;
+
+        for (Param.Role role : Param.Role.getMessageRoles())
+        {
+            index = findIndexForRole(role);
+            if (index >= 0)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    public Param getMessageObjectParam()
+    {
+        if (idxMessageObject < 0)
+        {
+            idxMessageObject = findMessageObjectIndex();
+
+            if (idxMessageObject < 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("A message type must be specified [TEXT, BINARY, DECODER, or PONG]");
+                throw new InvalidSignatureException(err.toString());
+            }
+        }
+
+        return super.params[idxMessageObject];
     }
 
     public boolean isPartialMessageSupported()

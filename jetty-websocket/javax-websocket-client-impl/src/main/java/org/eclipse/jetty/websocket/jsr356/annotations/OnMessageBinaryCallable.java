@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -45,6 +44,14 @@ public class OnMessageBinaryCallable extends OnMessageCallable
         super(pojo,method);
     }
 
+    /**
+     * Copy Constructor
+     */
+    public OnMessageBinaryCallable(OnMessageCallable copy)
+    {
+        super(copy);
+    }
+
     public void call(Object endpoint, ByteBuffer buf, boolean partialFlag) throws DecodeException
     {
         super.args[idxMessageObject] = binaryDecoder.decode(buf);
@@ -56,12 +63,12 @@ public class OnMessageBinaryCallable extends OnMessageCallable
     }
 
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_BINARY);
         assertRoleRequired(idxMessageObject,"Binary Message Object");
         assertDecoderRequired();
         binaryDecoder = (Decoder.Binary<?>)getDecoder();
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

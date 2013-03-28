@@ -63,7 +63,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private final WebSocketPolicy policy;
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
+    private EventDriverFactory eventDriverFactory;
     private ByteBufferPool bufferPool;
     private Executor executor;
     private Scheduler scheduler;
@@ -139,7 +139,17 @@ public class WebSocketClient extends ContainerLifeCycle
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
-        EventDriver driver = eventDriverFactory.wrap(websocket);
+        EventDriver driver = null;
+        if (websocket instanceof EventDriver)
+        {
+            // Use the EventDriver as-is
+            driver = (EventDriver)websocket;
+        }
+        else
+        {
+            // Wrap websocket with appropriate EventDriver
+            driver = eventDriverFactory.wrap(websocket);
+        }
 
         if (driver == null)
         {
@@ -403,6 +413,11 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setCookieStore(CookieStore cookieStore)
     {
         this.cookieStore = cookieStore;
+    }
+
+    public void setEventDriverFactory(EventDriverFactory factory)
+    {
+        this.eventDriverFactory = factory;
     }
 
     public void setExecutor(Executor executor)

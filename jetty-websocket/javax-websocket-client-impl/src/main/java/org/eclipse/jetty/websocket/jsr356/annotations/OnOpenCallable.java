@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnOpen;
@@ -39,6 +38,12 @@ public class OnOpenCallable extends JsrCallable
         super(pojo,method);
     }
 
+    public OnOpenCallable(OnOpenCallable copy)
+    {
+        super(copy);
+        this.idxEndpointConfig = copy.idxEndpointConfig;
+    }
+
     public void call(Object endpoint, EndpointConfig config)
     {
         // EndpointConfig is an optional parameter
@@ -49,18 +54,10 @@ public class OnOpenCallable extends JsrCallable
         super.call(endpoint,super.args);
     }
 
-    public OnOpenCallable copy()
-    {
-        OnOpenCallable copy = new OnOpenCallable(pojo,method);
-        super.copyTo(copy);
-        copy.idxEndpointConfig = this.idxEndpointConfig;
-        return copy;
-    }
-
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxEndpointConfig = findIndexForRole(Role.ENDPOINT_CONFIG);
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

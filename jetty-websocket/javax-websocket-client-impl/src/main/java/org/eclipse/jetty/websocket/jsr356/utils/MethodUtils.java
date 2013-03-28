@@ -105,4 +105,11 @@ public final class MethodUtils
         // TODO: show exceptions?
         return str.toString();
     }
+
+    public static String toString(Type type)
+    {
+        StringBuilder str = new StringBuilder();
+        appendTypeName(str,type,true);
+        return str.toString();
+    }
 }

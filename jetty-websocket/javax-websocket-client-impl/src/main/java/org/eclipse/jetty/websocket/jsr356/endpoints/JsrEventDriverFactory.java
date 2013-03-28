@@ -18,38 +18,33 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import javax.websocket.Endpoint;
-
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
+import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 
-public class JsrEndpointImpl implements EventDriverImpl
+public class JsrEventDriverFactory extends EventDriverFactory
 {
-    private final JettyWebSocketContainer container;
-
-    public JsrEndpointImpl(JettyWebSocketContainer container)
+    public JsrEventDriverFactory(WebSocketPolicy policy, JettyWebSocketContainer container)
     {
-        this.container = container;
+        super(policy);
+
+        clearImplementations();
+        addImplementation(new JsrEndpointImpl(container));
+        addImplementation(new JsrClientEndpointImpl(container));
     }
 
+    /**
+     * Unwrap ConfiguredEndpoint for end-user.
+     */
     @Override
-    public EventDriver create(Object websocket, WebSocketPolicy policy)
+    protected String getClassName(Object websocket)
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
+        if (websocket instanceof ConfiguredEndpoint)
+        {
+            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
+            return ce.getEndpoint().getClass().getName();
+        }
 
-    @Override
-    public String describeRule()
-    {
-        return "class extends " + Endpoint.class.getName();
-    }
-
-    @Override
-    public boolean supports(Object websocket)
-    {
-        return (websocket instanceof Endpoint);
+        return websocket.getClass().getName();
     }
 }

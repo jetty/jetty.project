@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -44,6 +43,14 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
         super(pojo,method);
     }
 
+    /**
+     * Copy Constructor
+     */
+    public OnMessageBinaryStreamCallable(OnMessageCallable copy)
+    {
+        super(copy);
+    }
+
     public void call(Object endpoint, InputStream stream) throws DecodeException, IOException
     {
         super.args[idxMessageObject] = binaryDecoder.decode(stream);
@@ -51,12 +58,12 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
     }
 
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_BINARY_STREAM);
         assertRoleRequired(idxMessageObject,"Binary InputStream Message Object");
         assertDecoderRequired();
         binaryDecoder = (Decoder.BinaryStream<?>)getDecoder();
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

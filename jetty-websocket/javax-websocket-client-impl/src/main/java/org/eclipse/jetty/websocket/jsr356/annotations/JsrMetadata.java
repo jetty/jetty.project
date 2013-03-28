@@ -29,6 +29,12 @@ import javax.websocket.OnOpen;
 import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
+/**
+ * Static reference to a specific annotated classes metadata.
+ * 
+ * @param <T>
+ *            the annotation this metadata is based off of
+ */
 public abstract class JsrMetadata<T extends Annotation>
 {
     /**

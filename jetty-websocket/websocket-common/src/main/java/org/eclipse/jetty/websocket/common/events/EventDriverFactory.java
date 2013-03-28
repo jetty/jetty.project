@@ -57,6 +57,16 @@ public class EventDriverFactory
         implementations.add(impl);
     }
 
+    public void clearImplementations()
+    {
+        this.implementations.clear();
+    }
+
+    protected String getClassName(Object websocket)
+    {
+        return websocket.getClass().getName();
+    }
+
     public List<EventDriverImpl> getImplementations()
     {
         return implementations;
@@ -66,8 +76,6 @@ public class EventDriverFactory
     {
         return this.implementations.remove(impl);
     }
-
-
 
     @Override
     public String toString()
@@ -113,7 +121,7 @@ public class EventDriverFactory
 
         // Create a clear error message for the developer
         StringBuilder err = new StringBuilder();
-        err.append(websocket.getClass().getName());
+        err.append(getClassName(websocket));
         err.append(" is not a valid WebSocket object.");
         err.append("  Object must obey one of the following rules: ");
 
@@ -123,9 +131,9 @@ public class EventDriverFactory
             EventDriverImpl impl = implementations.get(i);
             if (i > 0)
             {
-                err.append("or ");
+                err.append(" or ");
             }
-            err.append('(').append(i + 1).append(") ");
+            err.append("\n(").append(i + 1).append(") ");
             err.append(impl.describeRule());
         }
 

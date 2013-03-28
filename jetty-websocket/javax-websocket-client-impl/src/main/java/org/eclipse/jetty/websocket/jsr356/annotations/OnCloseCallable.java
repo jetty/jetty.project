@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
@@ -41,6 +40,12 @@ public class OnCloseCallable extends JsrCallable
         super(pojo,method);
     }
 
+    public OnCloseCallable(OnCloseCallable copy)
+    {
+        super(copy);
+        this.idxCloseReason = copy.idxCloseReason;
+    }
+
     public void call(Object endpoint, CloseInfo close)
     {
         this.call(endpoint,close.getStatusCode(),close.getReason());
@@ -58,18 +63,10 @@ public class OnCloseCallable extends JsrCallable
         super.call(endpoint,super.args);
     }
 
-    public OnCloseCallable copy()
-    {
-        OnCloseCallable copy = new OnCloseCallable(pojo,method);
-        super.copyTo(copy);
-        copy.idxCloseReason = this.idxCloseReason;
-        return copy;
-    }
-
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxCloseReason = findIndexForRole(Role.CLOSE_REASON);
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

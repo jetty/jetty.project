@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,19 +37,23 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 public class JsrSession implements Session
 {
     private final JettyWebSocketContainer container;
     /** Jetty API Session Impl */
-    private final org.eclipse.jetty.websocket.api.Session jettySession;
+    private final WebSocketSession jettySession;
     private final String id;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
+    private Map<String, String> pathParameters = new HashMap<>();
+    private Map<String, Object> userProperties;
+    private Set<MessageHandler> messageHandlers;
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(JettyWebSocketContainer container, org.eclipse.jetty.websocket.api.Session session, String id)
+    public JsrSession(JettyWebSocketContainer container, WebSocketSession session, String id)
     {
         this.container = container;
         this.jettySession = session;
@@ -57,7 +63,7 @@ public class JsrSession implements Session
     @Override
     public void addMessageHandler(MessageHandler listener) throws IllegalStateException
     {
-        // TODO Auto-generated method stub
+        messageHandlers.add(listener);
     }
 
     @Override
@@ -87,7 +93,7 @@ public class JsrSession implements Session
     {
         if (basicRemote == null)
         {
-            basicRemote = new JsrBasicRemote(jettySession.getRemote());
+            basicRemote = new JsrBasicRemote(jettySession);
         }
         return basicRemote;
     }
@@ -113,8 +119,7 @@ public class JsrSession implements Session
     @Override
     public long getMaxIdleTimeout()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return jettySession.getPolicy().getIdleTimeout();
     }
 
     @Override
@@ -126,8 +131,7 @@ public class JsrSession implements Session
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return messageHandlers;
     }
 
     @Override
@@ -153,15 +157,13 @@ public class JsrSession implements Session
     @Override
     public Set<Session> getOpenSessions()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return container.getOpenSessions();
     }
 
     @Override
     public Map<String, String> getPathParameters()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.unmodifiableMap(pathParameters);
     }
 
     @Override
@@ -188,11 +190,6 @@ public class JsrSession implements Session
         return jettySession.getUpgradeRequest().getRequestURI();
     }
 
-    public long getTimeout()
-    {
-        return jettySession.getIdleTimeout();
-    }
-
     @Override
     public Principal getUserPrincipal()
     {
@@ -203,8 +200,7 @@ public class JsrSession implements Session
     @Override
     public Map<String, Object> getUserProperties()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return userProperties;
     }
 
     @Override
@@ -222,33 +218,24 @@ public class JsrSession implements Session
     @Override
     public void removeMessageHandler(MessageHandler handler)
     {
-        // TODO Auto-generated method stub
-
+        messageHandlers.remove(handler);
     }
 
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        // TODO Auto-generated method stub
-
+        jettySession.getPolicy().setMaxBinaryMessageBufferSize(length);
     }
 
     @Override
     public void setMaxIdleTimeout(long milliseconds)
     {
-        // TODO Auto-generated method stub
-
+        jettySession.getPolicy().setIdleTimeout(milliseconds);
     }
 
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    public void setTimeout(long milliseconds)
-    {
-        jettySession.setIdleTimeout(milliseconds);
+        jettySession.getPolicy().setMaxTextMessageBufferSize(length);
     }
 }

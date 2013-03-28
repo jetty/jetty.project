@@ -125,25 +125,34 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         {
             assertIsPublicNonStatic(method);
             assertIsReturn(method,Void.TYPE);
-            // ParameterizedMethod msgMethod = establishCallable(metadata,pojo,method,paramsOnMessage,OnMessage.class);
-            // switch (msgMethod.getMessageType())
-            // {
-            // case TEXT:
-            // metadata.onText = msgMethod;
-            // break;
-            // case BINARY:
-            // metadata.onBinary = msgMethod;
-            // break;
-            // case PONG:
-            // metadata.onPong = msgMethod;
-            // break;
-            // default:
-            // StringBuilder err = new StringBuilder();
-            // err.append("Invalid @OnMessage method signature,");
-            // err.append(" Missing type TEXT, BINARY, or PONG parameter: ");
-            // err.append(msgMethod.getFullyQualifiedMethodName());
-            // throw new InvalidSignatureException(err.toString());
-            // }
+            OnMessageCallable onmessage = new OnMessageCallable(pojo,method);
+            visitMethod(onmessage,pojo,method,paramsOnMessage,OnMessage.class);
+
+            Param param = onmessage.getMessageObjectParam();
+            switch (param.role)
+            {
+                case MESSAGE_BINARY:
+                    metadata.onBinary = new OnMessageBinaryCallable(onmessage);
+                    break;
+                case MESSAGE_BINARY_STREAM:
+                    metadata.onBinaryStream = new OnMessageBinaryStreamCallable(onmessage);
+                    break;
+                case MESSAGE_TEXT:
+                    metadata.onText = new OnMessageTextCallable(onmessage);
+                    break;
+                case MESSAGE_TEXT_STREAM:
+                    metadata.onTextStream = new OnMessageTextStreamCallable(onmessage);
+                    break;
+                case MESSAGE_PONG:
+                    metadata.onPong = new OnMessagePongCallable(onmessage);
+                    break;
+                default:
+                    StringBuilder err = new StringBuilder();
+                    err.append("An unrecognized message type <");
+                    err.append(param.type);
+                    err.append(">: does not meet specified type categories of [TEXT, BINARY, DECODER, or PONG]");
+                    throw new InvalidSignatureException(err.toString());
+            }
         }
     }
 
@@ -181,6 +190,7 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
             if (paramId.process(param,callable))
             {
                 // Successfully identified
+                LOG.debug("Identified: {}",param);
                 return true;
             }
         }

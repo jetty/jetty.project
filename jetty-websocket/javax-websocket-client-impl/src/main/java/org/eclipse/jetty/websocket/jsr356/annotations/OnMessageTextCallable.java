@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.io.Reader;
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -45,6 +44,14 @@ public class OnMessageTextCallable extends OnMessageCallable
         super(pojo,method);
     }
 
+    /**
+     * Copy Constructor
+     */
+    public OnMessageTextCallable(OnMessageCallable copy)
+    {
+        super(copy);
+    }
+
     public void call(Object endpoint, String str, boolean partialFlag) throws DecodeException
     {
         super.args[idxMessageObject] = textDecoder.decode(str);
@@ -56,12 +63,12 @@ public class OnMessageTextCallable extends OnMessageCallable
     }
 
     @Override
-    public void init(Session session, Map<String, String> pathParams)
+    public void init(Session session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_TEXT);
         assertRoleRequired(idxMessageObject,"Text Message Object");
         assertDecoderRequired();
         textDecoder = (Decoder.Text<?>)getDecoder();
-        super.init(session,pathParams);
+        super.init(session);
     }
 }

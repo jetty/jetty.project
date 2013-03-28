@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
+
 public class Param
 {
     /**
@@ -35,7 +37,20 @@ public class Param
         MESSAGE_BINARY_STREAM,
         MESSAGE_PONG,
         MESSAGE_PARTIAL_FLAG,
-        PATH_PARAM
+        PATH_PARAM;
+
+        private static Role[] messageRoles;
+
+        static
+        {
+            messageRoles = new Role[]
+            { MESSAGE_TEXT, MESSAGE_TEXT_STREAM, MESSAGE_BINARY, MESSAGE_BINARY_STREAM, MESSAGE_PONG, };
+        }
+
+        public static Role[] getMessageRoles()
+        {
+            return messageRoles;
+        }
     }
 
     public int index;
@@ -70,6 +85,22 @@ public class Param
     public void setPathParamName(String name)
     {
         this.pathParamName = name;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append("Param[");
+        str.append("index=").append(index);
+        str.append(",type=").append(MethodUtils.toString(type));
+        str.append(",role=").append(role);
+        if (pathParamName != null)
+        {
+            str.append(",pathParamName=").append(pathParamName);
+        }
+        str.append(']');
+        return str.toString();
     }
 
     public void unbind()

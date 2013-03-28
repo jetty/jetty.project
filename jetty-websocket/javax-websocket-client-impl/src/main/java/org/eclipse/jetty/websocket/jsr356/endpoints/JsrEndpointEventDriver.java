@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import javax.websocket.Session;
+
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -30,8 +32,15 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
-public class JsrEndpointEventDriver implements EventDriver
+public class JsrEndpointEventDriver implements EventDriver, IJsrSession
 {
+    @Override
+    public Session getJsrSession()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     @Override
     public WebSocketPolicy getPolicy()
     {

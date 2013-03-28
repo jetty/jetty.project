@@ -38,10 +38,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrClientEndpointImpl;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointImpl;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
 
+/**
+ * Main WebSocketContainer for working with client based WebSocket Endpoints.
+ */
 public class JettyWebSocketContainer implements WebSocketContainer
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketContainer.class);
@@ -51,8 +54,7 @@ public class JettyWebSocketContainer implements WebSocketContainer
     public JettyWebSocketContainer()
     {
         client = new WebSocketClient();
-        client.getEventDriverFactory().addImplementation(new JsrEndpointImpl(this));
-        client.getEventDriverFactory().addImplementation(new JsrClientEndpointImpl(this));
+        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
 
         try
         {
@@ -83,7 +85,7 @@ public class JettyWebSocketContainer implements WebSocketContainer
         Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req);
         try
         {
-            org.eclipse.jetty.websocket.api.Session sess = futSess.get();
+            WebSocketSession sess = (WebSocketSession)futSess.get();
             return new JsrSession(this,sess,getNextId());
         }
         catch (InterruptedException | ExecutionException e)
@@ -173,6 +175,12 @@ public class JettyWebSocketContainer implements WebSocketContainer
     public String getNextId()
     {
         return String.format("websocket-%d",idgen.incrementAndGet());
+    }
+
+    public Set<Session> getOpenSessions()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
