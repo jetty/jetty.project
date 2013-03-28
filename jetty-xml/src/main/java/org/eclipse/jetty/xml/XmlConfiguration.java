@@ -1195,16 +1195,19 @@ public class XmlConfiguration
                         }
                     }
 
-                    // For all arguments, load properties or parse XMLs
+                    // For all arguments, load properties
+                    for (int i = 0; i < args.length; i++)
+                    {
+                        if (args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                            properties.load(Resource.newResource(args[i]).getInputStream());
+                    }
+
+                    // For all arguments, parse XMLs
                     XmlConfiguration last = null;
                     Object[] obj = new Object[args.length];
                     for (int i = 0; i < args.length; i++)
                     {
-                        if (args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                        {
-                            properties.load(Resource.newResource(args[i]).getInputStream());
-                        }
-                        else
+                        if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
                             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURL());
                             if (last != null)
