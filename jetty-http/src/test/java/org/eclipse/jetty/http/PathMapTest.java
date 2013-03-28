@@ -44,6 +44,7 @@ public class PathMapTest
         p.put("/", "8");
         p.put("/XXX:/YYY", "9");
         p.put("", "10");
+        p.put("/\u20ACuro/*", "11");
 
         String[][] tests = {
                 { "/abs/path", "1"},
@@ -62,7 +63,9 @@ public class PathMapTest
                 { "/suffix/path.tar.gz", "6"},
                 { "/suffix/path.gz", "7"},
                 { "/animal/path.gz", "5"},
-                { "/Other/path", "8"},};
+                { "/Other/path", "8"},
+                { "/\u20ACuro/path", "11"},
+                };
 
         for (String[] test : tests)
         {

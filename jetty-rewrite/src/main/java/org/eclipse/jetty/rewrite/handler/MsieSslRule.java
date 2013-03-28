@@ -25,7 +25,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.Trie;
 
 /**
  * MSIE (Microsoft Internet Explorer) SSL Rule.
@@ -38,7 +40,7 @@ public class MsieSslRule extends Rule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
-    private static StringMap __IE6_BadOS = new StringMap();
+    private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
     {
         __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
         __IE6_BadOS.put("NT 5.0",Boolean.TRUE);

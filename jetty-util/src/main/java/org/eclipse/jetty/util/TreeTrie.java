@@ -25,7 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class TreeTrie<V> implements Trie<V>
+/* ------------------------------------------------------------ */
+/** A Trie String lookup data structure using a tree
+ * <p>This implementation is always case insensitive and is optimal for
+ * a variable number of fixed strings with few special characters.
+ * </p>
+ * @param <V>
+ */
+public class TreeTrie<V> extends AbstractTrie<V>
 {
     private static final int[] __lookup = 
     { // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -47,20 +54,16 @@ public class TreeTrie<V> implements Trie<V>
 
     public TreeTrie()
     {
+        super(true);
         _nextIndex = new TreeTrie[INDEX];
         _c=0;
     }
     
     private TreeTrie(char c)
     {
+        super(true);
         _nextIndex = new TreeTrie[INDEX];
         this._c=c;
-    }
-
-    @Override
-    public boolean put(V v)
-    {
-        return put(v.toString(),v);
     }
 
     @Override
@@ -105,21 +108,12 @@ public class TreeTrie<V> implements Trie<V>
     }
 
     @Override
-    public V remove(String s)
-    {
-        V o=get(s);
-        put(s,null);
-        return o;
-    }
-
-    @Override
-    public V get(String s)
+    public V get(String s,int offset, int len)
     {
         TreeTrie<V> t = this;
-        int len = s.length();
         for(int i=0; i < len; i++)
         {
-            char c=s.charAt(i);
+            char c=s.charAt(offset+i);
             int index=c>=0&&c<0x7f?__lookup[c]:-1;
             if (index>=0)
             {
@@ -219,6 +213,14 @@ public class TreeTrie<V> implements Trie<V>
         return t._value;
     }
 
+    @Override
+    public V getBest(String s, int offset, int len)
+    {
+        // TODO inefficient
+        byte[] b=s.substring(offset,offset+len).getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        return getBest(b,0,b.length);
+    }
+    
     @Override
     public V getBest(ByteBuffer b,int offset,int len)
     {
@@ -343,5 +345,6 @@ public class TreeTrie<V> implements Trie<V>
     {
         return false;
     }
-    
+
+
 }

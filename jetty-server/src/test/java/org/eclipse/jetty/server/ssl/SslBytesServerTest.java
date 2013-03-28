@@ -1634,9 +1634,6 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
-        //System.err.println(((Dumpable)server.getConnectors()[0]).dump());
-        Assert.assertThat(((Dumpable)server.getConnectors()[0]).dump(), Matchers.containsString("SCEP@"));
-
         completeClose(client);
 
         TimeUnit.MILLISECONDS.sleep(200);

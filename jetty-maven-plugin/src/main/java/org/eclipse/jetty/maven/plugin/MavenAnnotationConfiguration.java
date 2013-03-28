@@ -88,7 +88,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
     public void doParse (final WebAppContext context, final AnnotationParser parser, Resource resource)
     throws Exception
     { 
-            parser.parse(resource, new ClassNameResolver()
+            parser.parseDir(resource, new ClassNameResolver()
             {
                 public boolean isExcluded (String name)
                 {

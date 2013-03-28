@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,7 +27,7 @@ import java.util.Set;
  * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
  * @param <V>
  */
-public class ArrayTernaryTrie<V> implements Trie<V>
+public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
     private static int LO=1;
     private static int EQ=2;
@@ -70,13 +69,37 @@ public class ArrayTernaryTrie<V> implements Trie<V>
         this(128);
     }
     
+    public ArrayTernaryTrie(boolean insensitive)
+    {
+        this(insensitive,128);
+    }
+
     public ArrayTernaryTrie(int capacityInNodes)
     {
+        this(true,capacityInNodes);
+    }
+    
+    public ArrayTernaryTrie(boolean insensitive, int capacityInNodes)
+    {
+        super(insensitive);
         _value=new Object[capacityInNodes];
         _tree=new char[capacityInNodes*ROW_SIZE];
         _key=new String[capacityInNodes];
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Copy Trie and change capacity by a factor
+     * @param trie
+     * @param factor
+     */
+    public ArrayTernaryTrie(ArrayTernaryTrie<V> trie, double factor)
+    {
+        this(trie.isCaseInsensitive(),(int)(trie._value.length*factor));
+        _rows=trie._rows;
+        System.arraycopy(trie._value,0,_value,0,trie._value.length);
+        System.arraycopy(trie._tree,0,_tree,0,trie._tree.length);
+        System.arraycopy(trie._key,0,_key,0,trie._key.length);
+    }
     
     /* ------------------------------------------------------------ */
     @Override
@@ -90,8 +113,8 @@ public class ArrayTernaryTrie<V> implements Trie<V>
         for(k=0; k < limit; k++)
         {
             char c=s.charAt(k);
-            if (c<128)
-              c=StringUtil.lowercases[c&0x7f];
+            if(isCaseInsensitive() && c<128)
+                c=StringUtil.lowercases[c];
             
             while (true)
             {
@@ -132,67 +155,20 @@ public class ArrayTernaryTrie<V> implements Trie<V>
         return true;
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
-    public boolean put(V v)
-    {
-        return put(v.toString(),v);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V remove(String s)
-    {
-        V o=get(s);
-        put(s,null);
-        return o;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V get(String s)
+    public V get(String s,int offset, int length)
     {
         int t = _tree[EQ];
-        int len = s.length();
-        int node=0;
-        for(int i=0; t!=0 && i < len ; i++)
+        int len = length;
+        int i=0;
+        while(i<len)
         {
-            char c=StringUtil.lowercases[s.charAt(i)&0x7f];
-            while (t!=0)
-            {
-                int row = ROW_SIZE*t;
-                char n=_tree[row];
-                int diff=n-c;
-                
-                if (diff==0)
-                {
-                    node=t;
-                    t=_tree[row+EQ];
-                    break;
-                }
-
-                if (diff<0)
-                    t=_tree[row+LO];
-                else
-                    t=_tree[row+HI];
-            }
-        }
-        
-        return (V)_value[node];
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V get(ByteBuffer b,int offset,int len)
-    {
-        int t = _tree[EQ];
-        int node=0;
-        for(int i=0; t!=0 && i<len; i++)
-        {
-            char c=StringUtil.lowercases[b.get(offset+i)&0x7f];
+            char c=s.charAt(offset+i++);
+            if(isCaseInsensitive() && c<128)
+                c=StringUtil.lowercases[c];
             
-            while (t!=0)
+            while (true)
             {
                 int row = ROW_SIZE*t;
                 char n=_tree[row];
@@ -200,43 +176,47 @@ public class ArrayTernaryTrie<V> implements Trie<V>
                 
                 if (diff==0)
                 {
-                    node=t;
+                    if (i==len)
+                        return (V)_value[t];
                     t=_tree[row+EQ];
+                    if (t==0)
+                        return null;
                     break;
                 }
 
-                if (diff<0)
-                    t=_tree[row+LO];
-                else
-                    t=_tree[row+HI];
+                t=_tree[row+((diff<0)?LO:HI)];
+                if (t==0)
+                    return null;
             }
         }
         
-        return (V)_value[node];
+        return null;
     }
 
+    
     /* ------------------------------------------------------------ */
     @Override
-    public V getBest(byte[] b,int offset,int len)
+    public V getBest(String s)
     {
-        return getBest(_tree[EQ],b,offset,len);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V getBest(ByteBuffer b,int offset,int len)
-    {
-        if (b.hasArray())
-            return getBest(_tree[EQ],b.array(),b.arrayOffset()+b.position()+offset,len);
-        return getBest(_tree[EQ],b,offset,len);
+        return getBest(_tree[EQ],s,0,s.length());
     }
     
-    private V getBest(int t,byte[] b,int offset,int len)
+    /* ------------------------------------------------------------ */
+    @Override
+    public V getBest(String s, int offset, int length)
+    {
+        return getBest(_tree[EQ],s,offset,length);
+    }
+
+    /* ------------------------------------------------------------ */
+    private V getBest(int t,String s,int offset,int len)
     {
         int node=0;
         for(int i=0; t!=0 && i<len; i++)
         {
-            char c=StringUtil.lowercases[b[offset+i]&0x7f];
+            char c=s.charAt(offset+i);
+            if(isCaseInsensitive() && c<128)
+                c=StringUtil.lowercases[c];
 
             while (t!=0)
             {
@@ -252,7 +232,7 @@ public class ArrayTernaryTrie<V> implements Trie<V>
                     // if this node is a match, recurse to remember 
                     if (_key[node]!=null)
                     {
-                        V best=getBest(t,b,offset+i+1,len-i-1);
+                        V best=getBest(t,s,offset+i+1,len-i-1);
                         if (best!=null)
                             return best;
                         return (V)_value[node];
@@ -261,57 +241,12 @@ public class ArrayTernaryTrie<V> implements Trie<V>
                     break;
                 }
 
-                if (diff<0)
-                    t=_tree[row+LO];
-                else
-                    t=_tree[row+HI];
+                t=_tree[row+((diff<0)?LO:HI)];
             }
         }
         return null;
     }
 
-    private V getBest(int t,ByteBuffer b,int offset,int len)
-    {
-        int pos=b.position()+offset;
-        int node=0;
-        for(int i=0; t!=0 && i<len; i++)
-        {
-            char c=StringUtil.lowercases[b.get(pos++)&0x7f];
-
-            while (t!=0)
-            {
-                int row = ROW_SIZE*t;
-                char n=_tree[row];
-                int diff=n-c;
-                
-                if (diff==0)
-                {
-                    node=t;
-                    t=_tree[row+EQ];
-                    
-                    // if this node is a match, recurse to remember 
-                    if (_key[node]!=null)
-                    {
-                        V best=getBest(t,b,offset+i+1,len-i-1);
-                        if (best!=null)
-                            return best;
-                        return (V)_value[node];
-                    }
-                    
-                    break;
-                }
-
-                if (diff<0)
-                    t=_tree[row+LO];
-                else
-                    t=_tree[row+HI];
-            }
-        }
-        return null;
-    }
-    
-    
-    
 
     @Override
     public String toString()

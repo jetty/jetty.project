@@ -39,7 +39,7 @@ public class StringUtil
     private static final Logger LOG = Log.getLogger(StringUtil.class);
     
     
-    private final static StringMap<String> CHARSETS= new StringMap<String>(true);
+    private final static Trie<String> CHARSETS= new ArrayTrie<>(256);
     
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
@@ -87,28 +87,9 @@ public class StringUtil
         String n=CHARSETS.get(s,offset,length);       
         return (n==null)?s.substring(offset,offset+length):n;
     }
+    
 
     /* ------------------------------------------------------------ */
-    /** Convert alternate charset names (eg utf8) to normalized
-     * name (eg UTF-8).
-     */
-    public static String normalizeCharset(ByteBuffer b,int position,int length)
-    {
-        ByteBuffer ro=b.asReadOnlyBuffer();
-        ro.limit(ro.capacity());
-        ro.position(position);
-        ro.limit(position+length);
-        String n=CHARSETS.get(ro); 
-        if (n!=null)
-            return n;
-        ByteBuffer slice = b.slice();
-        slice.position(position);
-        slice.limit(position+length);
-        return BufferUtil.toString(slice,__UTF8_CHARSET);
-    }
-    
-    
-    
     public static char[] lowercases = {
           '\000','\001','\002','\003','\004','\005','\006','\007',
           '\010','\011','\012','\013','\014','\015','\016','\017',
