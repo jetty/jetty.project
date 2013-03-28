@@ -29,12 +29,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +42,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -385,38 +382,6 @@ public class JDBCSessionManager extends AbstractSessionManager
     }
 
 
-
-
-    /**
-     * ClassLoadingObjectInputStream
-     *
-     * Used to persist the session attribute map
-     */
-    protected class ClassLoadingObjectInputStream extends ObjectInputStream
-    {
-        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
-        {
-            super(in);
-        }
-
-        public ClassLoadingObjectInputStream () throws IOException
-        {
-            super();
-        }
-
-        @Override
-        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
-        {
-            try
-            {
-                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
-            }
-            catch (ClassNotFoundException e)
-            {
-                return super.resolveClass(cl);
-            }
-        }
-    }
 
 
     /**

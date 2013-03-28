@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,6 +36,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -638,39 +638,6 @@ public class HashSessionManager extends AbstractSessionManager
                 String key = ois.readUTF();
                 Object value = ois.readObject();
                 session.setAttribute(key,value);
-            }
-        }
-    }
-    
-    
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    protected class ClassLoadingObjectInputStream extends ObjectInputStream
-    {
-        /* ------------------------------------------------------------ */
-        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
-        {
-            super(in);
-        }
-
-        /* ------------------------------------------------------------ */
-        public ClassLoadingObjectInputStream () throws IOException
-        {
-            super();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
-        {
-            try
-            {
-                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
-            }
-            catch (ClassNotFoundException e)
-            {
-                return super.resolveClass(cl);
             }
         }
     }
