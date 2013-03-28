@@ -860,6 +860,13 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     protected void headerComplete() throws IOException
     {
+        // Handle idle race
+        if (_endp.isOutputShutdown())
+        {
+            _endp.close();
+            return;
+        }
+        
         _requests++;
         _generator.setVersion(_version);
         switch (_version)
