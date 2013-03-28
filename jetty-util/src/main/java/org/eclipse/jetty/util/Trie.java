@@ -52,7 +52,23 @@ public interface Trie<V>
      * @return
      */
     public V get(String s);
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get and exact match from a String key
+     * @param s The key
+     * @param offset The offset within the string of the key
+     * @param len the length of the key
+     * @return
+     */
+    public V get(String s,int offset,int len);
+
+    /* ------------------------------------------------------------ */
+    /** Get and exact match from a segment of a ByteBuufer as key
+     * @param b The buffer
+     * @return The value or null if not found
+     */
+    public V get(ByteBuffer b);
+
     /* ------------------------------------------------------------ */
     /** Get and exact match from a segment of a ByteBuufer as key
      * @param b The buffer
@@ -61,6 +77,22 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     public V get(ByteBuffer b,int offset,int len);
+    
+    /* ------------------------------------------------------------ */
+    /** Get the best match from key in a String.
+     * @param s The string
+     * @return The value or null if not found
+     */
+    public V getBest(String s);
+    
+    /* ------------------------------------------------------------ */
+    /** Get the best match from key in a String.
+     * @param s The string
+     * @param offset The offset within the string of the key
+     * @param len the length of the key
+     * @return The value or null if not found
+     */
+    public V getBest(String s,int offset,int len); 
 
     /* ------------------------------------------------------------ */
     /** Get the best match from key in a byte array.
@@ -81,10 +113,14 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     public V getBest(ByteBuffer b,int offset,int len);
-
+    
     /* ------------------------------------------------------------ */
     public Set<String> keySet();
-    
+
+    /* ------------------------------------------------------------ */
     public boolean isFull();
-    
+
+    /* ------------------------------------------------------------ */
+    public boolean isCaseInsensitive();
+
 }

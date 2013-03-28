@@ -23,12 +23,14 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /* ------------------------------------------------------------ */
-/** A Trie String lookup data structure.
+/** A Trie String lookup data structure using a fixed size array.
+ * <p>This implementation is always case insensitive and is optimal for
+ * a small number of fixed strings with few special characters.
+ * </p>
  * @param <V>
  */
-public class ArrayTrie<V> implements Trie<V>
+public class ArrayTrie<V> extends AbstractTrie<V>
 {
     /**
      * The Size of a Trie row is how many characters can be looked
@@ -99,6 +101,7 @@ public class ArrayTrie<V> implements Trie<V>
     
     public ArrayTrie(int capacityInNodes)
     {
+        super(true);
         _value=new Object[capacityInNodes];
         _rowIndex=new char[capacityInNodes*32];
         _key=new String[capacityInNodes];
@@ -154,32 +157,14 @@ public class ArrayTrie<V> implements Trie<V>
         return true;
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
-    public boolean put(V v)
-    {
-        return put(v.toString(),v);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V remove(String s)
-    {
-        V o=get(s);
-        put(s,null);
-        return o;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V get(String s)
+    public V get(String s, int offset, int len)
     {
         int t = 0;
-        int len = s.length();
         for(int i=0; i < len; i++)
         {
-            char c=s.charAt(i);
+            char c=s.charAt(offset+i);
             int index=__lookup[c&0x7f];
             if (index>=0)
             {
@@ -245,7 +230,53 @@ public class ArrayTrie<V> implements Trie<V>
             return getBest(0,b.array(),b.arrayOffset()+b.position()+offset,len);
         return getBest(0,b,offset,len);
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public V getBest(String s, int offset, int len)
+    {
+        return getBest(0,s,offset,len);
+    }
     
+    /* ------------------------------------------------------------ */
+    private V getBest(int t, String s, int offset, int len)
+    {
+        int pos=offset;
+        for(int i=0; i < len; i++)
+        {
+            char c=s.charAt(pos++);
+            int index=__lookup[c&0x7f];
+            if (index>=0)
+            {
+                int idx=t*ROW_SIZE+index;
+                t=_rowIndex[idx];
+                if (t==0)
+                    return null;
+            }
+            else
+            {
+                char[] big = _bigIndex==null?null:_bigIndex[t];
+                if (big==null)
+                    return null;
+                t=big[c];
+                if (t==0)
+                    return null;
+            }
+            
+            // Is the next Trie is a match
+            if (_key[t]!=null)
+            {
+                // Recurse so we can remember this possibility
+                V best=getBest(t,s,offset+i+1,len-i-1);
+                if (best!=null)
+                    return best;
+                return (V)_value[t];
+            }
+        }
+        return (V)_value[t];
+    }
+
+    /* ------------------------------------------------------------ */
     private V getBest(int t,byte[] b,int offset,int len)
     {
         for(int i=0; i < len; i++)

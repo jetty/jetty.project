@@ -39,12 +39,14 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -1007,7 +1009,7 @@ public class HttpFields implements Iterable<HttpField>
 
     private static final Float __one = new Float("1.0");
     private static final Float __zero = new Float("0.0");
-    private static final StringMap<Float> __qualities = new StringMap<>();
+    private static final Trie<Float> __qualities = new ArrayTernaryTrie<>();
     static
     {
         __qualities.put("*", __one);
