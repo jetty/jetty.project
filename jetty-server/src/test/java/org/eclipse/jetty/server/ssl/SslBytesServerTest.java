@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -866,7 +865,62 @@ public class SslBytesServerTest extends SslBytesTest
         // Close the raw socket, this generates a truncation attack
         proxy.flushToServer(null);
 
-        // Expect raw close from server
+        // Expect alert + raw close from server
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+        record = proxy.readFromServer();
+        Assert.assertNull(String.valueOf(record), record);
+        proxy.flushToClient(record);
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestWithImmediateRawClose() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        Future<Object> request = threadPool.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                OutputStream clientOutput = client.getOutputStream();
+                clientOutput.write(("" +
+                        "GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "\r\n").getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Application data
+        TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToServer(record, 0);
+        // Close the raw socket, this generates a truncation attack
+        proxy.flushToServer(null);
+        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // Application data
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToClient(record);
+
+        // Expect alert + raw close from server
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         record = proxy.readFromServer();
         Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
