@@ -125,8 +125,11 @@ public class DoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
 
-    private static final Pattern IP_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
-    private static final Pattern CIDR_PATTERN = Pattern.compile(IP_PATTERN + "/(\\d{1,2})");
+    private static final String IPv4_GROUP = "(\\d{1,3})";
+    private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP+"\\."+IPv4_GROUP+"\\."+IPv4_GROUP+"\\."+IPv4_GROUP);
+    private static final String IPv6_GROUP = "(\\p{XDigit}{1,4})";
+    private static final Pattern IPv6_PATTERN = Pattern.compile(IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP);
+    private static final Pattern CIDR_PATTERN = Pattern.compile("([^/]+)/(\\d+)");
 
     private static final String __TRACKER = "DoSFilter.Tracker";
     private static final String __THROTTLED = "DoSFilter.Throttled";
@@ -618,31 +621,94 @@ public class DoSFilter implements Filter
         return false;
     }
 
-    protected boolean subnetMatch(String subnetAddress, String candidate)
+    protected boolean subnetMatch(String subnetAddress, String address)
     {
-        Matcher matcher = CIDR_PATTERN.matcher(subnetAddress);
-        int subnet = intFromAddress(matcher);
-        int prefix = Integer.parseInt(matcher.group(5));
-        // Sets the most significant prefix bits to 1
-        // If prefix == 8 => 11111111_00000000_00000000_00000000
-        int mask = ~((1 << (32 - prefix)) - 1);
-        int ip = intFromAddress(IP_PATTERN.matcher(candidate));
-        return (ip & mask) == (subnet & mask);
+        Matcher cidrMatcher = CIDR_PATTERN.matcher(subnetAddress);
+        if (!cidrMatcher.matches())
+            return false;
+
+        String subnet = cidrMatcher.group(1);
+        int prefix;
+        try
+        {
+            prefix = Integer.parseInt(cidrMatcher.group(2));
+        }
+        catch (NumberFormatException x)
+        {
+            LOG.info("Ignoring malformed CIDR address {}", subnetAddress);
+            return false;
+        }
+
+        byte[] subnetBytes = addressToBytes(subnet);
+        if (subnetBytes == null)
+        {
+            LOG.info("Ignoring malformed CIDR address {}", subnetAddress);
+            return false;
+        }
+        byte[] addressBytes = addressToBytes(address);
+        if (addressBytes == null)
+        {
+            LOG.info("Ignoring malformed remote address {}", address);
+            return false;
+        }
+
+        // Comparing IPv4 with IPv6 ?
+        int length = subnetBytes.length;
+        if (length != addressBytes.length)
+            return false;
+
+        byte[] mask = prefixToBytes(prefix, length);
+
+        for (int i = 0; i < length; ++i)
+        {
+            if ((subnetBytes[i] & mask[i]) != (addressBytes[i] & mask[i]))
+                return false;
+        }
+
+        return true;
     }
 
-    private int intFromAddress(Matcher matcher)
+    private byte[] addressToBytes(String address)
     {
-        int result = 0;
-        if (matcher.matches())
+        Matcher ipv4Matcher = IPv4_PATTERN.matcher(address);
+        if (ipv4Matcher.matches())
         {
-            for (int i = 0; i < 4; ++i)
-            {
-                int b = Integer.parseInt(matcher.group(i + 1));
-                result |= b << 8 * (3 - i);
-            }
+            byte[] result = new byte[4];
+            for (int i = 0; i < result.length; ++i)
+                result[i] = Integer.valueOf(ipv4Matcher.group(i + 1)).byteValue();
             return result;
         }
-        throw new IllegalStateException();
+        else
+        {
+            Matcher ipv6Matcher = IPv6_PATTERN.matcher(address);
+            if (ipv6Matcher.matches())
+            {
+                byte[] result = new byte[16];
+                for (int i = 0; i < result.length; i += 2)
+                {
+                    int word = Integer.valueOf(ipv6Matcher.group(i / 2 + 1), 16);
+                    result[i] = (byte)((word & 0xFF00) >>> 8);
+                    result[i + 1] = (byte)(word & 0xFF);
+                }
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private byte[] prefixToBytes(int prefix, int length)
+    {
+        byte[] result = new byte[length];
+        int index = 0;
+        while (prefix / 8 > 0)
+        {
+            result[index] = -1;
+            prefix -= 8;
+            ++index;
+        }
+        // Sets the _prefix_ most significant bits to 1
+        result[index] = (byte)~((1 << (8 - prefix)) - 1);
+        return result;
     }
 
     public void destroy()
@@ -947,14 +1013,7 @@ public class DoSFilter implements Filter
     private boolean addWhitelistAddress(List<String> list, String address)
     {
         address = address.trim();
-        if (address.length() > 0)
-        {
-            if (CIDR_PATTERN.matcher(address).matches() || IP_PATTERN.matcher(address).matches())
-                return list.add(address);
-            else
-                LOG.warn("Ignoring malformed whitelist IP address {}", address);
-        }
-        return false;
+        return address.length() > 0 && list.add(address);
     }
 
     public boolean removeWhitelistAddress(String address)
