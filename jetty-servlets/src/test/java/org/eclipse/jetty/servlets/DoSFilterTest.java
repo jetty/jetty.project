@@ -80,12 +80,17 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         List<String> whitelist = new ArrayList<String>();
         whitelist.add("192.168.0.1");
         whitelist.add("10.0.0.0/8");
+        whitelist.add("4d8:0:a:1234:ABc:1F:b18:17");
+        whitelist.add("4d8:0:a:1234:ABc:1F:0:0/96");
         Assert.assertTrue(filter.checkWhitelist(whitelist, "192.168.0.1"));
         Assert.assertFalse(filter.checkWhitelist(whitelist, "192.168.0.2"));
         Assert.assertFalse(filter.checkWhitelist(whitelist, "11.12.13.14"));
         Assert.assertTrue(filter.checkWhitelist(whitelist, "10.11.12.13"));
         Assert.assertTrue(filter.checkWhitelist(whitelist, "10.0.0.0"));
         Assert.assertFalse(filter.checkWhitelist(whitelist, "0.0.0.0"));
+        Assert.assertTrue(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1F:b18:17"));
+        Assert.assertTrue(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1F:b18:0"));
+        Assert.assertFalse(filter.checkWhitelist(whitelist, "4d8:0:a:1234:ABc:1D:0:0"));
     }
 
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException
