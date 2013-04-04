@@ -20,8 +20,9 @@ package org.eclipse.jetty.websocket.server.helper;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.LinkedList;
+import java.util.Queue;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,8 +36,8 @@ import org.junit.Assert;
 public class IncomingFramesCapture implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
-    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
-    private LinkedList<WebSocketException> errors = new LinkedList<>();
+    private EventQueue<WebSocketFrame> frames = new EventQueue<>();
+    private EventQueue<WebSocketException> errors = new EventQueue<>();
 
     public void assertErrorCount(int expectedCount)
     {
@@ -81,11 +82,11 @@ public class IncomingFramesCapture implements IncomingFrames
     public void dump()
     {
         System.err.printf("Captured %d incoming frames%n",frames.size());
-        for (int i = 0; i < frames.size(); i++)
+        int i = 0;
+        for (Frame frame : frames)
         {
-            Frame frame = frames.get(i);
-            System.err.printf("[%3d] %s%n",i,frame);
-            System.err.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.err.printf("[%3d] %s%n",i++,frame);
+            System.err.printf("          payload: %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
@@ -102,7 +103,7 @@ public class IncomingFramesCapture implements IncomingFrames
         return count;
     }
 
-    public LinkedList<WebSocketException> getErrors()
+    public Queue<WebSocketException> getErrors()
     {
         return errors;
     }
@@ -120,7 +121,7 @@ public class IncomingFramesCapture implements IncomingFrames
         return count;
     }
 
-    public LinkedList<WebSocketFrame> getFrames()
+    public Queue<WebSocketFrame> getFrames()
     {
         return frames;
     }

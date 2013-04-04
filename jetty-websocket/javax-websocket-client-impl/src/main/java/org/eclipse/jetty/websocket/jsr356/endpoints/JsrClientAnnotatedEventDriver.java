@@ -128,7 +128,7 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
         if (handled && (activeMessage != null))
         {
             LOG.debug("Appending Binary Message");
-            activeMessage.appendMessage(buffer);
+            activeMessage.appendMessage(buffer,fin);
 
             if (fin)
             {
@@ -284,7 +284,7 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
         if (handled && (activeMessage != null))
         {
             LOG.debug("Appending Text Message");
-            activeMessage.appendMessage(buffer);
+            activeMessage.appendMessage(buffer,fin);
 
             if (fin)
             {
@@ -317,10 +317,12 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void openSession(WebSocketSession session)
     {
-        super.openSession(session);
         String id = container.getNextId();
         this.jsrsession = new JsrSession(container,session,id);
+        // Initialize the events
         this.events.init(jsrsession);
+        // TODO: Initialize the decoders
+        super.openSession(session);
     }
 
     @Override

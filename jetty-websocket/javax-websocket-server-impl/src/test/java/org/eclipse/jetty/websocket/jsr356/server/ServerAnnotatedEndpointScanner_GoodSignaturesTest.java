@@ -30,6 +30,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
@@ -80,6 +81,8 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
             this.expectedParameters = expectedParams;
         }
     }
+
+    private static JettyWebSocketContainer container = new JettyWebSocketContainer();
 
     @Parameters
     public static Collection<Case[]> data() throws Exception
@@ -135,7 +138,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        JsrServerMetadata metadata = new JsrServerMetadata(testcase.pojo);
+        JsrServerMetadata metadata = new JsrServerMetadata(container,testcase.pojo);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         scanner.scan();
 

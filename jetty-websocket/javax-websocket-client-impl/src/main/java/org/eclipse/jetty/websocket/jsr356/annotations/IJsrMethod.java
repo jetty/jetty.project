@@ -23,19 +23,10 @@ import java.lang.reflect.Method;
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
+import org.eclipse.jetty.websocket.jsr356.MessageType;
+
 public interface IJsrMethod
 {
-    /**
-     * There can only be 1 of each kind of MessageType in a class
-     */
-    public static enum MessageType
-    {
-        UNKNOWN,
-        TEXT,
-        BINARY,
-        PONG
-    }
-
     /**
      * Indicate that partial message support is desired
      */

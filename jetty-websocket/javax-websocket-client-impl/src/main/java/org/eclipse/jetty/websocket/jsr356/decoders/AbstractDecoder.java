@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-public class AbstractDecoder implements Decoder
+public abstract class AbstractDecoder implements Decoder
 {
     @Override
     public void destroy()

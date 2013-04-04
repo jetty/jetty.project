@@ -16,14 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 
-import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
+import org.eclipse.jetty.websocket.jsr356.decoders.CharacterDecoder;
 import org.eclipse.jetty.websocket.jsr356.samples.DualDecoder;
 import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
 import org.eclipse.jetty.websocket.jsr356.samples.FruitDecoder;
@@ -32,11 +32,14 @@ import org.junit.Test;
 
 public class DecodersTest
 {
+    private DecoderMetadataFactory factory = new DecoderMetadataFactory();
+
     @Test
     public void testGetTextDecoder_Character() throws DeploymentException
     {
-        Decoders decoders = new Decoders();
-        decoders.add(FruitDecoder.class);
+        SimpleClientEndpointConfig config = new SimpleClientEndpointConfig();
+        config.addDecoder(FruitDecoder.class);
+        Decoders decoders = new Decoders(factory,config);
 
         Decoder txtDecoder = decoders.getDecoder(Character.class);
         Assert.assertThat("Text Decoder",txtDecoder,notNullValue());
@@ -48,11 +51,13 @@ public class DecodersTest
     {
         try
         {
-            Decoders decoders = new Decoders();
-            decoders.add(DualDecoder.class); // has duplicated support for the same target Type
-            Assert.fail("Should have thrown ConfigurationException");
+            SimpleClientEndpointConfig config = new SimpleClientEndpointConfig();
+            config.addDecoder(DualDecoder.class); // has duplicated support for the same target Type
+            @SuppressWarnings("unused")
+            Decoders decoders = new Decoders(factory,config);
+            Assert.fail("Should have thrown DeploymentException");
         }
-        catch (ConfigurationException e)
+        catch (DeploymentException e)
         {
             Assert.assertThat("Error Message",e.getMessage(),containsString("Duplicate"));
         }
@@ -61,8 +66,9 @@ public class DecodersTest
     @Test
     public void testGetTextDecoder_Fruit() throws DeploymentException
     {
-        Decoders decoders = new Decoders();
-        decoders.add(FruitDecoder.class);
+        SimpleClientEndpointConfig config = new SimpleClientEndpointConfig();
+        config.addDecoder(FruitDecoder.class);
+        Decoders decoders = new Decoders(factory,config);
 
         Decoder txtDecoder = decoders.getDecoder(Fruit.class);
         Assert.assertThat("Text Decoder",txtDecoder,notNullValue());

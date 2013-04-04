@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 public class SimpleTextMessage implements MessageAppender
 {
     private final EventDriver onEvent;
-    private final Utf8StringBuilder utf;
+    protected final Utf8StringBuilder utf;
     private int size = 0;
-    private boolean finished;
+    protected boolean finished;
 
     public SimpleTextMessage(EventDriver onEvent)
     {
@@ -40,7 +40,7 @@ public class SimpleTextMessage implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
         {

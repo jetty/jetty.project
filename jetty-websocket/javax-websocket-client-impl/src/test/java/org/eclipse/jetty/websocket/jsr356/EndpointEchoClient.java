@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
+
+import org.junit.Assert;
 
 /**
  * Basic Echo Client from extended Endpoint
@@ -43,6 +47,8 @@ public class EndpointEchoClient extends Endpoint
     public void onOpen(Session session, EndpointConfig config)
     {
         this.session = session;
+        Assert.assertThat("Session",session,notNullValue());
+        Assert.assertThat("EndpointConfig",config,notNullValue());
         this.session.addMessageHandler(textCapture);
     }
 

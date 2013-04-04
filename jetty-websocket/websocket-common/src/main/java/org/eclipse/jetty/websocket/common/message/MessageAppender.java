@@ -31,13 +31,17 @@ public interface MessageAppender
      * 
      * @param payload
      *            the payload to append.
+     * @param isLast
+     *            flag indicating if this is the last part of the message or not.
      * @throws IOException
      *             if unable to append the payload
      */
-    abstract void appendMessage(ByteBuffer payload) throws IOException;
+    abstract void appendMessage(ByteBuffer payload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.
+     * <p>
+     * Any cleanup or final actions should be taken here.
      */
     abstract void messageComplete();
 }

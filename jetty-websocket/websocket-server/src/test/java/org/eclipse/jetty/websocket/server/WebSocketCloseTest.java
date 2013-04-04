@@ -143,7 +143,7 @@ public class WebSocketCloseTest
             client.expectUpgradeResponse();
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));

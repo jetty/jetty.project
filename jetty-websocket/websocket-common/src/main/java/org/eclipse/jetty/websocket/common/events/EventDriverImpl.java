@@ -33,8 +33,10 @@ public interface EventDriverImpl
      * @param policy
      *            the policy to use
      * @return the created EventDriver
+     * @throws Throwable
+     *             if unable to create the EventDriver
      */
-    EventDriver create(Object websocket, WebSocketPolicy policy);
+    EventDriver create(Object websocket, WebSocketPolicy policy) throws Throwable;
 
     /**
      * human readable string describing the rule that would support this EventDriver.

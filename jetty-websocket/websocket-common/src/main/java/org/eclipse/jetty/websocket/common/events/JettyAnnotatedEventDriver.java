@@ -88,7 +88,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        activeMessage.appendMessage(buffer);
+        activeMessage.appendMessage(buffer,fin);
 
         if (fin)
         {
@@ -148,6 +148,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
     }
 
+    @Override
     public void onInputStream(InputStream stream)
     {
         if (events.onBinary != null)
@@ -156,6 +157,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
     }
 
+    @Override
     public void onReader(Reader reader)
     {
         if (events.onText != null)
@@ -185,7 +187,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        activeMessage.appendMessage(buffer);
+        activeMessage.appendMessage(buffer,fin);
 
         if (fin)
         {

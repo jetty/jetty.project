@@ -48,11 +48,14 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
 public class JettyWebSocketContainer implements WebSocketContainer
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketContainer.class);
+    private final DecoderMetadataFactory decoderMetadataFactory;
     private WebSocketClient client;
     private AtomicLong idgen = new AtomicLong(0);
 
     public JettyWebSocketContainer()
     {
+        decoderMetadataFactory = new DecoderMetadataFactory();
+
         client = new WebSocketClient();
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
 
@@ -132,6 +135,11 @@ public class JettyWebSocketContainer implements WebSocketContainer
     public Session connectToServer(Object annotatedEndpointInstance, URI path) throws DeploymentException, IOException
     {
         return connect(annotatedEndpointInstance,null,path);
+    }
+
+    public DecoderMetadataFactory getDecoderMetadataFactory()
+    {
+        return decoderMetadataFactory;
     }
 
     @Override

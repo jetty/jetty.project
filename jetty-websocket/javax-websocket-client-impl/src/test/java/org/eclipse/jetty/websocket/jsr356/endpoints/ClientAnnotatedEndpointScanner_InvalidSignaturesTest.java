@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.websocket.DeploymentException;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
@@ -32,6 +33,7 @@ import javax.websocket.OnOpen;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorErrorSocket;
@@ -53,6 +55,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class ClientAnnotatedEndpointScanner_InvalidSignaturesTest
 {
     private static final Logger LOG = Log.getLogger(ClientAnnotatedEndpointScanner_InvalidSignaturesTest.class);
+    private static JettyWebSocketContainer container = new JettyWebSocketContainer();
 
     @Parameters
     public static Collection<Class<?>[]> data()
@@ -89,9 +92,9 @@ public class ClientAnnotatedEndpointScanner_InvalidSignaturesTest
     }
 
     @Test
-    public void testScan_InvalidSignature()
+    public void testScan_InvalidSignature() throws DeploymentException
     {
-        JsrClientMetadata metadata = new JsrClientMetadata(pojo);
+        JsrClientMetadata metadata = new JsrClientMetadata(container,pojo);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         try
         {

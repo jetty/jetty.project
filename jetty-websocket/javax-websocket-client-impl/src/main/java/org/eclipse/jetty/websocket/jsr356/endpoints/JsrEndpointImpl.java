@@ -37,19 +37,36 @@ public class JsrEndpointImpl implements EventDriverImpl
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
-        // TODO Auto-generated method stub
-        return null;
+        Object endpoint = websocket;
+
+        if (endpoint instanceof ConfiguredEndpoint)
+        {
+            // unwrap
+            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
+            endpoint = ce.getEndpoint();
+        }
+
+        return new JsrEndpointEventDriver(container,policy,(Endpoint)endpoint);
     }
 
     @Override
     public String describeRule()
     {
-        return "class extends " + Endpoint.class.getName();
+        return "class extends " + javax.websocket.Endpoint.class.getName();
     }
 
     @Override
     public boolean supports(Object websocket)
     {
-        return (websocket instanceof Endpoint);
+        Object endpoint = websocket;
+
+        if (endpoint instanceof ConfiguredEndpoint)
+        {
+            // unwrap
+            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
+            endpoint = ce.getEndpoint();
+        }
+
+        return (endpoint instanceof javax.websocket.Endpoint);
     }
 }

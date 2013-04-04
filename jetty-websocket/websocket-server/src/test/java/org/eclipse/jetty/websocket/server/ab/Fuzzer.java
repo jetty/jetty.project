@@ -152,7 +152,7 @@ public class Fuzzer
         for (int i = 0; i < expectedCount; i++)
         {
             WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = capture.getFrames().pop();
+            WebSocketFrame actual = capture.getFrames().poll();
 
             prefix = "Frame[" + i + "]";
 

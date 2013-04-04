@@ -57,7 +57,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             activeMessage = new SimpleBinaryMessage(this);
         }
 
-        activeMessage.appendMessage(buffer);
+        activeMessage.appendMessage(buffer,fin);
 
         if (fin)
         {
@@ -126,7 +126,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             activeMessage = new SimpleTextMessage(this);
         }
 
-        activeMessage.appendMessage(buffer);
+        activeMessage.appendMessage(buffer,fin);
 
         if (fin)
         {

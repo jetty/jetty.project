@@ -29,9 +29,9 @@ public class SimpleBinaryMessage implements MessageAppender
 {
     private static final int BUFFER_SIZE = 65535;
     private final EventDriver onEvent;
-    private final ByteArrayOutputStream out;
+    protected final ByteArrayOutputStream out;
     private int size;
-    private boolean finished;
+    protected boolean finished;
 
     public SimpleBinaryMessage(EventDriver onEvent)
     {
@@ -41,7 +41,7 @@ public class SimpleBinaryMessage implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
         {

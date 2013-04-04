@@ -69,7 +69,7 @@ public class ChromeTest
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().get(0);
+            WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

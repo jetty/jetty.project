@@ -124,6 +124,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     {
                         pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
                         BufferUtil.put(frame.getPayload(),pongBuf);
+                        BufferUtil.flipToFlush(pongBuf,0);
                     }
                     else
                     {

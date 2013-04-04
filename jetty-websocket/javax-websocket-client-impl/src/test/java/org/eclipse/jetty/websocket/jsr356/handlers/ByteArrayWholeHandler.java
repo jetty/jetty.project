@@ -16,33 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.decoders;
+package org.eclipse.jetty.websocket.jsr356.handlers;
 
-import javax.websocket.Decoder;
+import javax.websocket.MessageHandler;
 
-/**
- * A reference to a Decoder.
- * <p>
- * This represents a potential decoder, no instance exists (yet)
- */
-public class DecoderRef
+public class ByteArrayWholeHandler implements MessageHandler.Whole<byte[]>
 {
-    private Class<?> type;
-    private Class<? extends Decoder> decoder;
-
-    public DecoderRef(Class<?> type, Class<? extends Decoder> decoder)
+    @Override
+    public void onMessage(byte[] message)
     {
-        this.type = type;
-        this.decoder = decoder;
-    }
-
-    public Class<? extends Decoder> getDecoder()
-    {
-        return decoder;
-    }
-
-    public Class<?> getType()
-    {
-        return type;
+        // TODO Auto-generated method stub
     }
 }

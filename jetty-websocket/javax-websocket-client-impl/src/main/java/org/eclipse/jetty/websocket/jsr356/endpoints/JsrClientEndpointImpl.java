@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
+import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -41,7 +42,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     }
 
     @Override
-    public EventDriver create(Object websocket, WebSocketPolicy policy)
+    public EventDriver create(Object websocket, WebSocketPolicy policy) throws DeploymentException
     {
         Object endpoint = websocket;
         ClientEndpointConfig config = null;
@@ -57,7 +58,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         JsrClientMetadata basemetadata = cache.get(endpointClass);
         if (basemetadata == null)
         {
-            basemetadata = new JsrClientMetadata(endpointClass);
+            basemetadata = new JsrClientMetadata(container,endpointClass);
             AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(basemetadata);
             scanner.scan();
             cache.put(endpointClass,basemetadata);

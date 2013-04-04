@@ -25,7 +25,6 @@ import javax.websocket.Decoder;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 public abstract class JsrCallable extends CallableMethod
@@ -133,18 +132,6 @@ public abstract class JsrCallable extends CallableMethod
                     args[idx] = value;
                 }
             }
-        }
-    }
-
-    public void setDecoder(Class<? extends Decoder> decoderClass) throws InvalidSignatureException
-    {
-        try
-        {
-            this.decoder = decoderClass.newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new InvalidSignatureException("Unable to instantiate Decoder: " + decoderClass,e);
         }
     }
 

@@ -26,9 +26,6 @@ import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
-
 /**
  * Static reference to a specific annotated classes metadata.
  * 
@@ -41,16 +38,6 @@ public abstract class JsrMetadata<T extends Annotation>
      * The actual class that this metadata belongs to
      */
     public final Class<?> pojo;
-
-    /**
-     * Decoders declared as part of annotations
-     */
-    public Decoders decoders;
-
-    /**
-     * Encoders declared as part of annotations
-     */
-    public Encoders encoders;
 
     /**
      * Callable for &#064;{@link OnOpen} annotation.

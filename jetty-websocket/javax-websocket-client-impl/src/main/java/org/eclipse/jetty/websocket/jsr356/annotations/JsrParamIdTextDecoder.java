@@ -22,28 +22,30 @@ import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
-import org.eclipse.jetty.websocket.jsr356.decoders.DecoderRef;
 
 /**
  * Param handling for Text &#064;{@link OnMessage} parameters declared as {@link Decoder}s of type {@link Decoder.Text} or {@link Decoder.TextStream}
  */
 public class JsrParamIdTextDecoder extends JsrParamIdOnMessage implements IJsrParamId
 {
-    private final DecoderRef ref;
+    private final DecoderWrapper ref;
+    private Class<?> supportedType;
 
-    public JsrParamIdTextDecoder(DecoderRef ref)
+    public JsrParamIdTextDecoder(DecoderWrapper ref)
     {
         this.ref = ref;
+        this.supportedType = ref.getMetadata().getObjectType();
     }
 
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (param.type.isAssignableFrom(ref.getType()))
+        if (param.type.isAssignableFrom(supportedType))
         {
             assertPartialMessageSupportDisabled(param,callable);
-            param.bind(Role.MESSAGE_TEXT_STREAM);
+            param.bind(Role.MESSAGE_TEXT_STREAM); // TODO: is this sane? for Text & TextStream ?
             callable.setDecoder(ref.getDecoder());
             return true;
         }

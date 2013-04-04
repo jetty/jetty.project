@@ -115,7 +115,7 @@ public class WebSocketServletRFCTest
 
             // Read frame echo'd back (hopefully a single binary frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            Frame binmsg = capture.getFrames().get(0);
+            Frame binmsg = capture.getFrames().poll();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -181,7 +181,7 @@ public class WebSocketServletRFCTest
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().get(0);
+            WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -209,7 +209,7 @@ public class WebSocketServletRFCTest
 
             // Read frame (hopefully close frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            Frame cf = capture.getFrames().get(0);
+            Frame cf = capture.getFrames().poll();
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
@@ -252,7 +252,7 @@ public class WebSocketServletRFCTest
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().get(0);
+            WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -292,7 +292,7 @@ public class WebSocketServletRFCTest
             }
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
@@ -334,7 +334,7 @@ public class WebSocketServletRFCTest
             }
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
@@ -367,7 +367,7 @@ public class WebSocketServletRFCTest
             client.writeRaw(bb);
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
@@ -413,7 +413,7 @@ public class WebSocketServletRFCTest
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().get(0);
+            WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

@@ -91,7 +91,7 @@ public class FragmentExtensionTest
             IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
             for (int i = 0; i < parts.length; i++)
             {
-                WebSocketFrame frame = capture.getFrames().get(i);
+                WebSocketFrame frame = capture.getFrames().poll();
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
         }

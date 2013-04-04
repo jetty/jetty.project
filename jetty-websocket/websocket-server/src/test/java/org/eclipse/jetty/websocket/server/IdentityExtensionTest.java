@@ -72,7 +72,7 @@ public class IdentityExtensionTest
             client.write(WebSocketFrame.text("Hello"));
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is("Hello"));
         }
         finally

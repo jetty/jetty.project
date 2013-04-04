@@ -53,7 +53,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
         {

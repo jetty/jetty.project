@@ -18,25 +18,30 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import javax.websocket.Decoder;
+import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
+import org.eclipse.jetty.websocket.jsr356.Decoders;
+import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdBinaryDecoder;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdTextDecoder;
-import org.eclipse.jetty.websocket.jsr356.decoders.DecoderRef;
-import org.eclipse.jetty.websocket.jsr356.decoders.Decoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.Encoders;
 
 public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
 {
     private final ServerEndpoint endpoint;
+    private final ServerEndpointConfig config;
+    private final Decoders decoders;
 
-    protected JsrServerMetadata(Class<?> websocket)
+    protected JsrServerMetadata(JettyWebSocketContainer container, Class<?> websocket) throws DeploymentException
     {
         super(websocket);
 
@@ -47,55 +52,66 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         }
 
         this.endpoint = anno;
-        this.encoders = new Encoders(anno.encoders());
-        this.decoders = new Decoders(anno.decoders());
+        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(websocket,anno.value());
+        builder.decoders(Arrays.asList(anno.decoders()));
+        builder.encoders(Arrays.asList(anno.encoders()));
+        builder.subprotocols(Arrays.asList(anno.subprotocols()));
+        try
+        {
+            builder.configurator(anno.configurator().newInstance());
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new DeploymentException("Unable to instantiate @ServerEndpoint.configurator(): " + anno.configurator(),e);
+        }
+        this.config = builder.build();
+        this.decoders = new Decoders(container.getDecoderMetadataFactory(),config);
+    }
+
+    @Override
+    public void customizeParamsOnClose(LinkedList<IJsrParamId> params)
+    {
+        params.addFirst(JsrParamPath.INSTANCE);
+    }
+
+    @Override
+    public void customizeParamsOnError(LinkedList<IJsrParamId> params)
+    {
+        params.addFirst(JsrParamPath.INSTANCE);
+    }
+
+    @Override
+    public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
+    {
+        for (DecoderWrapper wrapper : decoders.wrapperSet())
+        {
+            Class<? extends Decoder> decoder = wrapper.getMetadata().getDecoder();
+
+            if (Decoder.Text.class.isAssignableFrom(decoder) || Decoder.TextStream.class.isAssignableFrom(decoder))
+            {
+                params.add(new JsrParamIdTextDecoder(wrapper));
+                continue;
+            }
+
+            if (Decoder.Binary.class.isAssignableFrom(decoder) || Decoder.BinaryStream.class.isAssignableFrom(decoder))
+            {
+                params.add(new JsrParamIdBinaryDecoder(wrapper));
+                continue;
+            }
+
+            throw new IllegalStateException("Invalid Decoder: " + decoder);
+        }
+    }
+
+    @Override
+    public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
+    {
+        params.addFirst(JsrParamPath.INSTANCE);
     }
 
     @Override
     public ServerEndpoint getAnnotation()
     {
         return endpoint;
-    }
-    
-    @Override
-    public void customizeParamsOnClose(LinkedList<IJsrParamId> params)
-    {
-        params.addFirst(JsrParamPath.INSTANCE);
-    }
-    
-    @Override
-    public void customizeParamsOnError(LinkedList<IJsrParamId> params)
-    {
-        params.addFirst(JsrParamPath.INSTANCE);
-    }
-    
-    @Override
-    public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
-    {
-        params.addFirst(JsrParamPath.INSTANCE);
-    }
-    
-    @Override
-    public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
-    {
-        for (DecoderRef ref : decoders)
-        {
-            Class<? extends Decoder> decoder = ref.getDecoder();
-
-            if (Decoder.Text.class.isAssignableFrom(decoder) || Decoder.TextStream.class.isAssignableFrom(decoder))
-            {
-                params.add(new JsrParamIdTextDecoder(ref));
-                continue;
-            }
-
-            if (Decoder.Binary.class.isAssignableFrom(decoder) || Decoder.BinaryStream.class.isAssignableFrom(decoder))
-            {
-                params.add(new JsrParamIdBinaryDecoder(ref));
-                continue;
-            }
-
-            throw new IllegalStateException("Invalid Decoder: " + decoder);
-        }
-        params.addFirst(JsrParamPath.INSTANCE);
     }
 }

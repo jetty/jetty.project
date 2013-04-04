@@ -29,7 +29,9 @@ public class JsrEventDriverFactory extends EventDriverFactory
         super(policy);
 
         clearImplementations();
+        // Classes that extend javax.websocket.Endpoint
         addImplementation(new JsrEndpointImpl(container));
+        // Classes annotated with @javax.websocket.ClientEndpoint
         addImplementation(new JsrClientEndpointImpl(container));
     }
 

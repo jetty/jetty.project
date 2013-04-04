@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -82,6 +85,7 @@ public class EndpointEchoTest
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EndpointEchoClient echoer = new EndpointEchoClient();
+        Assert.assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
         Session session = container.connectToServer(echoer,serverUri);
         session.getBasicRemote().sendText("Echo");
         echoer.textCapture.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);

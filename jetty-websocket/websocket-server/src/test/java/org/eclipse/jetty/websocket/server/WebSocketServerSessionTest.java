@@ -96,13 +96,13 @@ public class WebSocketServerSessionTest
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(4,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().pop();
+            WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Parameter Map[snack]",tf.getPayloadAsUTF8(),is("[cashews]"));
-            tf = capture.getFrames().pop();
+            tf = capture.getFrames().poll();
             Assert.assertThat("Parameter Map[amount]",tf.getPayloadAsUTF8(),is("[handful]"));
-            tf = capture.getFrames().pop();
+            tf = capture.getFrames().poll();
             Assert.assertThat("Parameter Map[brand]",tf.getPayloadAsUTF8(),is("[off]"));
-            tf = capture.getFrames().pop();
+            tf = capture.getFrames().poll();
             Assert.assertThat("Parameter Map[cost]",tf.getPayloadAsUTF8(),is("<null>"));
         }
         finally

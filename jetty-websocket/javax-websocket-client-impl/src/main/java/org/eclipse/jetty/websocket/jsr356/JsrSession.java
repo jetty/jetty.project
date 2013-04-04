@@ -38,6 +38,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
 
 public class JsrSession implements Session
 {
@@ -49,7 +50,8 @@ public class JsrSession implements Session
     private Map<String, List<String>> jsrParameterMap;
     private Map<String, String> pathParameters = new HashMap<>();
     private Map<String, Object> userProperties;
-    private Set<MessageHandler> messageHandlers;
+    private Decoders decoders;
+    private MessageHandlers messageHandlers;
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
@@ -63,7 +65,7 @@ public class JsrSession implements Session
     @Override
     public void addMessageHandler(MessageHandler listener) throws IllegalStateException
     {
-        messageHandlers.add(listener);
+        this.messageHandlers.add(listener);
     }
 
     @Override
@@ -131,7 +133,12 @@ public class JsrSession implements Session
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
-        return messageHandlers;
+        return messageHandlers.getUnmodifiableHandlerSet();
+    }
+
+    public MessageHandlerWrapper getMessageHandlerWrapper(MessageType msgType)
+    {
+        return messageHandlers.getWrapper(msgType);
     }
 
     @Override

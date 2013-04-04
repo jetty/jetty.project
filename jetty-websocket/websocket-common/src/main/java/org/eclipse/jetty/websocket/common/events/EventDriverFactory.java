@@ -115,7 +115,14 @@ public class EventDriverFactory
         {
             if (impl.supports(websocket))
             {
-                return impl.create(websocket,policy.clonePolicy());
+                try
+                {
+                    return impl.create(websocket,policy.clonePolicy());
+                }
+                catch (Throwable e)
+                {
+                    throw new InvalidWebSocketException("Unable to create websocket",e);
+                }
             }
         }
 
