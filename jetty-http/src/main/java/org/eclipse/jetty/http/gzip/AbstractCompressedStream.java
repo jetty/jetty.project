@@ -234,7 +234,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                 setHeader("Content-Encoding", _encoding);            
                 if (_response.containsHeader("Content-Encoding"))
                 {
-                    setHeader("Vary",_vary);
+                    addHeader("Vary",_vary);
                     _out=_compressedOutputStream=createStream();
                     if (_out!=null)
                     {
@@ -269,7 +269,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         if (_out == null || _bOut != null)
         {
             if (sendVary)
-                setHeader("Vary",_vary);
+                addHeader("Vary",_vary);
             if (_wrapper.getETag()!=null)
                 setHeader("ETag",_wrapper.getETag());
                 
@@ -339,6 +339,11 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     protected PrintWriter newWriter(OutputStream out, String encoding) throws UnsupportedEncodingException
     {
         return encoding == null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
+    }
+
+    protected void addHeader(String name,String value)
+    {
+        _response.addHeader(name, value);
     }
 
     protected void setHeader(String name,String value)
