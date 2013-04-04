@@ -156,7 +156,8 @@ public class ShutdownMonitor
             {
                 return;
             }
-            System.err.println("Starting ShutdownMonitorThread");
+            if (DEBUG)
+                System.err.println("Starting ShutdownMonitorThread");
             super.start();
         }
         
