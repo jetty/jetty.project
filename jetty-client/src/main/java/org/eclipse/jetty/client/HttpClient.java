@@ -966,6 +966,7 @@ public class HttpClient extends ContainerLifeCycle
                     engine.setUseClientMode(true);
 
                     SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
+                    sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
                     HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
 

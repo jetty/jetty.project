@@ -30,7 +30,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -80,10 +79,9 @@ public class SslConnectionTest
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
             SslConnection sslConnection = new SslConnection(__byteBufferPool, getExecutor(), endpoint, engine);
-
+            sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
             Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
-
             return sslConnection;
         }
 

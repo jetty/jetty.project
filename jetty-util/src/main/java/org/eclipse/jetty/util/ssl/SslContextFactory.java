@@ -199,7 +199,11 @@ public class SslContextFactory extends AbstractLifeCycle
     /** EndpointIdentificationAlgorithm - when set to "HTTPS" hostname verification will be enabled */
     private String _endpointIdentificationAlgorithm = null;
 
+    /** Whether to blindly trust certificates */
     private boolean _trustAll;
+
+    /** Whether TLS renegotiation is allowed */
+    private boolean _renegotiationAllowed = true;
 
     /**
      * Construct an instance of SslContextFactory
@@ -762,6 +766,22 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkNotStarted();
         _trustManagerFactoryAlgorithm = algorithm;
+    }
+
+    /**
+     * @return whether TLS renegotiation is allowed (true by default)
+     */
+    public boolean isRenegotiationAllowed()
+    {
+        return _renegotiationAllowed;
+    }
+
+    /**
+     * @param renegotiationAllowed whether TLS renegotiation is allowed
+     */
+    public void setRenegotiationAllowed(boolean renegotiationAllowed)
+    {
+        _renegotiationAllowed = renegotiationAllowed;
     }
 
     /**
