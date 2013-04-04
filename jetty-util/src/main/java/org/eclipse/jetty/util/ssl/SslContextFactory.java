@@ -41,6 +41,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -369,6 +372,7 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /**
+     * You can either use the exact cipher suite name or a a regular expression.
      * @param cipherSuites
      *            The array of cipher suite names to exclude from
      *            {@link SSLEngine#setEnabledCipherSuites(String[])}
@@ -399,6 +403,7 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /**
+     * You can either use the exact cipher suite name or a a regular expression.
      * @param cipherSuites
      *            The array of cipher suite names to include in
      *            {@link SSLEngine#setEnabledCipherSuites(String[])}
@@ -1035,23 +1040,45 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        Set<String> selected_ciphers = new LinkedHashSet<>();
+        Set<String> selected_ciphers = new CopyOnWriteArraySet<>();
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites!=null)
-        {
-            // Use only the supported included ciphers
-            for (String cipherSuite : _includeCipherSuites)
-                if(Arrays.asList(supportedCipherSuites).contains(cipherSuite))
-                    selected_ciphers.add(cipherSuite);
-        }
+            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
         else
             selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));
 
+        removeExcludedCipherSuites(selected_ciphers);
 
-        // Remove any excluded ciphers
-        selected_ciphers.removeAll(_excludeCipherSuites);
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
+    }
+
+    private void processIncludeCipherSuites(String[] supportedCipherSuites, Set<String> selected_ciphers)
+    {
+        for (String cipherSuite : _includeCipherSuites)
+        {
+            Pattern p = Pattern.compile(cipherSuite);
+            for (String supportedCipherSuite : supportedCipherSuites)
+            {
+                Matcher m = p.matcher(supportedCipherSuite);
+                if (m.matches())
+                    selected_ciphers.add(supportedCipherSuite);
+            }
+        }
+    }
+
+    private void removeExcludedCipherSuites(Set<String> selected_ciphers)
+    {
+        for (String excludeCipherSuite : _excludeCipherSuites)
+        {
+            Pattern excludeCipherPattern = Pattern.compile(excludeCipherSuite);
+            for (String selectedCipherSuite : selected_ciphers)
+            {
+                Matcher m = excludeCipherPattern.matcher(selectedCipherSuite);
+                if (m.matches())
+                    selected_ciphers.remove(selectedCipherSuite);
+            }
+        }
     }
 
     /**
