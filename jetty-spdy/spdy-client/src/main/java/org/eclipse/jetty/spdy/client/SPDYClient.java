@@ -307,6 +307,7 @@ public class SPDYClient
                     {
                         final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
                         SslConnection sslConnection = new SslConnection(bufferPool, getExecutor(), endPoint, engine);
+                        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                         DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, getExecutor(), client);
                         sslEndPoint.setConnection(connection);

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -82,6 +81,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                 {
                     SSLEngine engine = newSSLEngine(sslContextFactory,channel);
                     SslConnection sslConnection = new SslConnection(bufferPool,getExecutor(),endPoint,engine);
+                    sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
 
                     Connection connection = newUpgradeConnection(channel,sslEndPoint,connectPromise);
