@@ -538,8 +538,10 @@ public class SslConnection extends AbstractConnection
                                 case NOT_HANDSHAKING:
                                     // we just didn't read anything.
                                     if (net_filled < 0)
-                                        _sslEngine.closeInbound();
-
+                                    {
+                                        closeInbound();
+                                        return -1;
+                                    }
                                     return 0;
 
                                 case NEED_TASK:
@@ -568,14 +570,8 @@ public class SslConnection extends AbstractConnection
                                     // if we just filled some net data
                                     if (net_filled < 0)
                                     {
-                                        // If we call closeInbound() before having read the SSL close
-                                        // message an exception will be thrown (truncation attack).
-                                        // The TLS specification says that the sender of the SSL close
-                                        // message may just close and avoid to read the response.
-                                        // If that is the case, we avoid calling closeInbound() because
-                                        // will throw the truncation attack exception for nothing.
-                                        if (isOpen())
-                                            _sslEngine.closeInbound();
+                                        closeInbound();
+                                        return -1;
                                     }
                                     else if (net_filled > 0)
                                     {
@@ -622,6 +618,18 @@ public class SslConnection extends AbstractConnection
                 }
                 if (DEBUG)
                     LOG.debug("{} fill exit", SslConnection.this);
+            }
+        }
+
+        private void closeInbound()
+        {
+            try
+            {
+                _sslEngine.closeInbound();
+            }
+            catch (SSLException x)
+            {
+                LOG.ignore(x);
             }
         }
 

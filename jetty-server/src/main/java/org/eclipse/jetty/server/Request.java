@@ -1779,6 +1779,9 @@ public class Request implements HttpServletRequest
     public void setHandled(boolean h)
     {
         _handled = h;
+        Response r=getResponse();
+        if (_handled && r.getStatus()==0)
+            r.setStatus(200);
     }
 
     /* ------------------------------------------------------------ */

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -95,7 +96,14 @@ public class AsyncStressTest
     @Stress("High connection count")
     public void testAsync() throws Throwable
     {
-        doConnections(1600,240);
+        if (PropertyFlag.isEnabled("test.stress"))
+        {
+            doConnections(1600,240);
+        }
+        else
+        {
+            doConnections(80,80);
+        }
     }
 
     private void doConnections(int connections,final int loops) throws Throwable

@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -94,6 +95,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
             // Abnormal Close
             reason = CloseStatus.trimMaxReasonLength(reason);
+            session.incomingError(new WebSocketException(x)); // TODO: JSR-356 change to Throwable
             session.notifyClose(StatusCode.NO_CLOSE,reason);
 
             disconnect(); // disconnect endpoint & connection
@@ -102,7 +104,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void succeeded()
         {
-            // Lets process the next set of bytes...
             AbstractWebSocketConnection.this.complete(writeBytes);
         }
     }
@@ -286,11 +287,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
         }
         CloseInfo close = new CloseInfo(statusCode,reason);
-        // TODO: create DisconnectCallback?
         outgoingFrame(close.asFrame(),new OnCloseCallback());
     }
 
-    private void execute(Runnable task)
+    protected void execute(Runnable task)
     {
         try
         {
@@ -502,6 +502,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         // Initiate close - politely send close frame.
         // Note: it is not possible in 100% of cases during read timeout to send this close frame.
+        session.incomingError(new WebSocketTimeoutException("Timeout on Read"));
         session.close(StatusCode.NORMAL,"Idle Timeout");
 
         // Force closure of writeBytes

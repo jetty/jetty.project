@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
 
@@ -61,7 +60,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -209,7 +207,8 @@ public class HttpClient extends ContainerLifeCycle
 
         handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
-        handlers.add(new AuthenticationProtocolHandler(this));
+        handlers.add(new WWWAuthenticationProtocolHandler(this));
+        handlers.add(new ProxyAuthenticationProtocolHandler(this));
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 
@@ -502,8 +501,8 @@ public class HttpClient extends ContainerLifeCycle
                     channel.configureBlocking(false);
                     channel.connect(socketAddress);
 
-                    Future<Connection> futureConnection = new ConnectionCallback(destination, promise);
-                    selectorManager.connect(channel, futureConnection);
+                    ConnectionCallback callback = new ConnectionCallback(destination, promise);
+                    selectorManager.connect(channel, callback);
                 }
                 // Must catch all exceptions, since some like
                 // UnresolvedAddressException are not IOExceptions.
@@ -971,7 +970,7 @@ public class HttpClient extends ContainerLifeCycle
                     HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
 
                     appEndPoint.setConnection(connection);
-                    callback.promise.succeeded(connection);
+                    callback.succeeded(connection);
 
                     return sslConnection;
                 }
@@ -979,7 +978,7 @@ public class HttpClient extends ContainerLifeCycle
             else
             {
                 HttpConnection connection = newHttpConnection(HttpClient.this, endPoint, destination);
-                callback.promise.succeeded(connection);
+                callback.succeeded(connection);
                 return connection;
             }
         }
@@ -988,11 +987,11 @@ public class HttpClient extends ContainerLifeCycle
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.promise.failed(ex);
+            callback.failed(ex);
         }
     }
 
-    private class ConnectionCallback extends FuturePromise<Connection>
+    private class ConnectionCallback implements Promise<Connection>
     {
         private final HttpDestination destination;
         private final Promise<Connection> promise;
@@ -1001,6 +1000,18 @@ public class HttpClient extends ContainerLifeCycle
         {
             this.destination = destination;
             this.promise = promise;
+        }
+
+        @Override
+        public void succeeded(Connection result)
+        {
+            promise.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            promise.failed(x);
         }
     }
 

@@ -57,7 +57,7 @@ public class MetaData
     protected final Map<Resource, List<DiscoveredAnnotation>> _webFragmentAnnotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
     protected final List<Resource> _webInfJars = new ArrayList<Resource>();
     protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>();
-    protected final List<Resource> _orderedContainerJars = new ArrayList<Resource>();
+    protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean allowDuplicateFragmentNames = false;
 
@@ -137,7 +137,7 @@ public class MetaData
         _webFragmentAnnotations.clear();
         _webInfJars.clear();
         _orderedWebInfJars.clear();
-        _orderedContainerJars.clear();
+        _orderedContainerResources.clear();
         _ordering = null;
         allowDuplicateFragmentNames = false;
     }
@@ -564,14 +564,14 @@ public class MetaData
         return Collections.unmodifiableList(_webInfJars);
     }
 
-    public List<Resource> getOrderedContainerJars()
+    public List<Resource> getContainerResources()
     {
-        return _orderedContainerJars;
+        return _orderedContainerResources;
     }
 
-    public void addContainerJar(Resource jar)
+    public void addContainerResource(Resource jar)
     {
-        _orderedContainerJars.add(jar);
+        _orderedContainerResources.add(jar);
     }
     public boolean isAllowDuplicateFragmentNames()
     {

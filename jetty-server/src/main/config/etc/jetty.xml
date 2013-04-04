@@ -44,8 +44,14 @@
     <!-- =========================================================== -->
     <Arg name="threadpool">
       <New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="minThreads">10</Set>
-        <Set name="maxThreads">200</Set>
+        <Arg name="minThreads" type="int">10</Arg>
+        <Arg name="maxThreads" type="int">200</Arg>
+        <Arg name="idleTimeout" type="int">60000</Arg>
+        <!-- Arg >
+          <New class="org.eclipse.jetty.util.ConcurrentArrayBlockingQueue$Unbounded">
+            <Arg type='int'>32</Arg>
+          </New>
+        </Arg --> 
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
@@ -76,7 +82,7 @@
     <!-- =========================================================== -->
     <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
       <Set name="secureScheme">https</Set>
-      <Set name="securePort"><Property name="jetty.tls.port" default="8443" /></Set>
+      <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
       <Set name="outputBufferSize">32768</Set>
       <Set name="requestHeaderSize">8192</Set>
       <Set name="responseHeaderSize">8192</Set>

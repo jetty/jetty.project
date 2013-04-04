@@ -326,10 +326,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         //Convert from Resource to URI
         ArrayList<URI> containerUris = new ArrayList<URI>();
-        for (Resource r : context.getMetaData().getOrderedContainerJars())
+        for (Resource r : context.getMetaData().getContainerResources())
         {
             URI uri = r.getURI();
-                containerUris.add(uri);
+            containerUris.add(uri);
         }
 
         parser.parse (containerUris.toArray(new URI[containerUris.size()]),
@@ -457,24 +457,23 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 parser.registerHandler(_classInheritanceHandler);
                 parser.registerHandlers(_containerInitializerAnnotationHandlers);
                 
-                parser.parse(classesDir,
-                             new ClassNameResolver()
-                {
-                    public boolean isExcluded (String name)
-                    {
-                        if (context.isSystemClass(name)) return true;
-                        if (context.isServerClass(name)) return false;
-                        return false;
-                    }
+                parser.parseDir(classesDir,
+                                new ClassNameResolver()
+                                {
+                                    public boolean isExcluded (String name)
+                                    {
+                                        if (context.isSystemClass(name)) return true;
+                                        if (context.isServerClass(name)) return false;
+                                        return false;
+                                    }
 
-                    public boolean shouldOverride (String name)
-                    {
-                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (context.isParentLoaderPriority())
-                            return false;
-                        return true;
-                    }
-                });
+                                    public boolean shouldOverride (String name)
+                                    {
+                                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                                        if (context.isParentLoaderPriority()) return false;
+                                        return true;
+                                    }
+                                });
             }
         }
     }

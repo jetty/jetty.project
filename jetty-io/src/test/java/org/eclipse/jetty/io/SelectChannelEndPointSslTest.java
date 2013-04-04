@@ -26,6 +26,7 @@ import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -197,10 +198,28 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         Assert.assertEquals("HelloWorld",reply);
 
+        if (debug) System.err.println("Shutting down output");
         client.socket().shutdownOutput();
 
         filled=client.read(sslIn);
+        if (debug) System.err.println("in="+filled);
+        sslIn.flip();
+        try
+        {
+            // Since the client closed abruptly, the server is sending a close alert with a failure
+            engine.unwrap(sslIn, appIn);
+            Assert.fail();
+        }
+        catch (SSLException x)
+        {
+            // Expected
+        }
+
+        sslIn.clear();
+        filled=client.read(sslIn);
         Assert.assertEquals(-1,filled);
+
+        Assert.assertFalse(server.isOpen());
     }
 
     @Test

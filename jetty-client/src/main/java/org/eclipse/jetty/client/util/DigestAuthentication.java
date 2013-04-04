@@ -85,13 +85,9 @@ public class DigestAuthentication implements Authentication
     }
 
     @Override
-    public Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context)
+    public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        // Avoid case sensitivity problems on the 'D' character
-        String type = "igest";
-        wwwAuthenticate = wwwAuthenticate.substring(wwwAuthenticate.indexOf(type) + type.length());
-
-        Map<String, String> params = parseParams(wwwAuthenticate);
+        Map<String, String> params = parseParameters(headerInfo.getParameters());
         String nonce = params.get("nonce");
         if (nonce == null || nonce.length() == 0)
             return null;
@@ -113,10 +109,10 @@ public class DigestAuthentication implements Authentication
                 clientQOP = "auth-int";
         }
 
-        return new DigestResult(request.getURI(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
+        return new DigestResult(headerInfo.getHeader(), uri, response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
     }
 
-    private Map<String, String> parseParams(String wwwAuthenticate)
+    private Map<String, String> parseParameters(String wwwAuthenticate)
     {
         Map<String, String> result = new HashMap<>();
         List<String> parts = splitParams(wwwAuthenticate);
@@ -154,7 +150,9 @@ public class DigestAuthentication implements Authentication
                 case ',':
                     if (quotes % 2 == 0)
                     {
-                        result.add(paramString.substring(start, i).trim());
+                        String element = paramString.substring(start, i).trim();
+                        if (element.length() > 0)
+                            result.add(element);
                         start = i + 1;
                     }
                     break;
@@ -181,6 +179,7 @@ public class DigestAuthentication implements Authentication
     private class DigestResult implements Result
     {
         private final AtomicInteger nonceCount = new AtomicInteger();
+        private final HttpHeader header;
         private final URI uri;
         private final byte[] content;
         private final String realm;
@@ -191,8 +190,9 @@ public class DigestAuthentication implements Authentication
         private final String qop;
         private final String opaque;
 
-        public DigestResult(URI uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
+        public DigestResult(HttpHeader header, URI uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
         {
+            this.header = header;
             this.uri = uri;
             this.content = content;
             this.realm = realm;
@@ -213,9 +213,6 @@ public class DigestAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (!request.getURI().toString().startsWith(uri.toString()))
-                return;
-
             MessageDigest digester = getMessageDigest(algorithm);
             if (digester == null)
                 return;
@@ -262,7 +259,7 @@ public class DigestAuthentication implements Authentication
             }
             value.append(", response=\"").append(hashA3).append("\"");
 
-            request.header(HttpHeader.AUTHORIZATION, value.toString());
+            request.header(header, value.toString());
         }
 
         private String nextNonceCount()

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -749,13 +750,14 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (Resource dir, ClassNameResolver resolver)
+    public void parseDir (Resource dir, ClassNameResolver resolver)
     throws Exception
     {
         if (!dir.isDirectory() || !dir.exists())
             return;
 
-
+        if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
+        
         String[] files=dir.list();
         for (int f=0;files!=null && f<files.length;f++)
         {
@@ -763,13 +765,14 @@ public class AnnotationParser
             {
                 Resource res = dir.addPath(files[f]);
                 if (res.isDirectory())
-                    parse(res, resolver);
+                    parseDir(res, resolver);
                 String name = res.getName();
                 if (name.endsWith(".class"))
                 {
                     if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
                     {
                         Resource r = Resource.newResource(res.getURL());
+                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
                         scanClass(r.getInputStream());
                     }
 
@@ -836,7 +839,7 @@ public class AnnotationParser
 
 
     /**
-     * Parse classes in the supplied url of jar files.
+     * Parse classes in the supplied uris.
      * 
      * @param uris
      * @param resolver
@@ -848,36 +851,18 @@ public class AnnotationParser
         if (uris==null)
             return;
 
-        JarScanner scanner = new JarScanner()
+        for (URI uri:uris)
         {
-            @Override
-            public void processEntry(URI jarUri, JarEntry entry)
+            try
             {
-                try
-                {
-                    String name = entry.getName();
-                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
-                    {
-                        String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-
-                        if ((resolver == null)
-                             ||
-                            (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                        {
-                            Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);
-                            scanClass(clazz.getInputStream());
-
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Problem processing jar entry "+entry, e);
-                }
+                parse(uri, resolver);
             }
+            catch (Exception e)
+            {
+                LOG.warn("Problem parsing classes from {}", uri);
+            }
+        }
 
-        };
-        scanner.scan(null, uris, true);
     }
 
     /**
@@ -891,10 +876,91 @@ public class AnnotationParser
     {
         if (uri == null)
             return;
-        URI[] uris = {uri};
-        parse(uris, resolver);
+
+        Resource r = Resource.newResource(uri);
+        if (r.exists() && r.isDirectory())
+        {
+            parseDir(r, resolver);
+            return;
+        }
+
+        String fullname = r.toString();
+        if (fullname.endsWith(".jar"))
+        {
+            parseJar(r, resolver);
+            return;
+        }
+
+        if (fullname.endsWith(".class"))
+        {
+            scanClass(r.getInputStream());
+            return;
+        }
     }
 
+
+
+    /**
+     * Parse a resource that is a jar file.
+     * 
+     * @param jarResource
+     * @param resolver
+     * @throws Exception
+     */
+    public void parseJar (Resource jarResource,  final ClassNameResolver resolver)
+    throws Exception
+    {
+        if (jarResource == null)
+            return;
+        
+        URI uri = jarResource.getURI();
+        
+        if (jarResource.toString().endsWith(".jar"))
+        {
+            if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
+            
+            //treat it as a jar that we need to open and scan all entries from             
+            InputStream in = jarResource.getInputStream();
+            if (in==null)
+                return;
+
+            JarInputStream jar_in = new JarInputStream(in);
+            try
+            { 
+                JarEntry entry = jar_in.getNextJarEntry();
+                while (entry!=null)
+                {                   
+                    try
+                    {
+                        String name = entry.getName();
+                        if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+                        {
+                            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+
+                            if ((resolver == null)
+                                 ||
+                                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+                            {
+                                Resource clazz = Resource.newResource("jar:"+uri+"!/"+name);
+                                if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
+                                scanClass(clazz.getInputStream());
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Problem processing jar entry "+entry, e);
+                    }
+                                    
+                    entry = jar_in.getNextJarEntry();
+                }
+            }
+            finally
+            {
+                jar_in.close();
+            } 
+        }   
+    }
     
     
     /**

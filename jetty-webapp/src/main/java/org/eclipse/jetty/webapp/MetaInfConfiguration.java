@@ -53,7 +53,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
        //Merge all container and webinf lib jars to look for META-INF resources
       
         ArrayList<Resource> jars = new ArrayList<Resource>();
-        jars.addAll(context.getMetaData().getOrderedContainerJars());
+        jars.addAll(context.getMetaData().getContainerResources());
         jars.addAll(context.getMetaData().getWebInfJars());
         
         JarScanner scanner = new JarScanner()

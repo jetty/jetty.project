@@ -150,11 +150,11 @@ public class LikeJettyXml
 
         // === jetty-requestlog.xml ===
         NCSARequestLog requestLog = new NCSARequestLog();
-        requestLog.setFilename(jetty_home + "/logs/jetty-yyyy_mm_dd.log");
+        requestLog.setFilename(jetty_home + "/logs/yyyy_mm_dd.request.log");
         requestLog.setFilenameDateFormat("yyyy_MM_dd");
         requestLog.setRetainDays(90);
         requestLog.setAppend(true);
-        requestLog.setExtended(false);
+        requestLog.setExtended(true);
         requestLog.setLogCookies(false);
         requestLog.setLogTimeZone("GMT");
         RequestLogHandler requestLogHandler = new RequestLogHandler();

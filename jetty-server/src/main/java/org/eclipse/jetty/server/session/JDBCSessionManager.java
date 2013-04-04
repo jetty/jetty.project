@@ -29,10 +29,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,6 +42,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -369,6 +370,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             super.timeout();
         }
         
+        
         @Override
         public String toString ()
         {
@@ -380,38 +382,6 @@ public class JDBCSessionManager extends AbstractSessionManager
     }
 
 
-
-
-    /**
-     * ClassLoadingObjectInputStream
-     *
-     * Used to persist the session attribute map
-     */
-    protected class ClassLoadingObjectInputStream extends ObjectInputStream
-    {
-        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
-        {
-            super(in);
-        }
-
-        public ClassLoadingObjectInputStream () throws IOException
-        {
-            super();
-        }
-
-        @Override
-        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
-        {
-            try
-            {
-                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
-            }
-            catch (ClassNotFoundException e)
-            {
-                return super.resolveClass(cl);
-            }
-        }
-    }
 
 
     /**
@@ -552,7 +522,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                             session.setLastNode(getSessionIdManager().getWorkerName());                            
                             _sessions.put(idInCluster, session);
                             
-                            //update in db: if unable to update, session will be scavenged later
+                            //update in db
                             try
                             {
                                 updateSessionNode(session);
@@ -567,6 +537,9 @@ public class JDBCSessionManager extends AbstractSessionManager
                         else
                         {
                             LOG.debug("getSession ({}): Session has expired", idInCluster);  
+                            //ensure that the session id for the expired session is deleted so that a new session with the 
+                            //same id cannot be created (because the idInUse() test would succeed)
+                            _jdbcSessionIdMgr.removeSession(idInCluster);
                             session=null;
                         }
 
@@ -583,6 +556,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                 return session;
         }
     }
+    
 
     /**
      * Get the number of sessions.
@@ -779,8 +753,8 @@ public class JDBCSessionManager extends AbstractSessionManager
 
         synchronized (this)
         {
-            //take this session out of the map of sessions for this context
-            if (getSession(session.getClusterId()) != null)
+            //take this session out of the map of sessions for this context         
+            if (_sessions.containsKey(session.getClusterId()))
             {
                 removed = true;
                 removeSession(session.getClusterId());
@@ -815,19 +789,20 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * @param sessionIds
      */
-    protected void expire (List<?> sessionIds)
+    protected Set<String> expire (Set<String> sessionIds)
     {
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
-            return;
+            return null;
 
-        //Remove any sessions we already have in memory that match the ids
+        
         Thread thread=Thread.currentThread();
         ClassLoader old_loader=thread.getContextClassLoader();
-        ListIterator<?> itor = sessionIds.listIterator();
-
+        
+        Set<String> successfullyExpiredIds = new HashSet<String>();
         try
         {
+            Iterator<?> itor = sessionIds.iterator();
             while (itor.hasNext())
             {
                 String sessionId = (String)itor.next();
@@ -835,29 +810,49 @@ public class JDBCSessionManager extends AbstractSessionManager
                     LOG.debug("Expiring session id "+sessionId);
 
                 Session session = (Session)_sessions.get(sessionId);
+
+                //if session is not in our memory, then fetch from db so we can call the usual listeners on it
+                if (session == null)
+                {
+                    if (LOG.isDebugEnabled())LOG.debug("Force loading session id "+sessionId);
+                    session = loadSession(sessionId, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                    if (session != null)
+                    {
+                        //loaded an expired session last managed on this node for this context, add it to the list so we can 
+                        //treat it like a normal expired session
+                        synchronized (this)
+                        {
+                            _sessions.put(session.getClusterId(), session);
+                        }
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Unrecognized session id="+sessionId);
+                        continue;
+                    }
+                }
+               
                 if (session != null)
                 {
                     session.timeout();
-                    itor.remove();
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unrecognized session id="+sessionId);
+                    successfullyExpiredIds.add(session.getClusterId());
                 }
             }
+            return successfullyExpiredIds;
         }
         catch (Throwable t)
         {
             LOG.warn("Problem expiring sessions", t);
+            return successfullyExpiredIds;
         }
         finally
         {
             thread.setContextClassLoader(old_loader);
         }
     }
-
-
+    
+  
     /**
      * Load a session from the database
      * @param id
@@ -913,6 +908,9 @@ public class JDBCSessionManager extends AbstractSessionManager
                         if (LOG.isDebugEnabled())
                             LOG.debug("LOADED session "+session);
                     }
+                    else
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Failed to load session "+id);
                     _reference.set(session);
                 }
                 catch (Exception e)

@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -441,6 +443,37 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         Result result = listener.await(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, result.getResponse().getStatus());
         Assert.assertNull(failure.get());
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void testInputStreamContentProviderThrowingWhileReading() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] data = new byte[]{0, 1, 2, 3};
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(new InputStreamContentProvider(new InputStream()
+                {
+                    private int index = 0;
+
+                    @Override
+                    public int read() throws IOException
+                    {
+                        // Will eventually throw ArrayIndexOutOfBounds
+                        return data[index++];
+                    }
+                }, data.length / 2))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
     }
 
     @Test(expected = AsynchronousCloseException.class)

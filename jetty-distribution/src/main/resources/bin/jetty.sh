@@ -52,7 +52,7 @@
 #
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
-# JETTY_PORT
+# JETTY_PORT (Deprecated - use JETTY_ARGS)
 #   Override the default port for Jetty servers. If not set then the
 #   default value in the xml configuration file will be used. The java
 #   system property "jetty.port" will be set to this value for use in
@@ -76,6 +76,8 @@
 #   
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
+#   For example
+#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
@@ -106,7 +108,7 @@ findDirectory()
 
 running()
 {
-  local PID=$(head -n 1 "$1" 2>/dev/null) || return 1
+  local PID=$(cat "$1" 2>/dev/null) || return 1
   kill -0 "$PID" 2>/dev/null
 }
 
@@ -119,7 +121,7 @@ started()
     [ -z "$(grep STARTED $1)" ] || return 0
     [ -z "$(grep STOPPED $1)" ] || return 1
     [ -z "$(grep FAILED $1)" ] || return 1
-    local PID=$(head -n 1 "$1" 2>/dev/null) || return 1
+    local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
   done
@@ -342,7 +344,9 @@ if [ -z "$JETTY_PID" ]
 then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
-JAVA_OPTIONS+=("-Djetty.pid=$JETTY_PID")
+JETTY_STATE=$(dirname $JETTY_PID)/jetty.state
+JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
+rm -f $JETTY_STATE
 
 ##################################################
 # Setup JAVA if unset
@@ -473,11 +477,16 @@ case "$ACTION" in
 
     fi
 
-    if started "$JETTY_PID"
+    if expr "${CONFIGS[*]}" : '.*etc/jetty-started.xml.*' >/dev/null
     then
-      echo "OK `date`"
+      if started "$JETTY_STATE" "$JETTY_PID"
+      then
+        echo "OK `date`"
+      else
+        echo "FAILED `date`"
+      fi
     else
-      echo "FAILED `date`"
+      echo "ok `date`"
     fi
 
     ;;
@@ -499,7 +508,7 @@ case "$ACTION" in
       rm -f "$JETTY_PID"
       echo OK
     else
-      PID=$(head -n 1 "$JETTY_PID" 2>/dev/null)
+      PID=$(cat "$JETTY_PID" 2>/dev/null)
       kill "$PID" 2>/dev/null
       
       TIMEOUT=30

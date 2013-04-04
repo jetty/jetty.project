@@ -219,7 +219,25 @@
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
-
+          <execution>
+            <id>copy-lib-monitor-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-monitor</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
           <execution>
             <id>copy-orbit-servlet-api-deps</id>
             <phase>generate-resources</phase>
@@ -419,6 +437,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-monitor</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

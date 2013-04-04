@@ -53,12 +53,12 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      * by 15 slots to avoid false sharing with the array length
      * (stored before the first element of the array itself).
      */
-    private static final int HEAD_OFFSET = 15;
+    private static final int HEAD_OFFSET = MemoryUtils.getIntegersPerCacheLine() - 1;
     /**
      * The tail offset in the {@link #_indexes} array, displaced
      * by 16 slots from the head to avoid false sharing with it.
      */
-    private static final int TAIL_OFFSET = 31;
+    private static final int TAIL_OFFSET = HEAD_OFFSET + MemoryUtils.getIntegersPerCacheLine();
     /**
      * Default initial capacity, 128.
      */
