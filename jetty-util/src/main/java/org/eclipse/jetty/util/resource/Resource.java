@@ -262,7 +262,8 @@ public abstract class Resource implements ResourceFactory
         }
         
         if (url==null)
-        {
+        {   
+            loader = ClassLoader.getSystemClassLoader();
             url=ClassLoader.getSystemResource(resource);
             if (url==null && resource.startsWith("/"))
                 url=loader.getResource(resource.substring(1));
