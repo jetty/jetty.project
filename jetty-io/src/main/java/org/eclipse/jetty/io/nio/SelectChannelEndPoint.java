@@ -236,7 +236,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     boolean dispatched = _manager.dispatch(_handler);
                     if(!dispatched)
                     {
-                        _state = STATE_UNDISPATCHED;
+                        _state = STATE_NEEDS_DISPATCH;
                         LOG.warn("Dispatched Failed! "+this+" to "+_manager);
                         updateKey();
                     }
@@ -338,7 +338,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public void onIdleExpired(long idleForMs)
     {
-        System.err.println("ON IDLE EXPIRED");
         try
         {
             synchronized (this)
@@ -348,7 +347,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if (_maxIdleTime>0 && (System.currentTimeMillis()-_idleTimestamp)>_maxIdleTime)
                 _connection.onIdleExpired(idleForMs);
-            
         }
         finally
         {
