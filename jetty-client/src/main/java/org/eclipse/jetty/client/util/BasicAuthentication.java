@@ -71,20 +71,22 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context)
+    public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
         String encoding = StringUtil.__ISO_8859_1;
         String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
-        return new BasicResult(request.getURI(), value);
+        return new BasicResult(headerInfo.getHeader(), uri, value);
     }
 
     private static class BasicResult implements Result
     {
+        private final HttpHeader header;
         private final URI uri;
         private final String value;
 
-        public BasicResult(URI uri, String value)
+        public BasicResult(HttpHeader header, URI uri, String value)
         {
+            this.header = header;
             this.uri = uri;
             this.value = value;
         }
@@ -98,8 +100,7 @@ public class BasicAuthentication implements Authentication
         @Override
         public void apply(Request request)
         {
-            if (request.getURI().toString().startsWith(uri.toString()))
-                request.header(HttpHeader.AUTHORIZATION, value);
+            request.header(header, value);
         }
 
         @Override

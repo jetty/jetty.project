@@ -20,18 +20,19 @@ package org.eclipse.jetty.client.api;
 
 import java.net.URI;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 
 /**
  * {@link Authentication} represents a mechanism to authenticate requests for protected resources.
  * <p />
  * {@link Authentication}s are added to an {@link AuthenticationStore}, which is then
- * {@link #matches(String, String, String) queried} to find the right
+ * {@link #matches(String, URI, String) queried} to find the right
  * {@link Authentication} mechanism to use based on its type, URI and realm, as returned by
  * {@code WWW-Authenticate} response headers.
  * <p />
  * If an {@link Authentication} mechanism is found, it is then
- * {@link #authenticate(Request, ContentResponse, String, Attributes) executed} for the given request,
+ * {@link #authenticate(Request, ContentResponse, HeaderInfo, Attributes) executed} for the given request,
  * returning an {@link Authentication.Result}, which is then stored in the {@link AuthenticationStore}
  * so that subsequent requests can be preemptively authenticated.
  */
@@ -56,13 +57,64 @@ public interface Authentication
      *
      * @param request the request to execute the authentication mechanism for
      * @param response the 401 response obtained in the previous attempt to request the protected resource
-     * @param wwwAuthenticate the {@code WWW-Authenticate} header chosen for this authentication
-     *                        (among the many that the response may contain)
+     * @param headerInfo the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header chosen for this
+     *                     authentication (among the many that the response may contain)
      * @param context the conversation context in case the authentication needs multiple exchanges
      *                to be completed and information needs to be stored across exchanges
      * @return the authentication result, or null if the authentication could not be performed
      */
-    Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context);
+    Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context);
+
+    /**
+     * Structure holding information about the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header.
+     */
+    public static class HeaderInfo
+    {
+        private final String type;
+        private final String realm;
+        private final String params;
+        private final HttpHeader header;
+
+        public HeaderInfo(String type, String realm, String params, HttpHeader header)
+        {
+            this.type = type;
+            this.realm = realm;
+            this.params = params;
+            this.header = header;
+        }
+
+        /**
+         * @return the authentication type (for example "Basic" or "Digest")
+         */
+        public String getType()
+        {
+            return type;
+        }
+
+        /**
+         * @return the realm name
+         */
+        public String getRealm()
+        {
+            return realm;
+        }
+
+        /**
+         * @return additional authentication parameters
+         */
+        public String getParameters()
+        {
+            return params;
+        }
+
+        /**
+         * @return the {@code Authorization} (or {@code Proxy-Authorization}) header
+         */
+        public HttpHeader getHeader()
+        {
+            return header;
+        }
+    }
 
     /**
      * {@link Result} holds the information needed to authenticate a {@link Request} via {@link #apply(Request)}.

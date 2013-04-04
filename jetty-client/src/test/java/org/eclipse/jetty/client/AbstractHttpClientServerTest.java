@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -54,7 +55,7 @@ public abstract class AbstractHttpClientServerTest
     public AbstractHttpClientServerTest(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
-        this.scheme = sslContextFactory == null ? "http" : "https";
+        this.scheme = (sslContextFactory == null ? HttpScheme.HTTP : HttpScheme.HTTPS).asString();
     }
 
     public void start(Handler handler) throws Exception

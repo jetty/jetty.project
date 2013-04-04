@@ -35,32 +35,33 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class AuthenticationProtocolHandler implements ProtocolHandler
+public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 4096;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern WWW_AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\".*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
 
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
 
-    public AuthenticationProtocolHandler(HttpClient client)
-    {
-        this(client, 4096);
-    }
-
-    public AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
+    protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
         this.client = client;
         this.maxContentLength = maxContentLength;
         this.notifier = new ResponseNotifier(client);
     }
 
-    @Override
-    public boolean accept(Request request, Response response)
+    protected HttpClient getHttpClient()
     {
-        return response.getStatus() == 401;
+        return client;
     }
+
+    protected abstract HttpHeader getAuthenticateHeader();
+
+    protected abstract HttpHeader getAuthorizationHeader();
+
+    protected abstract URI getAuthenticationURI(Request request);
 
     @Override
     public Response.Listener getResponseListener()
@@ -89,23 +90,24 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            List<WWWAuthenticate> wwwAuthenticates = parseWWWAuthenticate(response);
-            if (wwwAuthenticates.isEmpty())
+            HttpHeader header = getAuthenticateHeader();
+            List<Authentication.HeaderInfo> headerInfos = parseAuthenticateHeader(response, header);
+            if (headerInfos.isEmpty())
             {
-                LOG.debug("Authentication challenge without WWW-Authenticate header");
-                forwardFailureComplete(request, null, response, new HttpResponseException("HTTP protocol violation: 401 without WWW-Authenticate header", response));
+                LOG.debug("Authentication challenge without {} header", header);
+                forwardFailureComplete(request, null, response, new HttpResponseException("HTTP protocol violation: Authentication challenge without " + header + " header", response));
                 return;
             }
 
-            final URI uri = request.getURI();
+            URI uri = getAuthenticationURI(request);
             Authentication authentication = null;
-            WWWAuthenticate wwwAuthenticate = null;
-            for (WWWAuthenticate wwwAuthn : wwwAuthenticates)
+            Authentication.HeaderInfo headerInfo = null;
+            for (Authentication.HeaderInfo element : headerInfos)
             {
-                authentication = client.getAuthenticationStore().findAuthentication(wwwAuthn.type, uri, wwwAuthn.realm);
+                authentication = client.getAuthenticationStore().findAuthentication(element.getType(), uri, element.getRealm());
                 if (authentication != null)
                 {
-                    wwwAuthenticate = wwwAuthn;
+                    headerInfo = element;
                     break;
                 }
             }
@@ -117,7 +119,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             }
 
             HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-            final Authentication.Result authnResult = authentication.authenticate(request, response, wwwAuthenticate.value, conversation);
+            final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
             LOG.debug("Authentication result {}", authnResult);
             if (authnResult == null)
             {
@@ -125,7 +127,7 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            Request newRequest = client.copyRequest(request, uri);
+            Request newRequest = client.copyRequest(request, request.getURI());
             authnResult.apply(newRequest);
             newRequest.onResponseSuccess(new Response.SuccessListener()
             {
@@ -151,37 +153,24 @@ public class AuthenticationProtocolHandler implements ProtocolHandler
             notifier.forwardFailureComplete(conversation.getResponseListeners(), request, requestFailure, response, responseFailure);
         }
 
-        private List<WWWAuthenticate> parseWWWAuthenticate(Response response)
+        private List<Authentication.HeaderInfo> parseAuthenticateHeader(Response response, HttpHeader header)
         {
             // TODO: these should be ordered by strength
-            List<WWWAuthenticate> result = new ArrayList<>();
-            List<String> values = Collections.list(response.getHeaders().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
+            List<Authentication.HeaderInfo> result = new ArrayList<>();
+            List<String> values = Collections.list(response.getHeaders().getValues(header.asString()));
             for (String value : values)
             {
-                Matcher matcher = WWW_AUTHENTICATE_PATTERN.matcher(value);
+                Matcher matcher = AUTHENTICATE_PATTERN.matcher(value);
                 if (matcher.matches())
                 {
                     String type = matcher.group(1);
                     String realm = matcher.group(2);
-                    WWWAuthenticate wwwAuthenticate = new WWWAuthenticate(value, type, realm);
-                    result.add(wwwAuthenticate);
+                    String params = matcher.group(3);
+                    Authentication.HeaderInfo headerInfo = new Authentication.HeaderInfo(type, realm, params, getAuthorizationHeader());
+                    result.add(headerInfo);
                 }
             }
             return result;
-        }
-    }
-
-    private class WWWAuthenticate
-    {
-        private final String value;
-        private final String type;
-        private final String realm;
-
-        public WWWAuthenticate(String value, String type, String realm)
-        {
-            this.value = value;
-            this.type = type;
-            this.realm = realm;
         }
     }
 }

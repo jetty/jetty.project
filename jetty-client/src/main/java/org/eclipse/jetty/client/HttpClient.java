@@ -207,7 +207,8 @@ public class HttpClient extends ContainerLifeCycle
 
         handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
-        handlers.add(new AuthenticationProtocolHandler(this));
+        handlers.add(new WWWAuthenticationProtocolHandler(this));
+        handlers.add(new ProxyAuthenticationProtocolHandler(this));
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 
@@ -965,6 +966,7 @@ public class HttpClient extends ContainerLifeCycle
                     engine.setUseClientMode(true);
 
                     SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
+                    sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
                     HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
 

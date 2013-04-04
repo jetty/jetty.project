@@ -99,6 +99,7 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
     };
+    private boolean _renegotiationAllowed;
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
@@ -135,6 +136,16 @@ public class SslConnection extends AbstractConnection
     public DecryptedEndPoint getDecryptedEndPoint()
     {
         return _decryptedEndPoint;
+    }
+
+    public boolean isRenegotiationAllowed()
+    {
+        return _renegotiationAllowed;
+    }
+
+    public void setRenegotiationAllowed(boolean renegotiationAllowed)
+    {
+        this._renegotiationAllowed = renegotiationAllowed;
     }
 
     @Override
@@ -242,6 +253,7 @@ public class SslConnection extends AbstractConnection
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
+        private boolean _handshaken;
         private boolean _underFlown;
 
         private final Callback _writeCallback = new Callback()
@@ -493,15 +505,19 @@ public class SslConnection extends AbstractConnection
                     if (DEBUG)
                         LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
 
+                    Status unwrapResultStatus = unwrapResult.getStatus();
+                    HandshakeStatus unwrapHandshakeStatus = unwrapResult.getHandshakeStatus();
+                    HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
+
                     // and deal with the results
-                    switch (unwrapResult.getStatus())
+                    switch (unwrapResultStatus)
                     {
                         case BUFFER_OVERFLOW:
                             throw new IllegalStateException();
 
                         case CLOSED:
                             // Dang! we have to care about the handshake state specially for close
-                            switch (_sslEngine.getHandshakeStatus())
+                            switch (handshakeStatus)
                             {
                                 case NOT_HANDSHAKING:
                                     // We were not handshaking, so just tell the app we are closed
@@ -521,10 +537,28 @@ public class SslConnection extends AbstractConnection
                             throw new IllegalStateException();
 
                         default:
-                            if (unwrapResult.getStatus()==Status.BUFFER_UNDERFLOW)
-                                _underFlown=true;
+                            if (unwrapHandshakeStatus == HandshakeStatus.FINISHED && !_handshaken)
+                            {
+                                _handshaken = true;
+                                if (DEBUG)
+                                    LOG.debug("{} handshake completed client-side", SslConnection.this);
+                            }
 
-                            // if we produced bytes, we don't care about the handshake state for now and it can be dealt with on another call to fill or flush
+                            // Check whether renegotiation is allowed
+                            if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
+                            {
+                                if (DEBUG)
+                                    LOG.debug("{} renegotiation denied", SslConnection.this);
+                                closeInbound();
+                                return -1;
+                            }
+
+                            if (unwrapResultStatus == Status.BUFFER_UNDERFLOW)
+                                _underFlown = true;
+
+                            // If bytes were produced, don't bother with the handshake status;
+                            // pass the decrypted data to the application, which will perform
+                            // another call to fill() or flush().
                             if (unwrapResult.bytesProduced() > 0)
                             {
                                 if (app_in == buffer)
@@ -533,13 +567,15 @@ public class SslConnection extends AbstractConnection
                             }
 
                             // Dang! we have to care about the handshake state
-                            switch (_sslEngine.getHandshakeStatus())
+                            switch (handshakeStatus)
                             {
                                 case NOT_HANDSHAKING:
                                     // we just didn't read anything.
                                     if (net_filled < 0)
-                                        _sslEngine.closeInbound();
-
+                                    {
+                                        closeInbound();
+                                        return -1;
+                                    }
                                     return 0;
 
                                 case NEED_TASK:
@@ -551,7 +587,7 @@ public class SslConnection extends AbstractConnection
                                     // we need to send some handshake data
 
                                     // if we are called from flush
-                                    if (buffer==__FLUSH_CALLED_FILL)
+                                    if (buffer == __FLUSH_CALLED_FILL)
                                         return 0; // let it do the wrapping
 
                                     _fillRequiresFlushToProgress = true;
@@ -568,14 +604,8 @@ public class SslConnection extends AbstractConnection
                                     // if we just filled some net data
                                     if (net_filled < 0)
                                     {
-                                        // If we call closeInbound() before having read the SSL close
-                                        // message an exception will be thrown (truncation attack).
-                                        // The TLS specification says that the sender of the SSL close
-                                        // message may just close and avoid to read the response.
-                                        // If that is the case, we avoid calling closeInbound() because
-                                        // will throw the truncation attack exception for nothing.
-                                        if (isOpen())
-                                            _sslEngine.closeInbound();
+                                        closeInbound();
+                                        return -1;
                                     }
                                     else if (net_filled > 0)
                                     {
@@ -625,6 +655,18 @@ public class SslConnection extends AbstractConnection
             }
         }
 
+        private void closeInbound()
+        {
+            try
+            {
+                _sslEngine.closeInbound();
+            }
+            catch (SSLException x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
         @Override
         public synchronized boolean flush(ByteBuffer... appOuts) throws IOException
         {
@@ -653,7 +695,6 @@ public class SslConnection extends AbstractConnection
 
                 while (true)
                 {
-                    // do the funky SSL thang!
                     // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
                     BufferUtil.compact(_encryptedOutput);
                     int pos = BufferUtil.flipToFill(_encryptedOutput);
@@ -664,18 +705,20 @@ public class SslConnection extends AbstractConnection
                     if (wrapResult.bytesConsumed()>0)
                         consumed+=wrapResult.bytesConsumed();
 
-                    boolean all_consumed=true;
+                    boolean allConsumed=true;
                     // clear empty buffers to prevent position creeping up the buffer
                     for (ByteBuffer b : appOuts)
                     {
                         if (BufferUtil.isEmpty(b))
                             BufferUtil.clear(b);
                         else
-                            all_consumed=false;
+                            allConsumed=false;
                     }
 
+                    Status wrapResultStatus = wrapResult.getStatus();
+
                     // and deal with the results returned from the sslEngineWrap
-                    switch (wrapResult.getStatus())
+                    switch (wrapResultStatus)
                     {
                         case CLOSED:
                             // The SSL engine has close, but there may be close handshake that needs to be written
@@ -684,32 +727,52 @@ public class SslConnection extends AbstractConnection
                                 _cannotAcceptMoreAppDataToFlush = true;
                                 getEndPoint().flush(_encryptedOutput);
                                 // If we failed to flush the close handshake then we will just pretend that
-                                // the write has progressed normally and let a subsequent call to flush (or WriteFlusher#onIncompleteFlushed)
-                                // to finish writing the close handshake.   The caller will find out about the close on a subsequent flush or fill.
+                                // the write has progressed normally and let a subsequent call to flush
+                                // (or WriteFlusher#onIncompleteFlushed) to finish writing the close handshake.
+                                // The caller will find out about the close on a subsequent flush or fill.
                                 if (BufferUtil.hasContent(_encryptedOutput))
                                     return false;
                             }
 
                             // otherwise we have written, and the caller will close the underlying connection
-                            return all_consumed;
+                            return allConsumed;
 
                         case BUFFER_UNDERFLOW:
                             throw new IllegalStateException();
 
                         default:
                             if (DEBUG)
-                                LOG.debug("{} {} {}", this, wrapResult.getStatus(), BufferUtil.toDetailString(_encryptedOutput));
+                                LOG.debug("{} {} {}", this, wrapResultStatus, BufferUtil.toDetailString(_encryptedOutput));
+
+                            if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED && !_handshaken)
+                            {
+                                _handshaken = true;
+                                if (DEBUG)
+                                    LOG.debug("{} handshake completed server-side", SslConnection.this);
+                            }
+
+                            HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
+
+                            // Check whether renegotiation is allowed
+                            if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
+                            {
+                                if (DEBUG)
+                                    LOG.debug("{} renegotiation denied", SslConnection.this);
+                                shutdownOutput();
+                                BufferUtil.clear(_encryptedOutput);
+                                return allConsumed;
+                            }
 
                             // if we have net bytes, let's try to flush them
                             if (BufferUtil.hasContent(_encryptedOutput))
                                 getEndPoint().flush(_encryptedOutput);
 
                             // But we also might have more to do for the handshaking state.
-                            switch (_sslEngine.getHandshakeStatus())
+                            switch (handshakeStatus)
                             {
                                 case NOT_HANDSHAKING:
                                     // Return with the number of bytes consumed (which may be 0)
-                                    return all_consumed&&BufferUtil.isEmpty(_encryptedOutput);
+                                    return allConsumed && BufferUtil.isEmpty(_encryptedOutput);
 
                                 case NEED_TASK:
                                     // run the task and continue
@@ -729,14 +792,13 @@ public class SslConnection extends AbstractConnection
                                         _flushRequiresFillToProgress = true;
                                         fill(__FLUSH_CALLED_FILL);
                                         // Check if after the fill() we need to wrap again
-                                        if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_WRAP)
+                                        if (handshakeStatus == HandshakeStatus.NEED_WRAP)
                                             continue;
                                     }
-                                    return all_consumed&&BufferUtil.isEmpty(_encryptedOutput);
+                                    return allConsumed&&BufferUtil.isEmpty(_encryptedOutput);
 
                                 case FINISHED:
                                     throw new IllegalStateException();
-
                             }
                     }
                 }

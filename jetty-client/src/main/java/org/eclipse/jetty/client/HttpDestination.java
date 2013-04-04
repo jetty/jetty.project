@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,6 +140,15 @@ public class HttpDestination implements Destination, Closeable, Dumpable
     public boolean isProxied()
     {
         return proxyAddress != null;
+    }
+
+    public URI getProxyURI()
+    {
+        ProxyConfiguration proxyConfiguration = client.getProxyConfiguration();
+        String uri = getScheme() + "://" + proxyConfiguration.getHost();
+        if (!client.isDefaultPort(getScheme(), proxyConfiguration.getPort()))
+            uri += ":" + proxyConfiguration.getPort();
+        return URI.create(uri);
     }
 
     public HttpField getHostField()

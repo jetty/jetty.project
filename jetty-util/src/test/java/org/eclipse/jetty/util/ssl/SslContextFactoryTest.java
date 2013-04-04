@@ -18,14 +18,11 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -34,6 +31,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 public class SslContextFactoryTest
@@ -187,6 +190,30 @@ public class SslContextFactoryTest
         {
             Assert.fail("Unexpected exception");
         }
+    }
+
+    @Test
+    public void testSetExcludeCipherSuitesRegex() throws Exception
+    {
+        cf.setExcludeCipherSuites(".*RC4.*");
+        cf.start();
+        SSLEngine sslEngine = cf.newSSLEngine();
+        String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
+        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
+        for (String enabledCipherSuite : enabledCipherSuites)
+            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), is(false));
+    }
+
+    @Test
+    public void testSetIncludeCipherSuitesRegex() throws Exception
+    {
+        cf.setIncludeCipherSuites(".*RC4.*");
+        cf.start();
+        SSLEngine sslEngine = cf.newSSLEngine();
+        String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
+        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
+        for (String enabledCipherSuite : enabledCipherSuites)
+            assertThat("CipherSuite contains RC4", enabledCipherSuite.contains("RC4"), is(true));
     }
 
     @Test
