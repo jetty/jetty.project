@@ -138,7 +138,14 @@ public class ConstraintTest
         mapping5.setPathSpec("/forbid/post");
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
-        
+
+        Constraint constraint6 = new Constraint();
+        constraint6.setAuthenticate(false);
+        constraint6.setName("data constraint");
+        constraint6.setDataConstraint(2);
+        ConstraintMapping mapping6 = new ConstraintMapping();
+        mapping6.setPathSpec("/data/*");
+        mapping6.setConstraint(constraint6);
         
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
@@ -146,7 +153,7 @@ public class ConstraintTest
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
                 {
-                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5
+                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,mapping6
                 }), knownRoles);
     }
 
@@ -668,9 +675,9 @@ public class ConstraintTest
         response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\nHost:wibble.com:8888\r\n\r\n");
         assertTrue(response.indexOf(" 302 Found") > 0);
-        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        assertTrue(response.indexOf("http://wibble.com:8888/ctx/testLoginPage") > 0);
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -766,6 +773,48 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
+
+
+    @Test
+    public void testDataRedirection() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403"));
+        
+        _connector.setConfidentialPort(8443);
+        _connector.setConfidentialScheme("https");
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":8443/ctx/data/info") > 0);
+
+        _connector.setConfidentialPort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443/ctx/data/info") < 0);
+
+        _connector.setConfidentialPort(8443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("https://wobble.com:8443/ctx/data/info") > 0);
+
+        _connector.setConfidentialPort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        System.err.println(response);
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443") < 0);
+        assertTrue(response.indexOf("https://wobble.com/ctx/data/info") > 0);
+    }
+    
     @Test
     public void testRoleRef() throws Exception
     {
