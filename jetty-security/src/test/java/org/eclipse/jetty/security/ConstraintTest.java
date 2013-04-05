@@ -756,7 +756,7 @@ public class ConstraintTest
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\nHost:wibble.com:8888\r\n\r\n");
         assertThat(response,containsString(" 302 Found"));
-        assertThat(response,containsString("http:wibble.com:8888/ctx/testLoginPage"));
+        assertThat(response,containsString("http://wibble.com:8888/ctx/testLoginPage"));
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
