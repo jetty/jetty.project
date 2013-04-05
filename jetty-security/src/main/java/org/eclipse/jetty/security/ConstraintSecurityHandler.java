@@ -696,6 +696,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         HttpConfiguration httpConfig = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
 
+
         if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {
             if (request.isSecure())
@@ -703,11 +704,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
             if (httpConfig.getSecurePort() > 0)
             {
-                String url = httpConfig.getSecureScheme() + "://" + request.getServerName() + ":" + httpConfig.getSecurePort()
-                        + request.getRequestURI();
+                String scheme = httpConfig.getSecureScheme();
+                int port = httpConfig.getSecurePort();
+                String url = ("https".equalsIgnoreCase(scheme) && port==443)
+                    ? "https://"+request.getServerName()+request.getRequestURI()
+                    : scheme + "://" + request.getServerName() + ":" + port + request.getRequestURI();                    
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
-
                 response.setContentLength(0);
                 response.sendRedirect(url);
             }
