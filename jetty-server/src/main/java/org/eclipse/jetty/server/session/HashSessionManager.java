@@ -19,12 +19,11 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,6 +36,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -589,69 +589,55 @@ public class HashSessionManager extends AbstractSessionManager
         for (HashedSession session : _sessions.values())
             session.save(reactivate);
     }
+    
 
     /* ------------------------------------------------------------ */
     public HashedSession restoreSession (InputStream is, HashedSession session) throws Exception
     {
-        /*
-         * Take care of this class's fields first by calling
-         * defaultReadObject
-         */
-        DataInputStream in = new DataInputStream(is);
-        String clusterId = in.readUTF();
-        in.readUTF(); // nodeId
-        long created = in.readLong();
-        long accessed = in.readLong();
-        int requests = in.readInt();
+        DataInputStream di = new DataInputStream(is);
+
+        String clusterId = di.readUTF();
+        di.readUTF(); // nodeId
+
+        long created = di.readLong();
+        long accessed = di.readLong();
+        int requests = di.readInt();
 
         if (session == null)
             session = (HashedSession)newSession(created, accessed, clusterId);
         session.setRequests(requests);
-        int size = in.readInt();
+
+        int size = di.readInt();
+
+        restoreSessionAttributes(di, size, session);
+
+        try
+        {
+            int maxIdle = di.readInt();
+            session.setMaxInactiveInterval(maxIdle);
+        }
+        catch (EOFException e)
+        {
+            LOG.debug("No maxInactiveInterval persisted for session "+clusterId);
+            LOG.ignore(e);
+        }
+
+        return session;
+    }
+
+    
+    private void restoreSessionAttributes (InputStream is, int size, HashedSession session)
+    throws Exception
+    {
         if (size>0)
         {
-            ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(in);
+            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
+        
             for (int i=0; i<size;i++)
             {
                 String key = ois.readUTF();
                 Object value = ois.readObject();
                 session.setAttribute(key,value);
-            }
-            ois.close();
-        }
-        else
-            in.close();
-        return session;
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    protected class ClassLoadingObjectInputStream extends ObjectInputStream
-    {
-        /* ------------------------------------------------------------ */
-        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
-        {
-            super(in);
-        }
-
-        /* ------------------------------------------------------------ */
-        public ClassLoadingObjectInputStream () throws IOException
-        {
-            super();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
-        {
-            try
-            {
-                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
-            }
-            catch (ClassNotFoundException e)
-            {
-                return super.resolveClass(cl);
             }
         }
     }

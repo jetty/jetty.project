@@ -265,7 +265,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.9</version>
+          <version>1.0.10</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -450,6 +450,7 @@
     <module>tests</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
+    <module>jetty-monitor</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>

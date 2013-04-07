@@ -190,35 +190,6 @@ public class WebSocketServletRFCTest
         }
     }
 
-    @Test
-    @Ignore("Still not working")
-    public void testIdle() throws Exception
-    {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("onConnect");
-        client.setTimeout(TimeUnit.MILLISECONDS,800);
-        try
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            client.sleep(TimeUnit.SECONDS,1);
-
-            client.write(WebSocketFrame.text("Hello"));
-
-            // now wait for the server to time out
-            // should be 2 frames, the TextFrame echo, and then the Close on disconnect
-            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.SECONDS,2);
-            Assert.assertThat("frames[0].opcode",capture.getFrames().get(0).getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("frames[1].opcode",capture.getFrames().get(1).getOpCode(),is(OpCode.CLOSE));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
@@ -241,6 +212,48 @@ public class WebSocketServletRFCTest
             Frame cf = capture.getFrames().get(0);
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    /**
+     * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
+     * <p>
+     * This test will simulate a client requesting upgrade with all lowercase headers.
+     */
+    @Test
+    public void testLowercaseUpgrade() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        try
+        {
+            client.connect();
+
+            StringBuilder req = new StringBuilder();
+            req.append("GET ").append(client.getRequestPath()).append(" HTTP/1.1\r\n");
+            req.append("Host: ").append(client.getRequestHost()).append("\r\n");
+            req.append("Upgrade: websocket\r\n");
+            req.append("connection: upgrade\r\n");
+            req.append("sec-websocket-key: ").append(client.getRequestWebSocketKey()).append("\r\n");
+            req.append("sec-websocket-origin: ").append(client.getRequestWebSocketOrigin()).append("\r\n");
+            req.append("sec-websocket-protocol: echo\r\n");
+            req.append("sec-websocket-version: 13\r\n");
+            req.append("\r\n");
+            client.writeRaw(req.toString());
+
+            client.expectUpgradeResponse();
+
+            // Generate text frame
+            String msg = "this is an echo ... cho ... ho ... o";
+            client.write(WebSocketFrame.text(msg));
+
+            // Read frame (hopefully text frame)
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame tf = capture.getFrames().get(0);
+            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
         {
@@ -363,6 +376,48 @@ public class WebSocketServletRFCTest
         {
             // Reenable Long Stacks from Parser
             enableStacks(Parser.class,true);
+            client.close();
+        }
+    }
+
+    /**
+     * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
+     * <p>
+     * This test will simulate a client requesting upgrade with all uppercase headers.
+     */
+    @Test
+    public void testUppercaseUpgrade() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        try
+        {
+            client.connect();
+
+            StringBuilder req = new StringBuilder();
+            req.append("GET ").append(client.getRequestPath()).append(" HTTP/1.1\r\n");
+            req.append("HOST: ").append(client.getRequestHost()).append("\r\n");
+            req.append("UPGRADE: WEBSOCKET\r\n");
+            req.append("CONNECTION: UPGRADE\r\n");
+            req.append("SEC-WEBSOCKET-KEY: ").append(client.getRequestWebSocketKey()).append("\r\n");
+            req.append("SEC-WEBSOCKET-ORIGIN: ").append(client.getRequestWebSocketOrigin()).append("\r\n");
+            req.append("SEC-WEBSOCKET-PROTOCOL: ECHO\r\n");
+            req.append("SEC-WEBSOCKET-VERSION: 13\r\n");
+            req.append("\r\n");
+            client.writeRaw(req.toString());
+
+            client.expectUpgradeResponse();
+
+            // Generate text frame
+            String msg = "this is an echo ... cho ... ho ... o";
+            client.write(WebSocketFrame.text(msg));
+
+            // Read frame (hopefully text frame)
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame tf = capture.getFrames().get(0);
+            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+        }
+        finally
+        {
             client.close();
         }
     }

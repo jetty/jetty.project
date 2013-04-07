@@ -165,10 +165,13 @@ public class WriteBytesProvider implements Callback
     {
         synchronized (this)
         {
+            boolean notified = false;
+
             // fail active (if set)
             if (active != null)
             {
                 active.notifyFailure(t);
+                notified = true;
             }
 
             failure = t;
@@ -177,12 +180,16 @@ public class WriteBytesProvider implements Callback
             for (FrameEntry fe : queue)
             {
                 fe.notifyFailure(t);
+                notified = true;
             }
 
             queue.clear();
 
-            // notify flush callback
-            flushCallback.failed(t);
+            if (notified)
+            {
+                // notify flush callback
+                flushCallback.failed(t);
+            }
         }
     }
 

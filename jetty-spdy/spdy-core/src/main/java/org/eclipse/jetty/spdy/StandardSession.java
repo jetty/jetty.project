@@ -963,6 +963,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         FrameBytes frameBytes = null;
         ByteBuffer buffer = null;
+        boolean failFrameBytes = false;
         synchronized (queue)
         {
             if (flushing || queue.isEmpty())
@@ -982,11 +983,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 {
                     queue.remove(i);
                     if (stream != null && stream.isReset() && !(frameBytes instanceof ControlFrameBytes))
-                    {
-                        frameBytes.fail(new StreamException(stream.getId(), StreamStatus.INVALID_STREAM,
-                                "Stream: " + stream + " is reset!"));
-                        return;
-                    }
+                        failFrameBytes = true;
                     break;
                 }
 
@@ -1001,10 +998,21 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (buffer == null)
                 return;
 
-            flushing = true;
-            LOG.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
+            if (!failFrameBytes)
+            {
+                flushing = true;
+                LOG.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
+            }
         }
-        write(buffer, frameBytes);
+        if (failFrameBytes)
+        {
+            frameBytes.fail(new StreamException(frameBytes.getStream().getId(), StreamStatus.INVALID_STREAM,
+                    "Stream: " + frameBytes.getStream() + " is reset!"));
+        }
+        else
+        {
+            write(buffer, frameBytes);
+        }
     }
 
     private void append(FrameBytes frameBytes)

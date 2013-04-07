@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
  */
 public interface IncomingFrames
 {
+    // TODO: JSR-356 change to Throwable
     public void incomingError(WebSocketException e);
 
     public void incomingFrame(Frame frame);

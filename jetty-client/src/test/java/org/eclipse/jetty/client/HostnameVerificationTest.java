@@ -62,6 +62,7 @@ public class HostnameVerificationTest
             sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
             sslContextFactory.setKeyStorePassword("storepwd");
         }
+        sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
         if (server == null)
             server = new Server();

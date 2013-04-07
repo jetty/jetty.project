@@ -37,6 +37,7 @@ import java.util.TreeMap;
  * objects from being created just to look up in the map.
  *
  * This map is NOT synchronized.
+ * @deprecated Use {@link Trie}
  */
 public class StringMap<O> extends AbstractMap<String,O>
 {

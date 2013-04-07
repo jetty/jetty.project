@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +43,7 @@ import org.junit.Before;
 public class HttpServerTestFixture
 {    // Useful constants
     protected static final long PAUSE=10L;
-    protected static final int LOOPS=50;
+    protected static final int LOOPS=PropertyFlag.isEnabled("test.stress")?250:50;
 
     protected Server _server;
     protected URI _serverURI;

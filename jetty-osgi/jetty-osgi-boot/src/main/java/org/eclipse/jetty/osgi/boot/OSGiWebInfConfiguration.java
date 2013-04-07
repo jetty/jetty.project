@@ -115,7 +115,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         
         for (Resource r:matchingResources)
         {
-            context.getMetaData().addContainerJar(r);
+            context.getMetaData().addContainerResource(r);
         }
     }
     

@@ -253,7 +253,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     }
                     else
                     {
-                        _request.setDispatcherType(DispatcherType.ASYNC);
+                        if (_request.getHttpChannelState().isExpired())
+                        {
+                            _request.setDispatcherType(DispatcherType.ERROR);
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
+                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
+                            _response.setStatusWithReason(500,"Async Timeout");
+                        }
+                        else
+                            _request.setDispatcherType(DispatcherType.ASYNC);
                         getServer().handleAsync(this);
                     }
                 }

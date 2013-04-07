@@ -434,7 +434,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 if (resource!=null && resource.exists() && !resource.isDirectory())
                 {
                     // Tell caches that response may vary by accept-encoding
-                    response.setHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
+                    response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
                     
                     // Does the client accept gzip?
                     String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());

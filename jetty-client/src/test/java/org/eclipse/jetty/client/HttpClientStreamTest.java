@@ -32,11 +32,13 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -45,7 +47,9 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -58,7 +62,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -181,10 +184,10 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         {
             int read = input.read();
             assertTrue(read >= 0);
-            assertEquals(b & 0xFF, read);
+            Assert.assertEquals(b & 0xFF, read);
         }
 
-        assertEquals(-1, input.read());
+        Assert.assertEquals(-1, input.read());
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         Assert.assertNotNull(result);
@@ -248,6 +251,232 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
     }
 
     @Test(expected = AsynchronousCloseException.class)
+    public void testInputStreamResponseListenerClosedBeforeReading() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        InputStream stream = listener.getInputStream();
+        // Close the stream immediately
+        stream.close();
+
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(new BytesContentProvider(new byte[]{0, 1, 2, 3}))
+                .send(listener);
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.getStatus());
+
+        stream.read(); // Throws
+    }
+
+    @Test
+    public void testInputStreamResponseListenerClosedWhileWaiting() throws Exception
+    {
+        final byte[] chunk1 = new byte[]{0, 1};
+        final byte[] chunk2 = new byte[]{2, 3};
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(chunk1.length + chunk2.length);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(chunk1);
+                output.flush();
+                try
+                {
+                    closeLatch.await(5, TimeUnit.SECONDS);
+                    output.write(chunk2);
+                    output.flush();
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        final CountDownLatch waitLatch = new CountDownLatch(1);
+        final CountDownLatch waitedLatch = new CountDownLatch(1);
+        InputStreamResponseListener listener = new InputStreamResponseListener(1)
+        {
+            @Override
+            protected boolean await()
+            {
+                waitLatch.countDown();
+                boolean result = super.await();
+                waitedLatch.countDown();
+                return result;
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(listener);
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.getStatus());
+
+        InputStream stream = listener.getInputStream();
+        // Wait until we block
+        Assert.assertTrue(waitLatch.await(5, TimeUnit.SECONDS));
+        // Close the stream
+        stream.close();
+        closeLatch.countDown();
+
+        // Be sure we're not stuck waiting
+        Assert.assertTrue(waitedLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInputStreamResponseListenerFailedWhileWaiting() throws Exception
+    {
+        final byte[] chunk1 = new byte[]{0, 1};
+        final byte[] chunk2 = new byte[]{2, 3};
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(chunk1.length + chunk2.length);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(chunk1);
+                output.flush();
+                try
+                {
+                    closeLatch.await(5, TimeUnit.SECONDS);
+                    output.write(chunk2);
+                    output.flush();
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        final CountDownLatch waitLatch = new CountDownLatch(1);
+        final CountDownLatch waitedLatch = new CountDownLatch(1);
+        InputStreamResponseListener listener = new InputStreamResponseListener(1)
+        {
+            @Override
+            protected boolean await()
+            {
+                waitLatch.countDown();
+                boolean result = super.await();
+                waitedLatch.countDown();
+                return result;
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(listener);
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.getStatus());
+
+        // Wait until we block
+        Assert.assertTrue(waitLatch.await(5, TimeUnit.SECONDS));
+        // Fail the response
+        response.abort(new Exception());
+        closeLatch.countDown();
+
+        // Be sure we're not stuck waiting
+        Assert.assertTrue(waitedLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInputStreamResponseListenerConsumingBeforeWaiting() throws Exception
+    {
+        final byte[] data = new byte[]{0, 1};
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(data.length);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(data);
+                output.flush();
+            }
+        });
+
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        InputStreamResponseListener listener = new InputStreamResponseListener(1)
+        {
+            @Override
+            protected boolean await()
+            {
+                // Consume everything just before waiting
+                InputStream stream = getInputStream();
+                consume(stream, data);
+                return super.await();
+            }
+
+            private void consume(InputStream stream, byte[] data)
+            {
+                try
+                {
+                    for (byte datum : data)
+                        Assert.assertEquals(datum, stream.read());
+                }
+                catch (IOException x)
+                {
+                    failure.compareAndSet(null, x);
+                }
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(listener);
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, result.getResponse().getStatus());
+        Assert.assertNull(failure.get());
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void testInputStreamContentProviderThrowingWhileReading() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final byte[] data = new byte[]{0, 1, 2, 3};
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(new InputStreamContentProvider(new InputStream()
+                {
+                    private int index = 0;
+
+                    @Override
+                    public int read() throws IOException
+                    {
+                        // Will eventually throw ArrayIndexOutOfBounds
+                        return data[index++];
+                    }
+                }, data.length / 2))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+    }
+
+    @Test(expected = AsynchronousCloseException.class)
     public void testDownloadWithCloseBeforeContent() throws Exception
     {
         final byte[] data = new byte[128 * 1024];
@@ -289,7 +518,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         latch.countDown();
 
-        input.read();
+        input.read(); // Throws
     }
 
     @Test(expected = AsynchronousCloseException.class)
@@ -331,14 +560,14 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);
 
-        for (byte b : data1)
-            input.read();
+        for (byte datum1 : data1)
+            Assert.assertEquals(datum1, input.read());
 
         input.close();
 
         latch.countDown();
 
-        input.read(); // throws
+        input.read(); // Throws
     }
 
     @Test
@@ -367,8 +596,8 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         InputStream input = listener.getInputStream();
         Assert.assertNotNull(input);
 
-        for (byte b : data)
-            input.read();
+        for (byte datum : data)
+            Assert.assertEquals(datum, input.read());
 
         // Read EOF
         Assert.assertEquals(-1, input.read());

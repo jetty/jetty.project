@@ -334,8 +334,10 @@ public class Response implements HttpServletResponse
         setStatus(code);
         _reason=message;
 
+        Request request = _channel.getRequest();
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         if (message==null)
-            message=HttpStatus.getMessage(code);
+            message=cause==null?HttpStatus.getMessage(code):cause.toString();
 
         // If we are allowed to have a body
         if (code!=SC_NO_CONTENT &&
@@ -343,7 +345,6 @@ public class Response implements HttpServletResponse
             code!=SC_PARTIAL_CONTENT &&
             code>=SC_OK)
         {
-            Request request = _channel.getRequest();
 
             ErrorHandler error_handler = null;
             ContextHandler.Context context = request.getContext();
@@ -383,7 +384,6 @@ public class Response implements HttpServletResponse
                 writer.write(Integer.toString(code));
                 writer.write(' ');
                 if (message==null)
-                    message=HttpStatus.getMessage(code);
                 writer.write(message);
                 writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
                 writer.write(Integer.toString(code));
@@ -625,12 +625,20 @@ public class Response implements HttpServletResponse
         if (sc <= 0)
             throw new IllegalArgumentException();
         if (!isIncluding())
+        {
             _status = sc;
+            _reason = null;
+        }
     }
 
     @Override
     @Deprecated
     public void setStatus(int sc, String sm)
+    {
+        setStatusWithReason(sc,sm);
+    }
+    
+    public void setStatusWithReason(int sc, String sm)
     {
         if (sc <= 0)
             throw new IllegalArgumentException();

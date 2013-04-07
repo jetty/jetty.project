@@ -106,11 +106,6 @@ public class ServletWebSocketRequest extends UpgradeRequest
         return req.getUserPrincipal();
     }
 
-    public StringBuffer getRequestURL()
-    {
-        return req.getRequestURL();
-    }
-
     public Map<String, Object> getServletAttributes()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();

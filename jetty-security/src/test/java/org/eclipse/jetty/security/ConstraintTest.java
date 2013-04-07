@@ -41,6 +41,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -65,12 +67,14 @@ public class ConstraintTest
     private Server _server;
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
+    private HttpConfiguration _config;
 
     @Before
     public void startServer()
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _config=_connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
 
         ContextHandler _context = new ContextHandler();
@@ -161,7 +165,15 @@ public class ConstraintTest
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
 
-        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5);
+        Constraint constraint6 = new Constraint();
+        constraint6.setAuthenticate(false);
+        constraint6.setName("data constraint");
+        constraint6.setDataConstraint(2);
+        ConstraintMapping mapping6 = new ConstraintMapping();
+        mapping6.setPathSpec("/data/*");
+        mapping6.setConstraint(constraint6);
+        
+        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6);
     }
 
     @Test
@@ -742,9 +754,9 @@ public class ConstraintTest
         response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\nHost:wibble.com:8888\r\n\r\n");
         assertThat(response,containsString(" 302 Found"));
-        assertThat(response,containsString("/ctx/testLoginPage"));
+        assertThat(response,containsString("http://wibble.com:8888/ctx/testLoginPage"));
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -840,6 +852,48 @@ public class ConstraintTest
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
 
+
+
+    @Test
+    public void testDataRedirection() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403"));
+        
+        _config.setSecurePort(8443);
+        _config.setSecureScheme("https");
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":8443/ctx/data/info") > 0);
+
+        _config.setSecurePort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443/ctx/data/info") < 0);
+
+        _config.setSecurePort(8443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("https://wobble.com:8443/ctx/data/info") > 0);
+
+        _config.setSecurePort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        System.err.println(response);
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443") < 0);
+        assertTrue(response.indexOf("https://wobble.com/ctx/data/info") > 0);
+    }
+    
     @Test
     public void testRoleRef() throws Exception
     {

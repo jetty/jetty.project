@@ -182,7 +182,6 @@ public class HashedSession extends AbstractSession
          */
         //out.writeBoolean(_invalid);
         //out.writeBoolean(_doInvalidate);
-        //out.writeLong(_maxIdleMs);
         //out.writeBoolean( _newSession);
         out.writeInt(getRequests());
         out.writeInt(getAttributes());
@@ -194,7 +193,8 @@ public class HashedSession extends AbstractSession
             oos.writeUTF(key);
             oos.writeObject(doGet(key));
         }
-        oos.close();
+        
+        out.writeInt(getMaxInactiveInterval());
     }
 
     /* ------------------------------------------------------------ */

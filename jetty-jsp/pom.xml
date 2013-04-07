@@ -40,19 +40,19 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.el</artifactId>
-      <version>2.2.0.v201108011116</version>
+      <version>2.2.0.v201303151357</version>
     </dependency>
     <!-- EL Impl -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>com.sun.el</artifactId>
-      <version>2.2.0.v201108011116</version>
+      <version>2.2.0.v201303151357</version>
     </dependency>
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>org.eclipse.jdt.core</artifactId>
-      <version>3.7.1</version>
+      <version>3.8.2.v20130121</version>
     </dependency>
   </dependencies>
 </project>

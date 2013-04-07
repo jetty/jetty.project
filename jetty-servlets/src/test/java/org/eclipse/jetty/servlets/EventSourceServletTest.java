@@ -119,7 +119,7 @@ public class EventSourceServletTest
         Assert.assertEquals("data: " + data, received);
 
         socket.close();
-        Assert.assertTrue(closeLatch.await(heartBeatPeriod * 2, TimeUnit.SECONDS));
+        Assert.assertTrue(closeLatch.await(heartBeatPeriod * 3, TimeUnit.SECONDS));
     }
 
     @Test

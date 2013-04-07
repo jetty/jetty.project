@@ -656,6 +656,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Add to the list of Server classes.
      * @see #setServerClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
@@ -673,6 +674,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Prepend to the list of Server classes.
      * @see #setServerClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
@@ -703,6 +705,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Add to the list of System classes.
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @see #setSystemClasses(String[])
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
@@ -722,6 +725,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Prepend to the list of System classes.
      * @see #setSystemClasses(String[])
+     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the system classes and order is thus
@@ -872,7 +876,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @return True if the classloader should delegate first to the parent
      * classloader (standard java behaviour) or false if the classloader
      * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
-     * spec recommendation).
+     * spec recommendation). Default is false or can be set by the system 
+     * property org.eclipse.jetty.server.webapp.parentLoaderPriority
      */
     @Override
     @ManagedAttribute(value="parent classloader given priority", readonly=true)
@@ -1104,7 +1109,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
-     * @param java2compliant The java2compliant to set.
+     * @param java2compliant True if the classloader should delegate first to the parent
+     * classloader (standard java behaviour) or false if the classloader
+     * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
+     * spec recommendation).  Default is false or can be set by the system 
+     * property org.eclipse.jetty.server.webapp.parentLoaderPriority
      */
     public void setParentLoaderPriority(boolean java2compliant)
     {

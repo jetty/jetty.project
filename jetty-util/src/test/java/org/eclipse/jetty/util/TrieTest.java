@@ -82,7 +82,8 @@ public class TrieTest
         Assert.assertEquals(5,trie.get("wobble").intValue());
         Assert.assertEquals(6,trie.get("Foo-bar").intValue());
         Assert.assertEquals(7,trie.get("FOO+bar").intValue());
-
+        
+        Assert.assertEquals(null,trie.get("helloworld"));
         Assert.assertEquals(null,trie.get("Help"));
         Assert.assertEquals(null,trie.get("Blah"));
     }
@@ -105,7 +106,8 @@ public class TrieTest
         Assert.assertEquals(5,trie.get(BufferUtil.toBuffer("xwobble"),1,6).intValue());
         Assert.assertEquals(6,trie.get(BufferUtil.toBuffer("xFOO-barx"),1,7).intValue());
         Assert.assertEquals(7,trie.get(BufferUtil.toBuffer("xFOO+barx"),1,7).intValue());
-        
+
+        Assert.assertEquals(null,trie.get(BufferUtil.toBuffer("xHelloworldx"),1,10));
         Assert.assertEquals(null,trie.get(BufferUtil.toBuffer("xHelpx"),1,4));
         Assert.assertEquals(null,trie.get(BufferUtil.toBuffer("xBlahx"),1,4));
     }
@@ -128,7 +130,8 @@ public class TrieTest
         Assert.assertEquals(5,trie.get(BufferUtil.toDirectBuffer("xwobble"),1,6).intValue());
         Assert.assertEquals(6,trie.get(BufferUtil.toDirectBuffer("xFOO-barx"),1,7).intValue());
         Assert.assertEquals(7,trie.get(BufferUtil.toDirectBuffer("xFOO+barx"),1,7).intValue());
-        
+
+        Assert.assertEquals(null,trie.get(BufferUtil.toDirectBuffer("xHelloworldx"),1,10));
         Assert.assertEquals(null,trie.get(BufferUtil.toDirectBuffer("xHelpx"),1,4));
         Assert.assertEquals(null,trie.get(BufferUtil.toDirectBuffer("xBlahx"),1,4));
     }
