@@ -37,6 +37,7 @@ jetty-9.0.1.v20130408 - 08 April 2013
    attribute is Java dynamic proxy
  + 403280 Update to javax.el 2.2.4
  + 403281 jetty.sh waits for started or failure before returning
+ + 403360 Named connectors
  + 403370 move frameBytes.fail() call in StandardSession.flush() outside the
    synchronized block to avoid deadlock
  + 403373 WebSocket change timeout log level from warn -> info
@@ -70,6 +71,7 @@ jetty-9.0.1.v20130408 - 08 April 2013
  + 404881 Allow regexs for SslContextFactory.setIncludeCipherSuites() and
    .setExcludeCipherSuites()
  + 404889 SelectorManager accepts attachments with sockets
+ + 404906 servlets with load-on-startup = 0 are not fired up on jetty 9 startup
  + 404958 Fixed Resource.newSystemResource striped / handling
  + 405044 Query parameters lost for non GET or POST.
 
