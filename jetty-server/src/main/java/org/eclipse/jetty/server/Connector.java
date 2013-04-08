@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
@@ -90,4 +91,15 @@ public interface Connector extends LifeCycle, Graceful
      * @return immutable collection of connected endpoints
      */
     public Collection<EndPoint> getConnectedEndPoints();
+
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the connector name if set.
+     * <p>A {@link ContextHandler} may be configured with
+     * virtual hosts in the form "@connectorName" and will only serve
+     * requests from the named connector.
+     * @return The connector name or null.
+     */
+    public String getName();
 }

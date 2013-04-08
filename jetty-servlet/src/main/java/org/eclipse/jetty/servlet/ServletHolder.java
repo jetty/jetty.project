@@ -71,7 +71,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
 
     /* ---------------------------------------------------------------- */
-    private int _initOrder;
+    private int _initOrder = -1;
     private boolean _initOnStartup=false;
     private Map<String, String> _roleMap;
     private String _forcedPath;
@@ -179,7 +179,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public void setInitOrder(int order)
     {
-        _initOnStartup=order>0;
+        _initOnStartup=order>=0;
         _initOrder = order;
     }
 
@@ -329,7 +329,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     throws Exception
     {
         super.initialize();
-        
         if (_extInstance || _initOnStartup)
         {
             try
