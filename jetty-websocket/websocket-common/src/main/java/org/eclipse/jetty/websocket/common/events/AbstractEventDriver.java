@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -65,7 +64,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     }
 
     @Override
-    public final void incomingError(WebSocketException e)
+    public final void incomingError(Throwable e)
     {
         if (LOG.isDebugEnabled())
         {

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -36,7 +35,7 @@ public class FramePipes
         }
 
         @Override
-        public void incomingError(WebSocketException e)
+        public void incomingError(Throwable t)
         {
             /* cannot send exception on */
         }

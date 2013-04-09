@@ -30,6 +30,8 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -48,8 +50,10 @@ import org.eclipse.jetty.websocket.jsr356.messages.TextPartialMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextStreamMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextWholeMessage;
 
-public class JsrEndpointEventDriver extends AbstractEventDriver implements EventDriver, IJsrSession
+public class JsrEndpointEventDriver extends AbstractEventDriver implements EventDriver
 {
+    private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
+
     private final JettyWebSocketContainer container;
     private final Endpoint endpoint;
     private JsrSession jsrsession;
@@ -57,14 +61,19 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
-    public JsrEndpointEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Endpoint endpoint)
+    public JsrEndpointEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)
     {
         super(policy,endpoint);
         this.container = container;
         this.endpoint = endpoint;
+        this.endpointconfig = config;
     }
 
-    @Override
+    public EndpointConfig getEndpointconfig()
+    {
+        return endpointconfig;
+    }
+
     public Session getJsrSession()
     {
         return this.jsrsession;
@@ -123,7 +132,15 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     @Override
     public void onConnect()
     {
-        endpoint.onOpen(jsrsession,endpointconfig);
+        LOG.debug("onConnect({}, {})",jsrsession,endpointconfig);
+        try
+        {
+            endpoint.onOpen(jsrsession,endpointconfig);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Uncaught exception",t);
+        }
     }
 
     @Override
@@ -188,11 +205,26 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     @Override
     public void openSession(WebSocketSession session)
     {
-        String id = container.getNextId();
-        this.jsrsession = new JsrSession(container,session,id);
-        // TODO: Initialize the Decoders
-        // TODO: Initialize the MessageHandlers
-        // TODO: Set the Configuration?
+        // Cast should be safe, as it was created by JsrSessionFactory
+        this.jsrsession = (JsrSession)session;
+        // TODO: Create Decoders (Facade)
+        // TODO: Create MessageHandlers (Facade)
+
+        // Allow end-user socket to adjust configuration
         super.openSession(session);
+
+        // TODO: Initialize Decoders
+        // TODO: Initialize MessageHandlers
+    }
+
+    public void setEndpointconfig(EndpointConfig endpointconfig)
+    {
+        this.endpointconfig = endpointconfig;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]",JsrEndpointEventDriver.class.getSimpleName(),endpoint.getClass().getName());
     }
 }

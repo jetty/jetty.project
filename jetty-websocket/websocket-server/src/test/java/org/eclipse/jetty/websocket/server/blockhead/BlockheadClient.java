@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -383,7 +382,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
      * Errors received (after extensions)
      */
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         incomingFrames.incomingError(e);
     }

@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -147,7 +146,7 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
      * Incoming exceptions from Muxer.
      */
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         incoming.incomingError(e);
     }

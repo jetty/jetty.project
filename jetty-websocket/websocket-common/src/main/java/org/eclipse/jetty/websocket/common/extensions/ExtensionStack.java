@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -192,7 +191,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         nextIncoming.incomingError(e);
     }

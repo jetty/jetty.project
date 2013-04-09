@@ -16,14 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
-import javax.websocket.Session;
+import org.junit.Test;
 
-/**
- * Used to tag and expose JSR based EventDriver's that expose the JSR {@link Session}
- */
-public interface IJsrSession
+public class PathSpecTest
 {
-    public Session getJsrSession();
+    @Test
+    public void test()
+    {
+    }
 }

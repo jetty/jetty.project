@@ -18,25 +18,32 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class EchoHandler extends WebSocketHandler implements WebSocketCreator
+import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
+
+public class JsrSessionFactory implements SessionFactory
 {
-    public JettyEchoSocket socket = new JettyEchoSocket();
+    private AtomicLong idgen = new AtomicLong(0);
+    private final JettyWebSocketContainer container;
 
-    @Override
-    public void configure(WebSocketServletFactory factory)
+    public JsrSessionFactory(JettyWebSocketContainer container)
     {
-        factory.setCreator(this);
+        this.container = container;
     }
 
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return socket;
+        return new JsrSession(requestURI,websocket,connection,container,getNextId());
+    }
+
+    public String getNextId()
+    {
+        return String.format("websocket-%d",idgen.incrementAndGet());
     }
 }

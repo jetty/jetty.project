@@ -95,7 +95,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
             // Abnormal Close
             reason = CloseStatus.trimMaxReasonLength(reason);
-            session.incomingError(new WebSocketException(x)); // TODO: JSR-356 change to Throwable
+            session.notifyError(x);
             session.notifyClose(StatusCode.NO_CLOSE,reason);
 
             disconnect(); // disconnect endpoint & connection
@@ -508,7 +508,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         // Initiate close - politely send close frame.
         // Note: it is not possible in 100% of cases during read timeout to send this close frame.
-        session.incomingError(new WebSocketTimeoutException("Timeout on Read"));
+        session.notifyError(new WebSocketTimeoutException("Timeout on Read"));
         session.close(StatusCode.NORMAL,"Idle Timeout");
 
         // Force closure of writeBytes

@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.io.HttpResponseHeaderParser.ParseException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
@@ -214,7 +215,8 @@ public class UpgradeConnection extends AbstractConnection
         EventDriver websocket = connectPromise.getDriver();
         WebSocketPolicy policy = connectPromise.getClient().getPolicy();
 
-        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,connection);
+        SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
+        WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);
         session.setPolicy(policy);
         session.setUpgradeResponse(response);
 

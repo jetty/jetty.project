@@ -28,7 +28,7 @@ import javax.websocket.DeploymentException;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
-import org.eclipse.jetty.websocket.jsr356.DefaultClientEndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.JettyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdTextDecoder;
 public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
 {
     private final ClientEndpoint endpoint;
-    private final ClientEndpointConfig config;
+    private final JettyClientEndpointConfig config;
     private final Decoders decoders;
 
     public JsrClientMetadata(JettyWebSocketContainer container, Class<?> websocket) throws DeploymentException
@@ -52,7 +52,7 @@ public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
         }
 
         this.endpoint = anno;
-        this.config = new DefaultClientEndpointConfig(anno.decoders(),anno.encoders());
+        this.config = new JettyClientEndpointConfig(anno);
         this.decoders = new Decoders(container.getDecoderMetadataFactory(),config);
     }
 
@@ -83,5 +83,11 @@ public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
     public ClientEndpoint getAnnotation()
     {
         return endpoint;
+    }
+
+    public ClientEndpointConfig getEndpointConfigCopy() throws DeploymentException
+    {
+        // Copy constructor
+        return new JettyClientEndpointConfig(config);
     }
 }

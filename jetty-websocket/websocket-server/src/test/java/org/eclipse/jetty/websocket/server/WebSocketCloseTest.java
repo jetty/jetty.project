@@ -95,14 +95,7 @@ public class WebSocketCloseTest
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
-            try
-            {
-                sess.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
+            sess.close();
         }
 
         @Override

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common.extensions.identity;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -37,7 +36,7 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         // pass through
         nextIncomingError(e);

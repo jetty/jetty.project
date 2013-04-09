@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.extensions.fragment;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -37,7 +36,7 @@ public class FragmentExtension extends AbstractExtension
     private int maxLength = -1;
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         // Pass thru
         nextIncomingError(e);

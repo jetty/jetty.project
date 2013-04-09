@@ -16,14 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.extensions;
+package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+
+import javax.websocket.server.ServerEndpoint;
 
 /**
- * Interface for dealing with Incoming Frames.
+ * PathSpec for WebSocket &#064;{@link ServerEndpoint} declarations.
  */
-public interface IncomingFrames
+public class PathParamSpec extends PathSpec
 {
-    public void incomingError(Throwable t);
+    public PathParamSpec(String pathParamSpec)
+    {
 
-    public void incomingFrame(Frame frame);
+    }
 }

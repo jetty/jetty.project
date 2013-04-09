@@ -16,14 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.extensions;
+package org.eclipse.jetty.websocket.common;
+
+import java.net.URI;
+
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
- * Interface for dealing with Incoming Frames.
+ * Interface for creating jetty {@link MutableSession} objects.
  */
-public interface IncomingFrames
+public interface SessionFactory
 {
-    public void incomingError(Throwable t);
-
-    public void incomingFrame(Frame frame);
+    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
 }

@@ -31,6 +31,9 @@ import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 
+/**
+ * Event Driver for classes annotated with &#064;{@link ClientEndpoint}
+ */
 public class JsrClientEndpointImpl implements EventDriverImpl
 {
     private ConcurrentHashMap<Class<?>, JsrClientMetadata> cache = new ConcurrentHashMap<>();
@@ -45,12 +48,17 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     public EventDriver create(Object websocket, WebSocketPolicy policy) throws DeploymentException
     {
         Object endpoint = websocket;
-        ClientEndpointConfig config = null;
         if (websocket instanceof ConfiguredEndpoint)
         {
             ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
             endpoint = ce.getEndpoint();
-            config = (ClientEndpointConfig)ce.getConfig();
+            // Classes annotated with @ClientEndpoint cannot be created with
+            // an external ClientEndpointConfig, this information MUST come
+            // from the @ClientEndpoint annotation.
+            if (ce.getConfig() != null)
+            {
+                throw new IllegalStateException("Cannot create @ClientEndpoint websocket with an external EndpointConfig");
+            }
         }
 
         Class<?> endpointClass = endpoint.getClass();
@@ -67,8 +75,11 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         // At this point we have a base metadata, now we need to copy it for
         // this specific instance of the WebSocket Endpoint (as we will be
         // modifying the metadata)
-        JsrEvents events = new JsrEvents(basemetadata);
-        return new JsrClientAnnotatedEventDriver(container,policy,endpoint,events);
+        JsrEvents events = new JsrEvents(basemetadata); // copy constructor.
+
+        // Create copy of base config
+        ClientEndpointConfig config = basemetadata.getEndpointConfigCopy();
+        return new JsrClientAnnotatedEventDriver(container,policy,endpoint,events,config);
     }
 
     @Override

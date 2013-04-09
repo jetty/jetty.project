@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -141,7 +140,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
      * Incoming parser errors
      */
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         MuxDropChannel.Reason reason = MuxDropChannel.Reason.PHYSICAL_CONNECTION_FAILED;
         String phrase = String.format("%s: %s", e.getClass().getName(), e.getMessage());

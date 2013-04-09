@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -108,7 +107,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
     }
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         nextIncomingError(e);
     }
@@ -169,7 +168,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         return false;
     }
 
-    protected void nextIncomingError(WebSocketException e)
+    protected void nextIncomingError(Throwable e)
     {
         this.nextIncoming.incomingError(e);
     }

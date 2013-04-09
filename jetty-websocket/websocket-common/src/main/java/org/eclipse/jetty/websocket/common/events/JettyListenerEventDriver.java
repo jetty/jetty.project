@@ -140,4 +140,10 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         listener.onWebSocketText(message);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", JettyListenerEventDriver.class.getSimpleName(), listener.getClass().getName());
+    }
 }

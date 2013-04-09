@@ -49,6 +49,8 @@ import org.eclipse.jetty.websocket.client.io.ConnectPromise;
 import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
+import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
@@ -64,6 +66,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
     private EventDriverFactory eventDriverFactory;
+    private SessionFactory sessionFactory;
     private ByteBufferPool bufferPool;
     private Executor executor;
     private Scheduler scheduler;
@@ -85,6 +88,7 @@ public class WebSocketClient extends ContainerLifeCycle
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
+        this.sessionFactory = new WebSocketSessionFactory();
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -341,6 +345,11 @@ public class WebSocketClient extends ContainerLifeCycle
         return scheduler;
     }
 
+    public SessionFactory getSessionFactory()
+    {
+        return sessionFactory;
+    }
+
     /**
      * @return the {@link SslContextFactory} that manages TLS encryption
      * @see WebSocketClient(SslContextFactory)
@@ -451,5 +460,10 @@ public class WebSocketClient extends ContainerLifeCycle
     public void setMaxTextMessageBufferSize(int max)
     {
         this.policy.setMaxTextMessageBufferSize(max);
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory)
+    {
+        this.sessionFactory = sessionFactory;
     }
 }

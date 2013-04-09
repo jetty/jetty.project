@@ -16,14 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.extensions;
+package org.eclipse.jetty.websocket.jsr356;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
- * Interface for dealing with Incoming Frames.
+ * Jetty Echo Socket. using Jetty techniques.
  */
-public interface IncomingFrames
+public class JettyEchoSocket extends WebSocketAdapter
 {
-    public void incomingError(Throwable t);
+    private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
 
-    public void incomingFrame(Frame frame);
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    {
+        getRemote().sendBytesByFuture(BufferUtil.toBuffer(payload,offset,len));
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        LOG.warn(cause);
+    }
+
+    @Override
+    public void onWebSocketText(String message)
+    {
+        getRemote().sendStringByFuture(message);
+    }
 }

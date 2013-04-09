@@ -97,7 +97,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         this.close(StatusCode.NORMAL,null);
     }
@@ -272,14 +272,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
      * Incoming Errors from Parser
      */
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable t)
     {
         if (connection.getIOState().isInputClosed())
         {
             return; // input is closed
         }
         // Forward Errors to User WebSocket Object
-        websocket.incomingError(e);
+        websocket.incomingError(t);
     }
 
     /**
@@ -323,6 +323,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public void notifyClose(int statusCode, String reason)
     {
         websocket.onClose(new CloseInfo(statusCode,reason));
+    }
+
+    public void notifyError(Throwable cause)
+    {
+        incomingError(cause);
     }
 
     /**

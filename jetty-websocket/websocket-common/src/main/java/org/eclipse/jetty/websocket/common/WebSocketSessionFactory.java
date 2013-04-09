@@ -16,35 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import java.net.URI;
+
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
- * Jetty Echo Socket
+ * Default Session factory, creating WebSocketSession objects.
  */
-public class EchoSocket extends WebSocketAdapter
+public class WebSocketSessionFactory implements SessionFactory
 {
-    private static final Logger LOG = Log.getLogger(EchoSocket.class);
-
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        getRemote().sendBytesByFuture(BufferUtil.toBuffer(payload,offset,len));
-    }
-
-    @Override
-    public void onWebSocketError(Throwable cause)
-    {
-        LOG.warn(cause);
-    }
-
-    @Override
-    public void onWebSocketText(String message)
-    {
-        getRemote().sendStringByFuture(message);
+        return new WebSocketSession(requestURI,websocket,connection);
     }
 }

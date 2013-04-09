@@ -65,7 +65,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        WebSocketException known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().get(0);
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 11"));
     }
@@ -87,7 +87,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        WebSocketException known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().get(0);
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 12"));
     }
@@ -110,7 +110,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        WebSocketException known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().get(0);
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 3"));
     }
@@ -132,7 +132,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        WebSocketException known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().get(0);
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 4"));
     }

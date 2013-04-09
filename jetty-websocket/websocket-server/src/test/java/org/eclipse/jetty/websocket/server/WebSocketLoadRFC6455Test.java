@@ -41,7 +41,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -70,7 +69,7 @@ public class WebSocketLoadRFC6455Test
         private final IncomingFrames _handler = new IncomingFrames()
         {
             @Override
-            public void incomingError(WebSocketException e)
+            public void incomingError(Throwable e)
             {
             }
 

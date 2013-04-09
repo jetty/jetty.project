@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
 
@@ -50,7 +48,6 @@ public class JettyWebSocketContainer implements WebSocketContainer
     private static final Logger LOG = Log.getLogger(JettyWebSocketContainer.class);
     private final DecoderMetadataFactory decoderMetadataFactory;
     private WebSocketClient client;
-    private AtomicLong idgen = new AtomicLong(0);
 
     public JettyWebSocketContainer()
     {
@@ -58,6 +55,7 @@ public class JettyWebSocketContainer implements WebSocketContainer
 
         client = new WebSocketClient();
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
+        client.setSessionFactory(new JsrSessionFactory(this));
 
         try
         {
@@ -71,7 +69,13 @@ public class JettyWebSocketContainer implements WebSocketContainer
 
     private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
     {
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,config);
+        ClientEndpointConfig cec = config;
+        if (cec == null)
+        {
+            cec = ClientEndpointConfig.Builder.create().build();
+        }
+
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,cec);
         ClientUpgradeRequest req = new ClientUpgradeRequest();
         if (config != null)
         {
@@ -88,8 +92,7 @@ public class JettyWebSocketContainer implements WebSocketContainer
         Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req);
         try
         {
-            WebSocketSession sess = (WebSocketSession)futSess.get();
-            return new JsrSession(this,sess,getNextId());
+            return (JsrSession)futSess.get();
         }
         catch (InterruptedException | ExecutionException e)
         {
@@ -178,11 +181,6 @@ public class JettyWebSocketContainer implements WebSocketContainer
         }
 
         return ret;
-    }
-
-    public String getNextId()
-    {
-        return String.format("websocket-%d",idgen.incrementAndGet());
     }
 
     public Set<Session> getOpenSessions()

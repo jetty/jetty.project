@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 
-public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implements EventDriver, IJsrSession
+public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implements EventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrClientAnnotatedEventDriver.class);
     private final JettyWebSocketContainer container;
@@ -56,14 +56,15 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     private ClientEndpointConfig endpointconfig;
     private MessageAppender activeMessage;
 
-    public JsrClientAnnotatedEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Object websocket, JsrEvents events)
+    public JsrClientAnnotatedEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Object websocket, JsrEvents events,
+            ClientEndpointConfig endpointconfig)
     {
         super(policy,websocket);
         this.container = container;
         this.events = events;
+        this.endpointconfig = endpointconfig;
     }
 
-    @Override
     public Session getJsrSession()
     {
         return this.jsrsession;
@@ -317,8 +318,8 @@ public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implement
     @Override
     public void openSession(WebSocketSession session)
     {
-        String id = container.getNextId();
-        this.jsrsession = new JsrSession(container,session,id);
+        // Cast should be safe, as it was created by JsrSessionFactory
+        this.jsrsession = (JsrSession)session;
         // Initialize the events
         this.events.init(jsrsession);
         // TODO: Initialize the decoders

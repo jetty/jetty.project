@@ -37,14 +37,14 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
 
-public class JsrSession implements Session
+public class JsrSession extends WebSocketSession implements javax.websocket.Session
 {
     private final JettyWebSocketContainer container;
-    /** Jetty API Session Impl */
-    private final WebSocketSession jettySession;
     private final String id;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
@@ -55,10 +55,10 @@ public class JsrSession implements Session
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(JettyWebSocketContainer container, WebSocketSession session, String id)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, JettyWebSocketContainer container, String id)
     {
+        super(requestURI,websocket,connection);
         this.container = container;
-        this.jettySession = session;
         this.id = id;
     }
 
@@ -69,15 +69,9 @@ public class JsrSession implements Session
     }
 
     @Override
-    public void close() throws IOException
+    public void close(CloseReason closeReason) throws IOException
     {
-        jettySession.close();
-    }
-
-    @Override
-    public void close(CloseReason closeStatus) throws IOException
-    {
-        jettySession.close(closeStatus.getCloseCode().getCode(),closeStatus.getReasonPhrase());
+        close(closeReason.getCloseCode().getCode(),closeReason.getReasonPhrase());
     }
 
     @Override
@@ -85,7 +79,7 @@ public class JsrSession implements Session
     {
         if (asyncRemote == null)
         {
-            asyncRemote = new JsrAsyncRemote(jettySession.getRemote());
+            asyncRemote = new JsrAsyncRemote(getRemote());
         }
         return asyncRemote;
     }
@@ -95,7 +89,7 @@ public class JsrSession implements Session
     {
         if (basicRemote == null)
         {
-            basicRemote = new JsrBasicRemote(jettySession);
+            basicRemote = new JsrBasicRemote(this);
         }
         return basicRemote;
     }
@@ -104,6 +98,11 @@ public class JsrSession implements Session
     public WebSocketContainer getContainer()
     {
         return this.container;
+    }
+
+    public Decoders getDecodersFacade()
+    {
+        return this.decoders;
     }
 
     @Override
@@ -115,19 +114,24 @@ public class JsrSession implements Session
     @Override
     public int getMaxBinaryMessageBufferSize()
     {
-        return jettySession.getPolicy().getMaxBinaryMessageSize();
+        return getPolicy().getMaxBinaryMessageSize();
     }
 
     @Override
     public long getMaxIdleTimeout()
     {
-        return jettySession.getPolicy().getIdleTimeout();
+        return getPolicy().getIdleTimeout();
     }
 
     @Override
     public int getMaxTextMessageBufferSize()
     {
-        return jettySession.getPolicy().getMaxTextMessageSize();
+        return getPolicy().getMaxTextMessageSize();
+    }
+
+    public MessageHandlers getMessageHandlerFacade()
+    {
+        return messageHandlers;
     }
 
     @Override
@@ -147,7 +151,7 @@ public class JsrSession implements Session
         if (negotiatedExtensions == null)
         {
             negotiatedExtensions = new ArrayList<Extension>();
-            for (ExtensionConfig cfg : jettySession.getUpgradeResponse().getExtensions())
+            for (ExtensionConfig cfg : getUpgradeResponse().getExtensions())
             {
                 negotiatedExtensions.add(new JsrExtension(cfg));
             }
@@ -158,7 +162,7 @@ public class JsrSession implements Session
     @Override
     public String getNegotiatedSubprotocol()
     {
-        return jettySession.getUpgradeResponse().getAcceptedSubProtocol();
+        return getUpgradeResponse().getAcceptedSubProtocol();
     }
 
     @Override
@@ -176,25 +180,25 @@ public class JsrSession implements Session
     @Override
     public String getProtocolVersion()
     {
-        return jettySession.getProtocolVersion();
+        return getProtocolVersion();
     }
 
     @Override
     public String getQueryString()
     {
-        return jettySession.getUpgradeRequest().getRequestURI().getQuery();
+        return getUpgradeRequest().getRequestURI().getQuery();
     }
 
     @Override
     public Map<String, List<String>> getRequestParameterMap()
     {
-        return jettySession.getUpgradeRequest().getParameterMap();
+        return getUpgradeRequest().getParameterMap();
     }
 
     @Override
     public URI getRequestURI()
     {
-        return jettySession.getUpgradeRequest().getRequestURI();
+        return getUpgradeRequest().getRequestURI();
     }
 
     @Override
@@ -211,38 +215,36 @@ public class JsrSession implements Session
     }
 
     @Override
-    public boolean isOpen()
-    {
-        return jettySession.isOpen();
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return jettySession.isSecure();
-    }
-
-    @Override
     public void removeMessageHandler(MessageHandler handler)
     {
         messageHandlers.remove(handler);
     }
 
+    public void setDecodersFacade(Decoders decoders)
+    {
+        this.decoders = decoders;
+    }
+
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        jettySession.getPolicy().setMaxBinaryMessageBufferSize(length);
+        getPolicy().setMaxBinaryMessageBufferSize(length);
     }
 
     @Override
     public void setMaxIdleTimeout(long milliseconds)
     {
-        jettySession.getPolicy().setIdleTimeout(milliseconds);
+        getPolicy().setIdleTimeout(milliseconds);
     }
 
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        jettySession.getPolicy().setMaxTextMessageBufferSize(length);
+        getPolicy().setMaxTextMessageBufferSize(length);
+    }
+
+    public void setMessageHandlerFacade(MessageHandlers messageHandlers)
+    {
+        this.messageHandlers = messageHandlers;
     }
 }

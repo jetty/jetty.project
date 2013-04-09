@@ -40,7 +40,7 @@ public interface Session extends Closeable
      * @see #disconnect()
      */
     @Override
-    void close() throws IOException;
+    void close();
 
     /**
      * Request Close the current conversation, giving a reason for the closure. Note the websocket spec defines the acceptable uses of status codes and reason
@@ -55,7 +55,7 @@ public interface Session extends Closeable
      * @see #close(int, String)
      * @see #disconnect()
      */
-    void close(CloseStatus closeStatus) throws IOException;
+    void close(CloseStatus closeStatus);
 
     /**
      * Send a websocket Close frame, with status code.
@@ -72,7 +72,7 @@ public interface Session extends Closeable
      * @see #close(CloseStatus)
      * @see #disconnect()
      */
-    void close(int statusCode, String reason) throws IOException;
+    void close(int statusCode, String reason);
 
     /**
      * Issue a harsh disconnect of the underlying connection.
