@@ -759,7 +759,6 @@ public class SslConnection extends AbstractConnection
                                 if (DEBUG)
                                     LOG.debug("{} renegotiation denied", SslConnection.this);
                                 shutdownOutput();
-                                BufferUtil.clear(_encryptedOutput);
                                 return allConsumed;
                             }
 

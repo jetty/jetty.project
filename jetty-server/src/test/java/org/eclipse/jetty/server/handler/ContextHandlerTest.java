@@ -118,6 +118,79 @@ public class ContextHandlerTest
         }
 
     }
+    
+    
+    @Test
+    public void testNamedConnector() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        LocalConnector connectorN = new LocalConnector(server);
+        connectorN.setName("name");
+        server.setConnectors(new Connector[] { connector, connectorN });
+
+        ContextHandler contextA = new ContextHandler("/");
+        contextA.setVirtualHosts(new String[]{"www.example.com" });
+        IsHandledHandler handlerA = new IsHandledHandler();
+        contextA.setHandler(handlerA);
+
+        ContextHandler contextB = new ContextHandler("/");
+        IsHandledHandler handlerB = new IsHandledHandler();
+        contextB.setHandler(handlerB);
+        contextB.setVirtualHosts(new String[]{ "@name" });
+
+        ContextHandler contextC = new ContextHandler("/");
+        IsHandledHandler handlerC = new IsHandledHandler();
+        contextC.setHandler(handlerC);
+
+        HandlerCollection c = new HandlerCollection();
+        c.addHandler(contextA);
+        c.addHandler(contextB);
+        c.addHandler(contextC);
+        server.setHandler(c);
+
+        server.start();
+        try
+        {
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+
+            connector.getResponses("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+
+            connectorN.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+
+            connectorN.getResponses("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+
+        }
+        finally
+        {
+            server.stop();
+        }
+
+    }
 
     @Test
     public void testContextGetContext() throws Exception
