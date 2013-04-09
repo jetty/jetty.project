@@ -110,7 +110,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     private final AtomicBoolean goAwaySent = new AtomicBoolean();
     private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private final AtomicInteger lastStreamId = new AtomicInteger();
+    private final AtomicInteger localStreamCount = new AtomicInteger(0);
     private final FlowControlStrategy flowControlStrategy;
+    private volatile int maxConcurrentLocalStreams = -1;
     private boolean flushing;
     private Throwable failure;
 
@@ -181,6 +183,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             // TODO: for SPDYv3 we need to support the "slot" argument
             SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true, promise);
+            if (stream == null)
+                return;
             generateAndEnqueueControlFrame(stream, synStream, synInfo.getTimeout(), synInfo.getUnit(), stream);
         }
         flush();
@@ -535,15 +539,39 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
 
         int streamId = stream.getId();
+
+        if (local)
+        {
+            while (true)
+            {
+                int oldStreamCountValue = localStreamCount.get();
+                int maxConcurrentStreams = maxConcurrentLocalStreams;
+                if (maxConcurrentStreams > -1 && oldStreamCountValue >= maxConcurrentStreams)
+                {
+                    String msg = String.format("Max concurrent local streams (%d) exceeded.",
+                            maxConcurrentStreams);
+                    LOG.debug(msg);
+                    promise.failed(new SPDYException(msg));
+                    return null;
+                }
+                if (localStreamCount.compareAndSet(oldStreamCountValue, oldStreamCountValue + 1))
+                    break;
+            }
+        }
+
         if (streams.putIfAbsent(streamId, stream) != null)
         {
+            //TODO: fail promise
             if (local)
+            {
+                localStreamCount.decrementAndGet();
                 throw new IllegalStateException("Duplicate stream id " + streamId);
+            }
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
             LOG.debug("Duplicate stream, {}", rstInfo);
             try
             {
-                rst(rstInfo);
+                rst(rstInfo); //TODO: non blocking reset or find the reason why blocking is used
             }
             catch (InterruptedException | ExecutionException | TimeoutException e)
             {
@@ -554,8 +582,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         else
         {
             LOG.debug("Created {}", stream);
-            if (local)
-                notifyStreamCreated(stream);
+            notifyStreamCreated(stream);
             return stream;
         }
     }
@@ -590,10 +617,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
+        {
             assert removed == stream;
 
-        LOG.debug("Removed {}", stream);
-        notifyStreamClosed(stream);
+            if (streamIds.get() % 2 == stream.getId() % 2)
+                localStreamCount.decrementAndGet();
+
+            LOG.debug("Removed {}", stream);
+            notifyStreamClosed(stream);
+        }
     }
 
     private void notifyStreamClosed(IStream stream)
@@ -665,6 +697,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             int windowSize = windowSizeSetting.value();
             setWindowSize(windowSize);
             LOG.debug("Updated session window size to {}", windowSize);
+        }
+        Settings.Setting maxConcurrentStreamsSetting = frame.getSettings().get(Settings.ID.MAX_CONCURRENT_STREAMS);
+        if (maxConcurrentStreamsSetting != null)
+        {
+            int maxConcurrentStreamsValue = maxConcurrentStreamsSetting.value();
+            maxConcurrentLocalStreams = maxConcurrentStreamsValue;
+            LOG.debug("Updated session maxConcurrentLocalStreams to {}", maxConcurrentStreamsValue);
         }
         SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
         notifyOnSettings(listener, settingsInfo);

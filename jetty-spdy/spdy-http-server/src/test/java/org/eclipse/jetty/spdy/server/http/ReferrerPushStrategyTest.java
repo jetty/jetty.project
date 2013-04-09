@@ -101,14 +101,14 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     @Test
     public void testPushHeadersAreValid() throws Exception
     {
-        sendMainRequestAndCSSRequest();
+        sendMainRequestAndCSSRequest(null);
         run2ndClientRequests(true, true);
     }
 
     @Test
     public void testClientResetsPushStreams() throws Exception
     {
-        sendMainRequestAndCSSRequest();
+        sendMainRequestAndCSSRequest(null);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
         Session session = startClient(version, serverAddress, null);
@@ -125,14 +125,14 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     public void testUserAgentBlackList() throws Exception
     {
         pushStrategy.setUserAgentBlacklist(Arrays.asList(".*(?i)firefox/16.*"));
-        sendMainRequestAndCSSRequest();
+        sendMainRequestAndCSSRequest(null);
         run2ndClientRequests(false, false);
     }
 
     @Test
     public void testReferrerPushPeriod() throws Exception
     {
-        Session session = sendMainRequestAndCSSRequest();
+        Session session = sendMainRequestAndCSSRequest(null);
 
         // Sleep for pushPeriod This should prevent application.js from being mapped as pushResource
         Thread.sleep(referrerPushPeriod + 1);
@@ -148,11 +148,36 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         connector.addConnectionFactory(defaultFactory);
         connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
-        Session session = sendMainRequestAndCSSRequest();
+        Session session = sendMainRequestAndCSSRequest(null);
 
         sendRequest(session, associatedJSRequestHeaders, null, null);
 
         run2ndClientRequests(false, true);
+    }
+
+    @Test
+    public void testMaxConcurrentStreamsToDisablePush() throws Exception
+    {
+        final CountDownLatch pushReceivedLatch = new CountDownLatch(1);
+        Session session = sendMainRequestAndCSSRequest(new SessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                pushReceivedLatch.countDown();
+                return null;
+            }
+        });
+
+//        Settings settings = new Settings();
+//        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 0));
+//        SettingsInfo settingsInfo = new SettingsInfo(settings);
+//
+//        session.settings(settingsInfo);
+
+        sendRequest(session, mainRequestHeaders, null, null);
+
+        assertThat(pushReceivedLatch.await(1, TimeUnit.SECONDS), is(false));
     }
 
     private InetSocketAddress createServer() throws Exception
@@ -177,9 +202,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         return startHTTPServer(version, gzipHandler);
     }
 
-    private Session sendMainRequestAndCSSRequest() throws Exception
+    private Session sendMainRequestAndCSSRequest(SessionFrameListener sessionFrameListener) throws Exception
     {
-        Session session = startClient(version, serverAddress, null);
+        Session session = startClient(version, serverAddress, sessionFrameListener);
 
         sendRequest(session, mainRequestHeaders, null, null);
         sendRequest(session, associatedCSSRequestHeaders, null, null);
@@ -197,7 +222,8 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             @Override
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
-                validateHeaders(pushInfo.getHeaders(), pushSynHeadersValid);
+                if (pushSynHeadersValid != null)
+                    validateHeaders(pushInfo.getHeaders(), pushSynHeadersValid);
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))

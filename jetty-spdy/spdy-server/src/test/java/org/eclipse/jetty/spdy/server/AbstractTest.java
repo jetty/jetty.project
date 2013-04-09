@@ -53,13 +53,15 @@ public abstract class AbstractTest
         }
     };
 
+    protected final short version = SPDY.V2;
+
     protected Server server;
     protected SPDYClient.Factory clientFactory;
     protected SPDYServerConnector connector;
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
-        return startServer(SPDY.V2, listener);
+        return startServer(version, listener);
     }
 
     protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
@@ -99,7 +101,7 @@ public abstract class AbstractTest
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
     {
-        return startClient(SPDY.V2, socketAddress, listener);
+        return startClient(version, socketAddress, listener);
     }
 
     protected Session startClient(short version, InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
