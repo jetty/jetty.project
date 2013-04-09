@@ -284,7 +284,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <argLine>-showversion -XX:+PrintGCDetails</argLine>
+            <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <!--systemProperties>
               <property>
@@ -702,7 +702,7 @@
                       })();
                    </script>
                 ]]>
-              </header>           
+              </header>
             </configuration>
           </plugin>
         </plugins>
