@@ -167,7 +167,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //if not, add it
             for (WebInitParam ip:annotation.initParams())
             {
-                if (metaData.getOrigin(servletName+".servlet.init-param"+ip.name())==Origin.NotSet)
+                if (metaData.getOrigin(servletName+".servlet.init-param."+ip.name())==Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
                     metaData.setOrigin(servletName+".servlet.init-param."+ip.name());
