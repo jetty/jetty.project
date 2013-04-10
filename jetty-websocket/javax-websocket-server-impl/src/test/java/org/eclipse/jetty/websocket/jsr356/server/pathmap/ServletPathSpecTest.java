@@ -34,6 +34,7 @@ public class ServletPathSpecTest
         catch (IllegalArgumentException e)
         {
             // expected path
+            System.out.println(e);
         }
     }
 

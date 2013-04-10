@@ -19,8 +19,11 @@
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -95,9 +98,11 @@ public class PathParamSpec extends PathSpec
 
         List<String> varNames = new ArrayList<>();
         String segments[] = pathParamSpec.split("/");
+        char segmentSignature[] = new char[segments.length];
         this.pathDepth = segments.length - 1;
-        for (String segment : segments)
+        for (int i = 0; i < segments.length; i++)
         {
+            String segment = segments[i];
             Matcher mat = VARIABLE_PATTERN.matcher(segment);
 
             if (mat.matches())
@@ -116,6 +121,7 @@ public class PathParamSpec extends PathSpec
                 }
                 else if (VALID_VARIABLE_NAME.matcher(variable).matches())
                 {
+                    segmentSignature[i] = 'v'; // variable
                     // valid variable name
                     varNames.add(variable);
                     // build regex
@@ -171,6 +177,7 @@ public class PathParamSpec extends PathSpec
             else
             {
                 // valid path segment
+                segmentSignature[i] = 'e'; // exact
                 // build regex
                 if (wantDelim)
                 {
@@ -189,25 +196,45 @@ public class PathParamSpec extends PathSpec
         int varcount = varNames.size();
         this.variables = varNames.toArray(new String[varcount]);
 
-        if (varcount > 1)
-        {
-            this.group = PathSpecGroup.MIDDLE_GLOB;
-        }
-        if (varcount == 1)
-        {
-            if (isLastSegmentVariable)
-            {
-                this.group = PathSpecGroup.PREFIX_GLOB;
-            }
-            else
-            {
-                this.group = PathSpecGroup.MIDDLE_GLOB;
-            }
-        }
-        else
+        // Convert signature to group
+        String sig = String.valueOf(segmentSignature);
+
+        if (Pattern.matches("^e*$",sig))
         {
             this.group = PathSpecGroup.EXACT;
         }
+        else if (Pattern.matches("^e*v+",sig))
+        {
+            this.group = PathSpecGroup.PREFIX_GLOB;
+        }
+        else if (Pattern.matches("^v+e+",sig))
+        {
+            this.group = PathSpecGroup.SUFFIX_GLOB;
+        }
+        else
+        {
+            this.group = PathSpecGroup.MIDDLE_GLOB;
+        }
+    }
+
+    public Map<String, String> getPathParams(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
+        {
+            if (group == PathSpecGroup.EXACT)
+            {
+                return Collections.emptyMap();
+            }
+            Map<String, String> ret = new HashMap<>();
+            int groupCount = matcher.groupCount();
+            for (int i = 1; i <= groupCount; i++)
+            {
+                ret.put(this.variables[i - 1],matcher.group(i));
+            }
+            return ret;
+        }
+        return null;
     }
 
     public int getVariableCount()
