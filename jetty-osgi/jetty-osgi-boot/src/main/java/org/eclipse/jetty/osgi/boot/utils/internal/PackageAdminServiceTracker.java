@@ -39,7 +39,10 @@ import org.osgi.service.startlevel.StartLevel;
  * 
  * 
  * When the PackageAdmin service is activated we can look for the fragments
- * attached to this bundle and "activate" them.
+ * attached to this bundle and do a fake "activate" on them.
+ * 
+ * See particularly the jetty-osgi-boot-jsp fragment bundle that uses this
+ * facility.
  */
 public class PackageAdminServiceTracker implements ServiceListener
 {

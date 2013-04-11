@@ -80,7 +80,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private boolean _lookInOsgiFirst = true;
 
-
+    /* ------------------------------------------------------------ */
     /**
      * @param parent The parent classloader.
      * @param context The WebAppContext
@@ -94,7 +94,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         _contributor = contributor;
         _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Returns the <code>Bundle</code> that defined this web-application.
      * 
@@ -106,7 +109,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         return _contributor;
     }
 
-
+    /* ------------------------------------------------------------ */
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
@@ -121,7 +124,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             return Collections.enumeration(toList(urls, osgiUrls));
         }
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
     public URL getResource(String name)
     {
@@ -136,7 +142,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             return url != null ? url : _osgiBundleClassLoader.getResource(name);
         }
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
     {
         List<URL> list = new ArrayList<URL>();
@@ -147,9 +156,8 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         return list;
     }
 
-    /**
-     * 
-     */
+    
+    /* ------------------------------------------------------------ */
     protected Class<?> findClass(String name) throws ClassNotFoundException
     {
         try
@@ -168,7 +176,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             }
         }
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Parse the classpath ourselves to be able to filter things. This is a
      * derivative work of the super class
@@ -197,6 +208,8 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param lib
      * @return true if the lib should be included in the webapp classloader.
@@ -245,6 +258,8 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private static Field _contextField;
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * In the case of the generation of a webapp via a jetty context file we
      * need a proper classloader to setup the app before we have the

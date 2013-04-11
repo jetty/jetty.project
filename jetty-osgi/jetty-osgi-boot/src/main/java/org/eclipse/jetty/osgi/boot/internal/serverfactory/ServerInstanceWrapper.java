@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -27,8 +26,10 @@ import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.deploy.AppLifeCycle;
@@ -44,11 +45,10 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiUndeployer;
 import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
 import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
-import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.FakeURLClassLoader;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.IO;
@@ -72,6 +72,9 @@ public class ServerInstanceWrapper
      * support the case where the bundle is zipped.
      */
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
+    
+    
+    private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<TldBundleDiscoverer>();
 
     private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
     
@@ -94,6 +97,21 @@ public class ServerInstanceWrapper
     private ClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    public static void addContainerTldBundleDiscoverer (TldBundleDiscoverer tldBundleDiscoverer)
+    {
+        __containerTldBundleDiscoverers.add(tldBundleDiscoverer);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static Collection<TldBundleDiscoverer> getContainerTldBundleDiscoverers()
+    {
+        return __containerTldBundleDiscoverers;
+    }
+    
     
     
     /* ------------------------------------------------------------ */
@@ -173,9 +191,29 @@ public class ServerInstanceWrapper
             configure(server, props);
 
             init();
+            
+            //if support for jsp is enabled, we need to convert locations of bundles that contain tlds into urls.
+            //these are tlds that we want jasper to treat as if they are on the container's classpath. Web bundles
+            //can use the Require-TldBundle MANIFEST header to name other tld-containing bundles that should be regarded
+            //as on the webapp classpath.
+            if (!__containerTldBundleDiscoverers.isEmpty())
+            {
+                Set<URL> urls = new HashSet<URL>();
+                //discover bundles with tlds that need to be on the container's classpath as URLs
+                for (TldBundleDiscoverer d:__containerTldBundleDiscoverers)
+                {
+                    URL[] list = d.getUrlsForBundlesWithTlds(_deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
+                    if (list != null)
+                    {
+                        for (URL u:list)
+                            urls.add(u);
+                    }
+                }
+                _commonParentClassLoaderForWebapps =  new FakeURLClassLoader(libExtClassLoader, urls.toArray(new URL[urls.size()]));
+            }
+            else
+                _commonParentClassLoaderForWebapps = libExtClassLoader;
 
-            URL[] jarsWithTlds = getJarsWithTlds();
-            _commonParentClassLoaderForWebapps = jarsWithTlds == null ? libExtClassLoader : new TldLocatableURLClassloader(libExtClassLoader, jarsWithTlds);
             
             if (LOG.isDebugEnabled()) LOG.debug("common classloader = "+_commonParentClassLoaderForWebapps);
 
@@ -219,54 +257,7 @@ public class ServerInstanceWrapper
     }
     
     
-    /* ------------------------------------------------------------ */
-    /**
-     * TODO: right now only the jetty-jsp bundle is scanned for common taglibs.
-     * Should support a way to plug more bundles that contain taglibs.
-     * 
-     * The jasper TldScanner expects a URLClassloader to parse a jar for the
-     * /META-INF/*.tld it may contain. We place the bundles that we know contain
-     * such tag-libraries. Please note that it will work if and only if the
-     * bundle is a jar (!) Currently we just hardcode the bundle that contains
-     * the jstl implementation.
-     * 
-     * A workaround when the tld cannot be parsed with this method is to copy
-     * and paste it inside the WEB-INF of the webapplication where it is used.
-     * 
-     * Support only 2 types of packaging for the bundle: - the bundle is a jar
-     * (recommended for runtime.) - the bundle is a folder and contain jars in
-     * the root and/or in the lib folder (nice for PDE development situations)
-     * Unsupported: the bundle is a jar that embeds more jars.
-     * 
-     * @return
-     * @throws Exception
-     */
-    private URL[] getJarsWithTlds() throws Exception
-    {
-        
-        //Jars that are added onto the equivalent of the container classpath are:
-        // jstl jars: identified by the class WhenTag (and the boot-bundle manifest imports the jstl packages
-        // bundles identified by System property org.eclipse.jetty.osgi.tldbundles
-        // bundle symbolic name patterns defined in the DeploymentManager
-        //
-        // Any bundles mentioned in the Require-TldBundle manifest header of the webapp bundle MUST ALSO HAVE Import-Bundle
-        // in order to get them onto the classpath of the webapp.
-        
-        ArrayList<URL> res = new ArrayList<URL>();
-        for (WebappRegistrationCustomizer regCustomizer : WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS)
-        {
-            URL[] urls = regCustomizer.getJarsWithTlds(_deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
-            for (URL url : urls)
-            {
-                if (!res.contains(url)) res.add(url);
-            }
-        }
-        if (!res.isEmpty())
-            return res.toArray(new URL[res.size()]);
-        else
-            return null;
-    }
-    
+   
     
     /* ------------------------------------------------------------ */
     private void configure(Server server, Dictionary props) throws Exception
@@ -340,7 +331,9 @@ public class ServerInstanceWrapper
         }
 
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Must be called after the server is configured. 
      * 
@@ -438,7 +431,9 @@ public class ServerInstanceWrapper
             }
         }
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * @return The default folder in which the context files of the osgi bundles
      *         are located and watched. Or null when the system property
@@ -463,7 +458,7 @@ public class ServerInstanceWrapper
         return new File(jettyHome, "/contexts");
     }
 
-
+    /* ------------------------------------------------------------ */
     /**
      * @return the urls in this string.
      */
@@ -485,7 +480,9 @@ public class ServerInstanceWrapper
         }
         return urls;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Get the folders that might contain jars for the legacy J2EE shared
      * libraries

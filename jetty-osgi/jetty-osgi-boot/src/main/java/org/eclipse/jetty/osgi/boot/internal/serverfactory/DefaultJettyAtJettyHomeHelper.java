@@ -66,6 +66,7 @@ public class DefaultJettyAtJettyHomeHelper
     public static final String DEFAULT_JETTYHOME = "/jettyhome/";
     
     
+    
     /* ------------------------------------------------------------ */
     /**
      * Called by the JettyBootStrapActivator. If the system property jetty.home

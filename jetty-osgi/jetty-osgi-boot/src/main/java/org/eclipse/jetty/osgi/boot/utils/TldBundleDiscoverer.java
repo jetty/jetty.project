@@ -24,20 +24,12 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 
 
 /**
- * WebappRegistrationCustomizer
+ * TldBundleDiscoverer
  * 
  * Convert bundles that contain tlds into URL locations for consumption by jasper.
  */
-public interface WebappRegistrationCustomizer
+public interface TldBundleDiscoverer
 {
-    /**
-     * we could do something a lot more pluggable with a custom header in the
-     * manifest or some customer declarative services let's keep it simple for
-     * now. hopefully the rest of the world won't need to customize this.
-     */
-    public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.jasper.WebappRegistrationCustomizerImpl";
-
-
     /**
      * Find bundles that contain tlds and convert into URL references to their location.
      * 
@@ -46,6 +38,6 @@ public interface WebappRegistrationCustomizer
      * @return array of URLs representing locations of tld containing bundles
      * @throws Exception
      */
-    URL[] getJarsWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
+    URL[] getUrlsForBundlesWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
 
 }

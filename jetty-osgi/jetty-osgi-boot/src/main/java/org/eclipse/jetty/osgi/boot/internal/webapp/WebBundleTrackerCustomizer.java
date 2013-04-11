@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 
 import org.eclipse.jetty.osgi.boot.BundleProvider;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -53,7 +53,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
 {
     private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
     
-    public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
+    public static Collection<TldBundleDiscoverer> JSP_REGISTRATION_HELPERS = new ArrayList<TldBundleDiscoverer>();
 
 
     public static final String FILTER = "(objectclass=" + BundleProvider.class.getName() + ")";
@@ -78,24 +78,28 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     }
     
     
-    
+    /* ------------------------------------------------------------ */
     public boolean isWaitForDefaultServer()
     {
         return _waitForDefaultServer;
     }
 
 
-
+    /* ------------------------------------------------------------ */
     public void setWaitForDefaultServer(boolean waitForDefaultServer)
     {
         _waitForDefaultServer = waitForDefaultServer;
     }
 
+    
+    /* ------------------------------------------------------------ */
     public void setBundleTracker (BundleTracker bundleTracker)
     {
         _bundleTracker = bundleTracker;
     }
 
+    
+    /* ------------------------------------------------------------ */
     public void open () throws Exception
     {
         if (_waitForDefaultServer && !_defaultServerReady)

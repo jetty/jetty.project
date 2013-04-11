@@ -58,10 +58,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     public static String __defaultConfigurations[] = {
                                                             "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
                                                             "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                                                            "org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration",
+                                                            "org.eclipse.jetty.webapp.MetaInfConfiguration",
                                                             "org.eclipse.jetty.webapp.FragmentConfiguration",
-                                                            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"//,
-                                                            //"org.eclipse.jetty.osgi.boot.jsp.TagLibOSGiConfiguration"                            
+                                                            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"                          
                                                      };
     
     public static void setDefaultConfigurations (String[] defaultConfigs)

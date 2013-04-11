@@ -16,29 +16,42 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.jsp;
+package org.eclipse.jetty.osgi.boot.utils;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * Tricky url classloader. In fact we don't want a real URLClassLoader: we want
- * OSGi to provide its classloader and let it does. But to let
- * {@link org.apache.jasper.compiler.TldLocationsCache} find the core tlds
- * inside the jars we must be a URLClassLoader that returns an array of jars
- * where tlds are stored when the method getURLs is called.
+ * 
+ * FakeURLClassLoader
+ * 
+ * A URLClassloader that overrides the getURLs() method to return the list
+ * of urls passed in to the constructor, but otherwise acts as if it has no
+ * urls, which would cause it to delegate to the parent classloader (in this
+ * case an OSGi classloader).
+ * 
+ * The main use of this class is with jars containing tlds. Jasper expects a
+ * URL classloader to inspect for jars with tlds.
+ * 
  */
-public class TldLocatableURLClassloader extends URLClassLoader
+public class FakeURLClassLoader extends URLClassLoader
 {
 
-    private URL[] _jarsWithTldsInside;
-
-    public TldLocatableURLClassloader(ClassLoader osgiClassLoader, URL[] jarsWithTldsInside)
+    private URL[] _jars;
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param osgiClassLoader
+     * @param jars
+     */
+    public FakeURLClassLoader(ClassLoader osgiClassLoader, URL[] jars)
     {
         super(new URL[] {},osgiClassLoader);
-        _jarsWithTldsInside = jarsWithTldsInside;
+        _jars = jars;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @return the jars that contains tlds so that TldLocationsCache or
      *         TldScanner can find them.
@@ -46,16 +59,21 @@ public class TldLocatableURLClassloader extends URLClassLoader
     @Override
     public URL[] getURLs()
     {
-        return _jarsWithTldsInside;
+        return _jars;
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * @see java.lang.Object#toString()
+     */
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
 
-        if (_jarsWithTldsInside != null)
+        if (_jars != null)
         {
-            for (URL u:_jarsWithTldsInside)
+            for (URL u:_jars)
                 builder.append(" "+u.toString());
             return builder.toString();
         }

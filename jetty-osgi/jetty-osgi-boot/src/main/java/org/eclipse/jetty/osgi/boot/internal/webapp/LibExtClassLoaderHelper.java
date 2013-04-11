@@ -60,17 +60,23 @@ import org.eclipse.jetty.server.Server;
  */
 public class LibExtClassLoaderHelper
 {
-
+    /* ------------------------------------------------------------ */
     /**
-     * Class called back
+     * IFilesInJettyHomeResourcesProcessor
+     * 
+     * Interface for callback impls
      */
     public interface IFilesInJettyHomeResourcesProcessor
     {
         void processFilesInResourcesFolder(File jettyHome, Map<String, File> filesInResourcesFolder);
     }
 
+    
+    
     public static Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<IFilesInJettyHomeResourcesProcessor>();
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
@@ -125,6 +131,8 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
@@ -168,6 +176,7 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * When we find files typically used for central logging configuration we do
      * what it takes in this method to do what the user expects. Without

@@ -30,25 +30,30 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 
 
 /**
- * PluggableWebAppRegistrationCustomizerImpl
+ * ContainerTldBundleDiscoverer
  * 
  * 
  * Use a System property to define bundles that contain tlds that need to
  * be treated by jasper as if they were on the jetty container's classpath.
  * 
+ * The value of the property is evaluated against the DeploymentManager 
+ * context attribute "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", 
+ * which defines a pattern of matching bundle names.
+ * 
  * The bundle locations are converted to URLs for jasper's use.
  * 
  * Eg:
  * -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+ * 
  */
-public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistrationCustomizer
+public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 {
     /**
      * Comma separated list of names of bundles that contain tld files that should be
@@ -66,7 +71,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
      * 
      * @return The location of the jars that contain tld files as URLs.
      */
-    public URL[] getJarsWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getUrlsForBundlesWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
     {
         // naive way of finding those bundles.
         // lots of assumptions: for example we assume a single version of each
@@ -77,7 +82,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
         // probably using custom properties in the ContextHandler service
         // and mirroring those in the MANIFEST.MF
 
-        Bundle[] bundles = FrameworkUtil.getBundle(PluggableWebAppRegistrationCustomizerImpl.class).getBundleContext().getBundles();
+        Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
         HashSet<URL> urls = new HashSet<URL>();
         String tmp = System.getProperty(SYS_PROP_TLD_BUNDLES); //comma separated exact names
         List<String> sysNames =   new ArrayList<String>();

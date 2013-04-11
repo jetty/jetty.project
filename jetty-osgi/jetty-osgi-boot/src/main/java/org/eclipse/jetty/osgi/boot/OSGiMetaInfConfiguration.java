@@ -38,6 +38,7 @@ import org.osgi.framework.Bundle;
  * Extension of standard Jetty MetaInfConfiguration class to handle OSGi bundle
  * fragments that may also need to be scanned for META-INF info.
  * 
+ * @deprecated
  */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 {
