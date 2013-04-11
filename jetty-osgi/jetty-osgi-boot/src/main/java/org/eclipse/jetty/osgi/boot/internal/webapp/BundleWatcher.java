@@ -40,7 +40,7 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * WebBundleTrackerCustomizer
+ * BundleWatcher
  * 
  * 
  * Tracks the installation and removal of Bundles in the OSGi environment. Any bundles
@@ -49,9 +49,9 @@ import org.osgi.util.tracker.ServiceTracker;
  * 
  * @author hmalphettes
  */
-public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
+public class BundleWatcher implements BundleTrackerCustomizer
 {
-    private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
+    private static final Logger LOG = Log.getLogger(BundleWatcher.class);
     
     public static Collection<TldBundleDiscoverer> JSP_REGISTRATION_HELPERS = new ArrayList<TldBundleDiscoverer>();
 
@@ -69,7 +69,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     /**
      * @throws Exception
      */
-    public WebBundleTrackerCustomizer() throws Exception
+    public BundleWatcher() throws Exception
     {
         _bundle = FrameworkUtil.getBundle(this.getClass());
         //Track all BundleProviders (Jetty DeploymentManager Providers that can deploy bundles)

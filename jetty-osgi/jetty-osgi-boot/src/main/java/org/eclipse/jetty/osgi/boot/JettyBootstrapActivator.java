@@ -20,8 +20,8 @@ package org.eclipse.jetty.osgi.boot;
 
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
-import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleWatcher;
+import org.eclipse.jetty.osgi.boot.internal.webapp.ServiceWatcher;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -56,7 +56,7 @@ public class JettyBootstrapActivator implements BundleActivator
 
     private ServiceRegistration _registeredServer;
 
-    private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
+    private ServiceWatcher _jettyContextHandlerTracker;
 
     private PackageAdminServiceTracker _packageAdminServiceTracker;
 
@@ -65,7 +65,10 @@ public class JettyBootstrapActivator implements BundleActivator
     private BundleContext _bundleContext;
 
     private JettyServerServiceTracker _jettyServerServiceTracker;
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
      * tracker for the jetty ContextHandlers that are in charge of deploying the
@@ -88,20 +91,23 @@ public class JettyBootstrapActivator implements BundleActivator
         context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
 
         // track ContextHandler class instances and deploy them to one of the known Servers
-        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker();
+        _jettyContextHandlerTracker = new ServiceWatcher();
         context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
         // Create a default jetty instance right now.
         Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
 
         //Create a bundle tracker to help deploy webapps and ContextHandlers
-        WebBundleTrackerCustomizer bundleTrackerCustomizer = new WebBundleTrackerCustomizer();
+        BundleWatcher bundleTrackerCustomizer = new BundleWatcher();
         bundleTrackerCustomizer.setWaitForDefaultServer(defaultServer != null);
         _webBundleTracker =  new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, bundleTrackerCustomizer);
         bundleTrackerCustomizer.setBundleTracker(_webBundleTracker);
         bundleTrackerCustomizer.open();
     }
-
+    
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * Stop the activator.
      * 

@@ -52,8 +52,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
 {
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
     
-    private DeploymentManager _deploymentManager;
-    
+    private DeploymentManager _deploymentManager;    
     
     private ServerInstanceWrapper _serverWrapper;
     
@@ -62,7 +61,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     
     /* ------------------------------------------------------------ */
     /**
-     * BundleApp
+     * OSGiApp
      *
      *
      */

@@ -39,7 +39,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * JettyContextHandlerServiceTracker
+ * ServiceWatcher
  * 
  * When a {@link ContextHandler} is activated as an osgi service we find a jetty deployer
  * for it. The ContextHandler could be either a WebAppContext or any other derivative of 
@@ -49,9 +49,9 @@ import org.osgi.util.tracker.ServiceTracker;
  * osgi services. Instead, they can be deployed via manifest headers inside bundles. See
  * {@link WebBundleTrackerCustomizer}.
  */
-public class JettyContextHandlerServiceTracker implements ServiceListener
+public class ServiceWatcher implements ServiceListener
 {
-    private static Logger LOG = Log.getLogger(JettyContextHandlerServiceTracker.class);
+    private static Logger LOG = Log.getLogger(ServiceWatcher.class);
     
     public static final String FILTER = "(objectclass=" + ServiceProvider.class.getName() + ")";
 
@@ -65,7 +65,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     /**
      * @param registry
      */
-    public JettyContextHandlerServiceTracker() throws Exception
+    public ServiceWatcher() throws Exception
     {
         //track all instances of deployers of webapps
         Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
