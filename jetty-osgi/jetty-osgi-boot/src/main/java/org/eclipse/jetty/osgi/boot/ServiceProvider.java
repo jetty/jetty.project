@@ -21,6 +21,11 @@ package org.eclipse.jetty.osgi.boot;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.ServiceReference;
 
+/**
+ * ServiceProvider
+ *
+ * Jetty DeploymentManager Provider api for webapps or ContextHandlers that are discovered as OSGi services.
+ */
 public interface ServiceProvider
 {
     public boolean serviceAdded (ServiceReference ref, ContextHandler handler) throws Exception;

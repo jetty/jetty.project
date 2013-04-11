@@ -44,6 +44,9 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
+ * 
+ * WebappRegistrationCustomizerImpl
+ * 
  * Fix various shortcomings with the way jasper parses the tld files. Plugs the
  * JSTL tlds assuming that they are packaged with the bundle that contains the
  * JSTL classes.

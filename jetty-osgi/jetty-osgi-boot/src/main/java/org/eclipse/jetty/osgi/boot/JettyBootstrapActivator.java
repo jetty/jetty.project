@@ -21,6 +21,7 @@ package org.eclipse.jetty.osgi.boot;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
 import org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper;
@@ -29,34 +30,33 @@ import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
+ * JettyBootstrapActivator
+ * 
  * Bootstrap jetty and publish a default Server instance as an OSGi service.
  * 
  * Listen for other Server instances to be published as services and support them as deployment targets.
  * 
- * Listen for Bundles to be activated, and deploy those that represent webapps to one of the known Server instances.
+ * Listen for Bundles to be activated, and deploy those that represent webapps/ContextHandlers to one of the known Server instances.
  * 
- * <ol>
- * <li>basic servlet [ok]</li>
- * <li>basic jetty.xml [ok]</li>
- * <li>basic jetty.xml and jetty-plus.xml [ok]</li>
- * <li>basic jsp [ok]</li>
- * <li>jsp with tag-libs [ok]</li>
- * <li>test-jndi with atomikos and derby inside ${jetty.home}/lib/ext [ok]</li>
- * </ul>
  */
 public class JettyBootstrapActivator implements BundleActivator
 {
-
+    private static final Logger LOG = Log.getLogger(JettyBootstrapActivator.class);
+    
     private static JettyBootstrapActivator INSTANCE = null;
 
     public static JettyBootstrapActivator getInstance()
@@ -84,7 +84,7 @@ public class JettyBootstrapActivator implements BundleActivator
      * 
      * @param context
      */
-    public void start(BundleContext context) throws Exception
+    public void start(final BundleContext context) throws Exception
     {
         INSTANCE = this;
         _bundleContext = context;
@@ -102,12 +102,14 @@ public class JettyBootstrapActivator implements BundleActivator
         context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
         // Create a default jetty instance right now.
-        DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
+        Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
 
-        // track Bundles and deploy those that represent webapps to one of the known Servers
-        WebBundleTrackerCustomizer customizer = new WebBundleTrackerCustomizer();
-        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, customizer);
-        customizer.setAndOpenWebBundleTracker(_webBundleTracker);
+        //Create a bundle tracker to help deploy webapps and ContextHandlers
+        WebBundleTrackerCustomizer bundleTrackerCustomizer = new WebBundleTrackerCustomizer();
+        bundleTrackerCustomizer.setWaitForDefaultServer(defaultServer != null);
+        _webBundleTracker =  new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, bundleTrackerCustomizer);
+        bundleTrackerCustomizer.setBundleTracker(_webBundleTracker);
+        bundleTrackerCustomizer.open();
     }
 
     /**
@@ -120,7 +122,6 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
-
             if (_webBundleTracker != null)
             {
                 _webBundleTracker.close();
@@ -164,122 +165,4 @@ public class JettyBootstrapActivator implements BundleActivator
             INSTANCE = null;
         }
     }
-
-    /**
-     * Helper method that creates a new org.jetty.webapp.WebAppContext and
-     * registers it as an OSGi service. The tracker
-     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
-     * 
-     * @param contributor The bundle
-     * @param webappFolderPath The path to the root of the webapp. Must be a
-     *            path relative to bundle; either an absolute path.
-     * @param contextPath The context path. Must start with "/"
-     * @throws Exception
-     */
-    public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath) throws Exception
-    {
-        checkBundleActivated();
-        WebAppContext contextHandler = new WebAppContext();
-        Dictionary<String,String> dic = new Hashtable<String,String>();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
-        String requireTldBundle = (String) contributor.getHeaders().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
-        if (requireTldBundle != null)
-        {
-            dic.put(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE, requireTldBundle);
-        }
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
-    }
-
-    /**
-     * Helper method that creates a new org.jetty.webapp.WebAppContext and
-     * registers it as an OSGi service. The tracker
-     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
-     * 
-     * @param contributor The bundle
-     * @param webappFolderPath The path to the root of the webapp. Must be a
-     *            path relative to bundle; either an absolute path.
-     * @param contextPath The context path. Must start with "/"
-     * @param dic TODO: parameter description
-     * @throws Exception
-     */
-    public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath, Dictionary<String, String> dic) throws Exception
-    {
-        checkBundleActivated();
-        WebAppContext contextHandler = new WebAppContext();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
-    }
-
-    /**
-     * Helper method that creates a new skeleton of a ContextHandler and
-     * registers it as an OSGi service. The tracker
-     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
-     * 
-     * @param contributor The bundle that registers a new context
-     * @param contextFilePath The path to the file inside the bundle that
-     *            defines the context.
-     * @throws Exception
-     */
-    public static void registerContext(Bundle contributor, String contextFilePath) throws Exception
-    {
-        registerContext(contributor, contextFilePath, new Hashtable<String, String>());
-    }
-
-    /**
-     * Helper method that creates a new skeleton of a ContextHandler and
-     * registers it as an OSGi service. The tracker
-     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
-     * 
-     * @param contributor The bundle that registers a new context
-     * @param contextFilePath The path to the file inside the bundle that
-     *            defines the context.
-     * @param dic TODO: parameter description
-     * @throws Exception
-     */
-    public static void registerContext(Bundle contributor, String contextFilePath, Dictionary<String, String> dic) throws Exception
-    {
-        checkBundleActivated();
-        ContextHandler contextHandler = new ContextHandler();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH, contextFilePath);
-        dic.put(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE, Boolean.TRUE.toString());
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
-    }
-
-    public static void unregister(String contextPath)
-    {
-        // todo
-    }
-
-    /**
-     * Since org.eclipse.jetty.osgi.boot does not have a lazy activation policy
-     * when one of the static methods to register a webapp is called we should
-     * make sure that the bundle is started.
-     */
-    private static void checkBundleActivated()
-    {
-        if (INSTANCE == null)
-        {
-            Bundle thisBundle = FrameworkUtil.getBundle(JettyBootstrapActivator.class);
-            try
-            {
-                thisBundle.start();
-            }
-            catch (BundleException e)
-            {
-                // nevermind.
-            }
-        }
-    }
-
-    /**
-     * @return The bundle context for this bundle.
-     */
-    public static BundleContext getBundleContext()
-    {
-        checkBundleActivated();
-        return INSTANCE._bundleContext;
-    }
-
 }

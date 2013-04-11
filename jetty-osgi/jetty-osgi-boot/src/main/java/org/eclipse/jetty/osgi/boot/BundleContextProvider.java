@@ -43,7 +43,7 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * BundleContextProvider
  *
- * Handles deploying bundles that define a context xml file for configuring them.
+ * Handles deploying OSGi bundles that define a context xml file for configuring them.
  * 
  *
  */
@@ -136,6 +136,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             apps.add(app);
             getDeploymentManager().addApp(app);
+            added = true;
         }
 
         return added; //true if even 1 context from this bundle was added

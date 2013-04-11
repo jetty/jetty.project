@@ -18,28 +18,18 @@
 
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.ServiceProvider;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -195,6 +185,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                         try
                         {
                             added = e.getValue().serviceAdded(sr, contextHandler);
+                            System.err.println(serverName+" deployed "+contextHandler+": "+added);
                             if (added && LOG.isDebugEnabled())
                                 LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
                         }

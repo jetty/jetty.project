@@ -22,14 +22,12 @@ import java.io.File;
 import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -37,11 +35,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
 
 
 
@@ -49,7 +44,9 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * AbstractContextProvider
  *
- *
+ * Base class for DeploymentManager Providers that can deploy ContextHandlers into 
+ * Jetty that have been discovered via OSGI either as bundles or services.
+ * 
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {

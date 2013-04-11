@@ -36,6 +36,9 @@ import org.eclipse.jetty.util.resource.FileResource;
 import org.osgi.framework.Bundle;
 
 /**
+ * DefaultFileLocatorHelper
+ * 
+ * 
  * From a bundle to its location on the filesystem. Assumes the bundle is not a
  * jar.
  * 

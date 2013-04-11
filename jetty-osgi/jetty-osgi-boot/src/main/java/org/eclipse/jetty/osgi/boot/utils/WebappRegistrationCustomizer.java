@@ -24,7 +24,9 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 
 
 /**
- * Fix various shortcomings with the way jasper parses the tld files.
+ * WebappRegistrationCustomizer
+ * 
+ * Convert bundles that contain tlds into URL locations for consumption by jasper.
  */
 public interface WebappRegistrationCustomizer
 {
@@ -35,25 +37,13 @@ public interface WebappRegistrationCustomizer
      */
     public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.jasper.WebappRegistrationCustomizerImpl";
 
+
     /**
-     * TODO: right now only the jetty-jsp bundle is scanned for common taglibs.
-     * Should support a way to plug more bundles that contain taglibs.
+     * Find bundles that contain tlds and convert into URL references to their location.
      * 
-     * The jasper TldScanner expects a URLClassloader to parse a jar for the
-     * /META-INF/*.tld it may contain. We place the bundles that we know contain
-     * such tag-libraries. Please note that it will work if and only if the
-     * bundle is a jar (!) Currently we just hardcode the bundle that contains
-     * the jstl implemenation.
-     * 
-     * A workaround when the tld cannot be parsed with this method is to copy
-     * and paste it inside the WEB-INF of the webapplication where it is used.
-     * 
-     * Support only 2 types of packaging for the bundle: - the bundle is a jar
-     * (recommended for runtime.) - the bundle is a folder and contain jars in
-     * the root and/or in the lib folder (nice for PDE developement situations)
-     * Unsupported: the bundle is a jar that embeds more jars.
-     * 
-     * @return array of URLs
+     * @param manager
+     * @param fileLocator
+     * @return array of URLs representing locations of tld containing bundles
      * @throws Exception
      */
     URL[] getJarsWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;

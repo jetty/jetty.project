@@ -32,6 +32,13 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 
+/**
+ * OSGiMetaInfConfiguration
+ *
+ * Extension of standard Jetty MetaInfConfiguration class to handle OSGi bundle
+ * fragments that may also need to be scanned for META-INF info.
+ * 
+ */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(OSGiMetaInfConfiguration.class);

@@ -33,7 +33,6 @@ import java.util.jar.JarFile;
 
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -44,8 +43,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
 /**
- * Extends the webappclassloader to insert the classloader provided by the osgi
- * bundle at the same level than any other jars palced in the webappclassloader.
+ * OSGiWebappClassLoader
+ * 
+ * 
+ * Extends the webapp classloader to also use the classloader of the Bundle defining the webapp.
  */
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
@@ -79,10 +80,9 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private boolean _lookInOsgiFirst = true;
 
-    private Set<String> _libsAlreadyInManifest = new HashSet<String>();
 
     /**
-     * @param parent The parent classloader. In this case
+     * @param parent The parent classloader.
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
      * @throws IOException
@@ -106,16 +106,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         return _contributor;
     }
 
-    /**
-     * Reads the manifest. If the manifest is already configured to loads a few
-     * libs we should not add them to the classpath of the webapp. Not really
-     * important as we resolve classes through the osgi classloader first and
-     * then default on the libs of the webapp.
-     */
-    private void computeLibsAlreadyInOSGiClassLoader()
-    {
-        // TODO
-    }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
