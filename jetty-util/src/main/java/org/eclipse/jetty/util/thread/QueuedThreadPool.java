@@ -93,7 +93,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         
         if (queue==null)
             queue=new ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
-            // queue=new BlockingArrayQueue<Runnable>(_minThreads, _minThreads);
         _jobs=queue;
 
     }
