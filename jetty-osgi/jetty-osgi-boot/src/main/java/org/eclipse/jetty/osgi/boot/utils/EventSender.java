@@ -21,14 +21,18 @@ package org.eclipse.jetty.osgi.boot.utils;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-import javax.security.auth.login.FailedLoginException;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
+/**
+ * EventSender
+ *
+ * Utility class for emiting OSGi EventAdmin events
+ * 
+ */
 public class EventSender
 {    
     //OSGi Event Admin events for webapps
@@ -43,6 +47,13 @@ public class EventSender
     private Bundle _myBundle;
     private EventAdmin _eventAdmin;
     
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * 
+     */
     private EventSender ()
     {
         _myBundle = FrameworkUtil.getBundle(EventSender.class);
@@ -50,13 +61,27 @@ public class EventSender
         if (ref != null)
             _eventAdmin = (EventAdmin)_myBundle.getBundleContext().getService(ref);
     }
-
     
+    
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     public static EventSender getInstance()
     {
         return __instance;
     }
 
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param topic
+     * @param wab
+     * @param contextPath
+     */
     public  void send (String topic, Bundle wab, String contextPath)
     {
         if (topic==null || wab==null || contextPath==null)
@@ -66,6 +91,14 @@ public class EventSender
     }
     
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param topic
+     * @param wab
+     * @param contextPath
+     * @param ex
+     */
     public  void send (String topic, Bundle wab, String contextPath, Exception ex)
     {        
         if (_eventAdmin == null)

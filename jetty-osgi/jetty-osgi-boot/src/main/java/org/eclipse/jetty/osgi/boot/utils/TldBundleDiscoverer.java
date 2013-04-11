@@ -16,19 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.osgi.boot.utils;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.osgi.framework.ServiceReference;
+import java.net.URL;
+
+import org.eclipse.jetty.deploy.DeploymentManager;
+
 
 /**
- * ServiceProvider
- *
- * Jetty DeploymentManager Provider api for webapps or ContextHandlers that are discovered as OSGi services.
+ * TldBundleDiscoverer
+ * 
+ * Convert bundles that contain tlds into URL locations for consumption by jasper.
  */
-public interface ServiceProvider
+public interface TldBundleDiscoverer
 {
-    public boolean serviceAdded (ServiceReference ref, ContextHandler handler) throws Exception;
-    
-    public boolean serviceRemoved (ServiceReference ref, ContextHandler handler) throws Exception;
+    /**
+     * Find bundles that contain tlds and convert into URL references to their location.
+     * 
+     * @param manager
+     * @param fileLocator
+     * @return array of URLs representing locations of tld containing bundles
+     * @throws Exception
+     */
+    URL[] getUrlsForBundlesWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
+
 }

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.ssl;
+package org.eclipse.jetty.client.ssl;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -84,7 +84,7 @@ public class SslBytesServerTest extends SslBytesTest
     private final int idleTimeout = 2000;
     private ExecutorService threadPool;
     private Server server;
-    private int serverPort;
+    private SslContextFactory sslContextFactory;
     private SSLContext sslContext;
     private SimpleProxy proxy;
 
@@ -94,11 +94,10 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         HttpConnectionFactory httpFactory = new HttpConnectionFactory()
         {
@@ -204,7 +203,7 @@ public class SslBytesServerTest extends SslBytesTest
             }
         });
         server.start();
-        serverPort = connector.getLocalPort();
+        int serverPort = connector.getLocalPort();
 
         sslContext = sslContextFactory.getSslContext();
 
@@ -1275,6 +1274,98 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         closeClient(client);
+    }
+
+    @Test
+    public void testRequestWithContentWithRenegotiationInMiddleOfContentWhenRenegotiationIsForbidden() throws Exception
+    {
+        assumeJavaVersionSupportsTLSRenegotiations();
+
+        sslContextFactory.setRenegotiationAllowed(false);
+
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data1 = new byte[1024];
+        Arrays.fill(data1, (byte)'X');
+        String content1 = new String(data1, "UTF-8");
+        byte[] data2 = new byte[1024];
+        Arrays.fill(data2, (byte)'Y');
+        final String content2 = new String(data2, "UTF-8");
+
+        // Write only part of the body
+        automaticProxyFlow = proxy.startAutomaticFlow();
+        clientOutput.write(("" +
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes("UTF-8"));
+        clientOutput.flush();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        // Renegotiate
+        threadPool.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                client.startHandshake();
+                return null;
+            }
+        });
+
+        // Renegotiation Handshake
+        TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+        proxy.flushToServer(record);
+
+        // Renegotiation now allowed, server has closed
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+        proxy.flushToClient(record);
+
+        record = proxy.readFromServer();
+        Assert.assertNull(record);
+
+        // Write the rest of the request
+        threadPool.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                clientOutput.write(content2.getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Trying to write more application data results in an exception since the server closed
+        record = proxy.readFromClient();
+        proxy.flushToServer(record);
+        try
+        {
+            record = proxy.readFromClient();
+            Assert.assertNotNull(record);
+            proxy.flushToServer(record);
+            Assert.fail();
+        }
+        catch (IOException expected)
+        {
+        }
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
+
+        client.close();
     }
 
     @Test

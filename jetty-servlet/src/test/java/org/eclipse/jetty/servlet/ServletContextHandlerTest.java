@@ -130,8 +130,8 @@ public class ServletContextHandlerTest
         
         holder0.setInitOrder(0);
         _server.start();
-        assertEquals(2,__testServlets.get());
-        assertThat(holder0.getServletInstance(),nullValue());
+        assertEquals(3,__testServlets.get());
+        assertThat(holder0.getServletInstance(),notNullValue(Servlet.class));
         _server.stop();
         assertEquals(0,__testServlets.get());
         

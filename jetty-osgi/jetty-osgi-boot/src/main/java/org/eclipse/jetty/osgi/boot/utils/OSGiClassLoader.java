@@ -78,8 +78,7 @@ public class OSGiClassLoader extends URLClassLoader
         }
 
         if (url == null)
-        {
-            
+        {           
             url = _osgiBundleClassLoader.getResource(name);
 
             if (url == null && name.startsWith("/"))

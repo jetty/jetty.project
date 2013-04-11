@@ -142,14 +142,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     protected void onIdleExpired(TimeoutException timeout)
     {
-        if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
-        {
-            boolean output_shutdown=isOutputShutdown();
-            _fillInterest.onFail(timeout);
-            _writeFlusher.onFail(timeout);
-            if (output_shutdown)
-                close();
-        }
+        boolean output_shutdown=isOutputShutdown();
+        _fillInterest.onFail(timeout);
+        _writeFlusher.onFail(timeout);
+        if (output_shutdown)
+            close();
     }
 
     @Override

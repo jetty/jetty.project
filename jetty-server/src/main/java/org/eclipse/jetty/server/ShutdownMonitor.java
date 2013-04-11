@@ -146,6 +146,7 @@ public class ShutdownMonitor
         {
             if (isAlive())
             {
+                // TODO why are we reentrant here?
                 if (DEBUG)
                     System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
@@ -157,7 +158,8 @@ public class ShutdownMonitor
             {
                 return;
             }
-            System.err.println("Starting ShutdownMonitorThread");
+            if (DEBUG)
+                System.err.println("Starting ShutdownMonitorThread");
             super.start();
         }
         
@@ -352,7 +354,9 @@ public class ShutdownMonitor
         {
             if (thread != null && thread.isAlive())
             {
-                System.err.printf("ShutdownMonitorThread already started");
+                // TODO why are we reentrant here?
+                if (DEBUG)
+                    System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
             }
          

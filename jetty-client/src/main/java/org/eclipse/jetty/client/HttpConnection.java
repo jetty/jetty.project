@@ -191,25 +191,17 @@ public class HttpConnection extends AbstractConnection implements Connection
                     params.append("&");
             }
 
-            // Behave as a GET, adding the params to the path, if it's a POST with some content
-            if (method == HttpMethod.POST && request.getContent() != null)
-                method = HttpMethod.GET;
-
-            switch (method)
+            // POST with no content, send parameters as body
+            if (method == HttpMethod.POST && request.getContent() == null)
             {
-                case GET:
-                {
-                    path += "?";
-                    path += params.toString();
-                    request.path(path);
-                    break;
-                }
-                case POST:
-                {
-                    request.header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString());
-                    request.content(new StringContentProvider(params.toString()));
-                    break;
-                }
+                request.header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString());
+                request.content(new StringContentProvider(params.toString()));
+            }
+            else
+            {
+                path += "?";
+                path += params.toString();
+                request.path(path);
             }
         }
 

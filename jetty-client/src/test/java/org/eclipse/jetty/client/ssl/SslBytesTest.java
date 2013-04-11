@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.ssl;
+package org.eclipse.jetty.client.ssl;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -115,8 +115,8 @@ public abstract class SslBytesTest
 
         public void start() throws Exception
         {
-//            serverSocket = new ServerSocket(5871);
-            serverSocket = new ServerSocket(0);
+            serverSocket = new ServerSocket(47009);
+//            serverSocket = new ServerSocket(0);
             Thread acceptor = new Thread(this);
             acceptor.start();
             server = new Socket(serverHost, serverPort);

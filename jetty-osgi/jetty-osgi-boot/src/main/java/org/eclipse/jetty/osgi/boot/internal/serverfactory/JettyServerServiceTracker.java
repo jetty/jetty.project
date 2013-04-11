@@ -32,8 +32,11 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 
 /**
- * Deploy the jetty server instances when they are registered as an OSGi
- * service.
+ * JettyServerServiceTracker
+ * 
+ * Tracks instances of Jetty Servers, and configures them so that they can deploy 
+ * webapps or ContextHandlers discovered from the OSGi environment.
+ * 
  */
 public class JettyServerServiceTracker implements ServiceListener, IManagedJettyServerRegistry
 {

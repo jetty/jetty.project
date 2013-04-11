@@ -57,7 +57,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
     {
         super(filename);
         if (queue==null)
-            queue=new ConcurrentArrayBlockingQueue.Bounded<String>(1024);
+            queue=new ConcurrentArrayBlockingQueue.Unbounded<String>();
         _queue=queue;
     }
 

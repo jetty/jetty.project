@@ -65,6 +65,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -280,7 +281,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      * @param vhosts
      *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.  Hosts may start with '@', in which case they
+     *            will match the {@link Connector#getName()} for the request.
      */
     public void setVirtualHosts(String[] vhosts)
     {
@@ -872,18 +874,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             boolean match = false;
 
-            for (int i = 0; !match && i < _vhosts.length; i++)
+            loop: for (String contextVhost:_vhosts)
             {
-                String contextVhost = _vhosts[i];
-                if (contextVhost == null)
+                if (contextVhost == null || contextVhost.length()==0)
                     continue;
-                if (contextVhost.startsWith("*."))
+                char c=contextVhost.charAt(0);
+                switch (c)
                 {
-                    // wildcard only at the beginning, and only for one additional subdomain level
-                    match = contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - 2);
+                    case '*':
+                        if (contextVhost.startsWith("*."))
+                            // wildcard only at the beginning, and only for one additional subdomain level
+                            match = contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - 2);
+                        break;
+                    case '@':
+                        String name=baseRequest.getHttpChannel().getConnector().getName();
+                        match=name!=null && contextVhost.length()==name.length()+1 && contextVhost.endsWith(name);
+                        break;
+                    default:
+                        match = contextVhost.equalsIgnoreCase(vhost);
                 }
-                else
-                    match = contextVhost.equalsIgnoreCase(vhost);
+                
+                if (match)
+                    break loop;
+                
             }
             if (!match)
                 return false;

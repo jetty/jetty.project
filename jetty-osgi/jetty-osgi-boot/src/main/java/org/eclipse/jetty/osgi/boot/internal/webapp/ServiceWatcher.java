@@ -18,28 +18,18 @@
 
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.ServiceProvider;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -49,7 +39,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * JettyContextHandlerServiceTracker
+ * ServiceWatcher
  * 
  * When a {@link ContextHandler} is activated as an osgi service we find a jetty deployer
  * for it. The ContextHandler could be either a WebAppContext or any other derivative of 
@@ -59,9 +49,9 @@ import org.osgi.util.tracker.ServiceTracker;
  * osgi services. Instead, they can be deployed via manifest headers inside bundles. See
  * {@link WebBundleTrackerCustomizer}.
  */
-public class JettyContextHandlerServiceTracker implements ServiceListener
+public class ServiceWatcher implements ServiceListener
 {
-    private static Logger LOG = Log.getLogger(JettyContextHandlerServiceTracker.class);
+    private static Logger LOG = Log.getLogger(ServiceWatcher.class);
     
     public static final String FILTER = "(objectclass=" + ServiceProvider.class.getName() + ")";
 
@@ -75,7 +65,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     /**
      * @param registry
      */
-    public JettyContextHandlerServiceTracker() throws Exception
+    public ServiceWatcher() throws Exception
     {
         //track all instances of deployers of webapps
         Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
@@ -195,6 +185,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                         try
                         {
                             added = e.getValue().serviceAdded(sr, contextHandler);
+                            System.err.println(serverName+" deployed "+contextHandler+": "+added);
                             if (added && LOG.isDebugEnabled())
                                 LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
                         }

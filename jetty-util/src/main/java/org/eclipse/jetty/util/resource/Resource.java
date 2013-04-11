@@ -218,8 +218,7 @@ public abstract class Resource implements ResourceFactory
     {
         URL url=null;
         // Try to format as a URL?
-        ClassLoader
-            loader=Thread.currentThread().getContextClassLoader();
+        ClassLoader loader=Thread.currentThread().getContextClassLoader();
         if (loader!=null)
         {
             try
@@ -251,7 +250,7 @@ public abstract class Resource implements ResourceFactory
         {
             url=ClassLoader.getSystemResource(resource);
             if (url==null && resource.startsWith("/"))
-                url=loader.getResource(resource.substring(1));
+                url=ClassLoader.getSystemResource(resource.substring(1));
         }
         
         if (url==null)

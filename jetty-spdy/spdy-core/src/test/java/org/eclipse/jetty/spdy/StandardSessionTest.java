@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.HashSet;
@@ -47,12 +38,14 @@ import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
+import org.eclipse.jetty.spdy.frames.SettingsFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -73,6 +66,15 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
@@ -457,7 +459,30 @@ public class StandardSessionTest
         stream.headers(new HeadersInfo(headers, true));
 
         verify(controller, times(3)).write(any(ByteBuffer.class), any(Callback.class));
+    }
 
+    @Test
+    public void testMaxConcurrentStreams() throws InterruptedException
+    {
+        final CountDownLatch failedBecauseMaxConcurrentStreamsExceeded = new CountDownLatch(1);
+
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 0));
+        SettingsFrame settingsFrame = new SettingsFrame(VERSION, (byte)0, settings);
+        session.onControlFrame(settingsFrame);
+
+        PushSynInfo pushSynInfo = new PushSynInfo(1, new PushInfo(new Fields(), false));
+        session.syn(pushSynInfo, null, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                failedBecauseMaxConcurrentStreamsExceeded.countDown();
+            }
+        });
+
+        assertThat("Opening push stream failed because maxConcurrentStream is exceeded",
+                failedBecauseMaxConcurrentStreamsExceeded.await(5, TimeUnit.SECONDS), is(true));
     }
 
     @Test

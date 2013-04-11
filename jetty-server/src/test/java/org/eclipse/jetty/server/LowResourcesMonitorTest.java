@@ -80,13 +80,14 @@ public class LowResourcesMonitorTest
     @Test
     public void testLowOnThreads() throws Exception
     {
+        Thread.sleep(1200);
         _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
         Thread.sleep(1200);
         Assert.assertFalse(_lowResourcesMonitor.isLowOnResources());
         
         final CountDownLatch latch = new CountDownLatch(1);
         
-        for (int i=0;i<20;i++)
+        for (int i=0;i<100;i++)
         {
             _threadPool.dispatch(new Runnable()
             {
@@ -110,7 +111,6 @@ public class LowResourcesMonitorTest
         
         latch.countDown();
         Thread.sleep(1200);
-        System.err.println(_threadPool.dump());
         Assert.assertFalse(_lowResourcesMonitor.isLowOnResources());      
     }
     

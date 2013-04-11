@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 
 /**
+ * DefaultBundleClassLoaderHelper
+ * 
+ * 
  * Default implementation of the BundleClassLoaderHelper. Uses introspection to
  * support equinox-3.5 and felix-2.0.0
  */

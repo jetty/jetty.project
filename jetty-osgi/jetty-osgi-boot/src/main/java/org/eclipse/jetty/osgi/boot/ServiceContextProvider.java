@@ -38,7 +38,9 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * ServiceContextProvider
  *
- *
+ * Jetty DeploymentManager Provider that is able to deploy ContextHandlers discovered via OSGi as services.
+ * 
+ * 
  */
 public class ServiceContextProvider extends AbstractContextProvider implements ServiceProvider
 { 
