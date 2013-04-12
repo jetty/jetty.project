@@ -130,28 +130,23 @@ public class InputStreamResponseListener extends Response.Listener.Empty
     }
 
     @Override
-    public void onFailure(Response response, Throwable failure)
-    {
-        LOG.debug("Queuing failure {} {}", FAILURE, failure);
-        queue.offer(FAILURE);
-        responseLatch.countDown();
-        resultLatch.countDown();
-        this.failure = failure;
-        signal();
-    }
-
-    @Override
-    public void onSuccess(Response response)
-    {
-        LOG.debug("Queuing end of content {}{}", EOF, "");
-        queue.offer(EOF);
-    }
-
-    @Override
     public void onComplete(Result result)
     {
         this.result = result;
+        if (result.isSucceeded())
+        {
+            LOG.debug("Queuing end of content {}{}", EOF, "");
+            queue.offer(EOF);
+        }
+        else
+        {
+            LOG.debug("Queuing failure {} {}", FAILURE, failure);
+            queue.offer(FAILURE);
+            this.failure = result.getFailure();
+            responseLatch.countDown();
+        }
         resultLatch.countDown();
+        signal();
     }
 
     protected boolean await()
@@ -176,7 +171,7 @@ public class InputStreamResponseListener extends Response.Listener.Empty
     {
         synchronized (this)
         {
-            notify();
+            notifyAll();
         }
     }
 
