@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ReadPendingException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -726,6 +727,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 _cannotAcceptMoreAppDataToFlush = true;
                                 getEndPoint().flush(_encryptedOutput);
+                                getEndPoint().shutdownOutput();
                                 // If we failed to flush the close handshake then we will just pretend that
                                 // the write has progressed normally and let a subsequent call to flush
                                 // (or WriteFlusher#onIncompleteFlushed) to finish writing the close handshake.
@@ -735,6 +737,7 @@ public class SslConnection extends AbstractConnection
                             }
 
                             // otherwise we have written, and the caller will close the underlying connection
+                            getEndPoint().shutdownOutput();
                             return allConsumed;
 
                         case BUFFER_UNDERFLOW:
@@ -831,15 +834,39 @@ public class SslConnection extends AbstractConnection
         @Override
         public void shutdownOutput()
         {
-            _sslEngine.closeOutbound();
-            try
+            if (isInputShutdown())
             {
-                flush(BufferUtil.EMPTY_BUFFER);
-            }
-            catch (IOException e)
-            {
-                LOG.ignore(e);
+                // Aggressively close because inbound close handshake already processed
+                // and most impls are expecting a FIN rather than a reply. When a reply is sent, many impls will do
+                // a RST.
                 getEndPoint().close();
+            }
+            else
+            {
+                try
+                {
+                    _sslEngine.closeOutbound();
+                    flush(BufferUtil.EMPTY_BUFFER);
+                    fillInterested(new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            getEndPoint().close();
+                        }
+                        
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            getEndPoint().close();                            
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    LOG.ignore(e);
+                    getEndPoint().close();
+                }
             }
         }
 
