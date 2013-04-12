@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadPendingException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -426,7 +425,7 @@ public class SslConnection extends AbstractConnection
                             return true;
                         }
                     }
-                    else
+                    else if (!isOutputShutdown())
                     {
                         // Normal readable callback
                         // Get called back on onfillable when then is more data to fill
@@ -613,8 +612,21 @@ public class SslConnection extends AbstractConnection
                                         // maybe we will fill some more on a retry
                                         continue;
                                     }
-                                    // we need to wait for more net data
-                                    return 0;
+                                    else
+                                    {
+                                        if (isOutputShutdown())
+                                        {
+                                            // We have sent the SSL Close Alert, and we read 0 bytes:
+                                            // it's a peer that it is not sending the FIN, so we just
+                                            // return -1 as if we did, so the connection will be closed.
+                                            return -1;
+                                        }
+                                        else
+                                        {
+                                            // we need to wait for more net data
+                                            return 0;
+                                        }
+                                    }
 
                                 case FINISHED:
                                     throw new IllegalStateException();
@@ -735,9 +747,11 @@ public class SslConnection extends AbstractConnection
                                 if (BufferUtil.hasContent(_encryptedOutput))
                                     return false;
                             }
-
                             // otherwise we have written, and the caller will close the underlying connection
-                            getEndPoint().shutdownOutput();
+                            else
+                            {
+                                getEndPoint().shutdownOutput();
+                            }
                             return allConsumed;
 
                         case BUFFER_UNDERFLOW:
@@ -834,11 +848,15 @@ public class SslConnection extends AbstractConnection
         @Override
         public void shutdownOutput()
         {
-            if (isInputShutdown())
+            boolean ishut = isInputShutdown();
+            if (DEBUG)
+                LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, isOutputShutdown(), ishut);
+            if (ishut)
             {
-                // Aggressively close because inbound close handshake already processed
-                // and most impls are expecting a FIN rather than a reply. When a reply is sent, many impls will do
-                // a RST.
+                // Aggressively close, since inbound close alert has already been processed
+                // and the TLS specification allows to close the connection directly, which
+                // is what most other implementations expect: a FIN rather than a TLS close
+                // reply. If a TLS close reply is sent, most implementation send a RST.
                 getEndPoint().close();
             }
             else
@@ -847,20 +865,6 @@ public class SslConnection extends AbstractConnection
                 {
                     _sslEngine.closeOutbound();
                     flush(BufferUtil.EMPTY_BUFFER);
-                    fillInterested(new Callback()
-                    {
-                        @Override
-                        public void succeeded()
-                        {
-                            getEndPoint().close();
-                        }
-                        
-                        @Override
-                        public void failed(Throwable x)
-                        {
-                            getEndPoint().close();                            
-                        }
-                    });
                 }
                 catch (Exception e)
                 {
