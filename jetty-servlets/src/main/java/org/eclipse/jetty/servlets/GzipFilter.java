@@ -26,7 +26,6 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -34,10 +33,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -45,7 +42,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.servlets.gzip.GzipOutputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -129,6 +126,9 @@ public class GzipFilter extends UserAgentFilter
     protected int _minGzipSize=256;
     protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
     protected boolean _deflateNoWrap = true;
+    
+    // non-static, as other GzipFilter instances may have different configurations
+    protected final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
     protected final Set<String> _methods=new HashSet<String>();
     protected Set<String> _excludedAgents;
@@ -403,64 +403,60 @@ public class GzipFilter extends UserAgentFilter
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
-        if (compressionType==null)
+        wrappedResponse = new CompressedResponseWrapper(request,response)
         {
-            wrappedResponse = new CompressedResponseWrapper(request,response)
+            @Override
+            protected AbstractCompressedStream newCompressedStream(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
+                return new AbstractCompressedStream(compressionType,request,this,_vary)
                 {
-                    return new AbstractCompressedStream(null,request,this,_vary)
+                    private Deflater deflater;
+
+                    @Override
+                    protected DeflaterOutputStream createStream() throws IOException
                     {
-                        @Override
-                        protected DeflaterOutputStream createStream() throws IOException
+                        if (compressionType == null)
                         {
                             return null;
                         }
-                    };
-                }
-            };
-        }
-        else if (compressionType.equals(GZIP))
-        {
-            wrappedResponse = new CompressedResponseWrapper(request,response)
-            {
-                @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
-                {
-                    return new AbstractCompressedStream(compressionType,request,this,_vary)
-                    {
-                        @Override
-                        protected DeflaterOutputStream createStream() throws IOException
+                        
+                        // acquire deflater instance
+                        deflater = _deflater.get();
+                        if (deflater == null)
                         {
-                            return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
+                            deflater = new Deflater(_deflateCompressionLevel,_deflateNoWrap);
                         }
-                    };
-                }
-            };
-        }
-        else if (compressionType.equals(DEFLATE))
-        {
-            wrappedResponse = new CompressedResponseWrapper(request,response)
-            {
-                @Override
-                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response) throws IOException
-                {
-                    return new AbstractCompressedStream(compressionType,request,this,_vary)
-                    {
-                        @Override
-                        protected DeflaterOutputStream createStream() throws IOException
+                        else
                         {
-                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel,_deflateNoWrap));
+                            deflater.reset();
                         }
-                    };
-                }
-            };
-        } 
-        else
-        {
-            throw new IllegalStateException(compressionType + " not supported");
-        }
+                        
+                        switch (compressionType)
+                        {
+                            case GZIP:
+                                return new GzipOutputStream(_response.getOutputStream(),deflater,_bufferSize);
+                            case DEFLATE:
+                                return new DeflaterOutputStream(_response.getOutputStream(),deflater,_bufferSize);
+                        }
+                        throw new IllegalStateException(compressionType + " not supported");
+                    }
+
+                    @Override
+                    public void finish() throws IOException
+                    {
+                        super.finish();
+                        if (deflater != null)
+                        {
+                            // release deflater instance
+                            if (_deflater.get() == null)
+                            {
+                                _deflater.set(deflater);
+                            }
+                        }
+                    }
+                };
+            }
+        };
         configureWrappedResponse(wrappedResponse);
         return wrappedResponse;
     }
