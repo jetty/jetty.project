@@ -359,26 +359,32 @@ public class DeferredAuthentication implements Authentication.Deferred
     /* ------------------------------------------------------------ */
     private static ServletOutputStream __nullOut = new ServletOutputStream()
     {
+        @Override
         public void write(int b) throws IOException
         {
         }
-
+        
+        @Override
         public void print(String s) throws IOException
         {
         }
-
+        
+        @Override
         public void println(String s) throws IOException
         {
         }
 
-        public boolean canWrite()
-        {
-            return false;
-        }
-
+     
+        @Override
         public void setWriteListener(WriteListener writeListener)
         {
             
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return false;
         }
     };
 

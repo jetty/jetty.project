@@ -56,8 +56,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
-import javax.servlet.http.ProtocolHandler;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -2203,10 +2203,14 @@ public class Request implements HttpServletRequest
     }
 
 
-    /* ------------------------------------------------------------ */
+   
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
+     */
     @Override
-    public void upgrade(ProtocolHandler arg0) throws IOException
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // TODO Auto-generated method stub       
+        // TODO Auto-generated method stub
+        return null;
     }
 }

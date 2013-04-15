@@ -217,6 +217,16 @@ public class MultiPartInputStreamParser
            }
         }
 
+        
+        /** 
+         * @see javax.servlet.http.Part#getSubmittedFileName()
+         */
+        @Override
+        public String getSubmittedFileName()
+        {
+            return getContentDispositionFilename();
+        }
+
         public byte[] getBytes()
         {
             if (_bout!=null)

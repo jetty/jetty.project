@@ -31,8 +31,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
-import javax.servlet.http.ProtocolHandler;
+
 
 /* ------------------------------------------------------------ */
 /** 
@@ -212,12 +213,25 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
 
     }
 
-    
+
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
+     */
     @Override
-    public void upgrade(ProtocolHandler handler) throws IOException
+    public String changeSessionId()
     {
-        // TODO Auto-generated method stub
-        
+        // TODO 3.1 Auto-generated method stub
+        return null;
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
+     */
+    @Override
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
+    {
+        // TODO 3.1 Auto-generated method stub
+        return null;
     }
 
 

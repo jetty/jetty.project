@@ -353,17 +353,18 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     }
 
     @Override
-    public boolean canWrite()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
     public void setWriteListener(WriteListener writeListener)
     {
-        // TODO Auto-generated method stub
+        // TODO 3.1 Auto-generated method stub
         
+    }
+    
+
+    @Override
+    public boolean isReady()
+    {
+        // TODO 3.1 Auto-generated method stub
+        return false;
     }
 
     /**

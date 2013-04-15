@@ -2525,6 +2525,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             LOG.warn(__unimplmented);
         }
+
+        /** 
+         * @see javax.servlet.ServletContext#getVirtualServerName()
+         */
+        @Override
+        public String getVirtualServerName()
+        {
+            // TODO 3.1 Auto-generated method stub
+            return null;
+        }
     }
     
     

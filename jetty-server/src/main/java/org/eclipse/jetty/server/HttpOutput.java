@@ -347,20 +347,14 @@ public class HttpOutput extends ServletOutputStream
             BufferUtil.clear(_aggregate);
     }
 
-    @Override
-    public boolean canWrite()
-    {
-        // TODO implement behaviour
-        // return true if data can be written without blocking
-        return false;
-    }
+  
 
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
         _writeListener = writeListener;
         
-        // TODO implement behaviour
+        // TODO 3.1 implement behaviour
         /*
         Registering a WriteListener will start non-blocking IO. It is illegal to switch to
         the traditional blocking IO at that point.
@@ -370,7 +364,15 @@ public class HttpOutput extends ServletOutputStream
         called AND has returned false AND a writeListener has previously been
         set. 
          */
-    
+    }
 
+    /** 
+     * @see javax.servlet.ServletOutputStream#isReady()
+     */
+    @Override
+    public boolean isReady()
+    {
+        // TODO 3.1 Auto-generated method stub
+        return false;
     }
 }
