@@ -843,6 +843,9 @@ public class ServletContextHandler extends ContextHandler
         {
             if (isStarted())
                 throw new IllegalStateException();
+            
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
@@ -877,6 +880,9 @@ public class ServletContextHandler extends ContextHandler
         {
             if (isStarted())
                 throw new IllegalStateException();
+            
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
@@ -913,6 +919,9 @@ public class ServletContextHandler extends ContextHandler
             if (isStarted())
                 throw new IllegalStateException();
 
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -948,6 +957,9 @@ public class ServletContextHandler extends ContextHandler
             if (!isStarting())
                 throw new IllegalStateException();
 
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -983,6 +995,9 @@ public class ServletContextHandler extends ContextHandler
             if (!isStarting())
                 throw new IllegalStateException();
 
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -1018,7 +1033,10 @@ public class ServletContextHandler extends ContextHandler
         {
             if (!isStarting())
                 throw new IllegalStateException();
-
+            
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
