@@ -21,10 +21,14 @@ package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.jetty.osgi.boot.BundleProvider;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -36,52 +40,127 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * WebBundleTrackerCustomizer
+ * BundleWatcher
  * 
  * 
- * Support bundles that declare a webpp or context directly through headers in their
- * manifest. They will be deployed to the default jetty Server instance.
- * 
- * If you wish to deploy a context or webapp to a different jetty Server instance,
- * register your context/webapp as an osgi service, and set the property OSGiServerConstants.MANAGED_JETTY_SERVER_NAME
- * with the name of the Server instance you wish to depoy to.
+ * Tracks the installation and removal of Bundles in the OSGi environment. Any bundles
+ * that are added are passed to the set of Jetty DeploymentManager providers to see if
+ * the bundle should be deployed as a webapp or ContextHandler into Jetty.
  * 
  * @author hmalphettes
  */
-public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
+public class BundleWatcher implements BundleTrackerCustomizer
 {
-    private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
+    private static final Logger LOG = Log.getLogger(BundleWatcher.class);
     
-    public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
-    public static final String FILTER = "(&(objectclass=" + BundleProvider.class.getName() + ")"+
-                                          "("+OSGiServerConstants.MANAGED_JETTY_SERVER_NAME+"="+OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME+"))";
+    public static Collection<TldBundleDiscoverer> JSP_REGISTRATION_HELPERS = new ArrayList<TldBundleDiscoverer>();
 
+
+    public static final String FILTER = "(objectclass=" + BundleProvider.class.getName() + ")";
     private ServiceTracker _serviceTracker;
     private BundleTracker _bundleTracker;
+    private boolean _waitForDefaultServer = true;
+    private boolean _defaultServerReady = false;
+    private Bundle _bundle = null;
+    
+ 
     
     /* ------------------------------------------------------------ */
     /**
      * @throws Exception
      */
-    public WebBundleTrackerCustomizer ()
-    throws Exception
+    public BundleWatcher() throws Exception
     {
-        Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
-        
-        //track all instances of deployers of webapps/contexts as bundles       
-        _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null) {
-            public Object addingService(ServiceReference reference) {
-                Object object = super.addingService(reference);
-                LOG.debug("Deployer registered {}", reference);
-                openBundleTracker();
-                return object;
-            }
-        };
+        _bundle = FrameworkUtil.getBundle(this.getClass());
+        //Track all BundleProviders (Jetty DeploymentManager Providers that can deploy bundles)
+        _serviceTracker = new ServiceTracker(_bundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
         _serviceTracker.open();
-
     }
     
     
+    /* ------------------------------------------------------------ */
+    public boolean isWaitForDefaultServer()
+    {
+        return _waitForDefaultServer;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    public void setWaitForDefaultServer(boolean waitForDefaultServer)
+    {
+        _waitForDefaultServer = waitForDefaultServer;
+    }
+
+    
+    /* ------------------------------------------------------------ */
+    public void setBundleTracker (BundleTracker bundleTracker)
+    {
+        _bundleTracker = bundleTracker;
+    }
+
+    
+    /* ------------------------------------------------------------ */
+    public void open () throws Exception
+    {
+        if (_waitForDefaultServer && !_defaultServerReady)
+        {
+            String filter = "(&(objectclass=" + BundleProvider.class.getName() + ")"+
+                    "("+OSGiServerConstants.MANAGED_JETTY_SERVER_NAME+"="+OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME+"))";
+            
+            ServiceTracker defaultServerTracker = new ServiceTracker(_bundle.getBundleContext(), 
+                                                                     FrameworkUtil.createFilter(filter),null)
+            {
+                public Object addingService(ServiceReference reference)
+                {
+                    try
+                    {
+                        Object object = super.addingService(reference);
+                        LOG.debug("Default Jetty Server registered {}", reference);
+                        _defaultServerReady = true;
+                        openBundleTracker();
+                        return object;
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }
+            };
+            defaultServerTracker.open();
+        }
+        else
+            openBundleTracker();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param managedServerName
+     * @return
+     */
+    public Map<ServiceReference, BundleProvider> getDeployers(String managedServerName)
+    {
+        if (managedServerName == null)
+            managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
+        
+        Map<ServiceReference, BundleProvider> candidates = new HashMap<ServiceReference, BundleProvider>();
+        
+        ServiceReference[] references = _serviceTracker.getServiceReferences();
+        if (references != null)
+        {
+            for (ServiceReference ref:references)
+            {
+                String name = (String)ref.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);                
+                if (managedServerName.equalsIgnoreCase(name))
+                {
+                    BundleProvider candidate = (BundleProvider)_serviceTracker.getService(ref);
+                    if (candidate != null)
+                        candidates.put(ref, candidate);
+                }
+            }
+        }
+       return candidates;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * A bundle is being added to the <code>BundleTracker</code>.
@@ -138,8 +217,6 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
      */
     public void modifiedBundle(Bundle bundle, BundleEvent event, Object object)
     {
-        // nothing the web-bundle was already track. something changed.
-        // we only reload the webapps if the bundle is stopped and restarted.
         if (bundle.getState() == Bundle.STOPPING || bundle.getState() == Bundle.ACTIVE)
         {
             unregister(bundle);
@@ -171,35 +248,40 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     }
 
     
+    protected void openBundleTracker()
+    {
+        _bundleTracker.open();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param bundle
-     * @return true if this bundle in indeed a web-bundle.
+     * @return true if this bundle can be deployed into Jetty
      */
     private boolean register(Bundle bundle)
     {
         if (bundle == null)
             return false;
 
-        //It might be a bundle that we can deploy to our default jetty server instance
+        //It might be a bundle that is deployable by Jetty.
+        //Use any named Server instance provided, defaulting to the default Server instance if none supplied
         boolean deployed = false;
-        Object[] deployers = _serviceTracker.getServices();
-        if (deployers != null)
+        String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+        Map<ServiceReference, BundleProvider> candidates = getDeployers(serverName);
+        if (candidates != null)
         {
-            int i=0;
-            while (!deployed && i<deployers.length)
+            Iterator<Entry<ServiceReference, BundleProvider>> itor = candidates.entrySet().iterator();
+            while (!deployed && itor.hasNext())
             {
-
-                BundleProvider p = (BundleProvider)deployers[i];
+                Entry<ServiceReference, BundleProvider> e = itor.next();
                 try
-                {
-                    deployed = p.bundleAdded(bundle);
+                {           
+                    deployed = e.getValue().bundleAdded(bundle);
                 }
                 catch (Exception x)
                 {
                     LOG.warn("Error deploying bundle for jetty context", x);
                 }
-                i++;
             }
         }
 
@@ -212,39 +294,24 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
      */
     private void unregister(Bundle bundle)
     { 
-        Object[] deployers = _serviceTracker.getServices();
         boolean undeployed = false;
-        if (deployers != null)
+        String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
+        Map<ServiceReference, BundleProvider> candidates = getDeployers(serverName);
+        if (candidates != null)
         {
-            int i=0;
-            while (!undeployed && i<deployers.length)
+            Iterator<Entry<ServiceReference, BundleProvider>> itor = candidates.entrySet().iterator();
+            while (!undeployed && itor.hasNext())
             {
+                Entry<ServiceReference, BundleProvider> e = itor.next();
                 try
                 {
-                    undeployed = ((BundleProvider)deployers[i++]).bundleRemoved(bundle);
+                    undeployed = e.getValue().bundleRemoved(bundle);
                 }
                 catch (Exception x)
                 {
-                    LOG.warn("Error undeploying bundle for jetty context", x);
+                    LOG.warn("Error undeploying Bundle representing jetty deployable ", x);
                 }
             }
         }
     }
-
-    public void setAndOpenWebBundleTracker(BundleTracker bundleTracker) {
-        if(_bundleTracker == null) {
-            _bundleTracker = bundleTracker;
-            LOG.debug("Bundle tracker is set");
-            openBundleTracker();
-        }
-    }
-
-    private void openBundleTracker() {
-        if(_bundleTracker != null && _serviceTracker.getServices() != null &&
-                _serviceTracker.getServices().length > 0) {
-            _bundleTracker.open();
-            LOG.debug("Bundle tracker has been opened");
-        }
-    }
-
 }

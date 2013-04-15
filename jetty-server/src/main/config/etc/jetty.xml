@@ -47,11 +47,6 @@
         <Arg name="minThreads" type="int">10</Arg>
         <Arg name="maxThreads" type="int">200</Arg>
         <Arg name="idleTimeout" type="int">60000</Arg>
-        <!-- Arg >
-          <New class="org.eclipse.jetty.util.ConcurrentArrayBlockingQueue$Unbounded">
-            <Arg type='int'>32</Arg>
-          </New>
-        </Arg --> 
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>

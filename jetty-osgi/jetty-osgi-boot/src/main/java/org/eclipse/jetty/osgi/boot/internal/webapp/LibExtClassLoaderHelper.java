@@ -33,6 +33,9 @@ import java.util.Set;
 import org.eclipse.jetty.server.Server;
 
 /**
+ * LibExtClassLoaderHelper
+ * 
+ * 
  * Helper to create a URL class-loader with the jars inside
  * ${jetty.home}/lib/ext and ${jetty.home}/resources. In an ideal world, every
  * library is an OSGi bundle that does loads nicely. To support standard jars or
@@ -40,57 +43,40 @@ import org.eclipse.jetty.server.Server;
  * inserting the jars in the usual jetty/lib/ext folders in the proper classpath
  * for the webapps.
  * <p>
- * Also the folder resources typically contains central configuration files for
- * things like: log config and others. We enable fragments to register classes
- * that are called back and passed those resources to do what they need to do.
+ * The drawback is that those jars will not be available in the OSGi
+ * classloader.
  * </p>
  * <p>
- * For example the test-jndi webapplication depends on derby, derbytools,
- * atomikos none of them are osgi bundles. we can either re-package them or we
- * can place them in the usual lib/ext. <br/>
- * In fact jasper's jsp libraries should maybe place in lib/ext too.
- * </p>
- * <p>
- * The drawback is that those libraries will not be available in the OSGi
- * classloader. Note that we could have setup those jars as embedded jars of the
- * current bundle. However, we would need to know in advance what are those jars
- * which was not acceptable. Also having those jars in a URLClassLoader seem to
- * be required for some cases. For example jaspers' TldLocationsCache (replaced
- * by TldScanner for servlet-3.0). <br/>
- * Also all the dependencies of those libraries must be resolvable directly from
- * the JettyBootstrapActivator bundle as it is set as the parent classloader. For
- * example: if atomikos is placed in lib/ext it will work if and only if
- * JettyBootstrapActivator import the necessary packages from javax.naming*,
- * javax.transaction*, javax.mail* etc Most of the common cases of javax are
- * added as optional import packages into jetty bootstrapper plugin. When there
- * are not covered: please make a request or create a fragment or register a
- * bundle with a buddy-policy onto the jetty bootstrapper..
- * </p>
- * <p>
- * Alternatives to placing jars in lib/ext
+ * Alternatives to placing jars in lib/ext:
  * <ol>
- * <li>Bundle the jars in an osgi bundle. Have the webapp(s) that context
- * depends on them depend on that bundle. Things will go well for jetty.</li>
+ * <li>Bundle the jars in an osgi bundle. Have the webapp(s) that need these jars
+ * depend on that bundle.</li>
  * <li>Bundle those jars in an osgi bundle-fragment that targets the
  * jetty-bootstrap bundle</li>
  * <li>Use equinox Buddy-Policy: register a buddy of the jetty bootstrapper
- * bundle. (least favorite: it will work only on equinox)</li>
+ * bundle. (Note: it will work only on equinox)</li>
  * </ol>
  * </p>
  */
 public class LibExtClassLoaderHelper
 {
-
+    /* ------------------------------------------------------------ */
     /**
-     * Class called back
+     * IFilesInJettyHomeResourcesProcessor
+     * 
+     * Interface for callback impls
      */
     public interface IFilesInJettyHomeResourcesProcessor
     {
         void processFilesInResourcesFolder(File jettyHome, Map<String, File> filesInResourcesFolder);
     }
 
+    
+    
     public static Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<IFilesInJettyHomeResourcesProcessor>();
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
@@ -145,6 +131,8 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
@@ -188,6 +176,7 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * When we find files typically used for central logging configuration we do
      * what it takes in this method to do what the user expects. Without

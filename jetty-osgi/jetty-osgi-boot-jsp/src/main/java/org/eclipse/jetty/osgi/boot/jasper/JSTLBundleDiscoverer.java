@@ -34,7 +34,7 @@ import org.apache.jasper.xmlparser.ParserUtils;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -44,17 +44,20 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
+ * 
+ * JSTLBundleDiscoverer
+ * 
  * Fix various shortcomings with the way jasper parses the tld files. Plugs the
  * JSTL tlds assuming that they are packaged with the bundle that contains the
  * JSTL classes.
  * <p>
  * Pluggable tlds at the server level are handled by
- * {@link PluggableWebAppRegistrationCustomizerImpl}.
+ * {@link ContainerTldBundleDiscoverer}.
  * </p>
  */
-public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
+public class JSTLBundleDiscoverer implements TldBundleDiscoverer
 {
-    private static final Logger LOG = Log.getLogger(WebappRegistrationCustomizerImpl.class);
+    private static final Logger LOG = Log.getLogger(JSTLBundleDiscoverer.class);
     
 
     /**
@@ -83,7 +86,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      */
     private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
 
-    public WebappRegistrationCustomizerImpl()
+    public JSTLBundleDiscoverer()
     {
         fixupDtdResolution();
 
@@ -136,7 +139,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * @return array of URLs
      * @throws Exception
      */
-    public URL[] getJarsWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getUrlsForBundlesWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {
 
         ArrayList<URL> urls = new ArrayList<URL>();
@@ -148,7 +151,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         // So we can look for this class using this bundle's classloader:
         try
         {
-            Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+            Class<?> jstlClass = JSTLBundleDiscoverer.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
 
             classesToAddToTheTldBundles.add(jstlClass);
         }

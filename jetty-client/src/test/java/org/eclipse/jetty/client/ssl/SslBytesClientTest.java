@@ -357,12 +357,7 @@ public class SslBytesClientTest extends SslBytesTest
         proxy.flushToClient(record);
 
         record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
-        proxy.flushToServer(record);
-
-        record = proxy.readFromClient();
         Assert.assertNull(record);
-        proxy.flushToServer(record);
 
         server.close();
     }

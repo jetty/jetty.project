@@ -22,6 +22,10 @@ import org.eclipse.jetty.osgi.boot.utils.internal.DefaultBundleClassLoaderHelper
 import org.osgi.framework.Bundle;
 
 /**
+ * 
+ * BundleClassLoaderHelper
+ * 
+ * 
  * Is there a clean OSGi way to go from the Bundle object to the classloader of
  * the Bundle ? You can certainly take a class inside the bundle and get the
  * bundle's classloader that way. Getting the classloader directly from the

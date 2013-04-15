@@ -89,9 +89,9 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
         setStopTimeout(5000);
-        
+
         if (queue==null)
-            queue=new BlockingArrayQueue<Runnable>(_minThreads, _minThreads);// TODO ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
+            queue=new BlockingArrayQueue<>(_minThreads, _minThreads);
         _jobs=queue;
 
     }

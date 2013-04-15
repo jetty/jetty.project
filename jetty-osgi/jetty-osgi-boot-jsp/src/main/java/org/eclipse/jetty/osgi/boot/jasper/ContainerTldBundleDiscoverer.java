@@ -21,8 +21,6 @@ package org.eclipse.jetty.osgi.boot.jasper;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,67 +30,48 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
-import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
+
+
 /**
- * Plug bundles that contains tld files so that jasper will discover them and
- * set them up in jetty.
+ * ContainerTldBundleDiscoverer
  * 
- * For example:
- * -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet
- * ,com.opensymphony.module.sitemesh Otherwise use an attribute to the
- * WebAppDeployer &lt;New
- * class="org.eclipse.jetty.deploy.providers.WebAppProvider"&gt; .... &lt;Set
- * name="tldBundles"&gt;&ltProperty name="org.eclipse.jetty.osgi.tldsbundles"
- * default="" /&gt;&lt;/Set&gt; &lt;New&gt;
+ * 
+ * Use a System property to define bundles that contain tlds that need to
+ * be treated by jasper as if they were on the jetty container's classpath.
+ * 
+ * The value of the property is evaluated against the DeploymentManager 
+ * context attribute "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", 
+ * which defines a pattern of matching bundle names.
+ * 
+ * The bundle locations are converted to URLs for jasper's use.
+ * 
+ * Eg:
+ * -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+ * 
  */
-public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistrationCustomizer
+public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 {
     /**
-     * To plug into jasper bundles that contain tld files please use a list of
-     * bundle's symbolic names:
-     * -Djetty.osgi.tldbundles=org.springframework.web.servlet
-     * ,com.opensymphony.module.sitemesh
+     * Comma separated list of names of bundles that contain tld files that should be
+     * discoved by jasper as if they were on the container's classpath.
+     * Eg:
+     * -Djetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
      */
     public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
 
+
+
     /**
-     * Union of the tld bundles defined system wide and the one defines as an
-     * attribute of the AppProvider.
+     * Check the System property "org.eclipse.jetty.osgi.tldbundles" for names of
+     * bundles that contain tlds and convert to URLs.
      * 
-     * @param provider
-     * @return
+     * @return The location of the jars that contain tld files as URLs.
      */
-    private static Collection<String> getTldBundles(DeploymentManager deploymentManager)
-    {
-        String sysprop = System.getProperty(SYS_PROP_TLD_BUNDLES);
-        String att = (String) deploymentManager.getContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN);
-        if (sysprop == null && att == null) { return Collections.emptySet(); }
-        if (att == null)
-        {
-            att = sysprop;
-        }
-        else if (sysprop != null)
-        {
-            att = att + "," + sysprop;
-        }
-
-        Collection<String> tldbundles = new HashSet<String>();
-        StringTokenizer tokenizer = new StringTokenizer(att, ", \n\r\t", false);
-        while (tokenizer.hasMoreTokens())
-        {
-            tldbundles.add(tokenizer.nextToken());
-        }
-        return tldbundles;
-    }
-
-    /**
-     * @return The location of the jars that contain tld files. Jasper will
-     *         discover them.
-     */
-    public URL[] getJarsWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getUrlsForBundlesWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
     {
         // naive way of finding those bundles.
         // lots of assumptions: for example we assume a single version of each
@@ -103,7 +82,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
         // probably using custom properties in the ContextHandler service
         // and mirroring those in the MANIFEST.MF
 
-        Bundle[] bundles = FrameworkUtil.getBundle(PluggableWebAppRegistrationCustomizerImpl.class).getBundleContext().getBundles();
+        Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
         HashSet<URL> urls = new HashSet<URL>();
         String tmp = System.getProperty(SYS_PROP_TLD_BUNDLES); //comma separated exact names
         List<String> sysNames =   new ArrayList<String>();
@@ -118,10 +97,10 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
         for (Bundle bundle : bundles)
         {
             if (sysNames.contains(bundle.getSymbolicName()))
-                registerTldBundle(locatorHelper, bundle, urls);
+                convertBundleLocationToURL(locatorHelper, bundle, urls);
            
             if (pattern != null && pattern.matcher(bundle.getSymbolicName()).matches())
-                registerTldBundle(locatorHelper, bundle, urls);
+                convertBundleLocationToURL(locatorHelper, bundle, urls);
         }
 
         return urls.toArray(new URL[urls.size()]);
@@ -129,19 +108,8 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
     }
 
     /**
-     * Resolves the bundle that contains tld files as a set of URLs that will be
-     * passed to jasper as a URLClassLoader later on. Usually that would be a
-     * single URL per bundle. But we do some more work if there are jars
-     * embedded in the bundle.
-     * 
-     * The jasper TldScanner expects a URLClassloader to parse a jar for the
-     * /META-INF/*.tld it may contain. We place the bundles that we know contain
-     * such tag-libraries. Please note that it will work if and only if the
-     * bundle is a jar (!) Currently we just hardcode the bundle that contains
-     * the jstl implemenation.
-     * 
-     * A workaround when the tld cannot be parsed with this method is to copy
-     * and paste it inside the WEB-INF of the webapplication where it is used.
+     * Resolves a bundle that contains tld files as a URL. The URLs are
+     * used by jasper to discover the tld files.
      * 
      * Support only 2 types of packaging for the bundle: - the bundle is a jar
      * (recommended for runtime.) - the bundle is a folder and contain jars in
@@ -153,7 +121,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
      * @param urls
      * @throws Exception
      */
-    private void registerTldBundle(BundleFileLocatorHelper locatorHelper, Bundle bundle, Set<URL> urls) throws Exception
+    private void convertBundleLocationToURL(BundleFileLocatorHelper locatorHelper, Bundle bundle, Set<URL> urls) throws Exception
     {
         File jasperLocation = locatorHelper.getBundleInstallLocation(bundle);
         if (jasperLocation.isDirectory())
@@ -181,7 +149,5 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
         {
             urls.add(jasperLocation.toURI().toURL());
         }
-
     }
-
 }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -194,6 +195,45 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     }
 
     
+    @Override
+    public V get(ByteBuffer b, int offset, int length)
+    {
+        int t = _tree[EQ];
+        int len = length;
+        int i=0;
+        offset+=b.position();
+        
+        while(i<len)
+        {
+            byte c=(byte)(b.get(offset+i++)&0x7f);
+            if(isCaseInsensitive())
+                c=(byte)StringUtil.lowercases[c];
+            
+            while (true)
+            {
+                int row = ROW_SIZE*t;
+                char n=_tree[row];
+                int diff=n-c;
+                
+                if (diff==0)
+                {
+                    if (i==len)
+                        return (V)_value[t];
+                    t=_tree[row+EQ];
+                    if (t==0)
+                        return null;
+                    break;
+                }
+
+                t=_tree[row+((diff<0)?LO:HI)];
+                if (t==0)
+                    return null;
+            }
+        }
+        
+        return null;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public V getBest(String s)
@@ -247,6 +287,95 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return null;
     }
 
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public V getBest(ByteBuffer b, int offset, int len)
+    {
+        if (b.hasArray())
+            return getBest(_tree[EQ],b.array(),b.arrayOffset()+b.position()+offset,len);
+        return getBest(_tree[EQ],b,offset,len);
+    }
+
+    /* ------------------------------------------------------------ */
+    private V getBest(int t,byte[] b, int offset, int len)
+    {
+        int node=0;
+        for(int i=0; t!=0 && i<len; i++)
+        {
+            byte c=(byte)(b[offset+i]&0x7f);
+            if(isCaseInsensitive())
+                c=(byte)StringUtil.lowercases[c];
+
+            while (t!=0)
+            {
+                int row = ROW_SIZE*t;
+                char n=_tree[row];
+                int diff=n-c;
+                
+                if (diff==0)
+                {
+                    node=t;
+                    t=_tree[row+EQ];
+                    
+                    // if this node is a match, recurse to remember 
+                    if (_key[node]!=null)
+                    {
+                        V best=getBest(t,b,offset+i+1,len-i-1);
+                        if (best!=null)
+                            return best;
+                        return (V)_value[node];
+                    }
+                    
+                    break;
+                }
+
+                t=_tree[row+((diff<0)?LO:HI)];
+            }
+        }
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    private V getBest(int t,ByteBuffer b, int offset, int len)
+    {
+        int node=0;
+        int o= offset+b.position();
+        
+        for(int i=0; t!=0 && i<len; i++)
+        {
+            byte c=(byte)(b.get(o+i)&0x7f);
+            if(isCaseInsensitive())
+                c=(byte)StringUtil.lowercases[c];
+
+            while (t!=0)
+            {
+                int row = ROW_SIZE*t;
+                char n=_tree[row];
+                int diff=n-c;
+                
+                if (diff==0)
+                {
+                    node=t;
+                    t=_tree[row+EQ];
+                    
+                    // if this node is a match, recurse to remember 
+                    if (_key[node]!=null)
+                    {
+                        V best=getBest(t,b,offset+i+1,len-i-1);
+                        if (best!=null)
+                            return best;
+                        return (V)_value[node];
+                    }
+                    
+                    break;
+                }
+
+                t=_tree[row+((diff<0)?LO:HI)];
+            }
+        }
+        return null;
+    }
 
     @Override
     public String toString()

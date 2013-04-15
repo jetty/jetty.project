@@ -67,6 +67,7 @@ public class ManyConnectors
             new SslConnectionFactory(sslContextFactory,"http/1.1"),
             new HttpConnectionFactory(https_config));
         https.setPort(8443);
+        https.setIdleTimeout(500000);
 
         // Set the connectors
         server.setConnectors(new Connector[] { http, https });
