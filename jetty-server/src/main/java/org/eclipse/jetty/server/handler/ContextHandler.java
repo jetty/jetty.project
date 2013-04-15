@@ -818,8 +818,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!_contextListeners.isEmpty())
             {
                 ServletContextEvent event = new ServletContextEvent(_scontext);
-                for (ServletContextListener listener : _contextListeners)
-                    callContextDestroyed(listener,event);
+                for (int i = _contextListeners.size(); i-->0;) 
+                    callContextDestroyed(_contextListeners.get(i),event);
             }
 
             if (_errorHandler != null)
@@ -1094,20 +1094,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (!_requestListeners.isEmpty())
                 {
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
-                    ListIterator<ServletRequestListener> iter = _requestListeners.listIterator(_requestListeners.size());
-                    while (iter.hasNext())
-                        iter.next();
-                    while (iter.hasPrevious())
-                        iter.previous().requestDestroyed(sre);
+                    for (int i=_requestListeners.size();i-->0;)
+                        _requestListeners.get(i).requestDestroyed(sre);
                 }
 
                 if (!_requestAttributeListeners.isEmpty())
                 {
                     ListIterator<ServletRequestAttributeListener> iter = _requestAttributeListeners.listIterator(_requestAttributeListeners.size());
-                    while(iter.hasNext())
-                        iter.next();
-                    while(iter.hasPrevious())
-                        baseRequest.removeEventListener(iter.previous());
+                    for (int i=_requestAttributeListeners.size();i-->0;)
+                        baseRequest.removeEventListener(_requestAttributeListeners.get(i));
                 }
             }
         }
