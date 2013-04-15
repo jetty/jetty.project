@@ -618,18 +618,8 @@ public class SslConnection extends AbstractConnection
                                     }
                                     else
                                     {
-                                        if (isOutputShutdown())
-                                        {
-                                            // We have sent the SSL Close Alert, and we read 0 bytes:
-                                            // it's a peer that it is not sending the FIN, so we just
-                                            // return -1 as if we did, so the connection will be closed.
-                                            return -1;
-                                        }
-                                        else
-                                        {
-                                            // we need to wait for more net data
-                                            return 0;
-                                        }
+                                        // we need to wait for more net data
+                                        return 0;
                                     }
 
                                 case FINISHED:
@@ -844,8 +834,6 @@ public class SslConnection extends AbstractConnection
             {
                 _bufferPool.release(_encryptedOutput);
                 _encryptedOutput = null;
-                if (_sslEngine.isOutboundDone())
-                    getEndPoint().shutdownOutput();
             }
         }
 
@@ -869,7 +857,6 @@ public class SslConnection extends AbstractConnection
                 {
                     _sslEngine.closeOutbound();
                     flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                    getEndPoint().shutdownOutput(); // Send FIN
                     SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
                 }
                 catch (Exception e)
