@@ -548,7 +548,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("Taken on Aug 22 \\ 2012.jpg"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("Taken on Aug 22 \\ 2012.jpg"));
     }
     
     @Test
@@ -570,7 +570,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
     }
 
     @Test
@@ -591,7 +591,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
     }
     
     public void testMulti ()
@@ -642,7 +642,7 @@ public class MultiPartInputStreamTest
         assertFalse(f2.exists()); //2nd written file was explicitly deleted
 
         MultiPart stuff = (MultiPart)mpis.getPart("stuff");
-        assertThat(stuff.getContentDispositionFilename(), is(filename));
+        assertThat(stuff.getSubmittedFileName(), is(filename));
         assertThat(stuff.getContentType(),is("text/plain"));
         assertThat(stuff.getHeader("Content-Type"),is("text/plain"));
         assertThat(stuff.getHeaders("content-type").size(),is(1));
