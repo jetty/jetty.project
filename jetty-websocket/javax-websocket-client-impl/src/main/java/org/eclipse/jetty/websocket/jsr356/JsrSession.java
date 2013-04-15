@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
 
 public class JsrSession extends WebSocketSession implements javax.websocket.Session
 {
-    private final JettyWebSocketContainer container;
+    private final ClientContainer container;
     private final String id;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
@@ -55,7 +55,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, JettyWebSocketContainer container, String id)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id)
     {
         super(requestURI,websocket,connection);
         this.container = container;

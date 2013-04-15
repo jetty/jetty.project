@@ -93,13 +93,12 @@ public class PathParamSpec extends PathSpec
 
         StringBuilder regex = new StringBuilder();
         regex.append('^');
-        boolean wantDelim = false;
-        boolean isLastSegmentVariable = false;
 
         List<String> varNames = new ArrayList<>();
-        String segments[] = pathParamSpec.split("/");
+        // split up into path segments (ignoring the first slash that will always be empty)
+        String segments[] = pathParamSpec.substring(1).split("/");
         char segmentSignature[] = new char[segments.length];
-        this.pathDepth = segments.length - 1;
+        this.pathDepth = segments.length;
         for (int i = 0; i < segments.length; i++)
         {
             String segment = segments[i];
@@ -125,13 +124,7 @@ public class PathParamSpec extends PathSpec
                     // valid variable name
                     varNames.add(variable);
                     // build regex
-                    if (wantDelim)
-                    {
-                        regex.append('/');
-                    }
-                    regex.append("([^/]+)");
-                    wantDelim = true;
-                    isLastSegmentVariable = true;
+                    regex.append("/([^/]+)");
                 }
                 else
                 {
@@ -179,13 +172,7 @@ public class PathParamSpec extends PathSpec
                 // valid path segment
                 segmentSignature[i] = 'e'; // exact
                 // build regex
-                if (wantDelim)
-                {
-                    regex.append('/');
-                }
-                regex.append(segment);
-                wantDelim = true;
-                isLastSegmentVariable = false;
+                regex.append('/').append(segment);
             }
         }
 

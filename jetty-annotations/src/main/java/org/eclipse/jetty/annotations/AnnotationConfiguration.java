@@ -62,7 +62,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
     }
 
-    
+    public void addDiscoverableAnnotationHandler(DiscoverableAnnotationHandler handler)
+    {
+        _discoverableAnnotationHandlers.add(handler);
+    }
     
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)

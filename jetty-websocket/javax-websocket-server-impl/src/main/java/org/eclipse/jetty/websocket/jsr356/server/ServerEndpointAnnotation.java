@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import javax.websocket.ContainerProvider;
+import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
@@ -29,15 +31,15 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class ServerEndpointAnnotation extends DiscoveredAnnotation
 {
     private static final Logger LOG = Log.getLogger(ServerEndpointAnnotation.class);
-    
-    public ServerEndpointAnnotation(WebAppContext context, String className, Resource resource)
-    {
-        super(context,className,resource);
-    }
 
     public ServerEndpointAnnotation(WebAppContext context, String className)
     {
         super(context,className);
+    }
+
+    public ServerEndpointAnnotation(WebAppContext context, String className, Resource resource)
+    {
+        super(context,className,resource);
     }
 
     @Override
@@ -47,15 +49,25 @@ public class ServerEndpointAnnotation extends DiscoveredAnnotation
 
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            LOG.warn(_className + " cannot be loaded");
             return;
         }
-        
+
         ServerEndpoint annotation = clazz.getAnnotation(ServerEndpoint.class);
-        
+
         String path = annotation.value();
-        
-        // TODO: scan class for annotated methods
-        // TODO: add new websocket endpoint to _context with path mapping 
+        LOG.info("Got path: \"{}\"",path);
+
+        ServerContainer container = (ServerContainer)ContainerProvider.getWebSocketContainer();
+
+        try
+        {
+            JsrServerMetadata metadata = container.getServerEndpointMetadata(clazz);
+            container.addEndpoint(metadata);
+        }
+        catch (DeploymentException e)
+        {
+            e.printStackTrace();
+        }
     }
 }

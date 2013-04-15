@@ -16,50 +16,50 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.DeploymentException;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
+import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
- * Event Driver for classes annotated with &#064;{@link ClientEndpoint}
+ * Event Driver for classes annotated with &#064;{@link ServerEndpoint}
  */
-public class JsrClientEndpointImpl implements EventDriverImpl
+public class JsrServerEndpointImpl implements EventDriverImpl
 {
-    private ClientContainer container;
+    private ServerContainer container;
 
-    public JsrClientEndpointImpl(ClientContainer container)
+    public JsrServerEndpointImpl(ServerContainer container)
     {
         this.container = container;
     }
 
     @Override
-    public EventDriver create(Object websocket, WebSocketPolicy policy) throws DeploymentException
+    public EventDriver create(Object websocket, WebSocketPolicy policy) throws Throwable
     {
         Object endpoint = websocket;
         if (websocket instanceof ConfiguredEndpoint)
         {
             ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
             endpoint = ce.getEndpoint();
-            // Classes annotated with @ClientEndpoint cannot be created with
-            // an external ClientEndpointConfig, this information MUST come
-            // from the @ClientEndpoint annotation.
+            // Classes annotated with @ServerEndpoint cannot be created with
+            // an external ServerEndpointConfig, this information MUST come
+            // from the @ServerEndpoint annotation.
             if (ce.getConfig() != null)
             {
-                throw new IllegalStateException("Cannot create @ClientEndpoint websocket with an external EndpointConfig");
+                throw new IllegalStateException("Cannot create @ServerEndpoint websocket with an external EndpointConfig");
             }
         }
 
         Class<?> endpointClass = endpoint.getClass();
         // Get the base metadata for this class
-        JsrClientMetadata basemetadata = container.getClientEndpointMetadata(endpointClass);
+        JsrServerMetadata basemetadata = container.getServerEndpointMetadata(endpointClass);
 
         // At this point we have a base metadata, now we need to copy it for
         // this specific instance of the WebSocket Endpoint (as we will be
@@ -67,14 +67,14 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         JsrEvents events = new JsrEvents(basemetadata); // copy constructor.
 
         // Create copy of base config
-        ClientEndpointConfig config = basemetadata.getEndpointConfigCopy();
+        ServerEndpointConfig config = basemetadata.getEndpointConfigCopy();
         return new JsrAnnotatedEventDriver(policy,endpoint,events,config);
     }
 
     @Override
     public String describeRule()
     {
-        return "class is annotated with @" + ClientEndpoint.class.getName();
+        return "class is annotated with @" + ServerEndpoint.class.getName();
     }
 
     @Override
@@ -89,7 +89,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
             endpoint = ce.getEndpoint();
         }
 
-        ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
+        ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
         return (anno != null);
     }
 }

@@ -77,4 +77,36 @@ public class PathMappingsTest
         assertMatch(p,"/animal/fish/shark/hammerhead","fishes");
         assertMatch(p,"/animal/insect/ladybug","animals");
     }
+
+    /**
+     * Test the match order rules imposed by the WebSocket API (JSR-356)
+     * <p>
+     * <ul>
+     * <li>Exact match</li>
+     * <li>Longest prefix match</li>
+     * <li>Longest suffix match</li>
+     * </ul>
+     */
+    @Test
+    public void testWebsocketMatchOrder()
+    {
+        PathMappings<String> p = new PathMappings<>();
+
+        p.put(new PathParamSpec("/a/{var}/c"),"endpointA");
+        p.put(new PathParamSpec("/a/b/c"),"endpointB");
+        p.put(new PathParamSpec("/a/{var1}/{var2}"),"endpointC");
+        p.put(new PathParamSpec("/{var1}/d"),"endpointD");
+        p.put(new PathParamSpec("/b/{var2}"),"endpointE");
+
+        for (MappedResource<String> res : p)
+        {
+            System.out.printf("  %s%n",res);
+        }
+
+        assertMatch(p,"/a/b/c","endpointB");
+        assertMatch(p,"/a/d/c","endpointA");
+        assertMatch(p,"/a/x/y","endpointC");
+
+        assertMatch(p,"/b/d","endpointE");
+    }
 }

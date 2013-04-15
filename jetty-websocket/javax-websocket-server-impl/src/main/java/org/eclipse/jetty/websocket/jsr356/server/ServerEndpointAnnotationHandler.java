@@ -37,20 +37,31 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
     private static final String ANNOTATION_NAME = "javax.websocket.server.ServerEndpoint";
     private static final Logger LOG = Log.getLogger(ServerEndpointAnnotationHandler.class);
 
+    public ServerEndpointAnnotationHandler(WebAppContext context)
+    {
+        super(context);
+    }
+
     public ServerEndpointAnnotationHandler(WebAppContext context, List<DiscoveredAnnotation> list)
     {
         super(context,list);
     }
 
-    public ServerEndpointAnnotationHandler(WebAppContext context)
+    @Override
+    public String getAnnotationName()
     {
-        super(context);
+        return ANNOTATION_NAME;
     }
 
     @Override
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
             List<Value> values)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("handleClass: {}, {}, {}",className,annotationName,values);
+        }
+
         if (!ANNOTATION_NAME.equals(annotationName))
         {
             // Not the one we are interested in
@@ -62,23 +73,16 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
     }
 
     @Override
-    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-            List<Value> values)
-    {
-        LOG.warn("@WebServlet annotation not supported for methods");
-    }
-
-    @Override
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
             List<Value> values)
     {
-        LOG.warn("@WebServlet annotation not supported for fields");
+        LOG.warn("@ServerEndpoint annotation not supported for fields");
     }
 
     @Override
-    public String getAnnotationName()
+    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
+            List<Value> values)
     {
-        return ANNOTATION_NAME;
+        LOG.warn("@ServerEndpoint annotation not supported for methods");
     }
-
 }

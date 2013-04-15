@@ -26,10 +26,10 @@ import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
 import org.eclipse.jetty.websocket.jsr356.JettyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdBinaryDecoder;
@@ -41,7 +41,7 @@ public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
     private final JettyClientEndpointConfig config;
     private final Decoders decoders;
 
-    public JsrClientMetadata(JettyWebSocketContainer container, Class<?> websocket) throws DeploymentException
+    public JsrClientMetadata(ClientContainer container, Class<?> websocket) throws DeploymentException
     {
         super(websocket);
 

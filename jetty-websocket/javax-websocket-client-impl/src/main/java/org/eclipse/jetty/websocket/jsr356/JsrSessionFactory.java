@@ -29,9 +29,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 public class JsrSessionFactory implements SessionFactory
 {
     private AtomicLong idgen = new AtomicLong(0);
-    private final JettyWebSocketContainer container;
+    private final ClientContainer container;
 
-    public JsrSessionFactory(JettyWebSocketContainer container)
+    public JsrSessionFactory(ClientContainer container)
     {
         this.container = container;
     }

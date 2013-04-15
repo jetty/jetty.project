@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -30,41 +31,27 @@ import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Extension;
 import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
 
-/**
- * Main WebSocketContainer for working with client based WebSocket Endpoints.
- */
-public class JettyWebSocketContainer implements WebSocketContainer
+public class ClientContainer implements ContainerService
 {
-    private static final Logger LOG = Log.getLogger(JettyWebSocketContainer.class);
+    private static final Logger LOG = Log.getLogger(ClientContainer.class);
     private final DecoderMetadataFactory decoderMetadataFactory;
+    private ConcurrentHashMap<Class<?>, JsrClientMetadata> endpointClientMetadataCache = new ConcurrentHashMap<>();
     private WebSocketClient client;
 
-    public JettyWebSocketContainer()
+    public ClientContainer()
     {
         decoderMetadataFactory = new DecoderMetadataFactory();
-
-        client = new WebSocketClient();
-        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
-        client.setSessionFactory(new JsrSessionFactory(this));
-
-        try
-        {
-            client.start();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
-        }
     }
 
     private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
@@ -140,6 +127,21 @@ public class JettyWebSocketContainer implements WebSocketContainer
         return connect(annotatedEndpointInstance,null,path);
     }
 
+    public JsrClientMetadata getClientEndpointMetadata(Class<?> endpointClass) throws DeploymentException
+    {
+        JsrClientMetadata basemetadata = endpointClientMetadataCache.get(endpointClass);
+        if (basemetadata == null)
+        {
+            basemetadata = new JsrClientMetadata(this,endpointClass);
+            AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(basemetadata);
+            scanner.scan();
+            endpointClientMetadataCache.put(endpointClass,basemetadata);
+        }
+
+        return basemetadata;
+    }
+
+    @Override
     public DecoderMetadataFactory getDecoderMetadataFactory()
     {
         return decoderMetadataFactory;
@@ -213,5 +215,35 @@ public class JettyWebSocketContainer implements WebSocketContainer
     {
         // TODO: add safety net for policy assertions
         client.setMaxTextMessageBufferSize(max);
+    }
+
+    @Override
+    public void start()
+    {
+        client = new WebSocketClient();
+        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
+        client.setSessionFactory(new JsrSessionFactory(this));
+
+        try
+        {
+            client.start();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        try
+        {
+            client.stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
+        }
     }
 }

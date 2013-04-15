@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DecodeException;
+import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
@@ -42,25 +42,24 @@ import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 
-public class JsrClientAnnotatedEventDriver extends AbstractEventDriver implements EventDriver
+/**
+ * Base implementation for JSR-356 Annotated event drivers.
+ */
+public class JsrAnnotatedEventDriver extends AbstractEventDriver implements EventDriver
 {
-    private static final Logger LOG = Log.getLogger(JsrClientAnnotatedEventDriver.class);
-    private final JettyWebSocketContainer container;
+    private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents events;
+    private final EndpointConfig endpointconfig;
     private boolean hasCloseBeenCalled = false;
     private JsrSession jsrsession;
-    private ClientEndpointConfig endpointconfig;
     private MessageAppender activeMessage;
 
-    public JsrClientAnnotatedEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Object websocket, JsrEvents events,
-            ClientEndpointConfig endpointconfig)
+    public JsrAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JsrEvents events, EndpointConfig endpointconfig)
     {
         super(policy,websocket);
-        this.container = container;
         this.events = events;
         this.endpointconfig = endpointconfig;
     }

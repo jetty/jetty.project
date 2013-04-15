@@ -30,7 +30,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
+import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
@@ -83,7 +83,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         }
     }
 
-    private static JettyWebSocketContainer container = new JettyWebSocketContainer();
+    private static ClientContainer container = new ClientContainer();
 
     @Parameters
     public static Collection<Case[]> data() throws Exception

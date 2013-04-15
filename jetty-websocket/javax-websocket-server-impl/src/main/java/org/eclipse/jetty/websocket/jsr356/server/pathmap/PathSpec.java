@@ -43,6 +43,8 @@ public class PathSpec implements Comparable<PathSpec>
         boolean inGrouping = false;
         this.pathDepth = 0;
         this.specLength = pathSpec.length();
+        // build up a simple signature we can use to identify the grouping
+        StringBuilder signature = new StringBuilder();
         for (char c : pathSpec.toCharArray())
         {
             switch (c)
@@ -52,6 +54,10 @@ public class PathSpec implements Comparable<PathSpec>
                     break;
                 case ']':
                     inGrouping = false;
+                    signature.append('g'); // glob
+                    break;
+                case '*':
+                    signature.append('g'); // glob
                     break;
                 case '/':
                     if (!inGrouping)
@@ -59,9 +65,38 @@ public class PathSpec implements Comparable<PathSpec>
                         this.pathDepth++;
                     }
                     break;
+                default:
+                    if (!inGrouping)
+                    {
+                        if (Character.isLetterOrDigit(c))
+                        {
+                            signature.append('l'); // literal (exact)
+                        }
+                    }
+                    break;
             }
         }
         this.pattern = Pattern.compile(pathSpec);
+
+        // Figure out the grouping based on the signature
+        String sig = signature.toString();
+
+        if (Pattern.matches("^l*$",sig))
+        {
+            this.group = PathSpecGroup.EXACT;
+        }
+        else if (Pattern.matches("^l*g+",sig))
+        {
+            this.group = PathSpecGroup.PREFIX_GLOB;
+        }
+        else if (Pattern.matches("^g+l+$",sig))
+        {
+            this.group = PathSpecGroup.SUFFIX_GLOB;
+        }
+        else
+        {
+            this.group = PathSpecGroup.MIDDLE_GLOB;
+        }
     }
 
     @Override
@@ -165,6 +200,35 @@ public class PathSpec implements Comparable<PathSpec>
     }
 
     /**
+     * Return the portion of the path that matches a path spec.
+     * 
+     * @param path
+     *            the path to match against
+     * @return the match, or null if no match at all
+     */
+    public String getPathMatch(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
+        {
+            if (matcher.groupCount() >= 1)
+            {
+                int idx = matcher.start(1);
+                if (idx > 0)
+                {
+                    if (path.charAt(idx - 1) == '/')
+                    {
+                        idx--;
+                    }
+                    return path.substring(0,idx);
+                }
+            }
+            return path;
+        }
+        return null;
+    }
+
+    /**
      * The as-provided path spec.
      * 
      * @return the as-provided path spec
@@ -213,35 +277,6 @@ public class PathSpec implements Comparable<PathSpec>
     public boolean matches(String path)
     {
         return getMatcher(path).matches();
-    }
-
-    /**
-     * Return the portion of the path that matches a path spec.
-     * 
-     * @param path
-     *            the path to match against
-     * @return the match, or null if no match at all
-     */
-    public String getPathMatch(String path)
-    {
-        Matcher matcher = getMatcher(path);
-        if (matcher.matches())
-        {
-            if (matcher.groupCount() >= 1)
-            {
-                int idx = matcher.start(1);
-                if (idx > 0)
-                {
-                    if (path.charAt(idx - 1) == '/')
-                    {
-                        idx--;
-                    }
-                    return path.substring(0,idx);
-                }
-            }
-            return path;
-        }
-        return null;
     }
 
     @Override

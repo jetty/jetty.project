@@ -39,7 +39,6 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialMessage;
@@ -54,17 +53,15 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 
-    private final JettyWebSocketContainer container;
     private final Endpoint endpoint;
     private JsrSession jsrsession;
     private EndpointConfig endpointconfig;
     private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
-    public JsrEndpointEventDriver(JettyWebSocketContainer container, WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)
+    public JsrEndpointEventDriver(WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)
     {
         super(policy,endpoint);
-        this.container = container;
         this.endpoint = endpoint;
         this.endpointconfig = config;
     }

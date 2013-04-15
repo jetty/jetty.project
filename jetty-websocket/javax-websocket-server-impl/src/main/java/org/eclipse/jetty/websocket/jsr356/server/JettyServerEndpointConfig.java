@@ -16,40 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
-public class JettyClientEndpointConfig implements ClientEndpointConfig
+public class JettyServerEndpointConfig implements ServerEndpointConfig
 {
-    public static class NoopConfigurator extends ClientEndpointConfig.Configurator
+    public static class BaseConfigurator extends ServerEndpointConfig.Configurator
     {
-        public static final NoopConfigurator INSTANCE = new NoopConfigurator();
-
-        @Override
-        public void afterResponse(HandshakeResponse hr)
-        {
-            // do nothing
-        }
-
-        @Override
-        public void beforeRequest(Map<String, List<String>> headers)
-        {
-            // do nothing
-        }
+        public static final BaseConfigurator INSTANCE = new BaseConfigurator();
     }
 
+    private final Class<?> endpointClass;
+    private final String path;
     private Configurator configurator;
     private List<Class<? extends Decoder>> decoders;
     private List<Class<? extends Encoder>> encoders;
@@ -57,43 +46,17 @@ public class JettyClientEndpointConfig implements ClientEndpointConfig
     private List<Extension> extensions;
     private Map<String, Object> userProperties;
 
-    public JettyClientEndpointConfig()
+    public JettyServerEndpointConfig(Class<?> endpointClass, String path)
     {
-        decoders = new ArrayList<>();
-        encoders = new ArrayList<>();
-        subprotocols = new ArrayList<>();
-        extensions = new ArrayList<>();
-        userProperties = new HashMap<>();
-    }
+        this.endpointClass = endpointClass;
+        this.path = path;
 
-    public JettyClientEndpointConfig(ClientEndpoint anno) throws DeploymentException
-    {
-        this();
-        addAll(anno.decoders(),this.decoders);
-        addAll(anno.encoders(),this.encoders);
-        addAll(anno.subprotocols(),this.subprotocols);
-        // no extensions declared in annotation
-        // no userProperties in annotation
-        if (anno.configurator() == null)
-        {
-            this.configurator = NoopConfigurator.INSTANCE;
-        }
-        else
-        {
-            try
-            {
-                this.configurator = anno.configurator().newInstance();
-            }
-            catch (InstantiationException | IllegalAccessException e)
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Unable to instantiate ClientEndpoint.configurator() of ");
-                err.append(anno.configurator().getName());
-                err.append(" defined as annotation in ");
-                err.append(anno.getClass().getName());
-                throw new DeploymentException(err.toString(),e);
-            }
-        }
+        this.configurator = new BaseConfigurator();
+        this.decoders = new ArrayList<>();
+        this.encoders = new ArrayList<>();
+        this.subprotocols = new ArrayList<>();
+        this.extensions = new ArrayList<>();
+        this.userProperties = new HashMap<>();
     }
 
     /**
@@ -103,17 +66,17 @@ public class JettyClientEndpointConfig implements ClientEndpointConfig
      *            the endpoint configuration to copy
      * @throws DeploymentException
      */
-    public JettyClientEndpointConfig(JettyClientEndpointConfig copy) throws DeploymentException
+    public JettyServerEndpointConfig(JettyServerEndpointConfig copy) throws DeploymentException
     {
-        this();
+        this(copy.endpointClass,copy.path);
         this.decoders.addAll(copy.decoders);
         this.encoders.addAll(copy.encoders);
         this.subprotocols.addAll(copy.subprotocols);
         this.extensions.addAll(copy.extensions);
         this.userProperties.putAll(copy.userProperties);
-        if (copy.configurator instanceof NoopConfigurator)
+        if (copy.configurator instanceof BaseConfigurator)
         {
-            this.configurator = NoopConfigurator.INSTANCE;
+            this.configurator = BaseConfigurator.INSTANCE;
         }
         else
         {
@@ -125,8 +88,38 @@ public class JettyClientEndpointConfig implements ClientEndpointConfig
             catch (InstantiationException | IllegalAccessException e)
             {
                 StringBuilder err = new StringBuilder();
-                err.append("Unable to instantiate ClientEndpointConfig.Configurator of ");
+                err.append("Unable to instantiate ServerEndpointConfig.Configurator of ");
                 err.append(configuratorClass);
+                throw new DeploymentException(err.toString(),e);
+            }
+        }
+    }
+
+    public JettyServerEndpointConfig(ServerEndpoint anno) throws DeploymentException
+    {
+        this(anno.getClass(),anno.value());
+        addAll(anno.decoders(),this.decoders);
+        addAll(anno.encoders(),this.encoders);
+        addAll(anno.subprotocols(),this.subprotocols);
+        // no extensions declared in annotation
+        // no userProperties in annotation
+        if (anno.configurator() == null)
+        {
+            this.configurator = BaseConfigurator.INSTANCE;
+        }
+        else
+        {
+            try
+            {
+                this.configurator = anno.configurator().newInstance();
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("Unable to instantiate ServerEndpoint.configurator() of ");
+                err.append(anno.configurator().getName());
+                err.append(" defined as annotation in ");
+                err.append(anno.getClass().getName());
                 throw new DeploymentException(err.toString(),e);
             }
         }
@@ -163,13 +156,25 @@ public class JettyClientEndpointConfig implements ClientEndpointConfig
     }
 
     @Override
+    public Class<?> getEndpointClass()
+    {
+        return endpointClass;
+    }
+
+    @Override
     public List<Extension> getExtensions()
     {
         return extensions;
     }
 
     @Override
-    public List<String> getPreferredSubprotocols()
+    public String getPath()
+    {
+        return path;
+    }
+
+    @Override
+    public List<String> getSubprotocols()
     {
         return subprotocols;
     }

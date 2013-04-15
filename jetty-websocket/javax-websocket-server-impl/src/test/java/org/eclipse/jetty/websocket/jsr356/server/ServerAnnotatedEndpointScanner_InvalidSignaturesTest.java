@@ -33,7 +33,6 @@ import javax.websocket.OnOpen;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorErrorSocket;
@@ -56,7 +55,7 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
 {
     private static final Logger LOG = Log.getLogger(ServerAnnotatedEndpointScanner_InvalidSignaturesTest.class);
 
-    private static JettyWebSocketContainer container = new JettyWebSocketContainer();
+    private static ServerContainer container = new ServerContainer();
 
     @Parameters
     public static Collection<Class<?>[]> data()

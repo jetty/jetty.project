@@ -99,6 +99,30 @@ public class PathParamSpecTest
     }
 
     @Test
+    public void testMiddleVarPathSpec()
+    {
+        PathParamSpec spec = new PathParamSpec("/a/{var}/c");
+        assertEquals("Spec.pathSpec","/a/{var}/c",spec.getPathSpec());
+        assertEquals("Spec.pattern","^/a/([^/]+)/c$",spec.getPattern().pattern());
+        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+
+        assertDetectedVars(spec,"var");
+
+        assertMatches(spec,"/a/b/c");
+        assertMatches(spec,"/a/zz/c");
+        assertMatches(spec,"/a/hello+world/c");
+        assertNotMatches(spec,"/a/bc");
+        assertNotMatches(spec,"/a/b/");
+        assertNotMatches(spec,"/a/b");
+
+        Map<String, String> mapped = spec.getPathParams("/a/b/c");
+        assertThat("Spec.pathParams",mapped,notNullValue());
+        assertThat("Spec.pathParams.size",mapped.size(),is(1));
+        assertEquals("Spec.pathParams[var]","b",mapped.get("var"));
+    }
+
+    @Test
     public void testOneVarPathSpec()
     {
         PathParamSpec spec = new PathParamSpec("/a/{foo}");
@@ -117,6 +141,77 @@ public class PathParamSpecTest
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(1));
         assertEquals("Spec.pathParams[foo]","b",mapped.get("foo"));
+    }
+
+    @Test
+    public void testOneVarSuffixPathSpec()
+    {
+        PathParamSpec spec = new PathParamSpec("/{var}/b/c");
+        assertEquals("Spec.pathSpec","/{var}/b/c",spec.getPathSpec());
+        assertEquals("Spec.pattern","^/([^/]+)/b/c$",spec.getPattern().pattern());
+        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
+        assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.group);
+
+        assertDetectedVars(spec,"var");
+
+        assertMatches(spec,"/a/b/c");
+        assertMatches(spec,"/az/b/c");
+        assertMatches(spec,"/hello+world/b/c");
+        assertNotMatches(spec,"/a/bc");
+        assertNotMatches(spec,"/a/b/");
+        assertNotMatches(spec,"/a/b");
+
+        Map<String, String> mapped = spec.getPathParams("/a/b/c");
+        assertThat("Spec.pathParams",mapped,notNullValue());
+        assertThat("Spec.pathParams.size",mapped.size(),is(1));
+        assertEquals("Spec.pathParams[var]","a",mapped.get("var"));
+    }
+
+    @Test
+    public void testTwoVarComplexInnerPathSpec()
+    {
+        PathParamSpec spec = new PathParamSpec("/a/{var1}/c/{var2}/e");
+        assertEquals("Spec.pathSpec","/a/{var1}/c/{var2}/e",spec.getPathSpec());
+        assertEquals("Spec.pattern","^/a/([^/]+)/c/([^/]+)/e$",spec.getPattern().pattern());
+        assertEquals("Spec.pathDepth",5,spec.getPathDepth());
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+
+        assertDetectedVars(spec,"var1","var2");
+
+        assertMatches(spec,"/a/b/c/d/e");
+        assertNotMatches(spec,"/a/bc/d/e");
+        assertNotMatches(spec,"/a/b/d/e");
+        assertNotMatches(spec,"/a/b//d/e");
+
+        Map<String, String> mapped = spec.getPathParams("/a/b/c/d/e");
+        assertThat("Spec.pathParams",mapped,notNullValue());
+        assertThat("Spec.pathParams.size",mapped.size(),is(2));
+        assertEquals("Spec.pathParams[var1]","b",mapped.get("var1"));
+        assertEquals("Spec.pathParams[var2]","d",mapped.get("var2"));
+    }
+
+    @Test
+    public void testTwoVarComplexOuterPathSpec()
+    {
+        PathParamSpec spec = new PathParamSpec("/{var1}/b/{var2}/{var3}");
+        assertEquals("Spec.pathSpec","/{var1}/b/{var2}/{var3}",spec.getPathSpec());
+        assertEquals("Spec.pattern","^/([^/]+)/b/([^/]+)/([^/]+)$",spec.getPattern().pattern());
+        assertEquals("Spec.pathDepth",4,spec.getPathDepth());
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+
+        assertDetectedVars(spec,"var1","var2","var3");
+
+        assertMatches(spec,"/a/b/c/d");
+        assertNotMatches(spec,"/a/bc/d/e");
+        assertNotMatches(spec,"/a/c/d/e");
+        assertNotMatches(spec,"/a//d/e");
+
+        Map<String, String> mapped = spec.getPathParams("/a/b/c/d");
+        assertThat("Spec.pathParams",mapped,notNullValue());
+        assertThat("Spec.pathParams.size",mapped.size(),is(3));
+        assertEquals("Spec.pathParams[var1]","a",mapped.get("var1"));
+        assertEquals("Spec.pathParams[var2]","c",mapped.get("var2"));
+        assertEquals("Spec.pathParams[var3]","d",mapped.get("var3"));
     }
 
     @Test

@@ -24,7 +24,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
+import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSocket;
@@ -33,7 +33,7 @@ import org.junit.Test;
 
 public class ClientAnnotatedEndpointScannerTest
 {
-    private static JettyWebSocketContainer container = new JettyWebSocketContainer();
+    private static ClientContainer container = new ClientContainer();
 
     private void assertHasCallable(String msg, CallableMethod callable, Class<?>... expectedParameters)
     {

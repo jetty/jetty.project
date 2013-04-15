@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 
 import javax.websocket.Decoder;
@@ -29,7 +28,6 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdBinaryDecoder;
@@ -38,10 +36,10 @@ import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdTextDecoder;
 public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
 {
     private final ServerEndpoint endpoint;
-    private final ServerEndpointConfig config;
+    private final JettyServerEndpointConfig config;
     private final Decoders decoders;
 
-    protected JsrServerMetadata(JettyWebSocketContainer container, Class<?> websocket) throws DeploymentException
+    protected JsrServerMetadata(ServerContainer container, Class<?> websocket) throws DeploymentException
     {
         super(websocket);
 
@@ -52,19 +50,7 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         }
 
         this.endpoint = anno;
-        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(websocket,anno.value());
-        builder.decoders(Arrays.asList(anno.decoders()));
-        builder.encoders(Arrays.asList(anno.encoders()));
-        builder.subprotocols(Arrays.asList(anno.subprotocols()));
-        try
-        {
-            builder.configurator(anno.configurator().newInstance());
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new DeploymentException("Unable to instantiate @ServerEndpoint.configurator(): " + anno.configurator(),e);
-        }
-        this.config = builder.build();
+        this.config = new JettyServerEndpointConfig(anno);
         this.decoders = new Decoders(container.getDecoderMetadataFactory(),config);
     }
 
@@ -113,5 +99,11 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
     public ServerEndpoint getAnnotation()
     {
         return endpoint;
+    }
+
+    public ServerEndpointConfig getEndpointConfigCopy() throws DeploymentException
+    {
+        // Copy constructor
+        return new JettyServerEndpointConfig(config);
     }
 }

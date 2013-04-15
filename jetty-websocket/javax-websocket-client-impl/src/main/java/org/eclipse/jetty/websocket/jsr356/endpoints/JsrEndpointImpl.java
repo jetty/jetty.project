@@ -24,17 +24,9 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.JettyWebSocketContainer;
 
 public class JsrEndpointImpl implements EventDriverImpl
 {
-    private final JettyWebSocketContainer container;
-
-    public JsrEndpointImpl(JettyWebSocketContainer container)
-    {
-        this.container = container;
-    }
-
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
@@ -49,7 +41,7 @@ public class JsrEndpointImpl implements EventDriverImpl
             config = ce.getConfig();
         }
 
-        return new JsrEndpointEventDriver(container,policy,(Endpoint)endpoint,config);
+        return new JsrEndpointEventDriver(policy,(Endpoint)endpoint,config);
     }
 
     @Override
