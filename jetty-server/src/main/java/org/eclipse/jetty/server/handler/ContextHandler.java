@@ -303,7 +303,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      * @param virtualHosts
      *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Host names may start with '@', in which case they
+     *            will match the {@link Connector#getName()} for the request.
      */
     public void addVirtualHosts(String[] virtualHosts)
     {
