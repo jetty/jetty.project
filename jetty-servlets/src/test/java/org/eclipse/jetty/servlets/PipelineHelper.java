@@ -219,8 +219,8 @@ public class PipelineHelper
             int val = inputStream.read();
             try
             {
-                if (left % 10 == 0)
-                    Thread.sleep(1);
+                if (left % 1000 == 0)
+                    Thread.sleep(10);
             }
             catch (InterruptedException e)
             {
