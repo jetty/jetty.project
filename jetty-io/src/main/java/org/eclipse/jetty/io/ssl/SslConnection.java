@@ -190,6 +190,10 @@ public class SslConnection extends AbstractConnection
         if (DEBUG)
             LOG.debug("onFillable enter {}", getEndPoint());
 
+        // We have received a close handshake, close the end point to send FIN.
+        if (_decryptedEndPoint.isInputShutdown())
+            getEndPoint().close();
+            
         // wake up whoever is doing the fill or the flush so they can
         // do all the filling, unwrapping, wrapping and flushing
         _decryptedEndPoint.getFillInterest().fillable();
@@ -425,7 +429,7 @@ public class SslConnection extends AbstractConnection
                             return true;
                         }
                     }
-                    else if (!isOutputShutdown())
+                    else
                     {
                         // Normal readable callback
                         // Get called back on onfillable when then is more data to fill
@@ -864,7 +868,9 @@ public class SslConnection extends AbstractConnection
                 try
                 {
                     _sslEngine.closeOutbound();
-                    flush(BufferUtil.EMPTY_BUFFER);
+                    flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
+                    getEndPoint().shutdownOutput(); // Send FIN
+                    SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
                 }
                 catch (Exception e)
                 {
