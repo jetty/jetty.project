@@ -202,16 +202,21 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         filled=client.read(sslIn);
         if (debug) System.err.println("in="+filled);
-        sslIn.flip();
-        try
+        
+        if (filled>=0)
         {
-            // Since the client closed abruptly, the server is sending a close alert with a failure
-            engine.unwrap(sslIn, appIn);
-            Assert.fail();
-        }
-        catch (SSLException x)
-        {
-            // Expected
+            // this is the old behaviour. 
+            sslIn.flip();
+            try
+            {
+                // Since the client closed abruptly, the server is sending a close alert with a failure
+                engine.unwrap(sslIn, appIn);
+                Assert.fail();
+            }
+            catch (SSLException x)
+            {
+                // Expected
+            }
         }
 
         sslIn.clear();

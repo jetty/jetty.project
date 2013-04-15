@@ -57,16 +57,6 @@ public abstract class AbstractTrie<V> implements Trie<V>
         return get(s,0,s.length());
     }
 
-
-    @Override
-    public V get(ByteBuffer b, int offset, int len)
-    {
-        b=b.duplicate();
-        b.position(b.position()+offset);
-        b.limit(b.position()+len);
-        return get(BufferUtil.toString(b,StringUtil.__ISO_8859_1_CHARSET));
-    }
-
     @Override
     public V get(ByteBuffer b)
     {
@@ -83,15 +73,6 @@ public abstract class AbstractTrie<V> implements Trie<V>
     public V getBest(byte[] b, int offset, int len)
     {
         return getBest(new String(b,offset,len,StringUtil.__ISO_8859_1_CHARSET));
-    }
-
-    @Override
-    public V getBest(ByteBuffer b, int offset, int len)
-    {
-        b=b.duplicate();
-        b.position(b.position()+offset);
-        b.limit(b.position()+len);
-        return getBest(BufferUtil.toString(b,StringUtil.__ISO_8859_1_CHARSET));
     }
 
     @Override

@@ -29,7 +29,6 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,9 +39,12 @@ import org.osgi.framework.BundleContext;
  * DefaultJettyAtJettyHomeHelper
  * 
  * 
+ * Creates a default instance of Jetty, based on the values of the
+ * System properties "jetty.home" or "jetty.home.bundle", one of which
+ * must be specified in order to create the default instance.
+ * 
  * Called by the {@link JettyBootstrapActivator} during the starting of the
- * bundle. If the system property 'jetty.home' is defined and points to a
- * folder, then setup the corresponding jetty server.
+ * bundle. 
  */
 public class DefaultJettyAtJettyHomeHelper
 {
@@ -62,6 +64,7 @@ public class DefaultJettyAtJettyHomeHelper
      * Default location within bundle of a jetty home dir.
      */
     public static final String DEFAULT_JETTYHOME = "/jettyhome/";
+    
     
     
     /* ------------------------------------------------------------ */
@@ -87,7 +90,7 @@ public class DefaultJettyAtJettyHomeHelper
      * as part of their properties.
      * </p>
      */
-    public static void startJettyAtJettyHome(BundleContext bundleContext) throws Exception
+    public static Server startJettyAtJettyHome(BundleContext bundleContext) throws Exception
     {
         String jettyHomeSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME);
         String jettyHomeBundleSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME_BUNDLE);
@@ -109,7 +112,7 @@ public class DefaultJettyAtJettyHomeHelper
             if (!jettyHome.exists() || !jettyHome.isDirectory())
             {
                 LOG.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
-                return;
+                return null;
             }
         }
         else if (jettyHomeBundleSysProp != null)
@@ -126,14 +129,14 @@ public class DefaultJettyAtJettyHomeHelper
             if (jettyHomeBundle == null)
             {
                 LOG.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
-                return;
+                return null;
             }
 
         }
         if (jettyHome == null && jettyHomeBundle == null)
         {
             LOG.warn("No default jetty created.");
-            return;
+            return null;
         }
 
         Server server = new Server();
@@ -152,8 +155,11 @@ public class DefaultJettyAtJettyHomeHelper
         setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
         setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
 
-        //register the Server instance as an OSGi service.
+        //Register the default Server instance as an OSGi service.
+        //The JettyServerServiceTracker will notice it and configure it.
         bundleContext.registerService(Server.class.getName(), server, properties);
+        
+        return server;
     }
     
     

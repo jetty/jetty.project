@@ -19,7 +19,12 @@
 package org.eclipse.jetty.osgi.boot;
 
 /**
- * Name of the service properties for a ContextHandler that configure a webapp deployed on jetty OSGi.
+ * OSGiWebappConstants
+ * 
+ * 
+ * Constants (MANIFEST headers, service properties etc) associated with deploying
+ * webapps into OSGi via Jetty.
+ * 
  */
 public class OSGiWebappConstants
 {

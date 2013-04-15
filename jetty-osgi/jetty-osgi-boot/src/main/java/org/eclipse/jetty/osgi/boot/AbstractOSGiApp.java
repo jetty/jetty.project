@@ -32,9 +32,10 @@ import org.osgi.framework.ServiceRegistration;
 
 
 /**
- * AbstractBundleApp
+ * AbstractOSGiApp
  *
- *
+ * Base class representing info about a webapp/ContextHandler that is deployed into Jetty.
+ * 
  */
 public abstract class AbstractOSGiApp extends App
 {      

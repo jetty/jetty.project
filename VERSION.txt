@@ -1,3 +1,83 @@
+jetty-9.0.2-SNAPSHOT
+
+
+jetty-9.0.1.v20130408 - 08 April 2013
+ + 384552 add comment to jetty-https.xml describing keymanager password
+ + 385488 non existing resources in collection are just warnings
+ + 392129 fixed merged of handling of timeouts after startAsync
+ + 393971 Improve setParentLoaderPriorty javadoc
+ + 393972 Improve WebAppContext classloading javadoc
+ + 395620 do not managed inherited life cycle listeners
+ + 396562 Add an implementation of RequestLog that supports Slf4j
+ + 399967 Destroyables destroyed on undeploy and shutdown hook
+ + 400142 ConcurrentModificationException in JDBC SessionManger
+ + 400144 When loading a session fails the JDBCSessionManger produces duplicate
+   session IDs
+ + 400689 Add support for Proxy authentication.
+ + 401150 close input stream used from cached resource
+ + 401806 spdy push properly pass through request and response headers for
+   pushed resources
+ + 402397 InputStreamResponseListener early close inputStream cause hold lock.
+ + 402485 reseed secure random
+ + 402626 Do not required endpoint host checking by default in server and
+   configure in client
+ + 402666 Improve handling of TLS exceptions due to raw socket close.
+ + 402694 setuid as LifeCycle listener
+ + 402706 HttpSession.setMaxInactiveInterval(int) does not change JDBCSession
+   expiry
+ + 402726 WebAppContext references old WebSocket packages in system and server
+   classes
+ + 402735 jetty.sh to support status which is == check
+ + 402757 WebSocket client module can't be used with WebSocket server module in
+   the same WAR.
+ + 402833 Test harness for global error page and hide exception message from
+   reason string
+ + 402844 STOP.PORT & STOP.KEY behaviour has changed
+ + 402982 Premature initialization of Servlets
+ + 402984 WebSocket Upgrade must honor case insensitive header fields in
+   upgrade request
+ + 403122 Session replication fails with ClassNotFoundException when session
+   attribute is Java dynamic proxy
+ + 403280 Update to javax.el 2.2.4
+ + 403281 jetty.sh waits for started or failure before returning
+ + 403360 Named connectors
+ + 403370 move frameBytes.fail() call in StandardSession.flush() outside the
+   synchronized block to avoid deadlock
+ + 403373 WebSocket change timeout log level from warn -> info
+ + 403380 Introduce WebSocketTimeoutException to differentiate between EOF on
+   write and Timeout
+ + 403451 Review synchronization in SslConnection.
+ + 403510 HttpSession maxInactiveInterval is not serialized in HashSession
+ + 403513 jetty:run goal cannot be executed twice during the maven build
+ + 403570 Asynchronous Request Logging
+ + 403591 do not use the ConcurrentArrayBlockingQueue for thread pool, selector
+   and async request log
+ + 403817 Use of WebSocket Session.close() results in invalid status code
+ + 404029 port jetty-monitor to jetty-9 and activate it
+ + 404036 JDBCSessionIdManager.doStart() method should not call
+   cleanExpiredSessions() because Listeners can't be notified
+ + 404067 If cannot connect to db fail startup of JDBCSessionIdManager
+ + 404128 Add Vary headers rather than set them
+ + 404176 Jetty's AnnotationConfiguration class does not scan non-jar resources
+   on the container classpath
+ + 404204 Exception from inputstream cause hang or timeout.
+ + 404283 org.eclipse.jetty.util.Scanner.scanFile() dies with an NPE if
+   listFiles() returns null
+ + 404323 Improved parameterization of https and SPDY
+ + 404325 data constraint redirection does send default port
+ + 404326 set status when Request.setHandled(true) is called
+ + 404511 Replaced all StringMap usage with Tries
+ + 404517 Close connection if request received after half close
+ + 404610 Reintroduce ability to disallow TLS renegotiation.
+ + 404757 SPDY can only be built with the latest JDK version.
+ + 404789 Support IPv6 addresses in DoSFilter white list.
+ + 404881 Allow regexs for SslContextFactory.setIncludeCipherSuites() and
+   .setExcludeCipherSuites()
+ + 404889 SelectorManager accepts attachments with sockets
+ + 404906 servlets with load-on-startup = 0 are not fired up on jetty 9 startup
+ + 404958 Fixed Resource.newSystemResource striped / handling
+ + 405044 Query parameters lost for non GET or POST.
+
 jetty-9.0.0.v20130308 - 08 March 2013
  + 399070 add updated version of npn-boot jar to start.ini
  + 399799 do not hold lock while calling invalidation listeners
@@ -34,10 +114,10 @@ jetty-9.0.0.v20130308 - 08 March 2013
    upstream server. Fix several other small proxy issues
  + 402316 HttpReceiver and null pointer exception.
  + 402341 Host with default port causes redirects loop.
- + 402726 WebAppContext references old WebSocket packages in system and
-   server classes
- + 402757 WebSocket client module can't be used with WebSocket server
-   module in the same WAR
+ + 402726 WebAppContext references old WebSocket packages in system and server
+   classes
+ + 402757 WebSocket client module can't be used with WebSocket server module in
+   the same WAR
 
 jetty-8.1.10.v20130312 - 12 March 2013
  + 376273 Early EOF because of SSL Protocol Error on
