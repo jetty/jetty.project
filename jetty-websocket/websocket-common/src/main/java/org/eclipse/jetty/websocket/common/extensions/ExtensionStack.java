@@ -251,19 +251,35 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         StringBuilder s = new StringBuilder();
         s.append("ExtensionStack[");
-        s.append("extensions=[");
-        boolean delim = false;
-        for (Extension ext : extensions)
+        s.append("extensions=");
+        if (extensions == null)
         {
-            if (delim)
-            {
-                s.append(',');
-            }
-            s.append(ext.getName());
-            delim = true;
+            s.append("<null>");
         }
-        s.append("],incoming=").append(this.nextIncoming.getClass().getName());
-        s.append(",outgoing=").append(this.nextOutgoing.getClass().getName());
+        else
+        {
+            s.append('[');
+            boolean delim = false;
+            for (Extension ext : extensions)
+            {
+                if (delim)
+                {
+                    s.append(',');
+                }
+                if (ext == null)
+                {
+                    s.append("<null>");
+                }
+                else
+                {
+                    s.append(ext.getName());
+                }
+                delim = true;
+            }
+            s.append(']');
+        }
+        s.append(",incoming=").append((this.nextIncoming == null)?"<null>":this.nextIncoming.getClass().getName());
+        s.append(",outgoing=").append((this.nextOutgoing == null)?"<null>":this.nextOutgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }
