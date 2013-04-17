@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -36,6 +37,18 @@ public class ServletPathSpecTest
             // expected path
             System.out.println(e);
         }
+    }
+
+    private void assertMatches(ServletPathSpec spec, String path)
+    {
+        String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
+        assertThat(msg,spec.matches(path),is(true));
+    }
+
+    private void assertNotMatches(ServletPathSpec spec, String path)
+    {
+        String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
+        assertThat(msg,spec.matches(path),is(false));
     }
 
     @Test
@@ -73,7 +86,6 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec("/");
         assertEquals("Spec.pathSpec","/",spec.getPathSpec());
-        assertEquals("Spec.pattern","^(/.*)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",-1,spec.getPathDepth());
     }
 
@@ -82,7 +94,6 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec("");
         assertEquals("Spec.pathSpec","/",spec.getPathSpec());
-        assertEquals("Spec.pattern","^(/.*)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",-1,spec.getPathDepth());
     }
 
@@ -91,16 +102,15 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec("/abs/path");
         assertEquals("Spec.pathSpec","/abs/path",spec.getPathSpec());
-        assertEquals("Spec.pattern","^/abs/path/?$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
+        assertEquals("Spec.pathDepth",2,spec.getPathDepth());
 
-        assertTrue("Spec.matches",spec.matches("/abs/path"));
-        assertTrue("Spec.matches",spec.matches("/abs/path/"));
+        assertMatches(spec,"/abs/path");
+        assertMatches(spec,"/abs/path/");
 
-        assertFalse("!Spec.matches",spec.matches("/abs/path/more"));
-        assertFalse("!Spec.matches",spec.matches("/foo"));
-        assertFalse("!Spec.matches",spec.matches("/foo/abs/path"));
-        assertFalse("!Spec.matches",spec.matches("/foo/abs/path/"));
+        assertNotMatches(spec,"/abs/path/more");
+        assertNotMatches(spec,"/foo");
+        assertNotMatches(spec,"/foo/abs/path");
+        assertNotMatches(spec,"/foo/abs/path/");
     }
 
     @Test
@@ -122,7 +132,6 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec(null);
         assertEquals("Spec.pathSpec","/",spec.getPathSpec());
-        assertEquals("Spec.pattern","^(/.*)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",-1,spec.getPathDepth());
     }
 
@@ -136,8 +145,7 @@ public class ServletPathSpecTest
         assertEquals("pathMatch suffix","/Foo/bar.ext",new ServletPathSpec("*.ext").getPathMatch("/Foo/bar.ext"));
         assertEquals("pathMatch default","/Foo/bar.ext",new ServletPathSpec("/").getPathMatch("/Foo/bar.ext"));
 
-        // FIXME: not sure I understand this test
-        // assertEquals("pathMatch default","",new ServletPathSpec("/*").getPathMatch("/xxx/zzz"));
+        assertEquals("pathMatch default","",new ServletPathSpec("/*").getPathMatch("/xxx/zzz"));
     }
 
     @Test
@@ -145,15 +153,14 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec("/downloads/*");
         assertEquals("Spec.pathSpec","/downloads/*",spec.getPathSpec());
-        assertEquals("Spec.pattern","^/downloads(/.*)?$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
 
-        assertTrue("Spec.matches",spec.matches("/downloads/logo.jpg"));
-        assertTrue("Spec.matches",spec.matches("/downloads/distribution.tar.gz"));
-        assertTrue("Spec.matches",spec.matches("/downloads/distribution.tgz"));
-        assertTrue("Spec.matches",spec.matches("/downloads/distribution.zip"));
+        assertMatches(spec,"/downloads/logo.jpg");
+        assertMatches(spec,"/downloads/distribution.tar.gz");
+        assertMatches(spec,"/downloads/distribution.tgz");
+        assertMatches(spec,"/downloads/distribution.zip");
 
-        assertTrue("Spec.matches",spec.matches("/downloads"));
+        assertMatches(spec,"/downloads");
 
         assertEquals("Spec.pathInfo","/",spec.getPathInfo("/downloads/"));
         assertEquals("Spec.pathInfo","/distribution.zip",spec.getPathInfo("/downloads/distribution.zip"));
@@ -165,15 +172,14 @@ public class ServletPathSpecTest
     {
         ServletPathSpec spec = new ServletPathSpec("*.gz");
         assertEquals("Spec.pathSpec","*.gz",spec.getPathSpec());
-        assertEquals("Spec.pattern","^.*\\.gz$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",0,spec.getPathDepth());
 
-        assertTrue("Spec.matches",spec.matches("/downloads/distribution.tar.gz"));
-        assertTrue("Spec.matches",spec.matches("/downloads/jetty.log.gz"));
+        assertMatches(spec,"/downloads/distribution.tar.gz");
+        assertMatches(spec,"/downloads/jetty.log.gz");
 
-        assertFalse("!Spec.matches",spec.matches("/downloads/distribution.zip"));
-        assertFalse("!Spec.matches",spec.matches("/downloads/distribution.tgz"));
-        assertFalse("!Spec.matches",spec.matches("/abs/path"));
+        assertNotMatches(spec,"/downloads/distribution.zip");
+        assertNotMatches(spec,"/downloads/distribution.tgz");
+        assertNotMatches(spec,"/abs/path");
 
         assertEquals("Spec.pathInfo",null,spec.getPathInfo("/downloads/distribution.tar.gz"));
     }

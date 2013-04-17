@@ -23,7 +23,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-public class PathSpecTest
+public class RegexPathSpecTest
 {
     public static void assertMatches(PathSpec spec, String path)
     {
@@ -40,7 +40,7 @@ public class PathSpecTest
     @Test
     public void testExactSpec()
     {
-        PathSpec spec = new PathSpec("^/a$");
+        RegexPathSpec spec = new RegexPathSpec("^/a$");
         assertEquals("Spec.pathSpec","^/a$",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
@@ -55,7 +55,7 @@ public class PathSpecTest
     @Test
     public void testMiddleSpec()
     {
-        PathSpec spec = new PathSpec("^/rest/([^/]*)/list$");
+        RegexPathSpec spec = new RegexPathSpec("^/rest/([^/]*)/list$");
         assertEquals("Spec.pathSpec","^/rest/([^/]*)/list$",spec.getPathSpec());
         assertEquals("Spec.pattern","^/rest/([^/]*)/list$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
@@ -76,7 +76,7 @@ public class PathSpecTest
     @Test
     public void testPrefixSpec()
     {
-        PathSpec spec = new PathSpec("^/a/(.*)$");
+        RegexPathSpec spec = new RegexPathSpec("^/a/(.*)$");
         assertEquals("Spec.pathSpec","^/a/(.*)$",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/(.*)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
@@ -94,7 +94,7 @@ public class PathSpecTest
     @Test
     public void testSuffixSpec()
     {
-        PathSpec spec = new PathSpec("^(.*).do$");
+        RegexPathSpec spec = new RegexPathSpec("^(.*).do$");
         assertEquals("Spec.pathSpec","^(.*).do$",spec.getPathSpec());
         assertEquals("Spec.pattern","^(.*).do$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",0,spec.getPathDepth());

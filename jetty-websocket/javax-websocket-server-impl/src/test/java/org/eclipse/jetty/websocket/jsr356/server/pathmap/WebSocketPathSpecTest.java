@@ -28,9 +28,9 @@ import org.junit.Test;
 /**
  * Tests for ServerEndpoint Path Param / URI Template Path Specs
  */
-public class PathParamSpecTest
+public class WebSocketPathSpecTest
 {
-    private void assertDetectedVars(PathParamSpec spec, String... expectedVars)
+    private void assertDetectedVars(WebSocketPathSpec spec, String... expectedVars)
     {
         String prefix = String.format("Spec(\"%s\")",spec.getPathSpec());
         assertEquals(prefix + ".variableCount",expectedVars.length,spec.getVariableCount());
@@ -41,13 +41,13 @@ public class PathParamSpecTest
         }
     }
 
-    private void assertMatches(PathParamSpec spec, String path)
+    private void assertMatches(WebSocketPathSpec spec, String path)
     {
         String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
         assertThat(msg,spec.matches(path),is(true));
     }
 
-    private void assertNotMatches(PathParamSpec spec, String path)
+    private void assertNotMatches(WebSocketPathSpec spec, String path)
     {
         String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getPathSpec(),path);
         assertThat(msg,spec.matches(path),is(false));
@@ -56,7 +56,7 @@ public class PathParamSpecTest
     @Test
     public void testDefaultPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/");
         assertEquals("Spec.pathSpec","/",spec.getPathSpec());
         assertEquals("Spec.pattern","^/$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
@@ -69,7 +69,7 @@ public class PathParamSpecTest
     @Test
     public void testExactOnePathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a");
         assertEquals("Spec.pathSpec","/a",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
@@ -82,7 +82,7 @@ public class PathParamSpecTest
     @Test
     public void testExactTwoPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a/b");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a/b");
         assertEquals("Spec.pathSpec","/a/b",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/b$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
@@ -101,7 +101,7 @@ public class PathParamSpecTest
     @Test
     public void testMiddleVarPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a/{var}/c");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a/{var}/c");
         assertEquals("Spec.pathSpec","/a/{var}/c",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/c$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
@@ -125,7 +125,7 @@ public class PathParamSpecTest
     @Test
     public void testOneVarPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a/{foo}");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a/{foo}");
         assertEquals("Spec.pathSpec","/a/{foo}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
@@ -146,7 +146,7 @@ public class PathParamSpecTest
     @Test
     public void testOneVarSuffixPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/{var}/b/c");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/{var}/b/c");
         assertEquals("Spec.pathSpec","/{var}/b/c",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)/b/c$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
@@ -170,7 +170,7 @@ public class PathParamSpecTest
     @Test
     public void testTwoVarComplexInnerPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a/{var1}/c/{var2}/e");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a/{var1}/c/{var2}/e");
         assertEquals("Spec.pathSpec","/a/{var1}/c/{var2}/e",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/c/([^/]+)/e$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",5,spec.getPathDepth());
@@ -193,7 +193,7 @@ public class PathParamSpecTest
     @Test
     public void testTwoVarComplexOuterPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/{var1}/b/{var2}/{var3}");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/{var1}/b/{var2}/{var3}");
         assertEquals("Spec.pathSpec","/{var1}/b/{var2}/{var3}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)/b/([^/]+)/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",4,spec.getPathDepth());
@@ -217,7 +217,7 @@ public class PathParamSpecTest
     @Test
     public void testTwoVarPrefixPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/a/{var1}/{var2}");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/a/{var1}/{var2}");
         assertEquals("Spec.pathSpec","/a/{var1}/{var2}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
@@ -240,7 +240,7 @@ public class PathParamSpecTest
     @Test
     public void testVarOnlyPathSpec()
     {
-        PathParamSpec spec = new PathParamSpec("/{var1}");
+        WebSocketPathSpec spec = new WebSocketPathSpec("/{var1}");
         assertEquals("Spec.pathSpec","/{var1}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());

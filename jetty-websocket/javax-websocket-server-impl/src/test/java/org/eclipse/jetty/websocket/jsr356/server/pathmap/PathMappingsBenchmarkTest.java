@@ -112,9 +112,9 @@ public class PathMappingsBenchmarkTest
 
     private static final Logger LOG = Log.getLogger(PathMappingsBenchmarkTest.class);
     private static final String[][] LOOKUPS;
-    private int runs = 10;
-    private int threads = 100;
-    private int iters = 1000;
+    private int runs = 20;
+    private int threads = 200;
+    private int iters = 10000;
 
     static
     {
@@ -181,7 +181,7 @@ public class PathMappingsBenchmarkTest
             long end = System.nanoTime();
             long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
             int totalMatches = threads * iters * LOOKUPS.length;
-            LOG.info("PathMap (Servlet only) threads:{}/iters:{}/total-matches:{} => {} ms",threads,iters,totalMatches,elapsed);
+            LOG.info("jetty-http/PathMap (Servlet only) threads:{}/iters:{}/total-matches:{} => {} ms",threads,iters,totalMatches,elapsed);
         }
     }
 
@@ -216,7 +216,9 @@ public class PathMappingsBenchmarkTest
             await(barrier);
             long end = System.nanoTime();
             long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
-            LOG.info("PathMappings (Servlet only) threads:{}/iters:{} => {} ms",threads,iters,elapsed);
+            int totalMatches = threads * iters * LOOKUPS.length;
+            LOG.info("jetty-websocket/PathMappings (Servlet only) threads:{}/iters:{}/total-matches:{} => {} ms",threads,iters,totalMatches,elapsed);
+
         }
     }
 }

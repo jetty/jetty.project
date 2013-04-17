@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized.Parameters;
  * Tests for bad path specs on ServerEndpoint Path Param / URI Template
  */
 @RunWith(Parameterized.class)
-public class PathParamSpecBadSpecsTest
+public class WebSocketPathSpecBadSpecsTest
 {
     private static void bad(List<String[]> data, String str)
     {
@@ -65,7 +65,7 @@ public class PathParamSpecBadSpecsTest
 
     private String pathSpec;
 
-    public PathParamSpecBadSpecsTest(String pathSpec)
+    public WebSocketPathSpecBadSpecsTest(String pathSpec)
     {
         this.pathSpec = pathSpec;
     }
@@ -75,7 +75,7 @@ public class PathParamSpecBadSpecsTest
     {
         try
         {
-            new PathParamSpec(this.pathSpec);
+            new WebSocketPathSpec(this.pathSpec);
             fail("Expected IllegalArgumentException for a bad PathParam pathspec on: " + pathSpec);
         }
         catch (IllegalArgumentException e)

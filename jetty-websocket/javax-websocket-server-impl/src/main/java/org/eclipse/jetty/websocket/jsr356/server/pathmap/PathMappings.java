@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
 import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.PathMappings.MappedResource;
 
@@ -109,13 +109,15 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
         }
     }
 
-    private Set<MappedResource<E>> mappings = new TreeSet<MappedResource<E>>();
+    private List<MappedResource<E>> mappings = new CopyOnWriteArrayList<MappedResource<E>>();
     private MappedResource<E> defaultResource = null;
 
     public MappedResource<E> getMatch(String path)
     {
-        for (MappedResource<E> mr : mappings)
+        int len = mappings.size();
+        for (int i = 0; i < len; i++)
         {
+            MappedResource<E> mr = mappings.get(i);
             if (mr.getPathSpec().matches(path))
             {
                 return mr;

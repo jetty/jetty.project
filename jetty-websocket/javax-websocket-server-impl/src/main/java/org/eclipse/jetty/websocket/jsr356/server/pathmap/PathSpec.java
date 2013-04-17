@@ -18,86 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
- * The base PathSpec, based on Regex patterns.
+ * The base PathSpec, what all other path specs are based on
  */
-public class PathSpec implements Comparable<PathSpec>
+public abstract class PathSpec implements Comparable<PathSpec>
 {
     protected String pathSpec;
     protected PathSpecGroup group;
     protected int pathDepth;
     protected int specLength;
-    protected Pattern pattern;
-
-    protected PathSpec()
-    {
-        /* do nothing */
-    }
-
-    public PathSpec(String pathSpec)
-    {
-        this.pathSpec = pathSpec;
-        boolean inGrouping = false;
-        this.pathDepth = 0;
-        this.specLength = pathSpec.length();
-        // build up a simple signature we can use to identify the grouping
-        StringBuilder signature = new StringBuilder();
-        for (char c : pathSpec.toCharArray())
-        {
-            switch (c)
-            {
-                case '[':
-                    inGrouping = true;
-                    break;
-                case ']':
-                    inGrouping = false;
-                    signature.append('g'); // glob
-                    break;
-                case '*':
-                    signature.append('g'); // glob
-                    break;
-                case '/':
-                    if (!inGrouping)
-                    {
-                        this.pathDepth++;
-                    }
-                    break;
-                default:
-                    if (!inGrouping)
-                    {
-                        if (Character.isLetterOrDigit(c))
-                        {
-                            signature.append('l'); // literal (exact)
-                        }
-                    }
-                    break;
-            }
-        }
-        this.pattern = Pattern.compile(pathSpec);
-
-        // Figure out the grouping based on the signature
-        String sig = signature.toString();
-
-        if (Pattern.matches("^l*$",sig))
-        {
-            this.group = PathSpecGroup.EXACT;
-        }
-        else if (Pattern.matches("^l*g+",sig))
-        {
-            this.group = PathSpecGroup.PREFIX_GLOB;
-        }
-        else if (Pattern.matches("^g+l+$",sig))
-        {
-            this.group = PathSpecGroup.SUFFIX_GLOB;
-        }
-        else
-        {
-            this.group = PathSpecGroup.MIDDLE_GLOB;
-        }
-    }
 
     @Override
     public int compareTo(PathSpec other)
@@ -150,11 +79,6 @@ public class PathSpec implements Comparable<PathSpec>
         return true;
     }
 
-    public Matcher getMatcher(String path)
-    {
-        return this.pattern.matcher(path);
-    }
-
     /**
      * Get the number of path elements that this path spec declares.
      * <p>
@@ -174,30 +98,7 @@ public class PathSpec implements Comparable<PathSpec>
      *            the path to match against
      * @return the path info portion of the string
      */
-    public String getPathInfo(String path)
-    {
-        // Path Info only valid for PREFIX_GLOB types
-        if (group == PathSpecGroup.PREFIX_GLOB)
-        {
-            Matcher matcher = getMatcher(path);
-            if (matcher.matches())
-            {
-                if (matcher.groupCount() >= 1)
-                {
-                    String pathInfo = matcher.group(1);
-                    if ("".equals(pathInfo))
-                    {
-                        return "/";
-                    }
-                    else
-                    {
-                        return pathInfo;
-                    }
-                }
-            }
-        }
-        return null;
-    }
+    public abstract String getPathInfo(String path);
 
     /**
      * Return the portion of the path that matches a path spec.
@@ -206,27 +107,7 @@ public class PathSpec implements Comparable<PathSpec>
      *            the path to match against
      * @return the match, or null if no match at all
      */
-    public String getPathMatch(String path)
-    {
-        Matcher matcher = getMatcher(path);
-        if (matcher.matches())
-        {
-            if (matcher.groupCount() >= 1)
-            {
-                int idx = matcher.start(1);
-                if (idx > 0)
-                {
-                    if (path.charAt(idx - 1) == '/')
-                    {
-                        idx--;
-                    }
-                    return path.substring(0,idx);
-                }
-            }
-            return path;
-        }
-        return null;
-    }
+    public abstract String getPathMatch(String path);
 
     /**
      * The as-provided path spec.
@@ -238,11 +119,6 @@ public class PathSpec implements Comparable<PathSpec>
         return pathSpec;
     }
 
-    public Pattern getPattern()
-    {
-        return pattern;
-    }
-
     /**
      * Get the relative path.
      * 
@@ -252,11 +128,7 @@ public class PathSpec implements Comparable<PathSpec>
      *            the additional path
      * @return the base plus path with pathSpec portion removed
      */
-    public String getRelativePath(String base, String path)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
+    public abstract String getRelativePath(String base, String path);
 
     @Override
     public int hashCode()
@@ -274,10 +146,7 @@ public class PathSpec implements Comparable<PathSpec>
      *            the path to test
      * @return true if the path matches this path spec, false otherwise
      */
-    public boolean matches(String path)
-    {
-        return getMatcher(path).matches();
-    }
+    public abstract boolean matches(String path);
 
     @Override
     public String toString()
@@ -287,7 +156,6 @@ public class PathSpec implements Comparable<PathSpec>
         str.append(pathSpec);
         str.append("\",pathDepth=").append(pathDepth);
         str.append(",group=").append(group);
-        str.append(",pattern=").append(pattern);
         str.append("]");
         return str.toString();
     }

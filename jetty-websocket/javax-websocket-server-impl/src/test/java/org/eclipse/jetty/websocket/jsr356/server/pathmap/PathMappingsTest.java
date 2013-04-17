@@ -92,11 +92,11 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new PathParamSpec("/a/{var}/c"),"endpointA");
-        p.put(new PathParamSpec("/a/b/c"),"endpointB");
-        p.put(new PathParamSpec("/a/{var1}/{var2}"),"endpointC");
-        p.put(new PathParamSpec("/{var1}/d"),"endpointD");
-        p.put(new PathParamSpec("/b/{var2}"),"endpointE");
+        p.put(new WebSocketPathSpec("/a/{var}/c"),"endpointA");
+        p.put(new WebSocketPathSpec("/a/b/c"),"endpointB");
+        p.put(new WebSocketPathSpec("/a/{var1}/{var2}"),"endpointC");
+        p.put(new WebSocketPathSpec("/{var1}/d"),"endpointD");
+        p.put(new WebSocketPathSpec("/b/{var2}"),"endpointE");
 
         for (MappedResource<String> res : p)
         {

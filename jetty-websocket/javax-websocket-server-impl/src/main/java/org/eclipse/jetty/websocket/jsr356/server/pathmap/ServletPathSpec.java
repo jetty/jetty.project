@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
-import java.util.regex.Pattern;
+import org.eclipse.jetty.util.URIUtil;
 
 public class ServletPathSpec extends PathSpec
 {
@@ -52,15 +52,12 @@ public class ServletPathSpec extends PathSpec
         if ((servletPathSpec == null) || (servletPathSpec.length() == 0) || "/".equals(servletPathSpec))
         {
             super.pathSpec = "/";
-            super.pattern = Pattern.compile("^(/.*)$");
             super.pathDepth = -1; // force this to be last in sort order
             this.specLength = 1;
             this.group = PathSpecGroup.DEFAULT;
             return;
         }
 
-        StringBuilder regex = new StringBuilder();
-        regex.append("^");
         this.specLength = servletPathSpec.length();
         super.pathDepth = 0;
         char lastChar = servletPathSpec.charAt(specLength - 1);
@@ -82,54 +79,19 @@ public class ServletPathSpec extends PathSpec
         for (int i = 0; i < specLength; i++)
         {
             int cp = servletPathSpec.codePointAt(i);
-            if (cp >= 128)
-            {
-                regex.appendCodePoint(cp);
-            }
-            else
+            if (cp < 128)
             {
                 char c = (char)cp;
                 switch (c)
                 {
-                    case '*':
-                        if (group != PathSpecGroup.PREFIX_GLOB)
-                        {
-                            regex.append(".*");
-                        }
-                        break;
-                    case '.':
-                        regex.append("\\.");
-                        break;
                     case '/':
                         super.pathDepth++;
-                        if ((group == PathSpecGroup.PREFIX_GLOB) && (i == (specLength - 2)))
-                        {
-                            regex.append("(/.*)?");
-                        }
-                        else
-                        {
-                            regex.append('/');
-                        }
-                        break;
-                    default:
-                        regex.append(c);
                         break;
                 }
             }
         }
 
-        if ((group == PathSpecGroup.EXACT) && (lastChar != '/'))
-        {
-            super.pathDepth++;
-            regex.append("/?$");
-        }
-        else
-        {
-            regex.append('$');
-        }
-
         super.pathSpec = servletPathSpec;
-        super.pattern = Pattern.compile(regex.toString());
     }
 
     private void assertValidServletPathSpec(String servletPathSpec)
@@ -189,6 +151,141 @@ public class ServletPathSpec extends PathSpec
         else
         {
             throw new IllegalArgumentException("Servlet Spec 12.2 violation: path spec must start with \"/\" or \"*.\"");
+        }
+    }
+
+    @Override
+    public String getPathInfo(String path)
+    {
+        // Path Info only valid for PREFIX_GLOB types
+        if (group == PathSpecGroup.PREFIX_GLOB)
+        {
+            if (path.length() == (specLength - 2))
+            {
+                return null;
+            }
+            return path.substring(specLength - 2);
+        }
+
+        return null;
+    }
+
+    @Override
+    public String getPathMatch(String path)
+    {
+        switch (group)
+        {
+            case EXACT:
+                if (pathSpec.equals(path))
+                {
+                    return path;
+                }
+                else
+                {
+                    return null;
+                }
+            case PREFIX_GLOB:
+                if (isWildcardMatch(path))
+                {
+                    return path.substring(0,specLength - 2);
+                }
+                else
+                {
+                    return null;
+                }
+            case SUFFIX_GLOB:
+                if (path.regionMatches(path.length() - (specLength - 1),pathSpec,1,specLength - 1))
+                {
+                    return path;
+                }
+                else
+                {
+                    return null;
+                }
+            case DEFAULT:
+                return path;
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public String getRelativePath(String base, String path)
+    {
+        String info = getPathInfo(path);
+        if (info == null)
+        {
+            info = path;
+        }
+
+        if (info.startsWith("./"))
+        {
+            info = info.substring(2);
+        }
+        if (base.endsWith(URIUtil.SLASH))
+        {
+            if (info.startsWith(URIUtil.SLASH))
+            {
+                path = base + info.substring(1);
+            }
+            else
+            {
+                path = base + info;
+            }
+        }
+        else if (info.startsWith(URIUtil.SLASH))
+        {
+            path = base + info;
+        }
+        else
+        {
+            path = base + URIUtil.SLASH + info;
+        }
+        return path;
+    }
+
+    private boolean isExactMatch(String path)
+    {
+        if (group == PathSpecGroup.EXACT)
+        {
+            if (pathSpec.equals(path))
+            {
+                return true;
+            }
+            return (path.charAt(path.length() - 1) == '/') && (path.equals(pathSpec + '/'));
+        }
+        return false;
+    }
+
+    private boolean isWildcardMatch(String path)
+    {
+        // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
+        int cpl = specLength - 2;
+        if ((group == PathSpecGroup.PREFIX_GLOB) && (path.regionMatches(0,pathSpec,0,cpl)))
+        {
+            if ((path.length() == cpl) || ('/' == path.charAt(cpl)))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean matches(String path)
+    {
+        switch (group)
+        {
+            case EXACT:
+                return isExactMatch(path);
+            case PREFIX_GLOB:
+                return isWildcardMatch(path);
+            case SUFFIX_GLOB:
+                return path.regionMatches((path.length() - specLength) + 1,pathSpec,1,specLength - 1);
+            case DEFAULT:
+                return true;
+            default:
+                return false;
         }
     }
 }

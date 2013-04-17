@@ -34,7 +34,7 @@ import javax.websocket.server.ServerEndpoint;
 /**
  * PathSpec for WebSocket &#064;{@link ServerEndpoint} declarations.
  */
-public class PathParamSpec extends PathSpec
+public class WebSocketPathSpec extends RegexPathSpec
 {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.*)\\}");
     private static final Pattern VALID_VARIABLE_NAME = Pattern.compile("[a-zA-Z0-9._-]+");
@@ -50,7 +50,7 @@ public class PathParamSpec extends PathSpec
 
     private String variables[];
 
-    public PathParamSpec(String pathParamSpec)
+    public WebSocketPathSpec(String pathParamSpec)
     {
         super();
         Objects.requireNonNull(pathParamSpec,"Path Param Spec cannot be null");
