@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.PathMappings.MappedResource;
 
@@ -109,7 +110,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
         }
     }
 
-    private List<MappedResource<E>> mappings = new CopyOnWriteArrayList<MappedResource<E>>();
+    private List<MappedResource<E>> mappings = new ArrayList<MappedResource<E>>();
     private MappedResource<E> defaultResource = null;
 
     public MappedResource<E> getMatch(String path)
@@ -141,5 +142,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
         }
         // TODO: warning on replacement of existing mapping?
         mappings.add(entry);
+        Collections.sort(mappings);
     }
 }

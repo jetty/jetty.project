@@ -36,6 +36,43 @@ public class PathMappingsTest
     }
 
     /**
+     * Test the match order rules with a mixed Servlet and WebSocket path specs
+     * <p>
+     * <ul>
+     * <li>Exact match</li>
+     * <li>Longest prefix match</li>
+     * <li>Longest suffix match</li>
+     * </ul>
+     */
+    @Test
+    public void testMixedMatchOrder()
+    {
+        PathMappings<String> p = new PathMappings<>();
+
+        p.put(new ServletPathSpec("/"),"default");
+        p.put(new ServletPathSpec("/animal/bird/*"),"birds");
+        p.put(new ServletPathSpec("/animal/fish/*"),"fishes");
+        p.put(new ServletPathSpec("/animal/*"),"animals");
+        p.put(new WebSocketPathSpec("/animal/{type}/{name}/chat"),"animalChat");
+        p.put(new WebSocketPathSpec("/animal/{type}/{name}/cam"),"animalCam");
+        p.put(new WebSocketPathSpec("/entrance/cam"),"entranceCam");
+
+        for (MappedResource<String> res : p)
+        {
+            System.out.printf("  %s%n",res);
+        }
+
+        assertMatch(p,"/animal/bird/eagle","birds");
+        assertMatch(p,"/animal/fish/bass/sea","fishes");
+        assertMatch(p,"/animal/peccary/javalina/evolution","animals");
+        assertMatch(p,"/","default");
+        assertMatch(p,"/animal/bird/eagle/chat","animalChat");
+        assertMatch(p,"/animal/bird/penguin/chat","animalChat");
+        assertMatch(p,"/animal/fish/trout/cam","animalCam");
+        assertMatch(p,"/entrance/cam","entranceCam");
+    }
+
+    /**
      * Test the match order rules imposed by the Servlet API.
      * <p>
      * <ul>
