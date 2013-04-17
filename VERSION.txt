@@ -1,4 +1,4 @@
-jetty-9.0.2.v20130415 - 15 April 2013
+jetty-9.0.2.v20130417 - 17 April 2013
  + 364921 FIN WAIT sockets
  + 402885 reuse Deflaters in GzipFilter
  + 403591 do not use the ConcurrentArrayBlockingQueue for thread pool, selector
