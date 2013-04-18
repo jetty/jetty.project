@@ -29,13 +29,12 @@ import java.util.StringTokenizer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -265,12 +264,28 @@ public class GzipHandler extends HandlerWrapper
                 }
                 finally
                 {
-                    Continuation continuation = ContinuationSupport.getContinuation(request);
-                    if (continuation.isSuspended() && continuation.isResponseWrapped())
+                    if (request.isAsyncStarted())
                     {
-                        continuation.addContinuationListener(new ContinuationListener()
+                        request.getAsyncContext().addListener(new AsyncListener()
                         {
-                            public void onComplete(Continuation continuation)
+                            
+                            @Override
+                            public void onTimeout(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onStartAsync(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onError(AsyncEvent event) throws IOException
+                            {
+                            }
+                            
+                            @Override
+                            public void onComplete(AsyncEvent event) throws IOException
                             {
                                 try
                                 {
@@ -281,9 +296,6 @@ public class GzipHandler extends HandlerWrapper
                                     LOG.warn(e);
                                 }
                             }
-
-                            public void onTimeout(Continuation continuation)
-                            {}
                         });
                     }
                     else if (exceptional && !response.isCommitted())

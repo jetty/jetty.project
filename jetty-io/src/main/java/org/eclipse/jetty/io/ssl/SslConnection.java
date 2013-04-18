@@ -190,6 +190,10 @@ public class SslConnection extends AbstractConnection
         if (DEBUG)
             LOG.debug("onFillable enter {}", getEndPoint());
 
+        // We have received a close handshake, close the end point to send FIN.
+        if (_decryptedEndPoint.isInputShutdown())
+            getEndPoint().close();
+            
         // wake up whoever is doing the fill or the flush so they can
         // do all the filling, unwrapping, wrapping and flushing
         _decryptedEndPoint.getFillInterest().fillable();
@@ -612,8 +616,11 @@ public class SslConnection extends AbstractConnection
                                         // maybe we will fill some more on a retry
                                         continue;
                                     }
-                                    // we need to wait for more net data
-                                    return 0;
+                                    else
+                                    {
+                                        // we need to wait for more net data
+                                        return 0;
+                                    }
 
                                 case FINISHED:
                                     throw new IllegalStateException();
@@ -726,6 +733,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 _cannotAcceptMoreAppDataToFlush = true;
                                 getEndPoint().flush(_encryptedOutput);
+                                getEndPoint().shutdownOutput();
                                 // If we failed to flush the close handshake then we will just pretend that
                                 // the write has progressed normally and let a subsequent call to flush
                                 // (or WriteFlusher#onIncompleteFlushed) to finish writing the close handshake.
@@ -733,8 +741,11 @@ public class SslConnection extends AbstractConnection
                                 if (BufferUtil.hasContent(_encryptedOutput))
                                     return false;
                             }
-
                             // otherwise we have written, and the caller will close the underlying connection
+                            else
+                            {
+                                getEndPoint().shutdownOutput();
+                            }
                             return allConsumed;
 
                         case BUFFER_UNDERFLOW:
@@ -823,23 +834,36 @@ public class SslConnection extends AbstractConnection
             {
                 _bufferPool.release(_encryptedOutput);
                 _encryptedOutput = null;
-                if (_sslEngine.isOutboundDone())
-                    getEndPoint().shutdownOutput();
             }
         }
 
         @Override
         public void shutdownOutput()
         {
-            _sslEngine.closeOutbound();
-            try
+            boolean ishut = isInputShutdown();
+            if (DEBUG)
+                LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, isOutputShutdown(), ishut);
+            if (ishut)
             {
-                flush(BufferUtil.EMPTY_BUFFER);
-            }
-            catch (IOException e)
-            {
-                LOG.ignore(e);
+                // Aggressively close, since inbound close alert has already been processed
+                // and the TLS specification allows to close the connection directly, which
+                // is what most other implementations expect: a FIN rather than a TLS close
+                // reply. If a TLS close reply is sent, most implementation send a RST.
                 getEndPoint().close();
+            }
+            else
+            {
+                try
+                {
+                    _sslEngine.closeOutbound();
+                    flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
+                    SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
+                }
+                catch (Exception e)
+                {
+                    LOG.ignore(e);
+                    getEndPoint().close();
+                }
             }
         }
 

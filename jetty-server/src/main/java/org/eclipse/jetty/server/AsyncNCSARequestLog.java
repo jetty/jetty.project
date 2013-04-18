@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.ConcurrentArrayBlockingQueue;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,7 +42,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
     {
         this(null,null);
     }
-    
+
     public AsyncNCSARequestLog(BlockingQueue<String> queue)
     {
         this(null,queue);
@@ -52,12 +52,12 @@ public class AsyncNCSARequestLog extends NCSARequestLog
     {
         this(filename,null);
     }
-    
+
     public AsyncNCSARequestLog(String filename,BlockingQueue<String> queue)
     {
         super(filename);
         if (queue==null)
-            queue=new ConcurrentArrayBlockingQueue.Unbounded<String>();
+            queue=new BlockingArrayQueue<>(1024);
         _queue=queue;
     }
 
@@ -67,7 +67,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
         {
             setName("AsyncNCSARequestLog@"+Integer.toString(AsyncNCSARequestLog.this.hashCode(),16));
         }
-        
+
         @Override
         public void run()
         {
@@ -78,7 +78,7 @@ public class AsyncNCSARequestLog extends NCSARequestLog
                     String log = _queue.poll(10,TimeUnit.SECONDS);
                     if (log!=null)
                         AsyncNCSARequestLog.super.write(log);
-                    
+
                     while(!_queue.isEmpty())
                     {
                         log=_queue.poll();

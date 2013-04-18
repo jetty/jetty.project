@@ -244,7 +244,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public PingResultInfo ping(PingInfo pingInfo) throws ExecutionException, InterruptedException, TimeoutException
     {
-        //TODO: find a better name for PingResultInfo
         FuturePromise<PingResultInfo> result = new FuturePromise<>();
         ping(pingInfo, result);
         if (pingInfo.getTimeout() > 0)
@@ -548,10 +547,10 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 int maxConcurrentStreams = maxConcurrentLocalStreams;
                 if (maxConcurrentStreams > -1 && oldStreamCountValue >= maxConcurrentStreams)
                 {
-                    String msg = String.format("Max concurrent local streams (%d) exceeded.",
+                    String message = String.format("Max concurrent local streams (%d) exceeded.",
                             maxConcurrentStreams);
-                    LOG.debug(msg);
-                    promise.failed(new SPDYException(msg));
+                    LOG.debug(message);
+                    promise.failed(new SPDYException(message));
                     return null;
                 }
                 if (localStreamCount.compareAndSet(oldStreamCountValue, oldStreamCountValue + 1))
@@ -561,22 +560,17 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         if (streams.putIfAbsent(streamId, stream) != null)
         {
-            //TODO: fail promise
+            String message = "Duplicate stream id " + streamId;
+            IllegalStateException duplicateIdException = new IllegalStateException(message);
+            promise.failed(duplicateIdException);
             if (local)
             {
                 localStreamCount.decrementAndGet();
-                throw new IllegalStateException("Duplicate stream id " + streamId);
+                throw duplicateIdException;
             }
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
             LOG.debug("Duplicate stream, {}", rstInfo);
-            try
-            {
-                rst(rstInfo); //TODO: non blocking reset or find the reason why blocking is used
-            }
-            catch (InterruptedException | ExecutionException | TimeoutException e)
-            {
-                e.printStackTrace(); // TODO: really catch???
-            }
+            rst(rstInfo, new Callback.Adapter()); // We don't care (too much) if the reset fails.
             return null;
         }
         else

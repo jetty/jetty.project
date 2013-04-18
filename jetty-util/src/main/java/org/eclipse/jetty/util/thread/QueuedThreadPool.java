@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.ConcurrentArrayBlockingQueue;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -90,9 +89,9 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
         setStopTimeout(5000);
-        
+
         if (queue==null)
-            queue=new ConcurrentArrayBlockingQueue.Unbounded<Runnable>();
+            queue=new BlockingArrayQueue<>(_minThreads, _minThreads);
         _jobs=queue;
 
     }

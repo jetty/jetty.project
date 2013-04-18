@@ -303,7 +303,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      * @param virtualHosts
      *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Host names may start with '@', in which case they
+     *            will match the {@link Connector#getName()} for the request.
      */
     public void addVirtualHosts(String[] virtualHosts)
     {
@@ -817,8 +818,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!_contextListeners.isEmpty())
             {
                 ServletContextEvent event = new ServletContextEvent(_scontext);
-                for (ServletContextListener listener : _contextListeners)
-                    callContextDestroyed(listener,event);
+                for (int i = _contextListeners.size(); i-->0;) 
+                    callContextDestroyed(_contextListeners.get(i),event);
             }
 
             if (_errorHandler != null)
@@ -1093,20 +1094,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (!_requestListeners.isEmpty())
                 {
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
-                    ListIterator<ServletRequestListener> iter = _requestListeners.listIterator(_requestListeners.size());
-                    while (iter.hasNext())
-                        iter.next();
-                    while (iter.hasPrevious())
-                        iter.previous().requestDestroyed(sre);
+                    for (int i=_requestListeners.size();i-->0;)
+                        _requestListeners.get(i).requestDestroyed(sre);
                 }
 
                 if (!_requestAttributeListeners.isEmpty())
                 {
                     ListIterator<ServletRequestAttributeListener> iter = _requestAttributeListeners.listIterator(_requestAttributeListeners.size());
-                    while(iter.hasNext())
-                        iter.next();
-                    while(iter.hasPrevious())
-                        baseRequest.removeEventListener(iter.previous());
+                    for (int i=_requestAttributeListeners.size();i-->0;)
+                        baseRequest.removeEventListener(_requestAttributeListeners.get(i));
                 }
             }
         }

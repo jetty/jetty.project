@@ -160,4 +160,12 @@ public class ExtensionStackTest
             stack.stop();
         }
     }
+
+    @Test
+    public void testToString()
+    {
+        ExtensionStack stack = createExtensionStack();
+        // Shouldn't cause a NPE.
+        LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
+    }
 }

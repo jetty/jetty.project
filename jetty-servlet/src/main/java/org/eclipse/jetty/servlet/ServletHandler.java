@@ -208,6 +208,9 @@ public class ServletHandler extends ScopedHandler
         _filterNameMappings=null;
 
         _servletPathMap=null;
+        
+        _matchBeforeIndex=-1;
+        _matchAfterIndex=-1;
     }
 
     /* ------------------------------------------------------------ */
@@ -1053,7 +1056,7 @@ public class ServletHandler extends ScopedHandler
     public void addFilterMapping (FilterMapping mapping)
     {
         if (mapping != null)
-        { 
+        {
             Source source = (mapping.getFilterHolder()==null?null:mapping.getFilterHolder().getSource());
             FilterMapping[] mappings =getFilterMappings();
             if (mappings==null || mappings.length==0)

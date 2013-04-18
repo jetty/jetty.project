@@ -445,6 +445,20 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         Assert.assertNull(failure.get());
     }
 
+    @Test
+    public void testInputStreamResponseListenerFailedBeforeResponse() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        // Connect to the wrong port
+        client.newRequest("localhost", 0)
+                .scheme(scheme)
+                .send(listener);
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(result);
+    }
+
     @Test(expected = ExecutionException.class)
     public void testInputStreamContentProviderThrowingWhileReading() throws Exception
     {

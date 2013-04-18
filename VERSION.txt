@@ -1,5 +1,18 @@
-jetty-9.0.2-SNAPSHOT
+jetty-9.0.3-SNAPSHOT
 
+jetty-9.0.2.v20130417 - 17 April 2013
+ + 364921 FIN WAIT sockets
+ + 402885 reuse Deflaters in GzipFilter
+ + 403591 do not use the ConcurrentArrayBlockingQueue for thread pool, selector
+   and async request log
+ + 404511 fixed poor methods in ArrayTernaryTrie
+ + 405119 Tidy up comments and code formatting for osgi
+ + 405352 Servlet init-param always overridden by WebServlet annotation
+ + 405364 spdy imeplement MAX_CONCURRENT_STREAMS
+ + 405449 spdy improve handling of duplicate stream Ids
+ + 405540 ServletContextListeners call in reverse in doStop
+ + 405551 InputStreamResponseListener.await returns null when request fails.
+ + 405679 example other server for documentation
 
 jetty-9.0.1.v20130408 - 08 April 2013
  + 384552 add comment to jetty-https.xml describing keymanager password
