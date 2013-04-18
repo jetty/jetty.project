@@ -24,6 +24,7 @@ import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.AbstractHttpConnection;
@@ -96,7 +97,11 @@ public class JspPropertyGroupServlet extends GenericServlet
     @Override
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {           
-        Request request=(req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
+        HttpServletRequest request = null;
+        if (req instanceof HttpServletRequest)
+            request = (HttpServletRequest)req;
+        else
+            throw new ServletException("Request not HttpServletRequest");
 
         String servletPath=null;
         String pathInfo=null;

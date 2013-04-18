@@ -1769,7 +1769,14 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToServer(record);
 
         // Close Alert
-        record = proxy.readFromServer();
+        try
+        {
+            record = proxy.readFromServer();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
         proxy.flushToClient(record);
 
     }
