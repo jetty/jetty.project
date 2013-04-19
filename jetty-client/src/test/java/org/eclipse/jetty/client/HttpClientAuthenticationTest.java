@@ -81,7 +81,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         Constraint constraint = new Constraint();
         constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"*"});
+        constraint.setRoles(new String[]{"**"}); //allow any authenticated user
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/secure");
         mapping.setConstraint(constraint);
@@ -89,7 +89,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         securityHandler.addConstraintMapping(mapping);
         securityHandler.setAuthenticator(authenticator);
         securityHandler.setLoginService(loginService);
-        securityHandler.setStrict(false);
 
         securityHandler.setHandler(handler);
         start(securityHandler);

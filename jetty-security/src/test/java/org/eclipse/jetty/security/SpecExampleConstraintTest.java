@@ -239,7 +239,6 @@ public class SpecExampleConstraintTest
     {
         
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;

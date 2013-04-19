@@ -128,12 +128,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
         return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
-
-
-
-
-
-
     }
 
 

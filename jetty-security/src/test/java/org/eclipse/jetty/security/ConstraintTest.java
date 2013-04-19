@@ -81,7 +81,8 @@ public class ConstraintTest
         SessionHandler _session = new SessionHandler();
 
         HashLoginService _loginService = new HashLoginService(TEST_REALM);
-        _loginService.putUser("user",new Password("password"));
+        _loginService.putUser("user0", new Password("password"), new String[]{});
+        _loginService.putUser("user",new Password("password"), new String[] {"user"});
         _loginService.putUser("user2",new Password("password"), new String[] {"user"});
         _loginService.putUser("admin",new Password("password"), new String[] {"user","administrator"});
         _loginService.putUser("user3", new Password("password"), new String[] {"foo"});
@@ -173,7 +174,16 @@ public class ConstraintTest
         mapping6.setPathSpec("/data/*");
         mapping6.setConstraint(constraint6);
         
-        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6);
+        Constraint constraint7 = new Constraint();
+        constraint7.setAuthenticate(true);
+        constraint7.setName("** constraint");
+        constraint7.setRoles(new String[]{Constraint.ANY_AUTH,"user"}); //the "user" role is superfluous once ** has been defined
+        ConstraintMapping mapping7 = new ConstraintMapping();
+        mapping7.setPathSpec("/starstar/*");
+        mapping7.setConstraint(constraint7);
+       
+        
+        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7);
     }
 
     @Test
@@ -246,7 +256,6 @@ public class ConstraintTest
         
         
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -331,7 +340,6 @@ public class ConstraintTest
     public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -386,7 +394,6 @@ public class ConstraintTest
     public void testFormRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -443,7 +450,6 @@ public class ConstraintTest
     public void testFormPostRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -513,7 +519,6 @@ public class ConstraintTest
     public void testFormNoCookies() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -586,7 +591,7 @@ public class ConstraintTest
         assertThat(response,containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user3:password") + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403"));
 
@@ -660,9 +665,9 @@ public class ConstraintTest
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: 35\r\n" +
+                "Content-Length: 36\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=password\r\n");
+                "j_username=user0&j_password=password\r\n");
         assertThat(response,startsWith("HTTP/1.1 302 "));
         assertThat(response,containsString("Location"));
         assertThat(response,containsString("/ctx/auth/info"));
@@ -771,9 +776,9 @@ public class ConstraintTest
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: 35\r\n" +
+                "Content-Length: 36\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=password\r\n");
+                "j_username=user3&j_password=password\r\n");
         assertThat(response,startsWith("HTTP/1.1 302 "));
         assertThat(response,containsString("Location"));
         assertThat(response,containsString("/ctx/auth/info"));
@@ -816,12 +821,35 @@ public class ConstraintTest
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
+        //check user2 does not have right role to access /admin/*
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403"));
         assertThat(response,containsString("!role"));
+        
+        //log in as user3, who doesn't have a valid role, but we are checking a constraint
+        //of ** which just means they have to be authenticated
+        response = _connector.getResponses("GET /ctx/starstar/info HTTP/1.0\r\n\r\n");
+        assertThat(response,startsWith("HTTP/1.1 302 "));
+        assertThat(response,containsString("testLoginPage"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
+        response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 36\r\n" +
+                "\r\n" +
+                "j_username=user3&j_password=password\r\n");
+        assertThat(response,startsWith("HTTP/1.1 302 "));
+        assertThat(response,containsString("Location"));
+        assertThat(response,containsString("/ctx/starstar/info"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+
+        response = _connector.getResponses("GET /ctx/starstar/info HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
 
         // log in again as admin
@@ -900,7 +928,7 @@ public class ConstraintTest
         RoleCheckHandler check=new RoleCheckHandler();
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
+        //_security.setStrict(false);
 
         _server.start();
 
@@ -932,7 +960,7 @@ public class ConstraintTest
     public void testDeferredBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
+        //_security.setStrict(false);
         _server.start();
 
         String response;
@@ -959,7 +987,7 @@ public class ConstraintTest
     public void testRelaxedMethod() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
+        //_security.setStrict(false);
         _server.start();
 
         String response;

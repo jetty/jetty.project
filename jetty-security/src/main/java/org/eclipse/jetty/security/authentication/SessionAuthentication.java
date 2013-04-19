@@ -29,16 +29,15 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.UserIdentity.Scope;
 import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SessionAuthentication implements Authentication.User, Serializable, HttpSessionActivationListener, HttpSessionBindingListener
+public class SessionAuthentication extends AbstractUserAuthentication implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
 
@@ -48,35 +47,17 @@ public class SessionAuthentication implements Authentication.User, Serializable,
 
     public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
 
-    private final String _method;
     private final String _name;
     private final Object _credentials;
-
-    private transient UserIdentity _userIdentity;
     private transient HttpSession _session;
 
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
-        _method = method;
-        _userIdentity = userIdentity;
-        _name=_userIdentity.getUserPrincipal().getName();
+        super(method, userIdentity);
+        _name=userIdentity.getUserPrincipal().getName();
         _credentials=credentials;
     }
 
-    public String getAuthMethod()
-    {
-        return _method;
-    }
-
-    public UserIdentity getUserIdentity()
-    {
-        return _userIdentity;
-    }
-
-    public boolean isUserInRole(Scope scope, String role)
-    {
-        return _userIdentity.isUserInRole(role, scope);
-    }
 
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException

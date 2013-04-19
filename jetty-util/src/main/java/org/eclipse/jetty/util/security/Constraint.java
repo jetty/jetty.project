@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 /* ------------------------------------------------------------ */
 /**
+ * Constraint
+ * 
  * Describe an auth and/or data constraint.
  * 
  * 
@@ -65,6 +67,8 @@ public class Constraint implements Cloneable, Serializable
     public final static String NONE = "NONE";
 
     public final static String ANY_ROLE = "*";
+    
+    public final static String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
 
     /* ------------------------------------------------------------ */
     private String _name;
@@ -74,6 +78,8 @@ public class Constraint implements Cloneable, Serializable
     private int _dataConstraint = DC_UNSET;
 
     private boolean _anyRole = false;
+    
+    private boolean _anyAuth = false;
 
     private boolean _authenticate = false;
 
@@ -119,9 +125,15 @@ public class Constraint implements Cloneable, Serializable
     {
         _roles = roles;
         _anyRole = false;
+        _anyAuth = false;
         if (roles != null) 
-            for (int i = roles.length; !_anyRole && i-- > 0;)
+        {
+            for (int i = roles.length; i-- > 0;)
+            {
                 _anyRole |= ANY_ROLE.equals(roles[i]);
+                _anyAuth |= ANY_AUTH.equals(roles[i]);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -131,6 +143,16 @@ public class Constraint implements Cloneable, Serializable
     public boolean isAnyRole()
     {
         return _anyRole;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Servlet Spec 3.1, pg 140
+     * @return True if any authenticated user is permitted (ie a role "**" was specified in the constraint).
+     */
+    public boolean isAnyAuth()
+    {
+        return _anyAuth;
     }
 
     /* ------------------------------------------------------------ */

@@ -49,8 +49,10 @@ import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */
 /**
+ * ConstraintSecurityHandler
+ * 
  * Handler to enforce SecurityConstraints. This implementation is servlet spec
- * 3.0 compliant and pre-computes the constraint combinations for runtime
+ * 3.1 compliant and pre-computes the constraint combinations for runtime
  * efficiency.
  *
  */
@@ -61,7 +63,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final List<ConstraintMapping> _constraintMappings= new CopyOnWriteArrayList<>();
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
     private final PathMap<Map<String, RoleInfo>> _constraintMap = new PathMap<>();
-    private boolean _strict = true;
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -268,36 +270,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    
-    /* ------------------------------------------------------------ */
-    /** Get the strict mode.
-     * @return true if the security handler is running in strict mode.
-     */
-    public boolean isStrict()
-    {
-        return _strict;
-    }
 
-    /* ------------------------------------------------------------ */
-    /** Set the strict mode of the security handler.
-     * <p>
-     * When in strict mode (the default), the full servlet specification
-     * will be implemented.
-     * If not in strict mode, some additional flexibility in configuration
-     * is allowed:<ul>
-     * <li>All users do not need to have a role defined in the deployment descriptor
-     * <li>The * role in a constraint applies to ANY role rather than all roles defined in
-     * the deployment descriptor.
-     * </ul>
-     *
-     * @param strict the strict to set
-     * @see #setRoles(Set)
-     * @see #setConstraintMappings(List, Set)
-     */
-    public void setStrict(boolean strict)
-    {
-        _strict = strict;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -408,8 +381,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         _constraintMappings.add(mapping);
         if (mapping.getConstraint()!=null && mapping.getConstraint().getRoles()!=null)
+        {
+            //allow for lazy role naming: if a role is named in a security constraint, try and
+            //add it to the list of declared roles (ie as if it was declared with a security-role
             for (String role :  mapping.getConstraint().getRoles())
+            {
+                if ("*".equals(role) || "**".equals(role))
+                    continue;
                 addRole(role);
+            }
+        }
 
         if (isStarted())
         {
@@ -424,8 +405,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void addRole(String role)
     {
+        //add to list of declared roles
         boolean modified = _roles.add(role);
-        if (isStarted() && modified && isStrict())
+        if (isStarted() && modified)
         {
             // Add the new role to currently defined any role role infos
             for (Map<String,RoleInfo> map : _constraintMap.values())
@@ -593,26 +575,29 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             //add in the roles
             boolean checked = mapping.getConstraint().getAuthenticate();
             ri.setChecked(checked);
+
             if (ri.isChecked())
             {
                 if (mapping.getConstraint().isAnyRole())
-                 {
-                     if (_strict)
-                     {
-                         // * means "all defined roles"
-                         for (String role : _roles)
-                            ri.addRole(role);
-                     }
-                     else
-                         // * means any role
-                        ri.setAnyRole(true);
-                 }
-                 else
-                 {
+                {
+                    // * means matches any defined role
+                    for (String role : _roles)
+                        ri.addRole(role);
+                    ri.setAnyRole(true);
+                }
+                else if (mapping.getConstraint().isAnyAuth())
+                {
+                    //being authenticated is sufficient, not necessary to check roles
+                    ri.setAnyAuth(true);
+                }
+                else
+                {   
+                    //user must be in one of the named roles
                     String[] newRoles = mapping.getConstraint().getRoles();
                      for (String role : newRoles)
                      {
-                         if (_strict &&!_roles.contains(role))
+                         //check role has been defined
+                         if (!_roles.contains(role))
                              throw new IllegalArgumentException("Attempt to use undeclared role: " + role + ", known roles: " + _roles);
                         ri.addRole(role);
                      }
@@ -753,14 +738,35 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return true;
         }
 
-        if (roleInfo.isAnyRole() && request.getAuthType()!=null)
+        //handle ** role constraint
+        if (roleInfo.isAnyAuth() &&  request.getUserPrincipal() != null)
+        {
             return true;
-
+        }
+        
+        //check if user is any of the allowed roles
+        boolean isUserInRole = false;
         for (String role : roleInfo.getRoles())
         {
             if (userIdentity.isUserInRole(role, null))
-                return true;
+            {
+                isUserInRole = true;
+                break;
+            }
         }
+        
+        //handle * role constraint
+        if (roleInfo.isAnyRole() && request.getUserPrincipal() != null && isUserInRole)
+        {
+            return true;
+        }
+
+        //normal role check
+        if (isUserInRole)
+        {
+            return true;
+        }
+       
         return false;
     }
 
