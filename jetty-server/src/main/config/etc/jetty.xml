@@ -124,7 +124,7 @@
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
     <Set name="stopTimeout">5000</Set>
-    <Set name="dumpAfterStart">false</Set>
-    <Set name="dumpBeforeStop">false</Set>
+    <Set name="dumpAfterStart"><Property name="jetty.dump.start" default="false"/></Set>
+    <Set name="dumpBeforeStop"><Property name="jetty.dump.stop" default="false"/></Set>
 
 </Configure>
