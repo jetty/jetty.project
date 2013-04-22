@@ -78,6 +78,7 @@ public class ResourceCache
         _mimeTypes=mimeTypes;
         _parent=parent;
         _etags=etags;
+        _useFileMappedBuffer=useFileMappedBuffer;
     }
 
     /* ------------------------------------------------------------ */
