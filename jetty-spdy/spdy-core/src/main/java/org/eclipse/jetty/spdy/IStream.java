@@ -59,7 +59,9 @@ public interface IStream extends Stream, Callback
      */
     public void setStreamFrameListener(StreamFrameListener listener);
 
-    //TODO: javadoc thomas
+    /**
+     * @return the stream frame listener associated to this stream
+     */
     public StreamFrameListener getStreamFrameListener();
 
     /**

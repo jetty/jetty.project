@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
@@ -206,28 +208,100 @@ public class HttpTransportOverSPDY implements HttpTransport
         short version = stream.getSession().getVersion();
         if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") && !stream.isClosed())
         {
-            // We have a 200 OK with some content to send, check the push strategy
+            Set<String> pushResources = pushStrategy.apply(stream, requestHeaders, responseHeaders);
+            if (pushResources.size() > 0)
+            {
+                PushResourceCoordinator pushResourceCoordinator = new PushResourceCoordinator(pushResources);
+                pushResourceCoordinator.coordinate();
+            }
+        }
+    }
+
+    private class PushHttpTransportOverSPDY extends HttpTransportOverSPDY
+    {
+        private final PushResourceCoordinator pushResourceCoordinator;
+
+        private PushHttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint,
+                                          PushStrategy pushStrategy, Stream stream, Fields requestHeaders,
+                                          PushResourceCoordinator pushResourceCoordinator)
+        {
+            super(connector, configuration, endPoint, pushStrategy, stream, requestHeaders);
+            this.pushResourceCoordinator = pushResourceCoordinator;
+        }
+
+        @Override
+        public void completed()
+        {
+            pushResourceCoordinator.complete();
+        }
+    }
+
+    private class PushResourceCoordinator
+    {
+        private final Queue<PushResource> queue = new ConcurrentArrayQueue<>();
+        private final AtomicBoolean channelActive = new AtomicBoolean(false);
+        private final Set<String> pushResources;
+
+        private PushResourceCoordinator(Set<String> pushResources)
+        {
+            this.pushResources = pushResources;
+        }
+
+        private void coordinate()
+        {
+            for (String pushResource : pushResources)
+                pushResource(pushResource);
+        }
+
+        private void sendNextResourceData()
+        {
+            if (channelActive.compareAndSet(false, true))
+            {
+                PushResource pushResource = queue.poll();
+                if (pushResource != null)
+                {
+                    HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(pushResource.getPushStream(),
+                            pushResource.getPushRequestHeaders());
+                    pushChannel.requestStart(pushResource.getPushRequestHeaders(), true);
+                }
+            }
+        }
+
+        private HttpChannelOverSPDY newHttpChannelOverSPDY(Stream pushStream, Fields pushRequestHeaders)
+        {
+            HttpTransport transport = new PushHttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy,
+                    pushStream, pushRequestHeaders, this);
+            HttpInputOverSPDY input = new HttpInputOverSPDY();
+            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, pushStream);
+        }
+
+        private void pushResource(String pushResource)
+        {
+            short version = stream.getSession().getVersion();
             Fields.Field scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version));
             Fields.Field host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version));
             Fields.Field uri = requestHeaders.get(HTTPSPDYHeader.URI.name(version));
-            Set<String> pushResources = pushStrategy.apply(stream, requestHeaders, responseHeaders);
+            Fields pushHeaders = createPushHeaders(scheme, host, pushResource);
+            final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
-            for (String pushResource : pushResources)
+            // TODO: handle the timeout better
+            stream.push(new PushInfo(0, TimeUnit.MILLISECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
             {
-                Fields pushHeaders = createPushHeaders(scheme, host, pushResource);
-                final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
-
-                // TODO: handle the timeout better
-                stream.push(new PushInfo(0, TimeUnit.MILLISECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
+                @Override
+                public void succeeded(Stream pushStream)
                 {
-                    @Override
-                    public void succeeded(Stream pushStream)
-                    {
-                        HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(pushStream, pushRequestHeaders);
-                        pushChannel.requestStart(pushRequestHeaders, true);
-                    }
-                });
-            }
+                    queue.offer(new PushResource(pushStream, pushRequestHeaders));
+                    sendNextResourceData();
+                }
+            });
+        }
+
+        public void complete()
+        {
+            if (channelActive.compareAndSet(true, false))
+                sendNextResourceData();
+            else
+                throw new IllegalStateException("No channel was active when complete has been called.");
         }
     }
 
@@ -261,10 +335,25 @@ public class HttpTransportOverSPDY implements HttpTransport
         return pushHeaders;
     }
 
-    private HttpChannelOverSPDY newHttpChannelOverSPDY(Stream pushStream, Fields pushRequestHeaders)
+    private class PushResource
     {
-        HttpTransport transport = new HttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy, pushStream, pushRequestHeaders);
-        HttpInputOverSPDY input = new HttpInputOverSPDY();
-        return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, pushStream);
+        private final Stream pushStream;
+        private final Fields pushRequestHeaders;
+
+        public PushResource(Stream pushStream, Fields pushRequestHeaders)
+        {
+            this.pushStream = pushStream;
+            this.pushRequestHeaders = pushRequestHeaders;
+        }
+
+        public Stream getPushStream()
+        {
+            return pushStream;
+        }
+
+        public Fields getPushRequestHeaders()
+        {
+            return pushRequestHeaders;
+        }
     }
 }

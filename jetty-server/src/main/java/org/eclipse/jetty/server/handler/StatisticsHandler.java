@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -76,12 +77,13 @@ public class StatisticsHandler extends HandlerWrapper
         public void onError(AsyncEvent event) throws IOException
         {
         }
-        
+
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            HttpChannelState state = (HttpChannelState)event.getAsyncContext();
             
+            HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
+
             Request request = state.getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
 
@@ -93,7 +95,7 @@ public class StatisticsHandler extends HandlerWrapper
             if (!state.isDispatched())
                 _asyncWaitStats.decrement();
         }
-        
+
     };
 
     /**

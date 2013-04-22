@@ -22,9 +22,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -41,6 +45,8 @@ import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.spdy.api.Settings;
+import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -56,6 +62,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
@@ -159,25 +166,187 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     public void testMaxConcurrentStreamsToDisablePush() throws Exception
     {
         final CountDownLatch pushReceivedLatch = new CountDownLatch(1);
-        Session session = sendMainRequestAndCSSRequest(new SessionFrameListener.Adapter()
+
+        Session pushCacheBuildSession = startClient(version, serverAddress, null);
+
+        pushCacheBuildSession.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter());
+        pushCacheBuildSession.syn(new SynInfo(associatedCSSRequestHeaders, true), new StreamFrameListener.Adapter());
+
+        Session session = startClient(version, serverAddress, null);
+
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 0));
+        SettingsInfo settingsInfo = new SettingsInfo(settings);
+        session.settings(settingsInfo);
+
+        session.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 pushReceivedLatch.countDown();
+                return super.onPush(stream, pushInfo);
+            }
+        });
+
+        assertThat("No push stream is received", pushReceivedLatch.await(1, TimeUnit.SECONDS), is(false));
+    }
+
+    @Test
+    public void testPushResourceOrder() throws Exception
+    {
+        final CountDownLatch allExpectedPushesReceivedLatch = new CountDownLatch(4);
+
+        Session pushCacheBuildSession = startClient(version, serverAddress, null);
+
+        sendRequest(pushCacheBuildSession, mainRequestHeaders, null, null);
+        sendRequest(pushCacheBuildSession, associatedCSSRequestHeaders, null, null);
+        sendRequest(pushCacheBuildSession, associatedJSRequestHeaders, null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/image1.jpg", mainResource), null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/image2.jpg", mainResource), null, null);
+
+        Session session = startClient(version, serverAddress, null);
+
+        session.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+            {
+                LOG.info("onPush: stream: {}, pushInfo: {}", stream, pushInfo);
+                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+                switch ((int)allExpectedPushesReceivedLatch.getCount())
+                {
+                    case 4:
+                        assertThat("1st pushed resource is the css", uriHeader.endsWith("css"), is(true));
+                        break;
+                    case 3:
+                        assertThat("2nd pushed resource is the js", uriHeader.endsWith("js"), is(true));
+                        break;
+                    case 2:
+                        assertThat("3rd pushed resource is image1", uriHeader.endsWith("image1.jpg"),
+                                is(true));
+                        break;
+                    case 1:
+                        assertThat("4th pushed resource is image2", uriHeader.endsWith("image2.jpg"),
+                                is(true));
+                        break;
+                }
+                allExpectedPushesReceivedLatch.countDown();
+                return super.onPush(stream, pushInfo);
+            }
+        });
+
+        assertThat("All expected push resources have been received", allExpectedPushesReceivedLatch.await(5,
+                TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testThatPushResourcesAreUnique() throws Exception
+    {
+        final CountDownLatch pushReceivedLatch = new CountDownLatch(2);
+        sendMainRequestAndCSSRequest(null);
+        sendMainRequestAndCSSRequest(null);
+
+        Session session = startClient(version, serverAddress, null);
+
+        session.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+            {
+                pushReceivedLatch.countDown();
+                LOG.info("Push received: {}", pushInfo);
                 return null;
             }
         });
 
-//        Settings settings = new Settings();
-//        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 0));
-//        SettingsInfo settingsInfo = new SettingsInfo(settings);
-//
-//        session.settings(settingsInfo);
+        assertThat("style.css has been pushed only once", pushReceivedLatch.await(1, TimeUnit.SECONDS), is(false));
+    }
 
-        sendRequest(session, mainRequestHeaders, null, null);
+    @Test
+    public void testPushResourceAreSentNonInterleaved() throws Exception
+    {
+        final CountDownLatch allExpectedPushesReceivedLatch = new CountDownLatch(4);
+        final CountDownLatch allPushDataReceivedLatch = new CountDownLatch(4);
+        final CopyOnWriteArrayList<Integer> dataReceivedOrder = new CopyOnWriteArrayList<>();
 
-        assertThat(pushReceivedLatch.await(1, TimeUnit.SECONDS), is(false));
+        InetSocketAddress bigResponseServerAddress = startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                byte[] bytes = new byte[32768];
+                new Random().nextBytes(bytes);
+                ServletOutputStream outputStream = response.getOutputStream();
+                outputStream.write(bytes);
+                baseRequest.setHandled(true);
+            }
+        });
+        Session pushCacheBuildSession = startClient(version, bigResponseServerAddress, null);
+
+        Fields mainResourceHeaders = createHeadersWithoutReferrer(mainResource);
+        sendRequest(pushCacheBuildSession, mainResourceHeaders, null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/style.css", mainResource), null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/javascript.js", mainResource), null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/image1.jpg", mainResource), null, null);
+        sendRequest(pushCacheBuildSession, createHeaders("/image2.jpg", mainResource), null, null);
+
+        Session session = startClient(version, bigResponseServerAddress, null);
+
+        session.syn(new SynInfo(mainResourceHeaders, true), new StreamFrameListener.Adapter()
+        {
+            AtomicInteger currentStreamId = new AtomicInteger(2);
+
+            @Override
+            public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
+            {
+                LOG.info("Received push for stream: {} {}", stream.getId(), pushInfo);
+                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+                switch ((int)allExpectedPushesReceivedLatch.getCount())
+                {
+                    case 4:
+                        assertThat("1st pushed resource is the css", uriHeader.endsWith("css"), is(true));
+                        break;
+                    case 3:
+                        assertThat("2nd pushed resource is the js", uriHeader.endsWith("js"), is(true));
+                        break;
+                    case 2:
+                        assertThat("3rd pushed resource is image1", uriHeader.endsWith("image1.jpg"),
+                                is(true));
+                        break;
+                    case 1:
+                        assertThat("4th pushed resource is image2", uriHeader.endsWith("image2.jpg"),
+                                is(true));
+                        break;
+                }
+                allExpectedPushesReceivedLatch.countDown();
+                return new Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        if (stream.getId() != currentStreamId.get())
+                            throw new IllegalStateException("Streams interleaved. Expected StreamId: " +
+                                    currentStreamId + " but was: " + stream.getId());
+                        dataInfo.consume(dataInfo.available());
+                        if (dataInfo.isClose())
+                        {
+                            currentStreamId.compareAndSet(currentStreamId.get(), currentStreamId.get() + 2);
+                            allPushDataReceivedLatch.countDown();
+                            dataReceivedOrder.add(stream.getId());
+                        }
+
+                        LOG.info(stream.getId() + ":" + dataInfo);
+                    }
+                };
+            }
+        });
+
+        assertThat("All push resources received", allExpectedPushesReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("All pushData received", allPushDataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("The data for different push streams has not been interleaved",
+                dataReceivedOrder.toString(), equalTo("[2, 4, 6, 8]"));
+        LOG.info(dataReceivedOrder.toString());
     }
 
     private InetSocketAddress createServer() throws Exception
