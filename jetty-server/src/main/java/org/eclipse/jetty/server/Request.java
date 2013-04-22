@@ -204,7 +204,8 @@ public class Request implements HttpServletRequest
     private long _dispatchTime;
     private HttpURI _uri;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
-
+    private AsyncContextState _async;
+    
     /* ------------------------------------------------------------ */
     public Request(HttpChannel<?> channel, HttpInput<?> input)
     {
@@ -370,10 +371,11 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        HttpChannelState continuation = getHttpChannelState();
-        if (continuation.isInitial() && !continuation.isAsync())
-            throw new IllegalStateException(continuation.getStatusString());
-        return continuation;
+        HttpChannelState state = getHttpChannelState();
+        if (_async==null || state.isInitial() && !state.isAsync())
+            throw new IllegalStateException(state.getStatusString());
+        
+        return _async;
     }
 
     /* ------------------------------------------------------------ */
@@ -1517,6 +1519,9 @@ public class Request implements HttpServletRequest
 
         setAuthentication(Authentication.NOT_CHECKED);
         getHttpChannelState().recycle();
+        if (_async!=null)
+            _async.reset();
+        _async=null;
         _asyncSupported = true;
         _handled = false;
         if (_context != null)
@@ -2000,8 +2005,11 @@ public class Request implements HttpServletRequest
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
         HttpChannelState state = getHttpChannelState();
-        state.startAsync();
-        return state;
+        if (_async==null)
+            _async=new AsyncContextState(state);
+        AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,this,getResponse());
+        state.startAsync(event);
+        return _async;
     }
 
     /* ------------------------------------------------------------ */
@@ -2011,8 +2019,12 @@ public class Request implements HttpServletRequest
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
         HttpChannelState state = getHttpChannelState();
-        state.startAsync(_context, servletRequest, servletResponse);
-        return state;
+        if (_async==null)
+            _async=new AsyncContextState(state);
+        AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
+        event.setDispatchTarget(getServletContext(),URIUtil.addPaths(getServletPath(),getPathInfo()));
+        state.startAsync(event);
+        return _async;
     }
 
     /* ------------------------------------------------------------ */

@@ -476,16 +476,16 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
     {
-        final HttpChannelState async = connection.getRequest().getHttpChannelState();
-        final HttpChannelState.AsyncEventState state = async.getAsyncEventState();
+        final HttpChannelState state = connection.getRequest().getHttpChannelState();
+        final AsyncContextEvent event = state.getAsyncContextEvent();
 
         final Request baseRequest=connection.getRequest();
-        final String path=state.getPath();
+        final String path=event.getPath();
 
         if (path!=null)
         {
             // this is a dispatch with a path
-            ServletContext context=state.getServletContext();
+            ServletContext context=event.getServletContext();
             HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
@@ -495,8 +495,8 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         final String target=baseRequest.getPathInfo();
-        final HttpServletRequest request=(HttpServletRequest)async.getRequest();
-        final HttpServletResponse response=(HttpServletResponse)async.getResponse();
+        final HttpServletRequest request=(HttpServletRequest)event.getSuppliedRequest();
+        final HttpServletResponse response=(HttpServletResponse)event.getSuppliedResponse();
 
         if (LOG.isDebugEnabled())
         {
@@ -508,7 +508,6 @@ public class Server extends HandlerWrapper implements Attributes
             handle(target, baseRequest, request, response);
 
     }
-
 
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
