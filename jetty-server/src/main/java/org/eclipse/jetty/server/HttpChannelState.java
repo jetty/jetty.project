@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -350,6 +351,7 @@ public class HttpChannelState
     protected void expired()
     {
         final List<AsyncListener> aListeners;
+        AsyncEvent event;
         synchronized (this)
         {
             switch(_state)
@@ -357,6 +359,7 @@ public class HttpChannelState
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
                     _expired=true;
+                    event=_event;
                     aListeners=_asyncListeners;
                     break;
                 default:
@@ -370,7 +373,7 @@ public class HttpChannelState
             {
                 try
                 {
-                    listener.onTimeout(_event);
+                    listener.onTimeout(event);
                 }
                 catch(Exception e)
                 {
@@ -433,6 +436,7 @@ public class HttpChannelState
     protected void completed()
     {
         final List<AsyncListener> aListeners;
+        final AsyncContextEvent event;
         synchronized (this)
         {
             switch(_state)
@@ -440,6 +444,8 @@ public class HttpChannelState
                 case COMPLETING:
                     _state=State.COMPLETED;
                     aListeners=_asyncListeners;
+                    event=_event;
+                    _event=null;
                     break;
 
                 default:
@@ -453,14 +459,14 @@ public class HttpChannelState
             {
                 try
                 {
-                    if (_event!=null && _event.getThrowable()!=null)
+                    if (event!=null && event.getThrowable()!=null)
                     {
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,_event.getThrowable());
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,_event.getThrowable().getMessage());
-                        listener.onError(_event);
+                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
+                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,event.getThrowable().getMessage());
+                        listener.onError(event);
                     }
                     else
-                        listener.onComplete(_event);
+                        listener.onComplete(event);
                 }
                 catch(Exception e)
                 {
@@ -468,7 +474,9 @@ public class HttpChannelState
                 }
             }
         }
-        _event.completed();
+
+        if (event!=null)
+            event.completed();
     }
 
     protected void recycle()

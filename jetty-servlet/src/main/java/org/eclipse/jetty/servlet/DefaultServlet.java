@@ -160,7 +160,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
 
-
     /* ------------------------------------------------------------ */
     @Override
     public void init()

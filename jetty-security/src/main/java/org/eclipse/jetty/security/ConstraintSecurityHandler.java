@@ -542,7 +542,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void processConstraintMappingWithMethodOmissions (ConstraintMapping mapping, Map<String, RoleInfo> mappings)
     {
         String[] omissions = mapping.getMethodOmissions();
-        
         StringBuilder sb = new StringBuilder();
         for (int i=0; i<omissions.length; i++)
         {
@@ -551,12 +550,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             sb.append(omissions[i]);
         }
         sb.append(OMISSION_SUFFIX);
-       
         RoleInfo ri = new RoleInfo();
         mappings.put(sb.toString(), ri);
         configureRoleInfo(ri, mapping);
     }
-    
+
     
     /* ------------------------------------------------------------ */
     /**

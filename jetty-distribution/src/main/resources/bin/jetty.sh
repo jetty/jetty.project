@@ -118,9 +118,9 @@ started()
   for T in 1 2 3 4 5 6 7 9 10 11 12 13 14 15 
   do
     sleep 4
-    [ -z "$(grep STARTED $1)" ] || return 0
-    [ -z "$(grep STOPPED $1)" ] || return 1
-    [ -z "$(grep FAILED $1)" ] || return 1
+    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
+    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
+    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
@@ -338,13 +338,17 @@ then
 fi
 
 #####################################################
-# Find a PID for the pid file
+# Find a pid and state file
 #####################################################
 if [ -z "$JETTY_PID" ] 
 then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
-JETTY_STATE=$(dirname $JETTY_PID)/jetty.state
+
+if [ -z "$JETTY_STATE" ] 
+then
+  JETTY_STATE=$JETTY_HOME/jetty.state
+fi
 JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 
@@ -415,8 +419,8 @@ if (( DEBUG ))
 then
   echo "JETTY_HOME     =  $JETTY_HOME"
   echo "JETTY_CONF     =  $JETTY_CONF"
-  echo "JETTY_RUN      =  $JETTY_RUN"
   echo "JETTY_PID      =  $JETTY_PID"
+  echo "JETTY_START    =  $JETTY_START"
   echo "JETTY_ARGS     =  $JETTY_ARGS"
   echo "CONFIGS        =  ${CONFIGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
@@ -566,22 +570,21 @@ case "$ACTION" in
     fi
 
     exec "${RUN_CMD[@]}"
-
     ;;
 
   check|status)
     echo "Checking arguments to Jetty: "
+    echo "START_INI      =  $START_INI"
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_CONF     =  $JETTY_CONF"
-    echo "JETTY_RUN      =  $JETTY_RUN"
     echo "JETTY_PID      =  $JETTY_PID"
-    echo "JETTY_PORT     =  $JETTY_PORT"
+    echo "JETTY_START    =  $JETTY_START"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
-    echo "START_INI      =  $START_INI"
     echo "CONFIGS        =  ${CONFIGS[*]}"
-    echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
-    echo "JAVA           =  $JAVA"
     echo "CLASSPATH      =  $CLASSPATH"
+    echo "JAVA           =  $JAVA"
+    echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
+    echo "JETTY_ARGS     =  $JETTY_ARGS"
     echo "RUN_CMD        =  ${RUN_CMD[*]}"
     echo
     

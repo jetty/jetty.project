@@ -57,8 +57,8 @@ public class ResourceCache
     private final ResourceCache _parent;
     private final MimeTypes _mimeTypes;
     private final boolean _etagSupported;
-
-    private boolean  _useFileMappedBuffer=true;
+    private final boolean  _useFileMappedBuffer;
+    
     private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
@@ -140,12 +140,6 @@ public class ResourceCache
     public boolean isUseFileMappedBuffer()
     {
         return _useFileMappedBuffer;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setUseFileMappedBuffer(boolean useFileMappedBuffer)
-    {
-        _useFileMappedBuffer = useFileMappedBuffer;
     }
 
     /* ------------------------------------------------------------ */
