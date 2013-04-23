@@ -137,7 +137,7 @@ public class WebSocketClient extends ContainerLifeCycle
         }
 
         // Validate websocket URI
-        LOG.debug("connect websocket:{} to:{}",websocket,toUri);
+        LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
         ConnectionManager manager = getConnectionManager();
@@ -162,6 +162,8 @@ public class WebSocketClient extends ContainerLifeCycle
 
         // Create the appropriate (physical vs virtual) connection task
         ConnectPromise promise = manager.connect(this,driver,request);
+
+        LOG.debug("Connect Promise: {}",promise);
 
         // Execute the connection on the executor thread
         executor.execute(promise);

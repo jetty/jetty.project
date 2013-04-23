@@ -34,6 +34,8 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Assert;
 
@@ -44,6 +46,7 @@ import org.junit.Assert;
  */
 public class WSServer
 {
+    private static final Logger LOG = Log.getLogger(WSServer.class);
     @SuppressWarnings("unused")
     private final TestingDir testdir;
     private final File contextDir;
@@ -62,16 +65,32 @@ public class WSServer
         FS.ensureEmpty(contextDir);
     }
 
-    public void copyEndpoint(Class<?> endpointClass) throws Exception
+    public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = endpointClass.getName().replace('.','/') + ".class";
+        String endpointPath = clazz.getName().replace('.','/') + ".class";
         URL classUrl = cl.getResource(endpointPath);
-        Assert.assertThat("Class URL for: " + endpointClass,classUrl,notNullValue());
+        Assert.assertThat("Class URL for: " + clazz,classUrl,notNullValue());
         File destFile = new File(classesDir,OS.separators(endpointPath));
         FS.ensureDirExists(destFile.getParentFile());
         File srcFile = new File(classUrl.toURI());
         IO.copy(srcFile,destFile);
+    }
+
+    public void copyEndpoint(Class<?> endpointClass) throws Exception
+    {
+        copyClass(endpointClass);
+    }
+
+    public void copyWebInf(String testResourceName) throws IOException
+    {
+        webinf = new File(contextDir,"WEB-INF");
+        FS.ensureDirExists(webinf);
+        classesDir = new File(webinf,"classes");
+        FS.ensureDirExists(classesDir);
+        File webxml = new File(webinf,"web.xml");
+        File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
+        IO.copy(testWebXml,webxml);
     }
 
     public WebAppContext createWebAppContext()
@@ -84,13 +103,7 @@ public class WSServer
 
     public void createWebInf() throws IOException
     {
-        webinf = new File(contextDir,"WEB-INF");
-        FS.ensureDirExists(webinf);
-        classesDir = new File(webinf,"classes");
-        FS.ensureDirExists(classesDir);
-        File webxml = new File(webinf,"web.xml");
-        File emptyWebXml = MavenTestingUtils.getTestResourceFile("empty-web.xml");
-        IO.copy(emptyWebXml,webxml);
+        copyWebInf("empty-web.xml");
     }
 
     public void deployWebapp(WebAppContext webapp) throws Exception
@@ -134,6 +147,7 @@ public class WSServer
         }
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        LOG.debug("Server started on {}",serverUri);
     }
 
     public void stop()

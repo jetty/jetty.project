@@ -18,8 +18,25 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import java.util.List;
+import java.util.Map;
 
-public class WebSocketHandler extends HandlerWrapper
+import javax.websocket.HandshakeResponse;
+
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+
+public class JsrHandshakeResponse implements HandshakeResponse
 {
+    private final UpgradeResponse response;
+
+    public JsrHandshakeResponse(UpgradeResponse resp)
+    {
+        this.response = resp;
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return response.getHeaders();
+    }
 }

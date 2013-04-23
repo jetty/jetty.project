@@ -16,13 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
 import static org.hamcrest.Matchers.*;
 
-import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
-import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,9 +53,9 @@ public class PathMappingsTest
         p.put(new ServletPathSpec("/animal/bird/*"),"birds");
         p.put(new ServletPathSpec("/animal/fish/*"),"fishes");
         p.put(new ServletPathSpec("/animal/*"),"animals");
-        p.put(new WebSocketPathSpec("/animal/{type}/{name}/chat"),"animalChat");
-        p.put(new WebSocketPathSpec("/animal/{type}/{name}/cam"),"animalCam");
-        p.put(new WebSocketPathSpec("/entrance/cam"),"entranceCam");
+        p.put(new RegexPathSpec("^/animal/.*/chat$"),"animalChat");
+        p.put(new RegexPathSpec("^/animal/.*/cam$"),"animalCam");
+        p.put(new RegexPathSpec("^/entrance/cam$"),"entranceCam");
 
         for (MappedResource<String> res : p)
         {
@@ -75,34 +73,45 @@ public class PathMappingsTest
     }
 
     /**
-     * Test the match order rules imposed by the WebSocket API (JSR-356)
+     * Test the match order rules imposed by the Servlet API.
      * <p>
      * <ul>
      * <li>Exact match</li>
      * <li>Longest prefix match</li>
      * <li>Longest suffix match</li>
+     * <li>default</li>
      * </ul>
      */
     @Test
-    public void testWebsocketMatchOrder()
+    public void testServletMatchOrder()
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new WebSocketPathSpec("/a/{var}/c"),"endpointA");
-        p.put(new WebSocketPathSpec("/a/b/c"),"endpointB");
-        p.put(new WebSocketPathSpec("/a/{var1}/{var2}"),"endpointC");
-        p.put(new WebSocketPathSpec("/{var1}/d"),"endpointD");
-        p.put(new WebSocketPathSpec("/b/{var2}"),"endpointE");
+        p.put(new ServletPathSpec("/abs/path"),"path");
+        p.put(new ServletPathSpec("/abs/path/longer"),"longpath");
+        p.put(new ServletPathSpec("/animal/bird/*"),"birds");
+        p.put(new ServletPathSpec("/animal/fish/*"),"fishes");
+        p.put(new ServletPathSpec("/animal/*"),"animals");
+        p.put(new ServletPathSpec("*.tar.gz"),"tarball");
+        p.put(new ServletPathSpec("*.gz"),"gzipped");
+        p.put(new ServletPathSpec("/"),"default");
 
         for (MappedResource<String> res : p)
         {
             System.out.printf("  %s%n",res);
         }
 
-        assertMatch(p,"/a/b/c","endpointB");
-        assertMatch(p,"/a/d/c","endpointA");
-        assertMatch(p,"/a/x/y","endpointC");
-
-        assertMatch(p,"/b/d","endpointE");
+        assertMatch(p,"/abs/path","path");
+        assertMatch(p,"/abs/path/longer","longpath");
+        assertMatch(p,"/abs/path/foo","default");
+        assertMatch(p,"/main.css","default");
+        assertMatch(p,"/downloads/script.gz","gzipped");
+        assertMatch(p,"/downloads/distribution.tar.gz","tarball");
+        assertMatch(p,"/downloads/readme.txt","default");
+        assertMatch(p,"/downloads/logs.tgz","default");
+        assertMatch(p,"/animal/horse/mustang","animals");
+        assertMatch(p,"/animal/bird/eagle/bald","birds");
+        assertMatch(p,"/animal/fish/shark/hammerhead","fishes");
+        assertMatch(p,"/animal/insect/ladybug","animals");
     }
 }

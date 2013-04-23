@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
 import org.eclipse.jetty.util.URIUtil;
 

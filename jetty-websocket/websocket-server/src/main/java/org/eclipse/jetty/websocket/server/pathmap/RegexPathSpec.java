@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

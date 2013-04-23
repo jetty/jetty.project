@@ -489,7 +489,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         super.onOpen();
         this.ioState.setState(ConnectionState.OPEN);
-        LOG.debug("fillInterested");
+        LOG.debug("{} fillInterested",policy.getBehavior());
         fillInterested();
     }
 

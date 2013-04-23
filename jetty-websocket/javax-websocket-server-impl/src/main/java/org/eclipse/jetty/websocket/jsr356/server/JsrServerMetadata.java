@@ -106,4 +106,9 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         // Copy constructor
         return new JettyServerEndpointConfig(config);
     }
+
+    public String getPath()
+    {
+        return config.getPath();
+    }
 }

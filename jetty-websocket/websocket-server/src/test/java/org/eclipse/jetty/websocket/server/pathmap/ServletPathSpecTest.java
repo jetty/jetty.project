@@ -16,11 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
+import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.junit.Test;
 
 public class ServletPathSpecTest

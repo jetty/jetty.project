@@ -16,12 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples;
+package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+/**
+ * Annotated echo socket
+ */
 @ServerEndpoint("/echo")
 public class BasicEchoSocket
 {

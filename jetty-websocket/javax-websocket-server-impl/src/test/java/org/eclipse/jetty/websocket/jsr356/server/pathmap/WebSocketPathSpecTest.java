@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import java.util.Map;
 
+import org.eclipse.jetty.websocket.server.pathmap.PathSpecGroup;
 import org.junit.Test;
 
 /**
@@ -60,7 +61,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/",spec.getPathSpec());
         assertEquals("Spec.pattern","^/$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
 
         assertEquals("Spec.variableCount",0,spec.getVariableCount());
         assertEquals("Spec.variable.length",0,spec.getVariables().length);
@@ -73,7 +74,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
 
         assertEquals("Spec.variableCount",0,spec.getVariableCount());
         assertEquals("Spec.variable.length",0,spec.getVariables().length);
@@ -86,7 +87,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a/b",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/b$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
 
         assertEquals("Spec.variableCount",0,spec.getVariableCount());
         assertEquals("Spec.variable.length",0,spec.getVariables().length);
@@ -105,7 +106,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a/{var}/c",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/c$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var");
 
@@ -129,7 +130,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a/{foo}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",2,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"foo");
 
@@ -150,7 +151,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/{var}/b/c",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)/b/c$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var");
 
@@ -174,7 +175,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a/{var1}/c/{var2}/e",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/c/([^/]+)/e$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",5,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var1","var2");
 
@@ -197,7 +198,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/{var1}/b/{var2}/{var3}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)/b/([^/]+)/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",4,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var1","var2","var3");
 
@@ -221,7 +222,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/a/{var1}/{var2}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/a/([^/]+)/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var1","var2");
 
@@ -244,7 +245,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.pathSpec","/{var1}",spec.getPathSpec());
         assertEquals("Spec.pattern","^/([^/]+)$",spec.getPattern().pattern());
         assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.group);
+        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
 
         assertDetectedVars(spec,"var1");
 

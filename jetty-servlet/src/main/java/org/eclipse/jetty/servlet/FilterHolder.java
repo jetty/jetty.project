@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,6 +33,9 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -192,6 +196,16 @@ public class FilterHolder extends Holder<Filter>
     public String toString()
     {
         return getName();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        if(_filter instanceof Dumpable) {
+            ((Dumpable) _filter).dump(out, indent);
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -23,27 +23,24 @@ import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import javax.websocket.Endpoint;
+import javax.websocket.server.ServerContainer;
+
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpointConfigContextListener;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Example of an annotated echo server discovered via annotation scanning.
+ * Example of an {@link Endpoint} extended echo server added programmatically via the
+ * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
-public class BasicAnnotatedTest
+public class BasicEndpointTest
 {
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -52,8 +49,11 @@ public class BasicAnnotatedTest
     public void testEcho() throws Exception
     {
         WSServer wsb = new WSServer(testdir,"app");
-        wsb.createWebInf();
-        wsb.copyEndpoint(BasicEchoSocket.class);
+        wsb.copyWebInf("basic-echo-endpoint-config-web.xml");
+        // the endpoint (extends javax.websocket.Endpoint)
+        wsb.copyClass(BasicEchoEndpoint.class);
+        // the configuration (adds the endpoint)
+        wsb.copyClass(BasicEchoEndpointConfigContextListener.class);
 
         try
         {
@@ -61,29 +61,18 @@ public class BasicAnnotatedTest
             URI uri = wsb.getServerBaseURI();
 
             WebAppContext webapp = wsb.createWebAppContext();
-            AnnotationConfiguration annocfg = new AnnotationConfiguration();
-            annocfg.addDiscoverableAnnotationHandler(new ServerEndpointAnnotationHandler(webapp));
-            // @formatter:off
-            webapp.setConfigurations(new Configuration[] {
-                    annocfg, 
-                    new WebXmlConfiguration(),
-                    new WebInfConfiguration(),
-                    new PlusConfiguration(), 
-                    new MetaInfConfiguration(),
-                    new FragmentConfiguration(), 
-                    new EnvConfiguration()});
-            // @formatter:on
+            // default webapp configuration used (no annotation scanning)
             wsb.deployWebapp(webapp);
-            // wsb.dump();
+            wsb.dump();
 
             WebSocketClient client = new WebSocketClient();
             try
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> foo = client.connect(clientEcho,uri.resolve("/echo"));
+                Future<Session> future = client.connect(clientEcho,uri.resolve("/echo"));
                 // wait for connect
-                foo.get(1,TimeUnit.SECONDS);
+                future.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");
                 Queue<String> msgs = clientEcho.awaitMessages(1);
                 Assert.assertEquals("Expected message","Hello World",msgs.poll());

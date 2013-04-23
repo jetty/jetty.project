@@ -29,10 +29,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.websocket.server.pathmap.PathSpecGroup;
+import org.eclipse.jetty.websocket.server.pathmap.RegexPathSpec;
+
 /**
- * PathSpec for WebSocket &#064;{@link ServerEndpoint} declarations.
+ * PathSpec for WebSocket &#064;{@link ServerEndpoint} declarations with support for URI templates and &#064;{@link PathParam} annotations
  */
 public class WebSocketPathSpec extends RegexPathSpec
 {

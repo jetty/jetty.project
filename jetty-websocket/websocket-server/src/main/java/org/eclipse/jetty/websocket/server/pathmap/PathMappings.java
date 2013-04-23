@@ -16,14 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.jsr356.server.pathmap.PathMappings.MappedResource;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
 
 /**
  * Path Mappings of PathSpec to Resource.
@@ -32,8 +39,10 @@ import org.eclipse.jetty.websocket.jsr356.server.pathmap.PathMappings.MappedReso
  * 
  * @param <E>
  */
-public class PathMappings<E> implements Iterable<MappedResource<E>>
+@ManagedObject("Path Mappings")
+public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
+    @ManagedObject("Mapped Resource")
     public static class MappedResource<E> implements Comparable<MappedResource<E>>
     {
         private final PathSpec pathSpec;
@@ -84,11 +93,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
             return true;
         }
 
+        @ManagedAttribute(value = "path spec", readonly = true)
         public PathSpec getPathSpec()
         {
             return pathSpec;
         }
 
+        @ManagedAttribute(value = "resource", readonly = true)
         public E getResource()
         {
             return resource;
@@ -110,8 +121,27 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
         }
     }
 
+    private static final Logger LOG = Log.getLogger(PathMappings.class);
     private List<MappedResource<E>> mappings = new ArrayList<MappedResource<E>>();
     private MappedResource<E> defaultResource = null;
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dump(out,indent,mappings);
+    }
+
+    @ManagedAttribute(value = "mappings", readonly = true)
+    public List<MappedResource<E>> getMappings()
+    {
+        return mappings;
+    }
 
     public MappedResource<E> getMatch(String path)
     {
@@ -142,6 +172,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>
         }
         // TODO: warning on replacement of existing mapping?
         mappings.add(entry);
+        LOG.debug("Added {} to {}",entry,this);
         Collections.sort(mappings);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[size=%d]",this.getClass().getSimpleName(),mappings.size());
     }
 }

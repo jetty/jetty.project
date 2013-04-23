@@ -30,6 +30,8 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -37,6 +39,7 @@ import org.junit.Test;
 
 public class EndpointEchoTest
 {
+    private static final Logger LOG = Log.getLogger(EndpointEchoTest.class);
     private static Server server;
     private static EchoHandler handler;
     private static URI serverUri;
@@ -87,7 +90,9 @@ public class EndpointEchoTest
         EndpointEchoClient echoer = new EndpointEchoClient();
         Assert.assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
         Session session = container.connectToServer(echoer,serverUri);
+        LOG.debug("Client Connected: {}",session);
         session.getBasicRemote().sendText("Echo");
+        LOG.debug("Client Message Sent");
         echoer.textCapture.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
     }
 }

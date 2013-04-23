@@ -139,10 +139,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        return acceptWebSocket(getCreator(),request,response);
+    }
+
+    @Override
+    public boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
         ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
         ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
-
-        WebSocketCreator creator = getCreator();
 
         UpgradeContext context = getActiveUpgradeContext();
         if (context == null)
@@ -272,22 +276,41 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
     {
+        if (!"GET".equalsIgnoreCase(request.getMethod()))
+        {
+            // not a "GET" request (not a websocket upgrade)
+            return false;
+        }
+
+        String connection = request.getHeader("connection");
+        if (connection == null)
+        {
+            // no "Connection: upgrade" header present.
+            return false;
+        }
+
+        if (!"upgrade".equalsIgnoreCase(connection))
+        {
+            LOG.debug("Not a 'Connection: Upgrade' (was [Connection: " + connection + "])");
+            return false;
+        }
+
         String upgrade = request.getHeader("Upgrade");
         if (upgrade == null)
         {
-            // Quietly fail
+            // no "Upgrade: websocket" header present.
             return false;
         }
 
         if (!"websocket".equalsIgnoreCase(upgrade))
         {
-            LOG.warn("Not a 'Upgrade: WebSocket' (was [Upgrade: " + upgrade + "])");
+            LOG.debug("Not a 'Upgrade: WebSocket' (was [Upgrade: " + upgrade + "])");
             return false;
         }
 
         if (!"HTTP/1.1".equals(request.getProtocol()))
         {
-            LOG.warn("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            LOG.debug("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
             return false;
         }
 

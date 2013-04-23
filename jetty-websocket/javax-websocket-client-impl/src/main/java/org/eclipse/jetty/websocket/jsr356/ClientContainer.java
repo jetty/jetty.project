@@ -56,13 +56,7 @@ public class ClientContainer implements ContainerService
 
     private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
     {
-        ClientEndpointConfig cec = config;
-        if (cec == null)
-        {
-            cec = ClientEndpointConfig.Builder.create().build();
-        }
-
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,cec);
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,config);
         ClientUpgradeRequest req = new ClientUpgradeRequest();
         if (config != null)
         {

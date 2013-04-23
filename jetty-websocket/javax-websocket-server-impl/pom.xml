@@ -27,9 +27,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.drafts</groupId>
       <artifactId>javax.websocket-api</artifactId>
-      <version>1.0.0.PFD-SNAPSHOT</version>
+      <version>1.0.0.DRAFT-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

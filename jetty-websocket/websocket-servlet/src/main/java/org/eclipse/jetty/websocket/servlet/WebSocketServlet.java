@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.ServiceLoader;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -128,24 +126,7 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
 
-            WebSocketServletFactory baseFactory;
-            Iterator<WebSocketServletFactory> factories = ServiceLoader.load(WebSocketServletFactory.class).iterator();
-
-            if (factories.hasNext())
-            {
-                baseFactory = factories.next();
-            }
-            else
-            {
-                // Load the default class if ServiceLoader mechanism isn't valid in this environment. (such as OSGi)
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                @SuppressWarnings("unchecked")
-                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)loader
-                        .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
-                baseFactory = wssf.newInstance();
-            }
-
-            factory = baseFactory.createFactory(policy);
+            factory = WebSocketServletFactory.Loader.create(policy);
 
             configure(factory);
 

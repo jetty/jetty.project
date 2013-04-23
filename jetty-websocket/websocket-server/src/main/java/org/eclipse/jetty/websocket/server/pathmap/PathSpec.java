@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.pathmap;
+package org.eclipse.jetty.websocket.server.pathmap;
 
 /**
  * The base PathSpec, what all other path specs are based on
@@ -77,6 +77,11 @@ public abstract class PathSpec implements Comparable<PathSpec>
             return false;
         }
         return true;
+    }
+
+    public PathSpecGroup getGroup()
+    {
+        return group;
     }
 
     /**
