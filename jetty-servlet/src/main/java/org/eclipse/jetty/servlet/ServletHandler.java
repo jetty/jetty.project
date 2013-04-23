@@ -854,9 +854,12 @@ public class ServletHandler extends ScopedHandler
     {
         setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
-
-    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
-        if (_contextHandler != null) {
+    
+    /* ------------------------------------------------------------ */
+    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) 
+    {
+        if (_contextHandler != null) 
+        {
             return _contextHandler.setServletSecurity(registration, servletSecurityElement);
         }
         return Collections.emptySet();

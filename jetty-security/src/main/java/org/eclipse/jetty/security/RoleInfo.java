@@ -116,6 +116,7 @@ public class RoleInfo
         if (userDataConstraint == null) throw new NullPointerException("Null UserDataConstraint");
         if (this._userDataConstraint == null)
         {
+           
             this._userDataConstraint = userDataConstraint;
         }
         else
@@ -156,6 +157,6 @@ public class RoleInfo
     @Override
     public String toString()
     {
-        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":_roles)+"}";
+        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":_roles)+(_userDataConstraint!=null?","+_userDataConstraint:"")+"}";
     }
 }

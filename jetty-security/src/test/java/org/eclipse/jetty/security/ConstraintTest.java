@@ -19,7 +19,9 @@
 package org.eclipse.jetty.security;
 
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
@@ -27,6 +29,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -210,6 +213,76 @@ public class ConstraintTest
         assertTrue (mappings.get(1).getConstraint().getAuthenticate());
         assertTrue (mappings.get(2).getConstraint().getAuthenticate());
         assertFalse(mappings.get(3).getConstraint().getAuthenticate());
+    }
+    
+    
+    @Test
+    public void testUncoveredHttpMethodDetection() throws Exception
+    {
+        //Test no methods named
+        Constraint constraint1 = new Constraint();
+        constraint1.setAuthenticate(true);
+        constraint1.setName("** constraint");
+        constraint1.setRoles(new String[]{Constraint.ANY_AUTH,"user"}); //No methods named, no uncovered methods
+        ConstraintMapping mapping1 = new ConstraintMapping();
+        mapping1.setPathSpec("/starstar/*");
+        mapping1.setConstraint(constraint1);
+        
+        _security.setConstraintMappings(Collections.singletonList(mapping1));
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+        Set<String> uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertTrue(uncoveredPaths.isEmpty()); //no uncovered methods
+  
+        //Test only an explicitly named method, no omissions to cover other methods
+        Constraint constraint2 = new Constraint();
+        constraint2.setAuthenticate(true);
+        constraint2.setName("user constraint");
+        constraint2.setRoles(new String[]{"user"});
+        ConstraintMapping mapping2 = new ConstraintMapping();
+        mapping2.setPathSpec("/user/*");
+        mapping2.setMethod("GET");
+        mapping2.setConstraint(constraint2);
+        
+        _security.addConstraintMapping(mapping2);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(1, uncoveredPaths.size());
+        assertTrue(uncoveredPaths.contains("/user/*"));
+        
+        //Test an explicitly named method with a http-method-omission to cover all other methods
+        Constraint constraint2a = new Constraint();
+        constraint2a.setAuthenticate(true);
+        constraint2a.setName("forbid constraint");
+        ConstraintMapping mapping2a = new ConstraintMapping();
+        mapping2a.setPathSpec("/user/*");
+        mapping2a.setMethodOmissions(new String[]{"GET"});
+        mapping2a.setConstraint(constraint2a);
+        
+        _security.addConstraintMapping(mapping2a);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(0, uncoveredPaths.size());
+        
+        //Test a http-method-omission only
+        Constraint constraint3 = new Constraint();
+        constraint3.setAuthenticate(true);
+        constraint3.setName("omit constraint");
+        ConstraintMapping mapping3 = new ConstraintMapping();
+        mapping3.setPathSpec("/omit/*");
+        mapping3.setMethodOmissions(new String[]{"GET", "POST"});
+        mapping3.setConstraint(constraint3);
+        
+        _security.addConstraintMapping(mapping3);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertTrue(uncoveredPaths.contains("/omit/*"));
+        
+        _security.setDenyUncoveredHttpMethods(true);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(0, uncoveredPaths.size());
     }
 
     @Test

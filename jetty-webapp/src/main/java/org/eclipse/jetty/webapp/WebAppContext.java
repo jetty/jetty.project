@@ -1325,7 +1325,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-     
         Set<String> unchangedURLMappings = new HashSet<String>();
         //From javadoc for ServletSecurityElement:
         /*
@@ -1360,6 +1359,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
                         for (ConstraintMapping m:mappings)
                             ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         getMetaData().setOrigin("constraint.url."+pathSpec, Origin.API);
                         break;
                     }
@@ -1383,6 +1383,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         constraintMappings.addAll(freshMappings);
                            
                         ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         break;
                     }
                 }

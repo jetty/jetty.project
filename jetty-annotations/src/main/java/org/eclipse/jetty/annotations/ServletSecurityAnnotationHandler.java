@@ -112,6 +112,9 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
        for (ConstraintMapping m:constraintMappings)
            securityHandler.addConstraintMapping(m);
+       
+       //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
+       securityHandler.checkPathsWithUncoveredHttpMethods();
     }
 
 
