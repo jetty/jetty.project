@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -205,7 +206,6 @@ public class ConstraintTest
     @Test
     public void testBasic() throws Exception
     {
-        
         List<ConstraintMapping> list = new ArrayList<ConstraintMapping>(_security.getConstraintMappings());
         
         Constraint constraint6 = new Constraint();
@@ -250,14 +250,11 @@ public class ConstraintTest
         _server.start();
 
         String response;
-        /*
         response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
-*/
    
         response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
-        /*
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response,containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
@@ -272,8 +269,7 @@ public class ConstraintTest
                 "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
-*/
-/*
+        
         // test admin
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
@@ -304,28 +300,27 @@ public class ConstraintTest
         response = _connector.getResponses("GET /ctx/omit/x HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
                                            "\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
         
         //check POST is in role user
         response = _connector.getResponses("POST /ctx/omit/x HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                                            "\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
         
         //check POST can be in role foo too      
         response = _connector.getResponses("POST /ctx/omit/x HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("user3:password") + "\r\n" +
                                            "\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
         
         //check HEAD cannot be in role user
         response = _connector.getResponses("HEAD /ctx/omit/x HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                                            "\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));*/
+        assertThat(response,startsWith("HTTP/1.1 403 "));
     }
-    
-    
+
 
     @Test
     public void testFormDispatch() throws Exception
@@ -863,32 +858,32 @@ public class ConstraintTest
         String response;
 
         response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 403"));
+        assertThat(response,startsWith("HTTP/1.1 403"));
         
         _config.setSecurePort(8443);
         _config.setSecureScheme("https");
 
         response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertThat(response,startsWith("HTTP/1.1 302 Found"));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf(":8443/ctx/data/info") > 0);
 
         _config.setSecurePort(443);
         response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertThat(response,startsWith("HTTP/1.1 302 Found"));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf(":443/ctx/data/info") < 0);
 
         _config.setSecurePort(8443);
         response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
-        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertThat(response,startsWith("HTTP/1.1 302 Found"));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("https://wobble.com:8443/ctx/data/info") > 0);
 
         _config.setSecurePort(443);
         response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
         System.err.println(response);
-        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertThat(response,startsWith("HTTP/1.1 302 Found"));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf(":443") < 0);
         assertTrue(response.indexOf("https://wobble.com/ctx/data/info") > 0);
