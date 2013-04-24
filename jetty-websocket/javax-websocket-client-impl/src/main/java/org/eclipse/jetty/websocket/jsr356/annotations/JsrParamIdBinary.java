@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.nio.ByteBuffer;
 
 import javax.websocket.OnMessage;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -37,16 +38,21 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        Class<?> type = param.type;
+        // Session parameter (optional)
+        if (param.type.isAssignableFrom(Session.class))
+        {
+            param.bind(Role.SESSION);
+            return true;
+        }
 
-        if (type.isAssignableFrom(ByteBuffer.class))
+        if (param.type.isAssignableFrom(ByteBuffer.class))
         {
             param.bind(Role.MESSAGE_BINARY);
             callable.setDecoder(ByteBufferDecoder.INSTANCE);
             return true;
         }
 
-        if (type.isAssignableFrom(byte[].class))
+        if (param.type.isAssignableFrom(byte[].class))
         {
             param.bind(Role.MESSAGE_BINARY);
             callable.setDecoder(ByteArrayDecoder.INSTANCE);
@@ -54,7 +60,7 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         }
 
         // Boolean (for indicating partial message support)
-        if (type.isAssignableFrom(Boolean.TYPE))
+        if (param.type.isAssignableFrom(Boolean.TYPE))
         {
             param.bind(Role.MESSAGE_PARTIAL_FLAG);
             return true;

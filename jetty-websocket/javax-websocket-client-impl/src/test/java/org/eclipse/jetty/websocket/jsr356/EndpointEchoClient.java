@@ -27,6 +27,8 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 
 /**
@@ -34,6 +36,7 @@ import org.junit.Assert;
  */
 public class EndpointEchoClient extends Endpoint
 {
+    private static final Logger LOG = Log.getLogger(EndpointEchoClient.class);
     private Session session = null;
     private CloseReason close = null;
     public EchoCaptureHandler textCapture = new EchoCaptureHandler();
@@ -46,6 +49,7 @@ public class EndpointEchoClient extends Endpoint
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
+        LOG.debug("onOpen({}, {})",session,config);
         this.session = session;
         Assert.assertThat("Session",session,notNullValue());
         Assert.assertThat("EndpointConfig",config,notNullValue());

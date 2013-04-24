@@ -50,8 +50,7 @@ public class MessageHandlersTest
     @Test
     public void testGetBinaryHandler() throws DeploymentException
     {
-        MessageHandlers mhs = new MessageHandlers();
-        mhs.setFactory(factory);
+        MessageHandlers mhs = new MessageHandlers(factory);
         mhs.add(new ByteBufferPartialHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.BINARY);
         Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteBufferPartialHandler.class));
@@ -60,8 +59,7 @@ public class MessageHandlersTest
     @Test
     public void testGetBothHandler() throws DeploymentException
     {
-        MessageHandlers mhs = new MessageHandlers();
-        mhs.setFactory(factory);
+        MessageHandlers mhs = new MessageHandlers(factory);
         mhs.add(new StringWholeHandler());
         mhs.add(new ByteArrayWholeHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.TEXT);
@@ -73,25 +71,16 @@ public class MessageHandlersTest
     @Test
     public void testGetTextHandler() throws DeploymentException
     {
-        MessageHandlers mhs = new MessageHandlers();
-        mhs.setFactory(factory);
+        MessageHandlers mhs = new MessageHandlers(factory);
         mhs.add(new StringWholeHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.TEXT);
         Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testNoFactoryAdd()
-    {
-        MessageHandlers mhs = new MessageHandlers();
-        mhs.add(new ByteBufferPartialHandler());
-    }
-
     @Test
     public void testReplaceTextHandler() throws DeploymentException
     {
-        MessageHandlers mhs = new MessageHandlers();
-        mhs.setFactory(factory);
+        MessageHandlers mhs = new MessageHandlers(factory);
         MessageHandler oldText = new StringWholeHandler();
         mhs.add(oldText); // add a TEXT handler
         mhs.add(new ByteArrayWholeHandler()); // add BINARY handler

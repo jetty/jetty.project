@@ -70,9 +70,12 @@ public class Decoders
         Objects.requireNonNull(metadataFactory,"DecoderMetadataFactory cannot be null");
         this.metadataFactory = metadataFactory;
 
-        for (Class<? extends Decoder> decoder : config.getDecoders())
+        if (config != null)
         {
-            addAllMetadata(decoder);
+            for (Class<? extends Decoder> decoder : config.getDecoders())
+            {
+                addAllMetadata(decoder);
+            }
         }
     }
 
@@ -151,6 +154,14 @@ public class Decoders
         }
 
         throw new InvalidSignatureException("Unable to find appropriate Decoder for type: " + type);
+    }
+
+    public void init(EndpointConfig config)
+    {
+        for (DecoderWrapper decoder : decoderMap.values())
+        {
+            decoder.getDecoder().init(config);
+        }
     }
 
     public Set<Class<?>> keySet()

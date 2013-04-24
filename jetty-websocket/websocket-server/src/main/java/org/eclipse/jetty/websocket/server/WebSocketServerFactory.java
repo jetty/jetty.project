@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -62,8 +63,14 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  */
 public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory
 {
-    private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
+    public static interface Listener
+    {
+        void onWebSocketServerFactoryStarted(WebSocketServerFactory factory);
 
+        void onWebSocketServerFactoryStopped(WebSocketServerFactory factory);
+    }
+
+    private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     private static final ThreadLocal<UpgradeContext> ACTIVE_CONTEXT = new ThreadLocal<>();
 
     public static UpgradeContext getActiveUpgradeContext()
@@ -81,15 +88,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         handshakes.put(HandshakeRFC6455.VERSION,new HandshakeRFC6455());
     }
 
-    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketExtensionFactory extensionFactory;
+    private List<WebSocketServerFactory.Listener> listeners = new ArrayList<>();
     private SessionFactory sessionFactory;
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
@@ -177,6 +185,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return upgrade(sockreq,sockresp,driver);
     }
 
+    public void addListener(WebSocketServerFactory.Listener listener)
+    {
+        listeners.add(listener);
+    }
+
     @Override
     public void cleanup()
     {
@@ -233,9 +246,23 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        for (WebSocketServerFactory.Listener listener : listeners)
+        {
+            listener.onWebSocketServerFactoryStarted(this);
+        }
+        super.doStart();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
         closeAllConnections();
+        for (WebSocketServerFactory.Listener listener : listeners)
+        {
+            listener.onWebSocketServerFactoryStopped(this);
+        }
         super.doStop();
     }
 
@@ -254,6 +281,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
+    }
+
+    public Collection<WebSocketServerFactory.Listener> getListeners()
+    {
+        return listeners;
     }
 
     @Override
@@ -336,15 +368,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return protocols;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jetty.websocket.server.WebSocketServletFactory#register(java.lang.Class)
-     */
     @Override
     public void register(Class<?> websocketPojo)
     {
         registeredSocketClasses.add(websocketPojo);
+    }
+
+    public void removeListener(WebSocketServerFactory.Listener listener)
+    {
+        listeners.remove(listener);
     }
 
     public boolean sessionClosed(WebSocketSession session)

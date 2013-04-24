@@ -46,6 +46,36 @@ public class JettyServerEndpointConfig implements ServerEndpointConfig
     private List<Extension> extensions;
     private Map<String, Object> userProperties;
 
+    public JettyServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
+    {
+        this(endpointClass,anno.value());
+        addAll(anno.decoders(),this.decoders);
+        addAll(anno.encoders(),this.encoders);
+        addAll(anno.subprotocols(),this.subprotocols);
+        // no extensions declared in annotation
+        // no userProperties in annotation
+        if (anno.configurator() == null)
+        {
+            this.configurator = BaseConfigurator.INSTANCE;
+        }
+        else
+        {
+            try
+            {
+                this.configurator = anno.configurator().newInstance();
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("Unable to instantiate ServerEndpoint.configurator() of ");
+                err.append(anno.configurator().getName());
+                err.append(" defined as annotation in ");
+                err.append(anno.getClass().getName());
+                throw new DeploymentException(err.toString(),e);
+            }
+        }
+    }
+
     public JettyServerEndpointConfig(Class<?> endpointClass, String path)
     {
         this.endpointClass = endpointClass;
@@ -90,36 +120,6 @@ public class JettyServerEndpointConfig implements ServerEndpointConfig
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to instantiate ServerEndpointConfig.Configurator of ");
                 err.append(configuratorClass);
-                throw new DeploymentException(err.toString(),e);
-            }
-        }
-    }
-
-    public JettyServerEndpointConfig(ServerEndpoint anno) throws DeploymentException
-    {
-        this(anno.getClass(),anno.value());
-        addAll(anno.decoders(),this.decoders);
-        addAll(anno.encoders(),this.encoders);
-        addAll(anno.subprotocols(),this.subprotocols);
-        // no extensions declared in annotation
-        // no userProperties in annotation
-        if (anno.configurator() == null)
-        {
-            this.configurator = BaseConfigurator.INSTANCE;
-        }
-        else
-        {
-            try
-            {
-                this.configurator = anno.configurator().newInstance();
-            }
-            catch (InstantiationException | IllegalAccessException e)
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Unable to instantiate ServerEndpoint.configurator() of ");
-                err.append(anno.configurator().getName());
-                err.append(" defined as annotation in ");
-                err.append(anno.getClass().getName());
                 throw new DeploymentException(err.toString(),e);
             }
         }
@@ -183,5 +183,27 @@ public class JettyServerEndpointConfig implements ServerEndpointConfig
     public Map<String, Object> getUserProperties()
     {
         return userProperties;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("JettyServerEndpointConfig [endpointClass=");
+        builder.append(endpointClass);
+        builder.append(", path=");
+        builder.append(path);
+        builder.append(", configurator=");
+        builder.append(configurator);
+        builder.append(", decoders=");
+        builder.append(decoders);
+        builder.append(", encoders=");
+        builder.append(encoders);
+        builder.append(", subprotocols=");
+        builder.append(subprotocols);
+        builder.append(", extensions=");
+        builder.append(extensions);
+        builder.append("]");
+        return builder.toString();
     }
 }

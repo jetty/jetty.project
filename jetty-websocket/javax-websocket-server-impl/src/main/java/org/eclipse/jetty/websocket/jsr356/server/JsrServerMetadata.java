@@ -50,7 +50,7 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         }
 
         this.endpoint = anno;
-        this.config = new JettyServerEndpointConfig(anno);
+        this.config = new JettyServerEndpointConfig(websocket,anno);
         this.decoders = new Decoders(container.getDecoderMetadataFactory(),config);
     }
 

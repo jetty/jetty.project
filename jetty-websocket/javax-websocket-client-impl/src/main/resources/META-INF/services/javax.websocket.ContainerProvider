@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.jsr356.JettyContainerProvider
+org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider

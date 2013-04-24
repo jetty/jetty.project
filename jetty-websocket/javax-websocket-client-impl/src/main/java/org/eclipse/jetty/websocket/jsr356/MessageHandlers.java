@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.log.Log;
@@ -42,20 +43,21 @@ public class MessageHandlers
     /**
      * Factory for MessageHandlerMetadata instances.
      */
-    private MessageHandlerMetadataFactory factory;
+    private final MessageHandlerMetadataFactory factory;
     /**
      * Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()}
      */
     private final MessageHandlerWrapper wrappers[];
 
-    public MessageHandlers()
+    public MessageHandlers(MessageHandlerMetadataFactory factory)
     {
+        Objects.requireNonNull(factory,"MessageHandlerMetadataFactory cannot be null");
+        this.factory = factory;
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
     }
 
     public void add(MessageHandler handler)
     {
-        assertFactoryDefined();
         Objects.requireNonNull(handler,"MessageHandler cannot be null");
 
         synchronized (wrappers)
@@ -89,19 +91,6 @@ public class MessageHandlers
         }
     }
 
-    private void assertFactoryDefined()
-    {
-        if (this.factory == null)
-        {
-            throw new IllegalStateException("MessageHandlerMetadataFactory has not been set");
-        }
-    }
-
-    public MessageHandlerMetadataFactory getFactory()
-    {
-        return factory;
-    }
-
     public Set<MessageHandler> getUnmodifiableHandlerSet()
     {
         Set<MessageHandler> ret = new HashSet<>();
@@ -127,8 +116,6 @@ public class MessageHandlers
 
     public void remove(MessageHandler handler)
     {
-        assertFactoryDefined();
-
         try
         {
             for (MessageHandlerMetadata metadata : factory.getMetadata(handler.getClass()))
@@ -140,10 +127,5 @@ public class MessageHandlers
         {
             LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
         }
-    }
-
-    public void setFactory(MessageHandlerMetadataFactory factory)
-    {
-        this.factory = factory;
     }
 }

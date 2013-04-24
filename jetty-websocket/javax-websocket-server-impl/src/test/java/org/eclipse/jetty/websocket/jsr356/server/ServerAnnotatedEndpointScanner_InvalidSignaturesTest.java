@@ -55,7 +55,7 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
 {
     private static final Logger LOG = Log.getLogger(ServerAnnotatedEndpointScanner_InvalidSignaturesTest.class);
 
-    private static ServerContainer container = new ServerContainer();
+    private static ServerContainer container = new ServerContainer(new DummyCreator());
 
     @Parameters
     public static Collection<Class<?>[]> data()

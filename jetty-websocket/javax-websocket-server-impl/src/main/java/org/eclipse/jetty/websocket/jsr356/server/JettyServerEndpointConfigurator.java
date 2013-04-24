@@ -26,35 +26,56 @@ import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 import javax.websocket.server.ServerEndpointConfig.Configurator;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 public class JettyServerEndpointConfigurator extends Configurator
 {
+    private static final Logger LOG = Log.getLogger(JettyServerEndpointConfigurator.class);
+
     @Override
     public boolean checkOrigin(String originHeaderValue)
     {
-        return super.checkOrigin(originHeaderValue);
+        return true;
     }
 
     @Override
     public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
     {
-        return super.getEndpointInstance(endpointClass);
+        LOG.debug(".getEndpointInstance({})",endpointClass);
+        try
+        {
+            return endpointClass.newInstance();
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
+        }
     }
 
     @Override
     public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
     {
-        return super.getNegotiatedExtensions(installed,requested);
+        /* do nothing */
+        return null;
     }
 
     @Override
     public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
     {
-        return super.getNegotiatedSubprotocol(supported,requested);
+        for (String possible : requested)
+        {
+            if (supported.contains(possible))
+            {
+                return possible;
+            }
+        }
+        return null;
     }
 
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
-        super.modifyHandshake(sec,request,response);
+        /* do nothing */
     }
 }

@@ -23,16 +23,8 @@ import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoSocket;
@@ -61,27 +53,15 @@ public class BasicAnnotatedTest
             URI uri = wsb.getServerBaseURI();
 
             WebAppContext webapp = wsb.createWebAppContext();
-            AnnotationConfiguration annocfg = new AnnotationConfiguration();
-            annocfg.addDiscoverableAnnotationHandler(new ServerEndpointAnnotationHandler(webapp));
-            // @formatter:off
-            webapp.setConfigurations(new Configuration[] {
-                    annocfg, 
-                    new WebXmlConfiguration(),
-                    new WebInfConfiguration(),
-                    new PlusConfiguration(), 
-                    new MetaInfConfiguration(),
-                    new FragmentConfiguration(), 
-                    new EnvConfiguration()});
-            // @formatter:on
             wsb.deployWebapp(webapp);
-            // wsb.dump();
+            wsb.dump();
 
             WebSocketClient client = new WebSocketClient();
             try
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> foo = client.connect(clientEcho,uri.resolve("/echo"));
+                Future<Session> foo = client.connect(clientEcho,uri.resolve("echo"));
                 // wait for connect
                 foo.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");

@@ -18,54 +18,37 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.DispatcherType;
-import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointImpl;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
+public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer, WebSocketServerFactory.Listener
 {
-    private static final Logger LOG = Log.getLogger(ServerContainer.class);
-
-    public static ServerContainer getInstance()
+    public static ServerContainer get(WebAppContext context)
     {
-        return (ServerContainer)ContainerProvider.getWebSocketContainer();
+        return (ServerContainer)context.getAttribute(WebSocketConfiguration.JAVAX_WEBSOCKET_SERVER_CONTAINER);
     }
-    private ConcurrentHashMap<Class<?>, JsrServerMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
-    private MappedWebSocketCreator mappedCreator;
 
-    public ServerContainer()
+    private final MappedWebSocketCreator mappedCreator;
+    private WebSocketServerFactory webSocketServletFactory;
+    private ConcurrentHashMap<Class<?>, JsrServerMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
+
+    public ServerContainer(MappedWebSocketCreator creator)
     {
         super();
-        WebAppContext webapp = WebAppContext.getCurrentWebAppContext();
-        if (webapp != null)
-        {
-            WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
-            FilterHolder fholder = new FilterHolder(filter);
-            fholder.setName("Jetty_WebSocketUpgradeFilter");
-            fholder.setDisplayName("WebSocket Upgrade Filter");
-            String pathSpec = "/*";
-            webapp.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
-            LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,webapp);
-            mappedCreator = filter;
-        }
-        else
-        {
-            LOG.debug("No active WebAppContext detected");
-        }
+        this.mappedCreator = creator;
     }
 
     @Override
@@ -87,11 +70,6 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         mappedCreator.addMapping(new WebSocketPathSpec(config.getPath()),creator);
     }
 
-    public void addMappedCreator(MappedWebSocketCreator mappedCreator)
-    {
-        this.mappedCreator = mappedCreator;
-    }
-
     public JsrServerMetadata getServerEndpointMetadata(Class<?> endpointClass) throws DeploymentException
     {
         JsrServerMetadata basemetadata = endpointServerMetadataCache.get(endpointClass);
@@ -104,5 +82,26 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         }
 
         return basemetadata;
+    }
+
+    public WebSocketServletFactory getWebSocketServletFactory()
+    {
+        return webSocketServletFactory;
+    }
+
+    @Override
+    public void onWebSocketServerFactoryStarted(WebSocketServerFactory factory)
+    {
+        this.webSocketServletFactory = factory;
+        EventDriverFactory eventDriverFactory = this.webSocketServletFactory.getEventDriverFactory();
+        eventDriverFactory.addImplementation(new JsrServerEndpointImpl(this));
+        eventDriverFactory.addImplementation(new JsrEndpointImpl());
+        this.webSocketServletFactory.setSessionFactory(new JsrSessionFactory(this));
+    }
+
+    @Override
+    public void onWebSocketServerFactoryStopped(WebSocketServerFactory factory)
+    {
+        /* do nothing */
     }
 }

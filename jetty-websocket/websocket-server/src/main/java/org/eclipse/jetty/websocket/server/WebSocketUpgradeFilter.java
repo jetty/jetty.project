@@ -41,7 +41,6 @@ import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
 import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
@@ -51,7 +50,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     private PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
-    private WebSocketServletFactory factory;
+    private WebSocketServerFactory factory;
+    private WebSocketServerFactory.Listener listener;
 
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
@@ -76,21 +76,26 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
             return;
         }
 
-        if ((request instanceof HttpServletRequest) && (request instanceof HttpServletResponse))
+        LOG.debug("doFilter({})",request);
+
+        if ((request instanceof HttpServletRequest) && (response instanceof HttpServletResponse))
         {
             HttpServletRequest httpreq = (HttpServletRequest)request;
             HttpServletResponse httpresp = (HttpServletResponse)response;
-            String target = httpreq.getPathInfo();
+            String target = httpreq.getServletPath();
+            LOG.debug("target = [{}]",target);
 
             if (factory.isUpgradeRequest(httpreq,httpresp))
             {
                 MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
                 if (resource == null)
                 {
+                    LOG.debug("WebSocket Upgrade on {} has no associated endpoint",target);
                     // no match.
                     httpresp.sendError(HttpServletResponse.SC_NOT_FOUND,"No websocket endpoint matching path: " + target);
                     return;
                 }
+                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}",target,resource);
 
                 WebSocketCreator creator = resource.getResource();
 
@@ -171,13 +176,19 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
 
-            factory = WebSocketServletFactory.Loader.create(policy);
+            factory = new WebSocketServerFactory(policy);
+            factory.addListener(this.listener);
             factory.init();
         }
         catch (Exception x)
         {
             throw new ServletException(x);
         }
+    }
+
+    public void setWebSocketServerFactoryListener(WebSocketServerFactory.Listener listener)
+    {
+        this.listener = listener;
     }
 
     @Override

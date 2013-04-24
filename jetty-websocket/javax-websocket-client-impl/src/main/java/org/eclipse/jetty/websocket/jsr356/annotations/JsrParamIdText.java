@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import javax.websocket.OnMessage;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -42,6 +43,13 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
+        // Session parameter (optional)
+        if (param.type.isAssignableFrom(Session.class))
+        {
+            param.bind(Role.SESSION);
+            return true;
+        }
+
         // String for whole message
         if (param.type.isAssignableFrom(String.class))
         {

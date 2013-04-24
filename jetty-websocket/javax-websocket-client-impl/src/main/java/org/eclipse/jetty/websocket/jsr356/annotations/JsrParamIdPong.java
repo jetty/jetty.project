@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import javax.websocket.PongMessage;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -31,6 +32,13 @@ public class JsrParamIdPong extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
+        // Session parameter (optional)
+        if (param.type.isAssignableFrom(Session.class))
+        {
+            param.bind(Role.SESSION);
+            return true;
+        }
+
         if (param.type.isAssignableFrom(PongMessage.class))
         {
             assertPartialMessageSupportDisabled(param,callable);

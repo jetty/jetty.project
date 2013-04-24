@@ -76,9 +76,10 @@ public class JsrCreator implements WebSocketCreator
         // create endpoint class
         try
         {
-            return config.getEndpointClass().newInstance();
+            Class<?> endpointClass = config.getEndpointClass();
+            return config.getConfigurator().getEndpointInstance(endpointClass);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException e)
         {
             LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(),e);
             return null;

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
 
@@ -58,7 +57,7 @@ public class ServerEndpointAnnotation extends DiscoveredAnnotation
         String path = annotation.value();
         LOG.info("Got path: \"{}\"",path);
 
-        ServerContainer container = (ServerContainer)ContainerProvider.getWebSocketContainer();
+        ServerContainer container = ServerContainer.get(_context);
 
         try
         {

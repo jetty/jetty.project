@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,7 +82,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         }
     }
 
-    private static ServerContainer container = new ServerContainer();
+    private static ServerContainer container = new ServerContainer(new DummyCreator());
 
     @Parameters
     public static Collection<Case[]> data() throws Exception
@@ -111,6 +112,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Case.add(data, BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class);
         // -- Text Events
         Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
+        Case.add(data, StatelessTextMessageStringSocket.class, fText, Session.class, String.class);
         // -- Binary Events
         Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
         // -- Pong Events

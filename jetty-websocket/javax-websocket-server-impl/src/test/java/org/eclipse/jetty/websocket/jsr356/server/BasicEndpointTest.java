@@ -61,7 +61,6 @@ public class BasicEndpointTest
             URI uri = wsb.getServerBaseURI();
 
             WebAppContext webapp = wsb.createWebAppContext();
-            // default webapp configuration used (no annotation scanning)
             wsb.deployWebapp(webapp);
             wsb.dump();
 

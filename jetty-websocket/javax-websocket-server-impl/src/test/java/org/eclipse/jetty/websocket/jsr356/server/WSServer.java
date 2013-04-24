@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -36,7 +39,12 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.junit.Assert;
 
 /**
@@ -98,6 +106,19 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setWar(this.contextDir.getAbsolutePath());
+
+        // @formatter:off
+        context.setConfigurations(new Configuration[] {
+                new WebSocketConfiguration(),
+                new AnnotationConfiguration(),
+                new WebXmlConfiguration(),
+                new WebInfConfiguration(),
+                new PlusConfiguration(), 
+                new MetaInfConfiguration(),
+                new FragmentConfiguration(), 
+                new EnvConfiguration()});
+        // @formatter:on
+
         return context;
     }
 
@@ -146,7 +167,7 @@ public class WSServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
         LOG.debug("Server started on {}",serverUri);
     }
 
