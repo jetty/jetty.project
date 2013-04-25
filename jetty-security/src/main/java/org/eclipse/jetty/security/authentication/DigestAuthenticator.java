@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -54,7 +53,8 @@ import org.eclipse.jetty.util.security.Credential;
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  *
  * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
- * using the name "maxNonceAge"
+ * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setInitParameter(String, String)}
+ * using the name "maxNonceCount".  When the age or count is exceeded, the nonce is considered stale.
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
@@ -109,6 +109,11 @@ public class DigestAuthenticator extends LoginAuthenticator
         if (mna!=null)
         {
             _maxNonceAgeMs=Long.valueOf(mna);
+        }
+        String mnc=configuration.getInitParameter("maxNonceCount");
+        if (mnc!=null)
+        {
+            _maxNC=Integer.valueOf(mnc);
         }
     }
 
