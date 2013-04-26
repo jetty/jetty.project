@@ -122,6 +122,7 @@ public class DecoderMetadataFactory
 
     public List<DecoderMetadata> getMetadata(Class<? extends Decoder> decoder)
     {
+        LOG.debug("getDecoder({})",decoder);
         List<DecoderMetadata> ret = cache.get(decoder);
 
         if (ret == null)

@@ -20,11 +20,12 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 
 /**
  * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically via config
@@ -40,7 +41,7 @@ public class BasicEchoEndpointConfigContextListener implements ServletContextLis
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)ContainerProvider.getWebSocketContainer();
+        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(WebSocketConfiguration.JAVAX_WEBSOCKET_SERVER_CONTAINER);
         // Build up a configuration with a specific path
         String path = "/echo";
         ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class,path);

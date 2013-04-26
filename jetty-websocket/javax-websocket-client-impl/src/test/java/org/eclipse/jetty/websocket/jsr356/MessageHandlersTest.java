@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
+import java.nio.ByteBuffer;
+
 import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
 
@@ -54,6 +56,7 @@ public class MessageHandlersTest
         mhs.add(new ByteBufferPartialHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.BINARY);
         Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteBufferPartialHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),ByteBuffer.class);
     }
 
     @Test
@@ -64,8 +67,10 @@ public class MessageHandlersTest
         mhs.add(new ByteArrayWholeHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.TEXT);
         Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),String.class);
         wrapper = mhs.getWrapper(MessageType.BINARY);
         Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),byte[].class);
     }
 
     @Test
@@ -75,6 +80,7 @@ public class MessageHandlersTest
         mhs.add(new StringWholeHandler());
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.TEXT);
         Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),String.class);
     }
 
     @Test
@@ -88,7 +94,9 @@ public class MessageHandlersTest
         mhs.add(new LongMessageHandler()); // add new TEXT handler
         MessageHandlerWrapper wrapper = mhs.getWrapper(MessageType.BINARY);
         Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),byte[].class);
         wrapper = mhs.getWrapper(MessageType.TEXT);
         Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(LongMessageHandler.class));
+        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),Long.class);
     }
 }

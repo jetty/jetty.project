@@ -59,7 +59,7 @@ public class DecodersTest
         }
         catch (DeploymentException e)
         {
-            Assert.assertThat("Error Message",e.getMessage(),containsString("Duplicate"));
+            Assert.assertThat("Error Message",e.getMessage(),containsString("duplicate"));
         }
     }
 

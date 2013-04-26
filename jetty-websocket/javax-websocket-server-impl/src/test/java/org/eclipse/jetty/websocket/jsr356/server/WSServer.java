@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 
@@ -39,6 +40,7 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -101,11 +103,11 @@ public class WSServer
         IO.copy(testWebXml,webxml);
     }
 
-    public WebAppContext createWebAppContext()
+    public WebAppContext createWebAppContext() throws MalformedURLException, IOException
     {
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
-        context.setWar(this.contextDir.getAbsolutePath());
+        context.setBaseResource(Resource.newResource(this.contextDir));
 
         // @formatter:off
         context.setConfigurations(new Configuration[] {

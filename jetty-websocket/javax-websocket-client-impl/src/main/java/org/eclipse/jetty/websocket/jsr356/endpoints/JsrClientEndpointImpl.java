@@ -48,13 +48,8 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         {
             ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
             endpoint = ce.getEndpoint();
-            // Classes annotated with @ClientEndpoint cannot be created with
-            // an external ClientEndpointConfig, this information MUST come
-            // from the @ClientEndpoint annotation.
-            if (ce.getConfig() != null)
-            {
-                throw new IllegalStateException("Cannot create @ClientEndpoint websocket with an external EndpointConfig");
-            }
+            // Classes annotated with @ClientEndpoint will have their ClientEndpointConfig
+            // built up from the information present in the annotations, any provided config will be ignored
         }
 
         Class<?> endpointClass = endpoint.getClass();

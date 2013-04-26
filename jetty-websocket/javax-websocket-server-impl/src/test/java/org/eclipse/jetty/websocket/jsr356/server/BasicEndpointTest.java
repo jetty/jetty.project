@@ -62,14 +62,14 @@ public class BasicEndpointTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            wsb.dump();
+            // wsb.dump();
 
             WebSocketClient client = new WebSocketClient();
             try
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> future = client.connect(clientEcho,uri.resolve("/echo"));
+                Future<Session> future = client.connect(clientEcho,uri.resolve("echo"));
                 // wait for connect
                 future.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");

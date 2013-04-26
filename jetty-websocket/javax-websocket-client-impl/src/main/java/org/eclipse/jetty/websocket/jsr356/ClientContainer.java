@@ -56,16 +56,22 @@ public class ClientContainer implements ContainerService
 
     private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
     {
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,config);
-        ClientUpgradeRequest req = new ClientUpgradeRequest();
-        if (config != null)
+        ClientEndpointConfig cec = config;
+        if (cec == null)
         {
-            for (Extension ext : config.getExtensions())
+            // Create default config
+            cec = ClientEndpointConfig.Builder.create().build();
+        }
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,cec);
+        ClientUpgradeRequest req = new ClientUpgradeRequest();
+        if (cec != null)
+        {
+            for (Extension ext : cec.getExtensions())
             {
                 req.addExtensions(new JsrExtensionConfig(ext));
             }
 
-            if (config.getPreferredSubprotocols().size() > 0)
+            if (cec.getPreferredSubprotocols().size() > 0)
             {
                 req.setSubProtocols(config.getPreferredSubprotocols());
             }
@@ -100,8 +106,9 @@ public class ClientContainer implements ContainerService
     {
         try
         {
+            JsrClientMetadata metadata = new JsrClientMetadata(this,annotatedEndpointClass);
             Object websocket = annotatedEndpointClass.newInstance();
-            return connect(websocket,null,path);
+            return connect(websocket,metadata.getEndpointConfigCopy(),path);
         }
         catch (InstantiationException | IllegalAccessException e)
         {

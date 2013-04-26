@@ -74,7 +74,14 @@ public class Decoders
         {
             for (Class<? extends Decoder> decoder : config.getDecoders())
             {
-                addAllMetadata(decoder);
+                try
+                {
+                    addAllMetadata(decoder);
+                }
+                catch (IllegalStateException e)
+                {
+                    throw new DeploymentException("Invalid configuration: " + e.getMessage());
+                }
             }
         }
     }
@@ -133,6 +140,10 @@ public class Decoders
         {
             // try DEFAULT implementations
             Class<? extends Decoder> defaultDecoder = DefaultsDecoderFactory.INSTANCE.getDecoder(type);
+            if (defaultDecoder == null)
+            {
+                throw new IllegalStateException("Unable to find decoder for type: " + type);
+            }
             wrapper = addAllMetadata(defaultDecoder);
         }
 

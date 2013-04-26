@@ -25,6 +25,8 @@ import java.util.Objects;
 
 import javax.websocket.MessageHandler;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.websocket.jsr356.MessageType;
  */
 public class MessageHandlerMetadataFactory
 {
+    private static final Logger LOG = Log.getLogger(MessageHandlerMetadataFactory.class);
     private final Decoders decoders;
 
     public MessageHandlerMetadataFactory(Decoders decoders)
@@ -43,10 +46,12 @@ public class MessageHandlerMetadataFactory
 
     private Class<?> findOnMessageType(Class<? extends MessageHandler> handlerClass, int paramCount)
     {
+        LOG.debug("findOnMessageType({}, {})",handlerClass,paramCount);
         for (Method method : handlerClass.getMethods())
         {
             if ("onMessage".equals(method.getName()))
             {
+                LOG.debug("found {}",method);
                 // make sure we only look for the onMessage method that is relevant
                 Class<?> paramTypes[] = method.getParameterTypes();
                 if (paramTypes == null)
@@ -77,16 +82,22 @@ public class MessageHandlerMetadataFactory
         boolean partial = false;
         if (MessageHandler.Partial.class.isAssignableFrom(handler))
         {
+            LOG.debug("supports Partial: {}",handler);
             partial = true;
             Class<?> onMessageClass = getOnMessagePartialType(handler);
+            LOG.debug("Partial message class: {}",onMessageClass);
             MessageType onMessageType = identifyMessageType(onMessageClass);
+            LOG.debug("Partial message type: {}",onMessageType);
             ret.add(new MessageHandlerMetadata(handler,onMessageType,onMessageClass,partial));
         }
         if (MessageHandler.Whole.class.isAssignableFrom(handler))
         {
+            LOG.debug("supports Whole: {}",handler.getName());
             partial = false;
             Class<?> onMessageClass = getOnMessageType(handler);
+            LOG.debug("Whole message class: {}",onMessageClass);
             MessageType onMessageType = identifyMessageType(onMessageClass);
+            LOG.debug("Whole message type: {}",onMessageType);
             MessageHandlerMetadata metadata = new MessageHandlerMetadata(handler,onMessageType,onMessageClass,partial);
             ret.add(metadata);
         }
