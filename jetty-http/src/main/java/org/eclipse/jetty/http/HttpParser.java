@@ -1340,8 +1340,16 @@ public class HttpParser
             case CLOSED:
             case END:
                 break;
+                
+            case EOF_CONTENT:
+                _handler.messageComplete();
+                break;
+                
             default:
-                LOG.warn("Closing {}",this);
+                if (_state.ordinal()>State.END.ordinal())
+                    _handler.earlyEOF();
+                else
+                    LOG.warn("Closing {}",this);
         }
         setState(State.CLOSED);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
