@@ -16,37 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.websocket.common.io.http;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParseListener;
-
-public class ClientUpgradeResponse extends UpgradeResponse implements HttpResponseHeaderParseListener
+public interface HttpResponseHeaderParseListener
 {
-    private ByteBuffer remainingBuffer;
+    void addHeader(String name, String value);
 
-    public ClientUpgradeResponse()
-    {
-        super();
-    }
+    void setRemainingBuffer(ByteBuffer copy);
 
-    public ByteBuffer getRemainingBuffer()
-    {
-        return remainingBuffer;
-    }
+    void setStatusCode(int statusCode);
 
-    @Override
-    public void sendForbidden(String message) throws IOException
-    {
-        throw new UnsupportedOperationException("Not supported on client implementation");
-    }
-
-    @Override
-    public void setRemainingBuffer(ByteBuffer remainingBuffer)
-    {
-        this.remainingBuffer = remainingBuffer;
-    }
+    void setStatusReason(String statusReason);
 }
