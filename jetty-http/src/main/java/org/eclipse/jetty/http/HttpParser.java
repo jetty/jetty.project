@@ -652,6 +652,9 @@ public class HttpParser
             case CACHE_CONTROL:
             case USER_AGENT:
                 add_to_connection_trie=_connectionFields!=null && _field==null;
+                break;
+                
+            default: break;
         }
     
         if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
@@ -1089,6 +1092,8 @@ public class HttpParser
                         BufferUtil.clear(buffer);
                     }
                     return false;
+                default: break;
+    
             }
 
             // Request/response line
@@ -1262,6 +1267,9 @@ public class HttpParser
                         BufferUtil.clear(buffer);
                         return false;
                     }
+                    
+                    default: 
+                        break;
                 }
             }
 
