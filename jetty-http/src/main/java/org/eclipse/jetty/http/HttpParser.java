@@ -1355,7 +1355,10 @@ public class HttpParser
                 
             default:
                 if (_state.ordinal()>State.END.ordinal())
+                {
                     _handler.earlyEOF();
+                    _handler.messageComplete();
+                }
                 else
                     LOG.warn("Closing {}",this);
         }

@@ -268,10 +268,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     // TODO work out how we can get here and a better way to handle it
                     LOG.warn("Unexpected state: "+this+ " "+_channel+" "+_channel.getRequest());
-                    getEndPoint().close();
+                    if (!_channel.getState().isSuspended())
+                        getEndPoint().close();
                     return;
                 }  
-                System.err.println(_channel.getRequest());
             }
         }
         catch (EofException e)
