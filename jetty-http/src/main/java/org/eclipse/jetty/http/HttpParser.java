@@ -652,6 +652,9 @@ public class HttpParser
             case CACHE_CONTROL:
             case USER_AGENT:
                 add_to_connection_trie=_connectionFields!=null && _field==null;
+                break;
+                
+            default: break;
         }
     
         if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
@@ -1089,6 +1092,8 @@ public class HttpParser
                         BufferUtil.clear(buffer);
                     }
                     return false;
+                default: break;
+    
             }
 
             // Request/response line
@@ -1262,6 +1267,9 @@ public class HttpParser
                         BufferUtil.clear(buffer);
                         return false;
                     }
+                    
+                    default: 
+                        break;
                 }
             }
 
@@ -1340,8 +1348,19 @@ public class HttpParser
             case CLOSED:
             case END:
                 break;
+                
+            case EOF_CONTENT:
+                _handler.messageComplete();
+                break;
+                
             default:
-                LOG.warn("Closing {}",this);
+                if (_state.ordinal()>State.END.ordinal())
+                {
+                    _handler.earlyEOF();
+                    _handler.messageComplete();
+                }
+                else
+                    LOG.warn("Closing {}",this);
         }
         setState(State.CLOSED);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
@@ -1369,6 +1388,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
+        // LOG.debug("{} --> {}",_state,state);
         _state=state;
     }
 

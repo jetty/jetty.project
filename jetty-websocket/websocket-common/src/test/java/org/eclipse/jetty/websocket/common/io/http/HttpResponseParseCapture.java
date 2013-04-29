@@ -16,21 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.websocket.common.io.http;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParseListener;
-
-public class ClientUpgradeResponse extends UpgradeResponse implements HttpResponseHeaderParseListener
+public class HttpResponseParseCapture implements HttpResponseHeaderParseListener
 {
+    private int statusCode;
+    private String statusReason;
+    private Map<String, String> headers = new HashMap<>();
     private ByteBuffer remainingBuffer;
 
-    public ClientUpgradeResponse()
+    @Override
+    public void addHeader(String name, String value)
     {
-        super();
+        headers.put(name.toLowerCase(Locale.ENGLISH),value);
+    }
+
+    public String getHeader(String name)
+    {
+        return headers.get(name.toLowerCase(Locale.ENGLISH));
     }
 
     public ByteBuffer getRemainingBuffer()
@@ -38,15 +46,31 @@ public class ClientUpgradeResponse extends UpgradeResponse implements HttpRespon
         return remainingBuffer;
     }
 
-    @Override
-    public void sendForbidden(String message) throws IOException
+    public int getStatusCode()
     {
-        throw new UnsupportedOperationException("Not supported on client implementation");
+        return statusCode;
+    }
+
+    public String getStatusReason()
+    {
+        return statusReason;
     }
 
     @Override
-    public void setRemainingBuffer(ByteBuffer remainingBuffer)
+    public void setRemainingBuffer(ByteBuffer copy)
     {
-        this.remainingBuffer = remainingBuffer;
+        this.remainingBuffer = copy;
+    }
+
+    @Override
+    public void setStatusCode(int code)
+    {
+        this.statusCode = code;
+    }
+
+    @Override
+    public void setStatusReason(String reason)
+    {
+        this.statusReason = reason;
     }
 }

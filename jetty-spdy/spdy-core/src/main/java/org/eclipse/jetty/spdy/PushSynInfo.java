@@ -32,7 +32,7 @@ public class PushSynInfo extends SynInfo
     private int associatedStreamId;
     
     public PushSynInfo(int associatedStreamId, PushInfo pushInfo){
-        super(pushInfo.getHeaders(), pushInfo.isClose());
+        super(pushInfo.getTimeout(), pushInfo.getUnit(), pushInfo.getHeaders(), pushInfo.isClose(), (byte)0);
         this.associatedStreamId = associatedStreamId;
     }
     
