@@ -1388,6 +1388,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
+        // LOG.debug("{} --> {}",_state,state);
         _state=state;
     }
 

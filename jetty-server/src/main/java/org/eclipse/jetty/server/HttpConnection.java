@@ -550,7 +550,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // need to call blockForContent again
                     while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
                         _parser.parseNext(_requestBuffer);
-
+                    
                     // If we have an event, return
                     if (event)
                         return;
@@ -566,7 +566,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
 
                         // Wait until we can read
-                        getEndPoint().fillInterested(_readBlocker);
+                        block(_readBlocker);
                         LOG.debug("{} block readable on {}",this,_readBlocker);
                         _readBlocker.block();
 
