@@ -50,6 +50,8 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.naming.OperationNotSupportedException;
+
 /*-------------------------------------------*/
 /**
  * <p>
@@ -174,6 +176,12 @@ public class Main
                 int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
                 return null;
+            }
+            
+            if (arg.startsWith("--download="))
+            {
+                download(arg);
+                continue;
             }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
@@ -300,6 +308,121 @@ public class Main
         }
 
         return xmls;
+    }
+
+    private void download(String arg)
+    {
+        try
+        {
+            String[] split = arg.split(":",3);
+            if (split.length!=3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
+                throw new IllegalArgumentException("Not --download=<http uri>:<location>");
+            
+            String location=split[2];
+            if (File.separatorChar!='/')
+                location.replaceAll("/",File.separator);
+            File file = new File(location);
+            
+            if (Config.isDebug())
+                System.err.println("Download to "+file.getAbsolutePath()+(file.exists()?" Exists!":""));
+            if (file.exists())
+                return;
+            
+            String[] parse = split[1].split("/",4);
+            String host=parse[2];          
+            String uri="/"+split[1].substring(3+host.length());
+
+            try (Socket socket = new Socket(host,80))
+            {
+                String request="GET "+uri+" HTTP/1.0\r\n"+
+                    "Host: "+host+"\r\n"+
+                    "User-Agent: jetty-start.jar\r\n"+
+                    "\r\n";
+
+                socket.getOutputStream().write(request.getBytes("ISO-8859-1"));
+                socket.getOutputStream().flush();
+
+                InputStream in = socket.getInputStream();
+
+                int state=0;
+                loop: while (state>=0)
+                {
+                    char c = (char)in.read();
+
+                    switch (state)
+                    {
+                        case 0:
+                            c=Character.toLowerCase(c);
+                            if (c==' ')
+                                state=1;
+                            else if (c!='h' && c!='t' && c!='p' && c!='/' && c!='.' && !Character.isDigit(c))
+                                break loop;
+                            break;
+                        case 1:
+                            if (c==' ')
+                                state=2;
+                            else if (c!='2' && c!='0')
+                                break loop;
+                            break;
+                        case 2:
+                            if (c=='\r')
+                                state=3;
+                            else if (c=='\n')
+                                state=4;
+                            break;
+                        case 3:
+                            if (c=='\n')
+                                state=4;
+                            else if (c=='\r')
+                                state=-1;
+                            break;
+
+                        case 4:
+                            if (c=='\r')
+                                state=5;
+                            else if (c=='\n')
+                                state=-1;
+                            else 
+                                state=2;
+                            break;
+
+                        case 5:
+                            if (c=='\n')
+                                state=-1;
+                            else 
+                                state=2;
+                            break;
+                    }
+                }
+
+                if (state>=0)
+                    throw new IOException("Bad HTTP response: "+state);
+
+                System.err.println("DOWNLOAD: "+uri+" from "+host+" to "+location);
+                if (!file.getParentFile().exists())
+                    file.getParentFile().mkdirs();
+
+                byte[] buf=new byte[8192];
+                try (OutputStream out = new FileOutputStream(file))
+                {
+                    while(!socket.isInputShutdown())
+                    {
+                        int len = in.read(buf);
+
+                        if (len>0)
+                            out.write(buf,0,len);
+                        if (len<0)
+                            break;
+                    }
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            System.err.println("ERROR: processing "+arg+"\n"+e);
+            e.printStackTrace();
+            usageExit(EXIT_USAGE);
+        }
     }
 
     private void usage()
