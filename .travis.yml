@@ -2,4 +2,3 @@ language: java
 jdk:
   - openjdk7
   - oraclejdk7
-env: MAVEN_OPTS="-Djava.net.preferIPv4Stack=true"
