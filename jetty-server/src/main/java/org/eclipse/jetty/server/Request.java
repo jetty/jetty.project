@@ -62,6 +62,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -1067,19 +1068,17 @@ public class Request implements HttpServletRequest
     {
         StringBuilder url = new StringBuilder(48);
         String scheme = getScheme();
+        String server=getServerName();
         int port = getServerPort();
-
-        url.append(scheme);
-        url.append("://");
-        if (getServerName().contains(":"))
-            url.append('[').append(getServerName()).append(']');
+        
+        if (server.indexOf(':')>=0)
+            url.append(scheme).append("://").append('[').append(server).append(']');
         else
-            url.append(getServerName());
+            url.append(scheme).append("://").append(getServerName());
 
-        if (port > 0 && ((scheme.equalsIgnoreCase("http") && port != 80) || (scheme.equalsIgnoreCase("https") && port != 443)))
+        if (port > 0 && ((HttpScheme.HTTP.is(scheme) && port != 80) || (HttpScheme.HTTPS.is(scheme) && port != 443)))
         {
-            url.append(':');
-            url.append(port);
+            url.append(':').append(port);
         }
         return url;
     }
