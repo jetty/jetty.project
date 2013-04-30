@@ -76,13 +76,6 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void onWriteWebSocketClose()
-    {
-        // as server, always disconnect if writing close
-        disconnect();
-    }
-
-    @Override
     public void setNextIncomingFrames(IncomingFrames incoming)
     {
         getParser().setIncomingFramesHandler(incoming);

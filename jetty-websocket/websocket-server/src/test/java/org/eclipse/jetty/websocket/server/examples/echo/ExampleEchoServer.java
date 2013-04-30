@@ -31,6 +31,15 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  */
 public class ExampleEchoServer
 {
+    public final class EchoSocketHandler extends WebSocketHandler
+    {
+        @Override
+        public void configure(WebSocketServletFactory factory)
+        {
+            factory.setCreator(new EchoCreator());
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(ExampleEchoServer.class);
 
     public static void main(String... args)
@@ -96,14 +105,7 @@ public class ExampleEchoServer
         connector.setPort(port);
 
         server.addConnector(connector);
-        wsHandler = new WebSocketHandler()
-        {
-            @Override
-            public void configure(WebSocketServletFactory factory)
-            {
-                factory.setCreator(new EchoCreator());
-            }
-        };
+        wsHandler = new EchoSocketHandler();
 
         server.setHandler(wsHandler);
 
@@ -126,6 +128,14 @@ public class ExampleEchoServer
     public void runForever() throws Exception
     {
         server.start();
+        String host = connector.getHost();
+        if (host == null)
+        {
+            host = "localhost";
+        }
+        int port = connector.getLocalPort();
+        System.err.printf("Echo Server started on ws://%s:%d/%n",host,port);
+        System.err.println(server.dump());
         server.join();
     }
 

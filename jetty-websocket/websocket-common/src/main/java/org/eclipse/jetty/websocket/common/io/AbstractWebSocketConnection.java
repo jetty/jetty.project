@@ -56,11 +56,12 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
 {
     private class FlushCallback implements Callback
     {
@@ -141,21 +142,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    private class OnCloseCallback implements WriteCallback
-    {
-        @Override
-        public void writeFailed(Throwable x)
-        {
-            disconnect();
-        }
-
-        @Override
-        public void writeSuccess()
-        {
-            onWriteWebSocketClose();
-        }
-    }
-
     public static class Stats
     {
         private AtomicLong countFillInterestedEvents = new AtomicLong(0);
@@ -211,7 +197,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.extensions = new ArrayList<>();
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
-        this.ioState.setState(ConnectionState.CONNECTING);
+        this.ioState.addListener(this);
         this.writeBytes = new WriteBytesProvider(generator,new FlushCallback());
         this.setInputBufferSize(policy.getInputBufferSize());
     }
@@ -247,12 +233,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void disconnect()
     {
+        synchronized (writeBytes)
+        {
+            if (!writeBytes.isClosed())
+            {
+                writeBytes.close();
+            }
+        }
         disconnect(false);
     }
 
     public void disconnect(boolean onlyOutput)
     {
-        ioState.setState(ConnectionState.CLOSED);
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -276,18 +268,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      */
     private void enqueClose(int statusCode, String reason)
     {
-        synchronized (writeBytes)
-        {
-            // It is possible to get close events from many different sources.
-            // Make sure we only sent 1 over the network.
-            if (writeBytes.isClosed())
-            {
-                // already sent the close
-                return;
-            }
-        }
         CloseInfo close = new CloseInfo(statusCode,reason);
-        outgoingFrame(close.asFrame(),new OnCloseCallback());
+        ioState.onCloseLocal(close);
     }
 
     protected void execute(Runnable task)
@@ -438,8 +420,29 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onClose()
     {
         super.onClose();
-        this.getIOState().setState(ConnectionState.CLOSED);
         writeBytes.close();
+    }
+
+    @Override
+    public void onConnectionStateChange(ConnectionState state)
+    {
+        LOG.debug("Connection State Change: {}",state);
+        switch (state)
+        {
+            case OPEN:
+                LOG.debug("fillInterested");
+                fillInterested();
+                break;
+            case CLOSED:
+                this.disconnect();
+                break;
+            case CLOSING:
+                CloseInfo close = ioState.getCloseInfo();
+                // append close frame
+                outgoingFrame(close.asFrame(),null);
+            default:
+                break;
+        }
     }
 
     @Override
@@ -482,18 +485,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         super.onOpen();
-        this.ioState.setState(ConnectionState.OPEN);
-        LOG.debug("fillInterested");
-        fillInterested();
+        this.ioState.onOpened();
     }
 
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.info("Read Timeout");
+        LOG.debug("Read Timeout");
 
         IOState state = getIOState();
-        if ((state.getState() == ConnectionState.CLOSING) || (state.getState() == ConnectionState.CLOSED))
+        if ((state.getConnectionState() == ConnectionState.CLOSING) || (state.getConnectionState() == ConnectionState.CLOSED))
         {
             // close already initiated, extra timeouts not relevant
             // allow underlying connection and endpoint to disconnect on its own
@@ -501,22 +502,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         // Initiate close - politely send close frame.
-        // Note: it is not possible in 100% of cases during read timeout to send this close frame.
         session.incomingError(new WebSocketTimeoutException("Timeout on Read"));
-        session.close(StatusCode.NORMAL,"Idle Timeout");
-
-        // Force closure of writeBytes
-        writeBytes.close();
+        close(StatusCode.SHUTDOWN,"Idle Timeout");
 
         return false;
-    }
-
-    public void onWriteWebSocketClose()
-    {
-        if (ioState.onCloseHandshake(false))
-        {
-            disconnect();
-        }
     }
 
     /**
@@ -550,6 +539,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 else if (filled < 0)
                 {
                     LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
+                    ioState.onReadEOF();
                     return -1;
                 }
                 else
