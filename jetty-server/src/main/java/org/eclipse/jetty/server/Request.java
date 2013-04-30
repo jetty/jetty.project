@@ -1030,19 +1030,8 @@ public class Request implements HttpServletRequest
     @Override
     public StringBuffer getRequestURL()
     {
-        final StringBuffer url = new StringBuffer(48);
-        String scheme = getScheme();
-        int port = getServerPort();
-
-        url.append(scheme);
-        url.append("://");
-        url.append(getServerName());
-        if (_port > 0 && ((scheme.equalsIgnoreCase(URIUtil.HTTP) && port != 80) || (scheme.equalsIgnoreCase(URIUtil.HTTPS) && port != 443)))
-        {
-            url.append(':');
-            url.append(_port);
-        }
-
+        final StringBuffer url = new StringBuffer(128);
+        URIUtil.appendSchemeHostPort(url,getScheme(),getServerName(),getServerPort());
         url.append(getRequestURI());
         return url;
     }
@@ -1066,20 +1055,8 @@ public class Request implements HttpServletRequest
      */
     public StringBuilder getRootURL()
     {
-        StringBuilder url = new StringBuilder(48);
-        String scheme = getScheme();
-        String server=getServerName();
-        int port = getServerPort();
-        
-        if (server.indexOf(':')>=0)
-            url.append(scheme).append("://").append('[').append(server).append(']');
-        else
-            url.append(scheme).append("://").append(getServerName());
-
-        if (port > 0 && ((HttpScheme.HTTP.is(scheme) && port != 80) || (HttpScheme.HTTPS.is(scheme) && port != 443)))
-        {
-            url.append(':').append(port);
-        }
+        StringBuilder url = new StringBuilder(128);
+        URIUtil.appendSchemeHostPort(url,getScheme(),getServerName(),getServerPort());
         return url;
     }
 
@@ -1109,41 +1086,58 @@ public class Request implements HttpServletRequest
 
         // Return host from absolute URI
         _serverName = _uri.getHost();
-        _port = _uri.getPort();
         if (_serverName != null)
+        {
+            _port = _uri.getPort();
             return _serverName;
+        }
 
         // Return host from header field
         String hostPort = _fields.getStringField(HttpHeader.HOST);
+        
+        _port=0;
         if (hostPort != null)
         {
-            loop: for (int i = hostPort.length(); i-- > 0;)
+            int len=hostPort.length();
+            loop: for (int i = len; i-- > 0;)
             {
-                char ch = (char)(0xff & hostPort.charAt(i));
-                switch (ch)
+                char c2 = (char)(0xff & hostPort.charAt(i));
+                switch (c2)
                 {
                     case ']':
                         break loop;
 
                     case ':':
-                        _serverName = hostPort.substring(0,i);
                         try
                         {
+                            len=i;
                             _port = StringUtil.toInt(hostPort.substring(i+1));
                         }
                         catch (NumberFormatException e)
                         {
                             LOG.warn(e);
+                            _serverName=hostPort;
+                            _port=0;
+                            return _serverName;
                         }
-                        return _serverName;
+                        break loop;
                 }
             }
-
-            if (_serverName == null || _port < 0)
+            if (hostPort.charAt(0)=='[')
             {
-                _serverName = hostPort;
-                _port = 0;
+                if (hostPort.charAt(len-1)!=']') 
+                {
+                    LOG.warn("Bad IPv6 "+hostPort);
+                    _serverName=hostPort;
+                    _port=0;
+                    return _serverName;
+                }
+                _serverName = hostPort.substring(1,len-1);
             }
+            else if (len==hostPort.length())
+                _serverName=hostPort;
+            else
+                _serverName = hostPort.substring(0,len);
 
             return _serverName;
         }

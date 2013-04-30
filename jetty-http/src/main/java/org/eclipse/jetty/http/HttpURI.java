@@ -546,6 +546,8 @@ public class HttpURI
     {
         if (_host==_port)
             return null;
+        if (_raw[_host]=='[')
+            return new String(_raw,_host+1,_port-_host-2,_charset);
         return new String(_raw,_host,_port-_host,_charset);
     }
 

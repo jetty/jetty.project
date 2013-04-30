@@ -354,6 +354,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
+                results.add(request.getRequestURL().toString());
                 results.add(request.getRemoteAddr());
                 results.add(request.getServerName());
                 results.add(String.valueOf(request.getServerPort()));
@@ -361,71 +362,121 @@ public class RequestTest
             }
         };
 
-        String responses=_connector.getResponses(
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        int i=0;
+        assertEquals("http://myhost/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("80",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost:8888\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertEquals("http://myhost:8888/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        
+        assertEquals("http://1.2.3.4/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("1.2.3.4",results.get(i++));
+        assertEquals("80",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4:8888\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertEquals("http://1.2.3.4:8888/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("1.2.3.4",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertEquals("http://[::1]/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("::1",results.get(i++));
+        assertEquals("80",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertEquals("http://[::1]:8888/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("::1",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
-                "\n"+
-
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertEquals("https://[::1]/",results.get(i++));
+        assertEquals("remote",results.get(i++));
+        assertEquals("::1",results.get(i++));
+        assertEquals("443",results.get(i++));
+        
+        
+        results.clear();
+        _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
                 "Connection: close\n"+
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
-                "\n",10,TimeUnit.SECONDS);
-
-
-        int i=0;
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("myhost",results.get(i++));
-        assertEquals("80",results.get(i++));
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("myhost",results.get(i++));
-        assertEquals("8888",results.get(i++));
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("1.2.3.4",results.get(i++));
-        assertEquals("80",results.get(i++));
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("1.2.3.4",results.get(i++));
-        assertEquals("8888",results.get(i++));
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("[::1]",results.get(i++));
-        assertEquals("80",results.get(i++));
-        assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("[::1]",results.get(i++));
-        assertEquals("8888",results.get(i++));
+                "\n");
+        i=0;
+        
+        assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("[::1]",results.get(i++));
-        assertEquals("443",results.get(i++));
-        assertEquals("remote",results.get(i++));
-        assertEquals("[::1]",results.get(i++));
+        assertEquals("::1",results.get(i++));
         assertEquals("8888",results.get(i++));
 
+        
+
+
+        
+        
+        
     }
 
     @Test

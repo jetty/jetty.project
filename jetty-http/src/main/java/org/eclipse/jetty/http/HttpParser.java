@@ -609,7 +609,8 @@ public class HttpParser
                     return true;
                 }
 
-                loop: for (int i = host.length(); i-- > 0;)
+                int len=host.length();
+                loop: for (int i = len; i-- > 0;)
                 {
                     char c2 = (char)(0xff & host.charAt(i));
                     switch (c2)
@@ -620,6 +621,7 @@ public class HttpParser
                         case ':':
                             try
                             {
+                                len=i;
                                 port = StringUtil.toInt(host.substring(i+1));
                             }
                             catch (NumberFormatException e)
@@ -628,10 +630,21 @@ public class HttpParser
                                 badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad Host header");
                                 return true;
                             }
-                            host = host.substring(0,i);
                             break loop;
                     }
                 }
+                if (host.charAt(0)=='[')
+                {
+                    if (host.charAt(len-1)!=']') 
+                    {
+                        badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad IPv6 Host header");
+                        return true;
+                    }
+                    host = host.substring(1,len-1);
+                }
+                else if (len!=host.length())
+                    host = host.substring(0,len);
+                
                 if (_requestHandler!=null)
                     _requestHandler.parsedHostHeader(host,port);
                 

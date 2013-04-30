@@ -809,7 +809,132 @@ public class HttpParserTest
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
+    
+    @Test
+    public void testHost() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: host\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
 
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("host",_host);
+        assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testIPHost() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: 192.168.0.1\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("192.168.0.1",_host);
+        assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testIPv6Host() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: [::1]\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("::1",_host);
+        assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testBadIPv6Host() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: [::1\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("Bad IPv6 Host header",_bad);
+    }
+    
+    @Test
+    public void testHostPort() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: myhost:8888\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("myhost",_host);
+        assertEquals(8888,_port);
+    }
+    
+    @Test
+    public void testHostBadPort() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: myhost:xxx\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("Bad Host header",_bad);
+    }
+
+    @Test
+    public void testIPHostPort() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: 192.168.0.1:8888\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("192.168.0.1",_host);
+        assertEquals(8888,_port);
+    }
+
+    @Test
+    public void testIPv6HostPort() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Host: [::1]:8888\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parseNext(buffer);
+        assertEquals("::1",_host);
+        assertEquals(8888,_port);
+    }
 
     @Before
     public void init()
@@ -826,6 +951,8 @@ public class HttpParserTest
         _messageCompleted=false;
     }
 
+    private String _host;
+    private int _port;
     private String _bad;
     private String _content;
     private String _methodOrVersion;
@@ -884,7 +1011,8 @@ public class HttpParserTest
         @Override
         public boolean parsedHostHeader(String host,int port)
         {
-            // TODO test this
+            _host=host;
+            _port=port;
             return false;
         }
 
