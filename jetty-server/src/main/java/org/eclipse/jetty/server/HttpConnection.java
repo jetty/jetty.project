@@ -222,11 +222,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                        
-                    _channel.run();
+                    boolean handle=_channel.handle();
                     
                     // Return if suspended or upgraded
-                    if (_channel.getState().isSuspended() || getEndPoint().getConnection()!=this)
+                    if (!handle || getEndPoint().getConnection()!=this)
                         return;
                 }
                 else if (BufferUtil.isEmpty(_requestBuffer))

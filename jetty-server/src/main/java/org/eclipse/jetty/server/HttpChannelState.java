@@ -71,6 +71,14 @@ public class HttpChannelState
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
     }
+    
+    public enum Next
+    {
+        CONTINUE,       // Continue handling the channel        
+        WAIT,           // Wait for further events 
+        COMPLETE,       // Complete the channel
+        RECYCLE,        // Channel is completed
+    }
 
     private final HttpChannel<?> _channel;
     private List<AsyncListener> _lastAsyncListeners;
@@ -154,9 +162,9 @@ public class HttpChannelState
     }
 
     /**
-     * @return true if the handling of the request should proceed
+     * @return Next handling of the request should proceed
      */
-    protected boolean handling()
+    protected Next handling()
     {
         synchronized (this)
         {
@@ -178,12 +186,16 @@ public class HttpChannelState
 
                 case COMPLETECALLED:
                     _state=State.COMPLETING;
-                    return false;
+                    return Next.COMPLETE;
 
-                case ASYNCWAIT:
                 case COMPLETING:
+                    return Next.COMPLETE;
+                    
+                case ASYNCWAIT:
+                    return Next.WAIT;
+                    
                 case COMPLETED:
-                    return false;
+                    return Next.RECYCLE;
 
                 case REDISPATCH:
                     _state=State.REDISPATCHED;
@@ -194,7 +206,7 @@ public class HttpChannelState
             }
 
             _responseWrapped=false;
-            return true;
+            return Next.CONTINUE;
 
         }
     }
@@ -255,10 +267,10 @@ public class HttpChannelState
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has
      * been suspended (startAsync called).
-     * @return true if handling is complete, false if the request should
+     * @return next actions
      * be handled again (eg because of a resume that happened before unhandle was called)
      */
-    protected boolean unhandle()
+    protected Next unhandle()
     {
         synchronized (this)
         {
@@ -267,7 +279,7 @@ public class HttpChannelState
                 case REDISPATCHED:
                 case DISPATCHED:
                     _state=State.COMPLETING;
-                    return true;
+                    return Next.COMPLETE;
 
                 case IDLE:
                     throw new IllegalStateException(this.getStatusString());
@@ -277,25 +289,25 @@ public class HttpChannelState
                     _state=State.ASYNCWAIT;
                     scheduleTimeout();
                     if (_state==State.ASYNCWAIT)
-                        return true;
+                        return Next.WAIT;
                     else if (_state==State.COMPLETECALLED)
                     {
                         _state=State.COMPLETING;
-                        return true;
+                        return Next.COMPLETE;
                     }
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return false;
+                    return Next.CONTINUE;
 
                 case REDISPATCHING:
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return false;
+                    return Next.CONTINUE;
 
                 case COMPLETECALLED:
                     _initial=false;
                     _state=State.COMPLETING;
-                    return true;
+                    return Next.COMPLETE;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
