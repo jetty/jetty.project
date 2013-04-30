@@ -47,9 +47,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class HttpOutput extends ServletOutputStream
 {
-    private static final boolean OUTPUT_BUFFER_DIRECT=false;
-    private static final boolean CHANNEL_BUFFER_DIRECT=true;
-    private static final boolean STREAM_BUFFER_DIRECT=false;
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
     private boolean _closed;
@@ -165,8 +162,9 @@ public class HttpOutput extends ServletOutputStream
                 return;
             }
 
-            // Allocate an aggregate buffer
-            _aggregate = _channel.getByteBufferPool().acquire(size, OUTPUT_BUFFER_DIRECT);
+            // Allocate an aggregate buffer.
+            // Never direct as it is slow to do little writes to a direct buffer.
+            _aggregate = _channel.getByteBufferPool().acquire(size, false);
         }
 
         // Do we have space to aggregate ?
@@ -206,8 +204,10 @@ public class HttpOutput extends ServletOutputStream
         if (isClosed())
             throw new EOFException("Closed");
 
+        // Allocate an aggregate buffer.
+        // Never direct as it is slow to do little writes to a direct buffer.
         if (_aggregate == null)
-            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), OUTPUT_BUFFER_DIRECT);
+            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
 
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
@@ -256,7 +256,7 @@ public class HttpOutput extends ServletOutputStream
             if (etag!=null)
                 response.getHttpFields().put(HttpHeader.ETAG,etag);
 
-            content = httpContent.getDirectBuffer();
+            content = _channel.useDirectBuffers()?httpContent.getDirectBuffer():null;
             if (content == null)
                 content = httpContent.getIndirectBuffer();
             if (content == null)
@@ -279,7 +279,7 @@ public class HttpOutput extends ServletOutputStream
         }
         else if (content instanceof ReadableByteChannel)
         {
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), CHANNEL_BUFFER_DIRECT);
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
             try (ReadableByteChannel channel = (ReadableByteChannel)content;)
             {
                 while(channel.isOpen())
@@ -300,7 +300,8 @@ public class HttpOutput extends ServletOutputStream
         }
         else if (content instanceof InputStream)
         {
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), STREAM_BUFFER_DIRECT);
+            // allocate non direct buffer so array may be directly accessed.
+            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
             byte[] array = buffer.array();
             int offset=buffer.arrayOffset();
             int size=array.length-offset;

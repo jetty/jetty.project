@@ -1071,7 +1071,10 @@ public class Request implements HttpServletRequest
 
         url.append(scheme);
         url.append("://");
-        url.append(getServerName());
+        if (getServerName().contains(":"))
+            url.append('[').append(getServerName()).append(']');
+        else
+            url.append(getServerName());
 
         if (port > 0 && ((scheme.equalsIgnoreCase("http") && port != 80) || (scheme.equalsIgnoreCase("https") && port != 443)))
         {

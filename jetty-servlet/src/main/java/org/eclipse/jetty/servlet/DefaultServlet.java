@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -42,9 +41,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PathMap.MappedEntry;
 import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
@@ -267,7 +265,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             throw new UnavailableException(e.toString());
         }
 
-        _servletHandler= (ServletHandler) _contextHandler.getChildHandlerByClass(ServletHandler.class);
+        _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
         for (ServletHolder h :_servletHandler.getServlets())
             if (h.getServletInstance()==this)
                 _defaultHolder=h;
@@ -342,6 +340,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
      * @param pathInContext The path to find a resource for.
      * @return The resource to serve.
      */
+    @Override
     public Resource getResource(String pathInContext)
     {
         Resource r=null;
@@ -631,7 +630,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
             {
-                Map.Entry entry=_servletHandler.getHolderEntry(welcome_in_context);
+                MappedEntry<?> entry=_servletHandler.getHolderEntry(welcome_in_context);
                 if (entry!=null && entry.getValue()!=_defaultHolder &&
                         (_welcomeServlets || (_welcomeExactServlets && entry.getKey().equals(welcome_in_context))))
                     welcome_servlet=welcome_in_context;
@@ -827,24 +826,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             boolean include,
             Resource resource,
             HttpContent content,
-            Enumeration reqRanges)
+            Enumeration<String> reqRanges)
     throws IOException
     {
-        boolean direct;
-        long content_length;
-        if (content==null)
-        {
-            direct=false;
-            content_length=resource.length();
-        }
-        else
-        {
-            // TODO sometimes we should be direct!
-            Connector connector = HttpChannel.getCurrentHttpChannel().getConnector();
-            direct=false;
-            content_length=content.getContentLength();
-        }
-
+        final long content_length = (content==null)?resource.length():content.getContentLength();
 
         // Get the output stream (or writer)
         OutputStream out =null;
@@ -883,17 +868,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     }
                     else
                     {
-                        ByteBuffer buffer = direct?content.getDirectBuffer():content.getIndirectBuffer();
-                        if (buffer!=null)
-                        {
-                            writeHeaders(response,content,content_length);
-                            ((HttpOutput)out).sendContent(buffer);
-                        }
-                        else
-                        {
-                            writeHeaders(response,content,content_length);
-                            resource.writeTo(out,0,content_length);
-                        }
+                        writeHeaders(response,content,content_length);
+                        ((HttpOutput)out).sendContent(content.getResource());
                     }
                 }
                 else
@@ -913,7 +889,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else
         {
             // Parse the satisfiable ranges
-            List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
+            List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
 
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
@@ -930,8 +906,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             //  since were here now), send that range with a 216 response
             if ( ranges.size()== 1)
             {
-                InclusiveByteRange singleSatisfiableRange =
-                    (InclusiveByteRange)ranges.get(0);
+                InclusiveByteRange singleSatisfiableRange = ranges.get(0);
                 long singleLength = singleSatisfiableRange.getSize(content_length);
                 writeHeaders(response,content,singleLength                     );
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
@@ -946,7 +921,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             //  content-length header
             //
             writeHeaders(response,content,-1);
-            String mimetype=(content.getContentType()==null?null:content.getContentType().toString());
+            String mimetype=(content==null||content.getContentType()==null?null:content.getContentType().toString());
             if (mimetype==null)
                 LOG.warn("Unknown mimetype for "+request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
@@ -970,7 +945,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             String[] header = new String[ranges.size()];
             for (int i=0;i<ranges.size();i++)
             {
-                InclusiveByteRange ibr = (InclusiveByteRange) ranges.get(i);
+                InclusiveByteRange ibr = ranges.get(i);
                 header[i]=ibr.toHeaderRangeString(content_length);
                 length+=
                     ((i>0)?2:0)+
@@ -985,7 +960,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             for (int i=0;i<ranges.size();i++)
             {
-                InclusiveByteRange ibr = (InclusiveByteRange) ranges.get(i);
+                InclusiveByteRange ibr =  ranges.get(i);
                 multi.startPart(mimetype,new String[]{HttpHeader.CONTENT_RANGE+": "+header[i]});
 
                 long start=ibr.getFirst(content_length);
@@ -1022,7 +997,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
-    throws IOException
     {        
         if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());

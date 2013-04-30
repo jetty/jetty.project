@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -663,5 +664,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public Scheduler getScheduler()
     {
         return _connector.getScheduler();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
+     */
+    public boolean useDirectBuffers()
+    {
+        return getEndPoint() instanceof ChannelEndPoint;
     }
 }
