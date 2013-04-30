@@ -268,7 +268,7 @@ public class HttpOutput extends ServletOutputStream
         {
             Resource resource = (Resource)content;
             _channel.getResponse().getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
-            content = resource.getInputStream();
+            content=resource.getInputStream(); // Closed below
         }
 
         // Process content.
@@ -279,9 +279,8 @@ public class HttpOutput extends ServletOutputStream
         }
         else if (content instanceof ReadableByteChannel)
         {
-            ReadableByteChannel channel = (ReadableByteChannel)content;
             ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), CHANNEL_BUFFER_DIRECT);
-            try
+            try (ReadableByteChannel channel = (ReadableByteChannel)content;)
             {
                 while(channel.isOpen())
                 {
@@ -301,12 +300,11 @@ public class HttpOutput extends ServletOutputStream
         }
         else if (content instanceof InputStream)
         {
-            InputStream in = (InputStream)content;
             ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), STREAM_BUFFER_DIRECT);
             byte[] array = buffer.array();
             int offset=buffer.arrayOffset();
             int size=array.length-offset;
-            try
+            try (InputStream in = (InputStream)content;)
             {
                 while(true)
                 {
