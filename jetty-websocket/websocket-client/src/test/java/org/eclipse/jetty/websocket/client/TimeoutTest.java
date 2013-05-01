@@ -104,8 +104,8 @@ public class TimeoutTest
             // Make sure idle timeout takes less than 5 total seconds
             Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(5000L));
 
-            // Client should see a close event, with status NO_CLOSE
-            wsocket.assertCloseCode(StatusCode.NORMAL);
+            // Client should see a close event, with status SHUTDOWN
+            wsocket.assertCloseCode(StatusCode.SHUTDOWN);
         }
         finally
         {

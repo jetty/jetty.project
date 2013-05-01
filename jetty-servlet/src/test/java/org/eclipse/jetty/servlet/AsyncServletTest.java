@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlet;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -345,6 +344,45 @@ public class AsyncServletTest
         Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
     }
     
+
+    @Test
+    public void testAsyncRead() throws Exception
+    {
+        String header="GET /ctx/path/info?suspend=2000&resume=1500 HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Content-Length: 10\r\n"+
+            "\r\n";
+        String body="12345678\r\n";
+        String close="GET /ctx/path/info HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+
+        try (Socket socket = new Socket("localhost",_port);)
+        {
+            socket.setSoTimeout(10000);
+            socket.getOutputStream().write(header.getBytes("ISO-8859-1"));
+            Thread.sleep(500);
+            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),0,2);
+            Thread.sleep(500);
+            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),2,8);
+            socket.getOutputStream().write(close.getBytes("ISO-8859-1"));
+            
+            String response = IO.toString(socket.getInputStream());
+            assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+            assertContains(
+                "history: REQUEST\r\n"+
+                "history: initial\r\n"+
+                "history: suspend\r\n"+
+                "history: async-read=10\r\n"+
+                "history: resume\r\n"+
+                "history: ASYNC\r\n"+
+                "history: !initial\r\n"+
+                "history: onComplete\r\n",response);
+        }
+    }
+    
+    
     public synchronized String process(String query,String content) throws Exception
     {
         String request = "GET /ctx/path/info";
@@ -364,9 +402,8 @@ public class AsyncServletTest
         
         int port=_port;
         String response=null;
-        try
+        try (Socket socket = new Socket("localhost",port);)
         {
-            Socket socket = new Socket("localhost",port);
             socket.setSoTimeout(1000000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
 
@@ -379,11 +416,10 @@ public class AsyncServletTest
             throw e;
         }        
         
-        // System.err.println(response);
-
         return response;
     }
-    
+
+
        
     
     private static class AsyncServlet extends HttpServlet
@@ -429,7 +465,7 @@ public class AsyncServletTest
             
             if (request.getDispatcherType()==DispatcherType.REQUEST)
             {
-                ((HttpServletResponse)response).addHeader("history","initial");
+                response.addHeader("history","initial");
                 if (read_before>0)
                 {
                     byte[] buf=new byte[read_before];
@@ -442,6 +478,30 @@ public class AsyncServletTest
                     while(b!=-1)
                         b=in.read();
                 }
+                else if (request.getContentLength()>0)
+                {
+                    new Thread()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            int c=0;
+                            try
+                            {
+                                InputStream in=request.getInputStream();
+                                int b=0;
+                                while(b!=-1)
+                                    if((b=in.read())>=0)
+                                        c++;
+                                response.addHeader("history","async-read="+c);
+                            }
+                            catch(Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    }.start();
+                }
 
                 if (suspend_for>=0)
                 {
@@ -449,7 +509,7 @@ public class AsyncServletTest
                     if (suspend_for>0)
                         async.setTimeout(suspend_for);
                     async.addListener(__listener);
-                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    response.addHeader("history","suspend");
                     
                     if (complete_after>0)
                     {
@@ -527,7 +587,7 @@ public class AsyncServletTest
             }
             else
             {
-                ((HttpServletResponse)response).addHeader("history","!initial");
+                response.addHeader("history","!initial");
 
                 if (suspend2_for>=0 && request.getAttribute("2nd")==null)
                 {
@@ -540,7 +600,7 @@ public class AsyncServletTest
                         async.setTimeout(suspend2_for);
                     }
                     // continuation.addContinuationListener(__listener);
-                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    response.addHeader("history","suspend");
 
                     if (complete2_after>0)
                     {
@@ -581,7 +641,7 @@ public class AsyncServletTest
                             @Override
                             public void run()
                             {
-                                ((HttpServletResponse)response).addHeader("history","resume");
+                                response.addHeader("history","resume");
                                 async.dispatch();
                             }
                         };
@@ -592,7 +652,7 @@ public class AsyncServletTest
                     }
                     else if (resume2_after==0)
                     {
-                        ((HttpServletResponse)response).addHeader("history","dispatch");
+                        response.addHeader("history","dispatch");
                         async.dispatch();
                     }
                 }
@@ -633,15 +693,11 @@ public class AsyncServletTest
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
-            // TODO Auto-generated method stub
-            
         }
         
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            // TODO Auto-generated method stub
-            
         }
         
         @Override

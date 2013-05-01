@@ -40,8 +40,10 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.HttpChannelState.Next;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -216,6 +218,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public void run()
     {
+        handle();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the channel is ready to continue handling (ie it is not suspended)
+     */
+    public boolean handle()
+    {
         LOG.debug("{} handle enter", this);
 
         setCurrentHttpChannel(this);
@@ -227,15 +238,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             Thread.currentThread().setName(threadName + " - " + _uri);
         }
 
+
+        // Loop here to handle async request redispatches.
+        // The loop is controlled by the call to async.unhandle in the
+        // finally block below.  Unhandle will return false only if an async dispatch has
+        // already happened when unhandle is called.
+        HttpChannelState.Next next = _state.handling();
         try
         {
-            // Loop here to handle async request redispatches.
-            // The loop is controlled by the call to async.unhandle in the
-            // finally block below.  Unhandle will return false only if an async dispatch has
-            // already happened when unhandle is called.
-            boolean handling = _state.handling();
 
-            while (handling && getServer().isRunning())
+            while (next==Next.CONTINUE && getServer().isRunning())
             {
                 try
                 {
@@ -285,9 +297,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 }
                 finally
                 {
-                    handling = !_state.unhandle();
+                    next = _state.unhandle();
                 }
             }
+            if (next==Next.WAIT)
+                return false;
         }
         finally
         {
@@ -295,7 +309,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 Thread.currentThread().setName(threadName);
             setCurrentHttpChannel(null);
 
-            if (_state.isCompleting())
+            if (next==Next.COMPLETE)
             {
                 try
                 {
@@ -318,13 +332,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 }
                 finally
                 {
-                    _request.setHandled(true);
-                    _transport.completed();
+                    next=Next.RECYCLE;
                 }
             }
 
+            if (next==Next.RECYCLE)
+            {
+                _request.setHandled(true);
+                _transport.completed();
+            }
+            
+
             LOG.debug("{} handle exit", this);
         }
+        
+        return true;
     }
 
     /**
@@ -569,10 +591,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
         try
         {
-            if (_state.handling())
+            if (_state.handling()==Next.CONTINUE)
             {
                 commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
-                _state.unhandle();
             }
         }
         catch (IOException e)
@@ -580,8 +601,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.warn(e);
         }
         finally
-        {
-            _state.completed();
+        { 
+            if (_state.unhandle()==Next.COMPLETE)
+                _state.completed();
         }
     }
 
@@ -663,5 +685,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public Scheduler getScheduler()
     {
         return _connector.getScheduler();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
+     */
+    public boolean useDirectBuffers()
+    {
+        return getEndPoint() instanceof ChannelEndPoint;
     }
 }

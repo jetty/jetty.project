@@ -20,13 +20,12 @@ package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -46,8 +45,8 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
-    public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
-    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
+    public EventQueue<String> messageQueue = new EventQueue<>();
+    public EventQueue<Throwable> errorQueue = new EventQueue<>();
 
     public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
@@ -93,29 +92,9 @@ public class TrackingSocket extends WebSocketAdapter
         Assert.assertThat("Was Opened",openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
-    public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException
+    public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException, InterruptedException
     {
-        long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
-        long now = System.currentTimeMillis();
-        long expireOn = now + msDur;
-        LOG.debug("Await Message.. Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
-
-        while (messageQueue.size() < expectedMessageCount)
-        {
-            try
-            {
-                TimeUnit.MILLISECONDS.sleep(20);
-            }
-            catch (InterruptedException gnore)
-            {
-                /* ignore */
-            }
-            if (!LOG.isDebugEnabled() && (System.currentTimeMillis() > expireOn))
-            {
-                throw new TimeoutException(String.format("Timeout reading all %d expected messages. (managed to only read %d messages)",expectedMessageCount,
-                        messageQueue.size()));
-            }
-        }
+        messageQueue.awaitEventCount(expectedMessageCount,timeoutDuration,timeoutUnit);
     }
 
     public void clear()

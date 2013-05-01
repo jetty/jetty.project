@@ -110,7 +110,10 @@ public enum HttpMethod
     {
         if (buffer.hasArray())
             return lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.arrayOffset()+buffer.limit());
-        return CACHE.getBest(buffer,0,buffer.remaining());
+        
+        // TODO use cache and check for space
+        // return CACHE.getBest(buffer,0,buffer.remaining());
+        return null;
     }
     
     /* ------------------------------------------------------------ */

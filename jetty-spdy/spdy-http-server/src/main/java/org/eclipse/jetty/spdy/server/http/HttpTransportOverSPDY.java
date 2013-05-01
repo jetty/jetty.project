@@ -284,8 +284,8 @@ public class HttpTransportOverSPDY implements HttpTransport
             Fields pushHeaders = createPushHeaders(scheme, host, pushResource);
             final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
-            // TODO: handle the timeout better
-            stream.push(new PushInfo(0, TimeUnit.MILLISECONDS, pushHeaders, false), new Promise.Adapter<Stream>()
+            stream.push(new PushInfo(pushHeaders, false),
+                    new Promise.Adapter<Stream>()
             {
                 @Override
                 public void succeeded(Stream pushStream)

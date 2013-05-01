@@ -116,7 +116,7 @@ public class EventDriverTest
             driver.incomingFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
             driver.incomingFrame(WebSocketFrame.text("Text Me"));
             driver.incomingFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
-            driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
+            driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN,"testcase").asFrame());
 
             socket.capture.assertEventCount(6);
             socket.capture.assertEventStartsWith(0,"onConnect(");
@@ -148,13 +148,14 @@ public class EventDriverTest
     }
 
     @Test
-    public void testListener_Text() throws IOException
+    public void testListener_Text() throws Exception
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);
 
         try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
         {
+            conn.start();
             conn.open();
             driver.incomingFrame(WebSocketFrame.text("Hello World"));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());

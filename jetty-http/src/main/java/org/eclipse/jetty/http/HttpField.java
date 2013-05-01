@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Trie;
  */
 public class HttpField
 {
-    public final static Trie<HttpField> CACHE = new ArrayTrie<>(1024);
+    public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
     public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
     
     static
@@ -77,10 +77,7 @@ public class HttpField
         }
 
         // Add headers with null values so HttpParser can avoid looking up name again for unknown values
-        Set<HttpHeader> headers = new HashSet<>();
-        for (String key:CACHE.keySet())
-            headers.add(CACHE.get(key).getHeader());
-        for (HttpHeader h:headers)
+        for (HttpHeader h:HttpHeader.values())
             if (!CACHE.put(new HttpField(h,(String)null)))
                 throw new IllegalStateException("CACHE FULL");
         // Add some more common headers

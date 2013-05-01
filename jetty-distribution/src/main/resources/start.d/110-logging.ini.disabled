@@ -1,0 +1,7 @@
+#===========================================================
+# Server logging.
+# The following configuration will redirect stderr and stdout
+# to file which is rolled over daily.
+#-----------------------------------------------------------
+jetty.log.retain=90
+etc/jetty-logging.xml

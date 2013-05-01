@@ -135,11 +135,11 @@ public class HttpURITest
        /*33*/ {"/?abc=test",null, null, null,null,"/", null,"abc=test",null},
        /*34*/ {"/#fragment",null, null, null,null,"/", null,null,"fragment"},
        /*35*/ {"http://192.0.0.1:8080/","http","//192.0.0.1:8080","192.0.0.1","8080","/",null,null,null},
-       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
-       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
-       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","[2001:db8::1]",null,"/",null,null,null},
+       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
+       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
+       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","2001:db8::1",null,"/",null,null,null},
        /*39*/ {"//[2001:db8::1]:8080/",null,null,null,null,"//[2001:db8::1]:8080/",null,null,null},
-       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
+       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
        /*41*/ {"*",null,null,null,null,"*",null, null,null}
     };
 
@@ -366,7 +366,7 @@ public class HttpURITest
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
        /* 1*/ {"  127.0.0.1:8080  ","127.0.0.1","8080"},
-       /* 2*/ {"  [127::0::0::1]:8080  ","[127::0::0::1]","8080"},
+       /* 2*/ {"  [127::0::0::1]:8080  ","127::0::0::1","8080"},
        /* 3*/ {"  error  ",null,null},
        /* 4*/ {"  http://localhost:8080/  ",null,null},
     };
@@ -382,7 +382,7 @@ public class HttpURITest
                 byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
 
                 uri.parseConnect(buf,2,buf.length-4);
-                assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
+                assertEquals("path"+i,connect_tests[i][0].trim(),uri.getPath());
                 assertEquals("host"+i,connect_tests[i][1],uri.getHost());
                 assertEquals("port"+i,Integer.parseInt(connect_tests[i][2]),uri.getPort());
             }

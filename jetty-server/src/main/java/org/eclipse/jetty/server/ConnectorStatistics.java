@@ -23,14 +23,22 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
+
+/* ------------------------------------------------------------ */
+/** A Connector.Listener that gathers Connector and Connections Statistics.
+ * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)} 
+ * will register the listener with all connections accepted by that connector.
+ */
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
@@ -52,78 +60,93 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         connectionClosed(System.currentTimeMillis()-connection.getCreatedTimeStamp(),connection.getMessagesIn(),connection.getMessagesOut());
     }
 
+    @ManagedAttribute("Total number of bytes received by this connector")
     public int getBytesIn()
     {
         // TODO
         return -1;
     }
 
+    @ManagedAttribute("Total number of bytes sent by this connector")
     public int getBytesOut()
     {
         // TODO
         return -1;
     }
 
+    @ManagedAttribute("Total number of connections seen by this connector")
     public int getConnections()
     {
         return (int)_connectionStats.getTotal();
     }
 
+    @ManagedAttribute("Connection duraton maximum in ms")
     public long getConnectionsDurationMax()
     {
         return _connectionDurationStats.getMax();
     }
 
+    @ManagedAttribute("Connection duraton mean in ms")
     public double getConnectionsDurationMean()
     {
         return _connectionDurationStats.getMean();
     }
 
+    @ManagedAttribute("Connection duraton standard deviation")
     public double getConnectionsDurationStdDev()
     {
         return _connectionDurationStats.getStdDev();
     }
 
+    @ManagedAttribute("Connection duraton total of all connections in ms")
     public long getConnectionsDurationTotal()
     {
         return _connectionDurationStats.getTotal();
     }
 
-    public int getConnectionsMessagesInMax()
-    {
-        return (int)_messagesIn.getMax();
-    }
-
-    public double getConnectionsMessagesInMean()
-    {
-        return _messagesIn.getMean();
-    }
-
-    public double getConnectionsMessagesInStdDev()
-    {
-        return _messagesIn.getStdDev();
-    }
-
-    public int getConnectionsOpen()
-    {
-        return (int)_connectionStats.getCurrent();
-    }
-
-    public int getConnectionsOpenMax()
-    {
-        return (int)_connectionStats.getMax();
-    }
-
+    @ManagedAttribute("Messages In for all connections")
     public int getMessagesIn()
     {
         return (int)_messagesIn.getTotal();
     }
 
+    @ManagedAttribute("Messages In per connection maximum")
+    public int getConnectionsMessagesInMax()
+    {
+        return (int)_messagesIn.getMax();
+    }
+
+    @ManagedAttribute("Messages In per connection mean")
+    public double getConnectionsMessagesInMean()
+    {
+        return _messagesIn.getMean();
+    }
+
+    @ManagedAttribute("Messages In per connection standard deviation")
+    public double getConnectionsMessagesInStdDev()
+    {
+        return _messagesIn.getStdDev();
+    }
+
+    @ManagedAttribute("Connections open")
+    public int getConnectionsOpen()
+    {
+        return (int)_connectionStats.getCurrent();
+    }
+
+    @ManagedAttribute("Connections open maximum")
+    public int getConnectionsOpenMax()
+    {
+        return (int)_connectionStats.getMax();
+    }
+
+    @ManagedAttribute("Messages Out for all connections")
     public int getMessagesOut()
     {
         return (int)_messagesIn.getTotal();
     }
 
+    @ManagedAttribute("Connection statistics started ms since epoch")
     public long getStartedMillis()
     {
         long start = _startMillis.get();
@@ -141,6 +164,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     {
     }
 
+    @ManagedOperation("Reset the statistics")
     public void reset()
     {
         _startMillis.set(System.currentTimeMillis());
@@ -178,7 +202,6 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         }
     }
 
-
     @Override
     @ManagedOperation("dump thread state")
     public String dump()
@@ -191,5 +214,14 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     {
         ContainerLifeCycle.dumpObject(out,this);
         ContainerLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
+    }
+    
+    public static void addToAllConnectors(Server server)
+    {
+        for (Connector connector : server.getConnectors())
+        {
+            if (connector instanceof Container)
+             ((Container)connector).addBean(new ConnectorStatistics());
+        }
     }
 }

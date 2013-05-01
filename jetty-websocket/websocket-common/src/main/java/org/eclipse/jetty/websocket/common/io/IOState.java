@@ -19,39 +19,79 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 
 /**
- * Simple state tracker for Input / Output and {@link ConnectionState}
+ * Simple state tracker for Input / Output and {@link ConnectionState}.
+ * <p>
+ * Use the various known .on*() methods to trigger a state change.
+ * <ul>
+ * <li>{@link #onOpened()} - connection has been opened</li>
+ * </ul>
  */
 public class IOState
 {
+    /**
+     * The source of a close handshake. (ie: who initiated it).
+     */
+    private static enum CloseHandshakeSource
+    {
+        /** No close handshake initiated (yet) */
+        NONE,
+        /** Local side initiated the close handshake */
+        LOCAL,
+        /** Remote side initiated the close handshake */
+        REMOTE,
+        /** An abnormal close situation (disconnect, timeout, etc...) */
+        ABNORMAL;
+    }
+
+    public static interface ConnectionStateListener
+    {
+        public void onConnectionStateChange(ConnectionState state);
+    }
+
     private static final Logger LOG = Log.getLogger(IOState.class);
     private ConnectionState state;
-    private final AtomicBoolean inputClosed;
-    private final AtomicBoolean outputClosed;
+    private final List<ConnectionStateListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final AtomicBoolean inputAvailable;
+    private final AtomicBoolean outputAvailable;
+    private final AtomicReference<CloseHandshakeSource> closeHandshakeSource;
+    private final AtomicReference<CloseInfo> closeInfo;
 
     private final AtomicBoolean cleanClose;
-    private final AtomicBoolean remoteCloseInitiated;
-    private final AtomicBoolean localCloseInitiated;
 
+    /**
+     * Create a new IOState, initialized to {@link ConnectionState#CONNECTING}
+     */
     public IOState()
     {
         this.state = ConnectionState.CONNECTING;
-        this.inputClosed = new AtomicBoolean(false);
-        this.outputClosed = new AtomicBoolean(false);
-        this.remoteCloseInitiated = new AtomicBoolean(false);
-        this.localCloseInitiated = new AtomicBoolean(false);
+        this.inputAvailable = new AtomicBoolean(false);
+        this.outputAvailable = new AtomicBoolean(false);
+        this.closeHandshakeSource = new AtomicReference<>(CloseHandshakeSource.NONE);
+        this.closeInfo = new AtomicReference<>();
         this.cleanClose = new AtomicBoolean(false);
+    }
+
+    public void addListener(ConnectionStateListener listener)
+    {
+        listeners.add(listener);
     }
 
     public void assertInputOpen() throws IOException
     {
-        if (isInputClosed())
+        if (!isInputAvailable())
         {
             throw new IOException("Connection input is closed");
         }
@@ -59,15 +99,15 @@ public class IOState
 
     public void assertOutputOpen() throws IOException
     {
-        if (isOutputClosed())
+        if (!isOutputAvailable())
         {
             throw new IOException("Connection output is closed");
         }
     }
 
-    public boolean awaitClosed(long duration)
+    public CloseInfo getCloseInfo()
     {
-        return (isInputClosed() && isOutputClosed());
+        return closeInfo.get();
     }
 
     public ConnectionState getConnectionState()
@@ -75,90 +115,283 @@ public class IOState
         return state;
     }
 
-    public ConnectionState getState()
-    {
-        return state;
-    }
-
     public boolean isClosed()
     {
-        return (isInputClosed() && isOutputClosed());
+        synchronized (state)
+        {
+            return (state == ConnectionState.CLOSED);
+        }
     }
 
-    public boolean isCloseInitiated()
+    public boolean isInputAvailable()
     {
-        return remoteCloseInitiated.get() || localCloseInitiated.get();
-    }
-
-    public boolean isInputClosed()
-    {
-        return inputClosed.get();
+        return inputAvailable.get();
     }
 
     public boolean isOpen()
     {
-        return (getState() != ConnectionState.CLOSED);
+        return (getConnectionState() != ConnectionState.CLOSED);
     }
 
-    public boolean isOutputClosed()
+    public boolean isOutputAvailable()
     {
-        return outputClosed.get();
+        return outputAvailable.get();
+    }
+
+    private void notifyStateListeners(ConnectionState state)
+    {
+        for (ConnectionStateListener listener : listeners)
+        {
+            listener.onConnectionStateChange(state);
+        }
     }
 
     /**
-     * Test for if connection should disconnect or response on a close handshake.
-     * 
-     * @param incoming
-     *            true if incoming close
-     * @param close
-     *            the close details.
-     * @return true if connection should be disconnected now, or false if response to close should be issued.
+     * A websocket connection has been disconnected for abnormal close reasons.
+     * <p>
+     * This is the low level disconnect of the socket. It could be the result of a normal close operation, from an IO error, or even from a timeout.
      */
-    public boolean onCloseHandshake(boolean incoming)
+    public void onAbnormalClose(CloseInfo close)
     {
-        boolean in = inputClosed.get();
-        boolean out = outputClosed.get();
-        if (incoming)
+        ConnectionState event = null;
+        synchronized (this.state)
         {
-            in = true;
-            this.inputClosed.set(true);
-
-            if (!localCloseInitiated.get())
+            if (this.state == ConnectionState.CLOSED)
             {
-                remoteCloseInitiated.set(true);
+                // already closed
+                return;
             }
-        }
-        else
-        {
-            out = true;
-            this.outputClosed.set(true);
 
-            if ( !remoteCloseInitiated.get() )
+            if (this.state == ConnectionState.OPEN)
             {
-                localCloseInitiated.set(true);
+                this.cleanClose.set(false);
             }
+
+            this.state = ConnectionState.CLOSED;
+            this.closeInfo.compareAndSet(null,close);
+            this.inputAvailable.set(false);
+            this.outputAvailable.set(false);
+            this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+            event = this.state;
         }
-
-        LOG.debug("onCloseHandshake({}), input={}, output={}",incoming,in,out);
-
-        if (in && out)
-        {
-            LOG.debug("Close Handshake satisfied, disconnecting");
-            cleanClose.set(true);
-            return true;
-        }
-
-        return false;
+        notifyStateListeners(event);
     }
 
-    public void setConnectionState(ConnectionState connectionState)
+    /**
+     * A close handshake has been issued from the local endpoint
+     */
+    public void onCloseLocal(CloseInfo close)
     {
-        this.state = connectionState;
+        ConnectionState event = null;
+        ConnectionState initialState = this.state;
+        if (initialState == ConnectionState.CLOSED)
+        {
+            // already closed
+            return;
+        }
+
+        if (initialState == ConnectionState.CONNECTED)
+        {
+            // fast close. a local close request from end-user onConnected() method
+            LOG.debug("FastClose in CONNECTED detected");
+            // Force the state open (to allow read/write to endpoint)
+            onOpened();
+        }
+
+        synchronized (this.state)
+        {
+            closeInfo.compareAndSet(null,close);
+
+            boolean in = inputAvailable.get();
+            boolean out = outputAvailable.get();
+            closeHandshakeSource.compareAndSet(CloseHandshakeSource.NONE,CloseHandshakeSource.LOCAL);
+            out = false;
+            outputAvailable.set(false);
+
+            LOG.debug("onCloseLocal(), input={}, output={}",in,out);
+
+            if (!in && !out)
+            {
+                LOG.debug("Close Handshake satisfied, disconnecting");
+                cleanClose.set(true);
+                this.state = ConnectionState.CLOSED;
+                event = this.state;
+            }
+            else if (this.state == ConnectionState.OPEN)
+            {
+                // We are now entering CLOSING (or half-closed)
+                this.state = ConnectionState.CLOSING;
+                event = this.state;
+            }
+        }
+
+        // Only notify on state change events
+        if (event != null)
+        {
+            notifyStateListeners(event);
+
+            // if SHUTDOWN, we don't expect an answer.
+            if (close.getStatusCode() == StatusCode.SHUTDOWN)
+            {
+                synchronized (this.state)
+                {
+                    this.state = ConnectionState.CLOSED;
+                    cleanClose.set(false);
+                    outputAvailable.set(false);
+                    inputAvailable.set(false);
+                    this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+                    event = this.state;
+                }
+                notifyStateListeners(event);
+                return;
+            }
+        }
     }
 
-    public void setState(ConnectionState state)
+    /**
+     * A close handshake has been received from the remote endpoint
+     */
+    public void onCloseRemote(CloseInfo close)
     {
-        this.state = state;
+        ConnectionState event = null;
+        synchronized (this.state)
+        {
+            if (this.state == ConnectionState.CLOSED)
+            {
+                // already closed
+                return;
+            }
+
+            closeInfo.compareAndSet(null,close);
+
+            boolean in = inputAvailable.get();
+            boolean out = outputAvailable.get();
+            closeHandshakeSource.compareAndSet(CloseHandshakeSource.NONE,CloseHandshakeSource.REMOTE);
+            in = false;
+            inputAvailable.set(false);
+
+            LOG.debug("onCloseRemote(), input={}, output={}",in,out);
+
+            if (!in && !out)
+            {
+                LOG.debug("Close Handshake satisfied, disconnecting");
+                cleanClose.set(true);
+                this.state = ConnectionState.CLOSED;
+                event = this.state;
+            }
+            else if (this.state == ConnectionState.OPEN)
+            {
+                // We are now entering CLOSING (or half-closed)
+                this.state = ConnectionState.CLOSING;
+                event = this.state;
+            }
+        }
+
+        // Only notify on state change events
+        if (event != null)
+        {
+            notifyStateListeners(event);
+        }
+    }
+
+    /**
+     * WebSocket has successfully upgraded, but the end-user onOpen call hasn't run yet.
+     * <p>
+     * This is an intermediate state between the RFC's {@link ConnectionState#CONNECTING} and {@link ConnectionState#OPEN}
+     */
+    public void onConnected()
+    {
+        if (this.state != ConnectionState.CONNECTING)
+        {
+            LOG.debug("Unable to set to connected, not in CONNECTING state: {}",this.state);
+            return;
+        }
+
+        ConnectionState event = null;
+        synchronized (this.state)
+        {
+            this.state = ConnectionState.CONNECTED;
+            this.inputAvailable.set(false); // cannot read (yet)
+            this.outputAvailable.set(true); // write allowed
+            event = this.state;
+        }
+        notifyStateListeners(event);
+    }
+
+    /**
+     * A websocket connection has failed its upgrade handshake, and is now closed.
+     */
+    public void onFailedUpgrade()
+    {
+        assert (this.state == ConnectionState.CONNECTING);
+        ConnectionState event = null;
+        synchronized (this.state)
+        {
+            this.state = ConnectionState.CLOSED;
+            this.cleanClose.set(false);
+            this.inputAvailable.set(false);
+            this.outputAvailable.set(false);
+            event = this.state;
+        }
+        notifyStateListeners(event);
+    }
+
+    /**
+     * A websocket connection has finished its upgrade handshake, and is now open.
+     */
+    public void onOpened()
+    {
+        if (this.state != ConnectionState.CONNECTED)
+        {
+            LOG.debug("Unable to open, not in CONNECTED state: {}",this.state);
+            return;
+        }
+
+        assert (this.state == ConnectionState.CONNECTED);
+
+        ConnectionState event = null;
+        synchronized (this.state)
+        {
+            this.state = ConnectionState.OPEN;
+            this.inputAvailable.set(true);
+            this.outputAvailable.set(true);
+            event = this.state;
+        }
+        notifyStateListeners(event);
+    }
+
+    /**
+     * The local endpoint has reached a read EOF.
+     * <p>
+     * This could be a normal result after a proper close handshake, or even a premature close due to a connection disconnect.
+     */
+    public void onReadEOF()
+    {
+        ConnectionState event = null;
+        synchronized (this.state)
+        {
+            if (this.state == ConnectionState.CLOSED)
+            {
+                // already closed
+                return;
+            }
+
+            CloseInfo close = new CloseInfo(StatusCode.NO_CLOSE,"Read EOF");
+
+            this.cleanClose.set(false);
+            this.state = ConnectionState.CLOSED;
+            this.closeInfo.compareAndSet(null,close);
+            this.inputAvailable.set(false);
+            this.outputAvailable.set(false);
+            this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+            event = this.state;
+        }
+        notifyStateListeners(event);
+    }
+
+    public boolean wasAbnormalClose()
+    {
+        return closeHandshakeSource.get() == CloseHandshakeSource.ABNORMAL;
     }
 
     public boolean wasCleanClose()
@@ -168,11 +401,11 @@ public class IOState
 
     public boolean wasLocalCloseInitiated()
     {
-        return localCloseInitiated.get();
+        return closeHandshakeSource.get() == CloseHandshakeSource.LOCAL;
     }
 
     public boolean wasRemoteCloseInitiated()
     {
-        return remoteCloseInitiated.get();
+        return closeHandshakeSource.get() == CloseHandshakeSource.REMOTE;
     }
 }

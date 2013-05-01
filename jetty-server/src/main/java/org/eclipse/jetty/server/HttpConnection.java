@@ -207,8 +207,28 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Can the parser progress (even with an empty buffer)
                 boolean call_channel=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
-                // If there is a request buffer, we are re-entering here
-                if (!call_channel && BufferUtil.isEmpty(_requestBuffer))
+                // Parse the buffer
+                if (call_channel)
+                {
+                    // Parse as much content as there is available before calling the channel
+                    // this is both efficient (may queue many chunks), will correctly set available for 100 continues
+                    // and will drive the parser to completion if all content is available.
+                    while (_parser.inContentState())
+                    {
+                        if (!_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
+                            break;
+                    }
+
+                    // The parser returned true, which indicates the channel is ready to handle a request.
+                    // Call the channel and this will either handle the request/response to completion OR,
+                    // if the request suspends, the request/response will be incomplete so the outer loop will exit.
+                    boolean handle=_channel.handle();
+                    
+                    // Return if suspended or upgraded
+                    if (!handle || getEndPoint().getConnection()!=this)
+                        return;
+                }
+                else if (BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer == null)
                         _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
@@ -242,33 +262,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         releaseRequestBuffer();
                         return;
                     }
-
-                    // Parse what we have read
-                    call_channel=_parser.parseNext(_requestBuffer);
                 }
-
-                // Parse the buffer
-                if (call_channel)
+                else
                 {
-                    // Parse as much content as there is available before calling the channel
-                    // this is both efficient (may queue many chunks), will correctly set available for 100 continues
-                    // and will drive the parser to completion if all content is available.
-                    while (_parser.inContentState())
-                    {
-                        if (!_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
-                            break;
-                    }
-
-                    // The parser returned true, which indicates the channel is ready to handle a request.
-                    // Call the channel and this will either handle the request/response to completion OR,
-                    // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                        
-                    _channel.run();
-                    
-                    // Return if suspended or upgraded
-                    if (_channel.getState().isSuspended() || getEndPoint().getConnection()!=this)
-                        return;
-                }
+                    // TODO work out how we can get here and a better way to handle it
+                    LOG.warn("Unexpected state: "+this+ " "+_channel+" "+_channel.getRequest());
+                    if (!_channel.getState().isSuspended())
+                        getEndPoint().close();
+                    return;
+                }  
             }
         }
         catch (EofException e)
@@ -547,7 +549,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // need to call blockForContent again
                     while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
                         _parser.parseNext(_requestBuffer);
-
+                    
                     // If we have an event, return
                     if (event)
                         return;
@@ -563,7 +565,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
 
                         // Wait until we can read
-                        getEndPoint().fillInterested(_readBlocker);
+                        block(_readBlocker);
                         LOG.debug("{} block readable on {}",this,_readBlocker);
                         _readBlocker.block();
 

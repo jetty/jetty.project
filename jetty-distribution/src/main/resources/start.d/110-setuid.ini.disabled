@@ -1,0 +1,13 @@
+#===========================================================
+# Enable SetUID
+# The default user and group is 'jetty' and if you are
+# starting as root you must change the run privledged to true
+#-----------------------------------------------------------
+OPTIONS=setuid
+jetty.startServerAsPrivileged=false
+jetty.username=jetty
+jetty.groupname=jetty
+jetty.umask=002
+
+etc/jetty-setuid.xml
+

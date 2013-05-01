@@ -432,44 +432,54 @@ public class ResponseTest
         String[][] tests = {
                 // No cookie
                 {"http://myhost:8888/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
-                {"/other/location;jsessionid=12345?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
-                {"./location;jsessionid=12345?name=value","http://myhost:8888/path/location;jsessionid=12345?name=value"},
+                {"/other/location;jsessionid=12345?name=value","http://@HOST@@PORT@/other/location;jsessionid=12345?name=value"},
+                {"./location;jsessionid=12345?name=value","http://@HOST@@PORT@/path/location;jsessionid=12345?name=value"},
 
                 // From cookie
-                {"/other/location","http://myhost:8888/other/location"},
-                {"/other/l%20cation", "http://myhost:8888/other/l%20cation"},
-                {"location", "http://myhost:8888/path/location"},
-                {"./location", "http://myhost:8888/path/location"},
-                {"../location", "http://myhost:8888/location"},
-                {"/other/l%20cation", "http://myhost:8888/other/l%20cation"},
-                {"l%20cation", "http://myhost:8888/path/l%20cation"},
-                {"./l%20cation", "http://myhost:8888/path/l%20cation"},
-                {"../l%20cation","http://myhost:8888/l%20cation"},
-                {"../locati%C3%abn", "http://myhost:8888/locati%C3%ABn"},
-                {"//foo.bar/some/location", "http://foo.bar/some/location"},
+                {"/other/location","http://@HOST@@PORT@/other/location"},
+                {"/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation"},
+                {"location", "http://@HOST@@PORT@/path/location"},
+                {"./location", "http://@HOST@@PORT@/path/location"},
+                {"../location", "http://@HOST@@PORT@/location"},
+                {"/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation"},
+                {"l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
+                {"./l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
+                {"../l%20cation","http://@HOST@@PORT@/l%20cation"},
+                {"../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%ABn"},
+                {"http://somehost.com/other/location","http://somehost.com/other/location"},
         };
 
-        for (int i=0;i<tests.length;i++)
+        int[] ports=new int[]{8080,80};
+        String[] hosts=new String[]{"myhost","192.168.0.1","0::1"};
+        for (int port : ports)
         {
-            Response response = newResponse();
-            Request request = response.getHttpChannel().getRequest();
+            for (String host : hosts)
+            {
+                for (int i=0;i<tests.length;i++)
+                {
+                    Response response = newResponse();
+                    Request request = response.getHttpChannel().getRequest();
 
-            request.setServerName("myhost");
-            request.setServerPort(8888);
-            request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
-            request.setContextPath("/path");
-            request.setRequestedSessionId("12345");
-            request.setRequestedSessionIdFromCookie(i>2);
-            HashSessionManager manager = new HashSessionManager();
-            manager.setSessionIdManager(new HashSessionIdManager());
-            request.setSessionManager(manager);
-            request.setSession(new TestSession(manager, "12345"));
-            manager.setCheckingRemoteSessionIdEncoding(false);
+                    request.setServerName(host);
+                    request.setServerPort(port);
+                    request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
+                    request.setContextPath("/path");
+                    request.setRequestedSessionId("12345");
+                    request.setRequestedSessionIdFromCookie(i>2);
+                    HashSessionManager manager = new HashSessionManager();
+                    manager.setSessionIdManager(new HashSessionIdManager());
+                    request.setSessionManager(manager);
+                    request.setSession(new TestSession(manager, "12345"));
+                    manager.setCheckingRemoteSessionIdEncoding(false);
 
-            response.sendRedirect(tests[i][0]);
+                    response.sendRedirect(tests[i][0]);
 
-            String location = response.getHeader("Location");
-            assertEquals("test-"+i,tests[i][1],location);
+                    String location = response.getHeader("Location");
+
+                    String expected=tests[i][1].replace("@HOST@",host.contains(":")?("["+host+"]"):host).replace("@PORT@",port==80?"":(":"+port));
+                    assertEquals("test-"+i+" "+host+":"+port,expected,location);
+                }
+            }
         }
     }
 
