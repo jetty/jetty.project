@@ -459,7 +459,6 @@ public class ConstraintTest
         DigestAuthenticator authenticator = new DigestAuthenticator();
         authenticator.setMaxNonceCount(5);
         _security.setAuthenticator(authenticator);
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -1134,7 +1133,6 @@ public class ConstraintTest
         RoleCheckHandler check=new RoleCheckHandler();
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
-        //_security.setStrict(false);
 
         _server.start();
 
@@ -1166,7 +1164,6 @@ public class ConstraintTest
     public void testDeferredBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        //_security.setStrict(false);
         _server.start();
 
         String response;
@@ -1193,7 +1190,6 @@ public class ConstraintTest
     public void testRelaxedMethod() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        //_security.setStrict(false);
         _server.start();
 
         String response;
