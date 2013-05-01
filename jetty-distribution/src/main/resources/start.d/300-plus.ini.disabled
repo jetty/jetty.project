@@ -1,8 +1,0 @@
-#===========================================================
-# Annotations JNDI JAAS processing
-#-----------------------------------------------------------
-OPTIONS=plus
-etc/jetty-plus.xml
-OPTIONS=annotations
-etc/jetty-annotations.xml
-
