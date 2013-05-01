@@ -115,9 +115,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Request implements HttpServletRequest
 {
-    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
-    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.multiPartInputStream";
-    public static final String __MULTIPART_CONTEXT = "org.eclipse.multiPartContext";
+    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.jetty.multiPartInputStream";
+    public static final String __MULTIPART_CONTEXT = "org.eclipse.jetty.multiPartContext";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
