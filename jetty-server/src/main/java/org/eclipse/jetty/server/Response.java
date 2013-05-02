@@ -428,10 +428,18 @@ public class Response implements HttpServletResponse
             _channel.commitResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
         }
     }
-
-    @Override
-    public void sendRedirect(String location) throws IOException
+    
+    /**
+     * Sends a response with one of the 300 series redirection codes.
+     * @param code
+     * @param location
+     * @throws IOException
+     */
+    public void sendRedirect(int code, String location) throws IOException
     {
+        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+            throw new IllegalArgumentException("Not a 3xx redirect code");
+        
         if (isIncluding())
             return;
 
@@ -497,8 +505,14 @@ public class Response implements HttpServletResponse
 
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
-        setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+        setStatus(code);
         complete();
+    }
+
+    @Override
+    public void sendRedirect(String location) throws IOException
+    {
+        sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
     }
 
     @Override

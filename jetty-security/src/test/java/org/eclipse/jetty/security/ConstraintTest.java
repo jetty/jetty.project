@@ -686,6 +686,7 @@ public class ConstraintTest
                 "Content-Length: 31\r\n" +
                 "\r\n" +
         "j_username=user&j_password=wrong\r\n");
+        
         assertThat(response,containsString("Location"));
 
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
