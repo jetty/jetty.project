@@ -217,6 +217,11 @@ public class HttpParser
                 badMessage(buffer,400,"Bad EOL");
                 return -1;
             }
+            /*
+            if (ch>HttpTokens.SPACE)
+                System.err.println("Next "+(char)ch);
+            else
+                System.err.println("Next ["+ch+"]");*/
             return ch;   
         }
             
@@ -260,6 +265,12 @@ public class HttpParser
             return -1;
         }
         
+        /*
+        if (ch>HttpTokens.SPACE)
+            System.err.println("Next "+(char)ch);
+        else
+            System.err.println("Next ["+ch+"]");
+            */
         return ch;
     }
     
@@ -575,7 +586,7 @@ public class HttpParser
                         }
                         
                         // Should we try to cache header fields?
-                        if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
+                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
                         {
                             int header_cache = _handler.getHeaderCacheSize();
                             if (header_cache>0)
@@ -868,7 +879,7 @@ public class HttpParser
                             }
                             else
                             {
-                                if (buffer.remaining()>6)
+                                if (buffer.hasRemaining())
                                 {
                                     // Try a look ahead for the known header name and value.
                                     HttpField field=_connectionFields==null?null:_connectionFields.getBest(buffer,-1,buffer.remaining());
@@ -883,14 +894,12 @@ public class HttpParser
                                         if (v==null)
                                         {
                                             // Header only
-                                            int pos=buffer.position()+n.length()+1;
-                                            byte b=buffer.get(pos);
                                             _header=field.getHeader();
                                             _headerString=n;
                                             setState(State.HEADER_VALUE);
                                             _string.setLength(0);
                                             _length=0;
-                                            buffer.position(pos);
+                                            buffer.position(buffer.position()+n.length()+1);
                                             break;
                                         }
                                         else
@@ -949,8 +958,6 @@ public class HttpParser
                             {
                                 _headerString=takeLengthString();
                                 _header=HttpHeader.CACHE.get(_headerString); 
-                                if (_header!=null)
-                                    System.err.println(_header);
                             }
                             setState(State.HEADER_VALUE);
                             break;
@@ -1505,5 +1512,9 @@ public class HttpParser
         public abstract boolean startResponse(HttpVersion version, int status, String reason);
     }
 
+    public Trie<HttpField> getFieldCache()
+    {
+        return _connectionFields;
+    }
 
 }

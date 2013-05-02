@@ -23,6 +23,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
@@ -261,6 +263,8 @@ public class HttpParserTest
         assertEquals(9, _h);
     }
 
+    
+    
     @Test
     public void testHeaderParseLF() throws Exception
     {
@@ -332,7 +336,7 @@ public class HttpParserTest
             HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
             HttpParser parser= new HttpParser(handler);
 
-            System.err.println(BufferUtil.toDetailString(buffer));
+            // System.err.println(BufferUtil.toDetailString(buffer));
             buffer.position(2);
             buffer.limit(2+i);
 
@@ -989,6 +993,28 @@ public class HttpParserTest
         assertEquals(8888,_port);
     }
 
+    @Test
+    public void testCachedField() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+            "GET / HTTP/1.1\r\n"+
+            "Host: www.smh.com.au\r\n"+
+            "\r\n");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertEquals("www.smh.com.au",parser.getFieldCache().get("Host: www.smh.com.au").getValue());
+        HttpField field=_fields.get(0);
+        
+        //System.err.println(parser.getFieldCache());
+        
+        buffer.position(0);
+        parseAll(parser,buffer);
+        assertTrue(field==_fields.get(0));
+        
+    }
+
     @Before
     public void init()
     {
@@ -1011,6 +1037,7 @@ public class HttpParserTest
     private String _methodOrVersion;
     private String _uriOrStatus;
     private String _versionOrReason;
+    private List<HttpField> _fields=new ArrayList<>();
     private String[] _hdr;
     private String[] _val;
     private int _h;
@@ -1038,6 +1065,7 @@ public class HttpParserTest
         @Override
         public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
         {
+            _fields.clear();
             request=true;
             _h= -1;
             _hdr= new String[10];
@@ -1055,6 +1083,7 @@ public class HttpParserTest
         @Override
         public boolean parsedHeader(HttpField field)
         {
+            _fields.add(field);
             //System.err.println("header "+name+": "+value);
             _hdr[++_h]= field.getName();
             _val[_h]= field.getValue();
@@ -1102,6 +1131,7 @@ public class HttpParserTest
         @Override
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
+            _fields.clear();
             request=false;
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
