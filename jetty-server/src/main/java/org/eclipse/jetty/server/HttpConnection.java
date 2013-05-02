@@ -561,6 +561,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         if (getEndPoint().isInputShutdown())
                         {
                             _parser.shutdownInput();
+                            shutdown();
                             return;
                         }
 

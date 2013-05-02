@@ -96,32 +96,53 @@ public abstract class HttpInput<T> extends ServletInputStream
         T item = null;
         synchronized (lock())
         {
-            while (item == null)
+            // Get the current head of the input Q
+            item = _inputQ.peekUnsafe();
+            
+            // Skip empty items at the head of the queue
+            while (item != null && remaining(item) == 0)
             {
+                _inputQ.pollUnsafe();
+                onContentConsumed(item);
+                LOG.debug("{} consumed {}", this, item);
                 item = _inputQ.peekUnsafe();
-                while (item != null && remaining(item) == 0)
+                
+                // If that was the last item then notify
+                if (item==null)
+                    onAllContentConsumed();
+            }
+
+            // If we have no item
+            if (item == null)
+            {
+                // Was it unexpectedly EOF'd?
+                if (isEarlyEOF())
+                    throw new EofException();
+
+                // check for EOF
+                if (isShutdown())
                 {
-                    _inputQ.pollUnsafe();
-                    onContentConsumed(item);
-                    LOG.debug("{} consumed {}", this, item);
-                    item = _inputQ.peekUnsafe();
+                    onEOF();
+                    return -1;
                 }
 
-                if (item == null)
+                // OK then block for some more content
+                blockForContent();
+                
+                // If still not content, we must be closed
+                item = _inputQ.peekUnsafe();
+                if (item==null)
                 {
-                    onAllContentConsumed();
-
                     if (isEarlyEOF())
                         throw new EofException();
+                    
+                    // blockForContent will only return with no 
+                    // content if it is closed.
+                    if (!isShutdown())
+                        LOG.warn("unexpected !EOF state");
 
-                    // check for EOF
-                    if (isShutdown())
-                    {
-                        onEOF();
-                        return -1;
-                    }
-
-                    blockForContent();
+                    onEOF();
+                    return -1;
                 }
             }
         }
