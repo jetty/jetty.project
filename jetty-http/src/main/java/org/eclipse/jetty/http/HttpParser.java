@@ -1325,7 +1325,6 @@ public class HttpParser
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             BufferUtil.clear(buffer);
             if (isClosed())
             {

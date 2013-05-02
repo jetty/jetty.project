@@ -288,16 +288,7 @@ public class HttpChannelState
                     _initial=false;
                     _state=State.ASYNCWAIT;
                     scheduleTimeout();
-                    if (_state==State.ASYNCWAIT)
-                        return Next.WAIT;
-                    else if (_state==State.COMPLETECALLED)
-                    {
-                        _state=State.COMPLETING;
-                        return Next.COMPLETE;
-                    }
-                    _initial=false;
-                    _state=State.REDISPATCHED;
-                    return Next.CONTINUE;
+                    return Next.WAIT;
 
                 case REDISPATCHING:
                     _initial=false;
