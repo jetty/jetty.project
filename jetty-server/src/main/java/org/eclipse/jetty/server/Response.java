@@ -775,6 +775,8 @@ public class Response implements HttpServletResponse
                     break;
                 case STREAM:
                     getOutputStream().close();
+                    break;
+                default:
             }
             return true;
         }
@@ -954,6 +956,7 @@ public class Response implements HttpServletResponse
                         case TE:
                             _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
                             break;
+                        default:
                     }
                 }
             }
@@ -993,6 +996,8 @@ public class Response implements HttpServletResponse
             case STREAM:
             case WRITER:
                 _out.reset();
+                break;
+            default:
         }
 
         _out.resetBuffer();
@@ -1051,7 +1056,7 @@ public class Response implements HttpServletResponse
         return _reason;
     }
 
-    public void complete() throws IOException
+    public void complete()
     {
         _out.close();
     }

@@ -115,21 +115,12 @@ public class TestSecurityAnnotationConversions
         introspector.registerHandler(annotationHandler);
 
 
-        //set up the expected outcomes:
+        //set up the expected outcomes - no constraints at all as per Servlet Spec 3.1 pg 129
         //1 ConstraintMapping per ServletMapping pathSpec
-        Constraint expectedConstraint = new Constraint();
-        expectedConstraint.setAuthenticate(false);
-        expectedConstraint.setDataConstraint(Constraint.DC_NONE);
+       
 
-        ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
-        expectedMappings[0] = new ConstraintMapping();
-        expectedMappings[0].setConstraint(expectedConstraint);
-        expectedMappings[0].setPathSpec("/foo/*");
-
-        expectedMappings[1] = new ConstraintMapping();
-        expectedMappings[1].setConstraint(expectedConstraint);
-        expectedMappings[1].setPathSpec("*.foo");
-
+        ConstraintMapping[] expectedMappings = new ConstraintMapping[]{};
+       
         introspector.introspect(PermitServlet.class);
 
         compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());

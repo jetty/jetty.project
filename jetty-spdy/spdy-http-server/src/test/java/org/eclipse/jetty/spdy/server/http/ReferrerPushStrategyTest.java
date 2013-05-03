@@ -332,10 +332,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                         if (dataInfo.isClose())
                         {
                             currentStreamId.compareAndSet(currentStreamId.get(), currentStreamId.get() + 2);
-                            allPushDataReceivedLatch.countDown();
                             dataReceivedOrder.add(stream.getId());
+                            allPushDataReceivedLatch.countDown();
                         }
-
                         LOG.info(stream.getId() + ":" + dataInfo);
                     }
                 };

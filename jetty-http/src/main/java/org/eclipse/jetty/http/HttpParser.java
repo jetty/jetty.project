@@ -217,6 +217,11 @@ public class HttpParser
                 badMessage(buffer,400,"Bad EOL");
                 return -1;
             }
+            /*
+            if (ch>HttpTokens.SPACE)
+                System.err.println("Next "+(char)ch);
+            else
+                System.err.println("Next ["+ch+"]");*/
             return ch;   
         }
             
@@ -260,6 +265,12 @@ public class HttpParser
             return -1;
         }
         
+        /*
+        if (ch>HttpTokens.SPACE)
+            System.err.println("Next "+(char)ch);
+        else
+            System.err.println("Next ["+ch+"]");
+            */
         return ch;
     }
     
@@ -575,7 +586,7 @@ public class HttpParser
                         }
                         
                         // Should we try to cache header fields?
-                        if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
+                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
                         {
                             int header_cache = _handler.getHeaderCacheSize();
                             if (header_cache>0)
@@ -868,7 +879,7 @@ public class HttpParser
                             }
                             else
                             {
-                                if (buffer.remaining()>6)
+                                if (buffer.hasRemaining())
                                 {
                                     // Try a look ahead for the known header name and value.
                                     HttpField field=_connectionFields==null?null:_connectionFields.getBest(buffer,-1,buffer.remaining());
@@ -883,14 +894,12 @@ public class HttpParser
                                         if (v==null)
                                         {
                                             // Header only
-                                            int pos=buffer.position()+n.length()+1;
-                                            byte b=buffer.get(pos);
                                             _header=field.getHeader();
                                             _headerString=n;
                                             setState(State.HEADER_VALUE);
                                             _string.setLength(0);
                                             _length=0;
-                                            buffer.position(pos);
+                                            buffer.position(buffer.position()+n.length()+1);
                                             break;
                                         }
                                         else
@@ -949,8 +958,6 @@ public class HttpParser
                             {
                                 _headerString=takeLengthString();
                                 _header=HttpHeader.CACHE.get(_headerString); 
-                                if (_header!=null)
-                                    System.err.println(_header);
                             }
                             setState(State.HEADER_VALUE);
                             break;
@@ -1144,16 +1151,14 @@ public class HttpParser
                 case CLOSED:
                     if (BufferUtil.hasContent(buffer))
                     {
-                        int len=buffer.remaining();
-                        _headerBytes+=len;
+                        // Just ignore data when closed
+                        _headerBytes+=buffer.remaining();
+                        BufferUtil.clear(buffer);
                         if (_headerBytes>_maxHeaderBytes)
                         {
-                            Thread.sleep(100);
-                            String chars = BufferUtil.toDetailString(buffer);
-                            BufferUtil.clear(buffer);
-                            throw new IllegalStateException(String.format("%s %d/%d>%d data when CLOSED:%s",this,len,_headerBytes,_maxHeaderBytes,chars));
+                            // Don't want to waste time reading data of a closed request
+                            throw new IllegalStateException("too much data after closed");
                         }
-                        BufferUtil.clear(buffer);
                     }
                     return false;
                 default: break;
@@ -1318,7 +1323,6 @@ public class HttpParser
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             BufferUtil.clear(buffer);
             if (isClosed())
             {
@@ -1467,8 +1471,18 @@ public class HttpParser
          */
         public boolean parsedHeader(HttpField field);
 
-        public boolean earlyEOF();
+        /* ------------------------------------------------------------ */
+        /** Called to signal that an EOF was received unexpectedly
+         * during the parsing of a HTTP message
+         * @return True if the parser should return to its caller
+         */
+        public void earlyEOF();
 
+        /* ------------------------------------------------------------ */
+        /** Called to signal that a bad HTTP message has been received.
+         * @param status The bad status to send
+         * @param reason The textual reason for badness
+         */
         public void badMessage(int status, String reason);
         
         /* ------------------------------------------------------------ */
@@ -1505,5 +1519,9 @@ public class HttpParser
         public abstract boolean startResponse(HttpVersion version, int status, String reason);
     }
 
+    public Trie<HttpField> getFieldCache()
+    {
+        return _connectionFields;
+    }
 
 }

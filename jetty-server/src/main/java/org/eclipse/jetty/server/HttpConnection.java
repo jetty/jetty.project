@@ -277,17 +277,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             LOG.debug(e);
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             if (_parser.isIdle())
                 LOG.debug(e);
             else
                 LOG.warn(this.toString(), e);
-            close();
-        }
-        catch (Exception e)
-        {
-            LOG.warn(this.toString(), e);
             close();
         }
         finally
@@ -561,6 +556,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         if (getEndPoint().isInputShutdown())
                         {
                             _parser.shutdownInput();
+                            shutdown();
                             return;
                         }
 
@@ -620,7 +616,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
              */
         }
 
-
         @Override
         protected void onAllContentConsumed()
         {
@@ -629,6 +624,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
              * released if it is empty.
              */
             releaseRequestBuffer();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"{"+HttpConnection.this+","+getEndPoint()+","+_parser+"}";
         }
     }
 
