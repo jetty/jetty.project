@@ -23,6 +23,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.util.log.Log;
@@ -78,7 +79,8 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     ServletRequestListener.class.isAssignableFrom(clazz) ||
                     ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
                     HttpSessionListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionAttributeListener.class.isAssignableFrom(clazz))
+                    HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
+                    HttpSessionIdListener.class.isAssignableFrom(clazz))
             {
                 java.util.EventListener listener = (java.util.EventListener)clazz.newInstance();
                 MetaData metaData = _context.getMetaData();

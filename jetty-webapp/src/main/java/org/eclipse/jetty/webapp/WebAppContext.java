@@ -41,6 +41,7 @@ import javax.servlet.ServletSecurityElement;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintAware;
@@ -1058,7 +1059,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.addEventListener(listener);
@@ -1072,7 +1074,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.removeEventListener(listener);
