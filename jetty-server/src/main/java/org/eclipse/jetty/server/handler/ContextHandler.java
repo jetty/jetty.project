@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -104,11 +103,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 {
     public static int SERVLET_MAJOR_VERSION=3;
     public static int SERVLET_MINOR_VERSION=0;
-    
+
     final private static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
 
-        
-    
+
+
     private static final Logger LOG = Log.getLogger(ContextHandler.class);
 
     private static final ThreadLocal<Context> __context = new ThreadLocal<Context>();
@@ -141,8 +140,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return c.getContextHandler();
         return null;
     }
-    
-    
+
+
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
@@ -566,7 +565,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void addEventListener(EventListener listener)
     {
         _eventListeners.add(listener);
-        
+
         if (listener instanceof ServletContextListener)
             _contextListeners.add((ServletContextListener)listener);
 
@@ -579,7 +578,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Remove a context event listeners.
@@ -592,7 +591,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void removeEventListener(EventListener listener)
     {
         _eventListeners.remove(listener);
-        
+
         if (listener instanceof ServletContextListener)
             _contextListeners.remove(listener);
 
@@ -616,13 +615,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         _programmaticListeners.add(listener);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected boolean isProgrammaticListener(EventListener listener)
     {
         return _programmaticListeners.contains(listener);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return true if this context is accepting new requests
@@ -725,7 +724,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             startContext();
 
             _availability = Availability.AVAILABLE;
-            LOG.info("started {}",this);
+            LOG.info("Started {}", this);
         }
         finally
         {
@@ -771,7 +770,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (ServletContextListener listener:_contextListeners)
                 callContextInitialized(listener, event);
-        } 
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -818,7 +817,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!_contextListeners.isEmpty())
             {
                 ServletContextEvent event = new ServletContextEvent(_scontext);
-                for (int i = _contextListeners.size(); i-->0;) 
+                for (int i = _contextListeners.size(); i-->0;)
                     callContextDestroyed(_contextListeners.get(i),event);
             }
 
@@ -831,14 +830,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String name = e.nextElement();
                 checkManagedAttribute(name,null);
             }
-            
+
             for (EventListener l : _programmaticListeners)
                 removeEventListener(l);
             _programmaticListeners.clear();
         }
         finally
         {
-            LOG.info("stopped {}",this);
+            LOG.info("Stopped {}", this);
             __context.set(old_context);
             // reset the classloader
             if (_classLoader != null && current_thread!=null)
@@ -894,10 +893,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     default:
                         match = contextVhost.equalsIgnoreCase(vhost);
                 }
-                
+
                 if (match)
                     break loop;
-                
+
             }
             if (!match)
                 return false;
@@ -1657,7 +1656,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         return host;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Add an AliasCheck instance to possibly permit aliased resources
@@ -1667,7 +1666,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         _aliasChecks.add(check);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Mutable list of Alias checks
@@ -1798,7 +1797,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 return null;
             return _mimeTypes.getMimeByExtension(file);
         }
-        
+
         /* ------------------------------------------------------------ */
         /*
          * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
@@ -2182,13 +2181,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _enabled;
         }
     }
-    
+
 
     public static class NoContext extends AttributesMap implements ServletContext
     {
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
         private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
-        
+
         /* ------------------------------------------------------------ */
         public NoContext()
         {
@@ -2522,8 +2521,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(__unimplmented);
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Interface to check aliases
      */
@@ -2537,7 +2536,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          */
         boolean check(String path, Resource resource);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /** Approve all aliases.
@@ -2550,7 +2549,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return true;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Approve Aliases with same suffix.
      * Eg. a symbolic link from /foobar.html to /somewhere/wibble.html would be
@@ -2568,8 +2567,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return resource.getAlias().toString().endsWith(suffix);
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Approve Aliases with a path prefix.
      * Eg. a symbolic link from /dirA/foobar.html to /dirB/foobar.html would be
@@ -2589,7 +2588,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
     /* ------------------------------------------------------------ */
     /** Approve Aliases of a non existent directory.
-     * If a directory "/foobar/" does not exist, then the resource is 
+     * If a directory "/foobar/" does not exist, then the resource is
      * aliased to "/foobar".  Accept such aliases.
      */
     public static class ApproveNonExistentDirectoryAliases implements AliasCheck
