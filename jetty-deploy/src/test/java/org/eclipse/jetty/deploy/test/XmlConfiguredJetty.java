@@ -44,6 +44,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -290,9 +291,7 @@ public class XmlConfiguredJetty
     public URI getServerURI() throws UnknownHostException
     {
         StringBuilder uri = new StringBuilder();
-        uri.append(getScheme()).append("://");
-        uri.append(InetAddress.getLocalHost().getHostAddress());
-        uri.append(":").append(getServerPort());
+        URIUtil.appendSchemeHostPort(uri, getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort());
         return URI.create(uri.toString());
     }
 
