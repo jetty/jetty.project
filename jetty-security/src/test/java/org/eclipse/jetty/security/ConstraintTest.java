@@ -40,7 +40,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.HttpConstraintElement;
+import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
+import javax.servlet.ServletSecurityElement;
+import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -222,6 +227,154 @@ public class ConstraintTest
         assertFalse(mappings.get(3).getConstraint().getAuthenticate());
     }
     
+
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
+     * @ServletSecurity
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_1() throws Exception
+    {
+        ServletSecurityElement element = new ServletSecurityElement();
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(mappings.isEmpty());
+    }
+    
+   
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-2
+     * @ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_2() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL, new String[]{});
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size());
+        ConstraintMapping mapping = mappings.get(0);
+        assertEquals(2, mapping.getConstraint().getDataConstraint());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-3
+     * @ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_3() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(EmptyRoleSemantic.DENY);
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size()); 
+        ConstraintMapping mapping = mappings.get(0);
+        assertTrue(mapping.getConstraint().isForbidden());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
+     * @ServletSecurity(@HttpConstraint(rolesAllowed = "R1"))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_4() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.NONE, "R1");
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size()); 
+        ConstraintMapping mapping = mappings.get(0);
+        assertTrue(mapping.getConstraint().getAuthenticate());
+        assertTrue(mapping.getConstraint().getRoles() != null);
+        assertEquals(1, mapping.getConstraint().getRoles().length);
+        assertEquals("R1",  mapping.getConstraint().getRoles()[0]);
+        assertEquals(0, mapping.getConstraint().getDataConstraint());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-5
+     * @ServletSecurity((httpMethodConstraints = {
+     * @HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
+     * @HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
+     *         transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
+     * @throws Exception
+     */ 
+    @Test
+    public void testSecurityElementExample13_5() throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("GET", new HttpConstraintElement(TransportGuarantee.NONE, "R1")));
+        methodElements.add(new HttpMethodConstraintElement("POST", new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL, "R1")));
+        ServletSecurityElement element = new ServletSecurityElement(methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertEquals("GET", mappings.get(0).getMethod());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertTrue(mappings.get(0).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(0).getConstraint().getDataConstraint());
+        assertEquals("POST", mappings.get(1).getMethod());
+        assertEquals("R1", mappings.get(1).getConstraint().getRoles()[0]);
+        assertEquals(2, mappings.get(1).getConstraint().getDataConstraint());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-6
+     * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_6 () throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("GET"));
+        ServletSecurityElement element = new ServletSecurityElement(new HttpConstraintElement(TransportGuarantee.NONE, "R1"), methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertTrue(mappings.get(0).getMethodOmissions() != null);
+        assertEquals("GET", mappings.get(0).getMethodOmissions()[0]);
+        assertTrue(mappings.get(0).getConstraint().getAuthenticate());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertEquals("GET", mappings.get(1).getMethod());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(1).getConstraint().getDataConstraint());
+        assertFalse(mappings.get(1).getConstraint().getAuthenticate());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-7
+     * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), 
+     *                  httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
+     *                  emptyRoleSemantic = EmptyRoleSemantic.DENY))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_7() throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("TRACE", new HttpConstraintElement(EmptyRoleSemantic.DENY)));
+        ServletSecurityElement element = new ServletSecurityElement(new HttpConstraintElement(TransportGuarantee.NONE, "R1"), methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertTrue(mappings.get(0).getMethodOmissions() != null);
+        assertEquals("TRACE", mappings.get(0).getMethodOmissions()[0]);
+        assertTrue(mappings.get(0).getConstraint().getAuthenticate());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertEquals("TRACE", mappings.get(1).getMethod());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(1).getConstraint().getDataConstraint());
+        assertTrue(mappings.get(1).getConstraint().isForbidden());
+    }
     
     @Test
     public void testUncoveredHttpMethodDetection() throws Exception

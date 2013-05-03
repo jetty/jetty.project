@@ -235,41 +235,50 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         List<ConstraintMapping> mappings = new ArrayList<ConstraintMapping>();
 
         //Create a constraint that will describe the default case (ie if not overridden by specific HttpMethodConstraints)
-        Constraint constraint = ConstraintSecurityHandler.createConstraint(name, securityElement);
+        Constraint httpConstraint = null;
+        ConstraintMapping httpConstraintMapping = null;
+        
+        if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT ||
+            securityElement.getRolesAllowed().length != 0 ||
+            securityElement.getTransportGuarantee() != TransportGuarantee.NONE)
+        {
+            httpConstraint = ConstraintSecurityHandler.createConstraint(name, securityElement);
 
-        //Create a mapping for the pathSpec for the default case
-        ConstraintMapping defaultMapping = new ConstraintMapping();
-        defaultMapping.setPathSpec(pathSpec);
-        defaultMapping.setConstraint(constraint);  
-        mappings.add(defaultMapping);
-
+            //Create a mapping for the pathSpec for the default case
+            httpConstraintMapping = new ConstraintMapping();
+            httpConstraintMapping.setPathSpec(pathSpec);
+            httpConstraintMapping.setConstraint(httpConstraint); 
+            mappings.add(httpConstraintMapping);
+        }
+        
 
         //See Spec 13.4.1.2 p127
         List<String> methodOmissions = new ArrayList<String>();
         
         //make constraint mappings for this url for each of the HttpMethodConstraintElements
-        Collection<HttpMethodConstraintElement> methodConstraints = securityElement.getHttpMethodConstraints();
-        if (methodConstraints != null)
+        Collection<HttpMethodConstraintElement> methodConstraintElements = securityElement.getHttpMethodConstraints();
+        if (methodConstraintElements != null)
         {
-            for (HttpMethodConstraintElement methodConstraint:methodConstraints)
+            for (HttpMethodConstraintElement methodConstraintElement:methodConstraintElements)
             {
                 //Make a Constraint that captures the <auth-constraint> and <user-data-constraint> elements supplied for the HttpMethodConstraintElement
-                Constraint mconstraint = ConstraintSecurityHandler.createConstraint(name, methodConstraint);
+                Constraint methodConstraint = ConstraintSecurityHandler.createConstraint(name, methodConstraintElement);
                 ConstraintMapping mapping = new ConstraintMapping();
-                mapping.setConstraint(mconstraint);
+                mapping.setConstraint(methodConstraint);
                 mapping.setPathSpec(pathSpec);
-                if (methodConstraint.getMethodName() != null)
+                if (methodConstraintElement.getMethodName() != null)
                 {
-                    mapping.setMethod(methodConstraint.getMethodName());
+                    mapping.setMethod(methodConstraintElement.getMethodName());
                     //See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
-                    methodOmissions.add(methodConstraint.getMethodName());
+                    methodOmissions.add(methodConstraintElement.getMethodName());
                 }
                 mappings.add(mapping);
             }
         }
         //See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
-        if (methodOmissions.size() > 0)
-            defaultMapping.setMethodOmissions(methodOmissions.toArray(new String[methodOmissions.size()]));
+        //UNLESS the default constraint contains all default values. In that case, we won't add it. See Servlet Spec 3.1 pg 129
+        if (methodOmissions.size() > 0  && httpConstraintMapping != null)
+            httpConstraintMapping.setMethodOmissions(methodOmissions.toArray(new String[methodOmissions.size()]));
      
         return mappings;
     }
