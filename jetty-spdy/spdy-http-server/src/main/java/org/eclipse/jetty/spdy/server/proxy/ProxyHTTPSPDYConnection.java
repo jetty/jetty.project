@@ -158,10 +158,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean earlyEOF()
+    public void earlyEOF()
     {
         // TODO
-        return false;
     }
 
     @Override

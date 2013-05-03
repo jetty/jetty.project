@@ -139,7 +139,7 @@ public abstract class HttpInput<T> extends ServletInputStream
                     // blockForContent will only return with no 
                     // content if it is closed.
                     if (!isShutdown())
-                        LOG.warn("unexpected !EOF state");
+                        LOG.warn("Unexpected !EOF ");
 
                     onEOF();
                     return -1;
@@ -173,20 +173,34 @@ public abstract class HttpInput<T> extends ServletInputStream
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Called by this HttpInput to signal new content has been queued
+     * @param item
+     */
     protected void onContentQueued(T item)
     {
         lock().notify();
     }
 
+    /* ------------------------------------------------------------ */
+    /** Called by this HttpInput to signal all available content has been consumed
+     */
     protected void onAllContentConsumed()
     {
     }
 
+    /* ------------------------------------------------------------ */
+    /** Called by this HttpInput to signal it has reached EOF
+     */
     protected void onEOF()
     {
     }
 
-    public boolean content(T item)
+    /* ------------------------------------------------------------ */
+    /** Add some content to the input stream
+     * @param item
+     */
+    public void content(T item)
     {
         synchronized (lock())
         {
@@ -197,19 +211,26 @@ public abstract class HttpInput<T> extends ServletInputStream
             onContentQueued(item);
             LOG.debug("{} queued {}", this, item);
         }
-        return true;
     }
 
+    /* ------------------------------------------------------------ */
+    /** This method should be called to signal to the HttpInput
+     * that an EOF has arrived before all the expected content.
+     * Typically this will result in an EOFException being thrown
+     * from a subsequent read rather than a -1 return.
+     */
     public void earlyEOF()
     {
         synchronized (lock())
         {
             _earlyEOF = true;
+            _inputEOF = true;
             lock().notify();
             LOG.debug("{} early EOF", this);
         }
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isEarlyEOF()
     {
         synchronized (lock())
@@ -218,6 +239,7 @@ public abstract class HttpInput<T> extends ServletInputStream
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void shutdown()
     {
         synchronized (lock())
@@ -228,6 +250,7 @@ public abstract class HttpInput<T> extends ServletInputStream
         }
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isShutdown()
     {
         synchronized (lock())
@@ -236,13 +259,14 @@ public abstract class HttpInput<T> extends ServletInputStream
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void consumeAll()
     {
         synchronized (lock())
         {
+            T item = _inputQ.peekUnsafe();
             while (!isShutdown() && !isEarlyEOF())
             {
-                T item = _inputQ.peekUnsafe();
                 while (item != null)
                 {
                     _inputQ.pollUnsafe();
@@ -256,6 +280,9 @@ public abstract class HttpInput<T> extends ServletInputStream
                 try
                 {
                     blockForContent();
+                    item = _inputQ.peekUnsafe();
+                    if (item==null)
+                        break;
                 }
                 catch (IOException e)
                 {

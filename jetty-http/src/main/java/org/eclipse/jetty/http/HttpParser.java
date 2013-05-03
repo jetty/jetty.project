@@ -1151,16 +1151,14 @@ public class HttpParser
                 case CLOSED:
                     if (BufferUtil.hasContent(buffer))
                     {
-                        int len=buffer.remaining();
-                        _headerBytes+=len;
+                        // Just ignore data when closed
+                        _headerBytes+=buffer.remaining();
+                        BufferUtil.clear(buffer);
                         if (_headerBytes>_maxHeaderBytes)
                         {
-                            Thread.sleep(100);
-                            String chars = BufferUtil.toDetailString(buffer);
-                            BufferUtil.clear(buffer);
-                            throw new IllegalStateException(String.format("%s %d/%d>%d data when CLOSED:%s",this,len,_headerBytes,_maxHeaderBytes,chars));
+                            // Don't want to waste time reading data of a closed request
+                            throw new IllegalStateException("too much data after closed");
                         }
-                        BufferUtil.clear(buffer);
                     }
                     return false;
                 default: break;
@@ -1473,8 +1471,18 @@ public class HttpParser
          */
         public boolean parsedHeader(HttpField field);
 
-        public boolean earlyEOF();
+        /* ------------------------------------------------------------ */
+        /** Called to signal that an EOF was received unexpectedly
+         * during the parsing of a HTTP message
+         * @return True if the parser should return to its caller
+         */
+        public void earlyEOF();
 
+        /* ------------------------------------------------------------ */
+        /** Called to signal that a bad HTTP message has been received.
+         * @param status The bad status to send
+         * @param reason The textual reason for badness
+         */
         public void badMessage(int status, String reason);
         
         /* ------------------------------------------------------------ */

@@ -566,10 +566,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean earlyEOF()
+    public void earlyEOF()
     {
         _request.getHttpInput().earlyEOF();
-        return false;
     }
 
     @Override

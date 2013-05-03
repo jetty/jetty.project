@@ -1147,9 +1147,8 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean earlyEOF()
+        public void earlyEOF()
         {
-            return true;
         }
 
         @Override
