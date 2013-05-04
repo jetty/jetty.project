@@ -53,7 +53,6 @@ public class TestJettyOSGiBootCore
     public Option[] config()
     {
         VersionResolver resolver = MavenUtils.asInProject();
-        System.err.println(resolver.getVersion("org.eclipse.jetty", "jetty-server"));
         ArrayList<Option> options = new ArrayList<Option>();
         TestOSGiUtil.addMoreOSGiContainers(options);
         options.addAll(provisionCoreJetty());
