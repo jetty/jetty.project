@@ -1,5 +1,5 @@
 language: java
-script: maven install
+script: mvn install
 jdk:
   - openjdk7
   - oraclejdk7
