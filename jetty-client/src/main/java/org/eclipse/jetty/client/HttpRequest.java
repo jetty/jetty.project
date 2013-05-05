@@ -152,6 +152,7 @@ public class HttpRequest implements Request
         if (query != null)
         {
             this.query = query;
+            params.clear();
             extractParams(query);
         }
         this.uri = buildURI();

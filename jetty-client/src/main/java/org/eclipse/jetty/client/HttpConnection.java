@@ -159,7 +159,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (destination.isProxied() && HttpMethod.CONNECT != request.getMethod())
+        if (destination.isProxied() && HttpMethod.CONNECT != method)
         {
             path = request.getURI().toString();
             request.path(path);
