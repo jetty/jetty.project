@@ -63,6 +63,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -362,7 +363,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(String host, int port)
     {
-        return newRequest(URI.create(address("http", host, port)));
+        return newRequest(address("http", host, port));
     }
 
     /**
@@ -417,9 +418,11 @@ public class HttpClient extends ContainerLifeCycle
         return newRequest;
     }
 
-    private String address(String scheme, String host, int port)
+    protected String address(String scheme, String host, int port)
     {
-        return scheme + "://" + host + ":" + port;
+        StringBuilder result = new StringBuilder();
+        URIUtil.appendSchemeHostPort(result, scheme, host, port);
+        return result.toString();
     }
 
     /**
@@ -898,6 +901,13 @@ public class HttpClient extends ContainerLifeCycle
     protected HttpField getAcceptEncodingField()
     {
         return encodingField;
+    }
+
+    protected String normalizeHost(String host)
+    {
+        if (host != null && host.matches("\\[.*\\]"))
+            return host.substring(1, host.length() - 1);
+        return host;
     }
 
     protected int normalizePort(String scheme, int port)

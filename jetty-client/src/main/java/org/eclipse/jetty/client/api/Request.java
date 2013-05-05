@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EventListener;
@@ -86,18 +87,33 @@ public interface Request
     Request method(HttpMethod method);
 
     /**
-     * @return the path of this request, such as "/"
+     * @return the path of this request, such as "/" or "/path" - without the query
+     * @see #getQuery()
      */
     String getPath();
 
     /**
-     * @param path the path of this request, such as "/"
+     * Specifies the path - and possibly the query - of this request.
+     * If the query part is specified, parameter values must be properly
+     * {@link URLEncoder#encode(String, String) UTF-8 URL encoded}.
+     * For example, if the parameter value is the euro symbol &euro; then the
+     * query string must be "param=%E2%82%AC".
+     * For transparent encoding of parameter values, use {@link #param(String, String)}.
+     *
+     * @param path the path of this request, such as "/" or "/path?param=1"
      * @return this request object
      */
     Request path(String path);
 
     /**
-     * @return the full URI of this request such as "http://host:port/path"
+     * @return the query string of this request such as "param=1"
+     * @see #getPath()
+     * @see #getParams()
+     */
+    String getQuery();
+
+    /**
+     * @return the full URI of this request such as "http://host:port/path?param=1"
      */
     URI getURI();
 
@@ -118,6 +134,9 @@ public interface Request
     Fields getParams();
 
     /**
+     * Adds a query parameter with the given name and value.
+     * The value is {@link URLEncoder#encode(String, String) UTF-8 URL encoded}.
+     *
      * @param name the name of the query parameter
      * @param value the value of the query parameter
      * @return this request object
