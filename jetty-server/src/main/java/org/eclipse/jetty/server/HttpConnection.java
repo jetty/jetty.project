@@ -622,7 +622,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public String toString()
         {
-            return super.toString()+"{"+HttpConnection.this+","+getEndPoint()+","+_parser+"}";
+            return super.toString()+"{"+_channel+","+HttpConnection.this+"}";
         }
     }
 

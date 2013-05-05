@@ -391,11 +391,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,a=%s}",
+        return String.format("%s@%x{r=%s,a=%s,uri=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
-                _state.getState());
+                _state.getState(),
+                _state.getState()!=HttpChannelState.State.IDLE?"-":_request.getRequestURI()
+            );
     }
 
     @Override
