@@ -22,8 +22,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParseListener;
 
-public class ClientUpgradeResponse extends UpgradeResponse
+public class ClientUpgradeResponse extends UpgradeResponse implements HttpResponseHeaderParseListener
 {
     private ByteBuffer remainingBuffer;
 
@@ -43,6 +44,7 @@ public class ClientUpgradeResponse extends UpgradeResponse
         throw new UnsupportedOperationException("Not supported on client implementation");
     }
 
+    @Override
     public void setRemainingBuffer(ByteBuffer remainingBuffer)
     {
         this.remainingBuffer = remainingBuffer;

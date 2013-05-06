@@ -113,10 +113,10 @@ public class ServletHandler extends ScopedHandler
     private MultiMap<FilterMapping> _filterNameMappings;
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
-    private PathMap _servletPathMap;
+    private PathMap<ServletHolder> _servletPathMap;
 
-    protected final ConcurrentMap _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
-    protected final Queue[] _chainLRU = new Queue[FilterMapping.ALL];
+    protected final ConcurrentMap<?, ?> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
+    protected final Queue<?>[] _chainLRU = new Queue[FilterMapping.ALL];
 
 
     /* ------------------------------------------------------------ */
@@ -208,6 +208,9 @@ public class ServletHandler extends ScopedHandler
         _filterNameMappings=null;
 
         _servletPathMap=null;
+        
+        _matchBeforeIndex=-1;
+        _matchAfterIndex=-1;
     }
 
     /* ------------------------------------------------------------ */
@@ -250,7 +253,7 @@ public class ServletHandler extends ScopedHandler
      * @param pathInContext Path within _context.
      * @return PathMap Entries pathspec to ServletHolder
      */
-    public PathMap.MappedEntry getHolderEntry(String pathInContext)
+    public PathMap.MappedEntry<ServletHolder> getHolderEntry(String pathInContext)
     {
         if (_servletPathMap==null)
             return null;
@@ -331,10 +334,10 @@ public class ServletHandler extends ScopedHandler
         if (target.startsWith("/"))
         {
             // Look for the servlet by path
-            PathMap.MappedEntry entry=getHolderEntry(target);
+            PathMap.MappedEntry<ServletHolder> entry=getHolderEntry(target);
             if (entry!=null)
             {
-                servlet_holder=(ServletHolder)entry.getValue();
+                servlet_holder=entry.getValue();
 
                 String servlet_path_spec= entry.getKey();
                 String servlet_path=entry.getMapped()!=null?entry.getMapped():PathMap.pathMatch(servlet_path_spec,target);
@@ -342,8 +345,8 @@ public class ServletHandler extends ScopedHandler
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
-                    baseRequest.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
-                    baseRequest.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH,servlet_path);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, path_info);
                 }
                 else
                 {
@@ -615,8 +618,8 @@ public class ServletHandler extends ScopedHandler
             if (filters.size() > 0)
                 chain= new CachedChain(filters, servletHolder);
 
-            final Map<String,FilterChain> cache=_chainCache[dispatch];
-            final Queue<String> lru=_chainLRU[dispatch];
+            final Map<String,FilterChain> cache=(Map<String, FilterChain>)_chainCache[dispatch];
+            final Queue<String> lru=(Queue<String>)_chainLRU[dispatch];
 
         	// Do we have too many cached chains?
         	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
@@ -718,7 +721,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     if (servlet.getClassName() == null && servlet.getForcedPath() != null)
                     {
-                        ServletHolder forced_holder = (ServletHolder)_servletPathMap.match(servlet.getForcedPath());
+                        ServletHolder forced_holder = _servletPathMap.match(servlet.getForcedPath());
                         if (forced_holder == null || forced_holder.getClassName() == null)
                         {
                             mx.add(new IllegalStateException("No forced path servlet for " + servlet.getForcedPath()));
@@ -1053,7 +1056,7 @@ public class ServletHandler extends ScopedHandler
     public void addFilterMapping (FilterMapping mapping)
     {
         if (mapping != null)
-        { 
+        {
             Source source = (mapping.getFilterHolder()==null?null:mapping.getFilterHolder().getSource());
             FilterMapping[] mappings =getFilterMappings();
             if (mappings==null || mappings.length==0)

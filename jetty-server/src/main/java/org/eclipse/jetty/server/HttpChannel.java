@@ -40,8 +40,10 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.HttpChannelState.Next;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -216,6 +218,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public void run()
     {
+        handle();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the channel is ready to continue handling (ie it is not suspended)
+     */
+    public boolean handle()
+    {
         LOG.debug("{} handle enter", this);
 
         setCurrentHttpChannel(this);
@@ -227,104 +238,104 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             Thread.currentThread().setName(threadName + " - " + _uri);
         }
 
-        try
+        // Loop here to handle async request redispatches.
+        // The loop is controlled by the call to async.unhandle in the
+        // finally block below.  Unhandle will return false only if an async dispatch has
+        // already happened when unhandle is called.
+        HttpChannelState.Next next = _state.handling();
+        while (next==Next.CONTINUE && getServer().isRunning())
         {
-            // Loop here to handle async request redispatches.
-            // The loop is controlled by the call to async.unhandle in the
-            // finally block below.  Unhandle will return false only if an async dispatch has
-            // already happened when unhandle is called.
-            boolean handling = _state.handling();
-
-            while (handling && getServer().isRunning())
+            try
             {
-                try
-                {
-                    _request.setHandled(false);
-                    _response.getHttpOutput().reopen();
+                _request.setHandled(false);
+                _response.getHttpOutput().reopen();
 
-                    if (_state.isInitial())
+                if (_state.isInitial())
+                {
+                    _request.setTimeStamp(System.currentTimeMillis());
+                    _request.setDispatcherType(DispatcherType.REQUEST);
+
+                    for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
+                        customizer.customize(getConnector(),_configuration,_request);
+                    getServer().handle(this);
+                }
+                else
+                {
+                    if (_request.getHttpChannelState().isExpired())
                     {
-                        _request.setTimeStamp(System.currentTimeMillis());
-                        _request.setDispatcherType(DispatcherType.REQUEST);
-                        
-                        for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                            customizer.customize(getConnector(),_configuration,_request);
-                        getServer().handle(this);
+                        _request.setDispatcherType(DispatcherType.ERROR);
+                        _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
+                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
+                        _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
+                        _response.setStatusWithReason(500,"Async Timeout");
                     }
                     else
-                    {
-                        if (_request.getHttpChannelState().isExpired())
-                        {
-                            _request.setDispatcherType(DispatcherType.ERROR);
-                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
-                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
-                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
-                            _response.setStatusWithReason(500,"Async Timeout");
-                        }
-                        else
-                            _request.setDispatcherType(DispatcherType.ASYNC);
-                        getServer().handleAsync(this);
-                    }
-                }
-                catch (Error e)
-                {
-                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
-                        LOG.ignore(e);
-                    else 
-                        throw e;
-                }
-                catch (Exception e)
-                {
-                    if (e instanceof EofException)
-                        LOG.debug(e);
-                    else
-                        LOG.warn(String.valueOf(_uri), e);
-                    _state.error(e);
-                    _request.setHandled(true);
-                    handleException(e);
-                }
-                finally
-                {
-                    handling = !_state.unhandle();
+                        _request.setDispatcherType(DispatcherType.ASYNC);
+                    getServer().handleAsync(this);
                 }
             }
-        }
-        finally
-        {
-            if (threadName != null && LOG.isDebugEnabled())
-                Thread.currentThread().setName(threadName);
-            setCurrentHttpChannel(null);
-
-            if (_state.isCompleting())
+            catch (Error e)
             {
-                try
-                {
-                    _state.completed();
-
-                    if (!_response.isCommitted() && !_request.isHandled())
-                        _response.sendError(404);
-
-                    // Complete generating the response
-                    _response.complete();
-
-                }
-                catch(EofException e)
-                {
+                if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                    LOG.ignore(e);
+                else 
+                    throw e;
+            }
+            catch (Exception e)
+            {
+                if (e instanceof EofException)
                     LOG.debug(e);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
-                finally
-                {
-                    _request.setHandled(true);
-                    _transport.completed();
-                }
+                else
+                    LOG.warn(String.valueOf(_uri), e);
+                _state.error(e);
+                _request.setHandled(true);
+                handleException(e);
             }
-
-            LOG.debug("{} handle exit", this);
+            finally
+            {
+                next = _state.unhandle();
+            }
         }
+
+        if (threadName != null && LOG.isDebugEnabled())
+            Thread.currentThread().setName(threadName);
+        setCurrentHttpChannel(null);
+
+        if (next==Next.COMPLETE)
+        {
+            try
+            {
+                _state.completed();
+
+                if (!_response.isCommitted() && !_request.isHandled())
+                    _response.sendError(404);
+
+                // Complete generating the response
+                _response.complete();
+            }
+            catch(EofException e)
+            {
+                LOG.debug(e);
+            }
+            catch(Exception e)
+            {
+                LOG.warn(e);
+            }
+            finally
+            {
+                next=Next.RECYCLE;
+            }
+        }
+
+        if (next==Next.RECYCLE)
+        {
+            _request.setHandled(true);
+            _transport.completed();
+        }
+
+        LOG.debug("{} handle exit", this);
+
+        return next!=Next.WAIT;
     }
 
     /**
@@ -380,11 +391,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,a=%s}",
+        return String.format("%s@%x{r=%s,a=%s,uri=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
-                _state.getState());
+                _state.getState(),
+                _state.getState()==HttpChannelState.State.IDLE?"-":_request.getRequestURI()
+            );
     }
 
     @Override
@@ -555,10 +568,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean earlyEOF()
+    public void earlyEOF()
     {
         _request.getHttpInput().earlyEOF();
-        return false;
     }
 
     @Override
@@ -569,10 +581,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
         try
         {
-            if (_state.handling())
+            if (_state.handling()==Next.CONTINUE)
             {
                 commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
-                _state.unhandle();
             }
         }
         catch (IOException e)
@@ -580,8 +591,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.warn(e);
         }
         finally
-        {
-            _state.completed();
+        { 
+            if (_state.unhandle()==Next.COMPLETE)
+                _state.completed();
         }
     }
 
@@ -663,5 +675,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public Scheduler getScheduler()
     {
         return _connector.getScheduler();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
+     */
+    public boolean useDirectBuffers()
+    {
+        return getEndPoint() instanceof ChannelEndPoint;
     }
 }

@@ -9,10 +9,10 @@
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
-      <Arg>
-        <New class="com.acme.MockUserTransaction"/>
-      </Arg>
-    </New>
+    <Arg>
+      <New class="com.acme.MockUserTransaction"/>
+    </Arg>
+  </New>
 
 
   <!-- =============================================================== -->
@@ -39,7 +39,7 @@
   -->
 
   <Set name="contextPath">/test-spec</Set>
-  <Set name="war"><SystemProperty name="jetty.home"/>/webapps/test-spec.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/test-spec.war</Set>
   <Set name="configurationDiscovered">true</Set>
 
   <Get name="securityHandler">

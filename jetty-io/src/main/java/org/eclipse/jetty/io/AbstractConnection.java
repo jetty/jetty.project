@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -112,10 +113,127 @@ public abstract class AbstractConnection implements Connection
                     if (_state.compareAndSet(State.FILLING,State.FILLING_INTERESTED))
                         break loop;
                     break;
+                    
+                case FILLING_BLOCKED:
+                    if (_state.compareAndSet(State.FILLING_BLOCKED,State.FILLING_BLOCKED_INTERESTED))
+                        break loop;
+                    break;
+                    
+                case BLOCKED:
+                    if (_state.compareAndSet(State.BLOCKED,State.BLOCKED_INTERESTED))
+                        break loop;
+                    break;
 
+                case FILLING_BLOCKED_INTERESTED:
+                case FILLING_INTERESTED:
+                case BLOCKED_INTERESTED:
+                case INTERESTED:
+                    break loop;
+            }
+        }
+    }
+    
+
+    private void unblock()
+    {
+        LOG.debug("unblock {}",this);
+
+        loop:while(true)
+        {
+            switch(_state.get())
+            {
+                case FILLING_BLOCKED:
+                    if (_state.compareAndSet(State.FILLING_BLOCKED,State.FILLING))
+                        break loop;
+                    break;
+                    
+                case FILLING_BLOCKED_INTERESTED:
+                    if (_state.compareAndSet(State.FILLING_BLOCKED_INTERESTED,State.FILLING_INTERESTED))
+                        break loop;
+                    break;
+                    
+                case BLOCKED_INTERESTED:
+                    if (_state.compareAndSet(State.BLOCKED_INTERESTED,State.INTERESTED))
+                    {
+                        getEndPoint().fillInterested(_readCallback);
+                        break loop;
+                    }
+                    break;
+                    
+                case BLOCKED:
+                    if (_state.compareAndSet(State.BLOCKED,State.IDLE))
+                        break loop;
+                    break;
+
+                case FILLING:
+                case IDLE:
                 case FILLING_INTERESTED:
                 case INTERESTED:
                     break loop;
+            }
+        }
+    }
+    
+    
+    /**
+     */
+    protected void block(final BlockingCallback callback)
+    {
+        LOG.debug("block {}",this);
+        
+        final Callback blocked=new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                unblock();
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                unblock();
+                callback.failed(x);                
+            }
+        };
+
+        loop:while(true)
+        {
+            switch(_state.get())
+            {
+                case IDLE:
+                    if (_state.compareAndSet(State.IDLE,State.BLOCKED))
+                    {
+                        getEndPoint().fillInterested(blocked);
+                        break loop;
+                    }
+                    break;
+
+                case FILLING:
+                    if (_state.compareAndSet(State.FILLING,State.FILLING_BLOCKED))
+                    {
+                        getEndPoint().fillInterested(blocked);
+                        break loop;
+                    }
+                    break;
+                    
+                case FILLING_INTERESTED:
+                    if (_state.compareAndSet(State.FILLING_INTERESTED,State.FILLING_BLOCKED_INTERESTED))
+                    {
+                        getEndPoint().fillInterested(blocked);
+                        break loop;
+                    }
+                    break;
+
+                case BLOCKED:
+                case BLOCKED_INTERESTED:
+                case FILLING_BLOCKED:
+                case FILLING_BLOCKED_INTERESTED:
+                    throw new IllegalStateException("Already Blocked");
+                    
+                case INTERESTED:
+                    throw new IllegalStateException();
             }
         }
     }
@@ -225,7 +343,7 @@ public abstract class AbstractConnection implements Connection
 
     private enum State
     {
-        IDLE, INTERESTED, FILLING, FILLING_INTERESTED
+        IDLE, INTERESTED, FILLING, FILLING_INTERESTED, FILLING_BLOCKED, BLOCKED, FILLING_BLOCKED_INTERESTED, BLOCKED_INTERESTED
     }
     
     private class ReadCallback implements Callback, Runnable
@@ -247,10 +365,23 @@ public abstract class AbstractConnection implements Connection
                         {
                             case IDLE:
                             case INTERESTED:
-                                throw new IllegalStateException();
+                            case BLOCKED:
+                            case BLOCKED_INTERESTED:
+                                LOG.warn(new IllegalStateException());
+                                return;
 
                             case FILLING:
                                 if (_state.compareAndSet(State.FILLING,State.IDLE))
+                                    break loop;
+                                break;
+                                
+                            case FILLING_BLOCKED:
+                                if (_state.compareAndSet(State.FILLING_BLOCKED,State.BLOCKED))
+                                    break loop;
+                                break;
+                                
+                            case FILLING_BLOCKED_INTERESTED:
+                                if (_state.compareAndSet(State.FILLING_BLOCKED_INTERESTED,State.BLOCKED_INTERESTED))
                                     break loop;
                                 break;
 
@@ -266,7 +397,7 @@ public abstract class AbstractConnection implements Connection
                 }
             }
             else
-                LOG.warn(new Throwable());
+                LOG.warn(new IllegalStateException());
         }
         
         @Override

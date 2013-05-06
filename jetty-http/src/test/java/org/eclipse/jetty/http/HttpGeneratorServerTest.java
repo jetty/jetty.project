@@ -51,9 +51,8 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean earlyEOF()
+        public void earlyEOF()
         {
-            return true;
         }
 
         @Override

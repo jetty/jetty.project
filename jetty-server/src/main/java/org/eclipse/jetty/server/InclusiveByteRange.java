@@ -81,7 +81,7 @@ public class InclusiveByteRange
      * @param size Size of the resource.
      * @return LazyList of satisfiable ranges
      */
-    public static List satisfiableRanges(Enumeration headers, long size)
+    public static List<InclusiveByteRange> satisfiableRanges(Enumeration headers, long size)
     {
         Object satRanges=null;
         

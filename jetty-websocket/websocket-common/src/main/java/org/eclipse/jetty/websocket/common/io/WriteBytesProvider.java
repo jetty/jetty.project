@@ -258,6 +258,10 @@ public class WriteBytesProvider implements Callback
 
     private void notifySafeFailure(Callback callback, Throwable t)
     {
+        if (callback == null)
+        {
+            return;
+        }
         try
         {
             callback.failed(t);

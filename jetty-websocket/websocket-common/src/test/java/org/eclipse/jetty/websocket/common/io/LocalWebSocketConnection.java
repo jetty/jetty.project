@@ -22,22 +22,25 @@ import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames
+public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-    private boolean open = false;
     private IncomingFrames incoming;
     private IOState ioState = new IOState();
 
@@ -49,29 +52,33 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public LocalWebSocketConnection(String id)
     {
         this.id = id;
+        this.ioState.addListener(this);
     }
 
     public LocalWebSocketConnection(TestName testname)
     {
         this.id = testname.getMethodName();
+        this.ioState.addListener(this);
     }
 
     @Override
     public void close()
     {
-        open = false;
+        close(StatusCode.NORMAL,null);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        open = false;
+        LOG.debug("close({}, {})",statusCode,reason);
+        CloseInfo close = new CloseInfo(statusCode,reason);
+        ioState.onCloseLocal(close);
     }
 
     @Override
     public void disconnect()
     {
-        open = false;
+        LOG.debug("disconnect()");
     }
 
     public IncomingFrames getIncoming()
@@ -131,7 +138,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public boolean isOpen()
     {
-        return open;
+        return getIOState().isOpen();
     }
 
     @Override
@@ -140,9 +147,31 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         return false;
     }
 
+    @Override
+    public void onConnectionStateChange(ConnectionState state)
+    {
+        LOG.debug("Connection State Change: {}",state);
+        switch (state)
+        {
+            case CLOSED:
+                this.disconnect();
+                break;
+            case CLOSING:
+                if (ioState.wasRemoteCloseInitiated())
+                {
+                    // send response close frame
+                    CloseInfo close = ioState.getCloseInfo();
+                    LOG.debug("write close frame: {}",close);
+                    ioState.onCloseLocal(close);
+                }
+            default:
+                break;
+        }
+    }
+
     public void onOpen() {
         LOG.debug("onOpen()");
-        open = true;
+        ioState.onOpened();
     }
 
     @Override

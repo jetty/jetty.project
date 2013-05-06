@@ -284,7 +284,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * A wrapper for the Server object
      */
-    protected JettyServer server = JettyServer.getInstance();
+    protected JettyServer server = new JettyServer();
     
     
     /**
@@ -494,6 +494,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                     String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
+                if (httpConnector.getServer() == null)
+                    httpConnector.setServer(this.server);
                 this.server.addConnector(httpConnector);
             }
 
@@ -504,12 +506,13 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 //if <httpConnector> not configured in the pom, create one
                 if (httpConnector == null)
                 {
-                    httpConnector = new MavenServerConnector();
+                    httpConnector = new MavenServerConnector();               
                     //use any jetty.port settings provided
                     String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }
-                
+                if (httpConnector.getServer() == null)
+                    httpConnector.setServer(this.server);
                 this.server.setConnectors(new Connector[] {httpConnector});
             }
 

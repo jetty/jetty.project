@@ -21,19 +21,15 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.AsyncContext;
+
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -56,7 +52,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <tr><th align=right>COMPLETED:</th>     <td></td>            <td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
  * </table>
  */
-public class HttpChannelState implements AsyncContext
+public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
@@ -75,6 +71,14 @@ public class HttpChannelState implements AsyncContext
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
     }
+    
+    public enum Next
+    {
+        CONTINUE,       // Continue handling the channel        
+        WAIT,           // Wait for further events 
+        COMPLETE,       // Complete the channel
+        RECYCLE,        // Channel is completed
+    }
 
     private final HttpChannel<?> _channel;
     private List<AsyncListener> _lastAsyncListeners;
@@ -86,7 +90,7 @@ public class HttpChannelState implements AsyncContext
     private boolean _expired;
     private volatile boolean _responseWrapped;
     private long _timeoutMs=DEFAULT_TIMEOUT;
-    private AsyncEventState _event;
+    private AsyncContextEvent _event;
 
     protected HttpChannelState(HttpChannel<?> channel)
     {
@@ -103,7 +107,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    @Override
     public void addListener(AsyncListener listener)
     {
         synchronized(this)
@@ -114,19 +117,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    @Override
-    public void addListener(AsyncListener listener,ServletRequest request, ServletResponse response)
-    {
-        synchronized(this)
-        {
-            if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<>();
-            _asyncListeners.add(listener);
-        }
-    }
-
-
-    @Override
     public void setTimeout(long ms)
     {
         synchronized(this)
@@ -135,7 +125,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    @Override
     public long getTimeout()
     {
         synchronized(this)
@@ -144,7 +133,7 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    public AsyncEventState getAsyncEventState()
+    public AsyncContextEvent getAsyncContextEvent()
     {
         synchronized(this)
         {
@@ -173,9 +162,9 @@ public class HttpChannelState implements AsyncContext
     }
 
     /**
-     * @return true if the handling of the request should proceed
+     * @return Next handling of the request should proceed
      */
-    protected boolean handling()
+    protected Next handling()
     {
         synchronized (this)
         {
@@ -197,12 +186,16 @@ public class HttpChannelState implements AsyncContext
 
                 case COMPLETECALLED:
                     _state=State.COMPLETING;
-                    return false;
+                    return Next.COMPLETE;
 
-                case ASYNCWAIT:
                 case COMPLETING:
+                    return Next.COMPLETE;
+                    
+                case ASYNCWAIT:
+                    return Next.WAIT;
+                    
                 case COMPLETED:
-                    return false;
+                    return Next.RECYCLE;
 
                 case REDISPATCH:
                     _state=State.REDISPATCHED;
@@ -213,12 +206,13 @@ public class HttpChannelState implements AsyncContext
             }
 
             _responseWrapped=false;
-            return true;
+            return Next.CONTINUE;
 
         }
     }
 
-    public void startAsync()
+
+    public void startAsync(AsyncContextEvent event)
     {
         synchronized (this)
         {
@@ -228,56 +222,15 @@ public class HttpChannelState implements AsyncContext
                 case REDISPATCHED:
                     _dispatched=false;
                     _expired=false;
+                    _responseWrapped=event.getSuppliedResponse()!=_channel.getResponse();
                     _responseWrapped=false;
-                    _event=new AsyncEventState(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());
+                    _event=event;
                     _state=State.ASYNCSTARTED;
                     List<AsyncListener> listeners=_lastAsyncListeners;
                     _lastAsyncListeners=_asyncListeners;
+                    if (listeners!=null)
+                        listeners.clear();
                     _asyncListeners=listeners;
-                    if (_asyncListeners!=null)
-                        _asyncListeners.clear();
-                    break;
-
-                default:
-                    throw new IllegalStateException(this.getStatusString());
-            }
-        }
-
-        if (_lastAsyncListeners!=null)
-        {
-            for (AsyncListener listener : _lastAsyncListeners)
-            {
-                try
-                {
-                    listener.onStartAsync(_event);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-    }
-
-    public void startAsync(final ServletContext context,final ServletRequest request,final ServletResponse response)
-    {
-        synchronized (this)
-        {
-            switch(_state)
-            {
-                case DISPATCHED:
-                case REDISPATCHED:
-                    _dispatched=false;
-                    _expired=false;
-                    _responseWrapped=response!=_channel.getResponse();
-                    _event=new AsyncEventState(context,request,response);
-                    _event._pathInContext = (request instanceof HttpServletRequest)?URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo()):null;
-                    _state=State.ASYNCSTARTED;
-                    List<AsyncListener> listeners=_lastAsyncListeners;
-                    _lastAsyncListeners=_asyncListeners;
-                    _asyncListeners=listeners;
-                    if (_asyncListeners!=null)
-                        _asyncListeners.clear();
                     break;
 
                 default:
@@ -306,7 +259,7 @@ public class HttpChannelState implements AsyncContext
         synchronized (this)
         {
             if (_event!=null)
-                _event._cause=th;
+                _event.setThrowable(th);
         }
     }
 
@@ -314,10 +267,10 @@ public class HttpChannelState implements AsyncContext
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has
      * been suspended (startAsync called).
-     * @return true if handling is complete, false if the request should
+     * @return next actions
      * be handled again (eg because of a resume that happened before unhandle was called)
      */
-    protected boolean unhandle()
+    protected Next unhandle()
     {
         synchronized (this)
         {
@@ -326,7 +279,7 @@ public class HttpChannelState implements AsyncContext
                 case REDISPATCHED:
                 case DISPATCHED:
                     _state=State.COMPLETING;
-                    return true;
+                    return Next.COMPLETE;
 
                 case IDLE:
                     throw new IllegalStateException(this.getStatusString());
@@ -335,26 +288,17 @@ public class HttpChannelState implements AsyncContext
                     _initial=false;
                     _state=State.ASYNCWAIT;
                     scheduleTimeout();
-                    if (_state==State.ASYNCWAIT)
-                        return true;
-                    else if (_state==State.COMPLETECALLED)
-                    {
-                        _state=State.COMPLETING;
-                        return true;
-                    }
-                    _initial=false;
-                    _state=State.REDISPATCHED;
-                    return false;
+                    return Next.WAIT;
 
                 case REDISPATCHING:
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return false;
+                    return Next.CONTINUE;
 
                 case COMPLETECALLED:
                     _initial=false;
                     _state=State.COMPLETING;
-                    return true;
+                    return Next.COMPLETE;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
@@ -362,26 +306,29 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    @Override
-    public void dispatch()
+    public void dispatch(ServletContext context, String path)
     {
         boolean dispatch;
         synchronized (this)
         {
+            
             switch(_state)
             {
                 case ASYNCSTARTED:
                     _state=State.REDISPATCHING;
+                    _event.setDispatchTarget(context,path);
                     _dispatched=true;
                     return;
 
                 case ASYNCWAIT:
                     dispatch=!_expired;
                     _state=State.REDISPATCH;
+                    _event.setDispatchTarget(context,path);
                     _dispatched=true;
                     break;
 
                 case REDISPATCH:
+                    _event.setDispatchTarget(context,path);
                     return;
 
                 default:
@@ -407,6 +354,7 @@ public class HttpChannelState implements AsyncContext
     protected void expired()
     {
         final List<AsyncListener> aListeners;
+        AsyncEvent event;
         synchronized (this)
         {
             switch(_state)
@@ -414,6 +362,7 @@ public class HttpChannelState implements AsyncContext
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
                     _expired=true;
+                    event=_event;
                     aListeners=_asyncListeners;
                     break;
                 default:
@@ -427,7 +376,7 @@ public class HttpChannelState implements AsyncContext
             {
                 try
                 {
-                    listener.onTimeout(_event);
+                    listener.onTimeout(event);
                 }
                 catch(Exception e)
                 {
@@ -453,11 +402,10 @@ public class HttpChannelState implements AsyncContext
         scheduleDispatch();
     }
 
-    @Override
     public void complete()
     {
         // just like resume, except don't set _dispatched=true;
-        boolean dispatch;
+        boolean handle;
         synchronized (this)
         {
             switch(_state)
@@ -473,7 +421,7 @@ public class HttpChannelState implements AsyncContext
 
                 case ASYNCWAIT:
                     _state=State.COMPLETECALLED;
-                    dispatch=!_expired;
+                    handle=!_expired;
                     break;
 
                 default:
@@ -481,29 +429,21 @@ public class HttpChannelState implements AsyncContext
             }
         }
 
-        if (dispatch)
+        if (handle)
         {
             cancelTimeout();
-            scheduleDispatch();
-        }
-    }
-
-    @Override
-    public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
-    {
-        try
-        {
-            return clazz.newInstance();
-        }
-        catch(Exception e)
-        {
-            throw new ServletException(e);
+            ContextHandler handler=getContextHandler();
+            if (handler!=null)
+                handler.handle(_channel);
+            else
+                _channel.handle();
         }
     }
 
     protected void completed()
     {
         final List<AsyncListener> aListeners;
+        final AsyncContextEvent event;
         synchronized (this)
         {
             switch(_state)
@@ -511,6 +451,8 @@ public class HttpChannelState implements AsyncContext
                 case COMPLETING:
                     _state=State.COMPLETED;
                     aListeners=_asyncListeners;
+                    event=_event;
+                    _event=null;
                     break;
 
                 default:
@@ -524,14 +466,14 @@ public class HttpChannelState implements AsyncContext
             {
                 try
                 {
-                    if (_event!=null && _event._cause!=null)
+                    if (event!=null && event.getThrowable()!=null)
                     {
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,_event._cause);
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,_event._cause.getMessage());
-                        listener.onError(_event);
+                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
+                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,event.getThrowable().getMessage());
+                        listener.onError(event);
                     }
                     else
-                        listener.onComplete(_event);
+                        listener.onComplete(event);
                 }
                 catch(Exception e)
                 {
@@ -539,6 +481,9 @@ public class HttpChannelState implements AsyncContext
                 }
             }
         }
+
+        if (event!=null)
+            event.completed();
     }
 
     protected void recycle()
@@ -563,14 +508,6 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    public void cancel()
-    {
-        synchronized (this)
-        {
-            cancelTimeout();
-        }
-    }
-
     protected void scheduleDispatch()
     {
         _channel.execute(_channel);
@@ -580,18 +517,14 @@ public class HttpChannelState implements AsyncContext
     {
         Scheduler scheduler = _channel.getScheduler();
         if (scheduler!=null && _timeoutMs>0)
-            _event._timeout=scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS);
+            _event.setTimeoutTask(scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS));
     }
 
     protected void cancelTimeout()
     {
-        AsyncEventState event=_event;
+        AsyncContextEvent event=_event;
         if (event!=null)
-        {
-            Scheduler.Task task=event._timeout;
-            if (task!=null)
-                task.cancel();
-        }
+            event.cancelTimeoutTask();
     }
 
     public boolean isExpired()
@@ -656,73 +589,25 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    @Override
-    public void dispatch(ServletContext context, String path)
-    {
-        _event._dispatchContext=context;
-        _event._pathInContext=path;
-        dispatch();
-    }
-
-    @Override
-    public void dispatch(String path)
-    {
-        _event._pathInContext=path;
-        dispatch();
-    }
-
     public Request getBaseRequest()
     {
         return _channel.getRequest();
     }
 
-    @Override
-    public ServletRequest getRequest()
+    public HttpChannel<?> getHttpChannel()
     {
-        if (_event!=null)
-            return _event.getSuppliedRequest();
-        return _channel.getRequest();
-    }
-
-    @Override
-    public ServletResponse getResponse()
-    {
-        if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
-            return _event.getSuppliedResponse();
-        return _channel.getResponse();
-    }
-
-    @Override
-    public void start(final Runnable run)
-    {
-        final AsyncEventState event=_event;
-        if (event!=null)
-        {
-            _channel.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    ((Context)event.getServletContext()).getContextHandler().handle(run);
-                }
-            });
-        }
-    }
-
-    @Override
-    public boolean hasOriginalRequestAndResponse()
-    {
-        synchronized (this)
-        {
-            return (_event!=null && _event.getSuppliedRequest()==_channel.getRequest() && _event.getSuppliedResponse()==_channel.getResponse());
-        }
+        return _channel;
     }
 
     public ContextHandler getContextHandler()
     {
-        final AsyncEventState event=_event;
+        final AsyncContextEvent event=_event;
         if (event!=null)
-            return ((Context)event.getServletContext()).getContextHandler();
+        {
+            Context context=((Context)event.getServletContext());
+            if (context!=null)
+                return context.getContextHandler();
+        }
         return null;
     }
 
@@ -757,70 +642,4 @@ public class HttpChannelState implements AsyncContext
         }
     }
 
-    public class AsyncEventState extends AsyncEvent
-    {
-        final private ServletContext _suspendedContext;
-        private String _pathInContext;
-        private Scheduler.Task _timeout;
-        private ServletContext _dispatchContext;
-        private Throwable _cause;
-
-        public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
-        {
-            super(HttpChannelState.this, request,response);
-            _suspendedContext=context;
-
-            // Get the base request So we can remember the initial paths
-            Request r=_channel.getRequest();
-
-            // If we haven't been async dispatched before
-            if (r.getAttribute(AsyncContext.ASYNC_REQUEST_URI)==null)
-            {
-                // We are setting these attributes during startAsync, when the spec implies that
-                // they are only available after a call to AsyncContext.dispatch(...);
-
-                // have we been forwarded before?
-                String uri=(String)r.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-                if (uri!=null)
-                {
-                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
-                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
-                }
-                else
-                {
-                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,r.getRequestURI());
-                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getContextPath());
-                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getServletPath());
-                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getPathInfo());
-                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getQueryString());
-                }
-            }
-        }
-
-        public ServletContext getSuspendedContext()
-        {
-            return _suspendedContext;
-        }
-
-        public ServletContext getDispatchContext()
-        {
-            return _dispatchContext;
-        }
-
-        public ServletContext getServletContext()
-        {
-            return _dispatchContext==null?_suspendedContext:_dispatchContext;
-        }
-
-        /**
-         * @return The path in the context
-         */
-        public String getPath()
-        {
-            return _pathInContext;
-        }
-    }
 }

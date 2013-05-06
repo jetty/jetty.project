@@ -12,4 +12,7 @@
       <Set name="handler"><Ref refid="oldhandler" /></Set>
     </New>
   </Set>
+  <Call class="org.eclipse.jetty.server.ConnectorStatistics" name="addToAllConnectors">
+    <Arg><Ref refid="Server"/></Arg>
+  </Call>
 </Configure>

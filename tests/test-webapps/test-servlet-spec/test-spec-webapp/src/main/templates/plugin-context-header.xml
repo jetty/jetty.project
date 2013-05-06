@@ -8,13 +8,10 @@
 
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
-
   <!-- Configure the tx mgr (only needed for mvn jetty:run -->
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
-      <Arg>
-        <New class="com.acme.MockUserTransaction"/>
-      </Arg>
-    </New>
-
-
+    <Arg>
+      <New class="com.acme.MockUserTransaction"/>
+    </Arg>
+  </New>
 

@@ -657,6 +657,30 @@ public class URIUtil
         return false;
     }
     
+    public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
+    {
+        if (server.indexOf(':')>=0&&server.charAt(0)!='[')
+            url.append(scheme).append("://").append('[').append(server).append(']');
+        else
+            url.append(scheme).append("://").append(server);
+
+        if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
+            url.append(':').append(port);
+    }
+    
+    public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
+    {
+        synchronized (url)
+        {
+            if (server.indexOf(':')>=0&&server.charAt(0)!='[')
+                url.append(scheme).append("://").append('[').append(server).append(']');
+            else
+                url.append(scheme).append("://").append(server);
+
+            if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
+                url.append(':').append(port);
+        }
+    }
 }
 
 

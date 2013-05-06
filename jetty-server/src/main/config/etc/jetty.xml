@@ -44,9 +44,9 @@
     <!-- =========================================================== -->
     <Arg name="threadpool">
       <New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Arg name="minThreads" type="int">10</Arg>
-        <Arg name="maxThreads" type="int">200</Arg>
-        <Arg name="idleTimeout" type="int">60000</Arg>
+        <Arg name="minThreads" type="int"><Property name="threads.min" default="10"/></Arg>
+        <Arg name="maxThreads" type="int"><Property name="threads.max" default="200"/></Arg>
+        <Arg name="idleTimeout" type="int"><Property name="threads.timeout" default="60000"/></Arg>
         <Set name="detailedDump">false</Set>
       </New>
     </Arg>
@@ -124,7 +124,7 @@
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
     <Set name="stopTimeout">5000</Set>
-    <Set name="dumpAfterStart">false</Set>
-    <Set name="dumpBeforeStop">false</Set>
+    <Set name="dumpAfterStart"><Property name="jetty.dump.start" default="false"/></Set>
+    <Set name="dumpBeforeStop"><Property name="jetty.dump.stop" default="false"/></Set>
 
 </Configure>

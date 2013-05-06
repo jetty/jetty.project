@@ -35,7 +35,7 @@
  -->
 
   <Set name="contextPath">/test-jndi</Set>
-  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test-jndi.war</Set>
+  <Set name="war"><Property name="jetty.webapps" default="."/>/test-jndi.war</Set>
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="configurationDiscovered">true</Set>

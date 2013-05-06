@@ -55,7 +55,7 @@ public class Starter
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
     private File contextXml; //name of context xml file to configure the webapp - Mandatory
 
-    private JettyServer server;
+    private JettyServer server = new JettyServer();
     private JettyWebAppContext webApp;
 
     
@@ -120,8 +120,6 @@ public class Starter
     {
         LOG.debug("Starting Jetty Server ...");
 
-        this.server = JettyServer.getInstance();
-
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
 
@@ -132,6 +130,7 @@ public class Starter
         {
             //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
             MavenServerConnector httpConnector = new MavenServerConnector();
+            httpConnector.setServer(this.server);
             String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
             httpConnector.setPort(Integer.parseInt(tmp.trim()));
             connectors = new Connector[] {httpConnector};

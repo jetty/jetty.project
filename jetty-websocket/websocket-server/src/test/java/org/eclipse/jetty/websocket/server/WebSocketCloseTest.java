@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,15 +45,11 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests various close scenarios
  */
-@Ignore
 public class WebSocketCloseTest
 {
     @SuppressWarnings("serial")
@@ -145,7 +143,7 @@ public class WebSocketCloseTest
             client.expectUpgradeResponse();
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().get(0);
+            WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));

@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -262,7 +263,7 @@ public class ReferrerPushStrategy implements PushStrategy
     private class MainResource
     {
         private final String name;
-        private final Set<String> resources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        private final CopyOnWriteArraySet<String> resources = new CopyOnWriteArraySet<>();
         private final AtomicLong firstResourceAdded = new AtomicLong(-1);
 
         private MainResource(String name)

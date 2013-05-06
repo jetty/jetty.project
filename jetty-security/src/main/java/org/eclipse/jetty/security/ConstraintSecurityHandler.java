@@ -551,23 +551,20 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void processConstraintMappingWithMethodOmissions (ConstraintMapping mapping, Map<String, RoleInfo> mappings)
     {
         String[] omissions = mapping.getMethodOmissions();
-
-        for (String omission:omissions)
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<omissions.length; i++)
         {
-            //for each method omission, see if there is already a RoleInfo for it in mappings
-            RoleInfo ri = mappings.get(omission+OMISSION_SUFFIX);
-            if (ri == null)
-            {
-                //if not, make one
-                ri = new RoleInfo();
-                mappings.put(omission+OMISSION_SUFFIX, ri);
-            }
-
-            //initialize RoleInfo or combine from ConstraintMapping
-            configureRoleInfo(ri, mapping);
+            if (i > 0)
+                sb.append(".");
+            sb.append(omissions[i]);
         }
+        sb.append(OMISSION_SUFFIX);
+
+        RoleInfo ri = new RoleInfo();
+        mappings.put(sb.toString(), ri);
+        configureRoleInfo(ri, mapping);
     }
-    
+
     
     /* ------------------------------------------------------------ */
     /**
@@ -630,7 +627,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * <ol>
      * <li>A mapping of an exact method name </li>
      * <li>A mapping will null key that matches every method name</li>
-     * <li>Mappings with keys of the form "method.omission" that indicates it will match every method name EXCEPT that given</li>
+     * <li>Mappings with keys of the form "&lt;method&gt;.&lt;method&gt;.&lt;method&gt;.omission" that indicates it will match every method name EXCEPT those given</li>
      * </ol>
      * 
      * @see org.eclipse.jetty.security.SecurityHandler#prepareConstraintInfo(java.lang.String, org.eclipse.jetty.server.Request)
@@ -659,7 +656,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 //(ie matches because target method is not omitted, hence considered covered by the constraint)
                 for (Entry<String, RoleInfo> entry: mappings.entrySet())
                 {
-                    if (entry.getKey() != null && entry.getKey().contains(OMISSION_SUFFIX) && !(httpMethod+OMISSION_SUFFIX).equals(entry.getKey()))
+                    if (entry.getKey() != null && entry.getKey().endsWith(OMISSION_SUFFIX) && ! entry.getKey().contains(httpMethod))
                         applicableConstraints.add(entry.getValue());
                 }
                 

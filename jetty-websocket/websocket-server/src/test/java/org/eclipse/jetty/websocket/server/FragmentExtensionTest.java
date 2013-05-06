@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
@@ -80,9 +81,9 @@ public class FragmentExtensionTest
             client.setTimeout(TimeUnit.SECONDS,1);
             client.connect();
             client.sendStandardRequest();
-            String resp = client.expectUpgradeResponse();
+            HttpResponse resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp,containsString("fragment"));
+            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("fragment"));
 
             String msg = "Sent as a long message that should be split";
             client.write(WebSocketFrame.text(msg));
@@ -91,7 +92,7 @@ public class FragmentExtensionTest
             IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
             for (int i = 0; i < parts.length; i++)
             {
-                WebSocketFrame frame = capture.getFrames().get(i);
+                WebSocketFrame frame = capture.getFrames().poll();
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
         }

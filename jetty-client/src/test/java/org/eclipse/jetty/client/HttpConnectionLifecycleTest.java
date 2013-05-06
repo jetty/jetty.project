@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -66,7 +68,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
+        final CountDownLatch testLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(3);
+        final AtomicBoolean failed = new AtomicBoolean(false);
+        
         client.newRequest(host, port)
                 .scheme(scheme)
                 .onRequestSuccess(new Request.SuccessListener()
@@ -82,9 +87,15 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onHeaders(Response response)
                     {
-                        Assert.assertEquals(0, idleConnections.size());
-                        Assert.assertEquals(1, activeConnections.size());
                         headersLatch.countDown();
+                        try
+                        {
+                            testLatch.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 })
                 .send(new Response.Listener.Empty()
@@ -98,16 +109,21 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        Assert.assertFalse(result.isFailed());
+                        failed.set(result.isFailed());
                         successLatch.countDown();
                     }
                 });
 
         Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(1, activeConnections.size());
+        testLatch.countDown();
+        
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(1, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertFalse(failed.get());
     }
 
     @Test
@@ -127,6 +143,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch beginLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(2);
+        final AtomicBoolean failed = new AtomicBoolean(false);
+        
         client.newRequest(host, port).scheme(scheme).listener(new Request.Listener.Empty()
         {
             @Override
@@ -146,9 +164,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             @Override
             public void onComplete(Result result)
             {
-                Assert.assertTrue(result.isFailed());
-                Assert.assertEquals(0, idleConnections.size());
-                Assert.assertEquals(0, activeConnections.size());
+                failed.set(result.isFailed());
                 failureLatch.countDown();
             }
         });
@@ -158,6 +174,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertTrue(failed.get());
     }
 
     @Test
@@ -176,6 +193,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch successLatch = new CountDownLatch(3);
+        final AtomicBoolean failed = new AtomicBoolean(false);
+        final AtomicBoolean four_hundred = new AtomicBoolean(false);
+        
         client.newRequest(host, port)
                 .scheme(scheme)
                 .listener(new Request.Listener.Empty()
@@ -198,16 +218,16 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
+                        four_hundred.set(response.getStatus()==400);
                         successLatch.countDown();
                     }
 
                     @Override
                     public void onComplete(Result result)
                     {
-                        Assert.assertFalse(result.isFailed());
+                        failed.set(result.isFailed());
                         successLatch.countDown();
                     }
                 });
@@ -216,6 +236,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertFalse(failed.get());
+        Assert.assertTrue(four_hundred.get());
     }
 
     @Slow
@@ -236,6 +258,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final long delay = 1000;
         final CountDownLatch successLatch = new CountDownLatch(3);
+        final AtomicBoolean failed = new AtomicBoolean(false);
+        final AtomicBoolean four_hundred = new AtomicBoolean(false);
         client.newRequest(host, port)
                 .scheme(scheme)
                 .listener(new Request.Listener.Empty()
@@ -271,16 +295,16 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(400, response.getStatus());
                         // 400 response also come with a Connection: close,
                         // so the connection is closed and removed
+                        four_hundred.set(response.getStatus()==400);
                         successLatch.countDown();
                     }
 
                     @Override
                     public void onComplete(Result result)
                     {
-                        Assert.assertFalse(result.isFailed());
+                        failed.set(result.isFailed());
                         successLatch.countDown();
                     }
                 });
@@ -289,6 +313,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertFalse(failed.get());
+        Assert.assertTrue(four_hundred.get());
     }
 
     @Test
@@ -309,6 +335,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         server.stop();
 
         final CountDownLatch failureLatch = new CountDownLatch(2);
+        final AtomicBoolean failed = new AtomicBoolean(false);
         client.newRequest(host, port)
                 .scheme(scheme)
                 .onRequestFailure(new Request.FailureListener()
@@ -324,7 +351,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        Assert.assertTrue(result.isFailed());
+                        failed.set(result.isFailed());
                         failureLatch.countDown();
                     }
                 });
@@ -333,6 +360,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertTrue(failed.get());
     }
 
     @Test
@@ -359,6 +387,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean failed = new AtomicBoolean(false);
         client.newRequest(host, port)
                 .scheme(scheme)
                 .send(new Response.Listener.Empty()
@@ -366,9 +395,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        Assert.assertFalse(result.isFailed());
-                        Assert.assertEquals(0, idleConnections.size());
-                        Assert.assertEquals(0, activeConnections.size());
+                        failed.set(result.isFailed());
                         latch.countDown();
                     }
                 });
@@ -377,6 +404,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
+        Assert.assertFalse(failed.get());
     }
 
     @Test
@@ -410,6 +438,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
 
             final CountDownLatch latch = new CountDownLatch(1);
+            final AtomicBoolean failed = new AtomicBoolean(false);
             ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
             Arrays.fill(buffer.array(),(byte)'x');
             client.newRequest(host, port)
@@ -420,8 +449,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         @Override
                         public void onComplete(Result result)
                         {
-                            Assert.assertEquals(0, idleConnections.size());
-                            Assert.assertEquals(0, activeConnections.size());
+                            failed.set(result.isFailed());
                             latch.countDown();
                         }
                     });
@@ -430,6 +458,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
+            Assert.assertTrue(failed.get());
             server.stop();
         }
         finally

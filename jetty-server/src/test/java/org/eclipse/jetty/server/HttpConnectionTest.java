@@ -81,7 +81,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testFragmentedChunk()
+    public void testFragmentedChunk() throws Exception
     {
         String response=null;
         try
@@ -119,10 +119,9 @@ public class HttpConnectionTest
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
+            if(response != null)
                 System.err.println(response);
+            throw e;
         }
     }
 
@@ -249,7 +248,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testCharset()
+    public void testCharset() throws Exception
     {
 
         String response=null;
@@ -306,10 +305,9 @@ public class HttpConnectionTest
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
+            if(response != null)
                 System.err.println(response);
+            throw e;
         }
     }
 
@@ -391,7 +389,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testConnection()
+    public void testConnection() throws Exception
     {
         String response=null;
         try
@@ -412,10 +410,9 @@ public class HttpConnectionTest
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
-                 System.err.println(response);
+            if(response != null)
+                System.err.println(response);
+            throw e;
         }
     }
 
@@ -525,7 +522,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testAsterisk()
+    public void testAsterisk() throws Exception
     {
         String response = null;
 
@@ -572,10 +569,9 @@ public class HttpConnectionTest
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
-                 System.err.println(response);
+            if(response != null)
+                System.err.println(response);
+            throw e;
         }
         finally
         {
@@ -585,7 +581,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testCONNECT()
+    public void testCONNECT() throws Exception
     {
         String response = null;
 
@@ -601,10 +597,9 @@ public class HttpConnectionTest
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
-                 System.err.println(response);
+            if(response != null)
+                System.err.println(response);
+            throw e;
         }
 
     }

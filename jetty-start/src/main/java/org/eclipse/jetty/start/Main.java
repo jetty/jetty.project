@@ -39,6 +39,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+
+import javax.naming.OperationNotSupportedException;
 
 /*-------------------------------------------*/
 /**
@@ -175,6 +178,12 @@ public class Main
                 stop(port,key,timeout);
                 return null;
             }
+            
+            if (arg.startsWith("--download="))
+            {
+                download(arg);
+                continue;
+            }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
             {
@@ -300,6 +309,53 @@ public class Main
         }
 
         return xmls;
+    }
+
+    private void download(String arg)
+    {
+        try
+        {
+            String[] split = arg.split(":",3);
+            if (split.length!=3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
+                throw new IllegalArgumentException("Not --download=<http uri>:<location>");
+            
+            String location=split[2];
+            if (File.separatorChar!='/')
+                location.replaceAll("/",File.separator);
+            File file = new File(location);
+            
+            if (Config.isDebug())
+                System.err.println("Download to "+file.getAbsolutePath()+(file.exists()?" Exists!":""));
+            if (file.exists())
+                return;
+            
+            URL url = new URL(split[0].substring(11)+":"+split[1]);
+
+            System.err.println("DOWNLOAD: "+url+" to "+location);
+
+            if (!file.getParentFile().exists())
+                file.getParentFile().mkdirs();
+
+            byte[] buf=new byte[8192];
+            try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
+            {
+                while(true)
+                {
+                    int len = in.read(buf);
+
+                    if (len>0)
+                        out.write(buf,0,len);
+                    if (len<0)
+                        break;
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            System.err.println("ERROR: processing "+arg+"\n"+e);
+            e.printStackTrace();
+            usageExit(EXIT_USAGE);
+        }
     }
 
     private void usage()

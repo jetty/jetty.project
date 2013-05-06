@@ -19,9 +19,13 @@
 package org.eclipse.jetty.osgi.test;
 
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.options;
+
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -41,7 +45,8 @@ import org.osgi.framework.BundleContext;
 @RunWith(JUnit4TestRunner.class)
 public class TestJettyOSGiBootSpdy
 {
-
+    private static final boolean LOGGING_ENABLED = false;
+    
     private static final String JETTY_SPDY_PORT = "jetty.spdy.port";
 
     private static final int DEFAULT_JETTY_SPDY_PORT = 9877;
@@ -61,6 +66,22 @@ public class TestJettyOSGiBootSpdy
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
         options.addAll(spdyJettyDependencies());
+        
+        String logLevel = "WARN";
+        
+        // Enable Logging
+        if (LOGGING_ENABLED)
+            logLevel = "INFO";
+        
+
+        options.addAll(Arrays.asList(options(
+                                             // install log service using pax runners profile abstraction (there
+                                             // are more profiles, like DS)
+                                             // logProfile(),
+                                             // this is how you set the default log level when using pax logging
+                                             // (logProfile)
+                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
+                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
         return options.toArray(new Option[options.size()]);
     }
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.*;
 
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -56,9 +57,10 @@ public class WebSocketInvalidVersionTest
         {
             client.connect();
             client.sendStandardRequest();
-            String respHeader = client.readResponseHeader();
-            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 400 Unsupported websocket version specification"));
-            Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13\r\n"));
+            HttpResponse response = client.readResponseHeader();
+            Assert.assertThat("Response Status Code",response.getStatusCode(),is(400));
+            Assert.assertThat("Response Status Reason",response.getStatusReason(),containsString("Unsupported websocket version specification"));
+            Assert.assertThat("Response Versions",response.getHeader("Sec-WebSocket-Version"),is("13"));
         }
         finally
         {
