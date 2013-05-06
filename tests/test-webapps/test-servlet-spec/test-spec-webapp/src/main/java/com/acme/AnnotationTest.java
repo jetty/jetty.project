@@ -307,10 +307,15 @@ public class AnnotationTest extends HttpServlet
             context = request.getContextPath();
             if (!context.endsWith("/"))
                 context += "/";
-            context += "sec/foo";
-            out.println("<form action="+context+" method=\"post\"><button type=\"submit\">Test ServletSecurity Annotation</button></form>");
+            String path = context +"sec/foo";
+           
+            out.println("<form action="+path+" method=\"post\"><button type=\"submit\">Test ServletSecurity Annotation</button></form>");
 
-
+            out.println("<h2>AsyncListener Resource Injection</h2>");
+            out.println("<p>Click the following link to test that javax.servlet.AsyncListeners are injectable</p>");
+            path = context+"asy/xx";            
+            out.println("<form action="+path+" method=\"post\"><button type=\"submit\">Test AsyncListener</button></form>");
+            
             out.println("</body>");            
             out.println("</html>");
             out.flush();
