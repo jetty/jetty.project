@@ -29,21 +29,15 @@ This example shows how to configure and lookup resources such as DataSources, a 
 
 <h2>Preparation</h2>
 <p>
-  <ol>
-    <li>Ensure that you have downloaded and unpacked the test-jndi-webapp-&lt;version&gt;-config.jar, where &lt;version&gt; is replaced by the desired version number. The following files will be created:
-     <pre>
-      lib/jndi/test-mock-resources-&lt;version&gt;.jar (where &lt;version&gt; is replaced by the particular version number)
-      webapps/test-jndi.xml
-     </pre>
-    </li>
-    <li>Edit your $JETTY_HOME/start.ini file and uncomment the following lines:
-      <pre>
-      OPTIONS=plus
-      etc/jetty-plus.xml
-      </pre>
-    </li>
-  </ol>
+To enable JNDI edit the start.ini or start.d/*.ini files to include "OPTIONS=jndi".
 </p>
+<p>
+For the jetty distribution demos, jndi is already enabled in the start.d/900-demo.ini file and also enables the
+jndi.demo option which includes some mock resources used by the test.
+</p>
+<p>The full source of this demonstration is available <a href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-jndi-webapp">here</a>.</p>
+
+
 
 <h2>Execution</h2>
 <p>

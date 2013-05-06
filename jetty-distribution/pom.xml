@@ -104,6 +104,36 @@
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-jaas-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <destFileName>test-jaas.war</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-jndi-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <destFileName>test-jndi.war</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-spec-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <destFileName>test-spec.war</destFileName>
+                </artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>test-proxy-webapp</artifactId>
                   <version>${project.version}</version>
@@ -173,6 +203,7 @@
               </artifactItems>
             </configuration>
           </execution>
+
           <execution>
             <id>unpack-setuid-config</id>
             <phase>process-resources</phase>
@@ -193,6 +224,70 @@
               </artifactItems>
             </configuration>
           </execution>
+
+          <execution>
+            <id>unpack-test-jaas-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-jaas-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>unpack-test-jndi-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-jndi-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>unpack-test-spec-config</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-spec-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+
           <execution>
             <id>copy-lib-deps</id>
             <phase>generate-resources</phase>
