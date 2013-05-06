@@ -678,7 +678,7 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://docs.oracle.com/javase/6/docs/api/</link>
+                <link>http://docs.oracle.com/javase/7/docs/api/</link>
                 <link>http://docs.oracle.com/javaee/6/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
