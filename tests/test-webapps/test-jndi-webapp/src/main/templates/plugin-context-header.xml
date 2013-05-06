@@ -7,14 +7,9 @@
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
-      <Arg>
-        <New class="com.acme.MockUserTransaction"/>
-      </Arg>
-    </New>
-
-
-  <!-- only necessary for mvn jetty:run -->
-
-
+    <Arg>
+      <New class="com.acme.MockUserTransaction"/>
+    </Arg>
+  </New>
 
 

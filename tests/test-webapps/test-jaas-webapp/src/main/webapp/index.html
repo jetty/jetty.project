@@ -22,26 +22,17 @@
 
   <H1>JAAS Authentication and Authorization Demo </H1>
   <h2>Preparation</h2>
-  <ol>
-   <li>You will need to edit your $JETTY_HOME/start.ini file and add the following lines:
+  <p>To enable JAAS, edit your start.ini or start.d/*.ini files and add the following lines:
     <pre>
      OPTIONS=jaas
+     jaas.login.conf=etc/login.conf
      etc/jetty-jaas.xml
     </pre>
-    </li>
+  </p>
+  <p>For the jetty distribution demos, jaas is already enabled in the start.d/900-demo.ini file and sets the jaas.login.conf property to webapps.demo/test-jaas.d/login.conf  for use with the webapps.demo/test-jaas.war web application.  </p>
 
-    <li>Unjar the test-jaas-webapp-&lt;version&gt;-config.jar inside $JETTY_HOME. The following files will be added:
-     <pre>
-       etc/login.conf
-       etc/login.properties
-       contexts/test-jaas.xml
-    </pre>
-    </li>
-  </ol>
-
-  <p>Now start jetty as usual.</p>
-
-
+<p>The full source of this demonstration is available <a
+href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-jaas-webapp">here</a>.</p>
 
   <h2>Using the Demo</h2>
   <P>
