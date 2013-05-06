@@ -458,7 +458,9 @@ public class StatisticsHandlerTest
     {
         final long dispatchTime = 10;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CountDownLatch latch = new CountDownLatch(1);
+        
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -540,7 +542,7 @@ public class StatisticsHandlerTest
             {
                 try
                 {
-                    barrier[2].await();
+                    latch.countDown();
                 }
                 catch (Exception ignored)
                 {
@@ -550,7 +552,7 @@ public class StatisticsHandlerTest
         long requestTime = 20;
         Thread.sleep(requestTime);
         asyncHolder.get().complete();
-        barrier[2].await();
+        latch.await();
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());

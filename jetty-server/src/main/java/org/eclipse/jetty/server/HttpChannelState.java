@@ -405,7 +405,7 @@ public class HttpChannelState
     public void complete()
     {
         // just like resume, except don't set _dispatched=true;
-        boolean dispatch;
+        boolean handle;
         synchronized (this)
         {
             switch(_state)
@@ -421,7 +421,7 @@ public class HttpChannelState
 
                 case ASYNCWAIT:
                     _state=State.COMPLETECALLED;
-                    dispatch=!_expired;
+                    handle=!_expired;
                     break;
 
                 default:
@@ -429,10 +429,14 @@ public class HttpChannelState
             }
         }
 
-        if (dispatch)
+        if (handle)
         {
             cancelTimeout();
-            scheduleDispatch();
+            ContextHandler handler=getContextHandler();
+            if (handler!=null)
+                handler.handle(_channel);
+            else
+                _channel.handle();
         }
     }
 
@@ -599,7 +603,11 @@ public class HttpChannelState
     {
         final AsyncContextEvent event=_event;
         if (event!=null)
-            return ((Context)event.getServletContext()).getContextHandler();
+        {
+            Context context=((Context)event.getServletContext());
+            if (context!=null)
+                return context.getContextHandler();
+        }
         return null;
     }
 
