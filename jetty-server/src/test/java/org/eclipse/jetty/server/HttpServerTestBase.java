@@ -960,7 +960,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
             String in = IO.toString(is);
-            System.err.println(in);
+            // System.err.println(in);
 
             int index = in.indexOf("123456789");
             assertTrue(index > 0);

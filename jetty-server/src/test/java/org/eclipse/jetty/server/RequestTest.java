@@ -241,7 +241,7 @@ public class RequestTest
         multipart;
 
         String responses=_connector.getResponses(request);
-        System.err.println(responses);
+        // System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 

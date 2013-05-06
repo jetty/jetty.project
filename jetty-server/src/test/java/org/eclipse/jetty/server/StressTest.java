@@ -122,46 +122,46 @@ public class StressTest
             q.clear();
     }
 
+    @Test
+    public void testMinNonPersistent() throws Throwable
+    {
+        assumeTrue(!OS.IS_OSX);
+        doThreads(10,10,false);
+    }
 
     @Test
     @Stress("Hey, its called StressTest for a reason")
-    public void testMinNonPersistent() throws Throwable
-    {
-        doThreads(2,2,false);
-    }
-
-    @Test
     public void testNonPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
+        assumeTrue(!OS.IS_OSX);
 
-        doThreads(10,10,false);
-        if (PropertyFlag.isEnabled("test.stress"))
-        {
-            doThreads(20,20,false);
-            Thread.sleep(1000);
-            doThreads(200,10,false);
-            Thread.sleep(1000);
-            doThreads(200,200,false);
-        }
+        doThreads(20,20,false);
+        Thread.sleep(1000);
+        doThreads(200,10,false);
+        Thread.sleep(1000);
+        doThreads(200,200,false);
     }
 
     @Test
+    public void testMinPersistent() throws Throwable
+    {
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX);
+        doThreads(10,10,true);
+    }
+    
+    @Test
+    @Stress("Hey, its called StressTest for a reason")
     public void testPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
-
-        doThreads(10,10,true);
-        if (PropertyFlag.isEnabled("test.stress"))
-        {
-            doThreads(40,40,true);
-            Thread.sleep(1000);
-            doThreads(200,10,true);
-            Thread.sleep(1000);
-            doThreads(200,200,true);
-        }
+        assumeTrue(!OS.IS_OSX);
+        doThreads(40,40,true);
+        Thread.sleep(1000);
+        doThreads(200,10,true);
+        Thread.sleep(1000);
+        doThreads(200,200,true);
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
@@ -238,7 +238,6 @@ public class StressTest
                     {
                         System.err.println("STALLED!!!");
                         System.err.println(_server.getThreadPool().toString());
-                        ((ServerConnector)(_server.getConnectors()[0])).dump();
                         Thread.sleep(5000);
                         System.exit(1);
                     }

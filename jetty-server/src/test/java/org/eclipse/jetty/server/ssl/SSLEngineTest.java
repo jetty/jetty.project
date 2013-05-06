@@ -125,7 +125,6 @@ public class SSLEngineTest
     {
         server.setHandler(new HelloWorldHandler());
         server.start();
-        server.dumpStdErr();
 
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
