@@ -22,17 +22,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
@@ -44,7 +48,10 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
 import org.junit.Before;
@@ -138,7 +145,14 @@ public class ConstraintTest
         mapping5.setPathSpec("/forbid/post");
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
-        
+
+        Constraint constraint6 = new Constraint();
+        constraint6.setAuthenticate(false);
+        constraint6.setName("data constraint");
+        constraint6.setDataConstraint(2);
+        ConstraintMapping mapping6 = new ConstraintMapping();
+        mapping6.setPathSpec("/data/*");
+        mapping6.setConstraint(constraint6);
         
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
@@ -146,7 +160,7 @@ public class ConstraintTest
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
                 {
-                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5
+                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,mapping6
                 }), knownRoles);
     }
 
@@ -215,7 +229,6 @@ public class ConstraintTest
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
-
         // test admin
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
@@ -243,6 +256,127 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
+    
+    private static String CNONCE="1234567890";
+    private String digest(String nonce, String username,String password,String uri,String nc) throws Exception
+    {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] ha1;
+        // calc A1 digest
+        md.update(username.getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update("TestRealm".getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(password.getBytes(StringUtil.__ISO_8859_1));
+        ha1 = md.digest();
+        // calc A2 digest
+        md.reset();
+        md.update("GET".getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(uri.getBytes(StringUtil.__ISO_8859_1));
+        byte[] ha2 = md.digest();
+
+        // calc digest
+        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":"
+        // nc-value ":" unq(cnonce-value) ":" unq(qop-value) ":" H(A2) )
+        // <">
+        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
+        // ) > <">
+
+        md.update(TypeUtil.toString(ha1, 16).getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(nonce.getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(nc.getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(CNONCE.getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update("auth".getBytes(StringUtil.__ISO_8859_1));
+        md.update((byte) ':');
+        md.update(TypeUtil.toString(ha2, 16).getBytes(StringUtil.__ISO_8859_1));
+        byte[] digest = md.digest();
+
+        // check digest
+        return TypeUtil.toString(digest, 16);
+    }
+    
+    @Test
+    public void testDigest() throws Exception
+    {
+        _security.setAuthenticator(new DigestAuthenticator());
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+   
+        response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
+        assertTrue(response.contains("WWW-Authenticate: Digest realm=\"TestRealm\""));
+
+        Pattern nonceP = Pattern.compile("nonce=\"([^\"]*)\",");
+        Matcher matcher = nonceP.matcher(response);
+        assertTrue(matcher.find());
+        String nonce=matcher.group(1);
+        
+        
+        //wrong password
+        String digest= digest(nonce,"user","WRONG","/ctx/auth/info","1");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", "+
+            "nc=1, "+
+            "nonce=\""+nonce+"\", "+
+            "response=\""+digest+"\"\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
+        
+        // right password
+        digest= digest(nonce,"user","password","/ctx/auth/info","2");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", "+
+            "nc=2, "+
+            "nonce=\""+nonce+"\", "+
+            "response=\""+digest+"\"\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        
+
+        // once only
+        digest= digest(nonce,"user","password","/ctx/auth/info","2");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", "+
+            "nc=2, "+
+            "nonce=\""+nonce+"\", "+
+            "response=\""+digest+"\"\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
+
+        // increasing
+        digest= digest(nonce,"user","password","/ctx/auth/info","4");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", "+
+            "nc=4, "+
+            "nonce=\""+nonce+"\", "+
+            "response=\""+digest+"\"\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        
+        // out of order
+        digest= digest(nonce,"user","password","/ctx/auth/info","3");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", "+
+            "nc=3, "+
+            "nonce=\""+nonce+"\", "+
+            "response=\""+digest+"\"\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        
+    }
+
+    
     @Test
     public void testFormDispatch() throws Exception
     {
@@ -668,9 +802,9 @@ public class ConstraintTest
         response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\nHost:wibble.com:8888\r\n\r\n");
         assertTrue(response.indexOf(" 302 Found") > 0);
-        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        assertTrue(response.indexOf("http://wibble.com:8888/ctx/testLoginPage") > 0);
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -766,6 +900,48 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
+
+
+    @Test
+    public void testDataRedirection() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403"));
+        
+        _connector.setConfidentialPort(8443);
+        _connector.setConfidentialScheme("https");
+
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":8443/ctx/data/info") > 0);
+
+        _connector.setConfidentialPort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443/ctx/data/info") < 0);
+
+        _connector.setConfidentialPort(8443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("https://wobble.com:8443/ctx/data/info") > 0);
+
+        _connector.setConfidentialPort(443);
+        response = _connector.getResponses("GET /ctx/data/info HTTP/1.0\r\nHost: wobble.com\r\n\r\n");
+        System.err.println(response);
+        assertTrue(response.startsWith("HTTP/1.1 302 Found"));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf(":443") < 0);
+        assertTrue(response.indexOf("https://wobble.com/ctx/data/info") > 0);
+    }
+    
     @Test
     public void testRoleRef() throws Exception
     {

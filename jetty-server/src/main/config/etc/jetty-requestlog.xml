@@ -15,6 +15,7 @@
         <Arg>
           <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
 	    <Set name="requestLog">
+	      <!-- Use AsyncNCSARequestLog for improved request latency -->
 	      <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
 		<Set name="filename"><Property name="jetty.logs" default="./logs"/>/yyyy_mm_dd.request.log</Set>
 		<Set name="filenameDateFormat">yyyy_MM_dd</Set>

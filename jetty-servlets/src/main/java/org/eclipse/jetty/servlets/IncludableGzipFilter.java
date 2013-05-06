@@ -84,15 +84,6 @@ public class IncludableGzipFilter extends GzipFilter
                         {
                             return null;
                         }
-
-                        @Override
-                        protected void setHeader(String name, String value)
-                        {
-                            super.setHeader(name, value);
-                            HttpServletResponse response = (HttpServletResponse)getResponse();
-                            if (!response.containsHeader(name))
-                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
-                        }
                     };
                 }
             };
@@ -111,15 +102,6 @@ public class IncludableGzipFilter extends GzipFilter
                         {
                             return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
                         }
-
-                        @Override
-                        protected void setHeader(String name, String value)
-                        {
-                            super.setHeader(name, value);
-                            HttpServletResponse response = (HttpServletResponse)getResponse();
-                            if (!response.containsHeader(name))
-                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
-                        }
                     };
                 }
             };
@@ -137,15 +119,6 @@ public class IncludableGzipFilter extends GzipFilter
                         protected DeflaterOutputStream createStream() throws IOException
                         {
                             return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel, _deflateNoWrap));
-                        }
-
-                        @Override
-                        protected void setHeader(String name, String value)
-                        {
-                            super.setHeader(name, value);
-                            HttpServletResponse response = (HttpServletResponse)getResponse();
-                            if (!response.containsHeader(name))
-                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
                         }
                     };
                 }
@@ -176,6 +149,16 @@ public class IncludableGzipFilter extends GzipFilter
             if (!response.containsHeader(name))
                 response.setHeader("org.eclipse.jetty.server.include."+name,value);
         }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            super.addHeader(name, value);
+            HttpServletResponse response = (HttpServletResponse)getResponse();
+            if (!response.containsHeader(name))
+                setHeader(name,value);
+        }
+        
         @Override
         protected PrintWriter newWriter(OutputStream out, String encoding) throws UnsupportedEncodingException
         {

@@ -261,10 +261,12 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
-        if (getStopAtShutdown()) {
-            ShutdownThread.register(this);
-            ShutdownMonitor.getInstance().start(); // initialize
+        if (getStopAtShutdown())
+        {
+            ShutdownThread.register(this);    
         }
+        
+        ShutdownMonitor.getInstance().start(); // initialize
 
         LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);

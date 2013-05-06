@@ -340,8 +340,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (o==null)
             return;
         Servlet servlet =  ((Servlet)o);
-        servlet.destroy();
         getServletHandler().destroyServlet(servlet);
+        servlet.destroy();
     }
 
     /* ------------------------------------------------------------ */

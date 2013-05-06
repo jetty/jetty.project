@@ -110,6 +110,24 @@ running()
   kill -0 "$PID" 2>/dev/null
 }
 
+started()
+{
+  # wait for 60s to see "STARTED" in PID file, needs jetty-started.xml as argument
+  for T in 1 2 3 4 5 6 7 9 10 11 12 13 14 15 
+  do
+    sleep 4
+    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
+    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
+    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
+    local PID=$(cat "$2" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null || return 1
+    echo -n ". "
+  done
+
+  return 1;
+}
+
+
 readConfig()
 {
   (( DEBUG )) && echo "Reading $1.."
@@ -137,7 +155,13 @@ shift
 ##################################################
 # Read any configuration files
 ##################################################
-for CONFIG in /etc/default/jetty{,7} $HOME/.jettyrc; do
+ETC=/etc
+if [ $UID != 0 ]
+then 
+  ETC=$HOME/etc
+fi
+
+for CONFIG in $ETC/default/jetty{,7} $HOME/.jettyrc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -262,9 +286,9 @@ fi
 ##################################################
 if [ -z "$JETTY_CONF" ] 
 then
-  if [ -f /etc/jetty.conf ]
+  if [ -f $ETC/jetty.conf ]
   then
-    JETTY_CONF=/etc/jetty.conf
+    JETTY_CONF=$ETC/jetty.conf
   elif [ -f "$JETTY_HOME/etc/jetty.conf" ]
   then
     JETTY_CONF=$JETTY_HOME/etc/jetty.conf
@@ -312,12 +336,19 @@ then
 fi
 
 #####################################################
-# Find a PID for the pid file
+# Find a pid and state file
 #####################################################
 if [ -z "$JETTY_PID" ] 
 then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
+
+if [ -z "$JETTY_STATE" ] 
+then
+  JETTY_STATE=$JETTY_HOME/jetty.state
+fi
+JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
+rm -f $JETTY_STATE
 
 ##################################################
 # Setup JAVA if unset
@@ -407,23 +438,15 @@ case "$ACTION" in
       exit
     fi
 
-    if type start-stop-daemon > /dev/null 2>&1 
+    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1 
     then
       unset CH_USER
       if [ -n "$JETTY_USER" ]
       then
         CH_USER="-c$JETTY_USER"
       fi
-      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" --daemon
-      then
-        sleep 1
-        if running "$JETTY_PID"
-        then
-          echo "OK"
-        else
-          echo "FAILED"
-        fi
-      fi
+
+      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" --daemon
 
     else
 
@@ -454,14 +477,25 @@ case "$ACTION" in
         echo $! > "$JETTY_PID"
       fi
 
-      echo "STARTED Jetty `date`" 
+    fi
+
+    if expr "${CONFIGS[*]}" : '.*etc/jetty-started.xml.*' >/dev/null
+    then
+      if started "$JETTY_STATE" "$JETTY_PID"
+      then
+        echo "OK `date`"
+      else
+        echo "FAILED `date`"
+      fi
+    else
+      echo "ok `date`"
     fi
 
     ;;
 
   stop)
     echo -n "Stopping Jetty: "
-    if type start-stop-daemon > /dev/null 2>&1; then
+    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1; then
       start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
       
       TIMEOUT=30

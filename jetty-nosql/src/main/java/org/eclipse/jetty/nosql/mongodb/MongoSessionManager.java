@@ -143,7 +143,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             }
             else
             {
-                version = new Long(((Long)version).intValue() + 1);
+                version = new Long(((Number)version).longValue() + 1);
                 update.put("$inc",__version_1); 
             }
 

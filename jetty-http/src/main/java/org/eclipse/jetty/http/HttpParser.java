@@ -350,10 +350,14 @@ public class HttpParser implements Parser
 
                 ch=_buffer.get();
 
-                if (_eol == HttpTokens.CARRIAGE_RETURN && ch == HttpTokens.LINE_FEED)
+                if (_eol == HttpTokens.CARRIAGE_RETURN)
                 {
-                    _eol=HttpTokens.LINE_FEED;
-                    continue;
+                    if (ch == HttpTokens.LINE_FEED)
+                    {
+                        _eol=HttpTokens.LINE_FEED;
+                        continue;
+                    }
+                    throw new HttpException(HttpStatus.BAD_REQUEST_400);
                 }
                 _eol=0;
 

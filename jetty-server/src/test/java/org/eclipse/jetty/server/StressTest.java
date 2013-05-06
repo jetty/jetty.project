@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -126,10 +126,10 @@ public class StressTest
     public void testNonPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
     	
         doThreads(10,10,false);
-        if (Stress.isEnabled())
+        if (PropertyFlag.isEnabled("test.stress"))
         {
             Thread.sleep(1000);
             doThreads(200,10,false);
@@ -142,10 +142,10 @@ public class StressTest
     public void testPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
     	
         doThreads(20,10,true);
-        if (Stress.isEnabled())
+        if (PropertyFlag.isEnabled("test.stress"))
         {
             Thread.sleep(1000);
             doThreads(200,10,true);

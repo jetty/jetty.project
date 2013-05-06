@@ -24,15 +24,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.junit.Test;
 
 public class ThreadLocalBuffersTest
 {
     private Buffers httpBuffers;
     private List<Thread> threadList = new ArrayList<Thread>();
-    private int numThreads = Stress.isEnabled()?100:10;
-    private int runTestLength = Stress.isEnabled()?5000:1000;
+    private int numThreads =  PropertyFlag.isEnabled("test.stress")?100:10;
+    private int runTestLength = PropertyFlag.isEnabled("test.stress")?5000:1000;
     private boolean runTest = false;
     private AtomicLong buffersRetrieved;
 

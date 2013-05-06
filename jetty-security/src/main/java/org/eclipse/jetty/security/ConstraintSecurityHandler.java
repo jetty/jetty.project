@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
@@ -365,7 +366,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 return true;
             if (connector.getIntegralPort() > 0)
             {
-                String url = connector.getIntegralScheme() + "://" + request.getServerName() + ":" + connector.getIntegralPort() + request.getRequestURI();
+                String scheme=connector.getIntegralScheme();
+                int port=connector.getIntegralPort();
+                String url = (HttpSchemes.HTTPS.equalsIgnoreCase(scheme) && port==443)
+                    ? "https://"+request.getServerName()+request.getRequestURI()
+                    : scheme + "://" + request.getServerName() + ":" + port + request.getRequestURI();
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
                 response.setContentLength(0);
@@ -384,11 +389,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
             if (connector.getConfidentialPort() > 0)
             {
-                String url = connector.getConfidentialScheme() + "://" + request.getServerName() + ":" + connector.getConfidentialPort()
-                        + request.getRequestURI();
+                String scheme=connector.getConfidentialScheme();
+                int port=connector.getConfidentialPort();
+                String url = (HttpSchemes.HTTPS.equalsIgnoreCase(scheme) && port==443)
+                    ? "https://"+request.getServerName()+request.getRequestURI()
+                    : scheme + "://" + request.getServerName() + ":" + port + request.getRequestURI();                    
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
-
                 response.setContentLength(0);
                 response.sendRedirect(url);
             }

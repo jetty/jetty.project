@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
 
+import junit.framework.Assert;
+
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.SimpleBuffers;
@@ -177,6 +179,88 @@ public class HttpParserTest
         assertEquals("Server5", hdr[5]);
         assertEquals("notServer", val[5]);
         assertEquals(5, h);
+    }
+
+    @Test
+    public void testHeaderParseLF() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+            "GET / HTTP/1.0\012"
+                + "Host: localhost\012"
+                + "Header1: value1\012"
+                + "Header2  :   value 2a  \012"
+                + "                    value 2b  \012"
+                + "Header3: \012"
+                + "Header4 \012"
+                + "  value4\012"
+                + "Server5: notServer\012"
+                + "\012");
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        parser.parse();
+        assertEquals("GET", f0);
+        assertEquals("/", f1);
+        assertEquals("HTTP/1.0", f2);
+        assertEquals("Host", hdr[0]);
+        assertEquals("localhost", val[0]);
+        assertEquals("Header1", hdr[1]);
+        assertEquals("value1", val[1]);
+        assertEquals("Header2", hdr[2]);
+        assertEquals("value 2a value 2b", val[2]);
+        assertEquals("Header3", hdr[3]);
+        assertEquals("", val[3]);
+        assertEquals("Header4", hdr[4]);
+        assertEquals("value4", val[4]);
+        assertEquals("Server5", hdr[5]);
+        assertEquals("notServer", val[5]);
+        assertEquals(5, h);
+    }
+    
+    @Test
+    public void testHeaderParseCR() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+            "GET / HTTP/1.0\015"
+                + "Host: localhost\015"
+                + "Header1: value1\015"
+                + "\015");
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        try
+        { 
+            parser.parse();
+            Assert.fail();
+        }
+        catch(HttpException e)
+        {
+            assertEquals(400,e._status);
+        }
+        
+        io.setInput(
+            "GET / HTTP/1.0\r\n"
+                + "Host: localhost\r\r\n"
+                + "Header1: value1\r\n"
+                + "\r\n");
+
+        parser= new HttpParser(buffers,io, handler);
+        try
+        { 
+            parser.parse();
+            Assert.fail();
+        }
+        catch(HttpException e)
+        {
+            assertEquals(400,e._status);
+        }
+        
     }
 
     @Test
