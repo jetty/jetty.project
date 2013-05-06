@@ -40,6 +40,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 4096;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]+)\"(.*)", Pattern.CASE_INSENSITIVE);
+    private static final String AUTHENTICATION_ATTRIBUTE = AuthenticationProtocolHandler.class.getName() + ".authentication";
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -90,6 +91,15 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
+            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            if (conversation.getAttribute(AUTHENTICATION_ATTRIBUTE) != null)
+            {
+                // We have already tried to authenticate, but we failed again
+                LOG.debug("Bad credentials for {}", request);
+                forwardSuccessComplete(request, response);
+                return;
+            }
+
             HttpHeader header = getAuthenticateHeader();
             List<Authentication.HeaderInfo> headerInfos = parseAuthenticateHeader(response, header);
             if (headerInfos.isEmpty())
@@ -118,7 +128,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
             final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
             LOG.debug("Authentication result {}", authnResult);
             if (authnResult == null)
@@ -126,6 +135,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 forwardSuccessComplete(request, response);
                 return;
             }
+
+            conversation.setAttribute(AUTHENTICATION_ATTRIBUTE, true);
 
             Request newRequest = client.copyRequest(request, request.getURI());
             authnResult.apply(newRequest);

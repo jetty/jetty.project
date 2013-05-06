@@ -223,7 +223,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
                     boolean handle=_channel.handle();
-                    
+
                     // Return if suspended or upgraded
                     if (!handle || getEndPoint().getConnection()!=this)
                         return;
@@ -270,7 +270,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (!_channel.getState().isSuspended())
                         getEndPoint().close();
                     return;
-                }  
+                }
             }
         }
         catch (EofException e)
@@ -508,13 +508,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     getEndPoint().close();
                 }
             }
-
-            // make sure that an oshut connection is driven towards close
-            // TODO this is a little ugly
-            if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
-            {
-                fillInterested();
-            }
         }
     }
 
@@ -544,7 +537,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // need to call blockForContent again
                     while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
                         _parser.parseNext(_requestBuffer);
-                    
+
                     // If we have an event, return
                     if (event)
                         return;
@@ -625,11 +618,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
              */
             releaseRequestBuffer();
         }
-        
+
         @Override
         public String toString()
         {
-            return super.toString()+"{"+HttpConnection.this+","+getEndPoint()+","+_parser+"}";
+            return super.toString()+"{"+_channel+","+HttpConnection.this+"}";
         }
     }
 

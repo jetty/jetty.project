@@ -78,17 +78,21 @@ public class TestJettyOSGiBootContextAsService
         // to pick up and deploy
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
 
+        String logLevel = "WARN";
         // Enable Logging
         if (LOGGING_ENABLED)
-        {
-            options.addAll(Arrays.asList(options(
-                                                 // install log service using pax runners profile abstraction (there
-                                                 // are more profiles, like DS)
-                                                 // logProfile(),
-                                                 // this is how you set the default log level when using pax logging
-                                                 // (logProfile)
-                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("INFO"))));
-        }
+            logLevel = "INFO";
+        
+
+        options.addAll(Arrays.asList(options(
+                                             // install log service using pax runners profile abstraction (there
+                                             // are more profiles, like DS)
+                                             // logProfile(),
+                                             // this is how you set the default log level when using pax logging
+                                             // (logProfile)
+                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
+                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
+
 
         return options.toArray(new Option[options.size()]);
     }
@@ -142,12 +146,14 @@ public class TestJettyOSGiBootContextAsService
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         Assert.assertNotNull(refs);
         Assert.assertEquals(1, refs.length);
-        String[] keys = refs[0].getPropertyKeys();
+        //uncomment for debugging
+       /*  
+       String[] keys = refs[0].getPropertyKeys();
         if (keys != null)
         {
             for (String k : keys)
                 System.err.println("service property: " + k + ", " + refs[0].getProperty(k));
-        }
+        }*/
         ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
         Assert.assertEquals("/acme", ch.getContextPath());
 

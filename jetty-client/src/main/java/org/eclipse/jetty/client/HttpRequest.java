@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +64,7 @@ public class HttpRequest implements Request
     private URI uri;
     private String scheme;
     private String path;
+    private String query;
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
@@ -80,33 +83,13 @@ public class HttpRequest implements Request
         this.client = client;
         this.conversation = conversation;
         scheme = uri.getScheme();
-        host = uri.getHost();
+        host = client.normalizeHost(uri.getHost());
         port = client.normalizePort(scheme, uri.getPort());
         path = uri.getRawPath();
-        String query = uri.getRawQuery();
-        if (query != null)
-        {
-            for (String nameValue : query.split("&"))
-            {
-                String[] parts = nameValue.split("=");
-                param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
-            }
-        }
+        query = uri.getRawQuery();
+        extractParams(query);
         this.uri = buildURI();
         followRedirects(client.isFollowRedirects());
-    }
-
-    private String urlDecode(String value)
-    {
-        String charset = "UTF-8";
-        try
-        {
-            return URLDecoder.decode(value, charset);
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new UnsupportedCharsetException(charset);
-        }
     }
 
     @Override
@@ -163,9 +146,23 @@ public class HttpRequest implements Request
     @Override
     public Request path(String path)
     {
-        this.path = path;
+        URI uri = URI.create(path);
+        this.path = uri.getRawPath();
+        String query = uri.getRawQuery();
+        if (query != null)
+        {
+            this.query = query;
+            params.clear();
+            extractParams(query);
+        }
         this.uri = buildURI();
         return this;
+    }
+
+    @Override
+    public String getQuery()
+    {
+        return query;
     }
 
     @Override
@@ -191,13 +188,14 @@ public class HttpRequest implements Request
     public Request param(String name, String value)
     {
         params.add(name, value);
+        this.query = buildQuery();
         return this;
     }
 
     @Override
     public Fields getParams()
     {
-        return params;
+        return new Fields(params, true);
     }
 
     @Override
@@ -496,12 +494,73 @@ public class HttpRequest implements Request
         return aborted;
     }
 
+    private String buildQuery()
+    {
+        StringBuilder result = new StringBuilder();
+        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
+        {
+            Fields.Field field = iterator.next();
+            String[] values = field.values();
+            for (int i = 0; i < values.length; ++i)
+            {
+                if (i > 0)
+                    result.append("&");
+                result.append(field.name()).append("=");
+                result.append(urlEncode(values[i]));
+            }
+            if (iterator.hasNext())
+                result.append("&");
+        }
+        return result.toString();
+    }
+
+    private String urlEncode(String value)
+    {
+        String encoding = "UTF-8";
+        try
+        {
+            return URLEncoder.encode(value, encoding);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new UnsupportedCharsetException(encoding);
+        }
+    }
+
+    private void extractParams(String query)
+    {
+        if (query != null)
+        {
+            for (String nameValue : query.split("&"))
+            {
+                String[] parts = nameValue.split("=");
+                param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
+            }
+        }
+    }
+
+    private String urlDecode(String value)
+    {
+        String charset = "UTF-8";
+        try
+        {
+            return URLDecoder.decode(value, charset);
+        }
+        catch (UnsupportedEncodingException x)
+        {
+            throw new UnsupportedCharsetException(charset);
+        }
+    }
+
     private URI buildURI()
     {
         String path = getPath();
+        String query = getQuery();
+        if (query != null)
+            path += "?" + query;
         URI result = URI.create(path);
         if (!result.isAbsolute())
-            result = URI.create(getScheme() + "://" + getHost() + ":" + getPort() + path);
+            result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
         return result;
     }
 

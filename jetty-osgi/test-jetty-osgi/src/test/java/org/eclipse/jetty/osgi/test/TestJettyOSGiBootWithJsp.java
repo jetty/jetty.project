@@ -52,7 +52,7 @@ import org.osgi.framework.BundleContext;
 @RunWith(JUnit4TestRunner.class)
 public class TestJettyOSGiBootWithJsp
 {
-    private static final boolean LOGGING_ENABLED = true;
+    private static final boolean LOGGING_ENABLED = false;
 
     private static final boolean REMOTE_DEBUGGING = false;
 
@@ -72,18 +72,21 @@ public class TestJettyOSGiBootWithJsp
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
 
+        String logLevel = "WARN";
+        
         // Enable Logging
         if (LOGGING_ENABLED)
-        {
+            logLevel = "INFO";
+ 
             options.addAll(Arrays.asList(options(
                                                  // install log service using pax runners profile abstraction (there
                                                  // are more profiles, like DS)
                                                  // logProfile(),
                                                  // this is how you set the default log level when using pax logging
                                                  // (logProfile)
-                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("INFO"))));
-        }
-
+                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
+                                                 systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
+     
         options.addAll(jspDependencies());
 
         // Remote JDWP Debugging, this won't work with the forked container.
@@ -119,7 +122,6 @@ public class TestJettyOSGiBootWithJsp
                 + etc
                 + "/jetty-testrealm.xml";
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));
-        System.err.println(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS+"="+xmlConfigs);
         options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
@@ -163,10 +165,6 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void testJspDump() throws Exception
     {
-
-        // System.err.println("http://127.0.0.1:9876/jsp/dump.jsp  sleeping....");
-        // Thread.currentThread().sleep(5000000);
-        // now test the jsp/dump.jsp
         HttpClient client = new HttpClient();
         try
         {
@@ -175,7 +173,6 @@ public class TestJettyOSGiBootWithJsp
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
-            System.err.println("content: " + content);
             Assert.assertTrue(content.contains("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>"));
         }
         finally

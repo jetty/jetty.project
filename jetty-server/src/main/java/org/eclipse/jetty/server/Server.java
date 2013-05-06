@@ -19,11 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,22 +32,18 @@ import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.validation.Schema;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
@@ -282,9 +276,9 @@ public class Server extends HandlerWrapper implements Attributes
     {
         if (getStopAtShutdown())
         {
-            ShutdownThread.register(this);    
+            ShutdownThread.register(this);
         }
-        
+
         ShutdownMonitor.getInstance().start(); // initialize
 
         LOG.info("jetty-"+getVersion());
@@ -318,7 +312,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpAfterStart())
             dumpStdErr();
 
-        
+
         // use DateCache timer for Date field reformat
         final HttpFields.DateGenerator date = new HttpFields.DateGenerator();
         long now=System.currentTimeMillis();
@@ -335,8 +329,8 @@ public class Server extends HandlerWrapper implements Attributes
                     this.cancel();
             }
         },tick,1000);
-        
-        
+
+
         mex.ifExceptionThrow();
     }
 
@@ -374,7 +368,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (stopTimeout>0)
         {
             long stop_by=System.currentTimeMillis()+stopTimeout;
-            LOG.info("Graceful shutdown {} by ",this,new Date(stop_by));
+            LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
 
             // Wait for shutdowns
             for (Future<Void> future: futures)
@@ -606,10 +600,10 @@ public class Server extends HandlerWrapper implements Attributes
                 break;
             }
         }
-            
+
         if (connector==null)
             return null;
-        
+
         ContextHandler context = getChildHandlerByClass(ContextHandler.class);
 
         try
@@ -621,7 +615,7 @@ public class Server extends HandlerWrapper implements Attributes
                 host=context.getVirtualHosts()[0];
             if (host==null)
                 host=InetAddress.getLocalHost().getHostAddress();
-            
+
             String path=context==null?null:context.getContextPath();
             if (path==null)
                 path="/";
@@ -633,7 +627,7 @@ public class Server extends HandlerWrapper implements Attributes
             return null;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -646,7 +640,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         dumpBeans(out,indent,Collections.singleton(new ClassLoaderDump(this.getClass().getClassLoader())));
     }
-    
+
     /* ------------------------------------------------------------ */
     public static void main(String...args) throws Exception
     {

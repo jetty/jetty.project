@@ -95,7 +95,7 @@
         <version>${exam.version}</version>
         <scope>test</scope>
     </dependency>
-     
+
     <dependency>
         <groupId>org.ops4j.pax.runner</groupId>
         <artifactId>pax-runner-no-jcl</artifactId>
@@ -141,12 +141,14 @@
         <scope>test</scope>
     </dependency>
     <!-- For sane logging -->
+<!--
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
+      <artifactId>slf4j-log4j12</artifactId>
       <version>1.6.1</version>
       <scope>test</scope>
     </dependency>
+-->
     <!-- Orbit Servlet Deps -->
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -258,7 +260,7 @@
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-core</artifactId>
@@ -296,7 +298,7 @@
       <scope>test</scope>
     </dependency>
 
-    
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>

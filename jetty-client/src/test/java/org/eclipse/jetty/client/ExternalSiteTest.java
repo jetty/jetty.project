@@ -20,7 +20,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -94,8 +93,6 @@ public class ExternalSiteTest
             {
                 Assert.assertTrue(result.isSucceeded());
                 Assert.assertEquals(200, result.getResponse().getStatus());
-                URI uri = result.getRequest().getURI();
-                Assert.assertTrue(uri.getPort() > 0);
                 latch2.countDown();
             }
         });

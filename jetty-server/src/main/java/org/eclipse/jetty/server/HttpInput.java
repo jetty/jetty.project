@@ -140,7 +140,7 @@ public abstract class HttpInput<T> extends ServletInputStream
                     // blockForContent will only return with no 
                     // content if it is closed.
                     if (!isShutdown())
-                        LOG.warn("Unexpected !EOF ");
+                        LOG.warn("Unexpected !EOF: "+this);
 
                     onEOF();
                     return -1;

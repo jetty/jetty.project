@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,17 +31,14 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -166,43 +159,10 @@ public class HttpConnection extends AbstractConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (destination.isProxied() && HttpMethod.CONNECT != request.getMethod())
+        if (destination.isProxied() && HttpMethod.CONNECT != method)
         {
             path = request.getURI().toString();
             request.path(path);
-        }
-
-        Fields fields = request.getParams();
-        if (!fields.isEmpty())
-        {
-            StringBuilder params = new StringBuilder();
-            for (Iterator<Fields.Field> fieldIterator = fields.iterator(); fieldIterator.hasNext();)
-            {
-                Fields.Field field = fieldIterator.next();
-                String[] values = field.values();
-                for (int i = 0; i < values.length; ++i)
-                {
-                    if (i > 0)
-                        params.append("&");
-                    params.append(field.name()).append("=");
-                    params.append(urlEncode(values[i]));
-                }
-                if (fieldIterator.hasNext())
-                    params.append("&");
-            }
-
-            // POST with no content, send parameters as body
-            if (method == HttpMethod.POST && request.getContent() == null)
-            {
-                request.header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString());
-                request.content(new StringContentProvider(params.toString()));
-            }
-            else
-            {
-                path += "?";
-                path += params.toString();
-                request.path(path);
-            }
         }
 
         // If we are HTTP 1.1, add the Host header
@@ -254,19 +214,6 @@ public class HttpConnection extends AbstractConnection implements Connection
             HttpField acceptEncodingField = client.getAcceptEncodingField();
             if (acceptEncodingField != null)
                 headers.put(acceptEncodingField);
-        }
-    }
-
-    private String urlEncode(String value)
-    {
-        String encoding = "UTF-8";
-        try
-        {
-            return URLEncoder.encode(value, encoding);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new UnsupportedCharsetException(encoding);
         }
     }
 
