@@ -1,3 +1,6 @@
+branches:
+  only:
+    - /^release-.*$/
 language: java
 script: mvn install
 jdk:
