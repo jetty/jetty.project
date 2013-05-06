@@ -396,7 +396,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 hashCode(),
                 _requests,
                 _state.getState(),
-                _state.getState()!=HttpChannelState.State.IDLE?"-":_request.getRequestURI()
+                _state.getState()==HttpChannelState.State.IDLE?"-":_request.getRequestURI()
             );
     }
 
