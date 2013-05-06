@@ -18,9 +18,6 @@
 
 package examples.echo;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
@@ -29,7 +26,6 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
  */
 public class ListenerEchoSocket implements WebSocketListener
 {
-    private static final Logger LOG = Logger.getLogger(ListenerEchoSocket.class.getName());
     private Session outbound;
 
     @Override
@@ -53,17 +49,17 @@ public class ListenerEchoSocket implements WebSocketListener
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        LOG.log(Level.WARNING,"onWebSocketError",cause);
+        cause.printStackTrace(System.err);
     }
 
     @Override
     public void onWebSocketText(String message)
     {
-        if (outbound == null)
+        if ((outbound != null) && (outbound.isOpen()))
         {
-            return;
+            System.out.printf("Echoing back message [%s]%n",message);
+            // echo the message back
+            outbound.getRemote().sendStringByFuture(message);
         }
-
-        outbound.getRemote().sendStringByFuture(message);
     }
 }
