@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.IO;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -32,18 +33,12 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import java.util.TimeZone;
-import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
 
-import junit.framework.Assert;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.util.IO;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 
 public class ResourceTest
@@ -492,7 +487,7 @@ public class ResourceTest
         // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
 
-        String path = __userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
+        String path = __userURL.toURI().getPath().replace('/','\\')+"resource.txt";
         System.err.println(path);
 
         Resource resource = Resource.newResource(path, false);
