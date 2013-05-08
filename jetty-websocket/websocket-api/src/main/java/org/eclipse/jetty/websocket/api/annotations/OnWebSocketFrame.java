@@ -25,17 +25,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * (ADVANCED) Annotation for tagging methods to receive frame events.
  * <p>
- * Note: any frame derived from {@link WebSocketFrame} is acceptable to use as the last parameter here.
- * <p>
  * Acceptable method patterns.<br>
  * Note: <code>methodName</code> can be any name you want to use.
  * <ol>
- * <li><code>public void methodName({@link WebSocketFrame} frame)</code></li>
- * <li><code>public void methodName({@link Session} session, {@link WebSocketFrame} frame)</code></li>
+ * <li><code>public void methodName({@link Frame} frame)</code></li>
+ * <li><code>public void methodName({@link Session} session, {@link Frame} frame)</code></li>
  * </ol>
  */
 @Documented
