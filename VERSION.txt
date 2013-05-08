@@ -1,4 +1,36 @@
-jetty-9.0.3-SNAPSHOT
+jetty-9.0.3.v20130506 06 May 2013
+ + 404010 fix cast exception in mongodb session manager
+ + 404911 WebSocketCloseTest fails spuriously
+ + 405281 allow filemappedbuffers to not be used
+ + 405327 Modular Start.ini
+ + 405530 Wrap AsyncContext to throw ISE after complete
+ + 405537 NPE in rendering JSP using SPDY and wrapped ServletRequest
+ + 405570 spdy push: resource ordering and sequential push.
+ + 405631 Plugin gives error when its started twice
+ + 405925 Redeploy with jetty-maven-plugin fails
+ + 406015 Query parameters and POST queries. Fixed proxy case where the path is
+   rewritten to be absolute.
+ + 406202 re-enabled connector statistics
+ + 406214 fix constructor for PushSynInfo ignores timeout, remove timeout for
+   creating push streams in HttpTransportOverSPDY
+ + 406272 Security constraints with multiple http-method-omissions can be
+   incorrectly applied
+ + 406390 406617 removed tiny race from handling of suspend and complete
+ + 406437 Digest Auth supports out of order nc
+ + 406449 Session's disconnect not detected
+ + 406617 Spin in Request.recycle
+ + 406618 Jetty startup in OSGi Equinox fails when using option
+   jetty.home.bundle=org.eclipse.jetty.osgi.boot
+ + 406753 jetty-runner contains invalid signature files
+ + 406768 Improved handling of static content resources
+ + 406861 IPv6 redirects fail.
+ + 406923 Accept CRLF or LF but not CR as line termination
+ + 406962 Improve attribute names in Request
+ + 407075 Do not dispatch from complete
+ + 407135 Unauthorized response causes retry loop.
+ + 407136 @PreDestroy called after Servlet.destroy()
+ + 407173 java.lang.IllegalStateException: null when using JDBCSessionManager
+ + 407214 Reduce build logging of OSGi modules
 
 jetty-9.0.2.v20130417 - 17 April 2013
  + 364921 FIN WAIT sockets
