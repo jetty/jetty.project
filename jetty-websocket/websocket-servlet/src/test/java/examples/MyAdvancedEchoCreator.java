@@ -18,22 +18,30 @@
 
 package examples;
 
-import javax.servlet.annotation.WebServlet;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-
-@SuppressWarnings("serial")
-@WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = { "/echo" })
-public class MyEchoServlet extends WebSocketServlet
+public class MyAdvancedEchoCreator implements WebSocketCreator
 {
-    @Override
-    public void configure(WebSocketServletFactory factory)
-    {
-        // set a 10 second timeout
-        factory.getPolicy().setIdleTimeout(10000);
+    private MyBinaryEchoSocket binaryEcho;
+    private MyEchoSocket textEcho;
 
-        // register MyEchoSocket as the WebSocket to create on Upgrade
-        factory.register(MyEchoSocket.class);
+    public MyAdvancedEchoCreator()
+    {
+        // Create the reusable sockets
+        this.binaryEcho = new MyBinaryEchoSocket();
+        this.textEcho = new MyEchoSocket();
+    }
+
+    @Override
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    {
+        String type = req.getHeader("type");
+        if ("binary".equals(type))
+        {
+            return binaryEcho;
+        }
+        return textEcho;
     }
 }

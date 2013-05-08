@@ -24,8 +24,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
-@WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = { "/echo" })
-public class MyEchoServlet extends WebSocketServlet
+@WebServlet(name = "MyAdvanced Echo WebSocket Servlet", urlPatterns = { "/advecho" })
+public class MyAdvancedEchoServlet extends WebSocketServlet
 {
     @Override
     public void configure(WebSocketServletFactory factory)
@@ -33,7 +33,7 @@ public class MyEchoServlet extends WebSocketServlet
         // set a 10 second timeout
         factory.getPolicy().setIdleTimeout(10000);
 
-        // register MyEchoSocket as the WebSocket to create on Upgrade
-        factory.register(MyEchoSocket.class);
+        // set a custom WebSocket creator
+        factory.setCreator(new MyAdvancedEchoCreator());
     }
 }
