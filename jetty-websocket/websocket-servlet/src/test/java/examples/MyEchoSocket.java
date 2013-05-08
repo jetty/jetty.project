@@ -18,18 +18,20 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@SuppressWarnings("serial")
-public class MyExampleServlet extends WebSocketServlet
+/**
+ * Example WebSocket, simple echo
+ */
+@WebSocket
+public class MyEchoSocket
 {
-    @Override
-    public void configure(WebSocketServletFactory factory)
+    @OnWebSocketMessage
+    public void onWebSocketText(Session session, String message)
     {
-        // set a 10 second timeout
-        factory.getPolicy().setIdleTimeout(10000);
-        // register my socket
-        factory.register(MyExampleSocket.class);
+        // Echo message back, asynchronously
+        session.getRemote().sendStringByFuture(message);
     }
 }
