@@ -37,8 +37,8 @@ public class MyAdvancedEchoCreator implements WebSocketCreator
     @Override
     public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
-        String type = req.getHeader("type");
-        if ("binary".equals(type))
+        String[] type = req.getParameterMap().get("type");
+        if ((type != null) && (type.length >= 1) && ("binary".equals(type[0])))
         {
             return binaryEcho;
         }
