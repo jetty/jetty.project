@@ -198,7 +198,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     throw new IOException("Committed before 100 Continues");
 
                 // TODO: break this dependency with HttpGenerator
-                boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
@@ -356,7 +356,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 HttpFields fields = new HttpFields();
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
-                boolean committed = commitResponse(info, null, true);
+                boolean committed = sendResponse(info, null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
             }
@@ -584,7 +584,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         {
             if (_state.handling()==Next.CONTINUE)
             {
-                commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
             }
         }
         catch (IOException e)
@@ -598,11 +598,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         }
     }
 
-    protected boolean commitResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        boolean committed = _committed.compareAndSet(false, true);
-        if (committed)
+        boolean committing = _committed.compareAndSet(false, true);
+        if (committing)
         {
+            // We need an info to commit
+            if (info==null)
+                info = _response.newResponseInfo();
+            
             try
             {
                 // Try to commit with the passed info
@@ -637,7 +641,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     _response.getHttpOutput().closed();
             }
         }
-        return committed;
+        else if (info==null)
+        {
+            // This is a normal write
+            _transport.send(null, content, complete);
+        }
+        return committing;
     }
 
     protected boolean isCommitted()
@@ -655,17 +664,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      */
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        if (isCommitted())
-        {
-            _transport.send(null, content, complete);
-        }
-        else
-        {
-            ResponseInfo info = _response.newResponseInfo();
-            boolean committed = commitResponse(info, content, complete);
-            if (!committed)
-                throw new IOException("Concurrent commit");
-        }
+        sendResponse(null, content, complete);
     }
 
     protected void execute(Runnable task)

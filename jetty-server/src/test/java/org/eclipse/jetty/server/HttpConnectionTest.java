@@ -158,15 +158,15 @@ public class HttpConnectionTest
     @Test
     public void testHead() throws Exception
     {
-        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
-                "Host: localhost\015\012"+
-                "Connection: close\015\012"+
-                "\015\012");
-
         String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
+        
+        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
+            "Host: localhost\015\012"+
+            "Connection: close\015\012"+
+            "\015\012");
 
         assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
         assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
