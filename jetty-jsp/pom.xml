@@ -14,6 +14,12 @@
   <dependencies>
     <!-- JSP Api -->
     <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>javax.servlet.jsp-api</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+<!--
+    <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.servlet.jsp</artifactId>
       <version>2.2.0.v201112011158</version>
@@ -24,7 +30,14 @@
         </exclusion>
       </exclusions>
     </dependency>
+-->
     <!-- JSP Impl -->
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+<!--
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>org.apache.jasper.glassfish</artifactId>
@@ -36,6 +49,7 @@
         </exclusion>
       </exclusions>
     </dependency>
+-->
     <!-- JSTL Api -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
@@ -45,6 +59,10 @@
         <exclusion>
           <groupId>org.eclipse.jetty.orbit</groupId>
           <artifactId>javax.servlet</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet.jsp</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -62,6 +80,12 @@
     </dependency>
     <!-- EL Api -->
     <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>javax.el</artifactId>
+        <version>3.0-b07</version>
+    </dependency>
+<!--
+    <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.el</artifactId>
       <version>2.2.0.v201303151357</version>
@@ -72,7 +96,9 @@
         </exclusion>
       </exclusions>
     </dependency>
+-->
     <!-- EL Impl -->
+<!--
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>com.sun.el</artifactId>
@@ -84,6 +110,7 @@
         </exclusion>
       </exclusions>
     </dependency>
+-->
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>

@@ -297,7 +297,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
+              <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -430,8 +430,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>com.sun.el,javax.el,javax.servlet.jsp,javax.servlet.jsp.jstl,org.apache.jasper.glassfish,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.servlet.jsp</includeGroupIds>
+              <includeArtifactIds>javax.servlet.jsp.jstl,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, javax.el</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
             </configuration>
@@ -514,6 +514,23 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>javax.servlet.jsp-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.el</artifactId>
     </dependency>
 
     <!-- jetty deps -->
