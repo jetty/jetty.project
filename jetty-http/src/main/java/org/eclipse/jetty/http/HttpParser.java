@@ -1334,30 +1334,28 @@ public class HttpParser
             LOG.debug(e);
             setState(State.CLOSED);
             _handler.badMessage(e._code, e._message);
-            return true;
+            return false;
         }
         catch(Exception e)
         {
             BufferUtil.clear(buffer);
-            if (isClosed())
-            {
-                LOG.debug(e);
-                if (e instanceof IllegalStateException)
-                    throw (IllegalStateException)e;
-                throw new IllegalStateException(e);
-            }
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
             LOG.debug(e);
-            return true;
-        }
-    }
+            
+            if (_state.ordinal()<=State.END.ordinal())
+            {
+                setState(State.CLOSED);
+                _handler.badMessage(400,null);
+            }
+            else
+            {
+                _handler.earlyEOF();
+                setState(State.CLOSED);
+            }
 
-    /* ------------------------------------------------------------------------------- */
-    private void badMessage(int status, String reason)
-    {
-        setState(State.CLOSED);
-        _handler.badMessage(status, reason);
+            return false;
+        }
     }
 
     /**
