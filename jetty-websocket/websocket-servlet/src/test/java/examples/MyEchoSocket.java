@@ -16,26 +16,22 @@
 //  ========================================================================
 //
 
-package examples.echo;
+package examples;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
- * Example EchoSocket using Annotations.
+ * Example WebSocket, simple echo
  */
-@WebSocket(maxMessageSize = 64 * 1024)
-public class AnnotatedEchoSocket
+@WebSocket
+public class MyEchoSocket
 {
     @OnWebSocketMessage
-    public void onText(Session session, String message)
+    public void onWebSocketText(Session session, String message)
     {
-        if (session.isOpen())
-        {
-            System.out.printf("Echoing back message [%s]%n",message);
-            // echo the message back
-            session.getRemote().sendStringByFuture(message);
-        }
+        // Echo message back, asynchronously
+        session.getRemote().sendStringByFuture(message);
     }
 }

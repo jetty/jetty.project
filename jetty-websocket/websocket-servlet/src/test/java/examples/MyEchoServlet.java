@@ -16,26 +16,24 @@
 //  ========================================================================
 //
 
-package examples.echo;
+package examples;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import javax.servlet.annotation.WebServlet;
 
-/**
- * Example EchoSocket using Annotations.
- */
-@WebSocket(maxMessageSize = 64 * 1024)
-public class AnnotatedEchoSocket
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+
+@SuppressWarnings("serial")
+@WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = { "/echo" })
+public class MyEchoServlet extends WebSocketServlet
 {
-    @OnWebSocketMessage
-    public void onText(Session session, String message)
+    @Override
+    public void configure(WebSocketServletFactory factory)
     {
-        if (session.isOpen())
-        {
-            System.out.printf("Echoing back message [%s]%n",message);
-            // echo the message back
-            session.getRemote().sendStringByFuture(message);
-        }
+        // set a 10 second timeout
+        factory.getPolicy().setIdleTimeout(10000);
+
+        // register MyEchoSocket as the WebSocket to create on Upgrade
+        factory.register(MyEchoSocket.class);
     }
 }

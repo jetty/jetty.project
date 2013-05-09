@@ -18,17 +18,22 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import javax.servlet.annotation.WebServlet;
 
-/**
- * Example WebSocket, simple echo
- */
-public class MyExampleSocket extends WebSocketAdapter
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+
+@SuppressWarnings("serial")
+@WebServlet(name = "MyAdvanced Echo WebSocket Servlet", urlPatterns = { "/advecho" })
+public class MyAdvancedEchoServlet extends WebSocketServlet
 {
     @Override
-    public void onWebSocketText(String message)
+    public void configure(WebSocketServletFactory factory)
     {
-        // Echo message back, asynchronously
-        getSession().getRemote().sendStringByFuture(message);
+        // set a 10 second timeout
+        factory.getPolicy().setIdleTimeout(10000);
+
+        // set a custom WebSocket creator
+        factory.setCreator(new MyAdvancedEchoCreator());
     }
 }

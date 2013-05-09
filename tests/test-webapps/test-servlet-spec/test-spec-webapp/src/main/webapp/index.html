@@ -3,13 +3,7 @@
     <TITLE>Test Specification WebApp</TITLE>
     <META http-equiv="Pragma" content="no-cache">
     <META http-equiv="Cache-Control" content="no-cache,no-store">
-    <style>
-       body {color: #2E2E2E; font-family:sans-serif; font-size:90%;}
-       h1 {font-variant: small-caps; font-size:130%; letter-spacing: 0.1em;}
-       h2 {font-variant: small-caps; font-size:100%; letter-spacing: 0.1em;}
-       h3 {font-size:100%; letter-spacing: 0.1em;}
-    </style>
-
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
   </HEAD>
 <BODY >
 <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
@@ -36,6 +30,18 @@ The source repository for this test is available <a href="http://git.eclipse.org
 <h3>Test Servlet 2.5/3.0 Annotations, Fragments and Initializers</h3>
 <form action="test" method="post">
   <button type="submit">Test</button>
+</form>
+
+<h3>DeclaresRoles</h3>
+<p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @DeclareRoles annotation</p>
+<form action="role" method="post">
+  <button type="submit">Test Role Annotations</button>
+</form>
+
+<h3>ServletSecurity</h3>
+<p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @ServletSecurity annotation</p>
+<form action="sec/foo" method="post">
+  <button type="submit">Test ServletSecurity Annotation</button>
 </form>
 
 <h3>Test Servlet 3.0 Multipart Mime</h3>
