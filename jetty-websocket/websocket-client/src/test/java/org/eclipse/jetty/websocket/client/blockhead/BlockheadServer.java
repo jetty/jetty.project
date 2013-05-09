@@ -510,7 +510,7 @@ public class BlockheadServer
             resp.append("Connection: upgrade\r\n");
             resp.append("Sec-WebSocket-Accept: ");
             resp.append(AcceptHash.hashKey(key)).append("\r\n");
-            if (!extensionStack.hasNegotiatedExtensions())
+            if (extensionStack.hasNegotiatedExtensions())
             {
                 // Respond to used extensions
                 resp.append("Sec-WebSocket-Extensions: ");

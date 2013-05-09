@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
@@ -104,6 +105,7 @@ public class TomcatServerQuirksTest
             // Have server write frame.
             int length = bufferSize / 2;
             ByteBuffer serverFrame = ByteBuffer.allocate(bufferSize);
+            // BufferUtil.flipToFill(serverFrame);
             serverFrame.put((byte)(0x80 | 0x01)); // FIN + TEXT
             serverFrame.put((byte)0x7E); // No MASK and 2 bytes length
             serverFrame.put((byte)(length >> 8)); // first length byte
@@ -112,8 +114,8 @@ public class TomcatServerQuirksTest
             {
                 serverFrame.put((byte)'x');
             }
-            serverFrame.flip();
-            byte buf[] = serverFrame.array();
+            BufferUtil.flipToFlush(serverFrame,0);
+            byte buf[] = BufferUtil.toArray(serverFrame);
             socket.write(buf,0,buf.length);
             socket.flush();
 

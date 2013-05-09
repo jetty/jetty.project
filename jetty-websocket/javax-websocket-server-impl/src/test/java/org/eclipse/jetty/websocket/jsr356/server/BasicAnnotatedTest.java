@@ -54,7 +54,7 @@ public class BasicAnnotatedTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            wsb.dump();
+            // wsb.dump();
 
             WebSocketClient client = new WebSocketClient();
             try

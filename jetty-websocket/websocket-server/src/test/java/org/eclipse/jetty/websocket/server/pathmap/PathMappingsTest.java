@@ -35,6 +35,14 @@ public class PathMappingsTest
         Assert.assertEquals(msg,expectedValue,actualMatch);
     }
 
+    public void dumpMappings(PathMappings<String> p)
+    {
+        for (MappedResource<String> res : p)
+        {
+            System.out.printf("  %s%n",res);
+        }
+    }
+
     /**
      * Test the match order rules with a mixed Servlet and WebSocket path specs
      * <p>
@@ -57,10 +65,7 @@ public class PathMappingsTest
         p.put(new RegexPathSpec("^/animal/.*/cam$"),"animalCam");
         p.put(new RegexPathSpec("^/entrance/cam$"),"entranceCam");
 
-        for (MappedResource<String> res : p)
-        {
-            System.out.printf("  %s%n",res);
-        }
+        // dumpMappings(p);
 
         assertMatch(p,"/animal/bird/eagle","birds");
         assertMatch(p,"/animal/fish/bass/sea","fishes");
@@ -96,10 +101,7 @@ public class PathMappingsTest
         p.put(new ServletPathSpec("*.gz"),"gzipped");
         p.put(new ServletPathSpec("/"),"default");
 
-        for (MappedResource<String> res : p)
-        {
-            System.out.printf("  %s%n",res);
-        }
+        // dumpMappings(p);
 
         assertMatch(p,"/abs/path","path");
         assertMatch(p,"/abs/path/longer","longpath");
