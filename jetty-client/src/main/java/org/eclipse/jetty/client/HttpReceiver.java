@@ -374,10 +374,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     }
 
     @Override
-    public boolean earlyEOF()
+    public void earlyEOF()
     {
         failAndClose(new EOFException());
-        return false;
     }
 
     private void failAndClose(Throwable failure)

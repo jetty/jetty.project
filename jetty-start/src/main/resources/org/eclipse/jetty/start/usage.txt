@@ -45,6 +45,10 @@ Command Line Options:
                    and additional .ini files in jetty.home/start.d/
                    will NOT be read. A --ini option with no file indicates that
                    start.ini should not be read.
+                   
+  --download=<http-uri>:location
+                   If the file does not exist at the given location, then
+                   download it from the given http URI
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are

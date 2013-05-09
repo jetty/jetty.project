@@ -47,10 +47,6 @@ public class PipelineHelper
 
     public PipelineHelper(URI uri, String encodingHeader)
     {
-        if (LOG instanceof StdErrLog)
-        {
-            ((StdErrLog)LOG).setLevel(StdErrLog.LEVEL_DEBUG);
-        }
         this.uri = uri;
         this.endpoint = new InetSocketAddress(uri.getHost(),uri.getPort());
         this.encodingHeader = encodingHeader;

@@ -48,9 +48,11 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.io.IOState;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
-@ManagedObject
-public class WebSocketSession extends ContainerLifeCycle implements Session, IncomingFrames
+@ManagedObject("A Jetty WebSocket Session")
+public class WebSocketSession extends ContainerLifeCycle implements Session, IncomingFrames, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final URI requestURI;
@@ -78,6 +80,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         this.connection = connection;
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
+
+        this.connection.getIOState().addListener(this);
 
         // Get the parameter map (use the jetty MultiMap to do this right)
         MultiMap<String> params = new MultiMap<>();
@@ -247,6 +251,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         return remote.getInetSocketAddress();
     }
 
+    public URI getRequestURI()
+    {
+        return requestURI;
+    }
+
     @Override
     public UpgradeRequest getUpgradeRequest()
     {
@@ -274,12 +283,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void incomingError(Throwable t)
     {
-        if (connection.getIOState().isInputClosed())
+        if (connection.getIOState().isInputAvailable())
         {
-            return; // input is closed
-        }
-        // Forward Errors to User WebSocket Object
+            // Forward Errors to User WebSocket Object
         websocket.incomingError(t);
+        }
     }
 
     /**
@@ -288,13 +296,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void incomingFrame(Frame frame)
     {
-        if (connection.getIOState().isInputClosed())
+        if (connection.getIOState().isInputAvailable())
         {
-            return; // input is closed
+            // Forward Frames Through Extension List
+            incomingHandler.incomingFrame(frame);
         }
-
-        // Forward Frames Through Extension List
-        incomingHandler.incomingFrame(frame);
     }
 
     @Override
@@ -330,6 +336,24 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         incomingError(cause);
     }
 
+    @Override
+    public void onConnectionStateChange(ConnectionState state)
+    {
+        if (state == ConnectionState.CLOSED)
+        {
+            IOState ioState = this.connection.getIOState();
+            // The session only cares about abnormal close, as we need to notify
+            // the endpoint of this close scenario.
+            if (ioState.wasAbnormalClose())
+            {
+                CloseInfo close = ioState.getCloseInfo();
+                LOG.debug("Detected abnormal close: {}",close);
+                // notify local endpoint
+                notifyClose(close.getStatusCode(),close.getReason());
+            }
+        }
+    }
+
     /**
      * Open/Activate the session
      * 
@@ -343,11 +367,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             return;
         }
 
+        // Upgrade success
+        connection.getIOState().onConnected();
+
         // Connect remote
         remote = new WebSocketRemoteEndpoint(connection,outgoingHandler);
 
         // Open WebSocket
         websocket.openSession(this);
+
+        // Open connection
+        connection.getIOState().onOpened();
 
         if (LOG.isDebugEnabled())
         {

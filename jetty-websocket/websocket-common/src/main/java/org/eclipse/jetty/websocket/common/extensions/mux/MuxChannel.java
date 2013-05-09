@@ -37,11 +37,12 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.io.IOState;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
  * MuxChannel, acts as WebSocketConnection for specific sub-channel.
  */
-public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendToken
+public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendToken, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(MuxChannel.class);
 
@@ -64,7 +65,7 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
 
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
-        ioState.setState(ConnectionState.CONNECTING);
+        this.ioState.addListener(this);
 
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
@@ -87,7 +88,6 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
     @Override
     public void disconnect()
     {
-        this.ioState.setState(ConnectionState.CLOSED);
         // TODO: disconnect the virtual end-point?
     }
 
@@ -179,12 +179,18 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
 
     public void onClose()
     {
-        this.ioState.setState(ConnectionState.CLOSED);
+    }
+
+    @Override
+    public void onConnectionStateChange(ConnectionState state)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     public void onOpen()
     {
-        this.ioState.setState(ConnectionState.OPEN);
+        this.ioState.onOpened();
     }
 
     /**

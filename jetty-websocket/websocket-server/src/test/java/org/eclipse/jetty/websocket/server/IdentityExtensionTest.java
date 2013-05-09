@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
@@ -65,9 +66,9 @@ public class IdentityExtensionTest
             client.setTimeout(TimeUnit.SECONDS,1);
             client.connect();
             client.sendStandardRequest();
-            String resp = client.expectUpgradeResponse();
+            HttpResponse resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp,containsString("identity"));
+            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("identity"));
 
             client.write(WebSocketFrame.text("Hello"));
 

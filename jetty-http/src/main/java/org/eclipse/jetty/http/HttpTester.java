@@ -138,9 +138,8 @@ public class HttpTester
         }
 
         @Override
-        public boolean earlyEOF()
+        public void earlyEOF()
         {
-            return true;
         }
 
         @Override

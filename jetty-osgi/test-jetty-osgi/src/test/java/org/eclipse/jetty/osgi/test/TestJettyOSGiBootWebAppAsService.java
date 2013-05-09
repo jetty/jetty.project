@@ -77,18 +77,20 @@ public class TestJettyOSGiBootWebAppAsService
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
-
-        // Enable Logging
+        
+        String logLevel = "WARN";
         if (LOGGING_ENABLED)
-        {
-            options.addAll(Arrays.asList(options(
-                                                 // install log service using pax runners profile abstraction (there
-                                                 // are more profiles, like DS)
-                                                 // logProfile(),
-                                                 // this is how you set the default log level when using pax logging
-                                                 // (logProfile)
-                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("INFO"))));
-        }
+            logLevel = "INFO";
+        
+
+        options.addAll(Arrays.asList(options(
+                                             // install log service using pax runners profile abstraction (there
+                                             // are more profiles, like DS)
+                                             // logProfile(),
+                                             // this is how you set the default log level when using pax logging
+                                             // (logProfile)
+                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
+                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
 
         options.addAll(jspDependencies());
         return options.toArray(new Option[options.size()]);

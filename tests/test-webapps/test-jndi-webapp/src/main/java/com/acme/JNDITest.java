@@ -55,8 +55,8 @@ public class JNDITest extends HttpServlet
     
     private String resourceNameMappingInjectionResult;
     private String envEntryOverrideResult;
-    private String postConstructResult = "PostConstruct method called: FALSE";
-    private String preDestroyResult = "PreDestroy method called: NOT YET";
+    private String postConstructResult = "PostConstruct method called: <span class=\"fail\">FALSE</span>";
+    private String preDestroyResult = "PreDestroy method called: <span class=\"pass\">NOT YET</span>";
     private String envEntryGlobalScopeResult;
     private String envEntryWebAppScopeResult;
     private String userTransactionResult;
@@ -71,15 +71,14 @@ public class JNDITest extends HttpServlet
     
     private void postConstruct ()
     {
-        String tmp = (myDS == null?"":myDS.toString());
-        resourceNameMappingInjectionResult= "Injection of resource to locally mapped name (java:comp/env/mydatasource as java:comp/env/mydatasource1): "+String.valueOf(myDS);
-        envEntryOverrideResult = "Override of EnvEntry in jetty-env.xml (java:comp/env/wiggle): "+(wiggle==55.0?"PASS":"FAIL(expected 55.0, got "+wiggle+")");
-        postConstructResult = "PostConstruct method called: PASS";
+        resourceNameMappingInjectionResult= "Injection of resource to locally mapped name (java:comp/env/mydatasource as java:comp/env/mydatasource1): "+(myDS!=null?"<span class=\"pass\">PASS</span>":"<span class=\"fail\">FAIL</span>");
+        envEntryOverrideResult = "Override of EnvEntry in jetty-env.xml (java:comp/env/wiggle): "+(wiggle==55.0?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL(expected 55.0, got "+wiggle+")")+"</span>";
+        postConstructResult = "PostConstruct method called: <span class=\"pass\">PASS</span>";
     }
     
     private void preDestroy()
     {
-        preDestroyResult = "PreDestroy method called: PASS";
+        preDestroyResult = "PreDestroy method called: <span class=\"pass\">PASS</span>";
     }
     
     
@@ -90,13 +89,13 @@ public class JNDITest extends HttpServlet
         {
             InitialContext ic = new InitialContext();
             woggle = (Integer)ic.lookup("java:comp/env/woggle");
-            envEntryGlobalScopeResult = "EnvEntry defined in context xml lookup result (java:comp/env/woggle): "+(woggle==4000?"PASS":"FAIL(expected 4000, got "+woggle+")");
+            envEntryGlobalScopeResult = "EnvEntry defined in context xml lookup result (java:comp/env/woggle): "+(woggle==4000?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL(expected 4000, got "+woggle+")")+"</span>";
             gargle = (Double)ic.lookup("java:comp/env/gargle");
-            envEntryWebAppScopeResult = "EnvEntry defined in jetty-env.xml lookup result (java:comp/env/gargle): "+(gargle==100.0?"PASS":"FAIL(expected 100, got "+gargle+")");
+            envEntryWebAppScopeResult = "EnvEntry defined in jetty-env.xml lookup result (java:comp/env/gargle): "+(gargle==100.0?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL(expected 100, got "+gargle+")")+"</span>";
             UserTransaction utx = (UserTransaction)ic.lookup("java:comp/UserTransaction");
-            userTransactionResult = "UserTransaction lookup result (java:comp/UserTransaction): "+(utx!=null?"PASS":"FAIL");
+            userTransactionResult = "UserTransaction lookup result (java:comp/UserTransaction): "+(utx!=null?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span>";
             myMailSession = (Session)ic.lookup("java:comp/env/mail/Session");
-            mailSessionResult = "Mail Session lookup result (java:comp/env/mail/Session): "+(myMailSession!=null?"PASS": "FAIL");
+            mailSessionResult = "Mail Session lookup result (java:comp/env/mail/Session): "+(myMailSession!=null?"<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span>";
         }
         catch (Exception e)
         {
@@ -129,6 +128,7 @@ public class JNDITest extends HttpServlet
             response.setContentType("text/html");
             ServletOutputStream out = response.getOutputStream();
             out.println("<html>");
+            out.println("<head><link rel=\"stylesheet\" type=\"text/css\" href=\"stylesheet.css\"/></head>");
             out.println("<h1>Jetty JNDI Tests</h1>");
             out.println("<body>");
             

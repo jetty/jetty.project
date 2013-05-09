@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.3-SNAPSHOT</version>
+    <version>9.0.4-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
@@ -27,9 +27,7 @@
             </goals>
             <configuration>
               <includes>**</includes>
-              <excludes>**/MANIFEST.MF</excludes>
-              <excludes>**/ECLIPSEF.RSA</excludes>
-              <excludes>**/ECLIPSEF.SF</excludes>
+              <excludes>**/MANIFEST.MF,META-INF/*.RSA,META-INF/*.DSA,META-INF/*.SF</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>

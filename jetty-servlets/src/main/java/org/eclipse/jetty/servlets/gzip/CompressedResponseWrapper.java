@@ -42,6 +42,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public static final int DEFAULT_MIN_COMPRESS_SIZE = 256;
 
     private Set<String> _mimeTypes;
+    private boolean _excludeMimeTypes;
     private int _bufferSize=DEFAULT_BUFFER_SIZE;
     private int _minCompressSize=DEFAULT_MIN_COMPRESS_SIZE;
     protected HttpServletRequest _request;
@@ -67,6 +68,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int getBufferSize()
     {
         return _bufferSize;
@@ -92,16 +94,15 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setMimeTypes(java.util.Set)
      */
-    public void setMimeTypes(Set<String> mimeTypes)
+    public void setMimeTypes(Set<String> mimeTypes,boolean excludeMimeTypes)
     {
+        _excludeMimeTypes=excludeMimeTypes;
         _mimeTypes = mimeTypes;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setBufferSize(int)
      */
     @Override
     public void setBufferSize(int bufferSize)
@@ -127,18 +128,17 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     {
         super.setContentType(ct);
 
-        if (ct!=null)
+        if (_compressedStream==null || _compressedStream.getOutputStream()==null)
         {
-            int colon=ct.indexOf(";");
-            if (colon>0)
-                ct=ct.substring(0,colon);
-        }
+            if (ct!=null)
+            {
+                int colon=ct.indexOf(";");
+                if (colon>0)
+                    ct=ct.substring(0,colon);
 
-        if ((_compressedStream==null || _compressedStream.getOutputStream()==null) &&
-            (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
-             _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
-        {
-            noCompression();
+                if (_mimeTypes.contains(StringUtil.asciiToLowerCase(ct))==_excludeMimeTypes)
+                    noCompression();
+            }
         }
     }
 
@@ -146,6 +146,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     /**
      * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setStatus(int, java.lang.String)
      */
+    @SuppressWarnings("deprecation")
     @Override
     public void setStatus(int sc, String sm)
     {

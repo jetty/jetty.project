@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
@@ -64,9 +65,9 @@ public class FrameCompressionExtensionTest
             client.setTimeout(TimeUnit.SECONDS,1);
             client.connect();
             client.sendStandardRequest();
-            String resp = client.expectUpgradeResponse();
+            HttpResponse resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp,containsString("x-webkit-deflate-frame"));
+            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("x-webkit-deflate-frame"));
 
             String msg = "Hello";
 

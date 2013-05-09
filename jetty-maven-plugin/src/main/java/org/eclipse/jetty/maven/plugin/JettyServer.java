@@ -38,16 +38,6 @@ public class JettyServer extends org.eclipse.jetty.server.Server
 {
     public static final JettyServer __instance = new JettyServer();
     
-    /**
-     * Singleton instance
-     * @return
-     */
-    public static JettyServer getInstance()
-    {
-        return __instance;
-    }
-
-    
     private RequestLog requestLog;
     private ContextHandlerCollection contexts;
     
@@ -56,7 +46,7 @@ public class JettyServer extends org.eclipse.jetty.server.Server
     /**
      * 
      */
-    private JettyServer()
+    public JettyServer()
     {
         super();
         setStopAtShutdown(true);

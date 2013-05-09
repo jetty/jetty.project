@@ -11,7 +11,7 @@
       <outputDirectory></outputDirectory>
       <includes>
         <include>webapps/test-jaas.xml</include>
-        <include>etc/**</include>
+        <include>**</include>
       </includes>
     </fileSet>
   </fileSets>

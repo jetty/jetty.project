@@ -16,9 +16,10 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.internal.io;
+package org.eclipse.jetty.websocket.common.io.http;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,8 +28,6 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.client.io.HttpResponseHeaderParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +40,32 @@ public class HttpResponseHeaderParserTest
     private void appendUtf8(ByteBuffer buf, String line)
     {
         buf.put(ByteBuffer.wrap(StringUtil.getBytes(line,StringUtil.__UTF8)));
+    }
+
+    @Test
+    public void testParseNotFound()
+    {
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 404 Not Found\r\n");
+        resp.append("Date: Fri, 26 Apr 2013 21:43:08 GMT\r\n");
+        resp.append("Content-Type: text/html; charset=ISO-8859-1\r\n");
+        resp.append("Cache-Control: must-revalidate,no-cache,no-store\r\n");
+        resp.append("Content-Length: 38\r\n");
+        resp.append("Server: Jetty(9.0.0.v20130308)\r\n");
+        resp.append("\r\n");
+        // and some body content
+        resp.append("What you are looking for is not here\r\n");
+
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StringUtil.__UTF8_CHARSET);
+
+        HttpResponseParseCapture capture = new HttpResponseParseCapture();
+        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
+        assertThat("Parser.parse",parser.parse(buf),notNullValue());
+        assertThat("Response.statusCode",capture.getStatusCode(),is(404));
+        assertThat("Response.statusReason",capture.getStatusReason(),is("Not Found"));
+        assertThat("Response.headers[Content-Length]",capture.getHeader("Content-Length"),is("38"));
+
+        assertThat("Response.remainingBuffer",capture.getRemainingBuffer().remaining(),is(38));
     }
 
     @Test
@@ -73,14 +98,14 @@ public class HttpResponseHeaderParserTest
         BufferUtil.flipToFlush(buf,0);
 
         // Parse Buffer
-        HttpResponseHeaderParser parser = new HttpResponseHeaderParser();
-        UpgradeResponse response = parser.parse(buf);
-        Assert.assertThat("Response",response,notNullValue());
+        HttpResponseParseCapture capture = new HttpResponseParseCapture();
+        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
+        assertThat("Parser.parse",parser.parse(buf),notNullValue());
 
-        Assert.assertThat("Response.statusCode",response.getStatusCode(),is(200));
-        Assert.assertThat("Response.statusReason",response.getStatusReason(),is("OK"));
+        Assert.assertThat("Response.statusCode",capture.getStatusCode(),is(200));
+        Assert.assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",response.getHeader("age"),is("518097"));
+        Assert.assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
     }
 
     @Test
@@ -122,24 +147,47 @@ public class HttpResponseHeaderParserTest
         small3.position(70);
 
         // Parse Buffer
-        HttpResponseHeaderParser parser = new HttpResponseHeaderParser();
-        UpgradeResponse response;
+        HttpResponseParseCapture capture = new HttpResponseParseCapture();
+        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
+        assertThat("Parser.parse",parser.parse(buf),notNullValue());
 
         // Parse small 1
-        response = parser.parse(small1);
-        Assert.assertThat("Small 1",response,nullValue());
+        Assert.assertThat("Small 1",parser.parse(small1),nullValue());
 
         // Parse small 2
-        response = parser.parse(small2);
-        Assert.assertThat("Small 2",response,nullValue());
+        Assert.assertThat("Small 2",parser.parse(small2),nullValue());
 
         // Parse small 3
-        response = parser.parse(small3);
-        Assert.assertThat("Small 3",response,notNullValue());
+        Assert.assertThat("Small 3",parser.parse(small3),notNullValue());
 
-        Assert.assertThat("Response.statusCode",response.getStatusCode(),is(200));
-        Assert.assertThat("Response.statusReason",response.getStatusReason(),is("OK"));
+        Assert.assertThat("Response.statusCode",capture.getStatusCode(),is(200));
+        Assert.assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",response.getHeader("age"),is("518097"));
+        Assert.assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
+    }
+
+    @Test
+    public void testParseUpgrade()
+    {
+        // Example from RFC6455 - Section 1.2 (Protocol Overview)
+        StringBuilder resp = new StringBuilder();
+        resp.append("HTTP/1.1 101 Switching Protocols\r\n");
+        resp.append("Upgrade: websocket\r\n");
+        resp.append("Connection: Upgrade\r\n");
+        resp.append("Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
+        resp.append("Sec-WebSocket-Protocol: chat\r\n");
+        resp.append("\r\n");
+
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StringUtil.__UTF8_CHARSET);
+
+        HttpResponseParseCapture capture = new HttpResponseParseCapture();
+        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
+        assertThat("Parser.parse",parser.parse(buf),notNullValue());
+        assertThat("Response.statusCode",capture.getStatusCode(),is(101));
+        assertThat("Response.statusReason",capture.getStatusReason(),is("Switching Protocols"));
+        assertThat("Response.headers[Upgrade]",capture.getHeader("Upgrade"),is("websocket"));
+        assertThat("Response.headers[Connection]",capture.getHeader("Connection"),is("Upgrade"));
+
+        assertThat("Buffer.remaining",buf.remaining(),is(0));
     }
 }

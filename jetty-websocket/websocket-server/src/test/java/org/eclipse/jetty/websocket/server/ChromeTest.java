@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
@@ -60,8 +61,8 @@ public class ChromeTest
             client.setProtocols("chat");
             client.connect();
             client.sendStandardRequest();
-            String response = client.expectUpgradeResponse();
-            Assert.assertThat("Response",response,containsString("x-webkit-deflate-frame"));
+            HttpResponse response = client.expectUpgradeResponse();
+            Assert.assertThat("Response",response.getExtensionsHeader(),containsString("x-webkit-deflate-frame"));
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

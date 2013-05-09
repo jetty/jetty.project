@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-project</artifactId>
-        <version>9.0.3-SNAPSHOT</version>
+        <version>9.0.4-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -83,6 +83,18 @@
                 <property>
                     <name>java.version</name>
                     <value>1.7.0_17</value>
+                </property>
+            </activation>
+            <properties>
+                <npn.version>1.1.5.v20130313</npn.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>7u21</id>
+            <activation>
+                <property>
+                    <name>java.version</name>
+                    <value>1.7.0_21</value>
                 </property>
             </activation>
             <properties>

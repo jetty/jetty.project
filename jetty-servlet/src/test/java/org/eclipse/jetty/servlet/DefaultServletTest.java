@@ -668,13 +668,13 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Hello Text 0",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Vary: Accept-Encoding",response);

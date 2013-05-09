@@ -39,12 +39,13 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
-import org.eclipse.jetty.websocket.client.io.HttpResponseHeaderParser.ParseException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
+import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser.ParseException;
 
 /**
  * This is the initial connection handling that exists immediately after physical connection is established to destination server.
@@ -93,7 +94,7 @@ public class UpgradeConnection extends AbstractConnection
         this.request = connectPromise.getRequest();
 
         // Setup the parser
-        this.parser = new HttpResponseHeaderParser();
+        this.parser = new HttpResponseHeaderParser(new ClientUpgradeResponse());
     }
 
     public void disconnect(boolean onlyOutput)
@@ -174,7 +175,7 @@ public class UpgradeConnection extends AbstractConnection
                     {
                         LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                     }
-                    ClientUpgradeResponse resp = parser.parse(buffer);
+                    ClientUpgradeResponse resp = (ClientUpgradeResponse)parser.parse(buffer);
                     if (resp != null)
                     {
                         // Got a response!

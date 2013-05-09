@@ -116,6 +116,9 @@ public class BrowserDebugTool implements WebSocketCreator
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
+
+                // Set the timeout
+                factory.getPolicy().setIdleTimeout(2000);
             }
         };
 

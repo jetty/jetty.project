@@ -189,14 +189,16 @@ public class Fuzzer
         // we expect that the close handshake to have occurred and the server should have closed the connection
         try
         {
-            @SuppressWarnings("unused")
-            int val = client.read();
+            ByteBuffer buf = ByteBuffer.wrap(new byte[]
+            { 0x00 });
+            BufferUtil.flipToFill(buf);
+            int len = client.read(buf);
 
-            Assert.fail("Server has not closed socket");
+            Assert.assertThat("Server has not closed socket",len,lessThanOrEqualTo(0));
         }
-        catch (SocketException e)
+        catch (IOException e)
         {
-
+            // valid path
         }
 
         IOState ios = client.getIOState();

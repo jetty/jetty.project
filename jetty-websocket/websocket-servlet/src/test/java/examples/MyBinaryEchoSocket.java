@@ -18,18 +18,22 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import java.nio.ByteBuffer;
 
-@SuppressWarnings("serial")
-public class MyExampleServlet extends WebSocketServlet
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+
+/**
+ * Echo BINARY messages
+ */
+@WebSocket
+public class MyBinaryEchoSocket
 {
-    @Override
-    public void configure(WebSocketServletFactory factory)
+    @OnWebSocketMessage
+    public void onWebSocketText(Session session, byte buf[], int offset, int len)
     {
-        // set a 10 second timeout
-        factory.getPolicy().setIdleTimeout(10000);
-        // register my socket
-        factory.register(MyExampleSocket.class);
+        // Echo message back, asynchronously
+        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(buf,offset,len));
     }
 }

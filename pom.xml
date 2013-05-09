@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.0.3-SNAPSHOT</version>
+  <version>9.0.4-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -542,7 +542,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>2.0</version>
+        <version>2.2</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -678,7 +678,7 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://docs.oracle.com/javase/6/docs/api/</link>
+                <link>http://docs.oracle.com/javase/7/docs/api/</link>
                 <link>http://docs.oracle.com/javaee/6/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>

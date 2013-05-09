@@ -103,16 +103,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     onClose(close);
 
                     // process handshake
-                    if (session.getConnection().getIOState().onCloseHandshake(true))
-                    {
-                        // handshake resolved, disconnect.
-                        session.getConnection().disconnect();
-                    }
-                    else
-                    {
-                        // respond
-                        session.close(close.getStatusCode(),close.getReason());
-                    }
+                    session.getConnection().getIOState().onCloseRemote(close);
 
                     return;
                 }

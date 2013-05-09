@@ -510,8 +510,11 @@ public class HttpFields implements Iterable<HttpField>
                 while (e.hasMoreElements())
                 {
                     String value = e.nextElement();
-                    tok = new QuotedStringTokenizer(value, separators, false, false);
-                    if (tok.hasMoreElements()) return true;
+                    if (value!=null)
+                    {
+                        tok = new QuotedStringTokenizer(value, separators, false, false);
+                        if (tok.hasMoreElements()) return true;
+                    }
                 }
                 tok = null;
                 return false;

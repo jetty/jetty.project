@@ -94,18 +94,18 @@ public class AnnotationTest extends HttpServlet
     @PostConstruct
     private void myPostConstructMethod ()
     {       
-        postConstructResult = "Called";
+        postConstructResult = "<span class=\"pass\">PASS</span>";
        try 
        {
-           dsResult = (myDS==null?"FAIL":"myDS="+myDS.toString());
+           dsResult = (myDS==null?"<span class=\"fail\">FAIL</span>":"<span class=\"pass\">myDS="+myDS.toString()+"</span>");
        }
        catch (Exception e)
        {
-           dsResult = "FAIL: "+e;
+           dsResult = "<span class=\"fail\">FAIL:</span> "+e;
        }
 
 
-       envResult = (maxAmount==null?"FAIL":"maxAmount="+maxAmount.toString());
+       envResult = (maxAmount==null?"FAIL</span>":"<span class=\"pass\">maxAmount="+maxAmount.toString()+"</span>");
        
        try
        {
@@ -114,10 +114,10 @@ public class AnnotationTest extends HttpServlet
        }
        catch (Exception e)
        {
-           envLookupResult = "FAIL: "+e;
+           envLookupResult = "<span class=\"fail\">FAIL:</span> "+e;
        }
 
-      envResult2 = (minAmount==null?"FAIL":"minAmount="+minAmount.toString());
+      envResult2 = (minAmount==null?"<span class=\"fail\">FAIL</span>":"<span class=\"pass\">minAmount="+minAmount.toString()+"</span>");
       try
       {
           InitialContext ic = new InitialContext();
@@ -125,9 +125,9 @@ public class AnnotationTest extends HttpServlet
       }
       catch (Exception e)
       {
-          envLookupResult2 = "FAIL: "+e;
+          envLookupResult2 = "<span class=\"fail\">FAIL:</span> "+e;
       }
-      envResult3 = (minAmount==null?"FAIL":"avgAmount="+avgAmount.toString());
+      envResult3 = (minAmount==null?"<span class=\"fail\">FAIL</span>":"<span class=\"pass\">avgAmount="+avgAmount.toString()+"</span>");
       try
       {
           InitialContext ic = new InitialContext();
@@ -135,7 +135,7 @@ public class AnnotationTest extends HttpServlet
       }
       catch (Exception e)
       {
-          envLookupResult3 = "FAIL: "+e;
+          envLookupResult3 = "<span class=\"fail\">FAIL:</span> "+e;
       }
       
       
@@ -147,10 +147,10 @@ public class AnnotationTest extends HttpServlet
        }
        catch (Exception e)
        {
-           dsLookupResult = "FAIL: "+e;
+           dsLookupResult = "<span class=\"fail\">FAIL:</span> "+e;
        }
        
-       txResult = (myUserTransaction==null?"FAIL":"myUserTransaction="+myUserTransaction);
+       txResult = (myUserTransaction==null?"<span class=\"fail\">FAIL</span>":"<span class=\"pass\">myUserTransaction="+myUserTransaction+"</span>");
        try
        {
            InitialContext ic = new InitialContext();
@@ -158,7 +158,7 @@ public class AnnotationTest extends HttpServlet
        }
        catch (Exception e)
        {
-           txLookupResult = "FAIL: "+e;
+           txLookupResult = "<span class=\"fail\">FAIL:</span> "+e;
        }
     }
     
@@ -189,6 +189,7 @@ public class AnnotationTest extends HttpServlet
             response.setContentType("text/html");
             ServletOutputStream out = response.getOutputStream();
             out.println("<html>");
+            out.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"stylesheet.css\"/></HEAD>");
             out.println("<body>");
             out.println("<h1>Results</h1>");
 
@@ -196,14 +197,14 @@ public class AnnotationTest extends HttpServlet
             out.println("<pre>");
             out.println("initParams={@WebInitParam(name=\"fromAnnotation\", value=\"xyz\")}");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+("xyz".equals(config.getInitParameter("fromAnnotation"))? "PASS": "FAIL"));
+            out.println("<br/><b>Result: "+("xyz".equals(config.getInitParameter("fromAnnotation"))? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span>");
 
             out.println("<h2>Init Params from web-fragment</h2>");
             out.println("<pre>");
             out.println("extra1=123, extra2=345");
             out.println("</pre>");
             boolean fragInitParamResult = "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
-            out.println("<br/><b>Result: "+(fragInitParamResult? "PASS": "FAIL"));
+            out.println("<br/><b>Result: "+(fragInitParamResult? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span>");
 
 
              __HandlesTypes = Arrays.asList( "javax.servlet.GenericServlet", 
@@ -231,27 +232,27 @@ public class AnnotationTest extends HttpServlet
                  }
                 
                  if (classNames.size() != __HandlesTypes.size())
-                     out.println("<br/>FAIL");
+                     out.println("<br/><span class=\"fail\">FAIL</span>");
                  else if (!classNames.containsAll(__HandlesTypes))
-                     out.println("<br/>FAIL");
+                     out.println("<br/><span class=\"fail\">FAIL</span>");
                  else
-                     out.println("<br/>PASS");
+                     out.println("<br/><span class=\"pass\">PASS</span>");
              }
              else
-                 out.print("<br/>FAIL (No such attribute com.acme.Foo)");
+                 out.print("<br/><span class=\"fail\">FAIL</span> (No such attribute com.acme.Foo)");
              out.println("</b>");
 
             out.println("<h2>Complete Servlet Registration</h2>");
             Boolean complete = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.complete");
-            out.println("<br/><b>Result: "+(complete.booleanValue()?"PASS":"FAIL")+"</b>");
+            out.println("<br/><b>Result: "+(complete.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
             
             out.println("<h2>ServletContextListener Programmatic Registration from ServletContainerInitializer</h2>");
             Boolean programmaticListener = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerTest");
-            out.println("<br/><b>Result: "+(programmaticListener.booleanValue()?"PASS":"FAIL")+"</b>");
+            out.println("<br/><b>Result: "+(programmaticListener.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
             
             out.println("<h2>ServletContextListener Programmatic Registration Prevented from ServletContextListener</h2>");
             Boolean programmaticListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerRegoTest");
-            out.println("<br/><b>Result: "+(programmaticListenerPrevention.booleanValue()?"PASS":"FAIL")+"</b>");
+            out.println("<br/><b>Result: "+(programmaticListenerPrevention.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
             
             out.println("<h2>@PostConstruct Callback</h2>");
             out.println("<pre>");
@@ -281,11 +282,11 @@ public class AnnotationTest extends HttpServlet
             out.println("@Resource(name=\"minAmount\")");
             out.println("private Double minAmount;");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" PASS":" FAIL")+"</b>");     
+            out.println("<br/><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult+"</b>");
-            out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" PASS":" FAIL")+"</b>");     
+            out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult2+"</b>");
-            out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" PASS":" FAIL")+"</b>");     
+            out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult3+"</b>");          
             out.println("<h2>@Resource Injection for UserTransaction </h2>");
             out.println("<pre>");
@@ -294,22 +295,6 @@ public class AnnotationTest extends HttpServlet
             out.println("</pre>");
             out.println("<br/><b>Result: "+txResult+"</b>");
             out.println("<br/><b>JNDI Lookup Result: "+txLookupResult+"</b>");
-            out.println("<h2>DeclaresRoles</h2>");
-            out.println("<p>Login as user \"admin\" with password \"admin\" when prompted after clicking the button below to test @DeclareRoles annotation</p>");
-            String context = request.getContextPath();
-            if (!context.endsWith("/"))
-                context += "/";
-            context += "role/";
-            out.println("<form action="+context+" method=\"post\"><button type=\"submit\">Test Role Annotations</button></form>");
-
-            out.println("<h2>ServletSecurity</h2>");
-            out.println("<p>Login as user \"admin\" with password \"admin\" when prompted after clicking the button below to test @ServletSecurity annotation</p>");
-            context = request.getContextPath();
-            if (!context.endsWith("/"))
-                context += "/";
-            context += "sec/foo";
-            out.println("<form action="+context+" method=\"post\"><button type=\"submit\">Test ServletSecurity Annotation</button></form>");
-
 
             out.println("</body>");            
             out.println("</html>");

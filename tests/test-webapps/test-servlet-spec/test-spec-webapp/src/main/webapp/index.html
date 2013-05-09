@@ -3,13 +3,7 @@
     <TITLE>Test Specification WebApp</TITLE>
     <META http-equiv="Pragma" content="no-cache">
     <META http-equiv="Cache-Control" content="no-cache,no-store">
-    <style>
-       body {color: #2E2E2E; font-family:sans-serif; font-size:90%;}
-       h1 {font-variant: small-caps; font-size:130%; letter-spacing: 0.1em;}
-       h2 {font-variant: small-caps; font-size:100%; letter-spacing: 0.1em;}
-       h3 {font-size:100%; letter-spacing: 0.1em;}
-    </style>
-
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
   </HEAD>
 <BODY >
 <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
@@ -21,46 +15,44 @@
   <span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span>
 </center>
 <P>
-<h1>Advanced Servlet Specification Test WebApp</h1>
+<h1>Servlet 3.1 Test WebApp</h1>
 
 <p>
-This example uses and tests newer aspects of the servlet specification such as annotations, web-fragments and servlet container initializers.
+This example tests some aspects of the servlet 3.1 specification:<ul>
+<li>servlet annotations
+<li>web-fragments
+<li>servlet container initializers.
+<li>multi-part upload support.
+</ul>
+The source repository for this test is available <a href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-servlet-spec">here</a>.
 </p>
-
-<h2>Preparation</h2>
-<p>
- <ol>
-  <li>Ensure that you have downloaded and unpacked the test-spec-webapp-&lt;version&gt;-config.jar, where <version> is replaced by the desired version number. The following files will be created:
-      <pre>
-      lib/jndi/test-mock-resources-&lt;version&gt;.jar (where &lt;version&gt; is replaced by the particular version number)
-      webapps/test-spec.xml
-      </pre>
-  </li>
-  <li>Edit your $JETTY_HOME/start.ini file and uncomment the following lines:
-      <pre>
-      OPTIONS=plus
-      etc/jetty-plus.xml
-      OPTIONS=annotations
-      etc/jetty-annotations.xml
-      </pre>
-  </li>
- </ol>
-
-</p>
-
-<h2>The Tests</h2>
 
 <h3>Test Servlet 2.5/3.0 Annotations, Fragments and Initializers</h3>
 <form action="test" method="post">
   <button type="submit">Test</button>
 </form>
 
+<h3>DeclaresRoles</h3>
+<p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @DeclareRoles annotation</p>
+<form action="role" method="post">
+  <button type="submit">Test Role Annotations</button>
+</form>
+
+<h3>ServletSecurity</h3>
+<p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @ServletSecurity annotation</p>
+<form action="sec/foo" method="post">
+  <button type="submit">Test ServletSecurity Annotation</button>
+</form>
+
 <h3>Test Servlet 3.0 Multipart Mime</h3>
+Test of the annotation:
+<pre>
+@MultipartConfig(location="foo/bar", maxFileSize=10240, maxRequestSize=-1, fileSizeThreshold=2048)
+</pre>
 <form ENCTYPE="multipart/form-data" ACTION="multi" METHOD=POST>
     File to upload: <INPUT NAME="userfile1" TYPE="file">
  <input TYPE="submit" VALUE="Test Upload">
 </form>
-
 
 <center>
   <hr/>

@@ -16,19 +16,17 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.common.io.http;
 
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import java.nio.ByteBuffer;
 
-/**
- * Example WebSocket, simple echo
- */
-public class MyExampleSocket extends WebSocketAdapter
+public interface HttpResponseHeaderParseListener
 {
-    @Override
-    public void onWebSocketText(String message)
-    {
-        // Echo message back, asynchronously
-        getSession().getRemote().sendStringByFuture(message);
-    }
+    void addHeader(String name, String value);
+
+    void setRemainingBuffer(ByteBuffer copy);
+
+    void setStatusCode(int statusCode);
+
+    void setStatusReason(String statusReason);
 }

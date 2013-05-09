@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -167,20 +166,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         selector.submit(selector.new Accept(channel));
     }
 
-    /**
-     * <p>Registers a channel to perform non-blocking read/write operations.</p>
-     * <p>This method is called just after a channel has been accepted by {@link ServerSocketChannel#accept()},
-     * or just after having performed a blocking connect via {@link Socket#connect(SocketAddress, int)}.</p>
-     *
-     * @param channel the channel to register
-     * @param attachment An attachment to be passed via the selection key to the {@link SelectorManager#newConnection(SocketChannel, EndPoint, Object)} method.
-     */
-    public void accept(final SocketChannel channel, Object attachment)
-    {
-        final ManagedSelector selector = chooseSelector();
-        selector.submit(selector.new Accept(channel, attachment));
-    }
-    
     @Override
     protected void doStart() throws Exception
     {
@@ -333,7 +318,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
-        
+
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
@@ -699,18 +684,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private class Accept implements Runnable
         {
             private final SocketChannel _channel;
-            private final Object _attachment;
 
             public Accept(SocketChannel channel)
             {
                 this._channel = channel;
-                this._attachment = null;
-            }
-            
-            public Accept(SocketChannel channel, Object attachment)
-            {
-                this._channel = channel;
-                this._attachment = attachment;
             }
 
             @Override
@@ -718,7 +695,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 try
                 {
-                    SelectionKey key = _channel.register(_selector, 0, _attachment);
+                    SelectionKey key = _channel.register(_selector, 0, null);
                     EndPoint endpoint = createEndPoint(_channel, key);
                     key.attach(endpoint);
                 }

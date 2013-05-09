@@ -449,10 +449,12 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
     public void testInputStreamResponseListenerFailedBeforeResponse() throws Exception
     {
         start(new EmptyServerHandler());
+        int port = connector.getLocalPort();
+        server.stop();
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
-        client.newRequest("localhost", 0)
+        client.newRequest("localhost", port)
                 .scheme(scheme)
                 .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);

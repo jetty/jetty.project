@@ -19,13 +19,10 @@
 package org.eclipse.jetty.websocket.server.blockhead;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -41,8 +38,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -51,7 +46,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -70,6 +64,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.io.IOState;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
+import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
@@ -85,7 +81,7 @@ import org.junit.Assert;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements IncomingFrames, OutgoingFrames
+public class BlockheadClient implements IncomingFrames, OutgoingFrames, ConnectionStateListener
 {
     private static final String REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
     private static final int BUFFER_SIZE = 8192;
@@ -116,6 +112,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private ExtensionStack extensionStack;
     private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
+    private ByteBuffer remainingBuffer;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -143,6 +140,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
         this.ioState = new IOState();
+        this.ioState.addListener(this);
     }
 
     public void addExtensions(String xtension)
@@ -178,24 +176,22 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public void close(int statusCode, String message)
     {
-        try
-        {
-            CloseInfo close = new CloseInfo(statusCode,message);
+        CloseInfo close = new CloseInfo(statusCode,message);
 
-            if (ioState.onCloseHandshake(false))
+        ioState.onCloseLocal(close);
+
+        if (!ioState.isClosed())
+        {
+            WebSocketFrame frame = close.asFrame();
+            LOG.debug("Issuing: {}",frame);
+            try
             {
-                this.disconnect();
-            }
-            else
-            {
-                WebSocketFrame frame = close.asFrame();
-                LOG.debug("Issuing: {}",frame);
                 write(frame);
             }
-        }
-        catch (IOException e)
-        {
-            LOG.debug(e);
+            catch (IOException e)
+            {
+                LOG.debug(e);
+            }
         }
     }
 
@@ -233,32 +229,31 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
     }
 
-    public String expectUpgradeResponse() throws IOException
+    public HttpResponse expectUpgradeResponse() throws IOException
     {
-        String respHeader = readResponseHeader();
+        HttpResponse response = readResponseHeader();
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Response Header: {}{}",'\n',respHeader);
+            LOG.debug("Response Header: {}{}",'\n',response);
         }
 
-        Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
-        Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
-        Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+        Assert.assertThat("Response Status Code",response.getStatusCode(),is(101));
+        Assert.assertThat("Response Status Reason",response.getStatusReason(),is("Switching Protocols"));
+        Assert.assertThat("Response Header[Upgrade]",response.getHeader("Upgrade"),is("WebSocket"));
+        Assert.assertThat("Response Header[Connection]",response.getHeader("Connection"),is("Upgrade"));
 
         // Validate the Sec-WebSocket-Accept
-        Pattern patAcceptHeader = Pattern.compile("Sec-WebSocket-Accept: (.*=)",Pattern.CASE_INSENSITIVE);
-        Matcher matAcceptHeader = patAcceptHeader.matcher(respHeader);
-        Assert.assertThat("Response Header Sec-WebSocket-Accept Exists?",matAcceptHeader.find(),is(true));
+        String acceptKey = response.getHeader("Sec-WebSocket-Accept");
+        Assert.assertThat("Response Header[Sec-WebSocket-Accept Exists]",acceptKey,notNullValue());
 
         String reqKey = REQUEST_HASH_KEY;
         String expectedHash = AcceptHash.hashKey(reqKey);
-        String acceptKey = matAcceptHeader.group(1);
 
         Assert.assertThat("Valid Sec-WebSocket-Accept Hash?",acceptKey,is(expectedHash));
 
         // collect extensions configured in response header
-        List<ExtensionConfig> configs = getExtensionConfigs(respHeader);
+        List<ExtensionConfig> configs = getExtensionConfigs(response);
         extensionStack = new ExtensionStack(this.extensionFactory);
         extensionStack.negotiate(configs);
 
@@ -282,12 +277,12 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         // configure parser
         parser.setIncomingFramesHandler(extensionStack);
-        ioState.setState(ConnectionState.OPEN);
+        ioState.onOpened();
 
         LOG.debug("outgoing = {}",outgoing);
         LOG.debug("incoming = {}",extensionStack);
 
-        return respHeader;
+        return response;
     }
 
     public void flush() throws IOException
@@ -295,22 +290,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         out.flush();
     }
 
-    private List<ExtensionConfig> getExtensionConfigs(String respHeader)
+    private List<ExtensionConfig> getExtensionConfigs(HttpResponse response)
     {
         List<ExtensionConfig> configs = new ArrayList<>();
 
-        Pattern expat = Pattern.compile("Sec-WebSocket-Extensions: (.*)\r",Pattern.CASE_INSENSITIVE);
-        Matcher mat = expat.matcher(respHeader);
-        int offset = 0;
-        while (mat.find(offset))
+        String econf = response.getHeader("Sec-WebSocket-Extensions");
+        if (econf != null)
         {
-            String econf = mat.group(1);
             LOG.debug("Found Extension Response: {}",econf);
-
             ExtensionConfig config = ExtensionConfig.parse(econf);
             configs.add(config);
-
-            offset = mat.end(1);
         }
         return configs;
     }
@@ -403,14 +392,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         if (frame.getType() == Frame.Type.CLOSE)
         {
             CloseInfo close = new CloseInfo(frame);
-            if (ioState.onCloseHandshake(true))
-            {
-                this.disconnect();
-            }
-            else
-            {
-                close(close.getStatusCode(),close.getReason());
-            }
+            ioState.onCloseRemote(close);
         }
 
         WebSocketFrame copy = new WebSocketFrame(frame);
@@ -422,32 +404,24 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return (socket != null) && (socket.isConnected());
     }
 
-    public void lookFor(String string) throws IOException
+    @Override
+    public void onConnectionStateChange(ConnectionState state)
     {
-        String orig = string;
-        Utf8StringBuilder scanned = new Utf8StringBuilder();
-        try
+        switch (state)
         {
-            while (true)
-            {
-                int b = in.read();
-                if (b < 0)
+            case CLOSED:
+                this.disconnect();
+                break;
+            case CLOSING:
+                if (ioState.wasRemoteCloseInitiated())
                 {
-                    throw new EOFException();
+                    CloseInfo close = ioState.getCloseInfo();
+                    close(close.getStatusCode(),close.getReason());
                 }
-                scanned.append((byte)b);
-                assertEquals("looking for\"" + orig + "\" in '" + scanned + "'",string.charAt(0),b);
-                if (string.length() == 1)
-                {
-                    break;
-                }
-                string = string.substring(1);
-            }
-        }
-        catch (IOException e)
-        {
-            System.err.println("IOE while looking for \"" + orig + "\" in '" + scanned + "'");
-            throw e;
+                break;
+            default:
+                /* do nothing */
+                break;
         }
     }
 
@@ -486,17 +460,18 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
     }
 
-    public int read() throws IOException
-    {
-        return in.read();
-    }
-
     public int read(ByteBuffer buf) throws IOException
     {
         if (eof)
         {
             throw new EOFException("Hit EOF");
         }
+
+        if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
+        {
+            return BufferUtil.put(remainingBuffer,buf);
+        }
+
         int len = 0;
         int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
@@ -571,25 +546,24 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return incomingFrames;
     }
 
-    public String readResponseHeader() throws IOException
+    public HttpResponse readResponseHeader() throws IOException
     {
-        InputStreamReader isr = new InputStreamReader(in);
-        BufferedReader reader = new BufferedReader(isr);
-        StringBuilder header = new StringBuilder();
-        // Read the response header
-        String line = reader.readLine();
-        Assert.assertNotNull(line);
-        Assert.assertThat(line,startsWith("HTTP/1.1 "));
-        header.append(line).append("\r\n");
-        while ((line = reader.readLine()) != null)
+        HttpResponse response = new HttpResponse();
+        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(response);
+
+        ByteBuffer buf = BufferUtil.allocate(512);
+
+        do
         {
-            if (line.trim().length() == 0)
-            {
-                break;
-            }
-            header.append(line).append("\r\n");
+            BufferUtil.flipToFill(buf);
+            read(buf);
+            BufferUtil.flipToFlush(buf,0);
         }
-        return header.toString();
+        while (parser.parse(buf) == null);
+
+        remainingBuffer = response.getRemainingBuffer();
+
+        return response;
     }
 
     public void sendStandardRequest() throws IOException
