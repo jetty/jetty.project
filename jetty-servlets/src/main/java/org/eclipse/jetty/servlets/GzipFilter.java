@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Locale;
@@ -39,9 +40,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.servlets.GzipFilterDefaultTest.GetServlet;
 import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.GzipOutputStream;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -52,8 +56,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>accept-encoding header is set to either gzip, deflate or a combination of those</li>
  * <li>The response status code is >=200 and <300
  * <li>The content length is unknown or more than the <code>minGzipSize</code> initParameter or the minGzipSize is 0(default)</li>
- * <li>The content-type is in the comma separated list of mimeTypes set in the <code>mimeTypes</code> initParameter or
- * if no mimeTypes are defined the content-type is not "application/gzip"</li>
+ * <li>If a list of mimeTypes is set by the <code>mimeTypes</code> init parameter, then the Content-Type is in the list.</li>
+ * <li>If no mimeType list is set, then the content-type is not in the list defined by <code>excludedMimeTypes</code></li>
  * <li>No content-encoding is specified by the resource</li>
  * </ul>
  *
@@ -71,44 +75,52 @@ import org.eclipse.jetty.util.log.Logger;
  * is set to a comma separated list of user agents, then these agents will be excluded from gzip content.
  * </p>
  * <p>Init Parameters:</p>
- * <PRE>
- * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an
+ * <dl>
+ * <dt>bufferSize</dt>       <dd>The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an
  *                            {@link IllegalArgumentException}.
  *                            See: {@link java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)}
  *                            and: {@link java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)}
- *
- * minGzipSize                Content will only be compressed if content length is either unknown or greater
+ * </dd>
+ * <dt>minGzipSize</dt>       <dd>Content will only be compressed if content length is either unknown or greater
  *                            than <code>minGzipSize</code>.
- *
- * deflateCompressionLevel    The compression level used for deflate compression. (0-9).
+ * </dd>
+ * <dt>deflateCompressionLevel</dt>       <dd>The compression level used for deflate compression. (0-9).
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
- *
- * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
+ * </dd>
+ * <dt>deflateNoWrap</dt>       <dd>The noWrap setting for deflate compression. Defaults to true. (true/false)
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
- *
- * methods                    Comma separated list of HTTP methods to compress. If not set, only GET requests are compressed.
- * 
- * mimeTypes                  Comma separated list of mime types to compress. See description above.
- *
- * excludedAgents             Comma separated list of user agents to exclude from compression. Does a
+ * </dd>
+ * <dt>methods</dt>       <dd>Comma separated list of HTTP methods to compress. If not set, only GET requests are compressed.
+ *  </dd>
+ * <dt>mimeTypes</dt>       <dd>Comma separated list of mime types to compress. If it is not set, then the excludedMimeTypes list is used.
+ * </dd>
+ * <dt>excludedMimeTypes</dt>       <dd>Comma separated list of mime types to never compress. If not set, then the default is the commonly known
+ * image, video, audio and compressed types.
+ * </dd>
+
+ * <dt>excludedAgents</dt>       <dd>Comma separated list of user agents to exclude from compression. Does a
  *                            {@link String#contains(CharSequence)} to check if the excluded agent occurs
  *                            in the user-agent header. If it does -> no compression
- *
- * excludeAgentPatterns       Same as excludedAgents, but accepts regex patterns for more complex matching.
- *
- * excludePaths               Comma separated list of paths to exclude from compression.
+ * </dd>
+ * <dt>excludeAgentPatterns</dt>       <dd>Same as excludedAgents, but accepts regex patterns for more complex matching.
+ * </dd>
+ * <dt>excludePaths</dt>       <dd>Comma separated list of paths to exclude from compression.
  *                            Does a {@link String#startsWith(String)} comparison to check if the path matches.
  *                            If it does match -> no compression. To match subpaths use <code>excludePathPatterns</code>
  *                            instead.
- *
- * excludePathPatterns        Same as excludePath, but accepts regex patterns for more complex matching.
- * 
- * vary                       Set to the value of the Vary header sent with responses that could be compressed.  By default it is 
+ * </dd>
+ * <dt>excludePathPatterns</dt>       <dd>Same as excludePath, but accepts regex patterns for more complex matching.
+ * </dd>
+ * <dt>vary</dt>       <dd>Set to the value of the Vary header sent with responses that could be compressed.  By default it is 
  *                            set to 'Vary: Accept-Encoding, User-Agent' since IE6 is excluded by default from the excludedAgents. 
  *                            If user-agents are not to be excluded, then this can be set to 'Vary: Accept-Encoding'.  Note also 
  *                            that shared caches may cache copies of a resource that is varied by User-Agent - one per variation of 
  *                            the User-Agent, unless the cache does some normalization of the UA string.
- * </PRE>
+ * </dd>                         
+ * <dt>checkGzExists</dt>       <dd>If set to true, the filter check if a static resource with ".gz" appended exists.  If so then
+ *                            the normal processing is done so that the default servlet can send  the pre existing gz content.
+ *  </dd>
+ *  </dl>
  */
 public class GzipFilter extends UserAgentFilter
 {
@@ -120,11 +132,13 @@ public class GzipFilter extends UserAgentFilter
     public final static String ETAG="o.e.j.s.GzipFilter.ETag";
 
     protected ServletContext _context;
-    protected Set<String> _mimeTypes;
+    protected final Set<String> _mimeTypes=new HashSet<>();
+    protected boolean _excludeMimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
     protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
     protected boolean _deflateNoWrap = true;
+    protected boolean _checkGzExists = true;
     
     // non-static, as other GzipFilter instances may have different configurations
     protected final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
@@ -169,6 +183,10 @@ public class GzipFilter extends UserAgentFilter
         if (tmp!=null)
             _deflateNoWrap=Boolean.parseBoolean(tmp);
 
+        tmp=filterConfig.getInitParameter("checkGzExists");
+        if (tmp!=null)
+            _checkGzExists=Boolean.parseBoolean(tmp);
+        
         tmp=filterConfig.getInitParameter("methods");
         if (tmp!=null)
         {
@@ -180,9 +198,32 @@ public class GzipFilter extends UserAgentFilter
             _methods.add(HttpMethod.GET.asString());
         
         tmp=filterConfig.getInitParameter("mimeTypes");
-        if (tmp!=null)
+        if (tmp==null)
         {
-            _mimeTypes=new HashSet<String>();
+            _excludeMimeTypes=true;
+            tmp=filterConfig.getInitParameter("excludedMimeTypes");
+            if (tmp==null)
+            {
+                for (String type:MimeTypes.getKnownMimeTypes())
+                {
+                    if (type.startsWith("image/")||
+                        type.startsWith("audio/")||
+                        type.startsWith("video/"))
+                        _mimeTypes.add(type);
+                    _mimeTypes.add("application/compress");
+                    _mimeTypes.add("application/zip");
+                    _mimeTypes.add("application/gzip");
+                }
+            }
+            else
+            {
+                StringTokenizer tok = new StringTokenizer(tmp,",",false);
+                while (tok.hasMoreTokens())
+                    _mimeTypes.add(tok.nextToken());
+            }
+        }
+        else
+        {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
                 _mimeTypes.add(tok.nextToken());
@@ -196,7 +237,7 @@ public class GzipFilter extends UserAgentFilter
                _excludedAgents.add(tok.nextToken());
         }
 
-                tmp=filterConfig.getInitParameter("excludeAgentPatterns");
+        tmp=filterConfig.getInitParameter("excludeAgentPatterns");
         if (tmp!=null)
         {
             _excludedAgentPatterns=new HashSet<Pattern>();
@@ -257,15 +298,30 @@ public class GzipFilter extends UserAgentFilter
         }
         
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
-        if (_mimeTypes!=null && _mimeTypes.size()>0)
+        if (_mimeTypes.size()>0)
         {
             String mimeType = _context.getMimeType(request.getRequestURI());
             
-            if (mimeType!=null && !_mimeTypes.contains(mimeType))
+            if (mimeType!=null && _mimeTypes.contains(mimeType)==_excludeMimeTypes)
             {
                 // handle normally without setting vary header
                 super.doFilter(request,response,chain);
                 return;
+            }
+        }
+
+        if (_checkGzExists && request.getServletContext()!=null)
+        {
+            String path=request.getServletContext().getRealPath(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()));
+            if (path!=null)
+            {
+                File gz=new File(path+".gz");
+                if (gz.exists())
+                {
+                    // allow default servlet to handle
+                    super.doFilter(request,response,chain);
+                    return;
+                }
             }
         }
         
@@ -457,7 +513,7 @@ public class GzipFilter extends UserAgentFilter
 
     protected void configureWrappedResponse(CompressedResponseWrapper wrappedResponse)
     {
-        wrappedResponse.setMimeTypes(_mimeTypes);
+        wrappedResponse.setMimeTypes(_mimeTypes,_excludeMimeTypes);
         wrappedResponse.setBufferSize(_bufferSize);
         wrappedResponse.setMinCompressSize(_minGzipSize);
     }
