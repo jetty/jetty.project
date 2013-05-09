@@ -73,6 +73,7 @@
                 </execution>
               </executions>
               <configuration>
+                <minSeverity>info</minSeverity>
                 <comparisonVersion>9.0.3.v20130506</comparisonVersion>
               </configuration>
             </plugin>
