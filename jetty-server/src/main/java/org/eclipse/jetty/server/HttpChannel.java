@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,7 +46,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Next;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -88,7 +90,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final HttpURI _uri;
     private final HttpChannelState _state;
     private final Request _request;
-    private final Response _response;
+    private final Response _response;    
+    private final BlockingCallback _writeblock=new BlockingCallback();
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
@@ -500,6 +503,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     if (charset != null)
                         _request.setCharacterEncodingUnchecked(charset);
                     break;
+                default:    
             }
         }
         
@@ -597,55 +601,91 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 _state.completed();
         }
     }
-
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback) 
     {
         boolean committing = _committed.compareAndSet(false, true);
         if (committing)
         {
             // We need an info to commit
             if (info==null)
+            {
                 info = _response.newResponseInfo();
+            }
             
-            try
+            final int status=info.getStatus();
+            final Callback committed = new Callback()
             {
-                // Try to commit with the passed info
-                _transport.send(info, content, complete);
+                @Override
+                public void succeeded()
+                {
+                    // If we are committing a 1xx response, we need to reset the commit
+                    // status so that the "real" response can be committed again.
+                    if (status<200 && status>=100)
+                        _committed.set(false);
+                    callback.succeeded();
+                }
 
-                // If we are committing a 1xx response, we need to reset the commit
-                // status so that the "real" response can be committed again.
-                if (info.getStatus() < 200)
-                    _committed.set(false);
-            }
-            catch (EofException e)
-            {
-                LOG.debug(e);
-                // TODO is it worthwhile sending if we are at EoF?
-                // "application" info failed to commit, commit with a failsafe 500 info
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
-                complete=true;
-                throw e;
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-                // "application" info failed to commit, commit with a failsafe 500 info
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
-                complete=true;
-                throw e;
-            }
-            finally
-            {
-                // TODO this indicates the relationship with HttpOutput is not exactly correct
-                if (complete)
-                    _response.getHttpOutput().closed();
-            }
+                @Override
+                public void failed(final Throwable x)
+                {
+                    if (x instanceof EofException)
+                    {
+                        LOG.debug(x);
+                        _response.getHttpOutput().closed();
+                        callback.failed(x);
+                    }
+                    else
+                    {
+                        LOG.warn(x);
+                        _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                        {
+                            @Override
+                            public void succeeded()
+                            {
+                                _response.getHttpOutput().closed();
+                                callback.failed(x);
+                            }
+
+                            @Override
+                            public void failed(Throwable th)
+                            {
+                                LOG.ignore(th);
+                                _response.getHttpOutput().closed();
+                                callback.failed(x);
+                            }
+                        });
+                    }
+                }
+            };
+
+            _transport.send(info, content, complete, committed); 
         }
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(null, content, complete);
+            _transport.send(null, content, complete, callback);
         }
+        else
+        {
+            callback.failed(new IllegalStateException("committed"));
+        }
+        return committing;
+    }
+
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    {       
+        boolean committing=sendResponse(info,content,complete,_writeblock);
+       
+        try
+        {
+            _writeblock.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+        
         return committing;
     }
 
