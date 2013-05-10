@@ -1278,7 +1278,11 @@ public class ServletHandler extends ScopedHandler
                     String[] pathSpecs = servletmapping.getPathSpecs();
                     for (String pathSpec : pathSpecs)
                         if (pathSpec != null)
-                            pm.put(pathSpec, servlet_holder);
+                        {
+                            ServletHolder previous = pm.put(pathSpec, servlet_holder);
+                            if (previous != null)
+                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec);
+                        }
                 }
             }
 
