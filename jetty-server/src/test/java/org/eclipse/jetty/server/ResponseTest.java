@@ -89,6 +89,7 @@ public class ResponseTest
             @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
+                callback.succeeded();
             }
 
             @Override
