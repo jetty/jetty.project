@@ -120,6 +120,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _version;
     }
 
+    BlockingCallback getWriteBlockingCallback()
+    {
+        return _writeblock;
+    }
+    
     /**
      * @return the number of requests handled by this connection
      */
@@ -587,9 +592,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         try
         {
             if (_state.handling()==Next.CONTINUE)
-            {
                 sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
-            }
         }
         catch (IOException e)
         {
@@ -609,10 +612,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         {
             // We need an info to commit
             if (info==null)
-            {
                 info = _response.newResponseInfo();
-            }
             
+            // wrap callback to process 100 or 500 responses
             final int status=info.getStatus();
             final Callback committed = new Callback()
             {
@@ -695,8 +697,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     /**
-     * <p>Requests to write (in a blocking way) the given response content buffer,
-     * committing the response if needed.</p>
+     * <p>Blocking write, committing the response if needed.</p>
      *
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
@@ -704,7 +705,28 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      */
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        sendResponse(null, content, complete);
+        sendResponse(null,content,complete,_writeblock);  
+        try
+        {
+            _writeblock.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }  
+    }
+    
+    /**
+     * <p>Non-Blocking write, committing the response if needed.</p>
+     *
+     * @param content  the content buffer to write
+     * @param complete whether the content is complete for the response
+     * @param callback Callback when complete or failed
+     * @throws IOException if the write fails
+     */
+    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    {
+        sendResponse(null,content,complete,callback);
     }
 
     protected void execute(Runnable task)

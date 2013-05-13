@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.concurrent.TimeoutException;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -30,7 +32,10 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -226,105 +231,105 @@ public class HttpOutput extends ServletOutputStream
         write(s.getBytes(_channel.getResponse().getCharacterEncoding()));
     }
 
+    @Deprecated
     public void sendContent(Object content) throws IOException
     {
-        if (isClosed())
-            throw new IOException("Closed");
+        final BlockingCallback callback =_channel.getWriteBlockingCallback();
 
         if (content instanceof HttpContent)
         {
-            HttpContent httpContent = (HttpContent)content;
-            Response response = _channel.getResponse();
-            String contentType = httpContent.getContentType();
-            if (contentType != null && !response.getHttpFields().containsKey(HttpHeader.CONTENT_TYPE.asString()))
-                response.getHttpFields().put(HttpHeader.CONTENT_TYPE, contentType);
-
-            if (httpContent.getContentLength() > 0)
-                response.getHttpFields().putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
-
-            String lm = httpContent.getLastModified();
-            if (lm != null)
-                response.getHttpFields().put(HttpHeader.LAST_MODIFIED, lm);
-            else if (httpContent.getResource() != null)
-            {
-                long lml = httpContent.getResource().lastModified();
-                if (lml != -1)
-                    response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
-            }
-
-            String etag=httpContent.getETag();
-            if (etag!=null)
-                response.getHttpFields().put(HttpHeader.ETAG,etag);
-
-            content = _channel.useDirectBuffers()?httpContent.getDirectBuffer():null;
-            if (content == null)
-                content = httpContent.getIndirectBuffer();
-            if (content == null)
-                content = httpContent.getReadableByteChannel();
-            if (content == null)
-                content = httpContent.getInputStream();
+            _channel.getResponse().setHeaders((HttpContent)content);
+            sendContent((HttpContent)content,callback);
+            return;
         }
-        else if (content instanceof Resource)
+        
+        if (content instanceof Resource)
         {
             Resource resource = (Resource)content;
             _channel.getResponse().getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
-            content=resource.getInputStream(); // Closed below
+            
+            ReadableByteChannel in=((Resource)content).getReadableByteChannel();
+            if (in!=null)
+                sendContent(in,callback);
+            else
+                sendContent(resource.getInputStream(),callback);
         }
-
-        // Process content.
-        if (content instanceof ByteBuffer)
+        else if (content instanceof ByteBuffer)
         {
-            _channel.write((ByteBuffer)content, true);
-            _closed=true;
+            sendContent((ByteBuffer)content,callback);
         }
         else if (content instanceof ReadableByteChannel)
         {
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
-            try (ReadableByteChannel channel = (ReadableByteChannel)content;)
-            {
-                while(channel.isOpen())
-                {
-                    int pos = BufferUtil.flipToFill(buffer);
-                    int len=channel.read(buffer);
-                    if (len<0)
-                        break;
-                    BufferUtil.flipToFlush(buffer,pos);
-                    _channel.write(buffer,false);
-                }
-            }
-            finally
-            {
-                close();
-                _channel.getByteBufferPool().release(buffer);
-            }
+            sendContent((ReadableByteChannel)content,callback);
         }
         else if (content instanceof InputStream)
         {
-            // allocate non direct buffer so array may be directly accessed.
-            ByteBuffer buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
-            byte[] array = buffer.array();
-            int offset=buffer.arrayOffset();
-            int size=array.length-offset;
-            try (InputStream in = (InputStream)content;)
-            {
-                while(true)
-                {
-                    int len=in.read(array,offset,size);
-                    if (len<0)
-                        break;
-                    buffer.position(0);
-                    buffer.limit(len);
-                    _channel.write(buffer,false);
-                }
-            }
-            finally
-            {
-                close();
-                _channel.getByteBufferPool().release(buffer);
-            }
+            sendContent((InputStream)content,callback);
         }
         else
-            throw new IllegalArgumentException("unknown content type "+content.getClass());
+            callback.failed(new IllegalArgumentException("unknown content type "+content.getClass()));
+
+        try
+        {
+            callback.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+    public void sendContent(ByteBuffer content, Callback callback)
+    {
+        _channel.write(content,true,callback);
+    }
+
+    public void sendContent(InputStream in, Callback callback)
+    {
+        new InputStreamWritingCB(in,callback).iterate();
+    }
+
+    public void sendContent(ReadableByteChannel in, Callback callback)
+    {
+        new ReadableByteChannelWritingCB(in,callback).iterate();
+    }
+    
+    public void sendContent(HttpContent httpContent, Callback callback) throws IOException
+    {
+        if (isClosed())
+            throw new IOException("Closed");
+        if (BufferUtil.hasContent(_aggregate))
+            throw new IOException("written");
+        if (_channel.isCommitted())
+            throw new IOException("committed");
+            
+        _closed=true;
+
+        ByteBuffer buffer= _channel.useDirectBuffers()?httpContent.getDirectBuffer():null;
+        if (buffer == null)
+            buffer = httpContent.getIndirectBuffer();
+        
+        if (buffer!=null)
+        {
+            sendContent(buffer,callback);
+            return;
+        }
+        
+        ReadableByteChannel rbc=httpContent.getReadableByteChannel();
+        if (rbc!=null)
+        {
+            sendContent(rbc,callback);
+            return;
+        }
+           
+        InputStream in = httpContent.getInputStream();
+        if ( in!=null )
+        {
+            sendContent(in,callback);
+            return;
+        }
+
+        callback.failed(new IllegalArgumentException("unknown content for "+httpContent));
     }
 
     public int getBufferSize()
@@ -341,5 +346,103 @@ public class HttpOutput extends ServletOutputStream
     {
         if (BufferUtil.hasContent(_aggregate))
             BufferUtil.clear(_aggregate);
+    }
+    
+    private class InputStreamWritingCB extends IteratingCallback
+    {
+        final InputStream _in;
+        final ByteBuffer _buffer;
+        
+        public InputStreamWritingCB(InputStream in, Callback callback)
+        {          
+            super(callback);
+            _in=in;
+            _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+        }
+
+        @Override
+        protected boolean process() throws Exception
+        {
+            int len=_in.read(_buffer.array(),0,_buffer.capacity());
+            if (len==-1)
+            {
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+            boolean eof=false;
+
+            // if we read less than a buffer, are we at EOF?
+            if (len<_buffer.capacity())
+            {
+                int len2=_in.read(_buffer.array(),len,_buffer.capacity()-len);
+                if (len2<0)
+                    eof=true;
+                else
+                    len+=len2;
+            }
+
+            _buffer.position(0);
+            _buffer.limit(len);
+            _channel.write(_buffer,eof,this);
+            return false;
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            super.failed(x);
+            _channel.getByteBufferPool().release(_buffer);
+        }
+        
+    }
+    
+    private class ReadableByteChannelWritingCB extends IteratingCallback
+    {
+        final ReadableByteChannel _in;
+        final ByteBuffer _buffer;
+        
+        public ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
+        {          
+            super(callback);
+            _in=in;
+            _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
+        }
+
+        @Override
+        protected boolean process() throws Exception
+        {
+            _buffer.clear();
+            int len=_in.read(_buffer);
+            if (len==-1)
+            {
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+
+            boolean eof=false;
+
+            // if we read less than a buffer, are we at EOF?
+            if (len<_buffer.capacity())
+            {
+                int len2=_in.read(_buffer);
+                if (len2<0)
+                    eof=true;
+                else
+                    len+=len2;
+            }
+
+            _buffer.flip();
+            _channel.write(_buffer,eof,this);
+            return false;
+           
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            super.failed(x);
+            _channel.getByteBufferPool().release(_buffer);
+        }
+        
     }
 }

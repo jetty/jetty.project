@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -315,8 +316,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // then we can't be persistent
                 _generator.setPersistent(false);
 
-            Sender sender = new Sender(content,lastContent,_writeBlocker);
-            sender.process(info);
+            new Sender(info,content,lastContent,_writeBlocker).iterate();
 
             _writeBlocker.block();
         }
@@ -345,7 +345,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             // then we can't be persistent
             _generator.setPersistent(false);
 
-        new Sender(content,lastContent,callback).process(info);
+        new Sender(info,content,lastContent,callback).iterate();
     }
 
     @Override
@@ -586,147 +586,126 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _generator.setPersistent(false);
             super.handleException(x);
         }
-
     }
 
-    private class Sender implements Callback
+    private class Sender extends IteratingCallback
     {
         final ByteBuffer _content;
         final boolean _lastContent;
-        final Callback _callback;
+        final ResponseInfo _info;
         
-        Sender(ByteBuffer content, boolean last, Callback callback)
+        Sender(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
-            _callback=callback;
+            super(callback);
+            _info=info;
             _content=content;
             _lastContent=last;
         }
         
-        public void process(ResponseInfo info)
+        @Override
+        public boolean process() throws Exception
         {
-            try
+            ByteBuffer header = null;
+            ByteBuffer chunk = null;
+            while (true)
             {
-                ByteBuffer header = null;
-                ByteBuffer chunk = null;
-                while (true)
-                {
-                    HttpGenerator.Result result = _generator.generateResponse(info, header, chunk, _content, _lastContent);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} generate: {} ({},{},{})@{}",
-                            this,
-                            result,
-                            BufferUtil.toSummaryString(header),
-                            BufferUtil.toSummaryString(_content),
-                            _lastContent,
-                            _generator.getState());
+                HttpGenerator.Result result = _generator.generateResponse(_info, header, chunk, _content, _lastContent);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} generate: {} ({},{},{})@{}",
+                        this,
+                        result,
+                        BufferUtil.toSummaryString(header),
+                        BufferUtil.toSummaryString(_content),
+                        _lastContent,
+                        _generator.getState());
 
-                    switch (result)
+                switch (result)
+                {
+                    case NEED_HEADER:
                     {
-                        case NEED_HEADER:
+                        if (_lastContent && _content!=null && BufferUtil.space(_content)>_config.getResponseHeaderSize() && _content.hasArray() )
                         {
-                            if (_lastContent && _content!=null && BufferUtil.space(_content)>_config.getResponseHeaderSize() && _content.hasArray() )
-                            {
-                                // use spare space in content buffer for header buffer
-                                int p=_content.position();
-                                int l=_content.limit();
-                                _content.position(l);
-                                _content.limit(l+_config.getResponseHeaderSize());
-                                header=_content.slice();
-                                header.limit(0);
-                                _content.position(p);
-                                _content.limit(l);
-                            }
+                            // use spare space in content buffer for header buffer
+                            int p=_content.position();
+                            int l=_content.limit();
+                            _content.position(l);
+                            _content.limit(l+_config.getResponseHeaderSize());
+                            header=_content.slice();
+                            header.limit(0);
+                            _content.position(p);
+                            _content.limit(l);
+                        }
+                        else
+                            header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
+                        continue;
+                    }
+                    case NEED_CHUNK:
+                    {
+                        chunk = _chunk;
+                        if (chunk==null)
+                            chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
+                        continue;
+                    }
+                    case FLUSH:
+                    {
+                        // Don't write the chunk or the content if this is a HEAD response
+                        if (_channel.getRequest().isHead())
+                        {
+                            BufferUtil.clear(chunk);
+                            BufferUtil.clear(_content);
+                        }
+
+                        // If we have a header
+                        if (BufferUtil.hasContent(header))
+                        {
+                            // we know there will not be a chunk, so write either header+content or just the header
+                            if (BufferUtil.hasContent(_content))
+                                getEndPoint().write(this, header, _content);
                             else
-                                header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
-                            continue;
+                                getEndPoint().write(this, header);
                         }
-                        case NEED_CHUNK:
+                        else if (BufferUtil.hasContent(chunk))
                         {
-                            chunk = _chunk;
-                            if (chunk==null)
-                                chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
-                            continue;
-                        }
-                        case FLUSH:
-                        {
-                            // Don't write the chunk or the content if this is a HEAD response
-                            if (_channel.getRequest().isHead())
-                            {
-                                BufferUtil.clear(chunk);
-                                BufferUtil.clear(_content);
-                            }
-                            
-                            // If we have a header
-                            if (BufferUtil.hasContent(header))
-                            {
-                                // we know there will not be a chunk, so write either header+content or just the header
-                                if (BufferUtil.hasContent(_content))
-                                    getEndPoint().write(this, header, _content);
-                                else
-                                    getEndPoint().write(this, header);
-                            }
-                            else if (BufferUtil.hasContent(chunk))
-                            {
-                                if (BufferUtil.hasContent(_content))
-                                    getEndPoint().write(this, chunk, _content);
-                                else
-                                    getEndPoint().write(this, chunk);
-                            }
-                            else if (BufferUtil.hasContent(_content))
-                            {
-                                getEndPoint().write(this, _content);
-                            }
+                            if (BufferUtil.hasContent(_content))
+                                getEndPoint().write(this, chunk, _content);
                             else
-                                continue;
-                            return;
+                                getEndPoint().write(this, chunk);
                         }
-                        case SHUTDOWN_OUT:
+                        else if (BufferUtil.hasContent(_content))
                         {
-                            getEndPoint().shutdownOutput();
+                            getEndPoint().write(this, _content);
+                        }
+                        else
                             continue;
-                        }
-                        case DONE:
+                        return false;
+                    }
+                    case SHUTDOWN_OUT:
+                    {
+                        getEndPoint().shutdownOutput();
+                        continue;
+                    }
+                    case DONE:
+                    {
+                        if (header!=null)
                         {
-                            if (header!=null)
-                            {
-                                // don't release header in spare content buffer
-                                if (!_lastContent || _content==null || !_content.hasArray() || !header.hasArray() ||  _content.array()!=header.array())
-                                    _bufferPool.release(header);
-                            }
-                            if (chunk!=null)
-                                _bufferPool.release(chunk);
-                            _callback.succeeded();
-                            return;
+                            // don't release header in spare content buffer
+                            if (!_lastContent || _content==null || !_content.hasArray() || !header.hasArray() ||  _content.array()!=header.array())
+                                _bufferPool.release(header);
                         }
-                        case CONTINUE:
-                        {
-                            break;
-                        }
-                        default:
-                        {
-                            throw new IllegalStateException("generateResponse="+result);
-                        }
+                        if (chunk!=null)
+                            _bufferPool.release(chunk);
+                        return true;
+                    }
+                    case CONTINUE:
+                    {
+                        break;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException("generateResponse="+result);
                     }
                 }
             }
-            catch(Exception e)
-            {
-                _callback.failed(e);
-            }
         }
-
-        @Override
-        public void succeeded()
-        {
-            process(null);
-        }
-        
-        @Override
-        public void failed(Throwable x)
-        {
-            _callback.failed(x);
-        }
-        
     }
-
 }

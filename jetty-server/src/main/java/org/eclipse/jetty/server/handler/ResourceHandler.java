@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -431,26 +432,28 @@ public class ResourceHandler extends HandlerWrapper
 
         // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
-        response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
         if (_etags)
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
         
         if(skipContentBody)
             return;
+        
+        
         // Send the content
         OutputStream out =null;
         try {out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
-        // See if a short direct method can be used?
-        /* TODO file mapped buffers
+       
         if (out instanceof HttpOutput)
         {
-            // TODO file mapped buffers
-            ((HttpOutput)out).send(resource.getInputStream());
+            ((HttpOutput)out).sendContent(resource);
         }
-        else*/
+        else
         {
+            if (last_modified>0)
+                response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
+            
             // Write content normally
             resource.writeTo(out,0,resource.length());
         }

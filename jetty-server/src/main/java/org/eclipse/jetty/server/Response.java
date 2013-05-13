@@ -34,6 +34,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -129,6 +130,31 @@ public class Response implements HttpServletResponse
         _fields.clear();
     }
 
+    public void setHeaders(HttpContent httpContent)
+    {
+        Response response = _channel.getResponse();
+        String contentType = httpContent.getContentType();
+        if (contentType != null && !response.getHttpFields().containsKey(HttpHeader.CONTENT_TYPE.asString()))
+            response.getHttpFields().put(HttpHeader.CONTENT_TYPE, contentType);
+
+        if (httpContent.getContentLength() > 0)
+            response.getHttpFields().putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
+
+        String lm = httpContent.getLastModified();
+        if (lm != null)
+            response.getHttpFields().put(HttpHeader.LAST_MODIFIED, lm);
+        else if (httpContent.getResource() != null)
+        {
+            long lml = httpContent.getResource().lastModified();
+            if (lml != -1)
+                response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
+        }
+
+        String etag=httpContent.getETag();
+        if (etag!=null)
+            response.getHttpFields().put(HttpHeader.ETAG,etag);
+    }
+    
     public HttpOutput getHttpOutput()
     {
         return _out;

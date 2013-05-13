@@ -18,15 +18,24 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.net.Socket;
 import java.net.URI;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,6 +47,7 @@ import org.junit.Test;
 public class ResourceHandlerTest
 {
     private static Server _server;
+    private static HttpConfiguration _config;
     private static ServerConnector _connector;
     private static ContextHandler _contextHandler;
     private static ResourceHandler _resourceHandler;
@@ -45,11 +55,26 @@ public class ResourceHandlerTest
     @BeforeClass
     public static void setUp() throws Exception
     {
+        File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
+        File huge = new File(dir,"huge.txt");
+        File big=new File(dir,"big.txt");
+        FileOutputStream out = new FileOutputStream(huge);
+        for (int i=0;i<100;i++)
+        {       
+            FileInputStream in=new FileInputStream(big);
+            IO.copy(in,out);
+        }
+        huge.deleteOnExit();
+        
         _server = new Server();
-        _connector = new ServerConnector(_server);
+        _config=new HttpConfiguration();
+        _config.setOutputBufferSize(2048);
+        _connector = new ServerConnector(_server,new HttpConnectionFactory(_config));
+        
         _server.setConnectors(new Connector[] { _connector });
 
         _resourceHandler = new ResourceHandler();
+        _resourceHandler.setResourceBase(MavenTestingUtils.getTargetFile("test-classes/simple").getAbsolutePath());
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
@@ -62,16 +87,69 @@ public class ResourceHandlerTest
     {
         _server.stop();
     }
+    
+    @Before
+    public void before()
+    {
+        _config.setOutputBufferSize(4096);
+    }
 
     @Test
-    public void testSimpleResourceHandler() throws Exception
+    public void testMissing() throws Exception
     {
-        _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("simple").getAbsolutePath());
-
         SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-
-        Assert.assertEquals("simple text", sr.getString("/resource/simple.txt"));
-
         Assert.assertNotNull("missing jetty.css" , sr.getString("/resource/jetty-dir.css"));
+    }
+    
+    @Test
+    public void testSimple() throws Exception
+    {
+        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
+        Assert.assertEquals("simple text", sr.getString("/resource/simple.txt"));
+    }
+
+    
+    @Test
+    public void testBigFile() throws Exception
+    {
+        _config.setOutputBufferSize(2048);
+        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
+        String response=sr.getString("/resource/big.txt");
+        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+    }
+    
+    @Test
+    public void testBigFileBigBuffer() throws Exception
+    {
+        _config.setOutputBufferSize(16*1024);
+        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
+        String response=sr.getString("/resource/big.txt");
+        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+    }
+    
+    @Test
+    public void testBigFileLittleBuffer() throws Exception
+    {
+        _config.setOutputBufferSize(8);
+        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
+        String response=sr.getString("/resource/big.txt");
+        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+    }
+
+    @Test
+    public void testHuge() throws Exception
+    {
+        try (Socket socket = new Socket("localhost",_connector.getLocalPort());)
+        {
+            socket.getOutputStream().write("GET /resource/huge.txt HTTP/1.0\n\n".getBytes());
+            Thread.sleep(1000);
+            String response = IO.toString(socket.getInputStream());
+            Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(response,Matchers.containsString("   400\tThis is a big file\n     1\tThis is a big file"));
+            Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+        }
     }
 }
