@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -856,33 +858,55 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 resource.writeTo(out,0,content_length);
             }
+            // else if we can't do a bypass write because of wrapping
+            else if (content==null || written || !(out instanceof HttpOutput))
+            {
+                // write normally
+                writeHeaders(response,content,written?-1:content_length);
+                ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
+                if (buffer!=null)
+                    BufferUtil.writeTo(buffer,out);
+                else
+                    resource.writeTo(out,0,content_length);
+            }
+            // else do a bypass write
             else
             {
-                // See if a direct methods can be used?
-                if (content!=null && !written && out instanceof HttpOutput)
+                // write the headers
+                if (response instanceof Response)
                 {
-                    if (response instanceof Response)
-                    {
-                        writeOptionHeaders(((Response)response).getHttpFields());
-                        ((HttpOutput)out).sendContent(content);
-                    }
-                    else
-                    {
-                        writeHeaders(response,content,content_length);
-                        ((HttpOutput)out).sendContent(content.getResource());
-                    }
+                    Response r = (Response)response;
+                    writeOptionHeaders(r.getHttpFields());
+                    r.setHeaders(content);
                 }
                 else
-                {
-                    // Write headers normally
-                    writeHeaders(response,content,written?-1:content_length);
+                    writeHeaders(response,content,content_length);
 
-                    // Write content normally
-                    ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
-                    if (buffer!=null)
-                        BufferUtil.writeTo(buffer,out);
-                    else
-                        resource.writeTo(out,0,content_length);
+                // write the content asynchronously if supported
+                if (request.isAsyncSupported())
+                {
+                    final AsyncContext context = request.startAsync();
+
+                    ((HttpOutput)out).sendContent(content,new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {   
+                            context.complete();
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            LOG.debug(x);
+                            context.complete();
+                        }
+                    });
+                }
+                // otherwise write content blocking
+                else
+                {
+                    ((HttpOutput)out).sendContent(content);
                 }
             }
         }

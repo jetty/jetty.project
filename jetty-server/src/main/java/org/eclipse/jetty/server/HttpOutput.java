@@ -240,10 +240,8 @@ public class HttpOutput extends ServletOutputStream
         {
             _channel.getResponse().setHeaders((HttpContent)content);
             sendContent((HttpContent)content,callback);
-            return;
         }
-        
-        if (content instanceof Resource)
+        else if (content instanceof Resource)
         {
             Resource resource = (Resource)content;
             _channel.getResponse().getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
@@ -271,6 +269,21 @@ public class HttpOutput extends ServletOutputStream
 
         try
         {
+            callback.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+    }
+    
+    
+    public void sendContent(HttpContent content) throws IOException
+    {
+        try
+        {
+            final BlockingCallback callback =_channel.getWriteBlockingCallback();
+            sendContent(content,callback);
             callback.block();
         }
         catch (InterruptedException | TimeoutException e)
