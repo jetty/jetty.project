@@ -67,7 +67,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
                 //scan the equivalent of the WEB-INF/classes directory that has been synthesised by the plugin
                 if (f.isDirectory() && f.exists())
                 {
-                    doParse(context, parser, Resource.newResource(f.toURL()));
+                    doParse(context, parser, Resource.newResource(f.toURI()));
                 }
             }
 
