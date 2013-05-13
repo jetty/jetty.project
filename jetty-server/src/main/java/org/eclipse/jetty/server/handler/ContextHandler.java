@@ -2131,13 +2131,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                return clazz.newInstance();
+                return createInstance(clazz);
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -2179,6 +2175,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean isEnabled()
         {
             return _enabled;
+        }
+
+
+        public <T> T createInstance (Class<T> clazz) throws Exception
+        {
+            T o = clazz.newInstance();
+            return o;
         }
     }
 

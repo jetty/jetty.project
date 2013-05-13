@@ -18,19 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.EventListener;
-
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * WebAppDecoratorWrapper
+ * AnnotationDecorator
  *
  *
  */
@@ -53,99 +45,6 @@ public class AnnotationDecorator implements Decorator
         _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param filter
-     * @throws ServletException
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterHolder(org.eclipse.jetty.servlet.FilterHolder)
-     */
-    public void decorateFilterHolder(FilterHolder filter) throws ServletException
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param <T>
-     * @param filter
-     * @return the decorated filter
-     * @throws ServletException
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
-     */
-    public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
-    {
-        introspect(filter);
-        return filter;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param <T>
-     * @param listener
-     * @return the decorated event listener instance
-     * @throws ServletException
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateListenerInstance(java.util.EventListener)
-     */
-    public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
-    {
-        introspect(listener);
-        return listener;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param servlet
-     * @throws ServletException
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletHolder(org.eclipse.jetty.servlet.ServletHolder)
-     */
-    public void decorateServletHolder(ServletHolder servlet) throws ServletException
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param <T>
-     * @param servlet
-     * @return the decorated servlet instance
-     * @throws ServletException
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
-     */
-    public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
-    {
-        introspect(servlet);
-        return servlet;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param f
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyFilterInstance(javax.servlet.Filter)
-     */
-    public void destroyFilterInstance(Filter f)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param s
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyServletInstance(javax.servlet.Servlet)
-     */
-    public void destroyServletInstance(Servlet s)
-    {
-    }
-
-
-
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param f
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
-     */
-    public void destroyListenerInstance(EventListener f)
-    {
-    }
-
     /**
      * Look for annotations that can be discovered with introspection:
      * <ul>
@@ -160,5 +59,18 @@ public class AnnotationDecorator implements Decorator
     protected void introspect (Object o)
     {
         _introspector.introspect(o.getClass());
+    }
+
+    @Override
+    public Object decorate(Object o)
+    {
+       introspect(o);
+       return o;
+    }
+
+    @Override
+    public void destroy(Object o)
+    {
+        
     }
 }

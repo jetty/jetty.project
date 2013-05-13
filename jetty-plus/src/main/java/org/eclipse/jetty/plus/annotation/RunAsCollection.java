@@ -52,7 +52,6 @@ public class RunAsCollection
     }
 
     public RunAs getRunAs (Object o)
-    throws ServletException
     {
         if (o==null)
             return null;
@@ -61,7 +60,6 @@ public class RunAsCollection
     }
 
     public void setRunAs(Object o)
-    throws ServletException
     {
         if (o == null)
             return;

@@ -46,6 +46,7 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.descriptor.JspPropertyGroupDescriptor;
 import javax.servlet.descriptor.TaglibDescriptor;
+import javax.servlet.http.HttpUpgradeHandler;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -265,10 +266,10 @@ public class ServletContextHandler extends ContextHandler
     	        Decorator decorator = _decorators.get(i);
                 if (_servletHandler.getFilters()!=null)
                     for (FilterHolder holder:_servletHandler.getFilters())
-                        decorator.decorateFilterHolder(holder);
+                        decorator.decorate(holder);
     	        if(_servletHandler.getServlets()!=null)
     	            for (ServletHolder holder:_servletHandler.getServlets())
-    	                decorator.decorateServletHolder(holder);
+    	                decorator.decorate(holder);
     	    }
     	}
     	
@@ -521,14 +522,14 @@ public class ServletContextHandler extends ContextHandler
     void destroyServlet(Servlet servlet)
     {
         for (Decorator decorator : _decorators)
-            decorator.destroyServletInstance(servlet);
+            decorator.destroy(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
         for (Decorator decorator : _decorators)
-            decorator.destroyFilterInstance(filter);
+            decorator.destroy(filter);
     }
 
     /* ------------------------------------------------------------ */
@@ -1082,19 +1083,10 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T f = c.newInstance();
-                for (int i=_decorators.size()-1; i>=0; i--)
-                {
-                    Decorator decorator = _decorators.get(i);
-                    f=decorator.decorateFilterInstance(f);
-                }
+                T f = createInstance(c);
                 return f;
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -1106,23 +1098,29 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T s = c.newInstance();
-                for (int i=_decorators.size()-1; i>=0; i--)
-                {
-                    Decorator decorator = _decorators.get(i);
-                    s=decorator.decorateServletInstance(s);
-                }
+                T s = createInstance(c);
                 return s;
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
         }
+        
+        
+        
+        public <T> T createInstance (Class<T> c) throws Exception
+        {
+              T o = super.createInstance(c);
+              for (int i=_decorators.size()-1; i>=0; i--)
+              {
+                  Decorator decorator = _decorators.get(i);
+                  o=decorator.decorate(o);
+              }
+              return o;
+        }
+        
+        
 
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
@@ -1253,20 +1251,10 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T l = super.createListener(clazz);
-
-                for (int i=_decorators.size()-1; i>=0; i--)
-                {
-                    Decorator decorator = _decorators.get(i);
-                    l=decorator.decorateListenerInstance(l);
-                }
+                T l = createInstance(clazz);
                 return l;
-            }
-            catch(ServletException e)
-            {
-                throw e;
-            }
-            catch(Exception e)
+            }            
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -1307,15 +1295,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public interface Decorator
     {
-        <T extends Filter> T decorateFilterInstance(T filter) throws ServletException;
-        <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException;
-        <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException;
-
-        void decorateFilterHolder(FilterHolder filter) throws ServletException;
-        void decorateServletHolder(ServletHolder servlet) throws ServletException;
-
-        void destroyServletInstance(Servlet s);
-        void destroyFilterInstance(Filter f);
-        void destroyListenerInstance(EventListener f);
+        <T> T decorate (T o);
+        void destroy (Object o);
     }
 }

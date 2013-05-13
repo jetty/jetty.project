@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.plus.annotation;
 
-import javax.servlet.ServletException;
-
 import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
@@ -57,8 +55,10 @@ public class RunAs
     }
 
 
+    /**
+     * @param holder
+     */
     public void setRunAs (ServletHolder holder)
-    throws ServletException
     {
         if (holder == null)
             return;

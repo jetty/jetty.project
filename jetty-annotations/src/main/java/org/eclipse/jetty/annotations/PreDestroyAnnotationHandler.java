@@ -43,7 +43,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
     public void doHandle(Class clazz)
     {
         //Check that the PreDestroy is on a class that we're interested in
-        if (Util.isServletType(clazz))
+        if (Util.supportsPostConstructPreDestroy(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
             for (int i=0; i<methods.length; i++)

@@ -2218,7 +2218,23 @@ public class Request implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // TODO Auto-generated method stub
-        return null;
+        if (getContext() == null)
+            throw new ServletException ("Unable to instantiate "+handlerClass);
+
+        try
+        {
+            //Instantiate an instance and inject it
+            T h = getContext().createInstance(handlerClass);
+            
+            //TODO handle the rest of the upgrade process
+            
+            return h;
+        }
+        catch (Exception e)
+        {
+            if (e instanceof ServletException)
+                throw (ServletException)e;
+            throw new ServletException(e);
+        }
     }
 }

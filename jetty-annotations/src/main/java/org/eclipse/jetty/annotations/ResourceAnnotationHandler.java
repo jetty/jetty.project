@@ -57,7 +57,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public void doHandle(Class<?> clazz)
     {
-        if (Util.isServletType(clazz))
+        if (Util.supportsResourceInjection(clazz))
         {
             handleClass(clazz);
 
