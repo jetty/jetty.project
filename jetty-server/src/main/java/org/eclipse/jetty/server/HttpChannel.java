@@ -616,57 +616,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             
             // wrap callback to process 100 or 500 responses
             final int status=info.getStatus();
-            final Callback committed = new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    // If we are committing a 1xx response, we need to reset the commit
-                    // status so that the "real" response can be committed again.
-                    if (status<200 && status>=100)
-                        _committed.set(false);
-                    callback.succeeded();
-                }
+            final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
-                @Override
-                public void failed(final Throwable x)
-                {
-                    if (x instanceof EofException)
-                    {
-                        LOG.debug(x);
-                        _response.getHttpOutput().closed();
-                        callback.failed(x);
-                    }
-                    else
-                    {
-                        LOG.warn(x);
-                        _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                _response.getHttpOutput().closed();
-                                callback.failed(x);
-                            }
-
-                            @Override
-                            public void failed(Throwable th)
-                            {
-                                LOG.ignore(th);
-                                _response.getHttpOutput().closed();
-                                callback.failed(x);
-                            }
-                        });
-                    }
-                }
-            };
-
+            // committing write
             _transport.send(info, content, complete, committed); 
         }
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(null, content, complete, callback);
+            _transport.send(content, complete, callback);
         }
         else
         {
@@ -746,5 +704,69 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean useDirectBuffers()
     {
         return getEndPoint() instanceof ChannelEndPoint;
+    }
+
+    private class CommitCallback implements Callback
+    {
+        private final Callback _callback;
+
+        private CommitCallback(Callback callback)
+        {
+            _callback = callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            if (x instanceof EofException)
+            {
+                LOG.debug(x);
+                _response.getHttpOutput().closed();
+                _callback.failed(x);
+            }
+            else
+            {
+                LOG.warn(x);
+                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        _response.getHttpOutput().closed();
+                        _callback.failed(x);
+                    }
+
+                    @Override
+                    public void failed(Throwable th)
+                    {
+                        LOG.ignore(th);
+                        _response.getHttpOutput().closed();
+                        _callback.failed(x);
+                    }
+                });
+            }
+        }
+    }
+
+    private class Commit100Callback extends CommitCallback
+    {
+        private Commit100Callback(Callback callback)
+        {
+            super(callback);
+        }
+
+        @Override
+        public void succeeded()
+        {
+             _committed.set(false);
+             super.succeeded();
+        }
+
     }
 }

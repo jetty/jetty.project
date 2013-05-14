@@ -87,4 +87,10 @@ public class HttpTransportOverMux implements HttpTransport
         // prepare the AddChannelResponse
         // TODO: look at HttpSender in jetty-client for generator loop logic
     }
+    
+    @Override
+    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
+    {
+        send(null,responseBodyContent, lastContent, callback);
+    }
 }

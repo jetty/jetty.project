@@ -86,6 +86,14 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
+    
+    @Override
+    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
+    {
+        // TODO can this be more efficient?
+        send(null,responseBodyContent, lastContent, callback);
+    }
+    
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
