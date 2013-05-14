@@ -324,18 +324,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         catch (InterruptedException x)
         {
-            x.printStackTrace();
             throw (IOException)new InterruptedIOException().initCause(x);
-        }
-        catch (TimeoutException e)
-        {
-            e.printStackTrace();
-            throw new IOException(e);
         }
         catch (ClosedChannelException e)
         {
-            e.printStackTrace();
             throw new EofException(e);
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        catch (TimeoutException e)
+        {
+            throw new IOException(e);
         }
     }
     
