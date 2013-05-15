@@ -102,7 +102,7 @@ public class ServletHandler extends ScopedHandler
     private int _matchAfterIndex = -1;  //index of 1st programmatic FilterMapping with isMatchAfter=true
     private boolean _filterChainsCached=true;
     private int _maxFilterChainsCacheSize=512;
-    private boolean _startWithUnavailable=true;
+    private boolean _startWithUnavailable=false;
     private IdentityService _identityService;
     
     private ServletHolder[] _servlets=new ServletHolder[0];
