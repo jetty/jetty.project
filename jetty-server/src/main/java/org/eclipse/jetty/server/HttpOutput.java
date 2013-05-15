@@ -231,6 +231,12 @@ public class HttpOutput extends ServletOutputStream
         write(s.getBytes(_channel.getResponse().getCharacterEncoding()));
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set headers and send content.
+     * @deprecated Use {@link Response#setHeaders(HttpContent)} and {@link #sendContent(HttpContent)} instead.
+     * @param content
+     * @throws IOException
+     */
     @Deprecated
     public void sendContent(Object content) throws IOException
     {
@@ -276,8 +282,70 @@ public class HttpOutput extends ServletOutputStream
             throw new IOException(e);
         }
     }
+
+    /* ------------------------------------------------------------ */
+    /** Blocking send of content.
+     * @param content The content to send
+     * @throws IOException
+     */
+    public void sendContent(ByteBuffer content) throws IOException
+    {
+        try
+        {
+            final BlockingCallback callback =_channel.getWriteBlockingCallback();
+            _channel.write(content,true,callback);
+            callback.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Blocking send of content.
+     * @param content The content to send
+     * @throws IOException
+     */
+    public void sendContent(InputStream in) throws IOException
+    {
+        try
+        {
+            final BlockingCallback callback =_channel.getWriteBlockingCallback();
+            new InputStreamWritingCB(in,callback).iterate();
+            callback.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Blocking send of content.
+     * @param content The content to send
+     * @throws IOException
+     */
+    public void sendContent(ReadableByteChannel in) throws IOException
+    {
+        try
+        {
+            final BlockingCallback callback =_channel.getWriteBlockingCallback();
+            new ReadableByteChannelWritingCB(in,callback).iterate();
+            callback.block();
+        }
+        catch (InterruptedException | TimeoutException e)
+        {
+            throw new IOException(e);
+        }
+    }
     
-    
+
+    /* ------------------------------------------------------------ */
+    /** Blocking send of content.
+     * @param content The content to send
+     * @throws IOException
+     */
     public void sendContent(HttpContent content) throws IOException
     {
         try
@@ -291,22 +359,43 @@ public class HttpOutput extends ServletOutputStream
             throw new IOException(e);
         }
     }
+   
 
+    /* ------------------------------------------------------------ */
+    /** Asynchronous send of content.
+     * @param content The content to send
+     * @param callback The callback to use to notify success or failure
+     */
     public void sendContent(ByteBuffer content, Callback callback)
     {
         _channel.write(content,true,callback);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Asynchronous send of content.
+     * @param content The content to send
+     * @param callback The callback to use to notify success or failure
+     */
     public void sendContent(InputStream in, Callback callback)
     {
         new InputStreamWritingCB(in,callback).iterate();
     }
 
+    /* ------------------------------------------------------------ */
+    /** Asynchronous send of content.
+     * @param content The content to send
+     * @param callback The callback to use to notify success or failure
+     */
     public void sendContent(ReadableByteChannel in, Callback callback)
     {
         new ReadableByteChannelWritingCB(in,callback).iterate();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Asynchronous send of content.
+     * @param content The content to send
+     * @param callback The callback to use to notify success or failure
+     */
     public void sendContent(HttpContent httpContent, Callback callback) throws IOException
     {
         if (isClosed())
@@ -361,6 +450,15 @@ public class HttpOutput extends ServletOutputStream
             BufferUtil.clear(_aggregate);
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /** An iterating callback that will take content from an 
+     * InputStream and write it to the associated {@link HttpChannel}.
+     * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used. 
+     * This callback is passed to the {@link HttpChannel#write(ByteBuffer, boolean, Callback)} to
+     * be notified as each buffer is written and only once all the input is consumed will the 
+     * wrapped {@link Callback#succeeded()} method be called. 
+     */
     private class InputStreamWritingCB extends IteratingCallback
     {
         final InputStream _in;
@@ -408,7 +506,16 @@ public class HttpOutput extends ServletOutputStream
         }
         
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** An iterating callback that will take content from a 
+     * ReadableByteChannel and write it to the {@link HttpChannel}.
+     * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
+     * {@link HttpChannel#useDirectBuffers()} is true.
+     * This callback is passed to the {@link HttpChannel#write(ByteBuffer, boolean, Callback)} to
+     * be notified as each buffer is written and only once all the input is consumed will the 
+     * wrapped {@link Callback#succeeded()} method be called. 
+     */
     private class ReadableByteChannelWritingCB extends IteratingCallback
     {
         final ReadableByteChannel _in;
@@ -456,6 +563,5 @@ public class HttpOutput extends ServletOutputStream
             super.failed(x);
             _channel.getByteBufferPool().release(_buffer);
         }
-        
     }
 }

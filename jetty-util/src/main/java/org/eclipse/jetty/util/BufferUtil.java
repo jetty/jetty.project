@@ -731,9 +731,10 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {
-        RandomAccessFile raf = new RandomAccessFile(file,"r");
-        MappedByteBuffer buffer=raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
-        return buffer;
+        try(RandomAccessFile raf = new RandomAccessFile(file,"r");)
+        {
+            return raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
+        }
     }
 
     public static String toSummaryString(ByteBuffer buffer)

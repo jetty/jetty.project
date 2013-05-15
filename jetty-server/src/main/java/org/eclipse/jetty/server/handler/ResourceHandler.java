@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -438,22 +440,34 @@ public class ResourceHandler extends HandlerWrapper
         if(skipContentBody)
             return;
         
-        
         // Send the content
         OutputStream out =null;
         try {out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
+        if (last_modified>0)
+            response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
        
-        if (out instanceof HttpOutput)
+        if (out instanceof HttpOutput && request.isAsyncSupported())
         {
-            ((HttpOutput)out).sendContent(resource);
+            final AsyncContext async = request.startAsync();
+            ((HttpOutput)out).sendContent(resource.getReadableByteChannel(),new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    async.complete();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    async.complete();
+                }   
+            });
         }
         else
         {
-            if (last_modified>0)
-                response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
-            
             // Write content normally
             resource.writeTo(out,0,resource.length());
         }
