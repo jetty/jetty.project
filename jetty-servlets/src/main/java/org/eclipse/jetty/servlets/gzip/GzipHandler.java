@@ -62,8 +62,9 @@ public class GzipHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
-    protected Set<String> _mimeTypes;
-    protected Set<String> _excluded;
+    final protected Set<String> _mimeTypes=new HashSet<>();
+    protected boolean _excludeMimeTypes=false;
+    protected Set<String> _excludedUA;
     protected int _bufferSize = 8192;
     protected int _minGzipSize = 256;
     protected String _vary = "Accept-Encoding, User-Agent";
@@ -96,7 +97,9 @@ public class GzipHandler extends HandlerWrapper
      */
     public void setMimeTypes(Set<String> mimeTypes)
     {
-        _mimeTypes = mimeTypes;
+        _excludeMimeTypes=false;
+        _mimeTypes.clear();
+        _mimeTypes.addAll(mimeTypes);
     }
 
     /* ------------------------------------------------------------ */
@@ -110,7 +113,8 @@ public class GzipHandler extends HandlerWrapper
     {
         if (mimeTypes != null)
         {
-            _mimeTypes = new HashSet<String>();
+            _excludeMimeTypes=false;
+            _mimeTypes.clear();
             StringTokenizer tok = new StringTokenizer(mimeTypes,",",false);
             while (tok.hasMoreTokens())
             {
@@ -121,13 +125,22 @@ public class GzipHandler extends HandlerWrapper
 
     /* ------------------------------------------------------------ */
     /**
+     * Set the mime types.
+     */
+    public void setExcludeMimeTypes(boolean exclude)
+    {
+        _excludeMimeTypes=exclude;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * Get the excluded user agents.
      *
      * @return excluded user agents
      */
     public Set<String> getExcluded()
     {
-        return _excluded;
+        return _excludedUA;
     }
 
     /* ------------------------------------------------------------ */
@@ -139,7 +152,7 @@ public class GzipHandler extends HandlerWrapper
      */
     public void setExcluded(Set<String> excluded)
     {
-        _excluded = excluded;
+        _excludedUA = excluded;
     }
 
     /* ------------------------------------------------------------ */
@@ -153,10 +166,10 @@ public class GzipHandler extends HandlerWrapper
     {
         if (excluded != null)
         {
-            _excluded = new HashSet<String>();
+            _excludedUA = new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(excluded,",",false);
             while (tok.hasMoreTokens())
-                _excluded.add(tok.nextToken());
+                _excludedUA.add(tok.nextToken());
         }
     }
 
@@ -244,10 +257,10 @@ public class GzipHandler extends HandlerWrapper
             if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
                     && !HttpMethod.HEAD.is(request.getMethod()))
             {
-                if (_excluded!=null)
+                if (_excludedUA!=null)
                 {
                     String ua = request.getHeader("User-Agent");
-                    if (_excluded.contains(ua))
+                    if (_excludedUA.contains(ua))
                     {
                         _handler.handle(target,baseRequest, request, response);
                         return;
@@ -326,7 +339,7 @@ public class GzipHandler extends HandlerWrapper
         return new CompressedResponseWrapper(request,response)
         {
             {
-                super.setMimeTypes(GzipHandler.this._mimeTypes);
+                super.setMimeTypes(GzipHandler.this._mimeTypes,GzipHandler.this._excludeMimeTypes);
                 super.setBufferSize(GzipHandler.this._bufferSize);
                 super.setMinCompressSize(GzipHandler.this._minGzipSize);
             }

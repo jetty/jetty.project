@@ -27,12 +27,14 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 
@@ -144,10 +146,16 @@ public class IncludableGzipFilter extends GzipFilter
         @Override
         public void setHeader(String name,String value)
         {
-            super.setHeader(name,value);
-            HttpServletResponse response = (HttpServletResponse)getResponse();
-            if (!response.containsHeader(name))
-                response.setHeader("org.eclipse.jetty.server.include."+name,value);
+            if (getRequest().getDispatcherType()==DispatcherType.INCLUDE)
+            {
+                if (!"etag".equalsIgnoreCase(name) && !name.startsWith("content-"))
+                {
+                    HttpServletResponse response = (HttpServletResponse)getResponse();
+                    response.setHeader("org.eclipse.jetty.server.include."+name,value);
+                }
+            }
+            else
+                super.setHeader(name,value);
         }
 
         @Override

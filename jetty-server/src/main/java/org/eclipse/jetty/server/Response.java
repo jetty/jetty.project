@@ -425,7 +425,7 @@ public class Response implements HttpServletResponse
     {
         if (_channel.isExpecting102Processing() && !isCommitted())
         {
-            _channel.commitResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
+            _channel.sendResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
         }
     }
     
