@@ -107,6 +107,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         l.start();
     }
+    
+    /**
+     * Stops the given lifecycle.
+     *
+     * @param l
+     * @throws Exception
+     */
+    protected void stop(LifeCycle l) throws Exception
+    {
+        l.stop();
+    }
 
     /**
      * Stops the managed lifecycle beans in the reverse order they were added.
@@ -124,7 +135,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             {
                 LifeCycle l = (LifeCycle)b._bean;
                 if (l.isRunning())
-                    l.stop();
+                    stop(l);
             }
         }
     }
@@ -261,7 +272,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     {
                         LifeCycle l = (LifeCycle)o;
                         if (!l.isRunning())
-                            l.start();
+                            start(l);
                     }
                     break;
 
@@ -276,7 +287,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                             else
                             {
                                 manage(new_bean);
-                                l.start();
+                                start(l);
                             }
                         }
                         else
@@ -452,6 +463,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (_beans.remove(bean))
         {
+            
             unmanage(bean);
 
             for (Container.Listener l:_listeners)
@@ -472,7 +484,23 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     }
                 }
             }
-            
+
+            // stop managed beans
+            if (bean._managed==Managed.MANAGED && bean._bean instanceof LifeCycle)
+            {
+                try
+                {
+                    stop((LifeCycle)bean._bean);
+                }
+                catch(RuntimeException | Error e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
             return true;
         }
         return false;
