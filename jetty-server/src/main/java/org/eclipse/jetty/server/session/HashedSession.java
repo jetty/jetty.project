@@ -121,6 +121,7 @@ public class HashedSession extends AbstractSession
                 fos = new FileOutputStream(file);
                 willPassivate();
                 save(fos);
+                IO.close(fos);
                 if (reactivate)
                     didActivate();
                 else
@@ -129,14 +130,9 @@ public class HashedSession extends AbstractSession
             catch (Exception e)
             {
                 saveFailed(); // We won't try again for this session
-                if (fos != null)
-                {
-                    // Must not leave the file open if the saving failed
-                    IO.close(fos);
-                    // No point keeping the file if we didn't save the whole session
-                    file.delete();
-                    throw e;
-                }
+                if (fos != null) IO.close(fos);
+                if (file != null) file.delete(); // No point keeping the file if we didn't save the whole session
+                throw e;             
             }
         }
     }
@@ -192,9 +188,10 @@ public class HashedSession extends AbstractSession
                 fis = new FileInputStream(file);
                 _idled = false;
                 _hashSessionManager.restoreSession(fis, this);
-
-                didActivate();
+                IO.close(fis); 
                 
+                didActivate();
+
                 // If we are doing period saves, then there is no point deleting at this point 
                 if (_hashSessionManager._savePeriodMs == 0)
                     file.delete();
@@ -202,7 +199,7 @@ public class HashedSession extends AbstractSession
             catch (Exception e)
             {
                 LOG.warn("Problem de-idling session " + super.getId(), e);
-                IO.close(fis);
+                if (fis != null) IO.close(fis);//Must ensure closed before invalidate
                 invalidate();
             }
         }
