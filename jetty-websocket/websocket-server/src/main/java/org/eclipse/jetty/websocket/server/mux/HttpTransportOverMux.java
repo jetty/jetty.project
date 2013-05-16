@@ -57,18 +57,7 @@ public class HttpTransportOverMux implements HttpTransport
     public void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent) throws IOException
     {
         send(info,responseBodyContent,lastContent,streamBlocker);
-        try
-        {
-            streamBlocker.block();
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new EofException(e);
-        }
+        streamBlocker.block();
     }
 
     @Override

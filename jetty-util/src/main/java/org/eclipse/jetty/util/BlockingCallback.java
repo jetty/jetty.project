@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
@@ -87,24 +88,24 @@ public class BlockingCallback implements Callback
      * This is useful for code that wants to repeatable use a FutureCallback to convert
      * an asynchronous API to a blocking API. 
      * @return
-     * @throws InterruptedException
      * @throws IOException
-     * @throws TimeoutException
      */
-    public void block() throws InterruptedException, IOException, TimeoutException
+    public void block() throws IOException
     {
-        _semaphone.acquire();
         try
         {
+            _semaphone.acquire();
             if (_cause==COMPLETED)
                 return;
             if (_cause instanceof IOException)
                 throw (IOException) _cause;
             if (_cause instanceof CancellationException)
                 throw (CancellationException) _cause;
-            if (_cause instanceof TimeoutException)
-                throw (TimeoutException) _cause;
             throw new IOException(_cause);
+        }
+        catch (final InterruptedException e)
+        {
+            throw new InterruptedIOException(){{initCause(e);}};
         }
         finally
         {

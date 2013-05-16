@@ -322,10 +322,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
             _writeBlocker.block();
         }
-        catch (InterruptedException x)
-        {
-            throw (IOException)new InterruptedIOException().initCause(x);
-        }
         catch (ClosedChannelException e)
         {
             throw new EofException(e);
@@ -333,10 +329,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         catch (IOException e)
         {
             throw e;
-        }
-        catch (TimeoutException e)
-        {
-            throw new IOException(e);
         }
     }
     
@@ -435,67 +427,56 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             default implementation of a blocking queue with an implementation
             that uses the calling thread to block on a readable callback and
             then to do the parsing before before attempting the read.
-            */
-            try
+             */
+            while (true)
             {
-                while (true)
+                // Can the parser progress (even with an empty buffer)
+                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+
+                // If there is more content to parse, loop so we can queue all content from this buffer now without the
+                // need to call blockForContent again
+                while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
+                    _parser.parseNext(_requestBuffer);
+
+                // If we have an event, return
+                if (event)
+                    return;
+
+                // Do we have content ready to parse?
+                if (BufferUtil.isEmpty(_requestBuffer))
                 {
-                    // Can the parser progress (even with an empty buffer)
-                    boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-
-                    // If there is more content to parse, loop so we can queue all content from this buffer now without the
-                    // need to call blockForContent again
-                    while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
-                        _parser.parseNext(_requestBuffer);
-
-                    // If we have an event, return
-                    if (event)
-                        return;
-
-                    // Do we have content ready to parse?
-                    if (BufferUtil.isEmpty(_requestBuffer))
+                    // If no more input
+                    if (getEndPoint().isInputShutdown())
                     {
-                        // If no more input
-                        if (getEndPoint().isInputShutdown())
-                        {
-                            _parser.shutdownInput();
-                            shutdown();
-                            return;
-                        }
+                        _parser.shutdownInput();
+                        shutdown();
+                        return;
+                    }
 
-                        // Wait until we can read
-                        block(_readBlocker);
-                        LOG.debug("{} block readable on {}",this,_readBlocker);
-                        _readBlocker.block();
+                    // Wait until we can read
+                    block(_readBlocker);
+                    LOG.debug("{} block readable on {}",this,_readBlocker);
+                    _readBlocker.block();
 
-                        // We will need a buffer to read into
-                        if (_requestBuffer==null)
-                        {
-                            long content_length=_channel.getRequest().getContentLength();
-                            int size=getInputBufferSize();
-                            if (size<content_length)
-                                size=size*4; // TODO tune this
-                            _requestBuffer=_bufferPool.acquire(size,REQUEST_BUFFER_DIRECT);
-                        }
+                    // We will need a buffer to read into
+                    if (_requestBuffer==null)
+                    {
+                        long content_length=_channel.getRequest().getContentLength();
+                        int size=getInputBufferSize();
+                        if (size<content_length)
+                            size=size*4; // TODO tune this
+                        _requestBuffer=_bufferPool.acquire(size,REQUEST_BUFFER_DIRECT);
+                    }
 
-                        // read some data
-                        int filled=getEndPoint().fill(_requestBuffer);
-                        LOG.debug("{} block filled {}",this,filled);
-                        if (filled<0)
-                        {
-                            _parser.shutdownInput();
-                            return;
-                        }
+                    // read some data
+                    int filled=getEndPoint().fill(_requestBuffer);
+                    LOG.debug("{} block filled {}",this,filled);
+                    if (filled<0)
+                    {
+                        _parser.shutdownInput();
+                        return;
                     }
                 }
-            }
-            catch (TimeoutException e)
-            {
-                throw new EofException(e);
-            }
-            catch (final InterruptedException x)
-            {
-                throw new InterruptedIOException(getEndPoint().toString()){{initCause(x);}};
             }
         }
 

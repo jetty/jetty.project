@@ -193,17 +193,10 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         send(info, content, lastContent, streamBlocker);
-        try
-        {
-            streamBlocker.block();
-        }
-        catch (InterruptedException | TimeoutException | IOException e)
-        {
-            LOG.debug(e);
-        }
+        streamBlocker.block();
     }
 
     @Override

@@ -144,7 +144,13 @@ public class HttpOutput extends ServletOutputStream
 
     public boolean closeIfAllContentWritten() throws IOException
     {
-        return _channel.getResponse().closeIfAllContentWritten(_written);
+        Response response=_channel.getResponse();
+        if (response.isAllContentWritten(_written))
+        {
+            response.closeOutput();
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -153,53 +159,55 @@ public class HttpOutput extends ServletOutputStream
         if (isClosed())
             throw new EOFException("Closed");
 
-        // Do we have an aggregate buffer already ?
+        // Do we have an aggregate buffer ?
         if (_aggregate == null)
         {
-            // What size should the aggregate be ?
+            // NO - should we have an aggregate buffer? yes if this write will easily fit in it
             int size = getBufferSize();
-
-            // If this write would fill more than half the aggregate, just write it directly
-            if (len > size / 2)
+            if (len<=size/2)
             {
-                _channel.write(ByteBuffer.wrap(b, off, len), false);
+                _aggregate = _channel.getByteBufferPool().acquire(size, false);
+                BufferUtil.append(_aggregate, b, off, len);
                 _written += len;
+                closeIfAllContentWritten();
                 return;
             }
-
-            // Allocate an aggregate buffer.
-            // Never direct as it is slow to do little writes to a direct buffer.
-            _aggregate = _channel.getByteBufferPool().acquire(size, false);
         }
-
-        // Do we have space to aggregate ?
-        int space = BufferUtil.space(_aggregate);
-        if (len > space)
+        else
         {
-            // No space so write the aggregate out if it is not empty
-            if (BufferUtil.hasContent(_aggregate))
+            // YES - fill the aggregate with content from the buffer
+            int filled = BufferUtil.fill(_aggregate, b, off, len);
+            _written += filled;
+                     
+            // if closed or there is no content left over and we are not full, then we are done
+            if (closeIfAllContentWritten() || filled==len && !BufferUtil.isFull(_aggregate))
+                return;
+            
+            off+=filled;
+            len-=filled;
+        }
+        
+        // flush the aggregate
+        if (BufferUtil.hasContent(_aggregate))
+        {
+            _channel.write(_aggregate, false);
+            
+            // should we fill aggregate again from the buffer?
+            if (len<_aggregate.capacity()/2)
             {
-                _channel.write(_aggregate, false);
-                space = BufferUtil.space(_aggregate);
+                BufferUtil.append(_aggregate, b, off, len);
+                _written += len;
+                closeIfAllContentWritten();
+                return;
             }
         }
-
-        // Do we have space to aggregate now ?
-        if (len > space)
-        {
-            // No space so write the content directly
-            _channel.write(ByteBuffer.wrap(b, off, len), false);
-            _written += len;
-            return;
-        }
-
-        // Aggregate the content
-        BufferUtil.append(_aggregate, b, off, len);
+        
+        // write any remaining content in the buffer directly
         _written += len;
-
-        // Check if all written or full
-        if (!closeIfAllContentWritten() && BufferUtil.isFull(_aggregate))
-            _channel.write(_aggregate, false);
+        boolean complete=_channel.getResponse().isAllContentWritten(_written);
+        _channel.write(ByteBuffer.wrap(b, off, len), complete);
+        if (complete)
+            _channel.getResponse().closeOutput();
     }
 
 
@@ -219,7 +227,11 @@ public class HttpOutput extends ServletOutputStream
 
         // Check if all written or full
         if (!closeIfAllContentWritten() && BufferUtil.isFull(_aggregate))
-            _channel.write(_aggregate, false);
+        {
+            BlockingCallback callback = _channel.getWriteBlockingCallback();
+            _channel.write(_aggregate, false, callback);
+            callback.block();
+        }
     }
 
     @Override
@@ -273,14 +285,7 @@ public class HttpOutput extends ServletOutputStream
         else
             callback.failed(new IllegalArgumentException("unknown content type "+content.getClass()));
 
-        try
-        {
-            callback.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
+        callback.block();
     }
 
     /* ------------------------------------------------------------ */
@@ -290,16 +295,9 @@ public class HttpOutput extends ServletOutputStream
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
-        try
-        {
-            final BlockingCallback callback =_channel.getWriteBlockingCallback();
-            _channel.write(content,true,callback);
-            callback.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
+        final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        _channel.write(content,true,callback);
+        callback.block();
     }
 
     /* ------------------------------------------------------------ */
@@ -309,16 +307,9 @@ public class HttpOutput extends ServletOutputStream
      */
     public void sendContent(InputStream in) throws IOException
     {
-        try
-        {
-            final BlockingCallback callback =_channel.getWriteBlockingCallback();
-            new InputStreamWritingCB(in,callback).iterate();
-            callback.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
+        final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        new InputStreamWritingCB(in,callback).iterate();
+        callback.block();
     }
 
     /* ------------------------------------------------------------ */
@@ -328,16 +319,9 @@ public class HttpOutput extends ServletOutputStream
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        try
-        {
-            final BlockingCallback callback =_channel.getWriteBlockingCallback();
-            new ReadableByteChannelWritingCB(in,callback).iterate();
-            callback.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
+        final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        new ReadableByteChannelWritingCB(in,callback).iterate();
+        callback.block();
     }
     
 
@@ -348,16 +332,9 @@ public class HttpOutput extends ServletOutputStream
      */
     public void sendContent(HttpContent content) throws IOException
     {
-        try
-        {
-            final BlockingCallback callback =_channel.getWriteBlockingCallback();
-            sendContent(content,callback);
-            callback.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
+        final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        sendContent(content,callback);
+        callback.block();
     }
    
 

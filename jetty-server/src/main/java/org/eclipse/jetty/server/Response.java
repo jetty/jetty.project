@@ -757,34 +757,37 @@ public class Response implements HttpServletResponse
 
         if (_contentLength > 0)
         {
-            try
+            if (isAllContentWritten(written))
             {
-                closeIfAllContentWritten(written);
-            }
-            catch(IOException e)
-            {
-                throw new RuntimeIOException(e);
+                try
+                {
+                    closeOutput();
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
             }
         }
     }
 
-    public boolean closeIfAllContentWritten(long written) throws IOException
+    public boolean isAllContentWritten(long written)
     {
-        if (_contentLength >= 0 && written >= _contentLength)
+        return (_contentLength >= 0 && written >= _contentLength);
+    }
+
+    public void closeOutput() throws IOException
+    {
+        switch (_outputType)
         {
-            switch (_outputType)
-            {
-                case WRITER:
-                    _writer.close();
-                    break;
-                case STREAM:
-                    getOutputStream().close();
-                    break;
-                default:
-            }
-            return true;
+            case WRITER:
+                _writer.close();
+                break;
+            case STREAM:
+                getOutputStream().close();
+                break;
+            default:
         }
-        return false;
     }
 
     public long getLongContentLength()

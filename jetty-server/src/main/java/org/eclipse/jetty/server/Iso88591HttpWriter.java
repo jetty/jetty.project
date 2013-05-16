@@ -38,6 +38,13 @@ public class Iso88591HttpWriter extends HttpWriter
         if (length==0)
             out.closeIfAllContentWritten();
 
+        if (length==1)
+        {
+            int c=s[offset];
+            out.write(c<256?c:'?');
+            return;
+        }
+        
         while (length > 0)
         {
             _bytes.reset();

@@ -89,14 +89,7 @@ public class ResponseTest
             {
                 BlockingCallback cb = new BlockingCallback();
                 send(info,content,lastContent,cb);
-                try
-                {
-                    cb.block();
-                }
-                catch (InterruptedException | TimeoutException e)
-                {
-                    throw new IOException(e);
-                }
+                cb.block();
             }
 
             @Override

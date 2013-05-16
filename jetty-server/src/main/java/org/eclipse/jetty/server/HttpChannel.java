@@ -636,16 +636,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {       
         boolean committing=sendResponse(info,content,complete,_writeblock);
-       
-        try
-        {
-            _writeblock.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }
-        
+        _writeblock.block();
         return committing;
     }
 
@@ -664,14 +655,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
         sendResponse(null,content,complete,_writeblock);  
-        try
-        {
-            _writeblock.block();
-        }
-        catch (InterruptedException | TimeoutException e)
-        {
-            throw new IOException(e);
-        }  
+        _writeblock.block();
     }
     
     /**
