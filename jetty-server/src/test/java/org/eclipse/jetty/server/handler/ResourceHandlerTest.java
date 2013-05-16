@@ -74,6 +74,9 @@ public class ResourceHandlerTest
         _server.setConnectors(new Connector[] { _connector });
 
         _resourceHandler = new ResourceHandler();
+        _resourceHandler.setMinAsyncContentLength(4096);
+        _resourceHandler.setMinMemoryMappedContentLength(8192);
+        
         _resourceHandler.setResourceBase(MavenTestingUtils.getTargetFile("test-classes/simple").getAbsolutePath());
 
         _contextHandler = new ContextHandler("/resource");

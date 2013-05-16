@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -38,10 +40,12 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -68,6 +72,8 @@ public class ResourceHandler extends HandlerWrapper
     String _cacheControl;
     boolean _directory;
     boolean _etags;
+    int _minMemoryMappedContentLength=-1;
+    int _minAsyncContentLength=0;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
@@ -103,6 +109,50 @@ public class ResourceHandler extends HandlerWrapper
     public void setDirectoriesListed(boolean directory)
     {
         _directory = directory;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get minimum memory mapped file content length.
+     * @return the minimum size in bytes of a file resource that will
+     * be served using a memory mapped buffer, or -1 (default) for no memory mapped
+     * buffers.
+     */
+    public int getMinMemoryMappedContentLength()
+    {
+        return _minMemoryMappedContentLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set minimum memory mapped file content length.
+     * @param minMemoryMappedFileSize the minimum size in bytes of a file resource that will
+     * be served using a memory mapped buffer, or -1 for no memory mapped
+     * buffers.
+     */
+    public void setMinMemoryMappedContentLength(int minMemoryMappedFileSize)
+    {
+        _minMemoryMappedContentLength = minMemoryMappedFileSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the minimum content length for async handling.
+     * @return The minimum size in bytes of the content before asynchronous 
+     * handling is used, or -1 for no async handling or 0 (default) for using
+     * {@link HttpServletResponse#getBufferSize()} as the minimum length.
+     */
+    public int getMinAsyncContentLength()
+    {
+        return _minAsyncContentLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the minimum content length for async handling.
+     * @param minAsyncContentLength The minimum size in bytes of the content before asynchronous 
+     * handling is used, or -1 for no async handling or 0 for using
+     * {@link HttpServletResponse#getBufferSize()} as the minimum length.
+     */
+    public void setMinAsyncContentLength(int minAsyncContentLength)
+    {
+        _minAsyncContentLength = minAsyncContentLength;
     }
 
     /* ------------------------------------------------------------ */
@@ -361,9 +411,10 @@ public class ResourceHandler extends HandlerWrapper
         }
 
         Resource resource = getResource(request);
-
+        // If resource is not found
         if (resource==null || !resource.exists())
         {
+            // inject the jetty-dir.css file if it matches
             if (target.endsWith("/jetty-dir.css"))
             {
                 resource = getStylesheet();
@@ -382,6 +433,7 @@ public class ResourceHandler extends HandlerWrapper
         // We are going to serve something
         baseRequest.setHandled(true);
 
+        // handle directories
         if (resource.isDirectory())
         {
             if (!request.getPathInfo().endsWith(URIUtil.SLASH))
@@ -401,7 +453,7 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
-        // set some headers
+        // Handle ETAGS
         long last_modified=resource.lastModified();
         String etag=null;
         if (_etags)
@@ -417,7 +469,7 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
         
-        
+        // Handle if modified since 
         if (last_modified>0)
         {
             long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
@@ -428,11 +480,10 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
+        // set the headers
         String mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
-
-        // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
         if (_etags)
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
@@ -440,36 +491,77 @@ public class ResourceHandler extends HandlerWrapper
         if(skipContentBody)
             return;
         
+        
         // Send the content
         OutputStream out =null;
         try {out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
-        if (last_modified>0)
-            response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
-       
-        if (out instanceof HttpOutput && request.isAsyncSupported())
-        {
-            final AsyncContext async = request.startAsync();
-            ((HttpOutput)out).sendContent(resource.getReadableByteChannel(),new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    async.complete();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    async.complete();
-                }   
-            });
-        }
+        // Has the output been wrapped
+        if (!(out instanceof HttpOutput))
+            // Write content via wrapped output
+            resource.writeTo(out,0,resource.length());
         else
         {
-            // Write content normally
-            resource.writeTo(out,0,resource.length());
+            // select async by size
+            int min_async_size=_minAsyncContentLength==0?response.getBufferSize():_minAsyncContentLength;
+            
+            if (request.isAsyncSupported() && 
+                min_async_size>0 &&
+                resource.length()>=min_async_size)
+            {
+                final AsyncContext async = request.startAsync();
+                Callback callback = new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        async.complete();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        async.complete();
+                    }   
+                };
+
+                // Can we use a memory mapped file?
+                if (_minMemoryMappedContentLength>0 && 
+                    resource.length()>_minMemoryMappedContentLength &&
+                    resource instanceof FileResource)
+                {
+                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ((HttpOutput)out).sendContent(buffer,callback);
+                }
+                else  // Do a blocking write of a channel (if available) or input stream
+                {
+                    ReadableByteChannel channel= resource.getReadableByteChannel();
+                    if (channel!=null)
+                        ((HttpOutput)out).sendContent(channel,callback);
+                    else
+                        ((HttpOutput)out).sendContent(resource.getInputStream(),callback);
+                }
+            }
+            else
+            {
+                // Can we use a memory mapped file?
+                if (_minMemoryMappedContentLength>0 && 
+                    resource.length()>_minMemoryMappedContentLength &&
+                    resource instanceof FileResource)
+                {
+                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ((HttpOutput)out).sendContent(buffer);
+                }
+                else  // Do a blocking write of a channel (if available) or input stream
+                {
+                    ReadableByteChannel channel= resource.getReadableByteChannel();
+                    if (channel!=null)
+                        ((HttpOutput)out).sendContent(channel);
+                    else
+                        ((HttpOutput)out).sendContent(resource.getInputStream());
+                }
+            }
         }
     }
 
