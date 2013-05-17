@@ -158,59 +158,54 @@ public class HttpOutput extends ServletOutputStream
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException
-    {
+    {  
         if (isClosed())
             throw new EOFException("Closed");
 
-        // Do we have an aggregate buffer ?
-        if (_aggregate == null)
+        _written+=len;
+        boolean complete=_channel.getResponse().isAllContentWritten(_written);
+        int capacity = getBufferSize();
+
+        // Should we aggregate?
+        if (!complete && len<=capacity/4)
         {
-            // NO - should we have an aggregate buffer? yes if this write will easily fit in it
-            int size = getBufferSize();
-            if (len<=size/2)
-            {
-                _aggregate = _channel.getByteBufferPool().acquire(size, false);
-                BufferUtil.append(_aggregate, b, off, len);
-                _written += len;
-                closeIfAllContentWritten();
-                return;
-            }
-        }
-        else
-        {
+            if (_aggregate == null)
+                _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
+
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
-            _written += filled;
-                     
-            // if closed or there is no content left over and we are not full, then we are done
-            if (closeIfAllContentWritten() || filled==len && !BufferUtil.isFull(_aggregate))
+
+            // return if we are not complete, not full and filled all the content
+            if (!complete && filled==len && !BufferUtil.isFull(_aggregate))
                 return;
-            
+
+            // adjust offset/length
             off+=filled;
             len-=filled;
         }
-        
-        // flush the aggregate
+
+        // flush any content from the aggregate
         if (BufferUtil.hasContent(_aggregate))
         {
-            _channel.write(_aggregate, false);
-            
+            _channel.write(_aggregate, complete && len==0);
+
             // should we fill aggregate again from the buffer?
-            if (len<_aggregate.capacity()/2)
+            if (len>0 && !complete && len<=_aggregate.capacity()/4)
             {
                 BufferUtil.append(_aggregate, b, off, len);
-                _written += len;
-                closeIfAllContentWritten();
                 return;
             }
         }
-        
+
         // write any remaining content in the buffer directly
-        _written += len;
-        boolean complete=_channel.getResponse().isAllContentWritten(_written);
-        _channel.write(ByteBuffer.wrap(b, off, len), complete);
+        if (len>0)
+            _channel.write(ByteBuffer.wrap(b, off, len), complete);
+
         if (complete)
+        {
+            closed();
             _channel.getResponse().closeOutput();
+        }
     }
 
 
