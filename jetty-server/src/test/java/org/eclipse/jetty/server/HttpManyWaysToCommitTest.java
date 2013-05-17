@@ -327,7 +327,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        assertResponseBody(response, "foobar");
+        assertResponseBody(response, "foobarfoobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -341,7 +341,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        assertResponseBody(response, "foobar");
+        assertResponseBody(response, "foobarfoobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -372,7 +372,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            response.setBufferSize(3);
+            response.setBufferSize(4);
             response.getWriter().write("foobar");
             super.handle(target, baseRequest, request, response);
         }
@@ -389,9 +389,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            response.setBufferSize(3);
-            response.getWriter().write("f");
-            response.getWriter().write("oobar");
+            response.setBufferSize(8);
+            response.getWriter().write("fo");
+            response.getWriter().write("obarfoobar");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -407,7 +407,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            response.setBufferSize(5);
+            response.setBufferSize(8);
+            response.getWriter().write("fo");
+            response.getWriter().write("ob");
+            response.getWriter().write("ar");
             response.getWriter().write("fo");
             response.getWriter().write("ob");
             response.getWriter().write("ar");
