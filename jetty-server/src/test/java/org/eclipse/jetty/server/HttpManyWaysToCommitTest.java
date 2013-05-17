@@ -305,9 +305,37 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
-    public void testHandledBufferOverflow() throws Exception
+    public void testHandledOverflow() throws Exception
     {
         server.setHandler(new OverflowHandler(false));
+        server.start();
+
+        SimpleHttpResponse response = executeRequest();
+
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
+        if (!"HTTP/1.0".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
+    }
+    
+    @Test
+    public void testHandledOverflow2() throws Exception
+    {
+        server.setHandler(new Overflow2Handler(false));
+        server.start();
+
+        SimpleHttpResponse response = executeRequest();
+
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
+        if (!"HTTP/1.0".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
+    }
+    
+    @Test
+    public void testHandledOverflow3() throws Exception
+    {
+        server.setHandler(new Overflow3Handler(false));
         server.start();
 
         SimpleHttpResponse response = executeRequest();
@@ -346,6 +374,43 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             baseRequest.setHandled(true);
             response.setBufferSize(3);
             response.getWriter().write("foobar");
+            super.handle(target, baseRequest, request, response);
+        }
+    }
+
+    private class Overflow2Handler extends ThrowExceptionOnDemandHandler
+    {
+        private Overflow2Handler(boolean throwException)
+        {
+            super(throwException);
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setBufferSize(3);
+            response.getWriter().write("f");
+            response.getWriter().write("oobar");
+            super.handle(target, baseRequest, request, response);
+        }
+    }
+    
+    private class Overflow3Handler extends ThrowExceptionOnDemandHandler
+    {
+        private Overflow3Handler(boolean throwException)
+        {
+            super(throwException);
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setBufferSize(5);
+            response.getWriter().write("fo");
+            response.getWriter().write("ob");
+            response.getWriter().write("ar");
             super.handle(target, baseRequest, request, response);
         }
     }

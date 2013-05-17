@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -46,6 +48,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -84,12 +87,21 @@ public class ResponseTest
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
             {
+                BlockingCallback cb = new BlockingCallback();
+                send(info,content,lastContent,cb);
+                cb.block();
             }
 
             @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
                 callback.succeeded();
+            }
+            
+            @Override
+            public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
+            {
+                send(null,responseBodyContent, lastContent, callback);
             }
 
             @Override

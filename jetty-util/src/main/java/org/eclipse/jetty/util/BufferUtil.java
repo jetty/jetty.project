@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.Buffer;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -326,12 +327,31 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /**
      */
-    public static void append(ByteBuffer to, byte[] b,int off,int len)
+    public static void append(ByteBuffer to, byte[] b,int off,int len) throws BufferOverflowException
     {
         int pos= flipToFill(to);
         try
         {
             to.put(b,off,len);
+        }
+        finally
+        {
+            flipToFlush(to,pos);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Like append, but does not throw {@link BufferOverflowException}
+     */
+    public static int fill(ByteBuffer to, byte[] b,int off,int len)
+    {
+        int pos= flipToFill(to);
+        try
+        {
+            int remaining=to.remaining();
+            int take=remaining<len?remaining:len;
+            to.put(b,off,take);
+            return take;
         }
         finally
         {
@@ -731,9 +751,10 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {
-        RandomAccessFile raf = new RandomAccessFile(file,"r");
-        MappedByteBuffer buffer=raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
-        return buffer;
+        try(RandomAccessFile raf = new RandomAccessFile(file,"r");)
+        {
+            return raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
+        }
     }
 
     public static String toSummaryString(ByteBuffer buffer)

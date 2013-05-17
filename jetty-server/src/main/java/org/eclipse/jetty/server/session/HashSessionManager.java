@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -553,8 +554,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         finally
         {
-            if (in != null)
-                try {in.close();} catch (Exception x) {__log.ignore(x);}
+            if (in != null) IO.close(in);
             
             if (error != null)
             {

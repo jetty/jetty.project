@@ -54,13 +54,13 @@ public class Activator implements BundleActivator
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
-               System.err.println("Context is initialized");
+               // System.err.println("Context is initialized");
             }
 
             @Override
             public void contextDestroyed(ServletContextEvent sce)
             {
-                System.err.println("CONTEXT IS DESTROYED!");                
+                // System.err.println("CONTEXT IS DESTROYED!");                
             }
             
         });

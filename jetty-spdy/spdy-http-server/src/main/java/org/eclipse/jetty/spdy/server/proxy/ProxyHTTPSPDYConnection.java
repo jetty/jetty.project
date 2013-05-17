@@ -264,6 +264,8 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
                 HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
                         reason, false);
+                
+                // TODO use the async send 
                 send(info, null, replyInfo.isClose());
 
                 if (replyInfo.isClose())
@@ -300,6 +302,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 // Data buffer must be copied, as the ByteBuffer is pooled
                 ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
 
+                // TODO use the async send with callback!
                 send(null, byteBuffer, dataInfo.isClose());
 
                 if (dataInfo.isClose())

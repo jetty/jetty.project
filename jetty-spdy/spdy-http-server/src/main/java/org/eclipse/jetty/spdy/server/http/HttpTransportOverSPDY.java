@@ -86,6 +86,14 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
+    
+    @Override
+    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
+    {
+        // TODO can this be more efficient?
+        send(null,responseBodyContent, lastContent, callback);
+    }
+    
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
@@ -185,14 +193,14 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         send(info, content, lastContent, streamBlocker);
         try
         {
             streamBlocker.block();
         }
-        catch (InterruptedException | TimeoutException | IOException e)
+        catch (Exception e)
         {
             LOG.debug(e);
         }
