@@ -125,8 +125,13 @@ public class MultiPartFilter implements Filter
 
         // TODO - handle encodings
         String contentTypeBoundary = "";
-        if (content_type.indexOf("boundary=") >= 0)
-            contentTypeBoundary = QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+        int bstart = content_type.indexOf("boundary=");
+        if (bstart >= 0)
+        {
+            int bend = content_type.indexOf(";", bstart);
+            bend = (bend < 0? content_type.length(): bend);
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(content_type.substring(bstart,bend)).trim());
+        }
 
         String boundary="--"+contentTypeBoundary;
         
