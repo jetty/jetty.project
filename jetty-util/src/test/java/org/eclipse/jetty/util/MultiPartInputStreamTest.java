@@ -547,7 +547,7 @@ public class MultiPartInputStreamTest
                                                                          _tmpDir);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
-        //assertThat(parts.size(), is(1));
+        assertThat(parts.size(), is(1));
     }
     
     
