@@ -168,7 +168,6 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
 
-
     @Test
     public void testEncodedPost() throws Exception
     {
