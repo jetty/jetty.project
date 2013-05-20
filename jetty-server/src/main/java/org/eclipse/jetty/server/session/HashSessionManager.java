@@ -37,6 +37,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -520,8 +521,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         finally
         {
-            if (in != null)
-                try {in.close();} catch (Exception x) {__log.ignore(x);}
+            if (in != null) IO.close(in);
             
             if (error != null)
             {
@@ -568,30 +568,41 @@ public class HashSessionManager extends AbstractSessionManager
          * defaultReadObject
          */
         DataInputStream in = new DataInputStream(is);
-        String clusterId = in.readUTF();
-        in.readUTF(); // nodeId
-        long created = in.readLong();
-        long accessed = in.readLong();
-        int requests = in.readInt();
-
-        if (session == null)
-            session = (HashedSession)newSession(created, accessed, clusterId);
-        session.setRequests(requests);
-        int size = in.readInt();
-        if (size>0)
+        try
         {
-            ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(in);
-            for (int i=0; i<size;i++)
+            String clusterId = in.readUTF();
+            in.readUTF(); // nodeId
+            long created = in.readLong();
+            long accessed = in.readLong();
+            int requests = in.readInt();
+
+            if (session == null)
+                session = (HashedSession)newSession(created, accessed, clusterId);
+            session.setRequests(requests);
+            int size = in.readInt();
+            if (size>0)
             {
-                String key = ois.readUTF();
-                Object value = ois.readObject();
-                session.setAttribute(key,value);
+                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(in);
+                try
+                {
+                    for (int i=0; i<size;i++)
+                    {
+                        String key = ois.readUTF();
+                        Object value = ois.readObject();
+                        session.setAttribute(key,value);
+                    }
+                }
+                finally
+                {
+                    IO.close(ois);
+                }
             }
-            ois.close();
+            return session;
         }
-        else
-            in.close();
-        return session;
+        finally
+        {
+            IO.close(in);
+        }
     }
 
 
