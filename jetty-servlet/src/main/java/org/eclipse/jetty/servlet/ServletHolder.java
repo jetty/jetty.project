@@ -292,6 +292,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _unavailable=0;
         if (!_enabled)
             return;
+        
+        
         //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
         try
         {
@@ -300,9 +302,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         catch (UnavailableException ue)
         {
             makeUnavailable(ue);
-            throw ue;
+            if (_servletHandler.isStartWithUnavailable())
+            {
+                LOG.ignore(ue);
+                return;
+            }
+            else
+                throw ue;
         }
-        
+
+
+        //servlet is not an instance of javax.servlet.Servlet
         try
         {
             checkServletType();
@@ -310,8 +320,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         catch (UnavailableException ue)
         {
             makeUnavailable(ue);
-            if (!_servletHandler.isStartWithUnavailable())
-                throw ue; //servlet is not an instance of javax.servlet.Servlet
+            if (_servletHandler.isStartWithUnavailable())
+            {
+                LOG.ignore(ue);
+                return;
+            }
+            else
+                throw ue;
         }
         
 
@@ -378,8 +393,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (o==null)
             return;
         Servlet servlet =  ((Servlet)o);
-        servlet.destroy();
         getServletHandler().destroyServlet(servlet);
+        servlet.destroy();
     }
 
     /* ------------------------------------------------------------ */

@@ -516,24 +516,18 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      */
     @Override
     public void doStart()
-    {
-        try
-        {            
-            initializeDatabase();
-            prepareTables();   
-            cleanExpiredSessions();
-            super.doStart();
-            if (LOG.isDebugEnabled()) 
-                LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
-            _timer=new Timer("JDBCSessionScavenger", true);
-            setScavengeInterval(getScavengeInterval());
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Problem initialising JettySessionIds table", e);
-        }
+    throws Exception
+    {           
+        initializeDatabase();
+        prepareTables();   
+        cleanExpiredSessions();
+        super.doStart();
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
+        _timer=new Timer("JDBCSessionScavenger", true);
+        setScavengeInterval(getScavengeInterval());
     }
-    
+
     /** 
      * Stop the scavenger.
      */

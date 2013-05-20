@@ -232,7 +232,7 @@ public class DefaultJettyAtJettyHomeHelper
                 // can define their own configuration.
                 if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
-                    String tmp = DEFAULT_JETTYHOME+etcFile;
+                    String tmp = DEFAULT_JETTYHOME+(DEFAULT_JETTYHOME.endsWith("/")?"":"/")+etcFile;
                     enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, tmp);                    
                     LOG.info("Configuring jetty from bundle: "
                                        + configurationBundle.getSymbolicName()

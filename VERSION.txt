@@ -36,6 +36,38 @@ jetty-8.1.10.v20130312 - 12 March 2013
  + 402833 Test harness for global error page and hide exception message from
    reason string
 
+jetty-7.6.10.v20130312 - 12 March 2013
+ + 376273 Early EOF because of SSL Protocol Error on
+   https://api-3t.paypal.com/nvp.
+ + 381521 allow compress methods to be configured
+ + 394064 ensure that JarFile instances are closed on JarFileResource.release()
+ + 398649 ServletContextListener.contextDestroyed() is not called on
+   ContextHandler unregistration
+ + 399703 made encoding error handling consistent
+ + 399799 do not hold lock while calling invalidation listeners
+ + 399967 Shutdown hook calls destroy
+ + 400040 NullPointerException in HttpGenerator.prepareBuffers
+ + 400142 ConcurrentModificationException in JDBC SessionManger
+ + 400144 When loading a session fails the JDBCSessionManger produces duplicate
+   session IDs
+ + 400457 Thread context classloader hierarchy not searched when finding
+   webapp's java:comp/env
+ + 400859 limit max size of writes from cached content
+ + 401211 Remove requirement for jetty-websocket.jar in WEB-INF/lib
+ + 401317 Make Safari 5.x websocket support minVersion level error more clear
+ + 401382 Prevent parseAvailable from parsing next chunk when previous has not
+   been consumed. Handle no content-type in chunked request.
+ + 401474 Performance problem in org.eclipse.jetty.annotation.AnnotationParser
+ + 401531 StringIndexOutOfBoundsException for "/*" <url-pattern> of
+   <jsp-property-group> fix for multiple mappings to *.jsp
+ + 401908 Enhance DosFilter to allow dynamic configuration of attributes.
+ + 402048 org.eclipse.jetty.server.ShutdownMonitor doesn't stop after the jetty
+   server is stopped
+ + 402485 reseed secure random
+ + 402735 jetty.sh to support status which is == check
+ + 402833 Test harness for global error page and hide exception message from
+   reason string
+
 jetty-8.1.9.v20130131 - 31 January 2013
  + 362226 HttpConnection "wait" call causes thread resource exhaustion
  + 367638 throw exception for excess form keys

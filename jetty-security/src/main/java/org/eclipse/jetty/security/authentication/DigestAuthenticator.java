@@ -21,6 +21,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.BitSet;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -60,17 +61,32 @@ public class DigestAuthenticator extends LoginAuthenticator
     private static final Logger LOG = Log.getLogger(DigestAuthenticator.class);
     SecureRandom _random = new SecureRandom();
     private long _maxNonceAgeMs = 60*1000;
-    private ConcurrentMap<String, Nonce> _nonceCount = new ConcurrentHashMap<String, Nonce>();
+    private int _maxNC=1024;
+    private ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<String, Nonce>();
     private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<Nonce>();
     private static class Nonce
     {
         final String _nonce;
         final long _ts;
-        AtomicInteger _nc=new AtomicInteger();
-        public Nonce(String nonce, long ts)
+        final BitSet _seen; 
+
+        public Nonce(String nonce, long ts, int size)
         {
             _nonce=nonce;
             _ts=ts;
+            _seen = new BitSet(size);
+        }
+
+        public boolean seen(int count)
+        {
+            synchronized (this)
+            {
+                if (count>=_seen.size())
+                    return true;
+                boolean s=_seen.get(count);
+                _seen.set(count);
+                return s;
+            }
         }
     }
 
@@ -92,17 +108,33 @@ public class DigestAuthenticator extends LoginAuthenticator
         String mna=configuration.getInitParameter("maxNonceAge");
         if (mna!=null)
         {
-            synchronized (this)
-            {
-                _maxNonceAgeMs=Long.valueOf(mna);
-            }
+            _maxNonceAgeMs=Long.valueOf(mna);
         }
+    }
+
+   
+    /* ------------------------------------------------------------ */
+    public int getMaxNonceCount()
+    {
+        return _maxNC;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMaxNonceCount(int maxNC)
+    {
+        _maxNC = maxNC;
     }
     
     /* ------------------------------------------------------------ */
-    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
+    public void setMaxNonceAge(long maxNonceAgeInMillis)
     {
         _maxNonceAgeMs = maxNonceAgeInMillis;
+    }
+
+    /* ------------------------------------------------------------ */
+    public long getMaxNonceAge()
+    {
+        return _maxNonceAgeMs;
     }
 
     /* ------------------------------------------------------------ */
@@ -235,9 +267,9 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(new String(B64Code.encode(nounce)),request.getTimeStamp());
+            nonce = new Nonce(new String(B64Code.encode(nounce)),request.getTimeStamp(),_maxNC);
         }
-        while (_nonceCount.putIfAbsent(nonce._nonce,nonce)!=null);
+        while (_nonceMap.putIfAbsent(nonce._nonce,nonce)!=null);
         _nonceQueue.add(nonce);
                
         return nonce._nonce;
@@ -252,36 +284,27 @@ public class DigestAuthenticator extends LoginAuthenticator
     private int checkNonce(Digest digest, Request request)
     {
         // firstly let's expire old nonces
-        long expired;
-        synchronized (this)
-        {
-            expired = request.getTimeStamp()-_maxNonceAgeMs;
-        }
-        
+        long expired = request.getTimeStamp()-_maxNonceAgeMs;
         Nonce nonce=_nonceQueue.peek();
         while (nonce!=null && nonce._ts<expired)
         {
             _nonceQueue.remove(nonce);
-            _nonceCount.remove(nonce._nonce);
+            _nonceMap.remove(nonce._nonce);
             nonce=_nonceQueue.peek();
         }
         
-       
+        // Now check the requested nonce
         try
         {
-            nonce = _nonceCount.get(digest.nonce);
+            nonce = _nonceMap.get(digest.nonce);
             if (nonce==null)
                 return 0;
-            
+         
             long count = Long.parseLong(digest.nc,16);
-            if (count>Integer.MAX_VALUE)
+            if (count>=_maxNC)
                 return 0;
-            int old=nonce._nc.get();
-            while (!nonce._nc.compareAndSet(old,(int)count))
-                old=nonce._nc.get();
-            if (count<=old)
+            if (nonce.seen((int)count))
                 return -1;
- 
             return 1;
         }
         catch (Exception e)
@@ -380,6 +403,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             return false;
         }
 
+        @Override
         public String toString()
         {
             return username + "," + response;

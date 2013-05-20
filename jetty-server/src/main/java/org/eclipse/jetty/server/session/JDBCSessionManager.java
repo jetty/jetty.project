@@ -296,17 +296,20 @@ public class JDBCSessionManager extends AbstractSessionManager
                 super.complete();
                 try
                 {
-                    if (_dirty)
+                    if (isValid())
                     {
-                        //The session attributes have changed, write to the db, ensuring
-                        //http passivation/activation listeners called
-                        willPassivate();                      
-                        updateSession(this);
-                        didActivate();
-                    }
-                    else if ((getAccessed() - _lastSaved) >= (getSaveInterval() * 1000L))
-                    {
-                        updateSessionAccessTime(this);
+                        if (_dirty)
+                        {
+                            //The session attributes have changed, write to the db, ensuring
+                            //http passivation/activation listeners called
+                            willPassivate();                      
+                            updateSession(this);
+                            didActivate();
+                        }
+                        else if ((getAccessed() - _lastSaved) >= (getSaveInterval() * 1000L))
+                        {
+                            updateSessionAccessTime(this);
+                        }
                     }
                 }
                 catch (Exception e)

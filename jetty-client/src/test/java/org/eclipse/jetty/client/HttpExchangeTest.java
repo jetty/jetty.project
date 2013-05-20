@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +42,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.Stress;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.After;
 import org.junit.Before;
@@ -115,7 +111,7 @@ public class HttpExchangeTest
         sender(10,false);
         sender(10,true);
 
-        if (Stress.isEnabled())
+        if (PropertyFlag.isEnabled("test.stress"))
         {
             sender(100,false);
             sender(100,true);

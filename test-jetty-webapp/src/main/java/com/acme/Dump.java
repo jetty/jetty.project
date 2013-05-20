@@ -505,6 +505,10 @@ public class Dump extends HttpServlet
             pout.write("<td>"+request.isSecure()+"</td>");
 
             pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">encodeRedirectURL(/foo?bar):&nbsp;</th>");
+            pout.write("<td>"+response.encodeRedirectURL("/foo?bar")+"</td>");
+
+            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">isUserInRole(admin):&nbsp;</th>");
             pout.write("<td>"+request.isUserInRole("admin")+"</td>");
 
