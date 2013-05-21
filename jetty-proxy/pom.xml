@@ -8,6 +8,7 @@
   <artifactId>jetty-proxy</artifactId>
   <name>Jetty :: Proxy</name>
   <description>Jetty Proxy</description>
+  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
   </properties>
