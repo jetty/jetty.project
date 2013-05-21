@@ -10,6 +10,7 @@
   <artifactId>jetty-osgi-servletbridge</artifactId>
   <name>Jetty :: OSGi :: Servletbridge</name>
   <description>Jetty OSGi Servletbridge webapp</description>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
   <properties><eclipse.pde>false</eclipse.pde></properties>
   <dependencies>

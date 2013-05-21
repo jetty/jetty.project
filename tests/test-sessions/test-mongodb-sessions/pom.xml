@@ -25,6 +25,7 @@
   </parent>
   <artifactId>test-mongodb-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Mongo</name>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
       <plugin>

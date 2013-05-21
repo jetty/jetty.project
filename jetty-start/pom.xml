@@ -8,6 +8,7 @@
   <artifactId>jetty-start</artifactId>
   <name>Jetty :: Start</name>
   <description>The start utility</description>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
    <plugins>
       <plugin>
