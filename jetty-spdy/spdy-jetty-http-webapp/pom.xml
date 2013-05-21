@@ -9,7 +9,7 @@
     <artifactId>spdy-jetty-http-webapp</artifactId>
     <packaging>war</packaging>
     <name>Jetty :: SPDY :: Jetty HTTP Web Application</name>
-
+    <url>http://www.eclipse.org/jetty</url>
     <build>
         <plugins>
             <plugin>

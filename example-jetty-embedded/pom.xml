@@ -8,6 +8,7 @@
   <artifactId>example-jetty-embedded</artifactId>
   <name>Example :: Jetty Embedded</name>
   <description>Jetty Embedded Examples</description>
+  <url>http://www.eclipse.org/jetty</url>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

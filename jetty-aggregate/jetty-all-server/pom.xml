@@ -7,6 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>jetty-all-server</artifactId>
     <name>Jetty :: Aggregate :: All Server</name>
+    <url>http://www.eclipse.org/jetty</url>
     <properties>
       <bundle-symbolic-name>${project.groupId}.${project.artifactId}</bundle-symbolic-name>
     </properties>

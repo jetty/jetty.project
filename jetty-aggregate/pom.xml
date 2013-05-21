@@ -9,6 +9,7 @@
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-aggregate-project</artifactId>
   <name>Jetty :: Aggregate Project</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <build>
     <plugins>

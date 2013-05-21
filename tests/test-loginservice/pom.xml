@@ -25,6 +25,7 @@
   </parent>
   <artifactId>test-loginservice</artifactId>
   <name>Jetty Tests :: Login Service</name>
+  <url>http://www.eclipse.org/jetty</url>
  <dependencies>
        <dependency>
             <groupId>org.eclipse.jetty</groupId>

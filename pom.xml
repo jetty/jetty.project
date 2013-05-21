@@ -8,7 +8,7 @@
   <artifactId>jetty-project</artifactId>
   <version>8.1.11-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>${jetty.url}</url>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

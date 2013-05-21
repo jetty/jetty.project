@@ -7,8 +7,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.example-async-rest</groupId>
   <artifactId>example-async-rest-webapp</artifactId>
-  <packaging>war</packaging>
   <name>Example Async Rest :: Webapp</name>
+  <url>http://www.eclipse.org/jetty</url>
+  <packaging>war</packaging>
   <build>
     <finalName>async-rest</finalName>
   </build>
