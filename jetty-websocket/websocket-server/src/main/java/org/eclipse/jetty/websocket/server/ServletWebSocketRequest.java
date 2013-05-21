@@ -53,14 +53,18 @@ public class ServletWebSocketRequest extends UpgradeRequest
         super.setParameterMap(request.getParameterMap());
 
         // Copy Cookies
-        List<HttpCookie> cookies = new ArrayList<>();
-        for (Cookie rcookie : request.getCookies())
+        Cookie rcookies[] = request.getCookies();
+        if (rcookies != null)
         {
-            HttpCookie hcookie = new HttpCookie(rcookie.getName(),rcookie.getValue());
-            // no point handling domain/path/expires/secure/httponly on client request cookies
-            cookies.add(hcookie);
+            List<HttpCookie> cookies = new ArrayList<>();
+            for (Cookie rcookie : rcookies)
+            {
+                HttpCookie hcookie = new HttpCookie(rcookie.getName(),rcookie.getValue());
+                // no point handling domain/path/expires/secure/httponly on client request cookies
+                cookies.add(hcookie);
+            }
+            super.setCookies(cookies);
         }
-        super.setCookies(cookies);
 
         // Copy Headers
         Enumeration<String> headerNames = request.getHeaderNames();
