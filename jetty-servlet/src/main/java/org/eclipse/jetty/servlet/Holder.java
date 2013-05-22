@@ -104,8 +104,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         //if no class already loaded and no classname, make servlet permanently unavailable
         if (_class==null && (_className==null || _className.equals("")))
-            throw new UnavailableException("No class for Servlet or Filter for "+_name, -1);
-
+            throw new UnavailableException("No class for Servlet or Filter for "+_name);
+        
         //try to load class
         if (_class==null)
         {
@@ -118,7 +118,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             catch (Exception e)
             {
                 LOG.warn(e);
-                throw new UnavailableException(e.getMessage(), -1);
+                throw new UnavailableException(e.getMessage());
             }
         }
     }

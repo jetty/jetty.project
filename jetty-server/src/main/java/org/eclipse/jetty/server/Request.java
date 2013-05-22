@@ -1390,7 +1390,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncStarted()
     {
-       return getHttpChannelState().isAsync();
+       return getHttpChannelState().isAsyncStarted();
     }
 
 

@@ -569,6 +569,24 @@ public class HttpChannelState
         }
     }
 
+    public boolean isAsyncStarted()
+    {
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case ASYNCSTARTED:
+                case REDISPATCHING:
+                case COMPLETECALLED:
+                case ASYNCWAIT:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+    }
+
     public boolean isAsync()
     {
         synchronized (this)

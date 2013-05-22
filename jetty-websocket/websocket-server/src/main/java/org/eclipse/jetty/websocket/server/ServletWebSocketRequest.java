@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.net.HttpCookie;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class ServletWebSocketRequest extends UpgradeRequest
 {
-    private Map<String, String> cookieMap;
     private HttpServletRequest req;
 
     public ServletWebSocketRequest(HttpServletRequest request)
@@ -61,10 +61,17 @@ public class ServletWebSocketRequest extends UpgradeRequest
         super.setParameterMap(pmap);
 
         // Copy Cookies
-        cookieMap = new HashMap<String, String>();
-        for (Cookie cookie : request.getCookies())
+        Cookie rcookies[] = request.getCookies();
+        if (rcookies != null)
         {
-            cookieMap.put(cookie.getName(),cookie.getValue());
+            List<HttpCookie> cookies = new ArrayList<>();
+            for (Cookie rcookie : rcookies)
+            {
+                HttpCookie hcookie = new HttpCookie(rcookie.getName(),rcookie.getValue());
+                // no point handling domain/path/expires/secure/httponly on client request cookies
+                cookies.add(hcookie);
+            }
+            super.setCookies(cookies);
         }
 
         // Copy Headers

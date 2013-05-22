@@ -26,9 +26,12 @@ import org.eclipse.jetty.util.Callback;
 
 public interface HttpTransport
 {
+    @Deprecated
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException;
 
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback);
+
+    void send(ByteBuffer content, boolean lastContent, Callback callback);
     
     void completed();
 }

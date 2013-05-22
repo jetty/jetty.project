@@ -492,7 +492,7 @@ public class ResourceTest
         // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
 
-        String path = __userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
+        String path = __userURL.toURI().getPath().replace('/','\\')+"resource.txt";
         System.err.println(path);
 
         Resource resource = Resource.newResource(path, false);
