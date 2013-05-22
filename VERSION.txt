@@ -1,4 +1,32 @@
-jetty-8.1.11-SNAPSHOT
+jetty-8.1.12-SNAPSHOT
+
+jetty-8.1.11.v20130520 - 20 May 2013
+ + 402844 STOP.PORT & STOP.KEY behaviour has changed
+ + 403281 jetty.sh waits for started or failure before returning
+ + 403513 jetty:run goal cannot be executed twice during the maven build
+ + 403570 Asynchronous Request Logging
+ + 404010 fix cast exception in mongodb session manager
+ + 404128 Add Vary headers rather than set them
+ + 404283 org.eclipse.jetty.util.Scanner.scanFile() dies with an NPE if
+   listFiles() returns null
+ + 404325 data constraint redirection does send default port
+ + 404517 Close connection if request received after half close
+ + 404789 Support IPv6 addresses in DoSFilter white list.
+ + 404958 Fixed Resource.newSystemResource striped / handling
+ + 405281 allow filemappedbuffers to not be used
+ + 405537 NPE in rendering JSP using SPDY and wrapped ServletRequest
+ + 406437 Digest Auth supports out of order nc
+ + 406618 Jetty startup in OSGi Equinox fails when using option
+   jetty.home.bundle=org.eclipse.jetty.osgi.boot
+ + 406923 CR line termination
+ + 407136 @PreDestroy called after Servlet.destroy()
+ + 407173 java.lang.IllegalStateException: null when using JDBCSessionManager
+ + 407931 Add toggle for failing on servlet availability
+ + 407976 JDBCSessionIdManager potentially leaves server in bad state after
+   startup
+ + 408077 HashSessionManager leaves file handles open after being stopped
+ + 408446 Multipart parsing issue with boundry and charset in ContentType
+   header
 
 jetty-8.1.10.v20130312 - 12 March 2013
  + 376273 Early EOF because of SSL Protocol Error on
