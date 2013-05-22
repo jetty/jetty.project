@@ -203,7 +203,7 @@ public class ConnectionManager extends ContainerLifeCycle
         return Collections.unmodifiableCollection(sessions);
     }
 
-    private boolean isVirtualConnectionPossibleTo(String hostname)
+    public boolean isVirtualConnectionPossibleTo(String hostname)
     {
         // TODO Auto-generated method stub
         return false;

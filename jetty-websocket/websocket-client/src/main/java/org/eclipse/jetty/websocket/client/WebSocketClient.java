@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.ConnectPromise;
 import org.eclipse.jetty.websocket.client.io.ConnectionManager;
+import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
@@ -101,6 +102,11 @@ public class WebSocketClient extends ContainerLifeCycle
     }
 
     public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
+    {
+        return connect(websocket,toUri,request,null);
+    }
+
+    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, UpgradeListener upgradeListener) throws IOException
     {
         if (!isStarted())
         {
@@ -162,6 +168,11 @@ public class WebSocketClient extends ContainerLifeCycle
 
         // Create the appropriate (physical vs virtual) connection task
         ConnectPromise promise = manager.connect(this,driver,request);
+
+        if (upgradeListener != null)
+        {
+            promise.setUpgradeListener(upgradeListener);
+        }
 
         LOG.debug("Connect Promise: {}",promise);
 

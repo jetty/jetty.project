@@ -61,6 +61,13 @@ public class UpgradeConnection extends AbstractConnection
         {
             URI uri = connectPromise.getRequest().getRequestURI();
             request.setRequestURI(uri);
+
+            UpgradeListener handshakeListener = connectPromise.getUpgradeListener();
+            if (handshakeListener != null)
+            {
+                handshakeListener.onHandshakeRequest(request);
+            }
+
             String rawRequest = request.generate();
 
             ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
@@ -114,6 +121,12 @@ public class UpgradeConnection extends AbstractConnection
     private void notifyConnect(ClientUpgradeResponse response)
     {
         connectPromise.setResponse(response);
+
+        UpgradeListener handshakeListener = connectPromise.getUpgradeListener();
+        if (handshakeListener != null)
+        {
+            handshakeListener.onHandshakeResponse(response);
+        }
     }
 
     @Override
@@ -141,7 +154,6 @@ public class UpgradeConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        // TODO: handle timeout
         getExecutor().execute(new SendUpgradeRequest());
     }
 

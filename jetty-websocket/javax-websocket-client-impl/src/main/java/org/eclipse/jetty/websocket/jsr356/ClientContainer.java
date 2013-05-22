@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrClientMetadata;
@@ -64,6 +65,8 @@ public class ClientContainer implements ContainerService
         }
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,cec);
         ClientUpgradeRequest req = new ClientUpgradeRequest();
+        UpgradeListener upgradeListener = null;
+
         if (cec != null)
         {
             for (Extension ext : cec.getExtensions())
@@ -75,8 +78,14 @@ public class ClientContainer implements ContainerService
             {
                 req.setSubProtocols(config.getPreferredSubprotocols());
             }
+
+            if (cec.getConfigurator() != null)
+            {
+                upgradeListener = new JsrUpgradeListener(cec.getConfigurator());
+            }
         }
-        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req);
+
+        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req,upgradeListener);
         try
         {
             return (JsrSession)futSess.get();

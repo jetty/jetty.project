@@ -75,6 +75,11 @@ public class UpgradeRequest
         }
     }
 
+    public void clearHeaders()
+    {
+        headers.clear();
+    }
+
     public List<HttpCookie> getCookies()
     {
         return cookies;
@@ -240,6 +245,18 @@ public class UpgradeRequest
         List<String> values = new ArrayList<>();
         values.add(value);
         setHeader(name.toLowerCase(Locale.ENGLISH),values);
+    }
+
+    public void setHeaders(Map<String, List<String>> headers)
+    {
+        clearHeaders();
+
+        for (Map.Entry<String, List<String>> entry : headers.entrySet())
+        {
+            String name = entry.getKey();
+            List<String> values = entry.getValue();
+            setHeader(name,values);
+        }
     }
 
     public void setHttpVersion(String httpVersion)
