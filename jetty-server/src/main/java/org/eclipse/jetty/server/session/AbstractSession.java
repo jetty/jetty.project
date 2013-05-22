@@ -480,6 +480,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void setAttribute(String name, Object value)
     {
+        updateAttribute(name,value);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected boolean updateAttribute (String name, Object value)
+    {
         Object old=null;
         synchronized (this)
         {
@@ -495,8 +501,9 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
                 bindValue(name,value);
 
             _manager.doSessionAttributeListeners(this,name,old,value);
-
+            return true;
         }
+        return false;
     }
 
     /* ------------------------------------------------------------ */
