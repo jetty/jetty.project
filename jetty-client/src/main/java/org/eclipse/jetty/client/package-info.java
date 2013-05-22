@@ -17,6 +17,8 @@
 //
 
 /**
+ * Jetty Client : Implementation and Core Classes
+ * 
  * This package provides APIs, utility classes and an implementation of an asynchronous HTTP client.
  * <p />
  * The core class is {@link HttpClient}, which acts as a central configuration object (for example

@@ -477,8 +477,13 @@ public class MultiPartInputStreamParser
             _tmpDir.mkdirs();
 
         String contentTypeBoundary = "";
-        if (_contentType.indexOf("boundary=") >= 0)
-            contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary="))).trim());
+        int bstart = _contentType.indexOf("boundary=");
+        if (bstart >= 0)
+        {
+            int bend = _contentType.indexOf(";", bstart);
+            bend = (bend < 0? _contentType.length(): bend);
+            contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart,bend)).trim());
+        }
         
         String boundary="--"+contentTypeBoundary;
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);

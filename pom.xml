@@ -458,6 +458,7 @@
     <module>jetty-rhttp</module>
     <module>jetty-http-spi</module>
     -->
+    <module>jetty-overlay-deployer</module>
   </modules>
   <dependencyManagement>
     <dependencies>

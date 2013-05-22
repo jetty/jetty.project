@@ -452,7 +452,6 @@ public class HttpChannelState
                     _state=State.COMPLETED;
                     aListeners=_asyncListeners;
                     event=_event;
-                    _event=null;
                     break;
 
                 default:
