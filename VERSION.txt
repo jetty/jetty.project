@@ -1,3 +1,5 @@
+jetty-8.1.12-SNAPSHOT
+
 jetty-8.1.11.v20130520 - 20 May 2013
  + 402844 STOP.PORT & STOP.KEY behaviour has changed
  + 403281 jetty.sh waits for started or failure before returning
