@@ -631,7 +631,7 @@ public class AntWebAppContext extends WebAppContext
 
 
     /**
-     * @see WebApplicationProxy#start()
+     * 
      */
     public void doStart()
     {
@@ -641,7 +641,10 @@ public class AntWebAppContext extends WebAppContext
             if (jettyEnvXml != null && jettyEnvXml.exists())
                 envConfiguration.setJettyEnvXml(Resource.toURL(jettyEnvXml));
             
-            AntURLClassLoader parentLoader = new AntURLClassLoader((AntClassLoader)this.getClass().getClassLoader());
+            ClassLoader parentLoader = this.getClass().getClassLoader();
+            if (parentLoader instanceof AntClassLoader)
+                parentLoader = new AntURLClassLoader((AntClassLoader)parentLoader);
+
             setClassLoader(new WebAppClassLoader(parentLoader, this));
             if (attributes != null && attributes.getAttributes() != null)
             {
