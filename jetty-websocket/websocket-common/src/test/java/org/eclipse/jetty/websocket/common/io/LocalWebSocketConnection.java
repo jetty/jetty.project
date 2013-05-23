@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -39,6 +41,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
+    private final ByteBufferPool bufferPool;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private IncomingFrames incoming;
     private IOState ioState = new IOState();
@@ -51,13 +54,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public LocalWebSocketConnection(String id)
     {
         this.id = id;
+        this.bufferPool = new MappedByteBufferPool();
         this.ioState.addListener(this);
     }
 
     public LocalWebSocketConnection(TestName testname)
     {
-        this.id = testname.getMethodName();
-        this.ioState.addListener(this);
+        this(testname.getMethodName());
     }
 
     @Override
@@ -78,6 +81,12 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public void disconnect()
     {
         LOG.debug("disconnect()");
+    }
+
+    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return this.bufferPool;
     }
 
     @Override

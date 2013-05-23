@@ -40,7 +40,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.jsr356.ContainerService;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
@@ -65,7 +64,6 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     private final Endpoint endpoint;
     private JsrSession jsrsession;
     private EndpointConfig endpointconfig;
-    private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
     public JsrEndpointEventDriver(WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)

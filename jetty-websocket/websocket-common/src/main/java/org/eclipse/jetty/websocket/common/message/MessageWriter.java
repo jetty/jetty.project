@@ -21,17 +21,23 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.Writer;
 
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 public class MessageWriter extends Writer
 {
-    private final WebSocketSession session;
+    private final RemoteEndpoint remote;
     private final int bufferSize;
+
+    public MessageWriter(RemoteEndpoint remote, int bufferSize)
+    {
+        this.remote = remote;
+        this.bufferSize = bufferSize;
+    }
 
     public MessageWriter(WebSocketSession session)
     {
-        this.session = session;
-        this.bufferSize = session.getPolicy().getMaxTextMessageBufferSize();
+        this(session.getRemote(), session.getPolicy().getMaxTextMessageBufferSize());
     }
 
     @Override

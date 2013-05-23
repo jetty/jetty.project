@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -89,6 +90,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
     public void disconnect()
     {
         // TODO: disconnect the virtual end-point?
+    }
+
+    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public long getChannelId()

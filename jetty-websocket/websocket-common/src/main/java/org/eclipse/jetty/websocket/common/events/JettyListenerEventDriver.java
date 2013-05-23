@@ -29,7 +29,6 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 
@@ -40,7 +39,6 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 {
     private static final Logger LOG = Log.getLogger(JettyListenerEventDriver.class);
     private final WebSocketListener listener;
-    private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
     public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketListener listener)
@@ -57,13 +55,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             activeMessage = new SimpleBinaryMessage(this);
         }
 
-        activeMessage.appendMessage(buffer,fin);
-
-        if (fin)
-        {
-            activeMessage.messageComplete();
-            activeMessage = null;
-        }
+        appendMessage(buffer,fin);
     }
 
     @Override
@@ -126,13 +118,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             activeMessage = new SimpleTextMessage(this);
         }
 
-        activeMessage.appendMessage(buffer,fin);
-
-        if (fin)
-        {
-            activeMessage.messageComplete();
-            activeMessage = null;
-        }
+        appendMessage(buffer,fin);
     }
 
     @Override
@@ -144,6 +130,6 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", JettyListenerEventDriver.class.getSimpleName(), listener.getClass().getName());
+        return String.format("%s[%s]",JettyListenerEventDriver.class.getSimpleName(),listener.getClass().getName());
     }
 }

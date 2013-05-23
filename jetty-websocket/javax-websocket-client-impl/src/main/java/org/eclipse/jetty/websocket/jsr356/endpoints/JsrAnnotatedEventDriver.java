@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
@@ -55,7 +54,6 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
     private final EndpointConfig endpointconfig;
     private boolean hasCloseBeenCalled = false;
     private JsrSession jsrsession;
-    private MessageAppender activeMessage;
 
     public JsrAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JsrEvents events, EndpointConfig endpointconfig)
     {
@@ -127,15 +125,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
         {
-            LOG.debug("Appending Binary Message");
-            activeMessage.appendMessage(buffer,fin);
-
-            if (fin)
-            {
-                LOG.debug("Binary Message Complete");
-                activeMessage.messageComplete();
-                activeMessage = null;
-            }
+            appendMessage(buffer,fin);
         }
     }
 
@@ -283,15 +273,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
         {
-            LOG.debug("Appending Text Message");
-            activeMessage.appendMessage(buffer,fin);
-
-            if (fin)
-            {
-                LOG.debug("Text Message Complete");
-                activeMessage.messageComplete();
-                activeMessage = null;
-            }
+            appendMessage(buffer,fin);
         }
     }
 

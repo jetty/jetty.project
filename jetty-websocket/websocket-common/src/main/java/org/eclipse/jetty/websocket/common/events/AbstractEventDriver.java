@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.message.MessageAppender;
 
 /**
  * EventDriver is the main interface between the User's WebSocket POJO and the internal jetty implementation of WebSocket.
@@ -44,11 +46,23 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     protected final WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
+    protected MessageAppender activeMessage;
 
     public AbstractEventDriver(WebSocketPolicy policy, Object websocket)
     {
         this.policy = policy;
         this.websocket = websocket;
+    }
+
+    protected void appendMessage(ByteBuffer buffer, boolean fin) throws IOException
+    {
+        activeMessage.appendMessage(buffer,fin);
+
+        if (fin)
+        {
+            activeMessage.messageComplete();
+            activeMessage = null;
+        }
     }
 
     @Override
@@ -92,7 +106,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
         try
         {
-            switch (frame.getType().getOpCode())
+            byte opcode = frame.getType().getOpCode();
+            switch (opcode)
             {
                 case OpCode.CLOSE:
                 {
@@ -134,6 +149,15 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     onTextFrame(frame.getPayload(),frame.isFin());
                     return;
                 }
+                case OpCode.CONTINUATION:
+                {
+                    onContinuationFrame(frame.getPayload(),frame.isFin());
+                    return;
+                }
+                default:
+                {
+                    LOG.debug("Unhandled OpCode: {}",opcode);
+                }
             }
         }
         catch (NotUtf8Exception e)
@@ -148,6 +172,17 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         {
             unhandled(t);
         }
+    }
+
+    @Override
+    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
+    {
+        if (activeMessage == null)
+        {
+            throw new IOException("Out of order Continuation frame encountered");
+        }
+
+        appendMessage(buffer,fin);
     }
 
     @Override

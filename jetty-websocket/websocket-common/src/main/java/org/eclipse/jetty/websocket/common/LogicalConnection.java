@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -56,6 +57,12 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Terminate the connection (no close frame sent)
      */
     void disconnect();
+
+    /**
+     * Get the ByteBufferPool in use by the connection
+     * @return
+     */
+    ByteBufferPool getBufferPool();
 
     /**
      * Get the read/write idle timeout.

@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 public class JettyAnnotatedEventDriver extends AbstractEventDriver
 {
     private final JettyAnnotatedMetadata events;
-    private MessageAppender activeMessage;
     private boolean hasCloseBeenCalled = false;
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
@@ -88,13 +86,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        activeMessage.appendMessage(buffer,fin);
-
-        if (fin)
-        {
-            activeMessage.messageComplete();
-            activeMessage = null;
-        }
+        appendMessage(buffer,fin);
     }
 
     @Override
@@ -187,13 +179,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        activeMessage.appendMessage(buffer,fin);
-
-        if (fin)
-        {
-            activeMessage.messageComplete();
-            activeMessage = null;
-        }
+        appendMessage(buffer,fin);
     }
 
     @Override

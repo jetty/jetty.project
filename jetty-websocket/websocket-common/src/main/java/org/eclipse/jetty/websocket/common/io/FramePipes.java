@@ -59,7 +59,15 @@ public class FramePipes
         @Override
         public void outgoingFrame(Frame frame, WriteCallback callback)
         {
-            this.incoming.incomingFrame(frame);
+            try
+            {
+                this.incoming.incomingFrame(frame);
+                callback.writeSuccess();
+            }
+            catch (Throwable t)
+            {
+                callback.writeFailed(t);
+            }
         }
     }
 

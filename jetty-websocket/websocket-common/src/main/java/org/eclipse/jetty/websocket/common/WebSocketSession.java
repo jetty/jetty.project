@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -186,6 +187,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         return true;
     }
 
+    public ByteBufferPool getBufferPool()
+    {
+        return this.connection.getBufferPool();
+    }
+
     public LogicalConnection getConnection()
     {
         return connection;
@@ -286,7 +292,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         if (connection.getIOState().isInputAvailable())
         {
             // Forward Errors to User WebSocket Object
-        websocket.incomingError(t);
+            websocket.incomingError(t);
         }
     }
 

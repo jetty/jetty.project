@@ -43,6 +43,8 @@ public interface EventDriver extends IncomingFrames
 
     public void onConnect();
 
+    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException;
+
     public void onError(Throwable t);
 
     public void onFrame(Frame frame);
