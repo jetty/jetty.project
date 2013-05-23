@@ -27,6 +27,7 @@ import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -72,12 +73,15 @@ public class HttpChannelState
         COMPLETED      // Request is complete
     }
     
-    public enum Next
+    public enum Action
     {
-        CONTINUE,       // Continue handling the channel        
-        WAIT,           // Wait for further events 
-        COMPLETE,       // Complete the channel
-        RECYCLE,        // Channel is completed
+        REQUEST_DISPATCH, // handle a normal request dispatch  
+        ASYNC_DISPATCH,   // handle an async request dispatch
+        ASYNC_EXPIRED,    // handle an async timeout
+        IO_CALLBACK,      // handle an IO callback
+        WAIT,             // Wait for further events 
+        COMPLETE,         // Complete the channel
+        RECYCLE,          // Channel is completed
     }
 
     private final HttpChannel<?> _channel;
@@ -164,7 +168,7 @@ public class HttpChannelState
     /**
      * @return Next handling of the request should proceed
      */
-    protected Next handling()
+    protected Action handling()
     {
         synchronized (this)
         {
@@ -182,32 +186,30 @@ public class HttpChannelState
                         _asyncListeners=_lastAsyncListeners;
                         _lastAsyncListeners=null;
                     }
-                    break;
+                    _responseWrapped=false;
+                    return Action.REQUEST_DISPATCH;
 
                 case COMPLETECALLED:
                     _state=State.COMPLETING;
-                    return Next.COMPLETE;
+                    return Action.COMPLETE;
 
                 case COMPLETING:
-                    return Next.COMPLETE;
+                    return Action.COMPLETE;
                     
                 case ASYNCWAIT:
-                    return Next.WAIT;
+                    return Action.WAIT;
                     
                 case COMPLETED:
-                    return Next.RECYCLE;
+                    return Action.RECYCLE;
 
                 case REDISPATCH:
                     _state=State.REDISPATCHED;
-                    break;
+                    _responseWrapped=false;
+                    return _expired?Action.ASYNC_EXPIRED:Action.ASYNC_DISPATCH;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
-
-            _responseWrapped=false;
-            return Next.CONTINUE;
-
         }
     }
 
@@ -270,7 +272,7 @@ public class HttpChannelState
      * @return next actions
      * be handled again (eg because of a resume that happened before unhandle was called)
      */
-    protected Next unhandle()
+    protected Action unhandle()
     {
         synchronized (this)
         {
@@ -279,7 +281,7 @@ public class HttpChannelState
                 case REDISPATCHED:
                 case DISPATCHED:
                     _state=State.COMPLETING;
-                    return Next.COMPLETE;
+                    return Action.COMPLETE;
 
                 case IDLE:
                     throw new IllegalStateException(this.getStatusString());
@@ -288,17 +290,17 @@ public class HttpChannelState
                     _initial=false;
                     _state=State.ASYNCWAIT;
                     scheduleTimeout();
-                    return Next.WAIT;
+                    return Action.WAIT;
 
                 case REDISPATCHING:
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return Next.CONTINUE;
+                    return _expired?Action.ASYNC_EXPIRED:Action.ASYNC_DISPATCH;
 
                 case COMPLETECALLED:
                     _initial=false;
                     _state=State.COMPLETING;
-                    return Next.COMPLETE;
+                    return Action.COMPLETE;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
@@ -650,6 +652,13 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
+
+    public void asyncIO()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+    
     public class AsyncTimeout implements Runnable
     {
         @Override
