@@ -45,10 +45,11 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiUndeployer;
 import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
 import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
-import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
+import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.FakeURLClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
+import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.IO;
@@ -111,6 +112,87 @@ public class ServerInstanceWrapper
     {
         return __containerTldBundleDiscoverers;
     }
+    
+ 
+
+    
+    /* ------------------------------------------------------------ */
+    public static Server configure(Server server, List<URL> jettyConfigurations, Dictionary props) throws Exception
+    {
+       
+        if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return server; }
+        
+        Map<String, Object> id_map = new HashMap<String, Object>();
+        if (server != null)
+        {
+            //Put in a mapping for the id "Server" and the name of the server as the instance being configured
+            id_map.put("Server", server);
+            id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
+        }
+
+        Map<String, String> properties = new HashMap<String, String>();
+        if (props != null)
+        {
+            Enumeration<Object> en = props.keys();
+            while (en.hasMoreElements())
+            {
+                Object key = en.nextElement();
+                Object value = props.get(key);
+                String keyStr = String.valueOf(key);
+                String valStr = String.valueOf(value);
+                properties.put(keyStr, valStr);
+                if (server != null) server.setAttribute(keyStr, valStr);
+            }
+        }
+
+        for (URL jettyConfiguration : jettyConfigurations)
+        {
+            InputStream is = null;
+            try
+            {
+                // Execute a Jetty configuration file
+                Resource r = Resource.newResource(jettyConfiguration);
+                if (!r.exists())
+                {
+                    LOG.warn("File does not exist "+r);
+                    throw new IllegalStateException("No such jetty server config file: "+r);
+                }
+                is = r.getInputStream();
+                XmlConfiguration config = new XmlConfiguration(is);
+                config.getIdMap().putAll(id_map);
+                config.getProperties().putAll(properties);
+                
+                // #334062 compute the URL of the folder that contains the
+                // conf file and set it as a property so we can compute relative paths
+                // from it.
+                String urlPath = jettyConfiguration.toString();
+                int lastSlash = urlPath.lastIndexOf('/');
+                if (lastSlash > 4)
+                {
+                    urlPath = urlPath.substring(0, lastSlash);
+                    config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                }
+     
+                Object o = config.configure();
+                if (server == null)
+                    server = (Server)o;
+                
+                id_map = config.getIdMap();
+            }
+            catch (SAXParseException saxparse)
+            {
+                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
+                throw saxparse;
+            }
+            finally
+            {
+                IO.close(is);
+            }
+        }
+
+        return server;
+    }
+    
     
     
     
@@ -182,13 +264,16 @@ public class ServerInstanceWrapper
             String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
 
             List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
-            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null, server, JettyBootstrapActivator.class.getClassLoader());
+            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null,JettyBootstrapActivator.class.getClassLoader());
 
             if (LOG.isDebugEnabled()) LOG.debug("LibExtClassLoader = "+libExtClassLoader);
             
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
-            configure(server, props);
+            String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
+            List<URL> jettyConfigurations = jettyConfigurationUrls != null ? Util.fileNamesAsURLs(jettyConfigurationUrls, Util.DEFAULT_DELIMS) : null;
+            
+            _server = configure(server, jettyConfigurations, props);
 
             init();
             
@@ -258,80 +343,6 @@ public class ServerInstanceWrapper
     
     
    
-    
-    /* ------------------------------------------------------------ */
-    private void configure(Server server, Dictionary props) throws Exception
-    {
-        String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
-        List<URL> jettyConfigurations = jettyConfigurationUrls != null ? extractResources(jettyConfigurationUrls) : null;
-        if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return; }
-        Map<String, Object> id_map = new HashMap<String, Object>();
-        
-        //Put in a mapping for the id "Server" and the name of the server as the instance being configured
-        id_map.put("Server", server);
-        id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
-        
-        Map<String, String> properties = new HashMap<String, String>();
-        Enumeration<Object> en = props.keys();
-        while (en.hasMoreElements())
-        {
-            Object key = en.nextElement();
-            Object value = props.get(key);
-            String keyStr = String.valueOf(key);
-            String valStr = String.valueOf(value);
-            properties.put(keyStr, valStr);
-            server.setAttribute(keyStr, valStr);
-        }
-
-        for (URL jettyConfiguration : jettyConfigurations)
-        {
-            InputStream is = null;
-            try
-            {
-                // Execute a Jetty configuration file
-                Resource r = Resource.newResource(jettyConfiguration);
-                if (!r.exists())
-                {
-                    LOG.warn("File does not exist "+r);
-                    continue;
-                }
-                is = r.getInputStream();
-                XmlConfiguration config = new XmlConfiguration(is);
-                config.getIdMap().putAll(id_map);
-
-                // #334062 compute the URL of the folder that contains the
-                // jetty.xml conf file
-                // and set it as a property so we can compute relative paths
-                // from it.
-                String urlPath = jettyConfiguration.toString();
-                int lastSlash = urlPath.lastIndexOf('/');
-                if (lastSlash > 4)
-                {
-                    urlPath = urlPath.substring(0, lastSlash);
-                    Map<String, String> properties2 = new HashMap<String, String>(properties);
-                    properties2.put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
-                    config.getProperties().putAll(properties2);
-                }
-                else
-                {
-                    config.getProperties().putAll(properties);
-                }
-                config.configure();
-                id_map = config.getIdMap();
-            }
-            catch (SAXParseException saxparse)
-            {
-                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
-                throw saxparse;
-            }
-            finally
-            {
-                IO.close(is);
-            }
-        }
-
-    }
-    
     
     /* ------------------------------------------------------------ */
     /**
@@ -432,54 +443,8 @@ public class ServerInstanceWrapper
         }
     }
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The default folder in which the context files of the osgi bundles
-     *         are located and watched. Or null when the system property
-     *         "jetty.osgi.contexts.home" is not defined. If the configuration
-     *         file defines the OSGiAppProvider's context. This will not be
-     *         taken into account.
-     */
-    File getDefaultOSGiContextsHome(File jettyHome)
-    {
-        String jettyContextsHome = System.getProperty("jetty.osgi.contexts.home");
-        if (jettyContextsHome != null)
-        {
-            File contextsHome = new File(jettyContextsHome);
-            if (!contextsHome.exists() || !contextsHome.isDirectory())
-            { 
-                throw new IllegalArgumentException("the ${jetty.osgi.contexts.home} '" 
-                                                   + jettyContextsHome
-                                                   + " must exist and be a folder"); 
-            }
-            return contextsHome;
-        }
-        return new File(jettyHome, "/contexts");
-    }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the urls in this string.
-     */
-    private List<URL> extractResources(String propertyValue)
-    {
-        StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
-        List<URL> urls = new ArrayList<URL>();
-        while (tokenizer.hasMoreTokens())
-        {
-            String tok = tokenizer.nextToken();
-            try
-            {
-                urls.add(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(new URL(tok)));
-            }
-            catch (Throwable mfe)
-            {
-                LOG.warn(mfe);
-            }
-        }
-        return urls;
-    }
+  
     
     
     /* ------------------------------------------------------------ */

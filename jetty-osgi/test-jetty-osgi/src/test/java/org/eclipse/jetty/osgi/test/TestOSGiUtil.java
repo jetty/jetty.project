@@ -50,13 +50,15 @@ public class TestOSGiUtil
      * Note: this will run many more tests. TODO: find a better way to control
      * this and use non-deprecated methods.
      * 
-     * @param options
+     * @param opti
      */
     protected static void addMoreOSGiContainers(List<Option> options)
     {
-        options.add(CoreOptions.equinox().version("3.6.1"));
-        options.add(CoreOptions.equinox().version("3.7.0"));
-        options.add(CoreOptions.felix().version("3.2.2"));
+        //Uncomment to run more containers - these have been commented out
+        //to improve speed of builds.
+        //options.add(CoreOptions.equinox().version("3.6.1"));
+        //options.add(CoreOptions.equinox().version("3.7.0"));
+       // options.add(CoreOptions.felix().version("3.2.2"));
         options.add(CoreOptions.felix().version("4.0.2"));
     }
 

@@ -30,8 +30,7 @@ import org.junit.Test;
 public class JettyAntTaskTest
 {
     
-    @Ignore
-    //@Test
+    @Test
     public void testConnectorTask() throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("connector-test.xml").getAbsolutePath());
@@ -51,7 +50,6 @@ public class JettyAntTaskTest
 
 
     @Test
-    @Ignore("need to update connector")
     public void testWebApp () throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("webapp-test.xml").getAbsolutePath());

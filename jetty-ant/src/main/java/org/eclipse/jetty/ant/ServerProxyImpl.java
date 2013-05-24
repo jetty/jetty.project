@@ -278,6 +278,7 @@ public class ServerProxyImpl implements ServerProxy
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             new RuntimeException(e);
         }
     }
@@ -351,11 +352,14 @@ public class ServerProxyImpl implements ServerProxy
             return;
         
         configured = true;
-        
-        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setPort(stopPort);
-        monitor.setKey(stopKey);
-        monitor.setExitVm(false);
+
+        if(stopPort>0 && stopKey!=null)
+        {
+            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+            monitor.setPort(stopPort);
+            monitor.setKey(stopKey);
+            monitor.setExitVm(false);
+        }
         
         if (tempDirectory != null && !tempDirectory.exists())
             tempDirectory.mkdirs();
