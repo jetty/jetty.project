@@ -84,7 +84,7 @@ public class LibExtClassLoaderHelper
      *         is the JettyBootStrapper (an osgi classloader.
      * @throws MalformedURLException
      */
-    public static ClassLoader createLibEtcClassLoader(File jettyHome, Server server, ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader) throws MalformedURLException
     {
         if (jettyHome == null) { return parentClassLoader; }
         ArrayList<URL> urls = new ArrayList<URL>();
@@ -141,7 +141,7 @@ public class LibExtClassLoaderHelper
      *         extra jars to insert, then just return the parentClassLoader.
      * @throws MalformedURLException
      */
-    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, Server server, ClassLoader parentClassLoader) 
+    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, ClassLoader parentClassLoader) 
     throws MalformedURLException
     {
         if (jarsContainerOrJars == null && otherJarsOrFolder == null) { return parentClassLoader; }
