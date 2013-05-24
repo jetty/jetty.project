@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 
 /* ------------------------------------------------------------ */
-/** Iterating Callback.
+/** Iterating Nested Callback.
  * <p>This specialized callback is used when breaking up an
  * asynchronous task into smaller asynchronous tasks.  A typical pattern
  * is that a successful callback is used to schedule the next sub task, but 
@@ -36,68 +34,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>This callback is passed to the asynchronous handling of each sub
  * task and a call the {@link #succeeded()} on this call back represents
  * completion of the subtask.  Only once all the subtasks are completed is 
- * the {#completed()} method called.</p>
+ * the {@link Callback#succeeded()} method called on the {@link Callback} instance
+ * passed the the {@link #IteratingCallback(Callback)} constructor.</p>
  *  
  */
-public abstract class IteratingCallback implements Callback
+public abstract class IteratingNestedCallback extends IteratingCallback
 {
-    private final AtomicBoolean _iterating = new AtomicBoolean();
+    final Callback _callback;
     
-    public IteratingCallback()
+    public IteratingNestedCallback(Callback callback)
     {
+        _callback=callback;
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Process a subtask.
-     * <p>Called by {@link #iterate()} to process a sub task of the overall task
-     * <p>
-     * @return True if the total task is complete. If false is returned
-     * then this Callback must be scheduled to receive either a call to 
-     * {@link #succeeded()} or {@link #failed(Throwable)}.
-     * @throws Exception
-     */
-    abstract protected boolean process() throws Exception;
-    
-    abstract protected void completed();
-    
-    /* ------------------------------------------------------------ */
-    /** This method is called initially to start processing and 
-     * is then called by subsequent sub task success to continue
-     * processing.
-     */
-    public void iterate()
+    @Override
+    protected void completed()
     {
-        try
-        {
-            // Keep iterating as long as succeeded() is called during process()
-            while(_iterating.compareAndSet(false,true))
-            {
-                // process and test if we are complete
-                if (process())
-                {
-                    completed();
-                    return;
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            _iterating.set(false);
-            failed(e);
-        }
-        finally
-        {
-            _iterating.set(false);
-        }
+        _callback.succeeded();
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    public void succeeded()
+    public void failed(Throwable x)
     {
-        if (!_iterating.compareAndSet(true,false))
-            iterate();
+        x.printStackTrace();
+        _callback.failed(x);
     }
+
 }

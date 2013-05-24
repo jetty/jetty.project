@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -217,6 +217,7 @@ write completed    -          -          -          ASYNC         READY->owp
     	// Async or Blocking ?
     	while(true)
     	{
+    	    System.err.println("write "+_state);
     	    switch(_state.get())
     	    {
                 case OPEN:
@@ -245,6 +246,7 @@ write completed    -          -          -          ASYNC         READY->owp
                         {
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 throw new IllegalStateException();
+                            System.err.println("async complete ASYNC");
                             return;
                         }
 
@@ -255,6 +257,7 @@ write completed    -          -          -          ASYNC         READY->owp
 
                     // Do the asynchronous writing from the callback
                     new AsyncWrite(b,off,len,complete).process();
+                    System.err.println("async scheduled "+_state);
                     return;
 
     	        case PENDING:
@@ -564,12 +567,14 @@ write completed    -          -          -          ASYNC         READY->owp
                 case ASYNC:
                     if (!_state.compareAndSet(State.ASYNC, State.READY))
                         continue;
+                    System.err.println("isReady ASYNC -> READY");
                     return true;
                 case READY:
                     return true;
                 case PENDING:
                     if (!_state.compareAndSet(State.PENDING, State.UNREADY))
                         continue;
+                    System.err.println("isReady PENDING -> UNREADY");
                     return false;
                 case UNREADY:
                     return false;
@@ -581,35 +586,33 @@ write completed    -          -          -          ASYNC         READY->owp
 
     public void handle()
     {
-        if (_state.get()==State.READY)
-        {
-            try
-            {
-                _writeListener.onWritePossible();
-                return;
-            }
-            catch(Exception e)
-            {
-                _onError=e;
-            }
-        }
         if(_onError!=null)
         {
-
             Throwable th=_onError;
             _onError=null;
             _writeListener.onError(th);
             close();
         }
+        if (_state.get()==State.READY)
+        {
+            try
+            {
+                _writeListener.onWritePossible();
+            }
+            catch (IOException e)
+            {
+                _writeListener.onError(e);
+                close();
+            }
+        }
     }
 
-    private class AsyncWrite implements Callback
+    private class AsyncWrite extends AsyncFlush
     {
         private final byte[] _b;
         private final int _off;
         private final int _len;
         private final boolean _complete;
-        private boolean _flushed; 
 
         public AsyncWrite(byte[] b, int off, int len, boolean complete) 
         {
@@ -619,137 +622,118 @@ write completed    -          -          -          ASYNC         READY->owp
             _complete=complete;
         }
 
-        public void process() 
+        @Override
+        protected boolean process() 
         {
+            System.err.println("AsyncWrite#process "+_state);
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
             {
+                System.err.println("write aggregate "+BufferUtil.toDetailString(_aggregate));
                 _channel.write(_aggregate, _complete && _len==0, this);
-                return;
+                return false;
             }
 
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_aggregate.capacity()/4)
+            {
+                System.err.println("append aggregate");
                 BufferUtil.append(_aggregate, _b, _off, _len);
+            }
             else if (_len>0 && !_flushed)
             {
-                _channel.write(ByteBuffer.wrap(_b, _off, _len), _complete,this);
-                return;
+                ByteBuffer buffer=ByteBuffer.wrap(_b, _off, _len);
+                System.err.println("write buffer "+_complete+" "+BufferUtil.toDetailString(buffer));
+                _flushed=true;
+                _channel.write(buffer, _complete, this);
+                return false;
             }
 
-            try
-            {
-                if (_complete)
-                {
-                    closed();
-                    _channel.getResponse().closeOutput();
-                }
-
-                while(true)
-                {
-                    switch(_state.get())
-                    {
-                        case PENDING:
-                            if (!_state.compareAndSet(State.PENDING, State.ASYNC))
-                                continue;
-                            return;
-                        case UNREADY:
-                            if (!_state.compareAndSet(State.UNREADY, State.READY))
-                                continue;
-                            _channel.getState().asyncIO();
-                            return;
-                        case CLOSED:
-                            throw new EofException("Closed");
-
-                        default:
-                            throw new IllegalStateException();
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _onError=e;
-                _channel.getState().asyncIO();
-                close();
-            }
-        }
-        @Override
-        public void succeeded() 
-        {
-            process();
-        }
-
-        @Override
-        public void failed(Throwable e) 
-        {
-            _onError=e;
-            _channel.getState().asyncIO();
+            if (_complete)
+                closed();
+            return true;
         }
     }
 
-    private class AsyncFlush implements Callback
+    private class AsyncFlush extends IteratingCallback
     {
-        private boolean _flushed; 
+        protected boolean _flushed; 
 
         public AsyncFlush() 
         {
         }
 
-        public void process() 
+        @Override
+        protected boolean process()
         {
-            // flush any content from the aggregate
+            System.err.println("AsyncFlush#process "+_state);
+
             if (BufferUtil.hasContent(_aggregate))
             {
                 _flushed=true;
                 _channel.write(_aggregate, false, this);
-                return;
+                return false;
             }
 
             if (!_flushed)
+            {
+                _flushed=true;
                 _channel.write(BufferUtil.EMPTY_BUFFER,false,this);
+                return false;
+            }
             
-            
+            return true;
+        }
+
+        @Override
+        protected void completed()
+        {
             try
             {
-                while(true)
+                loop: while(true)
                 {
-                    switch(_state.get())
+                    State last=_state.get();
+                    switch(last)
                     {
                         case PENDING:
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 continue;
-                            return;
+                            System.err.println("AsyncFlush#completed "+last+" -> "+_state);
+                            break;
+                            
                         case UNREADY:
                             if (!_state.compareAndSet(State.UNREADY, State.READY))
                                 continue;
+                            System.err.println("AsyncFlush#completed "+last+" -> "+_state);
                             _channel.getState().asyncIO();
-                            return;
+                            break;
+                            
                         case CLOSED:
-                            throw new EofException("Closed");
+                            _onError=new EofException("Closed");
+                            break;
 
                         default:
                             throw new IllegalStateException();
                     }
+
+                    break loop;
                 }
             }
             catch (Exception e)
             {
+                e.printStackTrace();
                 _onError=e;
                 _channel.getState().asyncIO();
             }
         }
-
+        
         @Override
-        public void succeeded() 
+        public void failed(Throwable e)
         {
-            process();
-        }
-
-        @Override
-        public void failed(Throwable e) 
-        {
+            e.printStackTrace();
             _onError=e;
             _channel.getState().asyncIO();
         }
+
 
     }
 
@@ -762,7 +746,7 @@ write completed    -          -          -          ASYNC         READY->owp
      * be notified as each buffer is written and only once all the input is consumed will the 
      * wrapped {@link Callback#succeeded()} method be called. 
      */
-    private class InputStreamWritingCB extends IteratingCallback
+    private class InputStreamWritingCB extends IteratingNestedCallback
     {
         final InputStream _in;
         final ByteBuffer _buffer;
@@ -819,7 +803,7 @@ write completed    -          -          -          ASYNC         READY->owp
      * be notified as each buffer is written and only once all the input is consumed will the 
      * wrapped {@link Callback#succeeded()} method be called. 
      */
-    private class ReadableByteChannelWritingCB extends IteratingCallback
+    private class ReadableByteChannelWritingCB extends IteratingNestedCallback
     {
         final ReadableByteChannel _in;
         final ByteBuffer _buffer;
@@ -866,6 +850,5 @@ write completed    -          -          -          ASYNC         READY->owp
             _channel.getByteBufferPool().release(_buffer);
         }
     }
-
 
 }

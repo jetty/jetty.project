@@ -90,8 +90,8 @@ public class HttpChannelState
 
     private State _state;
     private boolean _initial;
-    private boolean _dispatched;
     private boolean _expired;
+    private boolean _asyncIO;
     private volatile boolean _responseWrapped;
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
@@ -160,7 +160,6 @@ public class HttpChannelState
         {
             return _state+
             (_initial?",initial":"")+
-            (_dispatched?",resumed":"")+
             (_expired?",expired":"");
         }
     }
@@ -197,6 +196,11 @@ public class HttpChannelState
                     return Action.COMPLETE;
                     
                 case ASYNCWAIT:
+                    if (_asyncIO)
+                    {
+                        _asyncIO=false;
+                        return Action.IO_CALLBACK;
+                    }
                     return Action.WAIT;
                     
                 case COMPLETED:
@@ -222,7 +226,6 @@ public class HttpChannelState
             {
                 case DISPATCHED:
                 case REDISPATCHED:
-                    _dispatched=false;
                     _expired=false;
                     _responseWrapped=event.getSuppliedResponse()!=_channel.getResponse();
                     _responseWrapped=false;
@@ -276,6 +279,12 @@ public class HttpChannelState
     {
         synchronized (this)
         {
+            if (_asyncIO)
+            {
+                _asyncIO=false;
+                return Action.IO_CALLBACK;
+            }
+            
             switch(_state)
             {
                 case REDISPATCHED:
@@ -319,14 +328,12 @@ public class HttpChannelState
                 case ASYNCSTARTED:
                     _state=State.REDISPATCHING;
                     _event.setDispatchTarget(context,path);
-                    _dispatched=true;
                     return;
 
                 case ASYNCWAIT:
                     dispatch=!_expired;
                     _state=State.REDISPATCH;
                     _event.setDispatchTarget(context,path);
-                    _dispatched=true;
                     break;
 
                 case REDISPATCH:
@@ -342,14 +349,6 @@ public class HttpChannelState
         {
             cancelTimeout();
             scheduleDispatch();
-        }
-    }
-
-    public boolean isDispatched()
-    {
-        synchronized (this)
-        {
-            return _dispatched;
         }
     }
 
@@ -500,12 +499,12 @@ public class HttpChannelState
                     _state=State.IDLE;
             }
             _initial = true;
-            _dispatched=false;
             _expired=false;
             _responseWrapped=false;
             cancelTimeout();
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
+            _asyncIO=false;
         }
     }
 
@@ -652,11 +651,42 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
-
     public void asyncIO()
     {
-        // TODO Auto-generated method stub
-        
+        boolean handle=false;
+
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case IDLE:
+                    throw new IllegalStateException();
+
+                case ASYNCWAIT:
+                    _asyncIO=true;
+                    handle=true;
+                    break;
+                
+                case ASYNCSTARTED:
+                case REDISPATCHING:
+                case REDISPATCHED:
+                case REDISPATCH:
+                case COMPLETECALLED:
+                case COMPLETED:
+                case COMPLETING:
+                case DISPATCHED:
+                    _asyncIO=true;
+            }
+        }
+
+        if (handle)
+        {
+            ContextHandler handler=getContextHandler();
+            if (handler!=null)
+                handler.handle(_channel);
+            else
+                _channel.handle();
+        }
     }
     
     public class AsyncTimeout implements Runnable
