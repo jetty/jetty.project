@@ -217,7 +217,6 @@ write completed    -          -          -          ASYNC         READY->owp
     	// Async or Blocking ?
     	while(true)
     	{
-    	    System.err.println("write "+_state);
     	    switch(_state.get())
     	    {
                 case OPEN:
@@ -246,7 +245,6 @@ write completed    -          -          -          ASYNC         READY->owp
                         {
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 throw new IllegalStateException();
-                            System.err.println("async complete ASYNC");
                             return;
                         }
 
@@ -257,7 +255,6 @@ write completed    -          -          -          ASYNC         READY->owp
 
                     // Do the asynchronous writing from the callback
                     new AsyncWrite(b,off,len,complete).process();
-                    System.err.println("async scheduled "+_state);
                     return;
 
     	        case PENDING:
@@ -567,14 +564,12 @@ write completed    -          -          -          ASYNC         READY->owp
                 case ASYNC:
                     if (!_state.compareAndSet(State.ASYNC, State.READY))
                         continue;
-                    System.err.println("isReady ASYNC -> READY");
                     return true;
                 case READY:
                     return true;
                 case PENDING:
                     if (!_state.compareAndSet(State.PENDING, State.UNREADY))
                         continue;
-                    System.err.println("isReady PENDING -> UNREADY");
                     return false;
                 case UNREADY:
                     return false;
@@ -625,24 +620,20 @@ write completed    -          -          -          ASYNC         READY->owp
         @Override
         protected boolean process() 
         {
-            System.err.println("AsyncWrite#process "+_state);
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
             {
-                System.err.println("write aggregate "+BufferUtil.toDetailString(_aggregate));
                 _channel.write(_aggregate, _complete && _len==0, this);
                 return false;
             }
 
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_aggregate.capacity()/4)
             {
-                System.err.println("append aggregate");
                 BufferUtil.append(_aggregate, _b, _off, _len);
             }
             else if (_len>0 && !_flushed)
             {
                 ByteBuffer buffer=ByteBuffer.wrap(_b, _off, _len);
-                System.err.println("write buffer "+_complete+" "+BufferUtil.toDetailString(buffer));
                 _flushed=true;
                 _channel.write(buffer, _complete, this);
                 return false;
@@ -665,8 +656,6 @@ write completed    -          -          -          ASYNC         READY->owp
         @Override
         protected boolean process()
         {
-            System.err.println("AsyncFlush#process "+_state);
-
             if (BufferUtil.hasContent(_aggregate))
             {
                 _flushed=true;
@@ -697,13 +686,11 @@ write completed    -          -          -          ASYNC         READY->owp
                         case PENDING:
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 continue;
-                            System.err.println("AsyncFlush#completed "+last+" -> "+_state);
                             break;
                             
                         case UNREADY:
                             if (!_state.compareAndSet(State.UNREADY, State.READY))
                                 continue;
-                            System.err.println("AsyncFlush#completed "+last+" -> "+_state);
                             _channel.getState().asyncIO();
                             break;
                             
@@ -720,7 +707,6 @@ write completed    -          -          -          ASYNC         READY->owp
             }
             catch (Exception e)
             {
-                e.printStackTrace();
                 _onError=e;
                 _channel.getState().asyncIO();
             }

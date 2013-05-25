@@ -83,7 +83,6 @@ public abstract class IteratingCallback implements Callback
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             _iterating.set(false);
             failed(e);
         }

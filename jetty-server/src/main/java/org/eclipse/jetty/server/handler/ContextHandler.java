@@ -954,7 +954,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (old_context != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || (DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isExpired()))
+            if (DispatcherType.REQUEST.equals(dispatch) || 
+                DispatcherType.ASYNC.equals(dispatch) || 
+                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);

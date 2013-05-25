@@ -115,7 +115,7 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        List<String> list=process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
+        List<String> list=process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
         int blocked=0;
         for (String line:list)
         {
@@ -160,21 +160,20 @@ public class AsyncServletIOTest
         try (Socket socket = new Socket("localhost",port);)
         {
             socket.setSoTimeout(1000000);
-            socket.setReceiveBufferSize(2048);
             socket.getOutputStream().write(request.toString().getBytes("ISO-8859-1"));
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
             
             // response line
             String line = in.readLine();
-            System.err.println("line: "+line);
+            //System.err.println("line: "+line);
             Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
             {
                 line = in.readLine();
-                System.err.println("line: "+line);
+                //System.err.println("line: "+line);
                 if (line.length()==0)
                     break;
             }
@@ -185,7 +184,7 @@ public class AsyncServletIOTest
                 line = in.readLine();
                 if (line==null)
                     break;
-                System.err.println("line:  "+line.length()+"\t"+(line.length()>40?(line.substring(0,40)+"..."):line));
+                //System.err.println("line:  "+line.length()+"\t"+(line.length()>40?(line.substring(0,40)+"..."):line));
                 list.add(line);
             }
         }
@@ -232,7 +231,7 @@ public class AsyncServletIOTest
                 @Override
                 public void onWritePossible() throws IOException
                 {
-                    System.err.println("OWP");
+                    //System.err.println("OWP");
                     out.write(_owp);
 
                     while (writes!=null && _w< writes.length)
@@ -258,7 +257,7 @@ public class AsyncServletIOTest
                     if (!out.isReady())
                         return;
                     
-                    System.err.println("COMPLETE!!!");
+                    //System.err.println("COMPLETE!!!");
                     async.complete();
                 }
 

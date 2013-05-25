@@ -57,7 +57,6 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     @Override
     public void failed(Throwable x)
     {
-        x.printStackTrace();
         _callback.failed(x);
     }
 
