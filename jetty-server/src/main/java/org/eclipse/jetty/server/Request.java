@@ -1615,8 +1615,10 @@ public class Request implements HttpServletRequest
         Object old_value = _attributes == null?null:_attributes.getAttribute(name);
 
         if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
-        	setQueryEncoding(value == null?null:value.toString());
-
+            setQueryEncoding(value == null?null:value.toString());
+        else if ("org.eclipse.jetty.server.sendContent".equals(name))
+            LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
+        
         if (_attributes == null)
             _attributes = new AttributesMap();
         _attributes.setAttribute(name,value);
