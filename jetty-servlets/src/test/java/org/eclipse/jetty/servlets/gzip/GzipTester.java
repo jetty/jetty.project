@@ -56,6 +56,7 @@ import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 
 public class GzipTester
@@ -110,6 +111,8 @@ public class GzipTester
         else
             Assert.assertThat("Response.header[Content-Encoding]", response.getHeader("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
 
+        Assert.assertThat(response.getHeader("ETag"),Matchers.startsWith("W/"));
+        
         // Assert that the decompressed contents are what we expect.
         File serverFile = testdir.getFile(serverFilename);
         String expected = IO.readToString(serverFile);
@@ -191,6 +194,8 @@ public class GzipTester
         Assert.assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.getHeader("Content-Type"),notNullValue());
         Assert.assertThat(prefix + ".header[Content-Type]",response.getHeader("Content-Type"),is(expectedContentType));
 
+        Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("w/etag-"));
+        
         ByteArrayInputStream bais = null;
         DigestOutputStream digester = null;
         try
@@ -315,6 +320,10 @@ public class GzipTester
             int serverLength = Integer.parseInt(response.getHeader("Content-Length"));
             Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
         }
+        
+        if (status>=200 && status<300)
+            Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("W/"));
+            
     }
 
     private HttpTester executeRequest(String method,String uri) throws IOException, Exception
@@ -347,11 +356,11 @@ public class GzipTester
         ByteArrayOutputStream out = null;
         try
         {
-            in = new ByteArrayInputStream(response.getContentBytes());
-            out = new ByteArrayOutputStream();
-            IO.copy(in,out);
-
-            actual = out.toString(encoding);
+            byte[] content=response.getContentBytes();
+            if (content!=null)  
+                actual=new String(response.getContentBytes(),encoding);
+            else
+                actual="";
         }
         finally
         {
@@ -434,7 +443,7 @@ public class GzipTester
         finally
         {
             IO.close(in);
-            IO.close(fos);
+            IO.close(fos);            
         }
     }
 
@@ -466,6 +475,7 @@ public class GzipTester
         servletTester.setResourceBase(testdir.getDir().getCanonicalPath());
         ServletHolder servletHolder = servletTester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
+        servletHolder.setInitParameter("etags","true");
         FilterHolder holder = servletTester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
         holder.setInitParameter("vary","Accept-Encoding");
         return holder;

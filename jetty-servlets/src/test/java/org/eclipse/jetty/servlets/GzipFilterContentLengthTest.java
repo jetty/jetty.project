@@ -33,7 +33,10 @@ import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
+import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -131,7 +134,8 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
+            HttpTester response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
+            Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("w/etag-"));
         }
         finally
         {
@@ -139,6 +143,15 @@ public class GzipFilterContentLengthTest
         }
     }
 
+    /**
+     * Tests gzip compression of a small size file
+     */
+    @Test
+    public void testEmpty() throws Exception
+    {
+        assertIsNotGzipCompressed("empty.txt",0);
+    }
+    
     /**
      * Tests gzip compression of a small size file
      */
