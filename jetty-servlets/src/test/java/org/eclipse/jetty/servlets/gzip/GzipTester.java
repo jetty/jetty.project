@@ -192,7 +192,7 @@ public class GzipTester
         Assert.assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.getHeader("Content-Type"),notNullValue());
         Assert.assertThat(prefix + ".header[Content-Type]",response.getHeader("Content-Type"),is(expectedContentType));
 
-        Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("w/etag-"));
+        Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("W/"));
         
         ByteArrayInputStream bais = null;
         DigestOutputStream digester = null;

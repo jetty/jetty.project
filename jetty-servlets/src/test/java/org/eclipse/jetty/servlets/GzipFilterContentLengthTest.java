@@ -135,7 +135,7 @@ public class GzipFilterContentLengthTest
         {
             tester.start();
             HttpTester response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
-            Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("w/etag-"));
+            Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("W/etag-"));
         }
         finally
         {
