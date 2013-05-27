@@ -599,4 +599,12 @@ public class HttpTester
         
     }
 
+    @Override
+    public String toString()
+    {
+        if (_method!=null)
+            return super.toString()+" "+_method+" "+_uri+" "+_version+"\n"+_fields.toString();
+
+        return super.toString()+" HTTP/1.1 "+_status+" "+_reason+"\n"+_fields.toString();
+    }
 }

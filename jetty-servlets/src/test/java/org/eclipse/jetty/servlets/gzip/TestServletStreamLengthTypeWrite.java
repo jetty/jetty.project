@@ -59,6 +59,7 @@ public class TestServletStreamLengthTypeWrite extends TestDirContentServlet
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
+        response.setHeader("ETag","w/etag-"+fileName);
 
         out.write(dataBytes);
     }
