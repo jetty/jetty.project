@@ -32,10 +32,13 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -67,7 +70,7 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Default location within bundle of a jetty home dir.
      */
-    public static final String DEFAULT_JETTYHOME = "/jettyhome/";
+    public static final String DEFAULT_JETTYHOME = "/jettyhome";
     
     
     
@@ -96,9 +99,10 @@ public class DefaultJettyAtJettyHomeHelper
     {
         String jettyHomeSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME);
         String jettyHomeBundleSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME_BUNDLE);
-        File jettyHome = null;
+        File jettyHomeDir = null;
         Bundle jettyHomeBundle = null;
-        
+     
+        Dictionary<String,String> properties = new Hashtable<String,String>();
         if (jettyHomeSysProp != null)
         {
             jettyHomeSysProp = Util.resolvePropertyValue(jettyHomeSysProp);
@@ -109,12 +113,15 @@ public class DefaultJettyAtJettyHomeHelper
             if (jettyHomeBundleSysProp != null)
                 LOG.warn("Both jetty.home and jetty.home.bundle property defined: jetty.home.bundle ignored.");
            
-            jettyHome = new File(jettyHomeSysProp);
-            if (!jettyHome.exists() || !jettyHome.isDirectory())
+            jettyHomeDir = new File(jettyHomeSysProp);
+            if (!jettyHomeDir.exists() || !jettyHomeDir.isDirectory())
             {
                 LOG.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
                 return null;
             }
+            
+            //set jetty.home
+            Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, jettyHomeDir.getAbsolutePath());
         }
         else if (jettyHomeBundleSysProp != null)
         {
@@ -134,33 +141,35 @@ public class DefaultJettyAtJettyHomeHelper
             }
         }
         
-        if (jettyHome == null && jettyHomeBundle == null)
+        if (jettyHomeDir == null && jettyHomeBundle == null)
         {
             LOG.warn("No default jetty created.");
             return null;
         }
-
+        
+        
+        
         //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
         //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
-        List<URL> configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
+        List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}",configURLs);
+        LOG.info("JETTY.HOME="+properties.get(OSGiServerConstants.JETTY_HOME));
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
             Thread.currentThread().setContextClassLoader(JettyBootstrapActivator.class.getClassLoader());
             
-
             // these properties usually are the ones passed to this type of
             // configuration.
-            Dictionary<String,String> properties = new Hashtable<String,String>();
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, System.getProperty(OSGiServerConstants.JETTY_HOME));
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
 
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
+            //ensure jetty.home is set
+            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
@@ -216,8 +225,8 @@ public class DefaultJettyAtJettyHomeHelper
      * @param jettyhome
      * @return
      */
-    private static List<URL> getJettyConfigurationURLs(Bundle configurationBundle)
-    throws MalformedURLException
+    private static List<URL> getJettyConfigurationURLs(Bundle configurationBundle, Dictionary properties)
+    throws Exception
     {
         List<URL> configURLs = new ArrayList<URL>();
         String files = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);       
@@ -234,25 +243,72 @@ public class DefaultJettyAtJettyHomeHelper
             {
                 Enumeration<URL> enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, etcFile);
 
+                String home = null;
                 // default for org.eclipse.osgi.boot where we look inside
                 // jettyhome/ for the default embedded configuration.
                 if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
+                    home = DEFAULT_JETTYHOME;
                     String tmp = DEFAULT_JETTYHOME+(DEFAULT_JETTYHOME.endsWith("/")?"":"/")+etcFile;
                     enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, tmp);                    
                     LOG.info("Configuring jetty from bundle: {} with {}", configurationBundle.getSymbolicName(),tmp);
-                }
+                }          
 
+                //lazily ensure jetty.home value is set based on location of etc files
+                if (properties.get(OSGiServerConstants.JETTY_HOME) == null)
+                {
+                    Resource res = findDir(configurationBundle, home);
+                    if (res != null)
+                        properties.put(OSGiServerConstants.JETTY_HOME, res.toString());
+                }
+         
                 if (enUrls == null || !enUrls.hasMoreElements())
                     throw new IllegalStateException ("Unable to locate a jetty configuration file for " + etcFile);
 
-                while (enUrls.hasMoreElements())
-                {
-                    URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(enUrls.nextElement());
-                    configURLs.add(url);
-                }
+                URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(enUrls.nextElement());
+                configURLs.add(url);
+           
             }
         }
         return configURLs;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get a resource representing a directory inside a bundle. If the dir is null,
+     * return a resource representing the installation location of the bundle.
+     * @param bundle
+     * @param dir
+     * @return
+     */
+    public static Resource findDir (Bundle bundle, String dir)
+    {
+        if (bundle == null)
+            return null;
+
+        try
+        {
+            File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+            URL u = f.toURI().toURL();
+            u = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(u);
+            Resource res = Resource.newResource(u);
+            String s = res.toString();
+   
+            //check if it is an unarchived bundle
+            if (s.endsWith(".jar") && s.startsWith("file:"))
+                res = JarResource.newJarResource(res);
+            
+            //if looking for a directory 
+            if (dir != null)
+                res = res.addPath(dir);
+            
+            return res;
+          
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Bad bundle location" , e);
+            return null;
+        }
     }
 }

@@ -12,6 +12,15 @@
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">
             <Arg><Ref refid="Server" /></Arg>
+             <Arg name="factories">
+               <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                <Item>
+                  <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                   <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                  </New>
+                </Item>
+              </Array>
+             </Arg>
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8080"/></Set>
             <Set name="idleTimeout">300000</Set>
