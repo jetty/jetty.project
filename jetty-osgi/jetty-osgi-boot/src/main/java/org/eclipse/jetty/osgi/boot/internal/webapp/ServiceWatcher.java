@@ -185,7 +185,6 @@ public class ServiceWatcher implements ServiceListener
                         try
                         {
                             added = e.getValue().serviceAdded(sr, contextHandler);
-                            System.err.println(serverName+" deployed "+contextHandler+": "+added);
                             if (added && LOG.isDebugEnabled())
                                 LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
                         }

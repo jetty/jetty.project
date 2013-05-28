@@ -195,7 +195,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle) 
                         : new File(overrideBundleInstallLocation));
             URL url = null;
-
+            
             //if the path wasn't set or it was ., then it is the root of the bundle's installed location
             if (_webAppPath == null || _webAppPath.length() == 0 || ".".equals(_webAppPath))
             {
@@ -227,6 +227,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                                                    + (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "unlocated bundle '" + _bundle.getSymbolicName()+ "'"));
             }
 
+            //Sets the location of the war file
             // converts bundleentry: protocol if necessary
             _webApp.setWar(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url).toString());
 
