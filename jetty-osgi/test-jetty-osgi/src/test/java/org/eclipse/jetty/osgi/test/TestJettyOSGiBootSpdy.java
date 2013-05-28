@@ -61,8 +61,9 @@ public class TestJettyOSGiBootSpdy
 
         TestOSGiUtil.addMoreOSGiContainers(options);
 
-        options.addAll(TestJettyOSGiBootCore.provisionCoreJetty());
+      
         options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort("jetty-spdy.xml"));
+        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
         options.addAll(spdyJettyDependencies());

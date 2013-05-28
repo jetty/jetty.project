@@ -25,7 +25,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -115,24 +115,24 @@ public class TagLibOSGiConfiguration extends TagLibConfiguration
             {
                 atLeastOneTldFound = true;
                 URL oriUrl = en.nextElement();
-                URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(oriUrl);
-                Resource tldResource;
                 try
                 {
+                    URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(oriUrl);
+                    Resource tldResource;
                     tldResource = Resource.newResource(url);
+                    tlds.add(tldResource);
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
                     throw new IllegalArgumentException("Unable to locate the " + "tld resource in '"
-                                                       + url.toString()
-                                                       + "' in the bundle '"
-                                                       + bs[0].getSymbolicName()
-                                                       + "' while registering the "
-                                                       + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
-                                                       + " of the manifest of "
-                                                       + bundle.getSymbolicName(), e);
+                            + oriUrl.toString()
+                            + "' in the bundle '"
+                            + bs[0].getSymbolicName()
+                            + "' while registering the "
+                            + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
+                            + " of the manifest of "
+                            + bundle.getSymbolicName(), e);
                 }
-                tlds.add(tldResource);
             }
             if (!atLeastOneTldFound)
             {

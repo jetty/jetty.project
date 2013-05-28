@@ -21,11 +21,20 @@ package org.eclipse.jetty.ant;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Array;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSource;
+import java.security.PermissionCollection;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.jar.Manifest;
 
 import javax.servlet.Servlet;
 
@@ -44,6 +53,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -65,6 +76,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class AntWebAppContext extends WebAppContext
 {
+    private static final Logger LOG = Log.getLogger(WebAppContext.class);
+    
     public final AntWebInfConfiguration antWebInfConfiguration = new AntWebInfConfiguration();
     public final WebXmlConfiguration webXmlConfiguration = new WebXmlConfiguration();
     public final MetaInfConfiguration metaInfConfiguration = new MetaInfConfiguration();
@@ -142,6 +155,184 @@ public class AntWebAppContext extends WebAppContext
     }
 
     
+    /**
+     * AntURLClassLoader
+     *
+     * Adapt the AntClassLoader which is not a URLClassLoader - this is needed for
+     * jsp to be able to search the classpath.
+     */
+    public static class AntURLClassLoader extends URLClassLoader
+    {
+        private AntClassLoader antLoader;
+        
+        public AntURLClassLoader(AntClassLoader antLoader)
+        {
+            super(new URL[] {}, antLoader);
+            this.antLoader = antLoader;      
+        }
+
+        @Override
+        public InputStream getResourceAsStream(String name)
+        {
+            return super.getResourceAsStream(name);
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            super.close();
+        }
+
+        @Override
+        protected void addURL(URL url)
+        {
+            super.addURL(url);
+        }
+
+        @Override
+        public URL[] getURLs()
+        {
+            Set<URL> urls = new HashSet<URL>();
+            
+            //convert urls from antLoader
+            String[] paths = antLoader.getClasspath().split(new String(new char[]{File.pathSeparatorChar}));
+            if (paths != null)
+            {
+                for (String p:paths)
+                {
+                    File f = new File(p);
+                    try
+                    {
+                        urls.add(f.toURI().toURL());   
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.ignore(e);
+                    }
+                }
+            }
+            
+            //add in any that may have been added to us as a URL directly
+            URL[] ourURLS = super.getURLs();
+            if (ourURLS != null)
+            {
+                for (URL u:ourURLS)
+                    urls.add(u);
+            }
+            
+            return urls.toArray(new URL[urls.size()]);
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException
+        {
+            return super.findClass(name);
+        }
+
+        @Override
+        protected Package definePackage(String name, Manifest man, URL url) throws IllegalArgumentException
+        {
+            return super.definePackage(name, man, url);
+        }
+
+        @Override
+        public URL findResource(String name)
+        {
+            return super.findResource(name);
+        }
+
+        @Override
+        public Enumeration<URL> findResources(String name) throws IOException
+        {
+            return super.findResources(name);
+        }
+
+        @Override
+        protected PermissionCollection getPermissions(CodeSource codesource)
+        {
+            return super.getPermissions(codesource);
+        }
+
+        @Override
+        public Class<?> loadClass(String name) throws ClassNotFoundException
+        {
+            return super.loadClass(name);
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
+        {
+            return super.loadClass(name, resolve);
+        }
+
+        @Override
+        protected Object getClassLoadingLock(String className)
+        {
+            return super.getClassLoadingLock(className);
+        }
+
+        @Override
+        public URL getResource(String name)
+        {
+            return super.getResource(name);
+        }
+
+        @Override
+        public Enumeration<URL> getResources(String name) throws IOException
+        {
+            return super.getResources(name);
+        }
+
+        @Override
+        protected Package definePackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion,
+                                        String implVendor, URL sealBase) throws IllegalArgumentException
+        {
+            return super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
+        }
+
+        @Override
+        protected Package getPackage(String name)
+        {
+            return super.getPackage(name);
+        }
+
+        @Override
+        protected Package[] getPackages()
+        {
+            return super.getPackages();
+        }
+
+        @Override
+        protected String findLibrary(String libname)
+        {
+            return super.findLibrary(libname);
+        }
+
+        @Override
+        public void setDefaultAssertionStatus(boolean enabled)
+        {
+            super.setDefaultAssertionStatus(enabled);
+        }
+
+        @Override
+        public void setPackageAssertionStatus(String packageName, boolean enabled)
+        {
+            super.setPackageAssertionStatus(packageName, enabled);
+        }
+
+        @Override
+        public void setClassAssertionStatus(String className, boolean enabled)
+        {
+            super.setClassAssertionStatus(className, enabled);
+        }
+
+        @Override
+        public void clearAssertionStatus()
+        {
+            super.clearAssertionStatus();
+        }
+    }
+    
     
     /**
      * AntServletHolder
@@ -179,31 +370,6 @@ public class AntWebAppContext extends WebAppContext
         {
             super(name, servlet);
         }
-
-
-        @Override
-        protected void initJspServlet() throws Exception
-        {
-            //super.initJspServlet();
-
-            ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-
-            /* Set the webapp's classpath for Jasper */
-            ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
-
-            /* Set the system classpath for Jasper */
-            String sysClassPath = getSystemClassPath(ch.getClassLoader().getParent());
-            setInitParameter("com.sun.appserv.jsp.classpath", sysClassPath);
-
-            /* Set up other classpath attribute */
-            if ("?".equals(getInitParameter("classpath")))
-            {
-                String classpath = ch.getClassPath();
-                if (classpath != null)
-                    setInitParameter("classpath", classpath);
-            }
-        }
-
 
         protected String getSystemClassPath (ClassLoader loader) throws Exception
         {
@@ -465,7 +631,7 @@ public class AntWebAppContext extends WebAppContext
 
 
     /**
-     * @see WebApplicationProxy#start()
+     * 
      */
     public void doStart()
     {
@@ -474,7 +640,12 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Starting web application "+this.getDescriptor());
             if (jettyEnvXml != null && jettyEnvXml.exists())
                 envConfiguration.setJettyEnvXml(Resource.toURL(jettyEnvXml));
-            setClassLoader(new WebAppClassLoader(this.getClass().getClassLoader(), this));
+            
+            ClassLoader parentLoader = this.getClass().getClassLoader();
+            if (parentLoader instanceof AntClassLoader)
+                parentLoader = new AntURLClassLoader((AntClassLoader)parentLoader);
+
+            setClassLoader(new WebAppClassLoader(parentLoader, this));
             if (attributes != null && attributes.getAttributes() != null)
             {
                 for (Attribute a:attributes.getAttributes())

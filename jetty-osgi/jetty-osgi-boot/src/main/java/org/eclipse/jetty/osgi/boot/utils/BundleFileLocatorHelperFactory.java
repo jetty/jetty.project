@@ -16,9 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.webapp;
+package org.eclipse.jetty.osgi.boot.utils;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

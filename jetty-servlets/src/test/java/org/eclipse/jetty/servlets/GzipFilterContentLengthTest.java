@@ -25,6 +25,7 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
@@ -35,6 +36,8 @@ import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -132,7 +135,8 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
+            HttpTester.Response response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
+            Assert.assertThat(response.get("ETAG"),Matchers.startsWith("W/etag-"));
         }
         finally
         {
@@ -140,6 +144,15 @@ public class GzipFilterContentLengthTest
         }
     }
 
+    /**
+     * Tests gzip compression of a small size file
+     */
+    @Test
+    public void testEmpty() throws Exception
+    {
+        assertIsNotGzipCompressed("empty.txt",0);
+    }
+    
     /**
      * Tests gzip compression of a small size file
      */

@@ -106,6 +106,17 @@ write completed    -          -          -          ASYNC         READY->owp
     public boolean isAllContentWritten()
     {
         return _channel.getResponse().isAllContentWritten(_written);
+        {
+            try
+            {
+                _channel.getResponse().closeOutput(); 
+            }
+            catch(IOException e)
+            {
+                _channel.getEndPoint().shutdownOutput();
+                LOG.ignore(e);
+            }
+        }
     }
     
     @Override
@@ -305,6 +316,8 @@ write completed    -          -          -          ASYNC         READY->owp
     	// write any remaining content in the buffer directly
     	if (len>0)
     	    _channel.write(ByteBuffer.wrap(b, off, len), complete);
+        else if (complete)
+            _channel.write(BufferUtil.EMPTY_BUFFER,complete);
 
     	if (complete)
     	{
@@ -441,9 +454,23 @@ write completed    -          -          -          ASYNC         READY->owp
      * @param content The content to send
      * @param callback The callback to use to notify success or failure
      */
-    public void sendContent(ByteBuffer content, Callback callback)
+    public void sendContent(ByteBuffer content, final Callback callback)
     {
-        _channel.write(content,true,callback);
+        _channel.write(content,true,new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                closed();
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback.failed(x);
+            }            
+        });
     }
 
     /* ------------------------------------------------------------ */
@@ -493,7 +520,6 @@ write completed    -          -          -          ASYNC         READY->owp
             }
             break;
         }
-
         ByteBuffer buffer= _channel.useDirectBuffers()?httpContent.getDirectBuffer():null;
         if (buffer == null)
             buffer = httpContent.getIndirectBuffer();
@@ -750,6 +776,7 @@ write completed    -          -          -          ASYNC         READY->owp
             int len=_in.read(_buffer.array(),0,_buffer.capacity());
             if (len==-1)
             {
+                closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
             }
@@ -808,6 +835,7 @@ write completed    -          -          -          ASYNC         READY->owp
             int len=_in.read(_buffer);
             if (len==-1)
             {
+                closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
             }
