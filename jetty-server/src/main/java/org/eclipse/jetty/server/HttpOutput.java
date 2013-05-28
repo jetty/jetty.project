@@ -106,17 +106,6 @@ write completed    -          -          -          ASYNC         READY->owp
     public boolean isAllContentWritten()
     {
         return _channel.getResponse().isAllContentWritten(_written);
-        {
-            try
-            {
-                _channel.getResponse().closeOutput(); 
-            }
-            catch(IOException e)
-            {
-                _channel.getEndPoint().shutdownOutput();
-                LOG.ignore(e);
-            }
-        }
     }
     
     @Override
@@ -569,7 +558,7 @@ write completed    -          -          -          ASYNC         READY->owp
         if (_state.compareAndSet(State.OPEN, State.READY))
         {
             _writeListener = writeListener;
-            _channel.getState().asyncIO();
+            _channel.getState().onWritePossible();
         }
         else
             throw new IllegalStateException();
@@ -664,6 +653,12 @@ write completed    -          -          -          ASYNC         READY->owp
                 _channel.write(buffer, _complete, this);
                 return false;
             }
+            else if (_len==0 && !_flushed)
+            {
+                _flushed=true;
+                _channel.write(BufferUtil.EMPTY_BUFFER, _complete, this);
+                return false;
+            }
 
             if (_complete)
                 closed();
@@ -717,7 +712,7 @@ write completed    -          -          -          ASYNC         READY->owp
                         case UNREADY:
                             if (!_state.compareAndSet(State.UNREADY, State.READY))
                                 continue;
-                            _channel.getState().asyncIO();
+                            _channel.getState().onWritePossible();
                             break;
                             
                         case CLOSED:
@@ -734,7 +729,7 @@ write completed    -          -          -          ASYNC         READY->owp
             catch (Exception e)
             {
                 _onError=e;
-                _channel.getState().asyncIO();
+                _channel.getState().onWritePossible();
             }
         }
         
@@ -743,7 +738,7 @@ write completed    -          -          -          ASYNC         READY->owp
         {
             e.printStackTrace();
             _onError=e;
-            _channel.getState().asyncIO();
+            _channel.getState().onWritePossible();
         }
 
 

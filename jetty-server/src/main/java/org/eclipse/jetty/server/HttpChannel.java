@@ -581,7 +581,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         @SuppressWarnings("unchecked")
         HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
         input.content(item);
-        return true;
+        return !_expect100Continue;
     }
 
     @Override

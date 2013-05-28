@@ -605,7 +605,11 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
-    public void asyncIO()
+    public void onReadPossible()
+    {
+    }
+    
+    public void onWritePossible()
     {
         boolean handle;
 
