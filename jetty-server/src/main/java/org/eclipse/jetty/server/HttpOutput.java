@@ -642,10 +642,12 @@ write completed    -          -          -          ASYNC         READY->owp
                 return false;
             }
 
+            // TODO write comments
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_aggregate.capacity()/4)
             {
                 BufferUtil.append(_aggregate, _b, _off, _len);
             }
+            // TODO write comments
             else if (_len>0 && !_flushed)
             {
                 ByteBuffer buffer=ByteBuffer.wrap(_b, _off, _len);

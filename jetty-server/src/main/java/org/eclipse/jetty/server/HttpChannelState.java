@@ -64,7 +64,7 @@ public class HttpChannelState
         IDLE,          // Idle request
         DISPATCHED,    // Request dispatched to filter/servlet
         ASYNCWAIT,     // Suspended and parked
-        ASYNCIO,       // Has been scheduled
+        ASYNCIO,       // Has been dispatched for async IO
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
     }

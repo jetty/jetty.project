@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -115,15 +116,9 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        List<String> list=process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        int blocked=0;
-        for (String line:list)
-        {
-            if ("-".equals(line))
-                blocked++;
-        }
-        
-        Assert.assertThat(blocked,Matchers.greaterThan(1));
+        _count.set(0);
+        process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
+        Assert.assertThat(_count.get(),Matchers.greaterThan(1));
     }
 
     
@@ -207,7 +202,8 @@ public class AsyncServletIOTest
     }
 
 
-       
+    
+    static AtomicInteger _count = new AtomicInteger();
     
     private static class AsyncIOServlet extends HttpServlet
     {
@@ -225,19 +221,16 @@ public class AsyncServletIOTest
             final ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener()
             {
-                byte[] _owp="-\n".getBytes("ISO-8859-1");
                 int _w=0;
                 
                 @Override
                 public void onWritePossible() throws IOException
                 {
                     //System.err.println("OWP");
-                    out.write(_owp);
+                    _count.incrementAndGet();
 
                     while (writes!=null && _w< writes.length)
                     {
-                        if (!out.isReady())
-                            return;
                         int write=Integer.valueOf(writes[_w++]);
                         
                         if (write==0)
@@ -253,9 +246,6 @@ public class AsyncServletIOTest
                         if (!out.isReady())
                             return;
                     }
-
-                    if (!out.isReady())
-                        return;
                     
                     //System.err.println("COMPLETE!!!");
                     async.complete();
