@@ -209,7 +209,6 @@ public class HttpChannelState
                     if (_async!=null)
                     {
                         Async async=_async;
-                        _async=null;
                         switch(async)
                         {
                             case COMPLETE:
@@ -217,14 +216,18 @@ public class HttpChannelState
                                 return Action.COMPLETE;
                             case DISPATCH:
                                 _state=State.DISPATCHED;
+                                _async=null;
                                 return Action.ASYNC_DISPATCH;
                             case EXPIRING:
                                 break;
                             case EXPIRED:
                                 _state=State.DISPATCHED;
+                                _async=null;
                                 return Action.ASYNC_EXPIRED;
                             case STARTED:
-                                throw new IllegalStateException(this.getStatusString());
+                                // TODO
+                                LOG.warn("TODO Fix this double dispatch",new IllegalStateException(this.getStatusString()));
+                                return Action.WAIT;
                         }
                     }
                     
