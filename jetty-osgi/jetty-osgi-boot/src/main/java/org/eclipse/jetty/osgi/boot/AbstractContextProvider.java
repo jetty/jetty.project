@@ -214,7 +214,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                         //put the server instance in
                         properties.put("Server", getServerInstanceWrapper().getServer());
                         //put in the location of the bundle root
-                        properties.put("bundle.root", rootResource.toString());
+                        properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
                         
                         // insert the bundle's location as a property.
                         xmlConfiguration.getProperties().putAll(properties);

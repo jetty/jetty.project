@@ -160,12 +160,9 @@ public class DefaultJettyAtJettyHomeHelper
         {
             Thread.currentThread().setContextClassLoader(JettyBootstrapActivator.class.getClassLoader());
             
-
             // these properties usually are the ones passed to this type of
             // configuration.
-          
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            //Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, System.getProperty(OSGiServerConstants.JETTY_HOME));
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));

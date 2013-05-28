@@ -34,6 +34,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -195,6 +197,14 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle) 
                         : new File(overrideBundleInstallLocation));
             URL url = null;
+            Resource rootResource = Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(bundleInstallLocation.toURI().toURL()));
+            //try and make sure the rootResource is useable - if its a jar then make it a jar file url
+            if (rootResource.exists()&& !rootResource.isDirectory() && !rootResource.toString().startsWith("jar:"))
+            {
+               Resource jarResource = JarResource.newJarResource(rootResource);
+               if (jarResource.exists() && jarResource.isDirectory())
+                   rootResource = jarResource;
+            }
             
             //if the path wasn't set or it was ., then it is the root of the bundle's installed location
             if (_webAppPath == null || _webAppPath.length() == 0 || ".".equals(_webAppPath))
@@ -284,7 +294,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
-            applyMetaInfContextXml();
+            applyMetaInfContextXml(rootResource);
 
             // pass the value of the require tld bundle so that the TagLibOSGiConfiguration
             // can pick it up.
@@ -342,7 +352,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
         
         
-        protected void applyMetaInfContextXml()
+        protected void applyMetaInfContextXml(Resource rootResource)
         throws Exception
         {
             if (_bundle == null) return;
@@ -366,6 +376,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
                 HashMap properties = new HashMap();
                 properties.put("Server", getDeploymentManager().getServer());
+                properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
                 xmlConfiguration.getProperties().putAll(properties);
                 xmlConfiguration.configure(_webApp);
             }
