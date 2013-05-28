@@ -168,6 +168,8 @@ public class DefaultJettyAtJettyHomeHelper
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
 
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
+            //ensure jetty.home is set
+            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
