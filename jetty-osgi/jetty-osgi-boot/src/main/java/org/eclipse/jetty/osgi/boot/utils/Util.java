@@ -46,7 +46,7 @@ public class Util
      * @throws MalformedURLException 
      */
     public static List<URL> fileNamesAsURLs(String val, String delims) 
-    throws MalformedURLException
+    throws Exception
     {
         String separators = DEFAULT_DELIMS;
         if (delims == null)
