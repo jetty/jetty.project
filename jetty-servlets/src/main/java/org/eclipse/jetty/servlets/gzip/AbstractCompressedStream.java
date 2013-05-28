@@ -65,22 +65,31 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             doCompress();
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Reset buffer.
      */
     public void resetBuffer()
     {
-        if (_response.isCommitted())
+        if (_response.isCommitted() || _compressedOutputStream!=null )
             throw new IllegalStateException("Committed");
         _closed = false;
         _out = null;
         _bOut = null;
-        if (_compressedOutputStream != null)
-            _response.setHeader("Content-Encoding",null);
-        _compressedOutputStream = null;
         _doNotCompress = false;
     }
 
+    /* ------------------------------------------------------------ */
+    public void setBufferSize(int bufferSize)
+    {
+        if (_bOut!=null && _bOut.getBuf().length<bufferSize)
+        {
+            ByteArrayOutputStream2 b = new ByteArrayOutputStream2(bufferSize);
+            b.write(_bOut.getBuf(),0,_bOut.size());
+            _bOut=b;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     public void setContentLength()
     {
@@ -170,7 +179,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             if (_out == null || _bOut != null)
             {
                 long length=_wrapper.getContentLength();
-                if (length > 0 && length < _wrapper.getMinCompressSize())
+                if (length >= 0 && length < _wrapper.getMinCompressSize())
                     doNotCompress(false);
                 else
                     doCompress();
@@ -358,5 +367,6 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      *             Signals that an I/O exception has occurred.
      */
     protected abstract DeflaterOutputStream createStream() throws IOException;
+
 
 }
