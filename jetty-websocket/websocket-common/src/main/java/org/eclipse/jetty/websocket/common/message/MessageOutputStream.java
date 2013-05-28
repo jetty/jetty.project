@@ -158,10 +158,15 @@ public class MessageOutputStream extends OutputStream
         int offset = off; // offset within provided array
         while (left > 0)
         {
-            LOG.debug("buffer: {}",BufferUtil.toDetailString(buffer));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("buffer: {}",BufferUtil.toDetailString(buffer));
+            }
             int space = buffer.remaining();
+            assert (space > 0);
             int size = Math.min(space,left);
             buffer.put(b,offset,size);
+            assert (size > 0);
             left -= size; // decrement bytes left
             if (left > 0)
             {

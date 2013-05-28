@@ -44,7 +44,7 @@ public class MessageWriter extends Writer
     private long frameCount = 0;
     private WebSocketFrame frame;
     private ByteBuffer buffer;
-    private Utf8ByteBuffer utf;
+    private Utf8CharBuffer utf;
     private FutureWriteCallback blocker;
     private boolean closed = false;
 
@@ -53,8 +53,8 @@ public class MessageWriter extends Writer
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
         this.buffer = bufferPool.acquire(bufferSize,true);
-        this.utf = Utf8ByteBuffer.wrap(buffer);
         BufferUtil.flipToFill(buffer);
+        this.utf = Utf8CharBuffer.wrap(buffer);
         this.frame = new WebSocketFrame(OpCode.TEXT);
     }
 
@@ -75,27 +75,23 @@ public class MessageWriter extends Writer
     public synchronized void close() throws IOException
     {
         assertNotClosed();
-        LOG.debug("close()");
 
         // finish sending whatever in the buffer with FIN=true
         flush(true);
 
         // close stream
-        LOG.debug("Sent Frame Count: {}",frameCount);
         closed = true;
         bufferPool.release(buffer);
-        LOG.debug("closed");
+        LOG.debug("closed (frame count={})",frameCount);
     }
 
     @Override
     public void flush() throws IOException
     {
-        LOG.debug("flush()");
         assertNotClosed();
 
         // flush whatever is in the buffer with FIN=false
         flush(false);
-        LOG.debug("flushed");
     }
 
     /**
@@ -107,8 +103,7 @@ public class MessageWriter extends Writer
      */
     private synchronized void flush(boolean fin) throws IOException
     {
-        ByteBuffer data = utf.getBuffer();
-        LOG.debug("flush({}): {}",fin,BufferUtil.toDetailString(data));
+        ByteBuffer data = utf.getByteBuffer();
         frame.setPayload(data);
         frame.setFin(fin);
 
@@ -149,21 +144,21 @@ public class MessageWriter extends Writer
     @Override
     public void write(char[] cbuf) throws IOException
     {
-        LOG.debug("write(char[{}])",cbuf.length);
         this.write(cbuf,0,cbuf.length);
     }
 
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException
     {
-        LOG.debug("write(char[{}], {}, {})",cbuf.length,off,len);
+        assertNotClosed();
         int left = len; // bytes left to write
         int offset = off; // offset within provided array
         while (left > 0)
         {
-            LOG.debug("buffer: {}",BufferUtil.toDetailString(buffer));
-            int space = utf.length();
+            int space = utf.remaining();
             int size = Math.min(space,left);
+            assert (space > 0);
+            assert (size > 0);
             utf.append(cbuf,offset,size); // append with utf logic
             left -= size; // decrement char left
             if (left > 0)
@@ -180,8 +175,8 @@ public class MessageWriter extends Writer
         assertNotClosed();
 
         // buffer up to limit, flush once buffer reached.
-        utf.append((byte)c); // append with utf logic
-        if (utf.length() <= 0)
+        utf.append(c); // append with utf logic
+        if (utf.remaining() <= 0)
         {
             flush(false);
         }
