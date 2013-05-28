@@ -91,8 +91,20 @@ public class HttpOutput extends ServletOutputStream
      */
     void closed()
     {
-        _closed = true;
-        releaseBuffer();
+        if (!_closed)
+        {
+            _closed = true;
+            try
+            {
+                _channel.getResponse().closeOutput(); 
+            }
+            catch(IOException e)
+            {
+                _channel.getEndPoint().shutdownOutput();
+                LOG.ignore(e);
+            }
+            releaseBuffer();
+        }
     }
 
     @Override
@@ -197,12 +209,11 @@ public class HttpOutput extends ServletOutputStream
         // write any remaining content in the buffer directly
         if (len>0)
             _channel.write(ByteBuffer.wrap(b, off, len), complete);
+        else if (complete)
+            _channel.write(BufferUtil.EMPTY_BUFFER,complete);
 
         if (complete)
-        {
             closed();
-            _channel.getResponse().closeOutput();
-        }
     }
 
 
@@ -338,9 +349,23 @@ public class HttpOutput extends ServletOutputStream
      * @param content The content to send
      * @param callback The callback to use to notify success or failure
      */
-    public void sendContent(ByteBuffer content, Callback callback)
+    public void sendContent(ByteBuffer content, final Callback callback)
     {
-        _channel.write(content,true,callback);
+        _channel.write(content,true,new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                closed();
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback.failed(x);
+            }            
+        });
     }
 
     /* ------------------------------------------------------------ */
@@ -377,8 +402,6 @@ public class HttpOutput extends ServletOutputStream
         if (_channel.isCommitted())
             throw new IOException("committed");
             
-        _closed=true;
-
         ByteBuffer buffer= _channel.useDirectBuffers()?httpContent.getDirectBuffer():null;
         if (buffer == null)
             buffer = httpContent.getIndirectBuffer();
@@ -449,6 +472,7 @@ public class HttpOutput extends ServletOutputStream
             int len=_in.read(_buffer.array(),0,_buffer.capacity());
             if (len==-1)
             {
+                closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
             }
@@ -507,6 +531,7 @@ public class HttpOutput extends ServletOutputStream
             int len=_in.read(_buffer);
             if (len==-1)
             {
+                closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
             }

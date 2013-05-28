@@ -179,7 +179,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             if (_out == null || _bOut != null)
             {
                 long length=_wrapper.getContentLength();
-                if (length >= 0 && length < _wrapper.getMinCompressSize())
+                if (length<0 && _bOut==null || length >= 0 && length < _wrapper.getMinCompressSize())
                     doNotCompress(false);
                 else
                     doCompress();

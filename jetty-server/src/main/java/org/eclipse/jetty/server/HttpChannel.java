@@ -607,6 +607,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback) 
     {
+        // TODO check that complete only set true once by changing _committed to AtomicRef<Enum>
         boolean committing = _committed.compareAndSet(false, true);
         if (committing)
         {
