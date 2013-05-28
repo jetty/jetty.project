@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,24 +33,32 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
+/**
+ * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
+ */
 public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
     private final OutgoingFrames outgoing;
-    private final int bufferSize;
+    private final ByteBufferPool bufferPool;
     private long frameCount = 0;
     private WebSocketFrame frame;
     private ByteBuffer buffer;
     private FutureWriteCallback blocker;
     private boolean closed = false;
 
-    public MessageOutputStream(WebSocketSession session)
+    public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
-        this.outgoing = session.getOutgoingHandler();
-        this.bufferSize = session.getPolicy().getMaxBinaryMessageBufferSize();
-        this.buffer = session.getBufferPool().acquire(bufferSize,true);
+        this.outgoing = outgoing;
+        this.bufferPool = bufferPool;
+        this.buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.flipToFill(buffer);
         this.frame = new WebSocketFrame(OpCode.BINARY);
+    }
+
+    public MessageOutputStream(WebSocketSession session)
+    {
+        this(session.getOutgoingHandler(),session.getPolicy().getMaxBinaryMessageBufferSize(),session.getBufferPool());
     }
 
     private void assertNotClosed() throws IOException
@@ -73,6 +82,7 @@ public class MessageOutputStream extends OutputStream
         LOG.debug("Sent Frame Count: {}",frameCount);
         closed = true;
         super.close();
+        bufferPool.release(buffer);
         LOG.debug("closed");
     }
 
