@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -154,15 +153,15 @@ public class HttpOutput extends ServletOutputStream
             _channel.write(BufferUtil.EMPTY_BUFFER, false);
     }
 
-    public boolean closeIfAllContentWritten() throws IOException
+    public boolean isAllContentWritten()
     {
         Response response=_channel.getResponse();
-        if (response.isAllContentWritten(_written))
-        {
-            response.closeOutput();
-            return true;
-        }
-        return false;
+        return response.isAllContentWritten(_written);
+    }
+    
+    public void closeOutput() throws IOException
+    {
+        _channel.getResponse().closeOutput();
     }
 
     @Override
@@ -231,12 +230,16 @@ public class HttpOutput extends ServletOutputStream
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
 
+        boolean complete=_channel.getResponse().isAllContentWritten(_written);
+        
         // Check if all written or full
-        if (!closeIfAllContentWritten() && BufferUtil.isFull(_aggregate))
+        if (complete ||  BufferUtil.isFull(_aggregate))
         {
             BlockingCallback callback = _channel.getWriteBlockingCallback();
             _channel.write(_aggregate, false, callback);
             callback.block();
+            if (complete)
+                closed();
         }
     }
 
