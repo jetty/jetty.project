@@ -23,13 +23,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.HandlesTypes;
-
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
@@ -37,10 +33,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Descriptor;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.MetaDataComplete;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -56,18 +49,31 @@ public class AnnotationConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";    
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
+    public static final String CONTAINER_INITIALIZER_LISTENER = "org.eclipse.jetty.containerInitializerListener";
   
     
     protected List<DiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
+   
     
-    
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
     }
    
-    
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        context.removeAttribute(CLASS_INHERITANCE_MAP);
+        context.removeAttribute(CONTAINER_INITIALIZERS);
+        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
+        if (listener != null)
+        {
+            context.removeBean(listener);
+            context.removeAttribute(CONTAINER_INITIALIZER_LISTENER);
+        }
+    }
     
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
@@ -225,8 +231,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
 
         //add a bean which will call the servletcontainerinitializers when appropriate
-        ServletContainerInitializerListener listener = new ServletContainerInitializerListener();
+        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
+        if (listener != null)
+            throw new IllegalStateException("ServletContainerInitializerListener already exists");
+        listener = new ServletContainerInitializerListener();
         listener.setWebAppContext(context);
+        context.setAttribute(CONTAINER_INITIALIZER_LISTENER, listener);
         context.addBean(listener, true);
     }
 
