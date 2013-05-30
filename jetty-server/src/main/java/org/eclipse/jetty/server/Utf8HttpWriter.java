@@ -45,10 +45,10 @@ public class Utf8HttpWriter extends HttpWriter
         HttpOutput out = _out;
         if (length==0 && out.isAllContentWritten())
         {
-            out.close();
+            close();
             return;
         }
-
+        
         while (length > 0)
         {
             _bytes.reset();

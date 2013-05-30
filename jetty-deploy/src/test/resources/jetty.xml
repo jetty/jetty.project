@@ -14,12 +14,10 @@
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
-    <Arg name="threadPool">
-      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="maxThreads">200</Set>
-        <Set name="minThreads">10</Set>
-      </New>
-    </Arg>
+    <Get name="ThreadPool">
+      <Set name="minThreads" type="int">10</Set>
+      <Set name="maxThreads" type="int">200</Set>
+    </Get>
 
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->

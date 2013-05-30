@@ -54,7 +54,7 @@ public class EncodingHttpWriter extends HttpWriter
             out.close();
             return;
         }
-
+            
         while (length > 0)
         {
             _bytes.reset();

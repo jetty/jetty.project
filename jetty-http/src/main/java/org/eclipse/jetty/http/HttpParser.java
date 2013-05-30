@@ -1151,6 +1151,9 @@ public class HttpParser
                     break;
 
                 case END:
+                    // eat white space
+                    while (buffer.remaining()>0 && buffer.get(buffer.position())<=HttpTokens.SPACE)
+                        buffer.get();
                     return false;
 
                 case CLOSED:

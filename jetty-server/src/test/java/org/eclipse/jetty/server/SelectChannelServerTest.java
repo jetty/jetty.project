@@ -30,11 +30,4 @@ public class SelectChannelServerTest extends HttpServerTestBase
     {
         startServer(new ServerConnector(_server));
     }
-    
-    @Override
-    public void testBlockingWhileWritingResponseContent() throws Exception
-    {
-        super.testBlockingWhileWritingResponseContent();
-    }
-
 }

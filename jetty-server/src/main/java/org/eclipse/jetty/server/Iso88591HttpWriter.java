@@ -37,7 +37,7 @@ public class Iso88591HttpWriter extends HttpWriter
         HttpOutput out = _out;
         if (length==0 && out.isAllContentWritten())
         {
-            out.close();
+            close();
             return;
         }
 

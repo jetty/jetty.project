@@ -180,7 +180,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             if (_out == null || _bOut != null)
             {
                 long length=_wrapper.getContentLength();
-                if (length<0 && _bOut==null || length >= 0 && length < _wrapper.getMinCompressSize())
+                if (length<0 &&_bOut==null || length >= 0 && length < _wrapper.getMinCompressSize())
                     doNotCompress(false);
                 else
                     doCompress();
@@ -241,7 +241,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
             if (_encoding!=null)
             {
-            setHeader("Content-Encoding", _encoding);
+                setHeader("Content-Encoding", _encoding);
                 if (_response.containsHeader("Content-Encoding"))
                 {
                     addHeader("Vary",_vary);
@@ -308,27 +308,43 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
             throw new IOException("CLOSED");
 
         if (_out == null)
-        {
-            long length=_wrapper.getContentLength();
-            if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
-                doNotCompress(false);
-            else if (lengthToWrite > _wrapper.getMinCompressSize())
-                doCompress();
+        {            
+            // If this first write is larger than buffer size, then we are committing now
+            if (lengthToWrite>_wrapper.getBufferSize())
+            {
+                // if we know this is all the content and it is less than minimum, then do not compress, otherwise do compress
+                long length=_wrapper.getContentLength();
+                if (length>=0 && length<_wrapper.getMinCompressSize())
+                    doNotCompress(false);  // Not compressing by size, so no vary on request headers
+                else
+                    doCompress();
+            }
             else
+            {
+                // start aggregating writes into a buffered output stream
                 _out = _bOut = new ByteArrayOutputStream2(_wrapper.getBufferSize());
+            }
         }
-        else if (_bOut != null)
+        // else are we aggregating writes?
+        else if (_bOut !=null)
         {
-            long length=_wrapper.getContentLength();
-            if (_response.isCommitted() || (length >= 0 && length < _wrapper.getMinCompressSize()))
-                doNotCompress(false);
-            else if (lengthToWrite >= (_bOut.getBuf().length - _bOut.getCount()))
-                doCompress();
+            // We are aggregating into the buffered output stream.  
+
+            // If this write fills the buffer, then we are committing
+            if (lengthToWrite>=(_bOut.getBuf().length - _bOut.getCount()))
+            {
+                // if we know this is all the content and it is less than minimum, then do not compress, otherwise do compress
+                long length=_wrapper.getContentLength();
+                if (length>=0 && length<_wrapper.getMinCompressSize())
+                    doNotCompress(false);  // Not compressing by size, so no vary on request headers
+                else
+                    doCompress();
+            }
         }
     }
 
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedStream#createOutputStream()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedStream#getOutputStream()
      */
     public OutputStream getOutputStream()
     {
