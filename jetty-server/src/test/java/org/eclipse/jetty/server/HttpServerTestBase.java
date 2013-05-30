@@ -466,10 +466,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Pick fragment points at random
             for (int j = 0; j < points.length; ++j)
-            {
                 points[j] = random.nextInt(bytes.length);
-            }
-            // System.err.println("points "+points[0]+" "+points[1]);
 
             // Sort the list
             Arrays.sort(points);
@@ -1138,14 +1135,19 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             InputStream in = request.getInputStream();
             ServletOutputStream out = response.getOutputStream();
 
-            // should always be some input available, because of deferred dispatch.
+            // this should initially be 0 bytes available.
             int avail = in.available();
             out.println(avail);
 
+            // block for the first character
             String buf = "";
+            buf += (char)in.read();
+            
+            // read remaining available bytes
+            avail = in.available();
+            out.println(avail);
             for (int i = 0; i < avail; i++)
                 buf += (char)in.read();
-
 
             avail = in.available();
             out.println(avail);
@@ -1238,10 +1240,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             // skip header
             while (reader.readLine().length() > 0) ;
+            assertThat(Integer.parseInt(reader.readLine()), Matchers.equalTo(0));
+            assertThat(Integer.parseInt(reader.readLine()), Matchers.equalTo(9));
+            assertThat(Integer.parseInt(reader.readLine()), Matchers.equalTo(0));
             assertThat(Integer.parseInt(reader.readLine()), Matchers.greaterThan(0));
-            assertEquals(0, Integer.parseInt(reader.readLine()));
-            assertThat(Integer.parseInt(reader.readLine()), Matchers.greaterThan(0));
-            assertEquals(0, Integer.parseInt(reader.readLine()));
+            assertThat(Integer.parseInt(reader.readLine()), Matchers.equalTo(0));
             assertEquals("1234567890abcdefghijklmnopqrst", reader.readLine());
         }
     }
