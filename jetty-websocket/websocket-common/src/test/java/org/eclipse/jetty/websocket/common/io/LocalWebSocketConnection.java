@@ -77,6 +77,12 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         ioState.onCloseLocal(close);
     }
 
+    public void connect()
+    {
+        LOG.debug("connect()");
+        ioState.onConnected();
+    }
+
     @Override
     public void disconnect()
     {
@@ -92,7 +98,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public long getIdleTimeout()
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
@@ -116,7 +121,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public long getMaxIdleTimeout()
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
@@ -184,8 +188,9 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         }
     }
 
-    public void onOpen() {
-        LOG.debug("onOpen()");
+    public void open()
+    {
+        LOG.debug("open()");
         ioState.onOpened();
     }
 
@@ -202,8 +207,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void setMaxIdleTimeout(long ms)
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override

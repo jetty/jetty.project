@@ -332,6 +332,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         write(buffer);
     }
 
+    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
@@ -535,7 +536,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         EndPoint endPoint = getEndPoint();
         try
         {
-            while (true)
+            while (true) // TODO: should this honor the LogicalConnection.suspend() ?
             {
                 int filled = endPoint.fill(buffer);
                 if (filled == 0)
@@ -555,6 +556,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                         LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                     }
                     parser.parse(buffer);
+                    // TODO: has the end user application already consumed what it was given?
                 }
             }
         }

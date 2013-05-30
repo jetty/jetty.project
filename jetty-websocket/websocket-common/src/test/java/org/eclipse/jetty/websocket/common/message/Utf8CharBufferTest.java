@@ -42,7 +42,7 @@ public class Utf8CharBufferTest
     @Test
     public void testAppendGetAppendGet()
     {
-        ByteBuffer buf = ByteBuffer.allocate(64);
+        ByteBuffer buf = ByteBuffer.allocate(128);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
         byte hellobytes[] = asUTF("Hello ");
@@ -60,8 +60,8 @@ public class Utf8CharBufferTest
     @Test
     public void testAppendGetClearAppendGet()
     {
-        int bufsize = 64;
-        ByteBuffer buf = ByteBuffer.allocate(64);
+        int bufsize = 128;
+        ByteBuffer buf = ByteBuffer.allocate(bufsize);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
         int expectedSize = bufsize / 2;

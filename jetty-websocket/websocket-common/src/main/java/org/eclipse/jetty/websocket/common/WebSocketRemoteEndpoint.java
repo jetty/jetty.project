@@ -23,6 +23,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -36,9 +38,18 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
+    private static final String PRIORMSG_ERROR = "Prior message pending, cannot start new message yet.";
+    /** Type of Message */
+    private static final int NONE = 0;
+    private static final int TEXT = 1;
+    private static final int BINARY = 2;
+    private static final int CONTROL = 3;
+
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
     public final LogicalConnection connection;
     public final OutgoingFrames outgoing;
+    private final ReentrantLock msgLock = new ReentrantLock();
+    private final AtomicInteger msgType = new AtomicInteger(NONE);
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
     {
@@ -100,89 +111,234 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        connection.getIOState().assertOutputOpen();
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
+            try
+            {
+                msgType.set(BINARY);
+                connection.getIOState().assertOutputOpen();
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
+                }
+                WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
+                blockingWrite(frame);
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        blockingWrite(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
+            try
+            {
+                msgType.set(BINARY);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
+                }
+                WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
+                return sendAsyncFrame(frame);
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        return sendAsyncFrame(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
+            try
+            {
+                if (msgType.get() == TEXT)
+                {
+                    throw new IllegalStateException("Prior TEXT message pending, cannot start new BINARY message yet.");
+                }
+                msgType.set(BINARY);
+
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
+                }
+                WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
+                blockingWrite(frame);
+            }
+            finally
+            {
+                if (isLast)
+                {
+                    msgType.set(NONE);
+                }
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
-        blockingWrite(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendPartialString({}, {})",fragment,isLast);
+            try
+            {
+                if (msgType.get() == BINARY)
+                {
+                    throw new IllegalStateException("Prior BINARY message pending, cannot start new TEXT message yet.");
+                }
+                msgType.set(TEXT);
+
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendPartialString({}, {})",fragment,isLast);
+                }
+                WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
+                blockingWrite(frame);
+
+            }
+            finally
+            {
+                if (isLast)
+                {
+                    msgType.set(NONE);
+                }
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
-        blockingWrite(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
+            try
+            {
+                msgType.set(CONTROL);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
+                }
+                WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
+                blockingWrite(frame);
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
-        blockingWrite(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
+            try
+            {
+                msgType.set(CONTROL);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
+                }
+                WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
+                blockingWrite(frame);
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
-        blockingWrite(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public void sendString(String text) throws IOException
     {
-        WebSocketFrame frame = WebSocketFrame.text(text);
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+            try
+            {
+                msgType.set(TEXT);
+                WebSocketFrame frame = WebSocketFrame.text(text);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+                }
+                blockingWrite(WebSocketFrame.text(text));
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        blockingWrite(WebSocketFrame.text(text));
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
-        WebSocketFrame frame = WebSocketFrame.text(text);
-        if (LOG.isDebugEnabled())
+        if (msgLock.tryLock())
         {
-            LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+            try
+            {
+                msgType.set(BINARY);
+                WebSocketFrame frame = WebSocketFrame.text(text);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+                }
+                return sendAsyncFrame(frame);
+            }
+            finally
+            {
+                msgType.set(NONE);
+                msgLock.unlock();
+            }
         }
-        return sendAsyncFrame(frame);
+        else
+        {
+            throw new IllegalStateException(PRIORMSG_ERROR);
+        }
     }
 }

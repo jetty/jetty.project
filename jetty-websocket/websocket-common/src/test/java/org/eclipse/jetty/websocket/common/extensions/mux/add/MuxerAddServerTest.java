@@ -48,7 +48,7 @@ public class MuxerAddServerTest
         // Server side physical connection
         LocalWebSocketConnection physical = new LocalWebSocketConnection(testname);
         physical.setPolicy(WebSocketPolicy.newServerPolicy());
-        physical.onOpen();
+        physical.open();
 
         // Client reader
         MuxDecoder clientRead = new MuxDecoder();
