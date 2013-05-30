@@ -270,6 +270,7 @@ public class SSLEngineTest
         {
             ((HttpsURLConnection)conn).setHostnameVerifier(new HostnameVerifier()
             {
+                @Override
                 public boolean verify(String urlHostName, SSLSession session)
                 {
                     return true;

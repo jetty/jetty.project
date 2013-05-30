@@ -51,20 +51,36 @@ public class AnnotationConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
-
-
+    public static final String CONTAINER_INITIALIZER_LISTENER = "org.eclipse.jetty.containerInitializerListener";
+  
+    
     protected List<DiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
+   
     
-    
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
     }
 
+   
     public void addDiscoverableAnnotationHandler(DiscoverableAnnotationHandler handler)
     {
         _discoverableAnnotationHandlers.add(handler);
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        context.removeAttribute(CLASS_INHERITANCE_MAP);
+        context.removeAttribute(CONTAINER_INITIALIZERS);
+        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
+        if (listener != null)
+        {
+            context.removeBean(listener);
+            context.removeAttribute(CONTAINER_INITIALIZER_LISTENER);
+        }
     }
     
     /** 
@@ -227,8 +243,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
 
         //add a bean which will call the servletcontainerinitializers when appropriate
-        ServletContainerInitializerListener listener = new ServletContainerInitializerListener();
+        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
+        if (listener != null)
+            throw new IllegalStateException("ServletContainerInitializerListener already exists");
+        listener = new ServletContainerInitializerListener();
         listener.setWebAppContext(context);
+        context.setAttribute(CONTAINER_INITIALIZER_LISTENER, listener);
         context.addBean(listener, true);
     }
 

@@ -428,20 +428,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             that uses the calling thread to block on a readable callback and
             then to do the parsing before before attempting the read.
              */
-            while (true)
+            while (!_parser.isComplete())
             {
                 // Can the parser progress (even with an empty buffer)
-                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-
+                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);             
+                
                 // If there is more content to parse, loop so we can queue all content from this buffer now without the
                 // need to call blockForContent again
-                while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
-                    _parser.parseNext(_requestBuffer);
+                while (!event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
+                    event=_parser.parseNext(_requestBuffer);
 
-                // If we have an event, return
-                if (event)
+                // If we have content, return
+                if (_parser.isComplete() || available()>0)
                     return;
-
+                
                 // Do we have content ready to parse?
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {

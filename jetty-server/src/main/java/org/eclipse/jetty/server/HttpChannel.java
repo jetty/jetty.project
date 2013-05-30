@@ -555,8 +555,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 throw new IllegalStateException();
         }
 
-        // Either handle now or wait for first content/message complete
-        return _expect100Continue;
+        return true;
     }
 
     @Override
@@ -567,7 +566,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         @SuppressWarnings("unchecked")
         HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
         input.content(item);
-        return true;
+        
+        return false;
     }
 
     @Override
