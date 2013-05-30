@@ -14,13 +14,10 @@
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
-    <Arg name="threadpool">
-      <!-- Default queued blocking threadpool -->
-      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="minThreads">10</Set>
-        <Set name="maxThreads">200</Set>
-      </New>
-    </Arg>
+    <Get name="ThreadPool">
+      <Set name="minThreads">10</Set>
+      <Set name="maxThreads">200</Set>
+    </Get>
 
 
     <!-- =========================================================== -->
