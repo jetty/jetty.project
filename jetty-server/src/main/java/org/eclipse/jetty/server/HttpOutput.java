@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.RequestDispatcher;
@@ -203,9 +204,6 @@ write completed    -          -          -          ASYNC         READY->owp
                     return;
             }
             break;
-    public void closeOutput() throws IOException
-    {
-        _channel.getResponse().closeOutput();
         }
     }
 
@@ -333,9 +331,7 @@ write completed    -          -          -          ASYNC         READY->owp
                     if (_aggregate == null)
                         _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
                     BufferUtil.append(_aggregate, (byte)b);
-
-        boolean complete=_channel.getResponse().isAllContentWritten(_written);
-        
+                    
                     // Check if all written or full
                     if (complete || BufferUtil.isFull(_aggregate))
                     {
