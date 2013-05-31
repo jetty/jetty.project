@@ -488,7 +488,7 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, null);
+                        return_from_parse=_responseHandler.startResponse(_version, _responseStatus, null)||return_from_parse;
                         setState(State.HEADER);
                     }
                     else
@@ -506,11 +506,11 @@ public class HttpParser
                     {
                         // HTTP/0.9
                         _uri.flip();
-                        return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
+                        return_from_parse=_requestHandler.startRequest(_method,_methodString,_uri,null)||return_from_parse;
                         setState(State.END);
                         BufferUtil.clear(buffer);
-                        return_from_parse|=_handler.headerComplete();
-                        return_from_parse|=_handler.messageComplete();
+                        return_from_parse=_handler.headerComplete()||return_from_parse;
+                        return_from_parse=_handler.messageComplete()||return_from_parse;
                     }
                     else
                     {
@@ -571,18 +571,18 @@ public class HttpParser
                     {
                         if (_responseHandler!=null)
                         {
-                            return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, null);
+                            return_from_parse=_responseHandler.startResponse(_version, _responseStatus, null)||return_from_parse;
                             setState(State.HEADER);
                         }
                         else
                         {
                             // HTTP/0.9
                             _uri.flip();
-                            return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri, null);
+                            return_from_parse=_requestHandler.startRequest(_method,_methodString,_uri, null)||return_from_parse;
                             setState(State.END);
                             BufferUtil.clear(buffer);
-                            return_from_parse|=_handler.headerComplete();
-                            return_from_parse|=_handler.messageComplete();
+                            return_from_parse=_handler.headerComplete()||return_from_parse;
+                            return_from_parse=_handler.messageComplete()||return_from_parse;
                         }
                     }
                     break;
@@ -607,7 +607,7 @@ public class HttpParser
 
                         setState(State.HEADER);
                         _uri.flip();
-                        return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri, _version);
+                        return_from_parse=_requestHandler.startRequest(_method,_methodString,_uri, _version)||return_from_parse;
                         continue;
                     }
                     else
@@ -621,7 +621,7 @@ public class HttpParser
                         String reason=takeLengthString();
 
                         setState(State.HEADER);
-                        return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, reason);
+                        return_from_parse=_responseHandler.startResponse(_version, _responseStatus, reason)||return_from_parse;
                         continue;
                     }
                     else
@@ -818,7 +818,7 @@ public class HttpParser
                                     _field=null;
                                     return true;
                                 }
-                                return_from_parse|=_handler.parsedHeader(_field!=null?_field:new HttpField(_header,_headerString,_valueString));
+                                return_from_parse=_handler.parsedHeader(_field!=null?_field:new HttpField(_header,_headerString,_valueString))||return_from_parse;
                             }
                             _headerString=_valueString=null;
                             _header=null;
@@ -862,23 +862,23 @@ public class HttpParser
                                 {
                                     case EOF_CONTENT:
                                         setState(State.EOF_CONTENT);
-                                        return_from_parse|=_handler.headerComplete();
+                                        return_from_parse=_handler.headerComplete()||return_from_parse;
                                         break;
 
                                     case CHUNKED_CONTENT:
                                         setState(State.CHUNKED_CONTENT);
-                                        return_from_parse|=_handler.headerComplete();
+                                        return_from_parse=_handler.headerComplete()||return_from_parse;
                                         break;
 
                                     case NO_CONTENT:
-                                        return_from_parse|=_handler.headerComplete();
+                                        return_from_parse=_handler.headerComplete()||return_from_parse;
                                         setState(State.END);
-                                        return_from_parse|=_handler.messageComplete();
+                                        return_from_parse=_handler.messageComplete()||return_from_parse;
                                         break;
 
                                     default:
                                         setState(State.CONTENT);
-                                        return_from_parse|=_handler.headerComplete();
+                                        return_from_parse=_handler.headerComplete()||return_from_parse;
                                         break;
                                 }
                             }
@@ -1467,8 +1467,11 @@ public class HttpParser
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* Event Handler interface
-     * These methods return true if they want parsing to return to
-     * the caller.
+     * These methods return true if the caller should process the events
+     * so far received (eg return from parseNext and call HttpChannel.handle).
+     * If multiple callbacks are called in sequence (eg 
+     * headerComplete then messageComplete) from the same point in the parsing
+     * then it is sufficient for the caller to process the events only once.
      */
     public interface HttpHandler<T>
     {
