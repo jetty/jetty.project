@@ -51,11 +51,7 @@ public class SecuredHelloHandler
         mapping.setPathSpec( "/*" );
         mapping.setConstraint( constraint );
 
-        Set<String> knownRoles = new HashSet<String>();
-        knownRoles.add("user");
-        knownRoles.add("admin");
-        
-        security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
+        security.setConstraintMappings(Collections.singletonList(mapping));
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         
