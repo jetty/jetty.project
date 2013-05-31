@@ -613,14 +613,19 @@ public class Response implements HttpServletResponse
                 return;
         }
 
-        _fields.add(name, value);
+        if (HttpHeader.CONTENT_TYPE.is(name))
+        {
+            setContentType(value);
+            return;
+        }
+        
         if (HttpHeader.CONTENT_LENGTH.is(name))
         {
-            if (value == null)
-                _contentLength = -1l;
-            else
-                _contentLength = Long.parseLong(value);
+            setHeader(name,value);
+            return;
         }
+        
+        _fields.add(name, value);
     }
 
     @Override
