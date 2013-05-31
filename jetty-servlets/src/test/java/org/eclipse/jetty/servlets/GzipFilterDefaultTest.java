@@ -145,7 +145,7 @@ public class GzipFilterDefaultTest
             String uri=req.getRequestURI();
             if (uri.endsWith(".deferred"))
             {
-                System.err.println("type for "+uri.substring(0,uri.length()-9)+" is "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
+                // System.err.println("type for "+uri.substring(0,uri.length()-9)+" is "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
                 resp.setContentType(getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
             }
             
@@ -272,6 +272,57 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
+    
+
+    @Test
+    public void testGzipedIfModified() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            HttpTester http = tester.assertIsResponseGzipCompressed("GET","file.txt",System.currentTimeMillis()-4000);
+            Assert.assertEquals("Accept-Encoding",http.getHeader("Vary"));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+
+    @Test
+    public void testNotGzipedIfNotModified() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+        holder.setInitParameter("etags","true");
+
+        try
+        {
+            tester.start();
+            HttpTester http = tester.assertIsResponseNotModified("GET","file.txt",System.currentTimeMillis()+4000);
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
 
     @Test
     public void testIsNotGzipCompressedWithQ() throws Exception

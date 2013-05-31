@@ -613,6 +613,12 @@ public class Response implements HttpServletResponse
                 return;
         }
 
+        if (HttpHeaders.CONTENT_TYPE.equalsIgnoreCase(name))
+        {
+            setContentType(value);
+            return;
+        }
+        
         _fields.add(name, value);
         if (HttpHeader.CONTENT_LENGTH.is(name))
         {
