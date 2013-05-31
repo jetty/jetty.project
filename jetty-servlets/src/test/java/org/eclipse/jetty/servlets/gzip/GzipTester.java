@@ -45,6 +45,8 @@ import java.util.zip.InflaterInputStream;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.DateCache;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 
@@ -78,10 +81,20 @@ public class GzipTester
     {
         return assertIsResponseGzipCompressed(method,filename,filename);
     }
+    
+    public HttpTester assertIsResponseGzipCompressed(String method,String filename,long ifmodifiedsince) throws Exception
+    {
+        return assertIsResponseGzipCompressed(method,filename,filename,ifmodifiedsince);
+    }
 
     public HttpTester assertIsResponseGzipCompressed(String method,String requestedFilename, String serverFilename) throws Exception
     {
-        System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+        return assertIsResponseGzipCompressed(method,requestedFilename,serverFilename,-1);
+    }
+    
+    public HttpTester assertIsResponseGzipCompressed(String method,String requestedFilename, String serverFilename, long ifmodifiedsince) throws Exception
+    {
+        //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester request = new HttpTester();
         HttpTester response = new HttpTester();
 
@@ -89,6 +102,8 @@ public class GzipTester
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
+        if (ifmodifiedsince>0)
+            request.setHeader(HttpHeaders.IF_MODIFIED_SINCE,HttpFields.formatDate(ifmodifiedsince));
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -98,7 +113,7 @@ public class GzipTester
         // Collect the response(s)
         ByteArrayBuffer respBuff = servletTester.getResponses(reqsBuff);
         response.parse(respBuff.asArray());
-
+        
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
         //        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
@@ -145,6 +160,41 @@ public class GzipTester
         
         return response;
     }
+    
+
+    public HttpTester assertIsResponseNotModified(String method,String requestedFilename, long ifmodifiedsince) throws Exception
+    {
+        return assertIsResponseNotModified(method,requestedFilename,requestedFilename,ifmodifiedsince);
+    }
+    
+    public HttpTester assertIsResponseNotModified(String method,String requestedFilename, String serverFilename, long ifmodifiedsince) throws Exception
+    {
+        //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        request.setMethod(method);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Accept-Encoding",compressionType);
+        if (ifmodifiedsince>0)
+            request.setHeader(HttpHeaders.IF_MODIFIED_SINCE,HttpFields.formatDate(ifmodifiedsince));
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
+        request.setURI("/context/" + requestedFilename);
+
+        // Issue the request
+        ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
+        // Collect the response(s)
+        ByteArrayBuffer respBuff = servletTester.getResponses(reqsBuff);
+        response.parse(respBuff.asArray());
+        
+        Assert.assertThat(response.getStatus(),Matchers.equalTo(304));
+        Assert.assertThat(response.getHeader("ETag"),Matchers.startsWith("W/"));
+        
+        return response;
+    }
+
 
     /**
      * Makes sure that the response contains an unfiltered file contents.
@@ -163,7 +213,7 @@ public class GzipTester
      */
     public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
-        System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+        // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester request = new HttpTester();
         HttpTester response = new HttpTester();
 
@@ -326,7 +376,7 @@ public class GzipTester
 
     private HttpTester executeRequest(String method,String uri) throws IOException, Exception
     {
-        System.err.printf("[GzipTester] requesting %s%n",uri);
+        //System.err.printf("[GzipTester] requesting %s%n",uri);
         HttpTester request = new HttpTester();
         HttpTester response = new HttpTester();
         
