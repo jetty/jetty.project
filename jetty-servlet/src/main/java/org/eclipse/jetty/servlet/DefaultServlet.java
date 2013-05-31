@@ -739,7 +739,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                                 r.reset(true);
                                 r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                                 if (_etags)
-                                    r.getHttpFields().add(HttpHeaders.ETAG_BUFFER,content.getETag());
+                                    r.getHttpFields().add(HttpHeader.ETAG,content.getETag());
                                 r.flushBuffer();
                                 return false;
                             }
@@ -754,7 +754,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             r.reset(true);
                             r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             if (_etags)
-                                r.getHttpFields().add(HttpHeaders.ETAG_BUFFER,content.getETag());
+                                r.getHttpFields().add(HttpHeader.ETAG,content.getETag());
                             r.flushBuffer();
                             return false;
                         }

@@ -289,8 +289,8 @@ public class GzipFilterDefaultTest
         try
         {
             tester.start();
-            HttpTester http = tester.assertIsResponseGzipCompressed("GET","file.txt",System.currentTimeMillis()-4000);
-            Assert.assertEquals("Accept-Encoding",http.getHeader("Vary"));
+            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt",System.currentTimeMillis()-4000);
+            Assert.assertEquals("Accept-Encoding",http.get("Vary"));
         }
         finally
         {
@@ -315,7 +315,7 @@ public class GzipFilterDefaultTest
         try
         {
             tester.start();
-            HttpTester http = tester.assertIsResponseNotModified("GET","file.txt",System.currentTimeMillis()+4000);
+            tester.assertIsResponseNotModified("GET","file.txt",System.currentTimeMillis()+4000);
         }
         finally
         {
