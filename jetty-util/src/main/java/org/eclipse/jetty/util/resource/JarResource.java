@@ -55,10 +55,10 @@ public class JarResource extends URLResource
     
     /* ------------------------------------------------------------ */
     @Override
-    public synchronized void release()
+    public synchronized void close()
     {
         _jarConnection=null;
-        super.release();
+        super.close();
     }
     
     /* ------------------------------------------------------------ */

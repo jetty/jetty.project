@@ -444,7 +444,7 @@ public class ResourceCache
             // Invalidate it
             _cachedSize.addAndGet(-_length);
             _cachedFiles.decrementAndGet();
-            _resource.release(); 
+            _resource.close(); 
         }
 
         /* ------------------------------------------------------------ */

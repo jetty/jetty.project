@@ -60,7 +60,7 @@ class JarFileResource extends JarResource
 
     /* ------------------------------------------------------------ */
     @Override
-    public synchronized void release()
+    public synchronized void close()
     {
         _list=null;
         _entry=null;
@@ -83,7 +83,7 @@ class JarFileResource extends JarResource
             }
         }
         _jarFile=null;
-        super.release();
+        super.close();
     }
     
     /* ------------------------------------------------------------ */
@@ -373,18 +373,6 @@ class JarFileResource extends JarResource
             return _entry.getSize();
         
         return -1;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Encode according to this resource type.
-     * File URIs are not encoded.
-     * @param uri URI to encode.
-     * @return The uri unchanged.
-     */
-    @Override
-    public String encode(String uri)
-    {
-        return uri;
     }
 
     

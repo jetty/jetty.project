@@ -20,10 +20,8 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -50,25 +48,24 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * 
  */
-public class FileResource extends URLResource
+public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
 
     /* ------------------------------------------------------------ */
-    private File _file;
-    private transient URL _alias=null;
-    private transient boolean _aliasChecked=false;
+    private final File _file;
+    private final String _uri;
+    private final URL _alias;
     
     /* -------------------------------------------------------- */
     public FileResource(URL url)
         throws IOException, URISyntaxException
     {
-        super(url,null);
-
+        File file;
         try
         {
             // Try standard API to convert URL to file.
-            _file =new File(new URI(url.toString()));
+            file =new File(url.toURI());
         }
         catch (URISyntaxException e) 
         {
@@ -76,48 +73,86 @@ public class FileResource extends URLResource
         }
         catch (Exception e)
         {
+            if (!url.toString().startsWith("file:"))
+                throw new IllegalArgumentException("!file:");
+            
             LOG.ignore(e);
             try
             {
-                // Assume that File.toURL produced unencoded chars. So try
-                // encoding them.
+                // Assume that File.toURL produced unencoded chars. So try encoding them.
                 String file_url="file:"+URIUtil.encodePath(url.toString().substring(5));           
                 URI uri = new URI(file_url);
                 if (uri.getAuthority()==null) 
-                    _file = new File(uri);
+                    file = new File(uri);
                 else
-                    _file = new File("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile()));
+                    file = new File("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile()));
             }
             catch (Exception e2)
             {
                 LOG.ignore(e2);
-
                 // Still can't get the file.  Doh! try good old hack!
-                checkConnection();
-                Permission perm = _connection.getPermission();
-                _file = new File(perm==null?url.getFile():perm.getName());
+                URLConnection connection=url.openConnection();
+                Permission perm = connection.getPermission();
+                file = new File(perm==null?url.getFile():perm.getName());
             }
         }
-        if (_file.isDirectory())
-        {
-            if (!_urlString.endsWith("/"))
-                _urlString=_urlString+"/";
-        }
-        else
-        {
-            if (_urlString.endsWith("/"))
-                _urlString=_urlString.substring(0,_urlString.length()-1);
-        }
-
+        
+        _file=file;
+        _uri=normalizeURI(_file,url.toURI());
+        _alias=checkAlias(_file);
     }
 
     /* -------------------------------------------------------- */
-    FileResource(URL url, URLConnection connection, File file)
+    public FileResource(URI uri)
     {
-        super(url,connection);
+        File file=new File(uri);
         _file=file;
-        if (_file.isDirectory() && !_urlString.endsWith("/"))
-            _urlString=_urlString+"/";
+        _uri=normalizeURI(_file,uri);
+        _alias=checkAlias(_file);
+    }
+
+    /* -------------------------------------------------------- */
+    FileResource(File file)
+    {
+        _file=file;
+        _uri=normalizeURI(_file,_file.toURI());
+        _alias=checkAlias(_file);
+    }
+
+    /* -------------------------------------------------------- */
+    private static String normalizeURI(File file, URI uri)
+    {
+        String u =uri.toASCIIString();
+        if (file.isDirectory())
+        {
+            if(!u.endsWith("/"))
+                u+="/";
+        } 
+        else if (file.exists() && u.endsWith("/"))
+            u=u.substring(0,u.length()-1);
+        return u;
+    }
+
+    /* -------------------------------------------------------- */
+    private static URL checkAlias(File file)
+    {
+        try
+        {
+            String abs=file.getAbsolutePath();
+            String can=file.getCanonicalPath();
+
+            if (!abs.equals(can))
+            {
+                LOG.debug("ALIAS abs={} can={}",abs,can);
+                return new File(can).toURI().toURL();
+            }
+        }
+        catch(IOException e)
+        {
+            LOG.warn(e);
+        }
+          
+        return null;
     }
     
     /* -------------------------------------------------------- */
@@ -125,45 +160,35 @@ public class FileResource extends URLResource
     public Resource addPath(String path)
         throws IOException,MalformedURLException
     {
-        URLResource r=null;
-        String url=null;
-
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
-       
+
+        if (path==null)
+            throw new MalformedURLException();   
+        
         if ("/".equals(path))
             return this;
-        else if (!isDirectory())
-        {
-            r=(FileResource)super.addPath(path);
-            url=r._urlString;
-        }
-        else
-        {
-            if (path==null)
-                throw new MalformedURLException();   
-            
-            // treat all paths being added as relative
-            String rel=path;
-            if (path.startsWith("/"))
-                rel = path.substring(1);
-            
-            url=URIUtil.addPaths(_urlString,URIUtil.encodePath(rel));
-            r=(URLResource)Resource.newResource(url);
-        }
         
-        String encoded=URIUtil.encodePath(path);
-        int expected=r.toString().length()-encoded.length();
-        int index = r._urlString.lastIndexOf(encoded, expected);
+        path=URIUtil.encodePath(path);
         
-        if (expected!=index && ((expected-1)!=index || path.endsWith("/") || !r.isDirectory()))
+        URI uri;
+        try
         {
-            if (!(r instanceof BadResource))
+            if (_file.isDirectory())
             {
-                ((FileResource)r)._alias=new URL(url);
-                ((FileResource)r)._aliasChecked=true;
+                // treat all paths being added as relative
+                uri=new URI(URIUtil.addPaths(_uri,path));
             }
-        }                             
-        return r;
+            else
+            {
+                uri=new URI(_uri+path);
+            }
+        }
+        catch(final URISyntaxException e)
+        {
+            throw new MalformedURLException(){{initCause(e);}};
+        }
+
+        return new FileResource(uri);
     }
    
     
@@ -171,30 +196,6 @@ public class FileResource extends URLResource
     @Override
     public URL getAlias()
     {
-        if (!_aliasChecked)
-        {
-            try
-            {    
-                String abs=_file.getAbsolutePath();
-                String can=_file.getCanonicalPath();
-                
-                if (abs.length()!=can.length() || !abs.equals(can))
-                    _alias=Resource.toURL(new File(can));
-                
-                _aliasChecked=true;
-                
-                if (_alias!=null && LOG.isDebugEnabled())
-                {
-                    LOG.debug("ALIAS abs="+abs);
-                    LOG.debug("ALIAS can="+can);
-                }
-            }
-            catch(Exception e)
-            {
-                LOG.warn(Log.EXCEPTION,e);
-                return getURL();
-            }                
-        }
         return _alias;
     }
     
@@ -220,12 +221,12 @@ public class FileResource extends URLResource
 
     /* -------------------------------------------------------- */
     /**
-     * Returns true if the respresenetd resource is a container/directory.
+     * Returns true if the resource is a container/directory.
      */
     @Override
     public boolean isDirectory()
     {
-        return _file.isDirectory();
+        return _file.exists() && _file.isDirectory() || _uri.endsWith("/");
     }
 
     /* --------------------------------------------------------- */
@@ -320,18 +321,6 @@ public class FileResource extends URLResource
         }
         return list;
     }
-         
-    /* ------------------------------------------------------------ */
-    /** Encode according to this resource type.
-     * File URIs are encoded.
-     * @param uri URI to encode.
-     * @return The uri unchanged.
-     */
-    @Override
-    public String encode(String uri)
-    {
-        return uri;
-    }
     
     /* ------------------------------------------------------------ */
     /** 
@@ -377,4 +366,35 @@ public class FileResource extends URLResource
             IO.copy(getFile(),destination);
         }
     }
+
+    @Override
+    public boolean isContainedIn(Resource r) throws MalformedURLException
+    {
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
+    }
+
+    @Override
+    public URL getURL()
+    {
+        try
+        {
+            return _file.toURI().toURL();
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return _uri;
+    }
+
 }

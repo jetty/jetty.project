@@ -169,7 +169,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                                 jettyHome = jettyHome.substring(0,jettyHome.length()-1);
 
                             res = getFileAsResource(jettyHome, _contextFile); 
-                            if (LOG.isDebugEnabled()) LOG.debug("jetty home context file:"+res);
+                            LOG.debug("jetty home context file: {}",res);
                         }
                     }
                 }
@@ -179,8 +179,11 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 {                 
                     if (bundleOverrideLocation != null)
                     { 
-                        res = getFileAsResource(Resource.newResource(bundleOverrideLocation).getFile(), _contextFile);
-                        if (LOG.isDebugEnabled()) LOG.debug("Bundle override location context file:"+res);
+                        try(Resource location=Resource.newResource(bundleOverrideLocation))
+                        {
+                            res=location.addPath(_contextFile);
+                        }
+                        LOG.debug("Bundle override location context file: {}",res);
                     }
                 }         
 
@@ -289,22 +292,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 if (asFile.exists())
                     r = Resource.newResource(asFile);
             }
-            catch (Exception e)
-            {
-                r = null;
-            } 
-            return r;
-        }
-        
-        private Resource getFileAsResource (File dir, String file)
-        {
-            Resource r = null;
-            try
-            {
-                File asFile = new File (dir, file);
-                if (asFile.exists())
-                    r = Resource.newResource(asFile);
-            } 
             catch (Exception e)
             {
                 r = null;

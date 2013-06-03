@@ -26,7 +26,6 @@ import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
@@ -372,12 +371,14 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
-        RandomAccessFile raf = new RandomAccessFile(file,"r");
-        FileChannel channel = raf.getChannel();
-        long needed=raf.length();
+        try(RandomAccessFile raf = new RandomAccessFile(file,"r");)
+        {
+            FileChannel channel = raf.getChannel();
+            long needed=raf.length();
 
-        while (needed>0 && buffer.hasRemaining())
-            needed=needed-channel.read(buffer);
+            while (needed>0 && buffer.hasRemaining())
+                needed=needed-channel.read(buffer);
+        }
     }
 
     /* ------------------------------------------------------------ */
