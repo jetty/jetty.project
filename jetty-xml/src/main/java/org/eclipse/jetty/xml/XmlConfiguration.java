@@ -742,37 +742,40 @@ public class XmlConfiguration
         {
             Class<?> oClass = nodeClass(node);
             int argIndex = node.size();
+            
+            Map<String, Object> namedArgMap = new HashMap<>();
+            List<Object> arguments = new LinkedList<>();
+            XmlParser.Node child;
+
+            // Find the <Arg> elements
             for (int i = 0; i < node.size(); i++)
             {
                 Object o = node.get(i);
                 if (o instanceof String)
-                    continue;
-                if (!((XmlParser.Node)o).getTag().equals("Arg"))
                 {
+                    // Skip raw String nodes
+                    continue;
+                }
+                
+                child = (XmlParser.Node)o;
+                if(child.getTag().equals("Arg"))
+                {
+                    String namedAttribute = child.getAttribute("name");
+                    Object value=value(obj,child);
+                    if (namedAttribute != null)
+                    {
+                        // named arguments
+                        namedArgMap.put(namedAttribute,value);
+                    }
+                    // raw arguments
+                    arguments.add(value);
+                } else {
+                    // The first non <Arg> child is the start of 
+                    // elements that configure the class, such as
+                    // <Set> and <Call> nodes
                     argIndex = i;
                     break;
                 }
-            }
-
-            Map<String, Object> namedArgMap = new HashMap<>();
-            List<Object> arguments = new LinkedList<>();
-
-            for (int i = 0; i < node.size(); i++)
-            {
-                Object o = node.get(i);
-
-                if (o instanceof String)
-                {
-                    continue;
-                }
-                
-                XmlParser.Node argNode = (XmlParser.Node)o;
-                
-                String namedAttribute = argNode.getAttribute("name");
-                Object value=value(obj,(XmlParser.Node)o);
-                if (namedAttribute != null)
-                    namedArgMap.put(namedAttribute,value);
-                arguments.add(value);
             }
 
             if (LOG.isDebugEnabled())

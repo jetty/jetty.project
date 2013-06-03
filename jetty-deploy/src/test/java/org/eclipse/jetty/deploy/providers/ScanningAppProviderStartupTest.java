@@ -39,6 +39,7 @@ public class ScanningAppProviderStartupTest
     {
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
+        jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 
         // Setup initial context
