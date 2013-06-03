@@ -31,6 +31,9 @@ import java.nio.channels.WritableByteChannel;
 
 import org.eclipse.jetty.io.AbstractBuffer;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------------------------- */
 /** 
@@ -39,6 +42,8 @@ import org.eclipse.jetty.io.Buffer;
  */
 public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
 { 	
+    private static final Logger LOG = Log.getLogger(DirectNIOBuffer.class);
+
     protected final ByteBuffer _buf;
     private ReadableByteChannel _in;
     private InputStream _inStream;
@@ -69,12 +74,22 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
     public DirectNIOBuffer(File file) throws IOException
     {
         super(READONLY,NON_VOLATILE);
-        FileInputStream fis = new FileInputStream(file);
-        FileChannel fc = fis.getChannel();
-        _buf = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-        setGetIndex(0);
-        setPutIndex((int)file.length());
-        _access=IMMUTABLE;
+        FileInputStream fis = null;
+        FileChannel fc = null;
+        try
+        {
+            fis = new FileInputStream(file);
+            fc = fis.getChannel();
+            _buf = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+            setGetIndex(0);
+            setPutIndex((int)file.length());
+            _access=IMMUTABLE;
+        }
+        finally
+        {
+            if (fc != null) try {fc.close();} catch (IOException e){LOG.ignore(e);}
+            IO.close(fis);
+        }
     }
 
     /* ------------------------------------------------------------ */
