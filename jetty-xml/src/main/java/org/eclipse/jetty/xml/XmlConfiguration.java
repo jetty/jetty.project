@@ -741,7 +741,6 @@ public class XmlConfiguration
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
         {
             Class<?> oClass = nodeClass(node);
-            int size = 0;
             int argIndex = node.size();
             for (int i = 0; i < node.size(); i++)
             {
@@ -753,13 +752,12 @@ public class XmlConfiguration
                     argIndex = i;
                     break;
                 }
-                size++;
             }
 
             Map<String, Object> namedArgMap = new HashMap<>();
             List<Object> arguments = new LinkedList<>();
 
-            for (int i = 0; i < size; i++)
+            for (int i = 0; i < node.size(); i++)
             {
                 Object o = node.get(i);
 
