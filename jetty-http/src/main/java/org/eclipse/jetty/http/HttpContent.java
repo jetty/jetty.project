@@ -171,7 +171,7 @@ public interface HttpContent
         @Override
         public void release()
         {
-            _resource.release();
+            _resource.close();
         }
     }
 }

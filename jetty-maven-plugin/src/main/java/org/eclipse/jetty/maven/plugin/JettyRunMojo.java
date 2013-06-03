@@ -405,9 +405,8 @@ public class JettyRunMojo extends AbstractJettyMojo
         scanList = new ArrayList<File>();
         if (webApp.getDescriptor() != null)
         {
-            try
+            try (Resource r = Resource.newResource(webApp.getDescriptor());)
             {
-                Resource r = Resource.newResource(webApp.getDescriptor());
                 scanList.add(r.getFile());
             }
             catch (IOException e)
@@ -418,9 +417,8 @@ public class JettyRunMojo extends AbstractJettyMojo
 
         if (webApp.getJettyEnvXml() != null)
         {
-            try
+            try (Resource r = Resource.newResource(webApp.getJettyEnvXml());)
             {
-                Resource r = Resource.newResource(webApp.getJettyEnvXml());
                 scanList.add(r.getFile());
             }
             catch (IOException e)
@@ -431,13 +429,10 @@ public class JettyRunMojo extends AbstractJettyMojo
 
         if (webApp.getDefaultsDescriptor() != null)
         {
-            try
+            try (Resource r = Resource.newResource(webApp.getDefaultsDescriptor());)
             {
                 if (!WebAppContext.WEB_DEFAULTS_XML.equals(webApp.getDefaultsDescriptor()))
-                {
-                    Resource r = Resource.newResource(webApp.getDefaultsDescriptor());
                     scanList.add(r.getFile());
-                }
             }
             catch (IOException e)
             {
@@ -447,9 +442,8 @@ public class JettyRunMojo extends AbstractJettyMojo
         
         if (webApp.getOverrideDescriptor() != null)
         {
-            try
+            try (Resource r = Resource.newResource(webApp.getOverrideDescriptor());)
             {
-                Resource r = Resource.newResource(webApp.getOverrideDescriptor());
                 scanList.add(r.getFile());
             }
             catch (IOException e)

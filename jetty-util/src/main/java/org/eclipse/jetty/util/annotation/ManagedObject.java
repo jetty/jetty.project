@@ -24,6 +24,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * The @ManagedObject annotation is used on a class at the top level to 
+ * indicate that it should be exposed as an mbean. It has only one attribute 
+ * to it which is used as the description of the MBean. Should multiple 
+ * @ManagedObject annotations be found in the chain of influence then the 
+ * first description is used.
+ *
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Target( { ElementType.TYPE } )

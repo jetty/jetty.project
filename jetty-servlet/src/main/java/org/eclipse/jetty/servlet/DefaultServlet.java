@@ -567,7 +567,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (content!=null)
                 content.release();
             else if (resource!=null)
-                resource.release();
+                resource.close();
         }
 
     }
@@ -658,7 +658,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (ifm!=null)
                     {
                         boolean match=false;
-                        if (content!=null && content.getETag()!=null)
+                        if (content.getETag()!=null)
                         {
                             QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifm,", ",false,true);
                             while (!match && quoted.hasMoreTokens())
@@ -671,48 +671,39 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
                         if (!match)
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
+                            response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
                             return false;
                         }
                     }
                     
-                    String ifnm=request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
-                    if (ifnm!=null && content!=null && content.getETag()!=null)
+                    String if_non_match_etag=request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+                    if (if_non_match_etag!=null && content.getETag()!=null)
                     {
                         // Look for GzipFiltered version of etag
                         if (content.getETag().toString().equals(request.getAttribute("o.e.j.s.GzipFilter.ETag")))
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            r.getHttpFields().put(HttpHeader.ETAG,ifnm);
+                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            response.setHeader(HttpHeader.ETAG.asString(),if_non_match_etag);
                             return false;
                         }
                         
-                        
                         // Handle special case of exact match.
-                        if (content.getETag().toString().equals(ifnm))
+                        if (content.getETag().toString().equals(if_non_match_etag))
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            r.getHttpFields().put(HttpHeader.ETAG,content.getETag());
+                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
                             return false;
                         }
 
                         // Handle list of tags
-                        QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifnm,", ",false,true);
+                        QuotedStringTokenizer quoted = new QuotedStringTokenizer(if_non_match_etag,", ",false,true);
                         while (quoted.hasMoreTokens())
                         {
                             String tag = quoted.nextToken();
                             if (content.getETag().toString().equals(tag))
                             {
-                                Response r = Response.getResponse(response);
-                                r.reset(true);
-                                r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                r.getHttpFields().put(HttpHeader.ETAG,content.getETag());
+                                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                                response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
                                 return false;
                             }
                         }
@@ -727,50 +718,33 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 if (ifms!=null)
                 {
                     //Get jetty's Response impl
-                    Response r = Response.getResponse(response);
-                                       
-                    if (content!=null)
+                    String mdlm=content.getLastModified();
+                    if (mdlm!=null && ifms.equals(mdlm))
                     {
-                        String mdlm=content.getLastModified();
-                        if (mdlm!=null)
-                        {
-                            if (ifms.equals(mdlm))
-                            {
-                                r.reset(true);
-                                r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                if (_etags)
-                                    r.getHttpFields().add(HttpHeader.ETAG,content.getETag());
-                                r.flushBuffer();
-                                return false;
-                            }
-                        }
+                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                        if (_etags)
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
+                        response.flushBuffer();
+                        return false;
                     }
 
                     long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                    if (ifmsl!=-1)
-                    {
-                        if (resource.lastModified()/1000 <= ifmsl/1000)
-                        { 
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            if (_etags)
-                                r.getHttpFields().add(HttpHeader.ETAG,content.getETag());
-                            r.flushBuffer();
-                            return false;
-                        }
+                    if (ifmsl!=-1 && resource.lastModified()/1000 <= ifmsl/1000)
+                    { 
+                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                        if (_etags)
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
+                        response.flushBuffer();
+                        return false;
                     }
                 }
 
                 // Parse the if[un]modified dates and compare to resource
                 long date=request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
-
-                if (date!=-1)
+                if (date!=-1 && resource.lastModified()/1000 > date/1000)
                 {
-                    if (resource.lastModified()/1000 > date/1000)
-                    {
-                        response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
-                        return false;
-                    }
+                    response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                    return false;
                 }
 
             }
