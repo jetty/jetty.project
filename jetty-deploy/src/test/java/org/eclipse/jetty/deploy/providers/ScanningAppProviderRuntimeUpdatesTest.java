@@ -25,10 +25,12 @@ import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -44,6 +46,9 @@ public class ScanningAppProviderRuntimeUpdatesTest
     private static final Logger LOG = Log.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
 
     @Rule
+    public TestTracker tracker = new TestTracker();
+    
+    @Rule
     public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
     private final AtomicInteger _scans = new AtomicInteger();
@@ -52,6 +57,9 @@ public class ScanningAppProviderRuntimeUpdatesTest
     @Before
     public void setupEnvironment() throws Exception
     {
+        testdir.ensureEmpty();
+        Resource.setDefaultUseCaches(false);
+        
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
@@ -90,7 +98,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     public void waitForDirectoryScan()
     {
-        int scan=_scans.get()+2*_providers;
+        int scan=_scans.get()+(2*_providers);
         do
         {
             try
@@ -167,8 +175,8 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         waitForDirectoryScan();
         System.out.println("Updating war files");
-        jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
+        jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
 
         // This should result in the existing foo.war being replaced with the new foo.war
         waitForDirectoryScan();
