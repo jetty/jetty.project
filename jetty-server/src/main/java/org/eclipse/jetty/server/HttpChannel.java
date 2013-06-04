@@ -318,9 +318,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                 if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(404);
-
-                // Complete generating the response
-                _response.complete();
+                else
+                    // Complete generating the response
+                    _response.closeOutput();
             }
             catch(EofException e)
             {
