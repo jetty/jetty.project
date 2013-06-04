@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.deploy.test;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -213,6 +215,7 @@ public class XmlConfiguredJetty
                 if (context.getContextPath().equals(expectedPath))
                 {
                     found = true;
+                    Assert.assertThat("Context[" + context.getContextPath() + "].state", context.getState(), is("STARTED"));
                     break;
                 }
             }
