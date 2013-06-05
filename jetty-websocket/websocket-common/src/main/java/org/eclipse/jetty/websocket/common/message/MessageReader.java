@@ -19,79 +19,36 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
- * Support class for reading text message data as an Reader.
+ * Support class for reading a (single) WebSocket TEXT message via a Reader.
  * <p>
- * Due to the spec, this reader is forced to use the UTF8 charset.
+ * In compliance to the WebSocket spec, this reader always uses the UTF8 {@link Charset}.
  */
-public class MessageReader extends Reader implements MessageAppender
+public class MessageReader extends InputStreamReader implements MessageAppender
 {
-    private final EventDriver driver;
-    private final Utf8StringBuilder utf;
-    private int size;
-    private boolean finished;
-    private boolean needsNotification;
+    private final MessageInputStream stream;
 
-    public MessageReader(EventDriver driver)
+    public MessageReader(MessageInputStream stream)
     {
-        this.driver = driver;
-        this.utf = new Utf8StringBuilder();
-        size = 0;
-        finished = false;
-        needsNotification = true;
+        super(stream,StringUtil.__UTF8_CHARSET);
+        this.stream = stream;
     }
 
     @Override
     public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
-        if (finished)
-        {
-            throw new IOException("Cannot append to finished buffer");
-        }
-
-        if (payload == null)
-        {
-            // empty payload is valid
-            return;
-        }
-
-        driver.getPolicy().assertValidTextMessageSize(size + payload.remaining());
-        size += payload.remaining();
-
-        synchronized (utf)
-        {
-            utf.append(payload);
-        }
-
-        if (needsNotification)
-        {
-            needsNotification = true;
-            this.driver.onReader(this);
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        finished = true;
+        this.stream.appendMessage(payload,isLast);
     }
 
     @Override
     public void messageComplete()
     {
-        finished = true;
-    }
-
-    @Override
-    public int read(char[] cbuf, int off, int len) throws IOException
-    {
-        // TODO Auto-generated method stub
-        return 0;
+        this.stream.messageComplete();
     }
 }

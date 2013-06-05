@@ -21,97 +21,135 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 /**
- * Support class for reading binary message data as an InputStream.
+ * Support class for reading a (single) WebSocket BINARY message via a InputStream.
+ * <p>
+ * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
     /**
-     * Threshold (of bytes) to perform compaction at
+     * Used for controlling read suspend/resume behavior if the queue is full, but the read operations haven't caught up yet.
      */
-    private static final int COMPACT_THRESHOLD = 5;
-    private final EventDriver driver;
-    private final ByteBuffer buf;
-    private int size;
-    private boolean finished;
-    private boolean needsNotification;
-    private int readPosition;
+    @SuppressWarnings("unused")
+    private final LogicalConnection connection;
+    private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
+    private AtomicBoolean closed = new AtomicBoolean(false);
+    // EOB / End of Buffers
+    private AtomicBoolean buffersExhausted = new AtomicBoolean(false);
+    private ByteBuffer activeBuffer = null;
 
-    public MessageInputStream(EventDriver driver)
+    public MessageInputStream(LogicalConnection connection)
     {
-        this.driver = driver;
-        this.buf = ByteBuffer.allocate(driver.getPolicy().getMaxBinaryMessageBufferSize());
-        BufferUtil.clearToFill(this.buf);
-        size = 0;
-        readPosition = this.buf.position();
-        finished = false;
-        needsNotification = true;
+        this.connection = connection;
     }
 
     @Override
     public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
-        if (finished)
+        if (buffersExhausted.get())
         {
-            throw new IOException("Cannot append to finished buffer");
+            // This indicates a programming mistake/error and must be bug fixed
+            throw new RuntimeException("Last frame already received");
         }
 
-        if (payload == null)
+        // if closed, we should just toss incoming payloads into the bit bucket.
+        if (closed.get())
         {
-            // empty payload is valid
             return;
         }
 
-        driver.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
-        size += payload.remaining();
-
-        synchronized (buf)
+        // Put the payload into the queue
+        try
         {
-            // TODO: grow buffer till max binary message size?
-            // TODO: compact this buffer to fit incoming buffer?
-            // TODO: tell connection to suspend if buffer too full?
-            BufferUtil.put(payload,buf);
+            buffers.put(payload);
+            if (isLast)
+            {
+                buffersExhausted.set(true);
+            }
         }
-
-        if (needsNotification)
+        catch (InterruptedException e)
         {
-            needsNotification = true;
-            this.driver.onInputStream(this);
+            throw new IOException(e);
         }
     }
 
     @Override
     public void close() throws IOException
     {
-        finished = true;
+        closed.set(true);
         super.close();
+    }
+
+    @Override
+    public synchronized void mark(int readlimit)
+    {
+        /* do nothing */
+    }
+
+    @Override
+    public boolean markSupported()
+    {
+        return false;
     }
 
     @Override
     public void messageComplete()
     {
-        finished = true;
+        buffersExhausted.set(true);
+        // toss an empty ByteBuffer into queue to let it drain
+        try
+        {
+            buffers.put(ByteBuffer.wrap(new byte[0]));
+        }
+        catch (InterruptedException ignore)
+        {
+            /* ignore */
+        }
     }
 
     @Override
     public int read() throws IOException
     {
-        synchronized (buf)
+        try
         {
-            byte b = buf.get(readPosition);
-            readPosition++;
-            if (readPosition <= (buf.limit() - COMPACT_THRESHOLD))
+            if (closed.get())
             {
-                int curPos = buf.position();
-                buf.compact();
-                int offsetPos = buf.position() - curPos;
-                readPosition += offsetPos;
+                return -1;
             }
-            return b;
+
+            if (activeBuffer == null)
+            {
+                activeBuffer = buffers.take();
+            }
+
+            while (activeBuffer.remaining() <= 0)
+            {
+                if (buffersExhausted.get())
+                {
+                    closed.set(true);
+                    return -1;
+                }
+                activeBuffer = buffers.take();
+            }
+
+            return activeBuffer.get();
         }
+        catch (InterruptedException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
+    public synchronized void reset() throws IOException
+    {
+        throw new IOException("reset() not supported");
     }
 }

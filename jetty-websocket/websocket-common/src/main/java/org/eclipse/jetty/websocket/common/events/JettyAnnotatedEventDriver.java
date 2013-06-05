@@ -65,6 +65,11 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
     }
 
+    private void dispatch(Runnable runnable)
+    {
+        session.dispatch(runnable);
+    }
+
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
@@ -78,7 +83,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onBinary.isStreaming())
             {
-                activeMessage = new MessageInputStream(this);
+                activeMessage = new MessageInputStream(session.getConnection());
+                dispatch(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        events.onBinary.call(websocket,session,activeMessage);
+                    }
+                });
             }
             else
             {
@@ -171,7 +184,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onText.isStreaming())
             {
-                activeMessage = new MessageReader(this);
+                activeMessage = new MessageReader(new MessageInputStream(session.getConnection()));
+                dispatch(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        events.onText.call(websocket,session,activeMessage);
+                    }
+                });
             }
             else
             {

@@ -132,6 +132,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         notifyClose(StatusCode.NO_CLOSE,"Harsh disconnect");
     }
 
+    public void dispatch(Runnable runnable)
+    {
+        // TODO Auto-generated method stub
+        runnable.run();
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {

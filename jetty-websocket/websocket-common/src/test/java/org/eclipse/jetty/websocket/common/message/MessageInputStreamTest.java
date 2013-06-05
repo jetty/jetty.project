@@ -22,84 +22,166 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
-import org.eclipse.jetty.websocket.common.io.FramePipes;
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
-import org.junit.After;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
 public class MessageInputStreamTest
 {
-    @Rule
-    public TestTracker testtracker = new TestTracker();
+    private static final Charset UTF8 = StringUtil.__UTF8_CHARSET;
 
     @Rule
     public TestName testname = new TestName();
 
-    private WebSocketPolicy policy;
-    private TrackingInputStreamSocket socket;
-    private LocalWebSocketSession session;
-    private LocalWebSocketSession remoteSession;
-
-    @After
-    public void closeSession()
+    @Test
+    public void testBasicAppendRead() throws IOException
     {
-        session.close();
-        remoteSession.close();
-    }
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
 
-    @Before
-    public void setupSession()
-    {
-        policy = WebSocketPolicy.newServerPolicy();
-        policy.setInputBufferSize(1024);
-        policy.setMaxBinaryMessageBufferSize(1024);
-        policy.setMaxTextMessageBufferSize(1024);
+        try (MessageInputStream stream = new MessageInputStream(conn))
+        {
+            // Append a message (simple, short)
+            ByteBuffer payload = BufferUtil.toBuffer("Hello World",UTF8);
+            System.out.printf("payload = %s%n",BufferUtil.toDetailString(payload));
+            boolean fin = true;
+            stream.appendMessage(payload,fin);
 
-        // Event Driver factory
-        EventDriverFactory factory = new EventDriverFactory(policy);
+            // Read it from the stream.
+            byte buf[] = new byte[32];
+            int len = stream.read(buf);
+            String message = new String(buf,0,len,UTF8);
 
-        // Local Socket
-        EventDriver localDriver = factory.wrap(new DummySocket());
-
-        // Remote socket & Session
-        socket = new TrackingInputStreamSocket("remote");
-        EventDriver remoteDriver = factory.wrap(socket);
-        remoteSession = new LocalWebSocketSession(testname,remoteDriver);
-        remoteSession.open();
-        OutgoingFrames socketPipe = FramePipes.to(remoteDriver);
-
-        // Local Session
-        session = new LocalWebSocketSession(testname,localDriver);
-
-        session.setPolicy(policy);
-        // talk to our remote socket
-        session.setOutgoingHandler(socketPipe);
-        // open connection
-        session.open();
+            // Test it
+            Assert.assertThat("Message",message,is("Hello World"));
+        }
     }
 
     @Test
-    @Ignore
-    public void testSimpleMessage() throws IOException
+    public void testBlockOnRead() throws IOException
     {
-        ByteBuffer data = BufferUtil.toBuffer("Hello World",StringUtil.__UTF8_CHARSET);
-        session.getRemote().sendBytes(data);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
 
-        Assert.assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
-        String msg = socket.messageQueue.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+        try (MessageInputStream stream = new MessageInputStream(conn))
+        {
+            final AtomicBoolean hadError = new AtomicBoolean(false);
+
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        boolean fin = false;
+                        TimeUnit.MILLISECONDS.sleep(200);
+                        stream.appendMessage(BufferUtil.toBuffer("Saved",UTF8),fin);
+                        TimeUnit.MILLISECONDS.sleep(200);
+                        stream.appendMessage(BufferUtil.toBuffer(" by ",UTF8),fin);
+                        fin = true;
+                        TimeUnit.MILLISECONDS.sleep(200);
+                        stream.appendMessage(BufferUtil.toBuffer("Zero",UTF8),fin);
+                    }
+                    catch (IOException | InterruptedException e)
+                    {
+                        hadError.set(true);
+                        e.printStackTrace(System.err);
+                    }
+                }
+            }).start();
+
+            // Read it from the stream.
+            byte buf[] = new byte[32];
+            int len = stream.read(buf);
+            String message = new String(buf,0,len,UTF8);
+
+            // Test it
+            Assert.assertThat("Error when appending",hadError.get(),is(false));
+            Assert.assertThat("Message",message,is("Saved by Zero"));
+        }
+    }
+
+    @Test
+    public void testBlockOnReadInitial() throws IOException
+    {
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+
+        try (MessageInputStream stream = new MessageInputStream(conn))
+        {
+            final AtomicBoolean hadError = new AtomicBoolean(false);
+
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        boolean fin = true;
+                        // wait for a little bit before populating buffers
+                        TimeUnit.MILLISECONDS.sleep(400);
+                        stream.appendMessage(BufferUtil.toBuffer("I will conquer",UTF8),fin);
+                    }
+                    catch (IOException | InterruptedException e)
+                    {
+                        hadError.set(true);
+                        e.printStackTrace(System.err);
+                    }
+                }
+            }).start();
+
+            // Read byte from stream.
+            int b = stream.read();
+            // Should be a byte, blocking till byte received.
+
+            // Test it
+            Assert.assertThat("Error when appending",hadError.get(),is(false));
+            Assert.assertThat("Initial byte",b,is((int)'I'));
+        }
+    }
+
+    @Test
+    public void testReadByteNoBuffersClosed() throws IOException
+    {
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+
+        try (MessageInputStream stream = new MessageInputStream(conn))
+        {
+            final AtomicBoolean hadError = new AtomicBoolean(false);
+
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        // wait for a little bit before sending input closed
+                        TimeUnit.MILLISECONDS.sleep(400);
+                        stream.messageComplete();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        hadError.set(true);
+                        e.printStackTrace(System.err);
+                    }
+                }
+            }).start();
+
+            // Read byte from stream.
+            int b = stream.read();
+            // Should be a -1, indicating the end of the stream.
+
+            // Test it
+            Assert.assertThat("Error when appending",hadError.get(),is(false));
+            Assert.assertThat("Initial byte",b,is(-1));
+        }
     }
 }
