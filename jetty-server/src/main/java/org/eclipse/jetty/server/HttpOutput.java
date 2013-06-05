@@ -184,12 +184,12 @@ public class HttpOutput extends ServletOutputStream
             int filled = BufferUtil.fill(_aggregate, b, off, len);
 
             // return if we are not complete, not full and filled all the content
-            if (!complete && filled==len && !BufferUtil.isFull(_aggregate))
+            if (!complete && filled == len && !BufferUtil.isFull(_aggregate))
                 return;
 
             // adjust offset/length
-            off+=filled;
-            len-=filled;
+            off += filled;
+            len -= filled;
         }
 
         // flush any content from the aggregate
@@ -311,7 +311,7 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Blocking send of content.
-     * @param content The content to send
+     * @param in The content to send
      * @throws IOException
      */
     public void sendContent(InputStream in) throws IOException
@@ -323,7 +323,7 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Blocking send of content.
-     * @param content The content to send
+     * @param in The content to send
      * @throws IOException
      */
     public void sendContent(ReadableByteChannel in) throws IOException
@@ -373,7 +373,7 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param content The content to send
+     * @param in The content to send
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(InputStream in, Callback callback)
@@ -383,7 +383,7 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param content The content to send
+     * @param in The content to send
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(ReadableByteChannel in, Callback callback)
@@ -393,7 +393,7 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param content The content to send
+     * @param httpContent The content to send
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(HttpContent httpContent, Callback callback) throws IOException

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.HttpCookie;
+import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -116,9 +117,93 @@ public class ServletWebSocketRequest extends UpgradeRequest
         }
     }
 
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocalAddr()}
+     * 
+     * @return the local address
+     */
+    public String getLocalAddress()
+    {
+        return req.getLocalAddr();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocalName()}
+     * 
+     * @return the local host name
+     */
+    public String getLocalHostName()
+    {
+        return req.getLocalName();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocalPort()}
+     * 
+     * @return the local port
+     */
+    public int getLocalPort()
+    {
+        return req.getLocalPort();
+    }
+
+    /**
+     * Return a {@link InetSocketAddress} for the local socket.
+     * <p>
+     * Warning: this can cause a DNS lookup
+     * 
+     * @return the local socket address
+     */
+    public InetSocketAddress getLocalSocketAddress()
+    {
+        return new InetSocketAddress(req.getLocalAddr(),req.getLocalPort());
+    }
+
     public Principal getPrincipal()
     {
         return req.getUserPrincipal();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getRemoteAddr()}
+     * 
+     * @return the remote address
+     */
+    public String getRemoteAddress()
+    {
+        return req.getRemoteAddr();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getRemoteHost()}
+     * 
+     * @return the remote host name
+     */
+    public String getRemoteHostName()
+    {
+        return req.getRemoteHost();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getRemotePort()}
+     * 
+     * @return the remote port
+     */
+    public int getRemotePort()
+    {
+        return req.getRemotePort();
+    }
+
+    /**
+     * Return a {@link InetSocketAddress} for the remote socket.
+     * <p>
+     * Warning: this can cause a DNS lookup
+     * 
+     * @return the remote socket address
+     */
+    public InetSocketAddress getRemoteSocketAddress()
+    {
+        return new InetSocketAddress(req.getRemoteAddr(),req.getRemotePort());
     }
 
     public Map<String, Object> getServletAttributes()
@@ -153,7 +238,7 @@ public class ServletWebSocketRequest extends UpgradeRequest
     @Override
     public Object getSession()
     {
-        return this.req.getSession();
+        return this.req.getSession(false);
     }
 
     protected String[] parseProtocols(String protocol)
