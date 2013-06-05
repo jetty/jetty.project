@@ -19,14 +19,10 @@
 package org.eclipse.jetty.util;
 
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -229,28 +225,5 @@ public class BufferUtilTest
         }
 
         Assert.assertEquals("Count of bytes",length,count);
-    }
-
-    private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
-    @Ignore
-    @Test
-    public void testWriteTo() throws IOException
-    {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int capacity = 1024 * 1024;
-        byte[] bytes = new byte[capacity];
-        Arrays.fill(bytes, (byte)'x');
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.append(buffer, bytes, 0, capacity);
-        long start = System.nanoTime();
-        for (int i = 0; i < 30; i++)
-        {
-            long startRun = System.nanoTime();
-            BufferUtil.writeTo(buffer, out);
-            long elapsedRun = System.nanoTime() - startRun;
-            LOG.warn("run elapsed={}ms", elapsedRun / 1000);
-        }
-        long elapsed = System.nanoTime() - start;
-        LOG.warn("elapsed={}ms", elapsed / 1000);
     }
 }
