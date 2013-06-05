@@ -89,6 +89,11 @@ public abstract class AbstractHTTPSPDYTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
+    protected Server getServer()
+    {
+        return server;
+    }
+
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL

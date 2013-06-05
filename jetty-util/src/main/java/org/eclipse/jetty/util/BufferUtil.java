@@ -63,8 +63,8 @@ public class BufferUtil
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-    { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-            (byte)'E', (byte)'F' };
+            {(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+                    (byte)'E', (byte)'F'};
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
@@ -104,7 +104,7 @@ public class BufferUtil
      */
     public static void clear(ByteBuffer buffer)
     {
-        if (buffer!=null)
+        if (buffer != null)
         {
             buffer.position(0);
             buffer.limit(0);
@@ -118,7 +118,7 @@ public class BufferUtil
      */
     public static void clearToFill(ByteBuffer buffer)
     {
-        if (buffer!=null)
+        if (buffer != null)
         {
             buffer.position(0);
             buffer.limit(buffer.capacity());
@@ -141,17 +141,17 @@ public class BufferUtil
      */
     public static int flipToFill(ByteBuffer buffer)
     {
-        int position=buffer.position();
-        int limit=buffer.limit();
-        if (position==limit)
+        int position = buffer.position();
+        int limit = buffer.limit();
+        if (position == limit)
         {
             buffer.position(0);
             buffer.limit(buffer.capacity());
             return 0;
         }
 
-        int capacity=buffer.capacity();
-        if (limit==capacity)
+        int capacity = buffer.capacity();
+        if (limit == capacity)
         {
             buffer.compact();
             return 0;
@@ -169,11 +169,11 @@ public class BufferUtil
      * the position is set to the passed position.
      * <p>
      * This method is used as a replacement of {@link Buffer#flip()}.
-     * @param buffer the buffer to be flipped
+     * @param buffer   the buffer to be flipped
      * @param position The position of valid data to flip to. This should
      * be the return value of the previous call to {@link #flipToFill(ByteBuffer)}
      */
-    public static void flipToFlush(ByteBuffer buffer,int position)
+    public static void flipToFlush(ByteBuffer buffer, int position)
     {
         buffer.limit(buffer.position());
         buffer.position(position);
@@ -191,7 +191,7 @@ public class BufferUtil
         if (buffer.hasArray())
         {
             byte[] array = buffer.array();
-            System.arraycopy(array,buffer.arrayOffset()+buffer.position(),to,0,to.length);
+            System.arraycopy(array, buffer.arrayOffset() + buffer.position(), to, 0, to.length);
         }
         else
             buffer.slice().get(to);
@@ -205,7 +205,7 @@ public class BufferUtil
      */
     public static boolean isEmpty(ByteBuffer buf)
     {
-        return buf==null || buf.remaining()==0;
+        return buf == null || buf.remaining() == 0;
     }
 
     /* ------------------------------------------------------------ */
@@ -215,7 +215,7 @@ public class BufferUtil
      */
     public static boolean hasContent(ByteBuffer buf)
     {
-        return buf!=null && buf.remaining()>0;
+        return buf != null && buf.remaining() > 0;
     }
 
     /* ------------------------------------------------------------ */
@@ -225,7 +225,7 @@ public class BufferUtil
      */
     public static boolean isFull(ByteBuffer buf)
     {
-        return buf!=null && buf.limit()==buf.capacity();
+        return buf != null && buf.limit() == buf.capacity();
     }
 
     /* ------------------------------------------------------------ */
@@ -235,7 +235,7 @@ public class BufferUtil
      */
     public static int length(ByteBuffer buffer)
     {
-        return buffer==null?0:buffer.remaining();
+        return buffer == null ? 0 : buffer.remaining();
     }
 
     /* ------------------------------------------------------------ */
@@ -245,9 +245,9 @@ public class BufferUtil
      */
     public static int space(ByteBuffer buffer)
     {
-        if (buffer==null)
+        if (buffer == null)
             return 0;
-        return buffer.capacity()-buffer.limit();
+        return buffer.capacity() - buffer.limit();
     }
 
     /* ------------------------------------------------------------ */
@@ -257,48 +257,48 @@ public class BufferUtil
      */
     public static boolean compact(ByteBuffer buffer)
     {
-        boolean full=buffer.limit()==buffer.capacity();
+        boolean full = buffer.limit() == buffer.capacity();
         buffer.compact().flip();
-        return full && buffer.limit()<buffer.capacity();
+        return full && buffer.limit() < buffer.capacity();
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
-     * @param to Buffer to put bytes to in fill mode.
+     * @param to   Buffer to put bytes to in fill mode.
      * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to)
     {
         int put;
-        int remaining=from.remaining();
-        if (remaining>0)
+        int remaining = from.remaining();
+        if (remaining > 0)
         {
-            if (remaining<=to.remaining())
+            if (remaining <= to.remaining())
             {
                 to.put(from);
-                put=remaining;
+                put = remaining;
                 from.position(0);
                 from.limit(0);
             }
             else if (from.hasArray())
             {
-                put=to.remaining();
-                to.put(from.array(),from.arrayOffset()+from.position(),put);
-                from.position(from.position()+put);
+                put = to.remaining();
+                to.put(from.array(), from.arrayOffset() + from.position(), put);
+                from.position(from.position() + put);
             }
             else
             {
-                put=to.remaining();
-                ByteBuffer slice=from.slice();
+                put = to.remaining();
+                ByteBuffer slice = from.slice();
                 slice.limit(put);
                 to.put(slice);
-                from.position(from.position()+put);
+                from.position(from.position() + put);
             }
         }
         else
-            put=0;
+            put = 0;
 
         return put;
     }
@@ -307,54 +307,35 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
-     * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
+     * @param to   Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
     public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
     {
-        int pos= flipToFill(to);
+        int pos = flipToFill(to);
         try
         {
-            return put(from,to);
+            return put(from, to);
         }
         finally
         {
-            flipToFlush(to,pos);
+            flipToFlush(to, pos);
         }
     }
 
     /* ------------------------------------------------------------ */
     /**
      */
-    public static void append(ByteBuffer to, byte[] b,int off,int len) throws BufferOverflowException
+    public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
     {
-        int pos= flipToFill(to);
+        int pos = flipToFill(to);
         try
         {
-            to.put(b,off,len);
+            to.put(b, off, len);
         }
         finally
         {
-            flipToFlush(to,pos);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Like append, but does not throw {@link BufferOverflowException}
-     */
-    public static int fill(ByteBuffer to, byte[] b,int off,int len)
-    {
-        int pos= flipToFill(to);
-        try
-        {
-            int remaining=to.remaining();
-            int take=remaining<len?remaining:len;
-            to.put(b,off,take);
-            return take;
-        }
-        finally
-        {
-            flipToFlush(to,pos);
+            flipToFlush(to, pos);
         }
     }
 
@@ -363,10 +344,37 @@ public class BufferUtil
      */
     public static void append(ByteBuffer to, byte b)
     {
-        int limit=to.limit();
-        to.limit(limit+1);
-        to.put(limit,b);
+        int pos = flipToFill(to);
+        try
+        {
+            to.put(b);
+        }
+        finally
+        {
+            flipToFlush(to, pos);
+        }
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Like append, but does not throw {@link BufferOverflowException}
+     */
+    public static int fill(ByteBuffer to, byte[] b, int off, int len)
+    {
+        int pos = flipToFill(to);
+        try
+        {
+            int remaining = to.remaining();
+            int take = remaining < len ? remaining : len;
+            to.put(b, off, take);
+            return take;
+        }
+        finally
+        {
+            flipToFlush(to, pos);
+        }
+    }
+
 
     /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
@@ -386,10 +394,10 @@ public class BufferUtil
     {
         ByteBuffer tmp = allocate(8192);
 
-        while (needed>0 && buffer.hasRemaining())
+        while (needed > 0 && buffer.hasRemaining())
         {
-            int l = is.read(tmp.array(),0,8192);
-            if (l<0)
+            int l = is.read(tmp.array(), 0, 8192);
+            if (l < 0)
                 break;
             tmp.position(0);
             tmp.limit(l);
@@ -401,11 +409,11 @@ public class BufferUtil
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
-            out.write(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         else
         {
             // TODO this is horribly inefficient
-            for (int i=buffer.position();i<buffer.limit();i++)
+            for (int i = buffer.position(); i < buffer.limit(); i++)
                 out.write(buffer.get(i));
         }
     }
@@ -417,7 +425,7 @@ public class BufferUtil
      */
     public static String toString(ByteBuffer buffer)
     {
-        return toString(buffer,StringUtil.__ISO_8859_1_CHARSET);
+        return toString(buffer, StringUtil.__ISO_8859_1_CHARSET);
     }
 
     /* ------------------------------------------------------------ */
@@ -427,12 +435,12 @@ public class BufferUtil
      */
     public static String toUTF8String(ByteBuffer buffer)
     {
-        return toString(buffer,StringUtil.__UTF8_CHARSET);
+        return toString(buffer, StringUtil.__UTF8_CHARSET);
     }
 
     /* ------------------------------------------------------------ */
     /** Convert the buffer to an ISO-8859-1 String
-     * @param buffer The buffer to convert in flush mode. The buffer is unchanged
+     * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
      */
@@ -440,19 +448,19 @@ public class BufferUtil
     {
         if (buffer == null)
             return null;
-        byte[] array = buffer.hasArray()?buffer.array():null;
+        byte[] array = buffer.hasArray() ? buffer.array() : null;
         if (array == null)
         {
             byte[] to = new byte[buffer.remaining()];
             buffer.slice().get(to);
-            return new String(to,0,to.length,charset);
+            return new String(to, 0, to.length, charset);
         }
-        return new String(array,buffer.arrayOffset()+buffer.position(),buffer.remaining(),charset);
+        return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
     }
 
     /* ------------------------------------------------------------ */
     /** Convert a partial buffer to an ISO-8859-1 String
-     * @param buffer The buffer to convert in flush mode. The buffer is unchanged
+     * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
      */
@@ -460,17 +468,17 @@ public class BufferUtil
     {
         if (buffer == null)
             return null;
-        byte[] array = buffer.hasArray()?buffer.array():null;
+        byte[] array = buffer.hasArray() ? buffer.array() : null;
         if (array == null)
         {
-            ByteBuffer ro=buffer.asReadOnlyBuffer();
+            ByteBuffer ro = buffer.asReadOnlyBuffer();
             ro.position(position);
-            ro.limit(position+length);
+            ro.limit(position + length);
             byte[] to = new byte[length];
             ro.get(to);
-            return new String(to,0,to.length,charset);
+            return new String(to, 0, to.length, charset);
         }
-        return new String(array,buffer.arrayOffset()+position,length,charset);
+        return new String(array, buffer.arrayOffset() + position, length, charset);
     }
 
     /* ------------------------------------------------------------ */
@@ -509,7 +517,7 @@ public class BufferUtil
         }
 
         if (started)
-            return minus?(-val):val;
+            return minus ? (-val) : val;
         throw new NumberFormatException(toString(buffer));
     }
 
@@ -548,7 +556,7 @@ public class BufferUtil
         }
 
         if (started)
-            return minus?(-val):val;
+            return minus ? (-val) : val;
         throw new NumberFormatException(toString(buffer));
     }
 
@@ -683,14 +691,14 @@ public class BufferUtil
     public static ByteBuffer toBuffer(int value)
     {
         ByteBuffer buf = ByteBuffer.allocate(32);
-        putDecInt(buf,value);
+        putDecInt(buf, value);
         return buf;
     }
 
     public static ByteBuffer toBuffer(long value)
     {
         ByteBuffer buf = ByteBuffer.allocate(32);
-        putDecLong(buf,value);
+        putDecLong(buf, value);
         return buf;
     }
 
@@ -698,10 +706,10 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET));
     }
-    
+
     public static ByteBuffer toDirectBuffer(String s)
     {
-        byte[] bytes=s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
         ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
         buf.put(bytes);
         buf.flip();
@@ -712,10 +720,10 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
-    
+
     public static ByteBuffer toDirectBuffer(String s, Charset charset)
     {
-        byte[] bytes=s.getBytes(charset);
+        byte[] bytes = s.getBytes(charset);
         ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
         buf.put(bytes);
         buf.flip();
@@ -747,20 +755,20 @@ public class BufferUtil
      */
     public static ByteBuffer toBuffer(byte array[], int offset, int length)
     {
-        return ByteBuffer.wrap(array,offset,length);
+        return ByteBuffer.wrap(array, offset, length);
     }
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {
-        try(RandomAccessFile raf = new RandomAccessFile(file,"r");)
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r");)
         {
-            return raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
+            return raf.getChannel().map(MapMode.READ_ONLY, 0, raf.length());
         }
     }
 
     public static String toSummaryString(ByteBuffer buffer)
     {
-        if (buffer==null)
+        if (buffer == null)
             return "null";
         StringBuilder buf = new StringBuilder();
         buf.append("[p=");
@@ -779,9 +787,9 @@ public class BufferUtil
     {
         StringBuilder builder = new StringBuilder();
         builder.append('[');
-        for (int i=0;i<buffer.length;i++)
+        for (int i = 0; i < buffer.length; i++)
         {
-            if (i>0) builder.append(',');
+            if (i > 0) builder.append(',');
             builder.append(toDetailString(buffer[i]));
         }
         builder.append(']');
@@ -790,7 +798,7 @@ public class BufferUtil
 
     public static String toDetailString(ByteBuffer buffer)
     {
-        if (buffer==null)
+        if (buffer == null)
             return "null";
 
         StringBuilder buf = new StringBuilder();
@@ -810,53 +818,53 @@ public class BufferUtil
         buf.append(buffer.remaining());
         buf.append("]={");
 
-        for (int i=0;i<buffer.position();i++)
+        for (int i = 0; i < buffer.position(); i++)
         {
-            char c=(char)buffer.get(i);
-            if (c>=' ' && c<=127)
+            char c = (char)buffer.get(i);
+            if (c >= ' ' && c <= 127)
                 buf.append(c);
-            else if (c=='\r'||c=='\n')
+            else if (c == '\r' || c == '\n')
                 buf.append('|');
             else
                 buf.append('\ufffd');
-            if (i==16&&buffer.position()>32)
+            if (i == 16 && buffer.position() > 32)
             {
                 buf.append("...");
-                i=buffer.position()-16;
+                i = buffer.position() - 16;
             }
         }
         buf.append("<<<");
-        for (int i=buffer.position();i<buffer.limit();i++)
+        for (int i = buffer.position(); i < buffer.limit(); i++)
         {
-            char c=(char)buffer.get(i);
-            if (c>=' ' && c<=127)
+            char c = (char)buffer.get(i);
+            if (c >= ' ' && c <= 127)
                 buf.append(c);
-            else if (c=='\r'||c=='\n')
+            else if (c == '\r' || c == '\n')
                 buf.append('|');
             else
                 buf.append('\ufffd');
-            if (i==buffer.position()+16&&buffer.limit()>buffer.position()+32)
+            if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
             {
                 buf.append("...");
-                i=buffer.limit()-16;
+                i = buffer.limit() - 16;
             }
         }
         buf.append(">>>");
-        int limit=buffer.limit();
+        int limit = buffer.limit();
         buffer.limit(buffer.capacity());
-        for (int i=limit;i<buffer.capacity();i++)
+        for (int i = limit; i < buffer.capacity(); i++)
         {
-            char c=(char)buffer.get(i);
-            if (c>=' ' && c<=127)
+            char c = (char)buffer.get(i);
+            if (c >= ' ' && c <= 127)
                 buf.append(c);
-            else if (c=='\r'||c=='\n')
+            else if (c == '\r' || c == '\n')
                 buf.append('|');
             else
                 buf.append('\ufffd');
-            if (i==limit+16&&buffer.capacity()>limit+32)
+            if (i == limit + 16 && buffer.capacity() > limit + 32)
             {
                 buf.append("...");
-                i=buffer.capacity()-16;
+                i = buffer.capacity() - 16;
             }
         }
         buffer.limit(limit);
@@ -867,14 +875,14 @@ public class BufferUtil
 
 
     private final static int[] decDivisors =
-    { 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
+            {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
 
     private final static int[] hexDivisors =
-    { 0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1 };
+            {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
 
     private final static long[] decDivisorsL =
-    { 1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L, 1000000000000L, 100000000000L,
-            10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L };
+            {1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L, 1000000000000L, 100000000000L,
+                    10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L};
 
     public static void putCRLF(ByteBuffer buffer)
     {
