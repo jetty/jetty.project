@@ -21,10 +21,8 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -90,7 +88,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final HttpURI _uri;
     private final HttpChannelState _state;
     private final Request _request;
-    private final Response _response;    
+    private final Response _response;
     private final BlockingCallback _writeblock=new BlockingCallback();
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
@@ -124,7 +122,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _writeblock;
     }
-    
+
     /**
      * @return the number of requests handled by this connection
      */
@@ -183,7 +181,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _configuration.getHeaderCacheSize();
     }
-    
+
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -229,7 +227,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         handle();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
@@ -287,7 +285,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
                     LOG.ignore(e);
-                else 
+                else
                     throw e;
             }
             catch (Exception e)
@@ -342,7 +340,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             _transport.completed();
         }
 
-        LOG.debug("{} handle exit", this);
+        LOG.debug("{} handle exit, result {}", this, next);
 
         return next!=Next.WAIT;
     }
@@ -508,10 +506,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     if (charset != null)
                         _request.setCharacterEncodingUnchecked(charset);
                     break;
-                default:    
+                default:
             }
         }
-        
+
         if (field.getName()!=null)
             _request.getHttpFields().add(field);
         return false;
@@ -566,7 +564,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         @SuppressWarnings("unchecked")
         HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
         input.content(item);
-        
+
         return false;
     }
 
@@ -599,13 +597,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.warn(e);
         }
         finally
-        { 
+        {
             if (_state.unhandle()==Next.COMPLETE)
                 _state.completed();
         }
     }
-    
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback) 
+
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback)
     {
         // TODO check that complete only set true once by changing _committed to AtomicRef<Enum>
         boolean committing = _committed.compareAndSet(false, true);
@@ -614,13 +612,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             // We need an info to commit
             if (info==null)
                 info = _response.newResponseInfo();
-            
+
             // wrap callback to process 100 or 500 responses
             final int status=info.getStatus();
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
             // committing write
-            _transport.send(info, content, complete, committed); 
+            _transport.send(info, content, complete, committed);
         }
         else if (info==null)
         {
@@ -635,7 +633,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
-    {       
+    {
         boolean committing=sendResponse(info,content,complete,_writeblock);
         _writeblock.block();
         return committing;
@@ -655,10 +653,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      */
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        sendResponse(null,content,complete,_writeblock);  
+        sendResponse(null,content,complete,_writeblock);
         _writeblock.block();
     }
-    
+
     /**
      * <p>Non-Blocking write, committing the response if needed.</p>
      *
@@ -681,7 +679,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _connector.getScheduler();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
