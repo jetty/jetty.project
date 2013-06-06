@@ -34,29 +34,53 @@ import java.nio.charset.Charset;
 /* ------------------------------------------------------------------------------- */
 /**
  * Buffer utility methods.
- *
- * These utility methods facilitate the usage of NIO {@link ByteBuffer}'s in a more flexible way.
- * The standard {@link ByteBuffer#flip()} assumes that once flipped to flush a buffer,
- * that it will be completely emptied before being cleared ready to be filled again.
- * The {@link #flipToFill(ByteBuffer)} and {@link #flipToFlush(ByteBuffer, int)} methods provided here
- * do not assume that the buffer is empty and will preserve content when flipped.
+ * <p>The standard JVM {@link ByteBuffer} can exist in two modes: In fill mode the valid
+ * data is between 0 and pos; In flush mode the valid data is between the pos and the limit.
+ * The various ByteBuffer methods assume a mode and some of them will switch or enforce a mode:
+ * Allocate and clear set fill mode; flip and compact switch modes; read and write assume fill 
+ * and flush modes.    This duality can result in confusing code such as:
+ * <pre>
+ *     buffer.clear();
+ *     channel.write(buffer);
+ * </pre>
+ * Which looks as if it should write no data, but in fact writes the buffer worth of garbage.
+ * </p>
  * <p>
- * ByteBuffers can be considered in one of two modes: Flush mode where valid content is contained between
- * position and limit which is consumed by advancing the position; and Fill mode where empty space is between
- * the position and limit, which is filled by advancing the position.   In fill mode, there may be valid data
- * in the buffer before the position and the start of this data is given by the return value of {@link #flipToFill(ByteBuffer)}
+ * The BufferUtil class provides a set of utilities that operate on the convention that ByteBuffers
+ * will always be left, passed in an API or returned from a method in the flush mode - ie with
+ * valid data between the pos and limit.    This convention is adopted so as to avoid confusion as to
+ * what state a buffer is in and to avoid excessive copying of data that can result with the usage 
+ * of compress.</p> 
  * <p>
- * A typical pattern for using the buffers in this style is:
- * <blockquote><pre>
- *    ByteBuffer buf = BufferUtil.allocate(4096);
- *    while(in.isOpen())
- *    {
- *        int pos=BufferUtil.flipToFill(buf);
- *        if (in.read(buf)<0)
- *          break;
- *        BufferUtil.flipToFlush(buf,pos);
- *        out.write(buf);
- *    }</pre></blockquote>
+ * Thus this class provides alternate implementations of {@link #allocate(int)}, 
+ * {@link #allocateDirect(int)} and {@link #clear(ByteBuffer)} that leave the buffer
+ * in flush mode.   Thus the following tests will pass:<pre>
+ *     ByteBuffer buffer = BufferUtil.allocate(1024);
+ *     assert(buffer.remaining()==0);
+ *     BufferUtil.clear(buffer);
+ *     assert(buffer.remaining()==0);
+ * </pre>
+ * </p>
+ * <p>If the BufferUtil methods {@link #fill(ByteBuffer, byte[], int, int)}, 
+ * {@link #append(ByteBuffer, byte[], int, int)} or {@link #put(ByteBuffer, ByteBuffer)} are used,
+ * then the caller does not need to explicitly switch the buffer to fill mode.    
+ * If the caller wishes to use other ByteBuffer bases libraries to fill a buffer, 
+ * then they can use explicit calls of #flipToFill(ByteBuffer) and #flipToFlush(ByteBuffer, int)
+ * to change modes.  Note because this convention attempts to avoid the copies of compact, the position
+ * is not set to zero on each fill cycle and so its value must be remembered:
+ * <pre>
+ *      int pos = BufferUtil.flipToFill(buffer);
+ *      try
+ *      {
+ *          buffer.put(data);
+ *      }
+ *      finally
+ *      {
+ *          flipToFlush(buffer, pos);
+ *      }
+ * </pre>
+ * The flipToFill method will effectively clear the buffer if it is emtpy and will compact the buffer if there is no space.
+ * 
  */
 public class BufferUtil
 {
@@ -85,7 +109,7 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
-     * empty and must be flipped before any data is put to it.
+     * empty and in flush mode.
      * @param capacity
      * @return Buffer
      */
@@ -324,7 +348,8 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /**
+    /** Append bytes to a buffer.
+     * 
      */
     public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
     {
@@ -340,7 +365,7 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /**
+    /** Appends a byte to a buffer
      */
     public static void append(ByteBuffer to, byte b)
     {
