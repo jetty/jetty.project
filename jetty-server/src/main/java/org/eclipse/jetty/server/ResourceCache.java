@@ -486,7 +486,7 @@ public class ResourceCache
             }
             if (buffer==null)
                 return null;
-            return buffer.asReadOnlyBuffer();
+            return buffer.slice();
         }
         
 
