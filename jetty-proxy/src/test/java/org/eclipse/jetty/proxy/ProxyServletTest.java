@@ -242,9 +242,9 @@ public class ProxyServletTest
         threadPool.setMaxThreads(2);
         result.setExecutor(threadPool);
         result.start();
-        
+
         ContentResponse[] responses = new ContentResponse[10];
-        
+
         final byte[] content = new byte[1024];
         Arrays.fill(content, (byte)'A');
         prepareServer(new HttpServlet()
@@ -265,8 +265,8 @@ public class ProxyServletTest
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
         }
-        
-     
+
+
         for ( int i = 0; i < 10; ++i )
         {
 
@@ -672,6 +672,45 @@ public class ProxyServletTest
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
                 .path(prefix + target)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
+    public void testTransparentProxyWithQuery() throws Exception
+    {
+        final String target = "/test";
+        final String query = "a=1&b=2";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                if (target.equals(req.getRequestURI()))
+                {
+                    if (query.equals(req.getQueryString()))
+                    {
+                        resp.setStatus(200);
+                        return;
+                    }
+                }
+                resp.setStatus(404);
+            }
+        });
+
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        String prefix = "/proxy";
+        ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
+        prepareProxy(proxyServlet);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(prefix + target + "?" + query)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());
