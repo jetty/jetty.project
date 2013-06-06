@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -55,6 +56,8 @@ import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -156,6 +159,7 @@ public class ProxySPDYToHTTPTest
             proxy.join();
         }
         factory.stop();
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
     }
 
     @Test
@@ -436,6 +440,7 @@ public class ProxySPDYToHTTPTest
         }).get(5, TimeUnit.SECONDS);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
         client.syn(new SynInfo(headers, false), null);
         assertThat("goAway has been received by proxy", goAwayLatch.await(2 * timeout, TimeUnit.MILLISECONDS),
                 is(true));
