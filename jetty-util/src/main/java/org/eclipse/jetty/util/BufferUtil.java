@@ -84,6 +84,7 @@ import java.nio.charset.Charset;
  */
 public class BufferUtil
 {
+    static final int TEMP_BUFFER_SIZE = 4096;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
@@ -96,7 +97,7 @@ public class BufferUtil
     /** Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and must be flipped before any data is put to it.
-     * @param capacity
+     * @param capacity capacity of the allocated ByteBuffer
      * @return Buffer
      */
     public static ByteBuffer allocate(int capacity)
@@ -110,7 +111,7 @@ public class BufferUtil
     /** Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and in flush mode.
-     * @param capacity
+     * @param capacity capacity of the allocated ByteBuffer
      * @return Buffer
      */
     public static ByteBuffer allocateDirect(int capacity)
@@ -264,7 +265,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Get the space from the limit to the capacity
-     * @param buffer
+     * @param buffer the buffer to get the space from
      * @return space
      */
     public static int space(ByteBuffer buffer)
@@ -276,7 +277,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Compact the buffer
-     * @param buffer
+     * @param buffer the buffer to compact
      * @return true if the compact made a full buffer have space
      */
     public static boolean compact(ByteBuffer buffer)
@@ -404,7 +405,7 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
-        try(RandomAccessFile raf = new RandomAccessFile(file,"r");)
+        try(RandomAccessFile raf = new RandomAccessFile(file,"r"))
         {
             FileChannel channel = raf.getChannel();
             long needed=raf.length();
@@ -437,9 +438,19 @@ public class BufferUtil
             out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         else
         {
-            // TODO this is horribly inefficient
+            byte[] bytes = new byte[TEMP_BUFFER_SIZE];
+            int j = 0;
             for (int i = buffer.position(); i < buffer.limit(); i++)
-                out.write(buffer.get(i));
+            {
+                bytes[j] = buffer.get(i);
+                j++;
+                if (j == TEMP_BUFFER_SIZE)
+                {
+                    out.write(bytes);
+                    j = 0;
+                }
+            }
+            out.write(bytes, 0, j);
         }
     }
 
@@ -615,9 +626,9 @@ public class BufferUtil
         {
             boolean started = false;
             // This assumes constant time int arithmatic
-            for (int i = 0; i < hexDivisors.length; i++)
+            for (int hexDivisor : hexDivisors)
             {
-                if (n < hexDivisors[i])
+                if (n < hexDivisor)
                 {
                     if (started)
                         buffer.put((byte)'0');
@@ -625,9 +636,9 @@ public class BufferUtil
                 }
 
                 started = true;
-                int d = n / hexDivisors[i];
+                int d = n / hexDivisor;
                 buffer.put(DIGIT[d]);
-                n = n - d * hexDivisors[i];
+                n = n - d * hexDivisor;
             }
         }
     }
@@ -656,9 +667,9 @@ public class BufferUtil
         {
             boolean started = false;
             // This assumes constant time int arithmatic
-            for (int i = 0; i < decDivisors.length; i++)
+            for (int decDivisor : decDivisors)
             {
-                if (n < decDivisors[i])
+                if (n < decDivisor)
                 {
                     if (started)
                         buffer.put((byte)'0');
@@ -666,9 +677,9 @@ public class BufferUtil
                 }
 
                 started = true;
-                int d = n / decDivisors[i];
+                int d = n / decDivisor;
                 buffer.put(DIGIT[d]);
-                n = n - d * decDivisors[i];
+                n = n - d * decDivisor;
             }
         }
     }
@@ -696,9 +707,9 @@ public class BufferUtil
         {
             boolean started = false;
             // This assumes constant time int arithmatic
-            for (int i = 0; i < decDivisorsL.length; i++)
+            for (long aDecDivisorsL : decDivisorsL)
             {
-                if (n < decDivisorsL[i])
+                if (n < aDecDivisorsL)
                 {
                     if (started)
                         buffer.put((byte)'0');
@@ -706,9 +717,9 @@ public class BufferUtil
                 }
 
                 started = true;
-                long d = n / decDivisorsL[i];
+                long d = n / aDecDivisorsL;
                 buffer.put(DIGIT[(int)d]);
-                n = n - d * decDivisorsL[i];
+                n = n - d * aDecDivisorsL;
             }
         }
     }
@@ -785,7 +796,7 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {
-        try (RandomAccessFile raf = new RandomAccessFile(file, "r");)
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
         {
             return raf.getChannel().map(MapMode.READ_ONLY, 0, raf.length());
         }
