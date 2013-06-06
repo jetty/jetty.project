@@ -84,7 +84,7 @@ import java.nio.charset.Charset;
  */
 public class BufferUtil
 {
-    static final int TEMP_BUFFER_SIZE = 4096;
+    static final int TEMP_BUFFER_SIZE = 512;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
@@ -439,18 +439,11 @@ public class BufferUtil
         else
         {
             byte[] bytes = new byte[TEMP_BUFFER_SIZE];
-            int j = 0;
-            for (int i = buffer.position(); i < buffer.limit(); i++)
-            {
-                bytes[j] = buffer.get(i);
-                j++;
-                if (j == TEMP_BUFFER_SIZE)
-                {
-                    out.write(bytes);
-                    j = 0;
-                }
+            while(buffer.hasRemaining()){
+                int byteCountToWrite = Math.min(buffer.remaining(), TEMP_BUFFER_SIZE);
+                buffer.get(bytes, 0, byteCountToWrite);
+                out.write(bytes,0 , byteCountToWrite);
             }
-            out.write(bytes, 0, j);
         }
     }
 
