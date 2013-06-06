@@ -28,6 +28,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -231,6 +232,7 @@ public class BufferUtilTest
     }
 
     private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
+    @Ignore
     @Test
     public void testWriteTo() throws IOException
     {
