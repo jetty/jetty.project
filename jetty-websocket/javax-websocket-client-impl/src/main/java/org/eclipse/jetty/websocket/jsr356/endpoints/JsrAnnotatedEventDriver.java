@@ -116,7 +116,23 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
             if (activeMessage == null)
             {
                 LOG.debug("Binary Message InputStream");
-                activeMessage = new MessageInputStream(this);
+                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                activeMessage = stream;
+                dispatch(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            events.callBinaryStream(websocket,stream);
+                        }
+                        catch (DecodeException | IOException e)
+                        {
+                            onFatalError(e);
+                        }
+                    }
+                });
             }
         }
 
@@ -264,7 +280,25 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
             if (activeMessage == null)
             {
                 LOG.debug("Text Message Writer");
-                activeMessage = new MessageReader(this);
+
+                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                activeMessage = stream;
+
+                dispatch(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            events.callTextStream(websocket,stream);
+                        }
+                        catch (DecodeException | IOException e)
+                        {
+                            onFatalError(e);
+                        }
+                    }
+                });
             }
         }
 

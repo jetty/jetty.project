@@ -29,6 +29,8 @@ import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Whole;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.log.Log;
@@ -40,18 +42,18 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.message.MessageInputStream;
+import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.jsr356.ContainerService;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlers;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.BinaryStreamMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryWholeMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerMetadataFactory;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
 import org.eclipse.jetty.websocket.jsr356.messages.TextPartialMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.TextStreamMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextWholeMessage;
 
 /**
@@ -88,7 +90,7 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     {
         if (activeMessage == null)
         {
-            MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.BINARY);
+            final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.BINARY);
             if (wrapper == null)
             {
                 LOG.debug("No BINARY MessageHandler declared");
@@ -100,7 +102,18 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
             }
             else if (wrapper.wantsStreams())
             {
-                activeMessage = new BinaryStreamMessage(this,wrapper);
+                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                activeMessage = stream;
+                dispatch(new Runnable()
+                {
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public void run()
+                    {
+                        MessageHandler.Whole<InputStream> handler = (Whole<InputStream>)wrapper.getHandler();
+                        handler.onMessage(stream);
+                    }
+                });
             }
             else
             {
@@ -181,7 +194,7 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     {
         if (activeMessage == null)
         {
-            MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.TEXT);
+            final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.TEXT);
             if (wrapper == null)
             {
                 LOG.debug("No TEXT MessageHandler declared");
@@ -193,7 +206,19 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
             }
             else if (wrapper.wantsStreams())
             {
-                activeMessage = new TextStreamMessage(this,wrapper);
+                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                activeMessage = stream;
+
+                dispatch(new Runnable()
+                {
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public void run()
+                    {
+                        MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
+                        handler.onMessage(stream);
+                    }
+                });
             }
             else
             {

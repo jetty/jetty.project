@@ -65,11 +65,6 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
     }
 
-    private void dispatch(Runnable runnable)
-    {
-        session.dispatch(runnable);
-    }
-
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {

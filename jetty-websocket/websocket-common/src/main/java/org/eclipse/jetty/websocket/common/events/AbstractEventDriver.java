@@ -65,6 +65,11 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         }
     }
 
+    protected void dispatch(Runnable runnable)
+    {
+        session.dispatch(runnable);
+    }
+
     @Override
     public WebSocketPolicy getPolicy()
     {
