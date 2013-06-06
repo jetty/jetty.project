@@ -39,11 +39,13 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+@Ignore
 public class WriteThroughAggregateBufferTest extends AbstractHTTPSPDYTest
 {
     private static final Logger LOG = Log.getLogger(WriteThroughAggregateBufferTest.class);
