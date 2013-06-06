@@ -39,13 +39,11 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-@Ignore
 public class WriteThroughAggregateBufferTest extends AbstractHTTPSPDYTest
 {
     private static final Logger LOG = Log.getLogger(WriteThroughAggregateBufferTest.class);
@@ -100,14 +98,14 @@ public class WriteThroughAggregateBufferTest extends AbstractHTTPSPDYTest
                 dataInfo.consume(dataInfo.available());
                 if (dataInfo.isClose())
                 {
-                    assertThat("bytes received matches file size: 76848", bytesReceived.get(), is(76848));
+                    assertThat("bytes received matches file size: 76847", bytesReceived.get(), is(76847));
                     dataLatch.countDown();
                 }
             }
 
         });
 
-        assertThat("reply is received", replyLatch.await(500, TimeUnit.SECONDS), is(true));
-        assertThat("all data is sent", dataLatch.await(500, TimeUnit.SECONDS), is(true));
+        assertThat("reply is received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("all data is sent", dataLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 }
