@@ -186,22 +186,14 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
             throw new EofException(e);
         }
         
-        boolean all_flushed=true;
         if (flushed>0)
-        {
             notIdle();
 
-            // clear empty buffers to prevent position creeping up the buffer
-            for (ByteBuffer b : buffers)
-            {
-                if (BufferUtil.isEmpty(b))
-                    BufferUtil.clear(b);
-                else
-                    all_flushed=false;
-            }
-        }
+        for (ByteBuffer b : buffers)
+            if (!BufferUtil.isEmpty(b))
+                return false;
         
-        return all_flushed;
+        return true;
     }
 
     public ByteChannel getChannel()
