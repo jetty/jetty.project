@@ -119,7 +119,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         // No Authentication available => 407
@@ -140,7 +140,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // ...and perform the request again => 407 + 204
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(status, response2.getStatus());
@@ -150,7 +150,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         requests.set(0);
         ContentResponse response3 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(status, response3.getStatus());

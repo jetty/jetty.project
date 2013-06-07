@@ -147,7 +147,12 @@ public class HttpRequest implements Request
     public Request path(String path)
     {
         URI uri = URI.create(path);
-        this.path = uri.getRawPath();
+        String rawPath = uri.getRawPath();
+        if (uri.isOpaque())
+            rawPath = path;
+        if (rawPath == null)
+            rawPath = "";
+        this.path = rawPath;
         String query = uri.getRawQuery();
         if (query != null)
         {
@@ -561,7 +566,7 @@ public class HttpRequest implements Request
         if (query != null && withQuery)
             path += "?" + query;
         URI result = URI.create(path);
-        if (!result.isAbsolute())
+        if (!result.isAbsolute() && !result.isOpaque())
             result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
         return result;
     }
