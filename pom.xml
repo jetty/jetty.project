@@ -448,8 +448,8 @@
     <module>jetty-osgi</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>examples</module>
     <module>tests</module>
+    <module>examples</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-monitor</module>

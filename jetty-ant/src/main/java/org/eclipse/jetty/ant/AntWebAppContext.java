@@ -540,9 +540,8 @@ public class AntWebAppContext extends WebAppContext
         
         if (getDescriptor() != null)
         {
-            try
+            try (Resource r = Resource.newResource(getDescriptor());)
             {
-                Resource r = Resource.newResource(getDescriptor());
                 scanList.add(r.getFile());
             }
             catch (IOException e)
@@ -553,9 +552,8 @@ public class AntWebAppContext extends WebAppContext
 
         if (getJettyEnvXml() != null)
         {
-            try
+            try (Resource r = Resource.newResource(getJettyEnvXml());)
             {
-                Resource r = Resource.newResource(getJettyEnvXml());
                 scanList.add(r.getFile());
             }
             catch (IOException e)
@@ -566,11 +564,10 @@ public class AntWebAppContext extends WebAppContext
 
         if (getDefaultsDescriptor() != null)
         {
-            try
+            try (Resource r = Resource.newResource(getDefaultsDescriptor());)
             {
-                if (!AntWebAppContext.WEB_DEFAULTS_XML.equals(getDefaultsDescriptor()))
-                {
-                    Resource r = Resource.newResource(getDefaultsDescriptor());
+                if (!WebAppContext.WEB_DEFAULTS_XML.equals(getDefaultsDescriptor()))
+                {   
                     scanList.add(r.getFile());
                 }
             }

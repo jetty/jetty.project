@@ -53,6 +53,7 @@ public class GlobalWebappConfigBindingTest
     {
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
+        jetty.addConfiguration("jetty-http.xml");
 
         // Setup initial context
         jetty.copyWebapp("foo.xml","foo.xml");

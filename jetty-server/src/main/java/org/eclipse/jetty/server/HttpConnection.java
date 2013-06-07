@@ -19,11 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -331,7 +329,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             throw e;
         }
     }
-    
+
     @Override
     public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
@@ -352,7 +350,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         new ContentCallback(content,lastContent,callback).iterate();
     }
-    
+
     @Override
     public void completed()
     {
@@ -379,7 +377,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         reset();
 
         // if we are not called from the onfillable thread, schedule completion
-        if (getCurrentConnection()==null)
+        if (getCurrentConnection()!=this)
         {
             if (_parser.isStart())
             {
@@ -431,8 +429,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             while (!_parser.isComplete())
             {
                 // Can the parser progress (even with an empty buffer)
-                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);             
-                
+                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+
                 // If there is more content to parse, loop so we can queue all content from this buffer now without the
                 // need to call blockForContent again
                 while (!event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
@@ -441,7 +439,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // If we have content, return
                 if (_parser.isComplete() || available()>0)
                     return;
-                
+
                 // Do we have content ready to parse?
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -588,7 +586,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         final boolean _lastContent;
         final ResponseInfo _info;
         ByteBuffer _header;
-        
+
         CommitCallback(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
             super(callback);
@@ -596,7 +594,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _content=content;
             _lastContent=last;
         }
-        
+
         @Override
         public boolean process() throws Exception
         {
@@ -707,14 +705,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         final ByteBuffer _content;
         final boolean _lastContent;
-        
+
         ContentCallback(ByteBuffer content, boolean last, Callback callback)
         {
             super(callback);
             _content=content;
             _lastContent=last;
         }
-        
+
         @Override
         public boolean process() throws Exception
         {

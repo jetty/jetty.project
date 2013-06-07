@@ -60,7 +60,7 @@ public class WebAppClassLoaderTest
 
         assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
 
-        Class clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
+        Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertTrue(clazzA.getField("FROM_PARENT")!=null);
     }
 

@@ -19,15 +19,23 @@
 package org.eclipse.jetty.util;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Random;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class BufferUtilTest
 {
@@ -224,5 +232,72 @@ public class BufferUtilTest
         }
 
         Assert.assertEquals("Count of bytes",length,count);
+    }
+
+    private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
+
+    @Test
+    @Ignore("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +
+            "ignored.")
+    public void testWriteToMicrobenchmark() throws IOException
+    {
+        int capacity = 1024 * 128;
+        int iterations = 100;
+        int testRuns = 10;
+        byte[] bytes = new byte[capacity];
+        new Random().nextBytes(bytes);
+        ByteBuffer buffer = BufferUtil.allocate(capacity);
+        BufferUtil.append(buffer, bytes, 0, capacity);
+        long startTest = System.nanoTime();
+        for (int i = 0; i < testRuns; i++)
+        {
+            long start = System.nanoTime();
+            for (int j = 0; j < iterations; j++)
+            {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                long startRun = System.nanoTime();
+                BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
+                long elapsedRun = System.nanoTime() - startRun;
+//                LOG.warn("run elapsed={}ms", elapsedRun / 1000);
+                assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
+            }
+            long elapsed = System.nanoTime() - start;
+            LOG.warn("elapsed={}ms average={}ms", elapsed / 1000, elapsed/iterations/1000);
+        }
+        LOG.warn("overall average: {}ms", (System.nanoTime() - startTest) / testRuns / iterations / 1000);
+    }
+
+    @Test
+    public void testWriteToWithBufferThatDoesNotExposeArrayAndSmallContent() throws IOException
+    {
+        int capacity = BufferUtil.TEMP_BUFFER_SIZE/4;
+        testWriteToWithBufferThatDoesNotExposeArray(capacity);
+    }
+
+    @Test
+    public void testWriteToWithBufferThatDoesNotExposeArrayAndContentLengthMatchingTempBufferSize() throws IOException
+    {
+        int capacity = BufferUtil.TEMP_BUFFER_SIZE;
+        testWriteToWithBufferThatDoesNotExposeArray(capacity);
+    }
+
+    @Test
+    public void testWriteToWithBufferThatDoesNotExposeArrayAndContentSlightlyBiggerThanTwoTimesTempBufferSize()
+            throws
+            IOException
+    {
+        int capacity = BufferUtil.TEMP_BUFFER_SIZE*2+1024;
+        testWriteToWithBufferThatDoesNotExposeArray(capacity);
+    }
+
+    private void testWriteToWithBufferThatDoesNotExposeArray(int capacity) throws IOException
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] bytes = new byte[capacity];
+        new Random().nextBytes(bytes);
+        ByteBuffer buffer = BufferUtil.allocate(capacity);
+        BufferUtil.append(buffer, bytes, 0, capacity);
+        BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
+        assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
     }
 }

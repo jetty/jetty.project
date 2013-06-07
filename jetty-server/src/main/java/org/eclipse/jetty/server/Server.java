@@ -459,7 +459,7 @@ public class Server extends HandlerWrapper implements Attributes
         response.setStatus(200);
         response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
         response.setContentLength(0);
-        response.complete();
+        response.closeOutput();
     }
 
     /* ------------------------------------------------------------ */

@@ -512,6 +512,62 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
     }
 
     @Test
+    public void testGETWithBigResponseContentInMultipleWrites() throws Exception
+    {
+        final byte[] data = new byte[4 * 1024];
+        Arrays.fill(data, (byte)'x');
+        final int writeTimes = 16;
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setStatus(HttpServletResponse.SC_OK);
+                ServletOutputStream output = httpResponse.getOutputStream();
+                for(int i = 0 ; i< writeTimes ; i++)
+                {
+                    output.write(data);
+                }
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger contentBytes = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Fields replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                contentBytes.addAndGet(dataInfo.asByteBuffer(true).remaining());
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(data.length * writeTimes, contentBytes.get());
+                    dataLatch.countDown();
+                }
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testGETWithBigResponseContentInTwoWrites() throws Exception
     {
         final byte[] data = new byte[128 * 1024];

@@ -167,10 +167,10 @@ public class OrderingTest
         }
 
         /**
-         * @see org.eclipse.jetty.util.resource.Resource#release()
+         * @see org.eclipse.jetty.util.resource.Resource#close()
          */
         @Override
-        public void release()
+        public void close()
         {
         }
 

@@ -436,7 +436,7 @@ public class Response implements HttpServletResponse
             _mimeType=null;
         }
 
-        complete();
+        closeOutput();
     }
 
     /**
@@ -532,7 +532,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        complete();
+        closeOutput();
     }
 
     @Override
@@ -814,6 +814,7 @@ public class Response implements HttpServletResponse
                 getOutputStream().close();
                 break;
             default:
+                _out.close();
         }
     }
 
@@ -1088,11 +1089,6 @@ public class Response implements HttpServletResponse
     public String getReason()
     {
         return _reason;
-    }
-
-    public void complete()
-    {
-        _out.close();
     }
 
     public HttpFields getHttpFields()

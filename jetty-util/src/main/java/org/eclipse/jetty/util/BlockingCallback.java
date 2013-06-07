@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /* ------------------------------------------------------------ */
@@ -56,7 +55,7 @@ public class BlockingCallback implements Callback
 {
     private static Throwable COMPLETED=new Throwable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
-    private final Semaphore _semaphone = new Semaphore(0);
+    private final Semaphore _semaphore = new Semaphore(0);
     private Throwable _cause;
     
     public BlockingCallback()
@@ -68,7 +67,7 @@ public class BlockingCallback implements Callback
         if (_done.compareAndSet(false,true))
         {
             _cause=COMPLETED;
-            _semaphone.release();
+            _semaphore.release();
         }
     }
 
@@ -78,7 +77,7 @@ public class BlockingCallback implements Callback
         if (_done.compareAndSet(false,true))
         {
             _cause=cause;
-            _semaphone.release();
+            _semaphore.release();
         }
     }
 
@@ -94,7 +93,7 @@ public class BlockingCallback implements Callback
     {
         try
         {
-            _semaphone.acquire();
+            _semaphore.acquire();
             if (_cause==COMPLETED)
                 return;
             if (_cause instanceof IOException)
