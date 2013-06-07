@@ -316,7 +316,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.addAuthentication(authentication);
 
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scheme).path("/secure");
-        ContentResponse response = request.timeout(555, TimeUnit.SECONDS).send();
+        ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.getStatus());
     }

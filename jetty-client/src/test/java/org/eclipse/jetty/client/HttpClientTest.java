@@ -444,6 +444,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(3);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .path("/one")
                 .listener(new Request.Listener.Empty()
                 {
                     @Override
@@ -477,6 +478,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .path("/two")
                 .onResponseSuccess(new Response.SuccessListener()
                 {
                     @Override

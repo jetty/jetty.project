@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpDestination implements Destination, Closeable, Dumpable
 {
@@ -474,13 +475,23 @@ public class HttpDestination implements Destination, Closeable, Dumpable
         @Override
         public void succeeded(Connection connection)
         {
-            boolean tunnel = isProxied() &&
-                    HttpScheme.HTTPS.is(getScheme()) &&
-                    client.getSslContextFactory() != null;
-            if (tunnel)
-                tunnel(connection);
+            if (isProxied() && HttpScheme.HTTPS.is(getScheme()))
+            {
+                if (client.getSslContextFactory() != null)
+                {
+                    tunnel(connection);
+                }
+                else
+                {
+                    String message = String.format("Cannot perform requests over SSL, no %s in %s",
+                            SslContextFactory.class.getSimpleName(), HttpClient.class.getSimpleName());
+                    delegate.failed(new IllegalStateException(message));
+                }
+            }
             else
+            {
                 delegate.succeeded(connection);
+            }
         }
 
         @Override
@@ -513,7 +524,9 @@ public class HttpDestination implements Destination, Closeable, Dumpable
                         Response response = result.getResponse();
                         if (response.getStatus() == 200)
                         {
-                            delegate.succeeded(connection);
+                            // Wrap the connection with TLS
+                            Connection tunnel = client.tunnel(connection);
+                            delegate.succeeded(tunnel);
                         }
                         else
                         {
