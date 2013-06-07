@@ -505,7 +505,10 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         else
             assertThat("No push data is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
         if (validateHeaders)
+        {
             assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
+            assertThat("Push response headers are valid", pushResponseHeaders.await(5, TimeUnit.SECONDS), is(true));
+        }
     }
 
     private static final Logger LOG = Log.getLogger(ReferrerPushStrategyTest.class);
