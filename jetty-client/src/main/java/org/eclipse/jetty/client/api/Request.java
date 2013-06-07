@@ -96,8 +96,8 @@ public interface Request
      * Specifies the path - and possibly the query - of this request.
      * If the query part is specified, parameter values must be properly
      * {@link URLEncoder#encode(String, String) UTF-8 URL encoded}.
-     * For example, if the parameter value is the euro symbol &euro; then the
-     * query string must be "param=%E2%82%AC".
+     * For example, if the value for parameter "currency" is the euro symbol &euro; then the
+     * query string for this parameter must be "currency=%E2%82%AC".
      * For transparent encoding of parameter values, use {@link #param(String, String)}.
      *
      * @param path the path of this request, such as "/" or "/path?param=1"
