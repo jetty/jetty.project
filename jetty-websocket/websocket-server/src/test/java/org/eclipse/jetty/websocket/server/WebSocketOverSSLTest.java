@@ -18,155 +18,111 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
+import static org.hamcrest.Matchers.*;
+
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
-import org.junit.After;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
+import org.eclipse.jetty.websocket.server.helper.SessionServlet;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
-    private Server _server;
-    private int _port;
-    private QueuedThreadPool _threadPool;
+    private static SimpleServletServer server;
 
-    private Session _session;
-
-    @After
-    public void destroy() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
-        if (_session != null)
-        {
-            _session.close();
-        }
-
-        // if (_wsFactory != null)
-        // _wsFactory.stop();
-
-        if (_threadPool != null)
-        {
-            _threadPool.stop();
-        }
-
-        if (_server != null)
-        {
-            _server.stop();
-            _server.join();
-        }
+        server = new SimpleServletServer(new SessionServlet());
+        server.enableSsl(true);
+        server.start();
     }
 
-    private void startClient(final Object webSocket) throws Exception
+    @AfterClass
+    public static void stopServer()
     {
-        Assert.assertTrue(_server.isStarted());
-
-        _threadPool = new QueuedThreadPool();
-        _threadPool.setName("wsc-" + _threadPool.getName());
-        _threadPool.start();
-
-        // _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMasker());
-        // SslContextFactory cf = _wsFactory.getSslContextFactory();
-        // cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
-        // cf.setKeyStorePassword("storepwd");
-        // cf.setKeyManagerPassword("keypwd");
-        // _wsFactory.start();
-
-        // WebSocketClient client = new WebSocketClient(_wsFactory);
-        // _connection = client.open(new URI("wss://localhost:" + _port), webSocket).get(5, TimeUnit.SECONDS);
+        server.stop();
     }
 
-    private void startServer(final Object websocket) throws Exception
-    {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        _server = new Server();
-        ServerConnector connector = new ServerConnector(_server,sslContextFactory);
-        _server.addConnector(connector);
-        _server.setHandler(new WebSocketHandler.Simple(websocket.getClass()));
-        _server.start();
-        _port = connector.getLocalPort();
-    }
-
+    /**
+     * Test the requirement of issuing socket and receiving echo response
+     */
     @Test
-    @Ignore("SSL Not yet implemented")
-    public void testManyMessages() throws Exception
+    public void testEcho() throws Exception
     {
-        startServer(MyEchoSocket.class);
-        int count = 1000;
-        final CountDownLatch clientLatch = new CountDownLatch(count);
-        startClient(new WebSocketAdapter()
+        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        try
         {
-            @Override
-            public void onWebSocketText(String message)
-            {
-                clientLatch.countDown();
-            }
-        });
+            client.start();
 
-        char[] chars = new char[256];
-        Arrays.fill(chars,'x');
-        String message = new String(chars);
-        for (int i = 0; i < count; ++i)
-        {
-            _session.getRemote().sendStringByFuture(message);
+            CaptureSocket clientSocket = new CaptureSocket();
+            Future<Session> fut = client.connect(clientSocket,server.getServerUri());
+
+            // wait for connect
+            Session session = fut.get(1,TimeUnit.SECONDS);
+
+            // Ask server socket
+
+            // Generate text frame
+            String msg = "this is an echo ... cho ... ho ... o";
+            session.getRemote().sendString(msg);
+
+            // Read frame (hopefully text frame)
+            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<String> captured = clientSocket.messages;
+            Assert.assertThat("Text Message",captured.poll(),is(msg));
+
+            // Shutdown the socket
+            clientSocket.close();
         }
-
-        Assert.assertTrue(clientLatch.await(20,TimeUnit.SECONDS));
-
-        // While messages may have all arrived, the SSL close alert
-        // may be in the way so give some time for it to be processed.
-        TimeUnit.SECONDS.sleep(1);
+        finally
+        {
+            client.stop();
+        }
     }
 
+    /**
+     * Test that server session reports as secure
+     */
     @Test
-    @Ignore("SSL Not yet implemented")
-    public void testWebSocketOverSSL() throws Exception
+    public void testServerSessionIsSecure() throws Exception
     {
-        final String message = "message";
-        final CountDownLatch serverLatch = new CountDownLatch(1);
-        startServer(new WebSocketAdapter()
+        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        try
         {
-            private Session session;
+            client.start();
 
-            @Override
-            public void onWebSocketConnect(Session session)
-            {
-                this.session = session;
-            }
+            CaptureSocket clientSocket = new CaptureSocket();
+            Future<Session> fut = client.connect(clientSocket,server.getServerUri());
 
-            @Override
-            public void onWebSocketText(String message)
-            {
-                Assert.assertEquals(message,message);
-                session.getRemote().sendStringByFuture(message);
-                serverLatch.countDown();
-            }
-        });
-        final CountDownLatch clientLatch = new CountDownLatch(1);
-        startClient(new WebSocketAdapter()
+            // wait for connect
+            Session session = fut.get(1,TimeUnit.SECONDS);
+
+            // Ask server socket
+
+            // Generate text frame
+            session.getRemote().sendString("session.isSecure");
+
+            // Read frame (hopefully text frame)
+            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<String> captured = clientSocket.messages;
+            Assert.assertThat("Server.session.isSecure",captured.poll(),is("session.isSecure=true"));
+
+            // Shutdown the socket
+            clientSocket.close();
+        }
+        finally
         {
-            @Override
-            public void onWebSocketText(String data)
-            {
-                Assert.assertEquals(message,data);
-                clientLatch.countDown();
-            }
-        });
-        _session.getRemote().sendStringByFuture(message);
-
-        Assert.assertTrue(serverLatch.await(5,TimeUnit.SECONDS));
-        Assert.assertTrue(clientLatch.await(5,TimeUnit.SECONDS));
+            client.stop();
+        }
     }
 }

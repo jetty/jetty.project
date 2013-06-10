@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,14 +37,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 
 public class ServletWebSocketRequest extends UpgradeRequest
 {
     private HttpServletRequest req;
 
-    public ServletWebSocketRequest(HttpServletRequest request)
+    public ServletWebSocketRequest(HttpServletRequest request) throws URISyntaxException
     {
-        super(request.getRequestURI());
+        super(WSURI.toWebsocket(request.getRequestURL(),request.getQueryString()));
         this.req = request;
 
         // Copy Request Line Details

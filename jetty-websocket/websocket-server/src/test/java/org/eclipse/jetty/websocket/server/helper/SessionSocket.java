@@ -81,6 +81,20 @@ public class SessionSocket
                 return;
             }
 
+            if ("session.isSecure".equals(message))
+            {
+                String issecure = String.format("session.isSecure=%b",session.isSecure());
+                session.getRemote().sendStringByFuture(issecure);
+                return;
+            }
+
+            if ("getRequestURI".equals(message))
+            {
+                String requestURI = session.getUpgradeRequest().getRequestURI().toASCIIString();
+                session.getRemote().sendStringByFuture(requestURI);
+                return;
+            }
+
             if ("harsh-disconnect".equals(message))
             {
                 session.disconnect();
