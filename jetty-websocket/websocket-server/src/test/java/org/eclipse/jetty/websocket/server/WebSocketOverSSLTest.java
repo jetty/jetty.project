@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
+import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -69,8 +70,6 @@ public class WebSocketOverSSLTest
             // wait for connect
             Session session = fut.get(1,TimeUnit.SECONDS);
 
-            // Ask server socket
-
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
             session.getRemote().sendString(msg);
@@ -107,8 +106,6 @@ public class WebSocketOverSSLTest
             // wait for connect
             Session session = fut.get(1,TimeUnit.SECONDS);
 
-            // Ask server socket
-
             // Generate text frame
             session.getRemote().sendString("session.isSecure");
 
@@ -116,6 +113,43 @@ public class WebSocketOverSSLTest
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
             EventQueue<String> captured = clientSocket.messages;
             Assert.assertThat("Server.session.isSecure",captured.poll(),is("session.isSecure=true"));
+
+            // Shutdown the socket
+            clientSocket.close();
+        }
+        finally
+        {
+            client.stop();
+        }
+    }
+
+    /**
+     * Test that server session.upgradeRequest.requestURI reports correctly
+     */
+    @Test
+    public void testServerSessionRequestURI() throws Exception
+    {
+        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        try
+        {
+            client.start();
+
+            CaptureSocket clientSocket = new CaptureSocket();
+            URI requestUri = server.getServerUri().resolve("/deep?a=b");
+            Future<Session> fut = client.connect(clientSocket,requestUri);
+
+            // wait for connect
+            Session session = fut.get(1,TimeUnit.SECONDS);
+
+            // Generate text frame
+            session.getRemote().sendString("session.upgradeRequest.requestURI");
+
+            // Read frame (hopefully text frame)
+            clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
+            EventQueue<String> captured = clientSocket.messages;
+            String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
+            Assert.assertThat("session.upgradeRequest.requestURI",captured.poll(),is(expected));
 
             // Shutdown the socket
             clientSocket.close();

@@ -88,10 +88,10 @@ public class SessionSocket
                 return;
             }
 
-            if ("getRequestURI".equals(message))
+            if ("session.upgradeRequest.requestURI".equals(message))
             {
-                String requestURI = session.getUpgradeRequest().getRequestURI().toASCIIString();
-                session.getRemote().sendStringByFuture(requestURI);
+                String response = String.format("session.upgradeRequest.requestURI=%s",session.getUpgradeRequest().getRequestURI().toASCIIString());
+                session.getRemote().sendStringByFuture(response);
                 return;
             }
 
