@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 /**
@@ -32,7 +32,7 @@ public class EchoCreator implements WebSocketCreator
     private LogSocket logSocket = new LogSocket();
 
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         for (String protocol : req.getSubProtocols())
         {

@@ -16,22 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
-
-import java.net.URISyntaxException;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+package org.eclipse.jetty.websocket.api;
 
 /**
- * @deprecated use {@link org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest} instead
+ * Some constants for Jetty's WebSocket implementation.
  */
-@Deprecated
-public class ServletWebSocketRequest extends ServletUpgradeRequest
+public final class JettyWebSocket
 {
-    public ServletWebSocketRequest(HttpServletRequest request) throws URISyntaxException
-    {
-        super(request);
-    }
+    /**
+     * Version of the Jetty WebSocket API
+     */
+    public static final int API_VERSION = 2;
+    /**
+     * Minimum WebSocket Protocol version supported.
+     */
+    public static final int PROTOCOL_MINIMUM = 13;
+    /**
+     * Maximum WebSocket Protocol version supported.
+     */
+    public static final int PROTOCOL_MAXIMUM = 13;
 }

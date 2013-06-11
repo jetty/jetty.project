@@ -42,8 +42,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -53,6 +51,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -138,8 +138,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         try
         {
-            ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
-            ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
+            ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
+            ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
             WebSocketCreator creator = getCreator();
 
@@ -216,7 +216,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Default Creator logic
      */
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         if (registeredSocketClasses.size() < 1)
         {
@@ -366,7 +366,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      *            The websocket handler implementation to use
      * @throws IOException
      */
-    public boolean upgrade(ServletWebSocketRequest request, ServletWebSocketResponse response, EventDriver driver) throws IOException
+    public boolean upgrade(ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {

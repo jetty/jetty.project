@@ -26,12 +26,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
@@ -60,7 +60,7 @@ public class AnnotatedMaxMessageSizeTest
                 factory.setCreator(new WebSocketCreator()
                 {
                     @Override
-                    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
                     {
                         return new BigEchoSocket();
                     }

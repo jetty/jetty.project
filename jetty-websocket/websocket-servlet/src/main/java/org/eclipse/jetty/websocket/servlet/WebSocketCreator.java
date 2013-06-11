@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-
 /**
  * Abstract WebSocket creator interface.
  * <p>
@@ -37,7 +34,9 @@ public interface WebSocketCreator
      * 
      * @param req
      *            the request details
+     * @param resp
+     *            the response details
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    Object createWebSocket(UpgradeRequest req, UpgradeResponse resp);
+    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
 }

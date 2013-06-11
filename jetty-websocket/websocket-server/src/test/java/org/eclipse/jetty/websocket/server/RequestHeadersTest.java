@@ -28,6 +28,8 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoSocket;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -45,7 +47,7 @@ public class RequestHeadersTest
         private EchoSocket echoSocket = new EchoSocket();
 
         @Override
-        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             this.lastRequest = req;
             this.lastResponse = resp;
@@ -57,6 +59,7 @@ public class RequestHeadersTest
             return lastRequest;
         }
 
+        @SuppressWarnings("unused")
         public UpgradeResponse getLastResponse()
         {
             return lastResponse;
