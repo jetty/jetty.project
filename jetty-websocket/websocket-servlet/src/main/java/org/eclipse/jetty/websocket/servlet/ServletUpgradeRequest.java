@@ -22,6 +22,7 @@ import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.security.Principal;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,6 +113,11 @@ public class ServletUpgradeRequest extends UpgradeRequest
                 addExtensions(config);
             }
         }
+    }
+
+    public X509Certificate[] getCertificates()
+    {
+        return (X509Certificate[])req.getAttribute("javax.servlet.request.X509Certificate");
     }
 
     /**
