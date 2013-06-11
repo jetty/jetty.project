@@ -435,12 +435,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.ignore(e);
             path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
         }
+        
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
         {
-            info = "/";
-            _request.setRequestURI("");
+            if( path==null && _uri.getScheme()!=null &&_uri.getHost()!=null)
+            {
+                info = "/";
+                _request.setRequestURI("");
+            }
+            else
+            {
+                badMessage(400,null);
+                return true;
+            }
         }
         _request.setPathInfo(info);
         _version = version == null ? HttpVersion.HTTP_0_9 : version;

@@ -221,6 +221,19 @@ public class DispatcherTest
     }
 
     @Test
+    public void testServletForwardDotDot() throws Exception
+    {
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/that");
+
+        String requests="GET /context/dispatch/test?forward=%2e%2e/roger/that HTTP/1.0\n" + "Host: localhost\n\n";
+
+        String responses = _connector.getResponses(requests);
+
+        assertThat(responses,startsWith("HTTP/1.1 404 "));
+    }
+    
+    @Test
     public void testServletInclude() throws Exception
     {
         _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
@@ -412,7 +425,10 @@ public class DispatcherTest
             else if(request.getParameter("forward")!=null)
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
-                dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                if (dispatcher!=null)
+                    dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                else
+                    response.sendError(404);
             }
 
         }
