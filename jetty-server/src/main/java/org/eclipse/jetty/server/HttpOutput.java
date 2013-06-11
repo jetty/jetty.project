@@ -99,7 +99,7 @@ public class HttpOutput extends ServletOutputStream
             }
             catch(IOException e)
             {
-                _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                 LOG.ignore(e);
             }
             releaseBuffer();
@@ -120,7 +120,7 @@ public class HttpOutput extends ServletOutputStream
             }
             catch(IOException e)
             {
-                _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                 LOG.ignore(e);
             }
         }
@@ -168,7 +168,7 @@ public class HttpOutput extends ServletOutputStream
     public void write(byte[] b, int off, int len) throws IOException
     {  
         if (isClosed())
-            throw new EOFException("Closed");
+            throw new EOFException("Closed:" + System.identityHashCode(this));
 
         _written+=len;
         boolean complete=_channel.getResponse().isAllContentWritten(_written);

@@ -672,7 +672,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
-     * @throws IOException if the write fails
      */
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
@@ -696,6 +695,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean useDirectBuffers()
     {
         return getEndPoint() instanceof ChannelEndPoint;
+    }
+
+    /**
+     * If a write or similar to this channel fails this method should be called. The standard implementation
+     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     */
+    public void failed()
+    {
     }
 
     private class CommitCallback implements Callback
