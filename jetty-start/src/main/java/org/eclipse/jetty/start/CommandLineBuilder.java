@@ -95,7 +95,8 @@ public class CommandLineBuilder
     }
 
     /**
-     * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed.
+     * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a
+     * subString is set in quotes it won't the subString won't be escaped.
      * 
      * @param arg
      * @return
@@ -110,11 +111,17 @@ public class CommandLineBuilder
         StringBuilder buf = new StringBuilder();
         // buf.append('"');
         boolean escaped = false;
+        boolean quoted = false;
         for (char c : arg.toCharArray())
         {
-            if (!escaped && ((c == '"') || (c == ' ')))
+            if (!quoted && !escaped && ((c == '"') || (c == ' ')))
             {
                 buf.append("\\");
+            }
+            // don't quote text in single quotes
+            if (!escaped && c == '\'')
+            {
+                quoted = !quoted;
             }
             escaped = (c == '\\');
             buf.append(c);

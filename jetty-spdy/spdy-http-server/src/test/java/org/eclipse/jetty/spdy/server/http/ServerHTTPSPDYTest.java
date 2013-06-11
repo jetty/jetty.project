@@ -52,6 +52,10 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
     public ServerHTTPSPDYTest(short version)
@@ -59,6 +63,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         super(version);
     }
 
+    @Test
     public void testSimpleGET() throws Exception
     {
         final String path = "/foo";
@@ -73,12 +78,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertEquals("GET", httpRequest.getMethod());
                 Assert.assertEquals(path, target);
                 Assert.assertEquals(path, httpRequest.getRequestURI());
-                Assert.assertEquals("localhost:" + connector.getLocalPort(), httpRequest.getHeader("host"));
+                assertThat("accept-encoding is set to gzip, even if client didn't set it",
+                        httpRequest.getHeader("accept-encoding"), containsString("gzip"));
+                assertThat(httpRequest.getHeader("host"), is("localhost:" + connector.getLocalPort()));
                 handlerLatch.countDown();
             }
         }), null);
 
-        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", path);
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getLocalPort(), version, "GET", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {

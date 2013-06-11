@@ -88,7 +88,7 @@ public class HttpRequest implements Request
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
-        this.uri = buildURI();
+        this.uri = buildURI(true);
         followRedirects(client.isFollowRedirects());
     }
 
@@ -108,7 +108,7 @@ public class HttpRequest implements Request
     public Request scheme(String scheme)
     {
         this.scheme = scheme;
-        this.uri = buildURI();
+        this.uri = buildURI(true);
         return this;
     }
 
@@ -147,7 +147,12 @@ public class HttpRequest implements Request
     public Request path(String path)
     {
         URI uri = URI.create(path);
-        this.path = uri.getRawPath();
+        String rawPath = uri.getRawPath();
+        if (uri.isOpaque())
+            rawPath = path;
+        if (rawPath == null)
+            rawPath = "";
+        this.path = rawPath;
         String query = uri.getRawQuery();
         if (query != null)
         {
@@ -155,7 +160,9 @@ public class HttpRequest implements Request
             params.clear();
             extractParams(query);
         }
-        this.uri = buildURI();
+        this.uri = buildURI(true);
+        if (uri.isAbsolute())
+            this.path = buildURI(false).toString();
         return this;
     }
 
@@ -552,14 +559,14 @@ public class HttpRequest implements Request
         }
     }
 
-    private URI buildURI()
+    private URI buildURI(boolean withQuery)
     {
         String path = getPath();
         String query = getQuery();
-        if (query != null)
+        if (query != null && withQuery)
             path += "?" + query;
         URI result = URI.create(path);
-        if (!result.isAbsolute())
+        if (!result.isAbsolute() && !result.isOpaque())
             result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
         return result;
     }
