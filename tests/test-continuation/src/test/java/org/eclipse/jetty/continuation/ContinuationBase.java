@@ -77,7 +77,6 @@ public abstract class ContinuationBase
     protected void doSuspendResume() throws Exception
     {
         String response=process("suspend=200&resume=0",null);
-        System.err.println(response);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -503,7 +502,7 @@ public abstract class ContinuationBase
         public void onTimeout(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");
-            continuation.resume();
+            // continuation.resume();
         }
 
     };
