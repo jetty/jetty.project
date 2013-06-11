@@ -272,8 +272,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (tmp != null)
             {
                 File defaultWebXml = getFile (tmp, bundleInstallLocation);
-                if (defaultWebXml != null && defaultWebXml.exists())
-                    _webApp.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
+                if (defaultWebXml != null)
+                {
+                    if (defaultWebXml.exists())
+                        _webApp.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
+                    else
+                        LOG.warn(defaultWebXml.getAbsolutePath()+" does not exist");
+                }
             }
 
             //Handle Require-TldBundle
@@ -377,6 +382,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 HashMap properties = new HashMap();
                 properties.put("Server", getDeploymentManager().getServer());
                 properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
+                properties.put(OSGiServerConstants.JETTY_HOME, getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
                 xmlConfiguration.getProperties().putAll(properties);
                 xmlConfiguration.configure(_webApp);
             }
@@ -390,11 +396,21 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         {
             if (file == null)
                 return null;
-            
-            if (file.startsWith("/") || file.startsWith("file:/"))
+
+            if (file.startsWith("/") || file.startsWith("file:/")) //absolute location
                 return new File(file);
             else
-                return new File(bundleInstall, file);
+            {
+                //relative location
+                //try inside the bundle first
+                File f = new File (bundleInstall, file);
+                if (f.exists()) return f;
+                String jettyHome = (String)getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+                if (jettyHome != null)
+                    return new File(jettyHome, file);
+            }
+            
+            return null;
         }
     }
    

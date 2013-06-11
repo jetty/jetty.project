@@ -99,7 +99,7 @@ public class HttpOutput extends ServletOutputStream
             }
             catch(IOException e)
             {
-                _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                 LOG.ignore(e);
             }
             releaseBuffer();
@@ -120,7 +120,7 @@ public class HttpOutput extends ServletOutputStream
             }
             catch(IOException e)
             {
-                _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                 LOG.ignore(e);
             }
         }

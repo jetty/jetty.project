@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -32,35 +30,32 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * ReloadedSessionMissingClassTest
- *
- *
- *
  */
 public class ReloadedSessionMissingClassTest
 {
+    @Rule
+    public TestingDir testdir = new TestingDir();
     
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
         ((StdErrLog)Log.getLogger(org.eclipse.jetty.server.session.JDBCSessionManager.class)).setHideStacks(true);
+        Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
-        File srcDir = new File(System.getProperty("basedir"), "src");
-        File targetDir = new File(System.getProperty("basedir"), "target");
-        File testDir = new File (srcDir, "test");
-        File resourcesDir = new File (testDir, "resources");
 
-        File unpackedWarDir = new File (targetDir, "foo");
-        if (unpackedWarDir.exists())
-            IO.delete(unpackedWarDir);
-        unpackedWarDir.mkdir();
+        File unpackedWarDir = testdir.getDir();
+        testdir.ensureEmpty();
 
         File webInfDir = new File (unpackedWarDir, "WEB-INF");
         webInfDir.mkdir();
@@ -81,8 +76,8 @@ public class ReloadedSessionMissingClassTest
         w.write(xml);
         w.close();
 
-        File foobarJar = new File (resourcesDir, "foobar.jar");
-        File foobarNOfooJar = new File (resourcesDir, "foobarNOfoo.jar");
+        File foobarJar = MavenTestingUtils.getTestResourceFile("foobar.jar");
+        File foobarNOfooJar = MavenTestingUtils.getTestResourceFile("foobarNOfoo.jar");
         
         URL[] foobarUrls = new URL[]{foobarJar.toURI().toURL()};
         URL[] barUrls = new URL[]{foobarNOfooJar.toURI().toURL()};
