@@ -355,7 +355,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             _transport.completed();
         }
 
-        LOG.debug("{} handle exit, result {}", this, next);
+        LOG.debug("{} handle exit, result {}", this, action);
 
         return action!=Action.WAIT;
     }

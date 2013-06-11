@@ -163,9 +163,7 @@ public class HttpChannelState
     {
         synchronized (this)
         {
-            return _state+
-            (_initial?",initial ":" ")+
-            _async;
+            return String.format("s=%s i=%b a=%s",_state,_initial,_async);
         }
     }
 
@@ -343,7 +341,7 @@ public class HttpChannelState
         synchronized (this)
         {
             if (_async!=Async.STARTED && _async!=Async.EXPIRING)
-                throw new IllegalStateException(this.getStatusString());
+                throw new IllegalStateException("AsyncContext#dispath "+this.getStatusString());
             _async=Async.DISPATCH;
             _event.setDispatchTarget(context,path);
            
@@ -552,7 +550,8 @@ public class HttpChannelState
     {
         synchronized (this)
         {            
-            return _async==Async.STARTED;
+            // Either we are started, or we are still dispatched and async has been completed or dispatched
+            return _async==Async.STARTED || _async!=null && _state==State.DISPATCHED;
         }
     }
 
