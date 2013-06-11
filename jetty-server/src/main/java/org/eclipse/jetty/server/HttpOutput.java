@@ -168,7 +168,7 @@ public class HttpOutput extends ServletOutputStream
     public void write(byte[] b, int off, int len) throws IOException
     {  
         if (isClosed())
-            throw new EOFException("Closed:" + System.identityHashCode(this));
+            throw new EOFException("Closed");
 
         _written+=len;
         boolean complete=_channel.getResponse().isAllContentWritten(_written);
