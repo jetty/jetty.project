@@ -490,9 +490,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, new Callback.Adapter());
     }
 
-    private void onSyn(SynStreamFrame frame)
+    private void onSyn(final SynStreamFrame frame)
     {
-        IStream stream = createStream(frame, null, false, null);
+        IStream stream = createStream(frame, null, false, new Promise.Adapter<Stream>(){
+            @Override
+            public void failed(Throwable x)
+            {
+                LOG.debug("Received: {} but creating new Stream failed: {}", frame, x.getMessage());
+            }
+        });
         if (stream != null)
             processSyn(listener, stream, frame);
     }
