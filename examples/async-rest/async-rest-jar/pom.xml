@@ -10,7 +10,6 @@
   <packaging>jar</packaging>
   <name>Example Async Rest :: Jar</name>
   <url>http://www.eclipse.org/jetty</url>
-  <packaging>war</packaging>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
