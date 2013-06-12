@@ -237,17 +237,15 @@ public class ServletWebSocketRequest extends UpgradeRequest
     {
         if (protocol == null)
         {
-            return new String[]
-            { null };
+            return new String[] {};
         }
         protocol = protocol.trim();
         if ((protocol == null) || (protocol.length() == 0))
         {
-            return new String[]
-            { null };
+            return new String[] {};
         }
         String[] passed = protocol.split("\\s*,\\s*");
-        String[] protocols = new String[passed.length + 1];
+        String[] protocols = new String[passed.length];
         System.arraycopy(passed,0,protocols,0,passed.length);
         return protocols;
     }
