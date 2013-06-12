@@ -991,16 +991,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add EventListener
-     * Conveniance method that calls {@link #setEventListeners(EventListener[])}
-     * @param listener
-     */
-    @Override
-    public void addEventListener(EventListener listener)
-    {
-        setEventListeners(LazyList.addToArray(getEventListeners(), listener, EventListener.class));
-    }
 
 
     /* ------------------------------------------------------------ */

@@ -149,6 +149,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Object _contextAttributeListeners;
     private Object _requestListeners;
     private Object _requestAttributeListeners;
+    private Object _durableListeners;
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
@@ -591,6 +592,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void addEventListener(EventListener listener)
     {
+        //Only listeners added before the context starts last through a stop/start cycle
+        if (!(isStarted() || isStarting()))
+            _durableListeners = LazyList.add(_durableListeners, listener);
+        
         setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(),listener,EventListener.class));
     }
     
@@ -606,6 +611,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void restrictEventListener (EventListener listener)
     {
     }
+
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -816,6 +823,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     ((ServletContextListener)LazyList.get(_contextListeners,i)).contextDestroyed(event);
                 }
             }
+            
+            //remove all non-durable listeners
+            setEventListeners((EventListener[])LazyList.toArray(_durableListeners, EventListener.class));
+            _durableListeners = null;
 
             if (_errorHandler != null)
                 _errorHandler.stop();
