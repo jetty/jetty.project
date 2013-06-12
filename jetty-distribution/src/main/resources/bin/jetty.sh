@@ -371,7 +371,7 @@ fi
 #####################################################
 if [ "$JETTY_PORT" ] 
 then
-  JAVA_OPTIONS+=("-Djetty.port=$JETTY_PORT")
+  JETTY_ARGS+=("jetty.port=$JETTY_PORT")
 fi
 
 #####################################################
