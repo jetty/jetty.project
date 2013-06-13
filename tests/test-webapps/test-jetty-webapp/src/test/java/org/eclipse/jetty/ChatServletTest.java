@@ -42,7 +42,7 @@ public class ChatServletTest
         tester.setContextPath("/");
 
         ServletHolder dispatch = tester.addServlet(ChatServlet.class, "/chat/*");
-        dispatch.setInitParameter("asyncTimeout","500");
+        dispatch.setInitParameter("asyncTimeout", "500");
         tester.start();
     }
 
@@ -61,8 +61,9 @@ public class ChatServletTest
     @Test
     public void testChat() throws Exception
     {
-        assertResponse("user=test&message=has%20joined!", "{\"from\":\"test\",\"chat\":\"has joined!\"}");
-        assertResponse("user=test&message=message", "");
+        assertResponse("user=test&join=true&message=has%20joined!", "{\"from\":\"test\",\"chat\":\"has joined!\"}");
+        String response = tester.getResponses(createRequestString("user=test&message=message"));
+        assertThat(response.contains("{"), is(false)); // make sure we didn't get a json body
     }
 
     @Test
