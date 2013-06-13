@@ -247,6 +247,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             
             DBObject attrs = (DBObject)getNestedValue(o,getContextKey());
             
+            
             if (attrs != null)
             {
                 for (String name : attrs.keySet())
@@ -280,6 +281,22 @@ public class MongoSessionManager extends NoSqlSessionManager
                 }
             }
 
+            /*
+             * We are refreshing so we should update the last accessed time.
+             */
+            BasicDBObject key = new BasicDBObject(__ID,session.getClusterId());
+            BasicDBObject sets = new BasicDBObject();
+            // Form updates
+            BasicDBObject update = new BasicDBObject();
+            sets.put(__ACCESSED,System.currentTimeMillis());
+            // Do the upsert
+            if (!sets.isEmpty())
+            {
+                update.put("$set",sets);
+            }            
+            
+            _sessions.update(key,update,false,false);
+            
             session.didActivate();
 
             return version;
