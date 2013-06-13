@@ -84,7 +84,7 @@ import java.nio.charset.Charset;
  */
 public class BufferUtil
 {
-    static final int TEMP_BUFFER_SIZE = 512;
+    static final int TEMP_BUFFER_SIZE = 4096;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =

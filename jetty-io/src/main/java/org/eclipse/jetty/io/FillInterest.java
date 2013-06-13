@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
 
@@ -34,8 +35,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public abstract class FillInterest
 {
-    private final AtomicBoolean _interested = new AtomicBoolean(false);
-    private volatile Callback _callback;
+    private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     /* ------------------------------------------------------------ */
     protected FillInterest()
@@ -52,9 +52,11 @@ public abstract class FillInterest
      */
     public <C> void register(Callback callback) throws ReadPendingException
     {
-        if (!_interested.compareAndSet(false,true))
+        if (callback==null)
+            throw new IllegalArgumentException();
+        
+        if (!_interested.compareAndSet(null,callback))
             throw new ReadPendingException();
-        _callback=callback;
         try
         {
             if (needsFill())
@@ -71,12 +73,9 @@ public abstract class FillInterest
      */
     public void fillable()
     {
-        if (_interested.compareAndSet(true,false))
-        {
-            Callback callback=_callback;
-            _callback=null;
+        Callback callback=_interested.get();
+        if (callback!=null && _interested.compareAndSet(callback,null))
             callback.succeeded();
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -85,7 +84,7 @@ public abstract class FillInterest
      */
     public boolean isInterested()
     {
-        return _interested.get();
+        return _interested.get()!=null;
     }
     
     /* ------------------------------------------------------------ */
@@ -93,30 +92,24 @@ public abstract class FillInterest
      */
     public void onFail(Throwable cause)
     {
-        if (_interested.compareAndSet(true,false))
-        {
-            Callback callback=_callback;
-            _callback=null;
+        Callback callback=_interested.get();
+        if (callback!=null && _interested.compareAndSet(callback,null))
             callback.failed(cause);
-        }
     }
     
     /* ------------------------------------------------------------ */
     public void onClose()
     {
-        if (_interested.compareAndSet(true,false))
-        {
-            Callback callback=_callback;
-            _callback=null;
+        Callback callback=_interested.get();
+        if (callback!=null && _interested.compareAndSet(callback,null))
             callback.failed(new ClosedChannelException());
-        }
     }
     
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return String.format("FillInterest@%x{%b,%s}",hashCode(),_interested.get(),_callback);
+        return String.format("FillInterest@%x{%b,%s}",hashCode(),_interested.get(),_interested.get());
     }
     
     /* ------------------------------------------------------------ */

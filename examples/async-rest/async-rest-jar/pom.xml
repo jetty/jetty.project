@@ -9,6 +9,7 @@
   <artifactId>example-async-rest-jar</artifactId>
   <packaging>jar</packaging>
   <name>Example Async Rest :: Jar</name>
+  <url>http://www.eclipse.org/jetty</url>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
