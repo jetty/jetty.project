@@ -143,7 +143,7 @@ public class SPDYClient
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        String peerHost = channel.socket().getInetAddress().getHostName();
         int peerPort = channel.socket().getPort();
         SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
         engine.setUseClientMode(true);

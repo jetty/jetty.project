@@ -104,7 +104,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.ignore(e);
             connectPromise.failed(e);
             // rethrow
             throw e;
@@ -120,7 +120,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        String peerHost = channel.socket().getInetAddress().getHostName();
         int peerPort = channel.socket().getPort();
         SSLEngine engine = sslContextFactory.newSSLEngine(peerHost,peerPort);
         engine.setUseClientMode(true);
