@@ -20,6 +20,9 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+
 public interface WebSocketHandshake
 {
     /**
@@ -29,5 +32,5 @@ public interface WebSocketHandshake
      * @param response
      * @param acceptedSubProtocol
      */
-    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response) throws IOException;
+    public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
 }

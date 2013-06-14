@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
 /**
  * WebSocket Handshake for <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a>.
@@ -34,7 +36,7 @@ public class HandshakeRFC6455 implements WebSocketHandshake
     public static final int VERSION = 13;
 
     @Override
-    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response) throws IOException
+    public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException
     {
         String key = request.getHeader("Sec-WebSocket-Key");
 
