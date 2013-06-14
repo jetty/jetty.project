@@ -103,7 +103,8 @@
               <New class="org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory">
                 <Arg name="version" type="int">3</Arg>
                 <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
-                <Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg>
+                <!-- Uncomment to enable ReferrerPushStrategy -->
+                <!--<Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg>-->
               </New>
             </Item>
 
