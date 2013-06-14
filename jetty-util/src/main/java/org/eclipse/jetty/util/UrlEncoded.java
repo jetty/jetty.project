@@ -83,6 +83,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     {
     }
     
+    public UrlEncoded(String query)
+    {
+        decodeTo(query,this,ENCODING,-1);
+    }
+
     /* ----------------------------------------------------------------- */
     public void decode(String query)
     {
