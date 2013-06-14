@@ -42,6 +42,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -216,7 +218,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Default Creator logic
      */
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         if (registeredSocketClasses.size() < 1)
         {

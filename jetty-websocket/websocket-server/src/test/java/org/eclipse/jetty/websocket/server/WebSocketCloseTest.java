@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -39,8 +41,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -88,7 +88,7 @@ public class WebSocketCloseTest
         }
 
         @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
         {
             if (req.hasSubProtocol("fastclose"))
             {
