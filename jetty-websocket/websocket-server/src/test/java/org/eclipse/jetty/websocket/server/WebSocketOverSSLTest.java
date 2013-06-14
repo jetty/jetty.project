@@ -140,7 +140,7 @@ public class WebSocketOverSSLTest
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(1,TimeUnit.SECONDS);
+            Session session = fut.get(3,TimeUnit.SECONDS);
 
             // Generate text frame
             session.getRemote().sendString("session.upgradeRequest.requestURI");
