@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
@@ -32,8 +34,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -222,35 +227,55 @@ public class CGI extends HttpServlet
         if ((pathTranslated == null) || (pathTranslated.length() == 0))
             pathTranslated = path;
 
+        String bodyFormEncoded = null;
+        if ((HttpMethods.POST.equals(req.getMethod()) || HttpMethods.PUT.equals(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
+        {
+            MultiMap<String> parameterMap = new MultiMap<String>();
+            Enumeration names = req.getParameterNames();
+            while (names.hasMoreElements())
+            {
+                String parameterName = (String)names.nextElement();
+                parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
+            }
+            bodyFormEncoded = UrlEncoded.encode(parameterMap, req.getCharacterEncoding(), true);
+        }
+
         EnvList env = new EnvList(_env);
         // these ones are from "The WWW Common Gateway Interface Version 1.1"
         // look at :
         // http://Web.Golux.Com/coar/cgi/draft-coar-cgi-v11-03-clean.html#6.1.1
-        env.set("AUTH_TYPE",req.getAuthType());
-        env.set("CONTENT_LENGTH",Integer.toString(len));
-        env.set("CONTENT_TYPE",req.getContentType());
-        env.set("GATEWAY_INTERFACE","CGI/1.1");
+        env.set("AUTH_TYPE", req.getAuthType());
+        if (bodyFormEncoded != null)
+        {
+            env.set("CONTENT_LENGTH", Integer.toString(bodyFormEncoded.length()));
+        }
+        else
+        {
+            env.set("CONTENT_LENGTH", Integer.toString(len));
+        }
+        env.set("CONTENT_TYPE", req.getContentType());
+        env.set("GATEWAY_INTERFACE", "CGI/1.1");
         if ((pathInfo != null) && (pathInfo.length() > 0))
         {
-            env.set("PATH_INFO",pathInfo);
+            env.set("PATH_INFO", pathInfo);
         }
-        env.set("PATH_TRANSLATED",pathTranslated);
-        env.set("QUERY_STRING",req.getQueryString());
-        env.set("REMOTE_ADDR",req.getRemoteAddr());
-        env.set("REMOTE_HOST",req.getRemoteHost());
+        env.set("PATH_TRANSLATED", pathTranslated);
+        env.set("QUERY_STRING", req.getQueryString());
+        env.set("REMOTE_ADDR", req.getRemoteAddr());
+        env.set("REMOTE_HOST", req.getRemoteHost());
         // The identity information reported about the connection by a
         // RFC 1413 [11] request to the remote agent, if
         // available. Servers MAY choose not to support this feature, or
         // not to request the data for efficiency reasons.
         // "REMOTE_IDENT" => "NYI"
-        env.set("REMOTE_USER",req.getRemoteUser());
-        env.set("REQUEST_METHOD",req.getMethod());
-        env.set("SCRIPT_NAME",scriptName);
-        env.set("SCRIPT_FILENAME",scriptPath);
-        env.set("SERVER_NAME",req.getServerName());
-        env.set("SERVER_PORT",Integer.toString(req.getServerPort()));
-        env.set("SERVER_PROTOCOL",req.getProtocol());
-        env.set("SERVER_SOFTWARE",getServletContext().getServerInfo());
+        env.set("REMOTE_USER", req.getRemoteUser());
+        env.set("REQUEST_METHOD", req.getMethod());
+        env.set("SCRIPT_NAME", scriptName);
+        env.set("SCRIPT_FILENAME", scriptPath);
+        env.set("SERVER_NAME", req.getServerName());
+        env.set("SERVER_PORT", Integer.toString(req.getServerPort()));
+        env.set("SERVER_PROTOCOL", req.getProtocol());
+        env.set("SERVER_SOFTWARE", getServletContext().getServerInfo());
 
         Enumeration enm = req.getHeaderNames();
         while (enm.hasMoreElements())
@@ -261,7 +286,7 @@ public class CGI extends HttpServlet
         }
 
         // these extra ones were from printenv on www.dev.nomura.co.uk
-        env.set("HTTPS",(req.isSecure()?"ON":"OFF"));
+        env.set("HTTPS", (req.isSecure()?"ON":"OFF"));
         // "DOCUMENT_ROOT" => root + "/docs",
         // "SERVER_URL" => "NYI - http://us0245",
         // "TZ" => System.getProperty("user.timezone"),
@@ -275,31 +300,22 @@ public class CGI extends HttpServlet
         if (_cmdPrefix != null)
             execCmd = _cmdPrefix + " " + execCmd;
 
-        Process p = (dir == null)?Runtime.getRuntime().exec(execCmd,env.getEnvArray()):Runtime.getRuntime().exec(execCmd,env.getEnvArray(),dir);
+        LOG.debug("Environment: " + env.getExportString());
+        LOG.debug("Command: " + execCmd);
+
+        Process p;
+        if (dir == null)
+            p = Runtime.getRuntime().exec(execCmd, env.getEnvArray());
+        else
+            p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), dir);
 
         // hook processes input to browser's output (async)
-        final InputStream inFromReq = req.getInputStream();
-        final OutputStream outToCgi = p.getOutputStream();
-        final int inLength = len;
+        if (bodyFormEncoded != null)
+            writeProcessInput(p, bodyFormEncoded);
+        else if (len > 0)
+            writeProcessInput(p, req.getInputStream(), len);
 
-        IO.copyThread(p.getErrorStream(),System.err);
-
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    if (inLength > 0)
-                        IO.copy(inFromReq,outToCgi,inLength);
-                    outToCgi.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.ignore(e);
-                }
-            }
-        }).start();
+        IO.copyThread(p.getErrorStream(), System.err);
 
         // hook processes output to browser's input (sync)
         // if browser closes stream, we should detect it and kill process...
@@ -376,13 +392,54 @@ public class CGI extends HttpServlet
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.debug(e);
                 }
             }
-            os = null;
             p.destroy();
             // LOG.debug("CGI: terminated!");
         }
+    }
+
+    private static void writeProcessInput(final Process p, final String input)
+    {
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    Writer outToCgi = new OutputStreamWriter(p.getOutputStream());
+                    outToCgi.write(input);
+                    outToCgi.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug(e);
+                }
+            }
+        }).start();
+    }
+
+    private static void writeProcessInput(final Process p, final InputStream input, final int len)
+    {
+        if (len <= 0) return;
+
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    OutputStream outToCgi = p.getOutputStream();
+                    IO.copy(input, outToCgi, len);
+                    outToCgi.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug(e);
+                }
+            }
+        }).start();
     }
 
     /**
@@ -393,7 +450,7 @@ public class CGI extends HttpServlet
      * @return the line of text
      * @throws IOException
      */
-    private String getTextLineFromStream(InputStream is) throws IOException
+    private static String getTextLineFromStream(InputStream is) throws IOException
     {
         StringBuilder buffer = new StringBuilder();
         int b;
@@ -411,16 +468,16 @@ public class CGI extends HttpServlet
      */
     private static class EnvList
     {
-        private Map envMap;
+        private Map<String, String> envMap;
 
         EnvList()
         {
-            envMap = new HashMap();
+            envMap = new HashMap<String, String>();
         }
 
         EnvList(EnvList l)
         {
-            envMap = new HashMap(l.envMap);
+            envMap = new HashMap<String,String>(l.envMap);
         }
 
         /**
@@ -434,7 +491,19 @@ public class CGI extends HttpServlet
         /** Get representation suitable for passing to exec. */
         public String[] getEnvArray()
         {
-            return (String[])envMap.values().toArray(new String[envMap.size()]);
+            return envMap.values().toArray(new String[envMap.size()]);
+        }
+
+        public String getExportString()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (String variable : getEnvArray())
+            {
+                sb.append("export \"");
+                sb.append(variable);
+                sb.append("\"; ");
+            }
+            return sb.toString();
         }
 
         @Override
