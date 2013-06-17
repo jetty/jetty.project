@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
@@ -52,28 +53,7 @@ import org.junit.Test;
  */
 public class WebSocketCloseTest
 {
-    @SuppressWarnings("serial")
-    public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
-    {
-        @Override
-        public void configure(WebSocketServletFactory factory)
-        {
-            factory.setCreator(this);
-        }
-
-        @Override
-        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
-        {
-            if (req.hasSubProtocol("fastclose"))
-            {
-                fastcloseSocket = new FastCloseSocket();
-                return fastcloseSocket;
-            }
-            return new RFCSocket();
-        }
-    }
-
-    public static class FastCloseSocket extends WebSocketAdapter
+    static class AbstractCloseSocket extends WebSocketAdapter
     {
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public String closeReason = null;
@@ -90,10 +70,66 @@ public class WebSocketCloseTest
         }
 
         @Override
+        public void onWebSocketError(Throwable cause)
+        {
+            errors.add(cause);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
+    {
+        @Override
+        public void configure(WebSocketServletFactory factory)
+        {
+            factory.setCreator(this);
+        }
+
+        @Override
+        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+        {
+            if (req.hasSubProtocol("fastclose"))
+            {
+                closeSocket = new FastCloseSocket();
+                return closeSocket;
+            }
+
+            if (req.hasSubProtocol("fastfail"))
+            {
+                closeSocket = new FastFailSocket();
+                return closeSocket;
+            }
+            return new RFCSocket();
+        }
+    }
+
+    /**
+     * On Connect, close socket
+     */
+    public static class FastCloseSocket extends AbstractCloseSocket
+    {
+        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastCloseSocket.class);
+
+        @Override
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
             sess.close();
+        }
+    }
+
+    /**
+     * On Connect, throw unhandled exception
+     */
+    public static class FastFailSocket extends AbstractCloseSocket
+    {
+        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastFailSocket.class);
+
+        @Override
+        public void onWebSocketConnect(Session sess)
+        {
+            LOG.debug("onWebSocketConnect({})",sess);
+            throw new RuntimeException("Intentional FastFail");
         }
 
         @Override
@@ -104,8 +140,9 @@ public class WebSocketCloseTest
     }
 
     private static final Logger LOG = Log.getLogger(WebSocketCloseTest.class);
+
     private static SimpleServletServer server;
-    private static FastCloseSocket fastcloseSocket;
+    private static AbstractCloseSocket closeSocket;
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -143,8 +180,44 @@ public class WebSocketCloseTest
 
             client.write(close.asFrame()); // respond with close
 
-            Assert.assertThat("Fast Close Latch",fastcloseSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            Assert.assertThat("Fast Close.statusCode",fastcloseSocket.closeStatusCode,is(StatusCode.NORMAL));
+            Assert.assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+            Assert.assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    /**
+     * Test fast fail (bug #410537)
+     */
+    @Test
+    public void testFastFail() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        client.setProtocols("fastfail");
+        client.setTimeout(TimeUnit.SECONDS,1);
+        try
+        {
+            try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
+            {
+                client.connect();
+                client.sendStandardRequest();
+                client.expectUpgradeResponse();
+
+                IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
+                WebSocketFrame frame = capture.getFrames().poll();
+                Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+                CloseInfo close = new CloseInfo(frame);
+                Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+
+                client.write(close.asFrame()); // respond with close
+
+                Assert.assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+                Assert.assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+                Assert.assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
+            }
         }
         finally
         {

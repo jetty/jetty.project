@@ -67,7 +67,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
-@Ignore
 public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 {
     private static final Logger LOG = Log.getLogger(ReferrerPushStrategyTest.class);
@@ -260,6 +259,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     public void testPushResourceOrder() throws Exception
     {
         final CountDownLatch allExpectedPushesReceivedLatch = new CountDownLatch(4);
+        final CountDownLatch allPushDataReceivedLatch = new CountDownLatch(4);
 
         Session pushCacheBuildSession = startClient(version, serverAddress, null);
 
@@ -296,12 +296,22 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                         break;
                 }
                 allExpectedPushesReceivedLatch.countDown();
-                return super.onPush(stream, pushInfo);
+                return new Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        if(dataInfo.isClose())
+                            allPushDataReceivedLatch.countDown();
+                    }
+                };
             }
         });
 
         assertThat("All expected push resources have been received", allExpectedPushesReceivedLatch.await(5,
                 TimeUnit.SECONDS), is(true));
+        assertThat("All push data has been fully received", allPushDataReceivedLatch.await(5, TimeUnit.SECONDS),
+                is(true));
     }
 
     @Test
@@ -496,7 +506,6 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             }
         }, new Promise.Adapter<Stream>());
         assertThat(dataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
-        LOG.info("sendRequest done");
     }
 
     private void run2ndClientRequests(final boolean validateHeaders,

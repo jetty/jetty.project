@@ -137,25 +137,25 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject sets = new BasicDBObject();
             BasicDBObject unsets = new BasicDBObject();
 
-            // handle new or existing
-            if (version == null)
-            {
-                // New session
-                upsert = true;
-                version = new Long(1);
-                sets.put(__CREATED,session.getCreationTime());
-                sets.put(__VALID,true);
-                sets.put(getContextKey(__VERSION),version);
-            }
-            else
-            {
-                version = new Long(((Number)version).longValue() + 1);
-                update.put("$inc",__version_1); 
-            }
-
             // handle valid or invalid
             if (session.isValid())
             {
+                // handle new or existing
+                if (version == null)
+                {
+                    // New session
+                    upsert = true;
+                    version = new Long(1);
+                    sets.put(__CREATED,session.getCreationTime());
+                    sets.put(__VALID,true);
+                    sets.put(getContextKey(__VERSION),version);
+                }
+                else
+                {
+                    version = new Long(((Number)version).longValue() + 1);
+                    update.put("$inc",__version_1); 
+                }
+                
                 sets.put(__ACCESSED,session.getAccessed());
                 Set<String> names = session.takeDirty();
                 if (isSaveAllAttributes() || upsert)
@@ -253,6 +253,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             
             DBObject attrs = (DBObject)getNestedValue(o,getContextKey());
             
+            
             if (attrs != null)
             {
                 for (String name : attrs.keySet())
@@ -286,6 +287,22 @@ public class MongoSessionManager extends NoSqlSessionManager
                 }
             }
 
+            /*
+             * We are refreshing so we should update the last accessed time.
+             */
+            BasicDBObject key = new BasicDBObject(__ID,session.getClusterId());
+            BasicDBObject sets = new BasicDBObject();
+            // Form updates
+            BasicDBObject update = new BasicDBObject();
+            sets.put(__ACCESSED,System.currentTimeMillis());
+            // Do the upsert
+            if (!sets.isEmpty())
+            {
+                update.put("$set",sets);
+            }            
+            
+            _sessions.update(key,update,false,false);
+            
             session.didActivate();
 
             return version;

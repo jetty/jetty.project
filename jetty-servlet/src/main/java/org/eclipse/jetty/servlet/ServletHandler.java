@@ -21,10 +21,12 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -187,30 +189,81 @@ public class ServletHandler extends ScopedHandler
         super.doStop();
 
         // Stop filters
+        List<FilterHolder> filterHolders = new ArrayList<FilterHolder>();
+        List<FilterMapping> filterMappings = ArrayUtil.asMutableList(_filterMappings);      
         if (_filters!=null)
         {
             for (int i=_filters.length; i-->0;)
             {
                 try { _filters[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                if (_filters[i].getSource() != Source.EMBEDDED)
+                {
+                    //remove all of the mappings that were for non-embedded filters
+                    _filterNameMap.remove(_filters[i].getName());
+                    //remove any mappings associated with this filter
+                    ListIterator<FilterMapping> fmitor = filterMappings.listIterator();
+                    while (fmitor.hasNext())
+                    {
+                        FilterMapping fm = fmitor.next();
+                        if (fm.getFilterName().equals(_filters[i].getName()))
+                            fmitor.remove();
+                    }
+                }
+                else
+                    filterHolders.add(_filters[i]); //only retain embedded
             }
         }
+        
+        //Retain only filters and mappings that were added using jetty api (ie Source.EMBEDDED)
+        FilterHolder[] fhs = (FilterHolder[]) LazyList.toArray(filterHolders, FilterHolder.class);
+        updateBeans(_filters, fhs);
+        _filters = fhs;
+        FilterMapping[] fms = (FilterMapping[]) LazyList.toArray(filterMappings, FilterMapping.class);
+        updateBeans(_filterMappings, fms);
+        _filterMappings = fms;
+        
+        _matchAfterIndex = (_filterMappings == null || _filterMappings.length == 0 ? -1 : _filterMappings.length-1);
+        _matchBeforeIndex = -1;
 
         // Stop servlets
+        List<ServletHolder> servletHolders = new ArrayList<ServletHolder>();  //will be remaining servlets
+        List<ServletMapping> servletMappings = ArrayUtil.asMutableList(_servletMappings); //will be remaining mappings
         if (_servlets!=null)
         {
             for (int i=_servlets.length; i-->0;)
             {
                 try { _servlets[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                
+                if (_servlets[i].getSource() != Source.EMBEDDED)
+                {
+                    //remove from servlet name map
+                    _servletNameMap.remove(_servlets[i].getName());
+                    //remove any mappings associated with this servlet
+                    ListIterator<ServletMapping> smitor = servletMappings.listIterator();
+                    while (smitor.hasNext())
+                    {
+                        ServletMapping sm = smitor.next();
+                        if (sm.getServletName().equals(_servlets[i].getName()))
+                            smitor.remove();
+                    }
+                }
+                else
+                    servletHolders.add(_servlets[i]); //only retain embedded 
             }
         }
 
+        //Retain only Servlets and mappings added via jetty apis (ie Source.EMBEDDED)
+        ServletHolder[] shs = (ServletHolder[]) LazyList.toArray(servletHolders, ServletHolder.class);
+        updateBeans(_servlets, shs);
+        _servlets = shs;
+        ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class); 
+        updateBeans(_servletMappings, sms);
+        _servletMappings = sms;
+
+        //will be regenerated on next start
         _filterPathMappings=null;
         _filterNameMappings=null;
-
         _servletPathMap=null;
-        
-        _matchBeforeIndex=-1;
-        _matchAfterIndex=-1;
     }
 
     /* ------------------------------------------------------------ */
@@ -786,7 +839,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
-        ServletHolder holder = newServletHolder(null);
+        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+(_servlets==null?0:_servlets.length));
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
@@ -801,7 +854,6 @@ public class ServletHandler extends ScopedHandler
     {
         ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
-        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
 
         return holder;
@@ -969,7 +1021,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(null);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
 
@@ -1116,7 +1168,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     //programmatically defined filter mappings are prepended to mapping list in the order
                     //in which they were defined. In other words, insert this mapping at the tail of the 
-                    //programmatically added filter mappings, BEFORE the first web.xml defined filter mapping.
+                    //programmatically prepended filter mappings, BEFORE the first web.xml defined filter mapping.
 
                     if (_matchBeforeIndex < 0)
                     { 
@@ -1159,14 +1211,15 @@ public class ServletHandler extends ScopedHandler
     {
         if (pos < 0)
             throw new IllegalArgumentException("FilterMapping insertion pos < 0");
-        
         FilterMapping[] mappings = getFilterMappings();
+        
         if (mappings==null || mappings.length==0)
         {
             return new FilterMapping[] {mapping};
         }
         FilterMapping[] new_mappings = new FilterMapping[mappings.length+1];
 
+    
         if (before)
         {
             //copy existing filter mappings up to but not including the pos
@@ -1375,6 +1428,7 @@ public class ServletHandler extends ScopedHandler
         if (holders!=null)
             for (ServletHolder holder:holders)
                 holder.setServletHandler(this);
+        
         updateBeans(_servlets,holders);
         _servlets=holders;
         updateNameMappings();

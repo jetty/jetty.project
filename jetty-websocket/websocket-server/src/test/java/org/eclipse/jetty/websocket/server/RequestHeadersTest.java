@@ -57,6 +57,7 @@ public class RequestHeadersTest
             return lastRequest;
         }
 
+        @SuppressWarnings("unused")
         public UpgradeResponse getLastResponse()
         {
             return lastResponse;

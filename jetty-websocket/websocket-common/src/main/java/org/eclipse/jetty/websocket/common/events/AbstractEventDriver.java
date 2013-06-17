@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
  */
 public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 {
-    private static final Logger LOG = Log.getLogger(EventDriver.class);
+    private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
     protected final WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
@@ -107,10 +107,10 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
             LOG.debug("{}.onFrame({})",websocket.getClass().getSimpleName(),frame);
         }
 
-        onFrame(frame);
-
         try
         {
+            onFrame(frame);
+
             byte opcode = frame.getType().getOpCode();
             switch (opcode)
             {
@@ -201,7 +201,14 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         LOG.debug("openSession({})",session);
         this.session = session;
-        this.onConnect();
+        try
+        {
+            this.onConnect();
+        }
+        catch (Throwable t)
+        {
+            unhandled(t);
+        }
     }
 
     protected void terminateConnection(int statusCode, String rawreason)
@@ -215,6 +222,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     private void unhandled(Throwable t)
     {
         LOG.warn("Unhandled Error (closing connection)",t);
+        onError(t);
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

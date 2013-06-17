@@ -19,13 +19,11 @@
 package com.acme;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -34,57 +32,70 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 // Simple asynchronous Chat room.
 // This does not handle duplicate usernames or multiple frames/tabs from the same browser
 // Some code is duplicated for clarity.
 @SuppressWarnings("serial")
 public class ChatServlet extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(ChatServlet.class);
+
+    private long asyncTimeout = 10000;
+
+    public void init()
+    {
+        String parameter = getServletConfig().getInitParameter("asyncTimeout");
+        if (parameter != null)
+            asyncTimeout = Long.parseLong(parameter);
+    }
 
     // inner class to hold message queue for each chat room member
     class Member implements AsyncListener
     {
         final String _name;
-        final AtomicReference<AsyncContext> _async=new AtomicReference<>();
-        final Queue<String> _queue = new LinkedList<String>();
-        
+        final AtomicReference<AsyncContext> _async = new AtomicReference<>();
+        final Queue<String> _queue = new LinkedList<>();
+
         Member(String name)
         {
-            _name=name;
+            _name = name;
         }
-        
+
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
+            LOG.debug("resume request");
             AsyncContext async = _async.get();
-            if (async!=null && _async.compareAndSet(async,null))
+            if (async != null && _async.compareAndSet(async, null))
             {
                 HttpServletResponse response = (HttpServletResponse)async.getResponse();
                 response.setContentType("text/json;charset=utf-8");
-                PrintWriter out=response.getWriter();
-                out.print("{action:\"poll\"}");
+                response.getOutputStream().write("{action:\"poll\"}".getBytes());
                 async.complete();
             }
         }
-        
+
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
             event.getAsyncContext().addListener(this);
         }
-        
+
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
         }
-        
+
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
         }
     }
 
-    Map<String,Map<String,Member>> _rooms = new HashMap<String,Map<String, Member>>();
+    Map<String, Map<String, Member>> _rooms = new HashMap<>();
 
 
     // Handle Ajax calls from browser
@@ -92,113 +103,119 @@ public class ChatServlet extends HttpServlet
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         // Ajax calls are form encoded
-        String action = request.getParameter("action");
+        boolean join = Boolean.parseBoolean(request.getParameter("join"));
         String message = request.getParameter("message");
         String username = request.getParameter("user");
 
-        if (action.equals("join"))
-            join(request,response,username);
-        else if (action.equals("poll"))
-            poll(request,response,username);
-        else if (action.equals("chat"))
-            chat(request,response,username,message);
-    }
-
-    private synchronized void join(HttpServletRequest request,HttpServletResponse response,String username)
-    throws IOException
-    {
-        Member member = new Member(username);
-        Map<String,Member> room=_rooms.get(request.getPathInfo());
-        if (room==null)
+        LOG.debug("doPost called. join={},message={},username={}", join, message, username);
+        if (username == null)
         {
-            room=new HashMap<String,Member>();
-            _rooms.put(request.getPathInfo(),room);
-        }
-        room.put(username,member);
-        response.setContentType("text/json;charset=utf-8");
-        PrintWriter out=response.getWriter();
-        out.print("{action:\"join\"}");
-    }
-
-    private synchronized void poll(HttpServletRequest request,HttpServletResponse response,String username)
-    throws IOException
-    {
-        Map<String,Member> room=_rooms.get(request.getPathInfo());
-        if (room==null)
-        {
-            response.sendError(503);
-            return;
-        }
-        final Member member = room.get(username);
-        if (member==null)
-        {
-            response.sendError(503);
+            LOG.debug("no paramter user set, sending 503");
+            response.sendError(503, "user==null");
             return;
         }
 
-        synchronized(member)
+        Map<String, Member> room = getRoom(request.getPathInfo());
+        Member member = getMember(username, room);
+
+        if (message != null)
         {
-            if (member._queue.size()>0)
+            sendMessageToAllMembers(message, username, room);
+        }
+        // If a message is set, we only want to enter poll mode if the user is a new user. This is necessary to avoid
+        // two parallel requests per user (one is already in async wait and the new one). Sending a message will
+        // dispatch to an existing poll request if necessary and the client will issue a new request to receive the
+        // next message or long poll again.
+        if (message == null || join)
+        {
+            synchronized (member)
             {
-                // Send one chat message
-                response.setContentType("text/json;charset=utf-8");
-                StringBuilder buf=new StringBuilder();
-
-                buf.append("{\"action\":\"poll\",");
-                buf.append("\"from\":\"");
-                buf.append(member._queue.poll());
-                buf.append("\",");
-
-                String message = member._queue.poll();
-                int quote=message.indexOf('"');
-                while (quote>=0)
+                LOG.debug("Queue size: {}", member._queue.size());
+                if (member._queue.size() > 0)
                 {
-                    message=message.substring(0,quote)+'\\'+message.substring(quote);
-                    quote=message.indexOf('"',quote+2);
+                    sendSingleMessage(response, member);
                 }
-                buf.append("\"chat\":\"");
-                buf.append(message);
-                buf.append("\"}");
-                byte[] bytes = buf.toString().getBytes("utf-8");
-                response.setContentLength(bytes.length);
-                response.getOutputStream().write(bytes);
-            }
-            else
-            {
-                AsyncContext async = request.startAsync();
-                async.setTimeout(10000);
-                async.addListener(member);
-                if (!member._async.compareAndSet(null,async))
-                    throw new IllegalStateException();
+                else
+                {
+                    LOG.debug("starting async");
+                    AsyncContext async = request.startAsync();
+                    async.setTimeout(asyncTimeout);
+                    async.addListener(member);
+                    if (!member._async.compareAndSet(null, async))
+                        throw new IllegalStateException();
+                }
             }
         }
     }
 
-    private synchronized void chat(HttpServletRequest request,HttpServletResponse response,String username,String message)
-    throws IOException
+    private Member getMember(String username, Map<String, Member> room)
     {
-        Map<String,Member> room=_rooms.get(request.getPathInfo());
-        if (room!=null)
+        Member member = room.get(username);
+        if (member == null)
         {
-            // Post chat to all members
-            for (Member m:room.values())
-            {
-                synchronized (m)
-                {
-                    m._queue.add(username); // from
-                    m._queue.add(message);  // chat
+            LOG.debug("user: {} in room: {} doesn't exist. Creating new user.", username, room);
+            member = new Member(username);
+            room.put(username, member);
+        }
+        return member;
+    }
 
-                    // wakeup member if polling
-                    AsyncContext async=m._async.get();
-                    if (async!=null & m._async.compareAndSet(async,null))
-                        async.dispatch();
+    private Map<String, Member> getRoom(String path)
+    {
+        Map<String, Member> room = _rooms.get(path);
+        if (room == null)
+        {
+            LOG.debug("room: {} doesn't exist. Creating new room.", path);
+            room = new HashMap<>();
+            _rooms.put(path, room);
+        }
+        return room;
+    }
+
+    private void sendSingleMessage(HttpServletResponse response, Member member) throws IOException
+    {
+        response.setContentType("text/json;charset=utf-8");
+        StringBuilder buf = new StringBuilder();
+
+        buf.append("{\"from\":\"");
+        buf.append(member._queue.poll());
+        buf.append("\",");
+
+        String returnMessage = member._queue.poll();
+        int quote = returnMessage.indexOf('"');
+        while (quote >= 0)
+        {
+            returnMessage = returnMessage.substring(0, quote) + '\\' + returnMessage.substring(quote);
+            quote = returnMessage.indexOf('"', quote + 2);
+        }
+        buf.append("\"chat\":\"");
+        buf.append(returnMessage);
+        buf.append("\"}");
+        byte[] bytes = buf.toString().getBytes("utf-8");
+        response.setContentLength(bytes.length);
+        response.getOutputStream().write(bytes);
+    }
+
+    private void sendMessageToAllMembers(String message, String username, Map<String, Member> room)
+    {
+        LOG.debug("Sending message: {} from: {}", message, username);
+        for (Member m : room.values())
+        {
+            synchronized (m)
+            {
+                m._queue.add(username); // from
+                m._queue.add(message);  // chat
+
+                // wakeup member if polling
+                AsyncContext async = m._async.get();
+                LOG.debug("Async found: {}", async);
+                if (async != null & m._async.compareAndSet(async, null))
+                {
+                    LOG.debug("dispatch");
+                    async.dispatch();
                 }
             }
         }
-
-        response.setContentType("text/json;charset=utf-8");
-        PrintWriter out=response.getWriter();
-        out.print("{action:\"chat\"}");
     }
 
     // Serve the HTML with embedded CSS and Javascript.
@@ -206,10 +223,10 @@ public class ChatServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (request.getParameter("action")!=null)
-            doPost(request,response);
+        if (request.getParameter("action") != null)
+            doPost(request, response);
         else
-            getServletContext().getNamedDispatcher("default").forward(request,response);
+            getServletContext().getNamedDispatcher("default").forward(request, response);
     }
 
 }

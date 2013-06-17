@@ -435,12 +435,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.ignore(e);
             path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
         }
+        
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
         {
-            info = "/";
-            _request.setRequestURI("");
+            if( path==null && _uri.getScheme()!=null &&_uri.getHost()!=null)
+            {
+                info = "/";
+                _request.setRequestURI("");
+            }
+            else
+            {
+                badMessage(400,null);
+                return true;
+            }
         }
         _request.setPathInfo(info);
         _version = version == null ? HttpVersion.HTTP_0_9 : version;
@@ -663,7 +672,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
-     * @throws IOException if the write fails
      */
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
@@ -687,6 +695,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean useDirectBuffers()
     {
         return getEndPoint() instanceof ChannelEndPoint;
+    }
+
+    /**
+     * If a write or similar to this channel fails this method should be called. The standard implementation
+     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     */
+    public void failed()
+    {
     }
 
     private class CommitCallback implements Callback

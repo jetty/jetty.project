@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -296,6 +301,14 @@ public class JettyWebAppContext extends WebAppContext
         //just wait a little while to ensure no requests are still being processed
         Thread.currentThread().sleep(500L);
         super.doStop();
+        
+        //remove all listeners, servlets and filters. This is because we will re-apply
+        //any context xml file, which means they would potentially be added multiple times.
+        setEventListeners(new EventListener[0]);
+        getServletHandler().setFilters(new FilterHolder[0]);
+        getServletHandler().setFilterMappings(new FilterMapping[0]);
+        getServletHandler().setServlets(new ServletHolder[0]);
+        getServletHandler().setServletMappings(new ServletMapping[0]);
     }
 
     @Override

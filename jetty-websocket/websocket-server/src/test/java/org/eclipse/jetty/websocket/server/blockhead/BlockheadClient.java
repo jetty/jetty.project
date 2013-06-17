@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
@@ -127,9 +128,12 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         if (destWebsocketURI.getScheme().equals("wss"))
         {
             scheme = "https";
+            throw new RuntimeException("Sorry, BlockheadClient does not support SSL");
         }
-        this.destHttpURI = new URI(scheme,destWebsocketURI.getUserInfo(),destWebsocketURI.getHost(),destWebsocketURI.getPort(),destWebsocketURI.getPath(),
-                destWebsocketURI.getQuery(),destWebsocketURI.getFragment());
+        this.destHttpURI = WSURI.toHttp(destWebsocketURI);
+
+        LOG.debug("WebSocket URI: {}",destWebsocketURI);
+        LOG.debug("     HTTP URI: {}",destHttpURI);
 
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);

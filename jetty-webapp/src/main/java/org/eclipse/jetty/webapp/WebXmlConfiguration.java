@@ -120,25 +120,13 @@ public class WebXmlConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     @Override
     public void deconfigure (WebAppContext context) throws Exception
-    {
-        // TODO preserve any configuration that pre-existed.
-
-        ServletHandler _servletHandler = context.getServletHandler();
-       
-        _servletHandler.setFilters(null);
-        _servletHandler.setFilterMappings(null);
-        _servletHandler.setServlets(null);
-        _servletHandler.setServletMappings(null);
-
-        context.setEventListeners(null);
+    {      
         context.setWelcomeFiles(null);
 
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler) 
                     context.getErrorHandler()).setErrorPages(null);
 
-
         // TODO remove classpaths from classloader
-
     }
 }

@@ -166,7 +166,17 @@ public class Servlet3Continuation implements Continuation
     @Override
     public boolean isSuspended()
     {
-        return _request.isAsyncStarted();
+        if (_request.isAsyncStarted())
+            return true;
+        try
+        {
+            return _request.getAsyncContext()!=null;
+        }
+        catch(IllegalStateException e)
+        {
+            // ignored
+        }
+        return false;
     }
 
     /* ------------------------------------------------------------ */

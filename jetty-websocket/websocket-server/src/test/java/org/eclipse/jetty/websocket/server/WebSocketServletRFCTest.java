@@ -162,7 +162,7 @@ public class WebSocketServletRFCTest
     }
 
     /**
-     * Test the requirement of issuing
+     * Test the requirement of issuing socket and receiving echo response
      */
     @Test
     public void testEcho() throws Exception

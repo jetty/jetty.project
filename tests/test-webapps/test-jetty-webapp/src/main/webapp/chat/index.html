@@ -30,38 +30,28 @@
             req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             req.send(body);
         }
-        ;
-        function send(action, user, message, handler)
+        function send(user, message, handler, join)
         {
             if (message) message = message.replace('%', '%25').replace('&', '%26').replace('=', '%3D');
             if (user) user = user.replace('%', '%25').replace('&', '%26').replace('=', '%3D');
-            xhr('POST', 'chat', 'action=' + action + '&user=' + user + '&message=' + message, handler);
+            var requestBody = 'user=' + user + (message ? '&message=' + message : '') + (join ? '&join=true' : '');
+            xhr('POST', 'chat', requestBody , handler);
         }
-        ;
-
         var room = {
-            join:function (name)
+            join: function (name)
             {
                 this._username = name;
                 $('join').className = 'hidden';
                 $('joined').className = '';
                 $('phrase').focus();
-                send('join', room._username, null, room._joined);
+                send(room._username, 'has joined!', room._poll, true);
             },
-            _joined:function ()
-            {
-                send('chat', room._username, 'has joined!', room._startPolling);
-            },
-            _startPolling:function ()
-            {
-                send('poll', room._username, null, room._poll);
-            },
-            chat:function (text)
+            chat: function (text)
             {
                 if (text != null && text.length > 0)
-                    send('chat', room._username, text);
+                    send(room._username, text, room._poll, false);
             },
-            _poll:function (m)
+            _poll: function (m)
             {
                 //console.debug(m);
                 if (m.chat)
@@ -79,10 +69,9 @@
                     chat.appendChild(lineBreak);
                     chat.scrollTop = chat.scrollHeight - chat.clientHeight;
                 }
-                if (m.action == 'poll')
-                    send('poll', room._username, null, room._poll);
+                send(room._username, null, room._poll, false);
             },
-            _end:''
+            _end: ''
         };
     </script>
     <style type='text/css'>
@@ -106,7 +95,7 @@
             padding: 4px;
             background-color: #e0e0e0;
             border: 1px solid black;
-            border-top: 0px
+            border-top: 0
         }
 
         input#phrase {
@@ -121,14 +110,6 @@
 
         div.hidden {
             display: none;
-        }
-
-        span.from {
-            font-weight: bold;
-        }
-
-        span.alert {
-            font-style: italic;
         }
     </style>
 </head>

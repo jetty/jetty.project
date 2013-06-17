@@ -57,7 +57,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder()
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
     }
 
 
@@ -66,7 +66,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Holder.Source source)
     {
-        super (source);
+        super(source);
     }
 
     /* ---------------------------------------------------------------- */
@@ -74,7 +74,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Class<? extends Filter> filter)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setHeldClass(filter);
     }
 
@@ -83,7 +83,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Filter filter)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setFilter(filter);
     }
 

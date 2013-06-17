@@ -30,6 +30,7 @@ import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -50,9 +51,12 @@ import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -676,6 +680,13 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Stopping web application "+this);
             Thread.currentThread().sleep(500L);
             super.doStop();
+            //remove all filters, servlets and listeners. They will be recreated
+            //either via application of a context xml file or web.xml or annotation or servlet api
+            setEventListeners(new EventListener[0]);
+            getServletHandler().setFilters(new FilterHolder[0]);
+            getServletHandler().setFilterMappings(new FilterMapping[0]);
+            getServletHandler().setServlets(new ServletHolder[0]);
+            getServletHandler().setServletMappings(new ServletMapping[0]);
         }
         catch (InterruptedException e)
         {

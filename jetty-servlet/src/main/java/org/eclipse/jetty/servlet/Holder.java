@@ -57,7 +57,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected String _className;
     protected String _displayName;
     protected boolean _extInstance;
-    protected boolean _asyncSupported=true;
+    protected boolean _asyncSupported;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
@@ -67,8 +67,19 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected Holder(Source source)
     {
         _source=source;
+        switch(_source)
+        {
+            case JAVAX_API:
+            case DESCRIPTOR:
+            case ANNOTATION:
+                _asyncSupported=false;
+                break;
+            default:
+                _asyncSupported=true;
+        }
     }
 
+    /* ------------------------------------------------------------ */
     public Source getSource()
     {
         return _source;

@@ -9,6 +9,7 @@
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-all</artifactId>
   <name>Jetty :: Aggregate :: All core Jetty</name>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>
