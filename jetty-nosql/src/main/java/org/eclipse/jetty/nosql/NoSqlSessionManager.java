@@ -40,6 +40,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     private int _savePeriod=0;
     private int _idlePeriod=-1;
     private boolean _invalidateOnStop;
+    private boolean _preserveOnStop;
     private boolean _saveAllAttributes;
     
     /* ------------------------------------------------------------ */
@@ -104,7 +105,10 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                 for (NoSqlSession session : sessions)
                 {
                     session.save(false);
-                    removeSession(session,false);
+
+                    if (!_preserveOnStop) {
+                        removeSession(session,false);
+                    }
                 }
             }
             else
@@ -279,12 +283,32 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
 
     /* ------------------------------------------------------------ */
     /**
+     * Preserve sessions when the session manager is stopped otherwise remove them from the DB.
+     * @return the removeOnStop
+     */
+    public boolean isPreserveOnStop()
+    {
+        return _preserveOnStop;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * Invalidate sessions when the session manager is stopped otherwise save them to the DB.
      * @param invalidateOnStop the invalidateOnStop to set
      */
     public void setInvalidateOnStop(boolean invalidateOnStop)
     {
         _invalidateOnStop = invalidateOnStop;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Preserve sessions when the session manager is stopped otherwise remove them from the DB.
+     * @param removeOnStop the removeOnStop to set
+     */
+    public void setPreserveOnStop(boolean preserveOnStop)
+    {
+        _preserveOnStop = preserveOnStop;
     }
 
     /* ------------------------------------------------------------ */
