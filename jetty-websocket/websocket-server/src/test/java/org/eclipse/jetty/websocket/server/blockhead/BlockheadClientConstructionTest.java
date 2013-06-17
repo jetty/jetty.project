@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -29,8 +31,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.is;
 
 /**
  * Gotta test some basic constructors of the BlockheadClient.
@@ -47,7 +47,6 @@ public class BlockheadClientConstructionTest
         data.add(new Object[] { "ws://localhost:8080/", "http://localhost:8080/" });
         data.add(new Object[] { "ws://webtide.com/",    "http://webtide.com/" });
         data.add(new Object[] { "ws://www.webtide.com/sockets/chat", "http://www.webtide.com/sockets/chat" });
-        data.add(new Object[] { "wss://dummy.eclipse.org:5454/",     "https://dummy.eclipse.org:5454/" });
         // @formatter:on
         return data;
     }

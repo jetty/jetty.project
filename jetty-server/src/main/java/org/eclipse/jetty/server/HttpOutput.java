@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -31,6 +30,7 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -168,7 +168,7 @@ public class HttpOutput extends ServletOutputStream
     public void write(byte[] b, int off, int len) throws IOException
     {  
         if (isClosed())
-            throw new EOFException("Closed");
+            throw new EofException("Closed");
 
         _written+=len;
         boolean complete=_channel.getResponse().isAllContentWritten(_written);
