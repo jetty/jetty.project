@@ -68,7 +68,7 @@ public class WebSocketOverSSLTest
             Future<Session> fut = client.connect(clientSocket,server.getServerUri());
 
             // wait for connect
-            Session session = fut.get(1,TimeUnit.SECONDS);
+            Session session = fut.get(3,TimeUnit.SECONDS);
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
