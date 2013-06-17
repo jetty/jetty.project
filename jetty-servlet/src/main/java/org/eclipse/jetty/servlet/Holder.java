@@ -79,6 +79,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         }
     }
 
+    /* ------------------------------------------------------------ */
     public Source getSource()
     {
         return _source;

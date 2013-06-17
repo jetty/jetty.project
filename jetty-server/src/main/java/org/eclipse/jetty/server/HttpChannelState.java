@@ -570,8 +570,6 @@ public class HttpChannelState
             switch(_state)
             {
                 case ASYNCSTARTED:
-                case REDISPATCHING:
-                case COMPLETECALLED:
                 case ASYNCWAIT:
                     return true;
 
