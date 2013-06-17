@@ -508,7 +508,7 @@ public class ServletContextHandler extends ContextHandler
             setSessionHandler((SessionHandler) handler);
         else if (handler instanceof SecurityHandler)
             setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof HandlerWrapper)
+        else if (handler == null || handler instanceof HandlerWrapper)
         {
             super.setHandler(handler);
             relinkHandlers();
