@@ -140,7 +140,7 @@ public class UpgradeConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        // TODO: handle timeout
+        // TODO: handle timeout?
         getExecutor().execute(new SendUpgradeRequest());
     }
 

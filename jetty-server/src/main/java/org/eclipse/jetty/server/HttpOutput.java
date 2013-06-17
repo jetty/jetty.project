@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -32,6 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
@@ -125,7 +125,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 }
                 catch(IOException e)
                 {
-                    _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                     LOG.ignore(e);
                 }
                 releaseBuffer();
@@ -149,7 +149,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 }
                 catch(IOException e)
                 {
-                    _channel.getEndPoint().shutdownOutput();
+                _channel.failed();
                     LOG.ignore(e);
                 }
                 releaseBuffer();

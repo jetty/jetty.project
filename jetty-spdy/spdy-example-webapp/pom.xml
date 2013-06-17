@@ -8,8 +8,8 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-example-webapp</artifactId>
     <packaging>war</packaging>
-    <name>Jetty :: SPDY :: Example Web Application</name>
-
+    <name>Jetty :: SPDY :: Jetty HTTP Web Application</name>
+    <url>http://www.eclipse.org/jetty</url>
     <build>
         <plugins>
             <plugin>

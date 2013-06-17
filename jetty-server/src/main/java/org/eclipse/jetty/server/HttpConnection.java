@@ -578,6 +578,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _generator.setPersistent(false);
             super.handleException(x);
         }
+
+        @Override
+        public void failed()
+        {
+            getEndPoint().shutdownOutput();
+        }
     }
 
     private class CommitCallback extends IteratingNestedCallback

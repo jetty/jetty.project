@@ -12,7 +12,7 @@
  <properties>
     <assembly-directory>target/distribution</assembly-directory>
   </properties>
-
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
       <plugin>

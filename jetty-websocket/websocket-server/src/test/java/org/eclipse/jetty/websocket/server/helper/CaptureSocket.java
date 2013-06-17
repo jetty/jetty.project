@@ -18,27 +18,39 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.io.IOException;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 public class CaptureSocket extends WebSocketAdapter
 {
     private final CountDownLatch latch = new CountDownLatch(1);
-    public List<String> messages;
+    public EventQueue<String> messages;
 
     public CaptureSocket()
     {
-        messages = new ArrayList<String>();
+        messages = new EventQueue<String>();
     }
 
     public boolean awaitConnected(long timeout) throws InterruptedException
     {
         return latch.await(timeout,TimeUnit.MILLISECONDS);
+    }
+
+    public void close()
+    {
+        try
+        {
+            getSession().close();
+        }
+        catch (IOException ignore)
+        {
+            /* ignore */
+        }
     }
 
     public void onClose(int closeCode, String message)

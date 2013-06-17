@@ -7,6 +7,7 @@
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>

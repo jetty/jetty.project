@@ -221,6 +221,32 @@ public class DispatcherTest
     }
 
     @Test
+    public void testServletForwardDotDot() throws Exception
+    {
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/that");
+
+        String requests="GET /context/dispatch/test?forward=/%2e%2e/roger/that HTTP/1.0\n" + "Host: localhost\n\n";
+
+        String responses = _connector.getResponses(requests);
+
+        assertThat(responses,startsWith("HTTP/1.1 404 "));
+    }
+    
+    @Test
+    public void testServletForwardEncodedDotDot() throws Exception
+    {
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/that");
+
+        String requests="GET /context/dispatch/test?forward=/%252e%252e/roger/that HTTP/1.0\n" + "Host: localhost\n\n";
+
+        String responses = _connector.getResponses(requests);
+
+        assertThat(responses,startsWith("HTTP/1.1 404 "));
+    }
+    
+    @Test
     public void testServletInclude() throws Exception
     {
         _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
@@ -412,7 +438,10 @@ public class DispatcherTest
             else if(request.getParameter("forward")!=null)
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
-                dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                if (dispatcher!=null)
+                    dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                else
+                    response.sendError(404);
             }
 
         }
@@ -586,10 +615,14 @@ public class DispatcherTest
             assertEquals(null, request.getPathInfo());
             assertEquals(null, request.getPathTranslated());
             
-            UrlEncoded query = new UrlEncoded(request.getQueryString());
+            UrlEncoded query = new UrlEncoded();
+            query.decode(request.getQueryString());
             assertThat(query.getString("do"), is("end"));
+            
             // Russian for "selected=Temperature"
-            String russian = new UrlEncoded(query.getString("else")).encode();
+            UrlEncoded q2=new UrlEncoded();
+            q2.decode(query.getString("else"));
+            String russian = q2.encode();
             assertThat(russian, is("%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE=%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0"));
             assertThat(query.getString("test"), is("1"));
             assertThat(query.containsKey("foreign"), is(true));

@@ -42,6 +42,7 @@ public class UpgradeRequest
     private String httpVersion;
     private String method;
     private String host;
+    private boolean secure = false;
 
     protected UpgradeRequest()
     {
@@ -225,6 +226,11 @@ public class UpgradeRequest
         return test.equalsIgnoreCase(getOrigin());
     }
 
+    public boolean isSecure()
+    {
+        return secure;
+    }
+
     public void setCookies(List<HttpCookie> cookies)
     {
         this.cookies = cookies;
@@ -261,6 +267,19 @@ public class UpgradeRequest
     public void setRequestURI(URI uri)
     {
         this.requestURI = uri;
+        String scheme = uri.getScheme();
+        if ("ws".equalsIgnoreCase(scheme))
+        {
+            secure = false;
+        }
+        else if ("wss".equalsIgnoreCase(scheme))
+        {
+            secure = true;
+        }
+        else
+        {
+            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
+        }
         this.host = this.requestURI.getHost();
         this.parameters.clear();
     }

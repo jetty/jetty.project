@@ -113,7 +113,6 @@ public class ReloadedSessionMissingClassTest
                 webApp.stop();
                 
                 webApp.setClassLoader(loaderWithoutFoo);
-                webApp.addServlet("Bar", "/bar");
                 
                 //restart webapp
                 webApp.start();

@@ -14,6 +14,7 @@
         <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     </properties>
 
+    <url>http://www.eclipse.org/jetty</url>
     <build>
         <plugins>
             <plugin>

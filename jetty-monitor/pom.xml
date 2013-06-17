@@ -24,6 +24,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-monitor</artifactId>
   <name>Jetty :: Monitoring</name>
+  <url>http://www.eclipse.org/jetty</url>
   <description>Performance monitoring artifact for jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.monitor</bundle-symbolic-name>

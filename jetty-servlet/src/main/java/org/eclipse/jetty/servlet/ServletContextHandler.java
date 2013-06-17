@@ -1041,8 +1041,6 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            //TODO handle partial registrations
-
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
