@@ -177,19 +177,28 @@ public class ServletContextHandler extends ContextHandler
         
         if (getSessionHandler()!=null)
         {
-            handler.setHandler(_sessionHandler);
+            if (handler==this)
+                super.setHandler(_sessionHandler);
+            else
+                handler.setHandler(_sessionHandler);
             handler=_sessionHandler;
         }
-        
+
         if (getSecurityHandler()!=null)
         {
-            handler.setHandler(_securityHandler);
+            if (handler==this)
+                super.setHandler(_securityHandler);
+            else
+                handler.setHandler(_securityHandler);
             handler=_securityHandler;
         }
-        
+
         if (getServletHandler()!=null)
         {
-            handler.setHandler(_servletHandler);
+            if (handler==this)
+                super.setHandler(_servletHandler);
+            else
+                handler.setHandler(_servletHandler);
             handler=_servletHandler;
         } 
     }
@@ -488,6 +497,50 @@ public class ServletContextHandler extends ContextHandler
         _servletHandler = servletHandler;
         relinkHandlers();
         _servletHandler.setHandler(next);
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setHandler(Handler handler)
+    {
+        if (handler instanceof ServletHandler)
+            setServletHandler((ServletHandler) handler);
+        else if (handler instanceof SessionHandler)
+            setSessionHandler((SessionHandler) handler);
+        else if (handler instanceof SecurityHandler)
+            setSecurityHandler((SecurityHandler)handler);
+        else if (handler instanceof HandlerWrapper)
+        {
+            super.setHandler(handler);
+            relinkHandlers();
+        }
+        else
+            throw new IllegalArgumentException();
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Insert a HandlerWrapper before the first Session,Security or ServletHandler
+     * but after any other HandlerWrappers.
+     */
+    public void insertHandler(HandlerWrapper handler)
+    {
+        HandlerWrapper h=this;
+        
+        // Skip any injected handlers
+        while (h.getHandler() instanceof HandlerWrapper)
+        {
+            HandlerWrapper wrapper = (HandlerWrapper)h.getHandler();
+            if (wrapper instanceof SessionHandler ||
+                wrapper instanceof SecurityHandler ||
+                wrapper instanceof ServletHandler)
+                break;
+            h=wrapper;
+        }
+        
+        h.setHandler(handler);
+        relinkHandlers();
     }
 
     /* ------------------------------------------------------------ */
