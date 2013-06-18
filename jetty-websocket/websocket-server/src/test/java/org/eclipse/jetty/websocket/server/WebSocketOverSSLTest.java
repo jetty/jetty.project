@@ -98,13 +98,16 @@ public class WebSocketOverSSLTest
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
         try
         {
+            client.setConnectTimeout(3000);
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
-            Future<Session> fut = client.connect(clientSocket,server.getServerUri());
+            URI requestUri = server.getServerUri();
+            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(3,TimeUnit.SECONDS);
+            Session session = fut.get(5,TimeUnit.SECONDS);
 
             // Generate text frame
             session.getRemote().sendString("session.isSecure");
@@ -133,17 +136,19 @@ public class WebSocketOverSSLTest
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
         try
         {
+            client.setConnectTimeout(3000);
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
             URI requestUri = server.getServerUri().resolve("/deep?a=b");
-            Future<Session> fut = client.connect(clientSocket,requestUri);
+            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
+            client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(3,TimeUnit.SECONDS);
+            clientSocket.awaitConnected(5000);
 
             // Generate text frame
-            session.getRemote().sendString("session.upgradeRequest.requestURI");
+            clientSocket.getRemote().sendString("session.upgradeRequest.requestURI");
 
             // Read frame (hopefully text frame)
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
