@@ -38,21 +38,21 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.</p> <p>A typical request for a main
- * resource such as <tt>index.html</tt> is immediately followed by a number of requests for associated resources.
- * Associated resource requests will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which is
- * used to link the associated resource to the main resource.</p> <p>However, also following a hyperlink generates a
- * HTTP request with a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>; therefore a proper value for
+ * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.<p>A typical request for a main
+ * resource such as {@code index.html} is immediately followed by a number of requests for associated resources.
+ * Associated resource requests will have a {@code Referer} HTTP header that points to {@code index.html}, which is
+ * used to link the associated resource to the main resource.<p>However, also following a hyperlink generates a
+ * HTTP request with a {@code Referer} HTTP header that points to {@code index.html}; therefore a proper value for
  * {@link #setReferrerPushPeriod(int)} has to be set. If the referrerPushPeriod for a main resource has elapsed,
- * no more associated resources will be added for that main resource.</p> <p>This class distinguishes associated main
+ * no more associated resources will be added for that main resource.<p>This class distinguishes associated main
  * resources by their URL path suffix and content type. CSS stylesheets, images and JavaScript files have
  * recognizable URL path suffixes that are classified as associated resources. The suffix regexs can be configured by
  * constructor argument</p>
  * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS stylesheet as referrer. This
- * implementation will push also the CSS image.</p> <p>The push metadata built by this implementation is limited by the
+ * implementation will push also the CSS image.<p>The push metadata built by this implementation is limited by the
  * number of pages of the application itself, and by the {@link #setMaxAssociatedResources(int)} max associated resources}
  * parameter. This parameter limits the number of associated resources per each main resource, so that if a main
- * resource has hundreds of associated resources, only up to the number specified by this parameter will be pushed.</p>
+ * resource has hundreds of associated resources, only up to the number specified by this parameter will be pushed.
  */
 public class ReferrerPushStrategy implements PushStrategy
 {

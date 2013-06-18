@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -76,7 +77,7 @@ public class TomcatServerQuirksTest
 
         try
         {
-            int bufferSize = 512;
+            final int bufferSize = 512;
 
             server.start();
 
@@ -103,17 +104,15 @@ public class TomcatServerQuirksTest
             Assert.assertTrue("Timed out waiting for Client side WebSocket open event",websocket.openLatch.await(1,TimeUnit.SECONDS));
 
             // Have server write frame.
-            int length = bufferSize / 2;
-            ByteBuffer serverFrame = ByteBuffer.allocate(bufferSize);
-            // BufferUtil.flipToFill(serverFrame);
+            byte payload[] = new byte[bufferSize / 2];
+            Arrays.fill(payload,(byte)'x');
+            ByteBuffer serverFrame = BufferUtil.allocate(bufferSize);
+            BufferUtil.flipToFill(serverFrame);
             serverFrame.put((byte)(0x80 | 0x01)); // FIN + TEXT
             serverFrame.put((byte)0x7E); // No MASK and 2 bytes length
-            serverFrame.put((byte)(length >> 8)); // first length byte
-            serverFrame.put((byte)(length & 0xFF)); // second length byte
-            for (int i = 0; i < length; ++i)
-            {
-                serverFrame.put((byte)'x');
-            }
+            serverFrame.put((byte)(payload.length >> 8)); // first length byte
+            serverFrame.put((byte)(payload.length & 0xFF)); // second length byte
+            serverFrame.put(payload);
             BufferUtil.flipToFlush(serverFrame,0);
             byte buf[] = BufferUtil.toArray(serverFrame);
             socket.write(buf,0,buf.length);
