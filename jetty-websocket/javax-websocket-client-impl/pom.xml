@@ -22,9 +22,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.drafts</groupId>
+      <groupId>javax.websocket</groupId>
       <artifactId>javax.websocket-client-api</artifactId>
-      <version>1.0.0.DRAFT-SNAPSHOT</version>
+      <version>1.0</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
