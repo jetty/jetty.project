@@ -48,25 +48,18 @@ import static org.junit.Assert.assertThat;
  */
 public class HostnameVerificationTest
 {
-    private SslContextFactory sslContextFactory = new SslContextFactory();
-    private Server server;
+    private SslContextFactory clientSslContextFactory = new SslContextFactory();
+    private Server server = new Server();
     private HttpClient client;
     private NetworkConnector connector;
 
     @Before
     public void setUp() throws Exception
     {
-        if (sslContextFactory != null)
-        {
-            // keystore contains a hostname which doesn't match localhost
-            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-            sslContextFactory.setKeyStorePassword("storepwd");
-        }
-        sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-
-        if (server == null)
-            server = new Server();
-        connector = new ServerConnector(server, sslContextFactory);
+        SslContextFactory serverSslContextFactory = new SslContextFactory();
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePassword("storepwd");
+        connector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(connector);
         server.setHandler(new DefaultHandler()
         {
@@ -79,9 +72,13 @@ public class HostnameVerificationTest
         });
         server.start();
 
+        // keystore contains a hostname which doesn't match localhost
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePassword("storepwd");
+
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
-        client = new HttpClient(sslContextFactory);
+        client = new HttpClient(clientSslContextFactory);
         client.setExecutor(executor);
         client.start();
     }
@@ -104,6 +101,7 @@ public class HostnameVerificationTest
     @Test
     public void simpleGetWithHostnameVerificationEnabledTest() throws Exception
     {
+        clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
         try
         {
@@ -136,7 +134,7 @@ public class HostnameVerificationTest
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
     {
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
         try
         {
@@ -157,7 +155,7 @@ public class HostnameVerificationTest
     @Test
     public void trustAllDisablesHostnameVerificationTest() throws Exception
     {
-        sslContextFactory.setTrustAll(true);
+        clientSslContextFactory.setTrustAll(true);
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
         try
         {
