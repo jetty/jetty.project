@@ -52,9 +52,25 @@ public interface Authenticator
      * @return The name of the authentication method
      */
     String getAuthMethod();
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Called prior to validateRequest. The authenticator can
+     * manipulate the request to update it with information that
+     * can be inspected prior to validateRequest being called.
+     * The primary purpose of this method is to satisfy the Servlet
+     * Spec 3.1 section 13.6.3 on handling Form authentication
+     * where the http method of the original request causing authentication
+     * is not the same as the http method resulting from the redirect
+     * after authentication.
+     * @param request
+     */
+    void prepareRequest(ServletRequest request);
+    
 
     /* ------------------------------------------------------------ */
-    /** Validate a response
+    /** Validate a request
      * @param request The request
      * @param response The response
      * @param mandatory True if authentication is mandatory.

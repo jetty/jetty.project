@@ -209,6 +209,7 @@ public class AnnotationTest extends HttpServlet
 
              __HandlesTypes = Arrays.asList( "javax.servlet.GenericServlet", 
                                              "javax.servlet.http.HttpServlet", 
+                                             "com.acme.AsyncListenerServlet",
                                              "com.acme.AnnotationTest", 
                                              "com.acme.RoleAnnotationTest", 
                                              "com.acme.MultiPartTest", 

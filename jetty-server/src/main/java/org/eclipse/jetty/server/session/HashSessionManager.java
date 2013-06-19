@@ -440,6 +440,8 @@ public class HashSessionManager extends AbstractSessionManager
             session.setNodeId(newNodeId);
             session.save(); //save updated session: TODO consider only saving file if idled
             sessions.put(newClusterId, session);
+            
+            super.renewSessionId(oldClusterId, oldNodeId, newClusterId, newNodeId);
         }
         catch (Exception e)
         {

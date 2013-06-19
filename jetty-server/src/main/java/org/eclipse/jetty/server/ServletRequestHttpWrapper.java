@@ -31,10 +31,15 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+
 /* ------------------------------------------------------------ */
-/** Class to tunnel a ServletRequest via a HttpServletRequest
+/** 
+ * ServletRequestHttpWrapper
+ * 
+ * Class to tunnel a ServletRequest via a HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
 {
@@ -206,6 +211,27 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     public void logout() throws ServletException
     {
 
+    }
+
+
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
+     */
+    @Override
+    public String changeSessionId()
+    {
+        // TODO 3.1 Auto-generated method stub
+        return null;
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
+     */
+    @Override
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
+    {
+        // TODO 3.1 Auto-generated method stub
+        return null;
     }
 
 

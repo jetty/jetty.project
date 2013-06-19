@@ -92,6 +92,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("filter-mapping", this.getClass().getDeclaredMethod("visitFilterMapping",  __signature));
             registerVisitor("listener", this.getClass().getDeclaredMethod("visitListener",  __signature));
             registerVisitor("distributable", this.getClass().getDeclaredMethod("visitDistributable",  __signature));
+            registerVisitor("deny-uncovered-http-methods", this.getClass().getDeclaredMethod("visitDenyUncoveredHttpMethods", __signature));
         }
         catch (Exception e)
         {
@@ -1886,6 +1887,21 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // indicates that the webapp is distributable...
         //Servlet Spec 3.0 p.74  distributable only if all fragments are distributable
         ((WebDescriptor)descriptor).setDistributable(true);
+    }
+    
+    
+    /**
+     * Servlet spec 3.1. When present in web.xml, this means that http methods that are
+     * not covered by security constraints should have access denied.
+     * 
+     * See section 13.8.4, pg 145
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+    protected void visitDenyUncoveredHttpMethods(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        ((ConstraintAware)context.getSecurityHandler()).setDenyUncoveredHttpMethods(true);
     }
 
     /**

@@ -51,8 +51,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 {
     final static Logger LOG = SessionHandler.LOG;
     public final static String SESSION_KNOWN_ONLY_TO_AUTHENTICATED="org.eclipse.jetty.security.sessionKnownOnlytoAuthenticated";
-    private  String _clusterId; // ID unique within cluster
-    private  String _nodeId;    // ID unique within node
+    private  String _clusterId; // ID without any node (ie "worker") id appended
+    private  String _nodeId;    // ID of session with node(ie "worker") id appended
     private final AbstractSessionManager _manager;
     private final Map<String,Object> _attributes=new HashMap<String, Object>();
     private boolean _idChanged;

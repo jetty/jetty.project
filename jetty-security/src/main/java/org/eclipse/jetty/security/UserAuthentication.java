@@ -18,39 +18,20 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.UserIdentity.Scope;
 
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
-public class UserAuthentication implements Authentication.User
+public class UserAuthentication extends AbstractUserAuthentication
 {
-    private final String _method;
-    private final UserIdentity _userIdentity;
-
+   
     public UserAuthentication(String method, UserIdentity userIdentity)
     {
-        _method = method;
-        _userIdentity = userIdentity;
-    }
-    
-    public String getAuthMethod()
-    {
-        return _method;
+        super(method, userIdentity);
     }
 
-    public UserIdentity getUserIdentity()
-    {
-        return _userIdentity;
-    }
-
-    public boolean isUserInRole(Scope scope, String role)
-    {
-        return _userIdentity.isUserInRole(role, scope);
-    }
     
     @Override
     public String toString()

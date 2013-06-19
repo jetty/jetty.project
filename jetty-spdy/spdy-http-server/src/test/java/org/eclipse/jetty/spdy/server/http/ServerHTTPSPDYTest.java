@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +50,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -937,32 +935,12 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
-
-    @Ignore("The correspondent functionality in HttpOutput is not yet implemented")
-    @Test
-    public void testGETWithMediumContentAsInputStreamByPassed() throws Exception
-    {
-        byte[] data = new byte[2048];
-        testGETWithContentByPassed(new ByteArrayInputStream(data), data.length);
-    }
-
-    @Ignore("The correspondent functionality in HttpOutput is not yet implemented")
-    @Test
-    public void testGETWithBigContentAsInputStreamByPassed() throws Exception
-    {
-        byte[] data = new byte[128 * 1024];
-        testGETWithContentByPassed(new ByteArrayInputStream(data), data.length);
-    }
-
+    
     @Test
     public void testGETWithMediumContentAsBufferByPassed() throws Exception
     {
-        byte[] data = new byte[2048];
-        testGETWithContentByPassed(ByteBuffer.wrap(data), data.length);
-    }
-
-    private void testGETWithContentByPassed(final Object content, final int length) throws Exception
-    {
+        final byte[] data = new byte[2048];
+        
         final CountDownLatch handlerLatch = new CountDownLatch(1);
         Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
@@ -971,10 +949,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                // We use this trick that's present in Jetty code: if we add a request attribute
-                // called "org.eclipse.jetty.server.sendContent", then it will trigger the
-                // content bypass that we want to test
-                request.setAttribute("org.eclipse.jetty.server.sendContent", content);
+                request.getResponse().getHttpOutput().sendContent(ByteBuffer.wrap(data));
                 handlerLatch.countDown();
             }
         }), null);
@@ -1003,7 +978,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 contentLength.addAndGet(dataInfo.asBytes(true).length);
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(length, contentLength.get());
+                    Assert.assertEquals(data.length, contentLength.get());
                     dataLatch.countDown();
                 }
             }

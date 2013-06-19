@@ -356,6 +356,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                 __log.warn(e);
             }
         }
+        super.renewSessionId(oldClusterId, oldNodeId, newClusterId, newNodeId);
     }
 
     

@@ -155,7 +155,6 @@ public class JdbcLoginServiceTest
         security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
-        security.setStrict(false);
 
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 
 import javax.servlet.ServletInputStream;
+import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -290,5 +291,26 @@ public abstract class HttpInput<T> extends ServletInputStream
                 }
             }
         }
+    }
+
+   @Override
+    public boolean isFinished()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean isReady()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void setReadListener(ReadListener readListener)
+    {
+        // TODO Auto-generated method stub
+
     }
 }

@@ -41,6 +41,7 @@ import javax.servlet.ServletSecurityElement;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintAware;
@@ -1058,7 +1059,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.addEventListener(listener);
@@ -1072,7 +1074,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.removeEventListener(listener);
@@ -1326,7 +1329,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-     
         Set<String> unchangedURLMappings = new HashSet<String>();
         //From javadoc for ServletSecurityElement:
         /*
@@ -1361,6 +1363,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
                         for (ConstraintMapping m:mappings)
                             ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         getMetaData().setOrigin("constraint.url."+pathSpec, Origin.API);
                         break;
                     }
@@ -1384,6 +1387,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         constraintMappings.addAll(freshMappings);
                            
                         ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         break;
                     }
                 }

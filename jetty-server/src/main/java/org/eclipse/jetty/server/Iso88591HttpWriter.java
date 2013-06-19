@@ -35,10 +35,10 @@ public class Iso88591HttpWriter extends HttpWriter
     public void write (char[] s,int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0)
+        if (length==0 && out.isAllContentWritten())
         {
-            if (_out.isAllContentWritten())
-                close();
+            close();
+            return;
         }
 
         if (length==1)

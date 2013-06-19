@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.4-SNAPSHOT</version>
+    <version>9.1.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
@@ -30,8 +30,8 @@
       <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
   </dependencies>
 

@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
+ * RoleInfo
  * 
  * Badly named class that holds the role and user data constraint info for a
  * path/http method combination, extracted and combined from security
@@ -31,11 +32,15 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class RoleInfo
 {
+    private boolean _isAnyAuth;
     private boolean _isAnyRole;
     private boolean _checked;
     private boolean _forbidden;
     private UserDataConstraint _userDataConstraint;
 
+    /**
+     * List of permitted roles
+     */
     private final Set<String> _roles = new CopyOnWriteArraySet<String>();
 
     public RoleInfo()
@@ -55,6 +60,7 @@ public class RoleInfo
             _forbidden=false;
             _roles.clear();
             _isAnyRole=false;
+            _isAnyAuth=false;
         }
     }
 
@@ -71,6 +77,7 @@ public class RoleInfo
             _checked = true;
             _userDataConstraint = null;
             _isAnyRole=false;
+            _isAnyAuth=false;
             _roles.clear();
         }
     }
@@ -84,10 +91,19 @@ public class RoleInfo
     {
         this._isAnyRole=anyRole;
         if (anyRole)
-        {
             _checked = true;
-            _roles.clear();
-        }
+    }
+    
+    public boolean isAnyAuth ()
+    {
+        return _isAnyAuth;
+    }
+    
+    public void setAnyAuth(boolean anyAuth)
+    {
+        this._isAnyAuth=anyAuth;
+        if (anyAuth)
+            _checked = true;
     }
 
     public UserDataConstraint getUserDataConstraint()
@@ -100,6 +116,7 @@ public class RoleInfo
         if (userDataConstraint == null) throw new NullPointerException("Null UserDataConstraint");
         if (this._userDataConstraint == null)
         {
+           
             this._userDataConstraint = userDataConstraint;
         }
         else
@@ -126,6 +143,8 @@ public class RoleInfo
             setChecked(true);
         else if (other._isAnyRole)
             setAnyRole(true);
+        else if (other._isAnyAuth)
+            setAnyAuth(true);
         else if (!_isAnyRole)
         {
             for (String r : other._roles)
@@ -138,6 +157,6 @@ public class RoleInfo
     @Override
     public String toString()
     {
-        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":_roles)+"}";
+        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":_roles)+(_userDataConstraint!=null?","+_userDataConstraint:"")+"}";
     }
 }

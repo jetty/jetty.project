@@ -119,10 +119,6 @@ public abstract class AbstractProxySerializationTest
                 //stop the context to be sure the sesssion will be passivated
                 context.stop();
                 
-                //after a stop some of the volatile info is lost, so reinstate it
-                context.setClassLoader(loader);
-                context.addServlet("TestServlet", servletMapping);
-                
                 //restart the context
                 context.start();
                

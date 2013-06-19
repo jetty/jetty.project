@@ -34,7 +34,7 @@ import javax.servlet.ServletResponseWrapper;
 /* ------------------------------------------------------------ */
 /**
  * This implementation of Continuation is used by {@link ContinuationSupport}
- * when it detects that the application has been deployed in a non-jetty Servlet 3
+ * when it detects that the application has been deployed in a Servlet 3
  * server.
  */
 public class Servlet3Continuation implements Continuation, AsyncListener

@@ -43,10 +43,10 @@ public class Utf8HttpWriter extends HttpWriter
     public void write (char[] s,int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0)
+        if (length==0 && out.isAllContentWritten())
         {
-            if (_out.isAllContentWritten())
-                close();
+            close();
+            return;
         }
         
         while (length > 0)

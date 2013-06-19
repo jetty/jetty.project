@@ -81,7 +81,6 @@ public class StatisticsHandler extends HandlerWrapper
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            
             HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
 
             Request request = state.getBaseRequest();
@@ -92,8 +91,7 @@ public class StatisticsHandler extends HandlerWrapper
 
             updateResponse(request);
 
-            if (!state.isDispatched())
-                _asyncWaitStats.decrement();
+            _asyncWaitStats.decrement();
         }
 
     };
@@ -139,9 +137,7 @@ public class StatisticsHandler extends HandlerWrapper
         {
             // resumed request
             start = System.currentTimeMillis();
-            _asyncWaitStats.decrement();
-            if (state.isDispatched())
-                _asyncDispatches.incrementAndGet();
+            _asyncDispatches.incrementAndGet();
         }
 
         try
@@ -159,8 +155,10 @@ public class StatisticsHandler extends HandlerWrapper
             if (state.isSuspended())
             {
                 if (state.isInitial())
+                {
                     state.addListener(_onCompletion);
-                _asyncWaitStats.increment();
+                    _asyncWaitStats.increment();
+                }
             }
             else if (state.isInitial())
             {

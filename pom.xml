@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.0.4-SNAPSHOT</version>
+  <version>9.1.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -147,8 +147,10 @@
                 <!-- Banned Dependencies (should use Orbit based versions now) -->
                 <bannedDependencies>
                   <excludes>
+<!--
                     <exclude>javax.servlet</exclude>
                     <exclude>javax.servlet.jsp</exclude>
+-->
                     <exclude>org.apache.geronimo.specs</exclude>
                     <exclude>javax.mail</exclude>
                     <exclude>javax.activation</exclude>
@@ -462,9 +464,14 @@
     <dependencies>
       <!-- Orbit Deps -->
       <dependency>
+         <groupId>javax.servlet</groupId>
+         <artifactId>javax.servlet-api</artifactId>
+         <version>3.1-b08</version>
+<!--
          <groupId>org.eclipse.jetty.orbit</groupId>
          <artifactId>javax.servlet</artifactId>
          <version>3.0.0.v201112011016</version>
+-->
        </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -502,11 +509,25 @@
         <artifactId>javax.servlet.jsp</artifactId>
         <version>2.1.0.v201105211820</version>
       </dependency>
+      -->
+      <dependency>
+        <groupId>javax.servlet.jsp</groupId>
+        <artifactId>javax.servlet.jsp-api</artifactId>
+        <version>2.3.1</version>
+      </dependency>
+
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
         <version>1.2.0.v201105211821</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet.jsp</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
+<!--
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.el</artifactId>
@@ -517,22 +538,40 @@
         <artifactId>com.sun.el</artifactId>
         <version>1.0.0.v201105211818</version>
       </dependency>
+-->
+      <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>javax.el</artifactId>
+        <version>3.0-b07</version>
+      </dependency>
+<!--
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>org.apache.jasper.glassfish</artifactId>
         <version>2.1.0.v201110031002</version>
       </dependency>
+-->
+      <dependency>
+        <groupId>org.glassfish.web</groupId>
+        <artifactId>javax.servlet.jsp</artifactId>
+        <version>2.3.1</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
         <version>1.2.0.v201112081803</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet.jsp</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>org.eclipse.jdt.core</artifactId>
         <version>3.7.1</version>
       </dependency>
-        -->
 
       <!-- Old Deps -->
       <dependency>

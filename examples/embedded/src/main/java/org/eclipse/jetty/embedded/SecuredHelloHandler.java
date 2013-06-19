@@ -54,7 +54,6 @@ public class SecuredHelloHandler
         security.setConstraintMappings(Collections.singletonList(mapping));
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
-        security.setStrict(false);
         
         HelloHandler hh = new HelloHandler();
         

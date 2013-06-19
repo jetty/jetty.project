@@ -462,6 +462,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         if (checkSecurity(baseRequest))
         {
+            //See Servlet Spec 3.1 sec 13.6.3
+            if (authenticator != null)
+                authenticator.prepareRequest(baseRequest);
+            
             RoleInfo roleInfo = prepareConstraintInfo(pathInContext, baseRequest);
 
             // Check data constraints

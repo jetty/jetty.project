@@ -40,9 +40,18 @@ public abstract class LoginAuthenticator implements Authenticator
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;
-
+    
+    
+    /* ------------------------------------------------------------ */
     protected LoginAuthenticator()
     {
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void prepareRequest(ServletRequest request)
+    {
+        //empty implementation as the default
     }
 
 
@@ -58,7 +67,7 @@ public abstract class LoginAuthenticator implements Authenticator
         return null;
     }
 
-
+    /* ------------------------------------------------------------ */
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
@@ -70,12 +79,16 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for "+this+" in "+configuration);
         _renewSession=configuration.isSessionRenewedOnAuthentication();
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     public LoginService getLoginService()
     {
         return _loginService;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /** Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.

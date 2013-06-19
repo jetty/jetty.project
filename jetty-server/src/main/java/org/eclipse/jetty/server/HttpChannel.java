@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.HttpChannelState.Next;
+import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
@@ -249,36 +250,50 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         // The loop is controlled by the call to async.unhandle in the
         // finally block below.  Unhandle will return false only if an async dispatch has
         // already happened when unhandle is called.
-        HttpChannelState.Next next = _state.handling();
-        while (next==Next.CONTINUE && getServer().isRunning())
+        HttpChannelState.Action action = _state.handling();
+        loop: while (action.ordinal()<HttpChannelState.Action.WAIT.ordinal() && getServer().isRunning())
         {
             try
             {
-                _request.setHandled(false);
-                _response.getHttpOutput().reopen();
-
-                if (_state.isInitial())
+                switch(action)
                 {
-                    _request.setTimeStamp(System.currentTimeMillis());
-                    _request.setDispatcherType(DispatcherType.REQUEST);
+                    case REQUEST_DISPATCH:
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
+                        _request.setTimeStamp(System.currentTimeMillis());
+                        _request.setDispatcherType(DispatcherType.REQUEST);
 
-                    for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                        customizer.customize(getConnector(),_configuration,_request);
-                    getServer().handle(this);
-                }
-                else
-                {
-                    if (_request.getHttpChannelState().isExpired())
-                    {
+                        for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
+                            customizer.customize(getConnector(),_configuration,_request);
+                        getServer().handle(this);
+                        break;
+                        
+                    case ASYNC_DISPATCH:
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
+                        _request.setDispatcherType(DispatcherType.ASYNC);
+                        getServer().handleAsync(this);
+                        break;
+                        
+                    case ASYNC_EXPIRED:
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
                         _request.setDispatcherType(DispatcherType.ERROR);
                         _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
                         _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
                         _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
                         _response.setStatusWithReason(500,"Async Timeout");
-                    }
-                    else
-                        _request.setDispatcherType(DispatcherType.ASYNC);
-                    getServer().handleAsync(this);
+
+                        getServer().handleAsync(this);
+                        break;
+                        
+                    case IO_CALLBACK:
+                        _response.getHttpOutput().handle();
+                        
+                        break;
+                    default:
+                        break loop;
+                        
                 }
             }
             catch (Error e)
@@ -300,7 +315,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
-                next = _state.unhandle();
+                action = _state.unhandle();
             }
         }
 
@@ -308,7 +323,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             Thread.currentThread().setName(threadName);
         setCurrentHttpChannel(null);
 
-        if (next==Next.COMPLETE)
+        if (action==Action.COMPLETE)
         {
             try
             {
@@ -330,19 +345,19 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
-                next=Next.RECYCLE;
+                action=Action.RECYCLE;
             }
         }
 
-        if (next==Next.RECYCLE)
+        if (action==Action.RECYCLE)
         {
             _request.setHandled(true);
             _transport.completed();
         }
 
-        LOG.debug("{} handle exit, result {}", this, next);
+        LOG.debug("{} handle exit, result {}", this, action);
 
-        return next!=Next.WAIT;
+        return action!=Action.WAIT;
     }
 
     /**
@@ -598,7 +613,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
         try
         {
-            if (_state.handling()==Next.CONTINUE)
+            if (_state.handling()==Action.REQUEST_DISPATCH)
                 sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
         }
         catch (IOException e)
@@ -607,8 +622,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         }
         finally
         {
-            if (_state.unhandle()==Next.COMPLETE)
+            if (_state.unhandle()==Action.COMPLETE)
                 _state.completed();
+            else 
+                throw new IllegalStateException();
         }
     }
 

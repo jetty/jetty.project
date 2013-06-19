@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security;
 
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -232,6 +233,45 @@ public class SpecExampleConstraintTest
         }
     }
 
+    @Test
+    public void testUncoveredHttpMethodDetection() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+       Set<String> paths =  _security.getPathsWithUncoveredHttpMethods();
+       assertEquals(1, paths.size());
+       assertEquals("/*", paths.iterator().next());
+    }
+    
+    @Test
+    public void testUncoveredHttpMethodsDenied() throws Exception
+    {
+        try
+        {
+            _security.setDenyUncoveredHttpMethods(false);
+            _security.setAuthenticator(new BasicAuthenticator());
+            _server.start();
+            
+            //There are uncovered methods for GET/POST at url /*
+            //without deny-uncovered-http-methods they should be accessible
+            String response;
+            response = _connector.getResponses("GET /ctx/index.html HTTP/1.0\r\n\r\n");
+            assertThat(response,startsWith("HTTP/1.1 200 OK"));   
+            
+            //set deny-uncovered-http-methods true
+            _security.setDenyUncoveredHttpMethods(true);
+            
+            //check they cannot be accessed
+            response = _connector.getResponses("GET /ctx/index.html HTTP/1.0\r\n\r\n");
+            assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
+        }
+        finally
+        {
+            _security.setDenyUncoveredHttpMethods(false);
+        }
+        
+    }
   
 
     @Test
@@ -239,7 +279,6 @@ public class SpecExampleConstraintTest
     {
         
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;

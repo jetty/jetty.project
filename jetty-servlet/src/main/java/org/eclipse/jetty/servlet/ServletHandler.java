@@ -906,9 +906,12 @@ public class ServletHandler extends ScopedHandler
     {
         setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
-
-    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
-        if (_contextHandler != null) {
+    
+    /* ------------------------------------------------------------ */
+    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) 
+    {
+        if (_contextHandler != null) 
+        {
             return _contextHandler.setServletSecurity(registration, servletSecurityElement);
         }
         return Collections.emptySet();
@@ -1328,7 +1331,11 @@ public class ServletHandler extends ScopedHandler
                     String[] pathSpecs = servletmapping.getPathSpecs();
                     for (String pathSpec : pathSpecs)
                         if (pathSpec != null)
-                            pm.put(pathSpec, servlet_holder);
+                        {
+                            ServletHolder previous = pm.put(pathSpec, servlet_holder);
+                            if (previous != null)
+                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec);
+                        }
                 }
             }
 

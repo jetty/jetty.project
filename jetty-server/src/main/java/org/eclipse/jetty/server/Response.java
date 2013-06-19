@@ -454,10 +454,18 @@ public class Response implements HttpServletResponse
             _channel.sendResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
         }
     }
-
-    @Override
-    public void sendRedirect(String location) throws IOException
+    
+    /**
+     * Sends a response with one of the 300 series redirection codes.
+     * @param code
+     * @param location
+     * @throws IOException
+     */
+    public void sendRedirect(int code, String location) throws IOException
     {
+        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+            throw new IllegalArgumentException("Not a 3xx redirect code");
+        
         if (isIncluding())
             return;
 
@@ -467,7 +475,15 @@ public class Response implements HttpServletResponse
         if (!URIUtil.hasScheme(location))
         {
             StringBuilder buf = _channel.getRequest().getRootURL();
-            if (location.startsWith("/"))
+ 
+            if (location.startsWith("//"))
+            {
+                buf.delete(0, buf.length());
+                buf.append(_channel.getRequest().getScheme());
+                buf.append(":");
+                buf.append(location);
+            }
+            else if (location.startsWith("/"))
                 buf.append(location);
             else
             {
@@ -515,8 +531,14 @@ public class Response implements HttpServletResponse
 
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
-        setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+        setStatus(code);
         closeOutput();
+    }
+
+    @Override
+    public void sendRedirect(String location) throws IOException
+    {
+        sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
     }
 
     @Override
@@ -810,6 +832,12 @@ public class Response implements HttpServletResponse
             return;
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
+    }
+    
+    @Override
+    public void setContentLengthLong(long length)
+    {
+        setLongContentLength(length);
     }
 
     @Override

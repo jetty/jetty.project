@@ -647,6 +647,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                 LOG.warn(e);
             }
         }
+
+        super.renewSessionId(oldClusterId, oldNodeId, newClusterId, newNodeId);
     }
 
     

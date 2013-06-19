@@ -19,7 +19,9 @@
 package org.eclipse.jetty.security;
 
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +40,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.HttpConstraintElement;
+import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
+import javax.servlet.ServletSecurityElement;
+import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -88,7 +96,8 @@ public class ConstraintTest
         SessionHandler _session = new SessionHandler();
 
         HashLoginService _loginService = new HashLoginService(TEST_REALM);
-        _loginService.putUser("user",new Password("password"));
+        _loginService.putUser("user0", new Password("password"), new String[]{});
+        _loginService.putUser("user",new Password("password"), new String[] {"user"});
         _loginService.putUser("user2",new Password("password"), new String[] {"user"});
         _loginService.putUser("admin",new Password("password"), new String[] {"user","administrator"});
         _loginService.putUser("user3", new Password("password"), new String[] {"foo"});
@@ -180,7 +189,16 @@ public class ConstraintTest
         mapping6.setPathSpec("/data/*");
         mapping6.setConstraint(constraint6);
         
-        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6);
+        Constraint constraint7 = new Constraint();
+        constraint7.setAuthenticate(true);
+        constraint7.setName("** constraint");
+        constraint7.setRoles(new String[]{Constraint.ANY_AUTH,"user"}); //the "user" role is superfluous once ** has been defined
+        ConstraintMapping mapping7 = new ConstraintMapping();
+        mapping7.setPathSpec("/starstar/*");
+        mapping7.setConstraint(constraint7);
+       
+        
+        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7);
     }
 
     @Test
@@ -207,6 +225,224 @@ public class ConstraintTest
         assertTrue (mappings.get(1).getConstraint().getAuthenticate());
         assertTrue (mappings.get(2).getConstraint().getAuthenticate());
         assertFalse(mappings.get(3).getConstraint().getAuthenticate());
+    }
+    
+
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
+     * @ServletSecurity
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_1() throws Exception
+    {
+        ServletSecurityElement element = new ServletSecurityElement();
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(mappings.isEmpty());
+    }
+    
+   
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-2
+     * @ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_2() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL, new String[]{});
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size());
+        ConstraintMapping mapping = mappings.get(0);
+        assertEquals(2, mapping.getConstraint().getDataConstraint());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-3
+     * @ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_3() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(EmptyRoleSemantic.DENY);
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size()); 
+        ConstraintMapping mapping = mappings.get(0);
+        assertTrue(mapping.getConstraint().isForbidden());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
+     * @ServletSecurity(@HttpConstraint(rolesAllowed = "R1"))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_4() throws Exception
+    {
+        HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.NONE, "R1");
+        ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(1, mappings.size()); 
+        ConstraintMapping mapping = mappings.get(0);
+        assertTrue(mapping.getConstraint().getAuthenticate());
+        assertTrue(mapping.getConstraint().getRoles() != null);
+        assertEquals(1, mapping.getConstraint().getRoles().length);
+        assertEquals("R1",  mapping.getConstraint().getRoles()[0]);
+        assertEquals(0, mapping.getConstraint().getDataConstraint());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-5
+     * @ServletSecurity((httpMethodConstraints = {
+     * @HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
+     * @HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
+     *         transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
+     * @throws Exception
+     */ 
+    @Test
+    public void testSecurityElementExample13_5() throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("GET", new HttpConstraintElement(TransportGuarantee.NONE, "R1")));
+        methodElements.add(new HttpMethodConstraintElement("POST", new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL, "R1")));
+        ServletSecurityElement element = new ServletSecurityElement(methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertEquals("GET", mappings.get(0).getMethod());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertTrue(mappings.get(0).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(0).getConstraint().getDataConstraint());
+        assertEquals("POST", mappings.get(1).getMethod());
+        assertEquals("R1", mappings.get(1).getConstraint().getRoles()[0]);
+        assertEquals(2, mappings.get(1).getConstraint().getDataConstraint());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-6
+     * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_6 () throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("GET"));
+        ServletSecurityElement element = new ServletSecurityElement(new HttpConstraintElement(TransportGuarantee.NONE, "R1"), methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertTrue(mappings.get(0).getMethodOmissions() != null);
+        assertEquals("GET", mappings.get(0).getMethodOmissions()[0]);
+        assertTrue(mappings.get(0).getConstraint().getAuthenticate());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertEquals("GET", mappings.get(1).getMethod());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(1).getConstraint().getDataConstraint());
+        assertFalse(mappings.get(1).getConstraint().getAuthenticate());
+    }
+    
+    /**
+     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-7
+     * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), 
+     *                  httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
+     *                  emptyRoleSemantic = EmptyRoleSemantic.DENY))
+     * @throws Exception
+     */
+    @Test
+    public void testSecurityElementExample13_7() throws Exception
+    {
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        methodElements.add(new HttpMethodConstraintElement("TRACE", new HttpConstraintElement(EmptyRoleSemantic.DENY)));
+        ServletSecurityElement element = new ServletSecurityElement(new HttpConstraintElement(TransportGuarantee.NONE, "R1"), methodElements);
+        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
+        assertTrue(!mappings.isEmpty());
+        assertEquals(2, mappings.size());
+        assertTrue(mappings.get(0).getMethodOmissions() != null);
+        assertEquals("TRACE", mappings.get(0).getMethodOmissions()[0]);
+        assertTrue(mappings.get(0).getConstraint().getAuthenticate());
+        assertEquals("R1", mappings.get(0).getConstraint().getRoles()[0]);
+        assertEquals("TRACE", mappings.get(1).getMethod());
+        assertTrue(mappings.get(1).getMethodOmissions() == null);
+        assertEquals(0, mappings.get(1).getConstraint().getDataConstraint());
+        assertTrue(mappings.get(1).getConstraint().isForbidden());
+    }
+    
+    @Test
+    public void testUncoveredHttpMethodDetection() throws Exception
+    {
+        //Test no methods named
+        Constraint constraint1 = new Constraint();
+        constraint1.setAuthenticate(true);
+        constraint1.setName("** constraint");
+        constraint1.setRoles(new String[]{Constraint.ANY_AUTH,"user"}); //No methods named, no uncovered methods
+        ConstraintMapping mapping1 = new ConstraintMapping();
+        mapping1.setPathSpec("/starstar/*");
+        mapping1.setConstraint(constraint1);
+        
+        _security.setConstraintMappings(Collections.singletonList(mapping1));
+        _security.setAuthenticator(new BasicAuthenticator());
+        _server.start();
+
+        Set<String> uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertTrue(uncoveredPaths.isEmpty()); //no uncovered methods
+  
+        //Test only an explicitly named method, no omissions to cover other methods
+        Constraint constraint2 = new Constraint();
+        constraint2.setAuthenticate(true);
+        constraint2.setName("user constraint");
+        constraint2.setRoles(new String[]{"user"});
+        ConstraintMapping mapping2 = new ConstraintMapping();
+        mapping2.setPathSpec("/user/*");
+        mapping2.setMethod("GET");
+        mapping2.setConstraint(constraint2);
+        
+        _security.addConstraintMapping(mapping2);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(1, uncoveredPaths.size());
+        assertTrue(uncoveredPaths.contains("/user/*"));
+        
+        //Test an explicitly named method with a http-method-omission to cover all other methods
+        Constraint constraint2a = new Constraint();
+        constraint2a.setAuthenticate(true);
+        constraint2a.setName("forbid constraint");
+        ConstraintMapping mapping2a = new ConstraintMapping();
+        mapping2a.setPathSpec("/user/*");
+        mapping2a.setMethodOmissions(new String[]{"GET"});
+        mapping2a.setConstraint(constraint2a);
+        
+        _security.addConstraintMapping(mapping2a);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(0, uncoveredPaths.size());
+        
+        //Test a http-method-omission only
+        Constraint constraint3 = new Constraint();
+        constraint3.setAuthenticate(true);
+        constraint3.setName("omit constraint");
+        ConstraintMapping mapping3 = new ConstraintMapping();
+        mapping3.setPathSpec("/omit/*");
+        mapping3.setMethodOmissions(new String[]{"GET", "POST"});
+        mapping3.setConstraint(constraint3);
+        
+        _security.addConstraintMapping(mapping3);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertTrue(uncoveredPaths.contains("/omit/*"));
+        
+        _security.setDenyUncoveredHttpMethods(true);
+        uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        assertNotNull(uncoveredPaths);
+        assertEquals(0, uncoveredPaths.size());
     }
 
     @Test
@@ -252,7 +488,6 @@ public class ConstraintTest
         
         
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -377,7 +612,6 @@ public class ConstraintTest
         DigestAuthenticator authenticator = new DigestAuthenticator();
         authenticator.setMaxNonceCount(5);
         _security.setAuthenticator(authenticator);
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -464,7 +698,6 @@ public class ConstraintTest
     public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -519,7 +752,6 @@ public class ConstraintTest
     public void testFormRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -576,7 +808,6 @@ public class ConstraintTest
     public void testFormPostRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -608,6 +839,7 @@ public class ConstraintTest
                 "Content-Length: 31\r\n" +
                 "\r\n" +
         "j_username=user&j_password=wrong\r\n");
+        
         assertThat(response,containsString("Location"));
 
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
@@ -646,7 +878,6 @@ public class ConstraintTest
     public void testFormNoCookies() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -719,7 +950,7 @@ public class ConstraintTest
         assertThat(response,containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user3:password") + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403"));
 
@@ -793,9 +1024,9 @@ public class ConstraintTest
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: 35\r\n" +
+                "Content-Length: 36\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=password\r\n");
+                "j_username=user0&j_password=password\r\n");
         assertThat(response,startsWith("HTTP/1.1 302 "));
         assertThat(response,containsString("Location"));
         assertThat(response,containsString("/ctx/auth/info"));
@@ -904,9 +1135,9 @@ public class ConstraintTest
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: 35\r\n" +
+                "Content-Length: 36\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=password\r\n");
+                "j_username=user3&j_password=password\r\n");
         assertThat(response,startsWith("HTTP/1.1 302 "));
         assertThat(response,containsString("Location"));
         assertThat(response,containsString("/ctx/auth/info"));
@@ -949,12 +1180,35 @@ public class ConstraintTest
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
+        //check user2 does not have right role to access /admin/*
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403"));
         assertThat(response,containsString("!role"));
+        
+        //log in as user3, who doesn't have a valid role, but we are checking a constraint
+        //of ** which just means they have to be authenticated
+        response = _connector.getResponses("GET /ctx/starstar/info HTTP/1.0\r\n\r\n");
+        assertThat(response,startsWith("HTTP/1.1 302 "));
+        assertThat(response,containsString("testLoginPage"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
+        response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 36\r\n" +
+                "\r\n" +
+                "j_username=user3&j_password=password\r\n");
+        assertThat(response,startsWith("HTTP/1.1 302 "));
+        assertThat(response,containsString("Location"));
+        assertThat(response,containsString("/ctx/starstar/info"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+
+        response = _connector.getResponses("GET /ctx/starstar/info HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
 
         // log in again as admin
@@ -1033,7 +1287,6 @@ public class ConstraintTest
         RoleCheckHandler check=new RoleCheckHandler();
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
 
         _server.start();
 
@@ -1065,7 +1318,6 @@ public class ConstraintTest
     public void testDeferredBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;
@@ -1092,7 +1344,6 @@ public class ConstraintTest
     public void testRelaxedMethod() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
-        _security.setStrict(false);
         _server.start();
 
         String response;

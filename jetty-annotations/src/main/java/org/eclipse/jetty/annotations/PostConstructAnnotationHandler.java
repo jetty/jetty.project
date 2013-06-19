@@ -44,7 +44,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
     public void doHandle(Class clazz)
     {
         //Check that the PostConstruct is on a class that we're interested in
-        if (Util.isServletType(clazz))
+        if (Util.supportsPostConstructPreDestroy(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
             for (int i=0; i<methods.length; i++)

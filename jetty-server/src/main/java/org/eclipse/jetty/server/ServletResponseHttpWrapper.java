@@ -28,7 +28,10 @@ import javax.servlet.http.HttpServletResponse;
 
 
 /* ------------------------------------------------------------ */
-/** Wrapper to tunnel a ServletResponse via a HttpServletResponse
+/** 
+ * ServletResponseHttpWrapper
+ * 
+ * Wrapper to tunnel a ServletResponse via a HttpServletResponse
  */
 public class ServletResponseHttpWrapper extends ServletResponseWrapper implements HttpServletResponse
 {

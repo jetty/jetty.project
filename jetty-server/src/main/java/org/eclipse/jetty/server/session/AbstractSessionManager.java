@@ -38,6 +38,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -107,6 +108,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<HttpSessionAttributeListener>();
     protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<HttpSessionListener>();
+    protected final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<HttpSessionIdListener>();
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;
@@ -191,6 +193,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
         if (listener instanceof HttpSessionListener)
             _sessionListeners.add((HttpSessionListener)listener);
+        if (listener instanceof HttpSessionIdListener)
+            _sessionIdListeners.add((HttpSessionIdListener)listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -198,6 +202,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         _sessionAttributeListeners.clear();
         _sessionListeners.clear();
+        _sessionIdListeners.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -989,6 +994,29 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding=remote;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Tell the HttpSessionIdListeners the id changed.
+     * NOTE: this method must be called LAST in subclass overrides, after the session has been updated
+     * with the new id.
+     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     */
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    {
+        if (!_sessionIdListeners.isEmpty())
+        {
+            AbstractSession session = getSession(newClusterId);
+            HttpSessionEvent event = new HttpSessionEvent(session);
+            for (HttpSessionIdListener l:_sessionIdListeners)
+            {
+                l.sessionIdChanged(event, oldClusterId);
+            }
+        }
+
     }
 
     /* ------------------------------------------------------------ */

@@ -20,6 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 
+import javax.servlet.ReadListener;
+
 /**
  * <p>An implementation of HttpInput using {@link ByteBuffer} as items.</p>
  */

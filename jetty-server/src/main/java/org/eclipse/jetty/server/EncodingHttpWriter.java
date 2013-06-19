@@ -49,10 +49,10 @@ public class EncodingHttpWriter extends HttpWriter
     public void write (char[] s,int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0)
+        if (length==0 && out.isAllContentWritten())
         {
-            if (_out.isAllContentWritten())
-                close();
+            out.close();
+            return;
         }
             
         while (length > 0)

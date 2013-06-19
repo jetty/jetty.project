@@ -965,7 +965,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (old_context != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || (DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isExpired()))
+            if (DispatcherType.REQUEST.equals(dispatch) || 
+                DispatcherType.ASYNC.equals(dispatch) || 
+                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -2143,13 +2145,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                return clazz.newInstance();
+                return createInstance(clazz);
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -2191,6 +2189,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean isEnabled()
         {
             return _enabled;
+        }
+
+
+        public <T> T createInstance (Class<T> clazz) throws Exception
+        {
+            T o = clazz.newInstance();
+            return o;
         }
     }
 
@@ -2531,6 +2536,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public void declareRoles(String... roleNames)
         {
             LOG.warn(__unimplmented);
+        }
+
+        /** 
+         * @see javax.servlet.ServletContext#getVirtualServerName()
+         */
+        @Override
+        public String getVirtualServerName()
+        {
+            // TODO 3.1 Auto-generated method stub
+            return null;
         }
     }
 

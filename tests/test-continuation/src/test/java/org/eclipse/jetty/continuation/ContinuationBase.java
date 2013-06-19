@@ -502,7 +502,6 @@ public abstract class ContinuationBase
         public void onTimeout(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");
-            // continuation.resume();
         }
 
     };
