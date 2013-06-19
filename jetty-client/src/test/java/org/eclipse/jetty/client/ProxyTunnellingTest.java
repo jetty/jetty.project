@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -32,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Connector;
@@ -45,7 +45,11 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ProxyTunnellingTest
 {
@@ -113,7 +117,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    public void testOneMessageSSL() throws Exception
+    public void testOneExchangeViaSSL() throws Exception
     {
         startSSLServer(new ServerHandler());
         startProxy();
@@ -141,7 +145,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    public void testTwoMessagesSSL() throws Exception
+    public void testTwoExchangesViaSSL() throws Exception
     {
         startSSLServer(new ServerHandler());
         startProxy();
@@ -174,6 +178,85 @@ public class ProxyTunnellingTest
             assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
             content = exchange.getResponseContent();
             assertEquals(body, content);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testTwoConcurrentExchangesViaSSL() throws Exception
+    {
+        startSSLServer(new ServerHandler());
+        startProxy();
+
+        final HttpClient httpClient = new HttpClient();
+        httpClient.setProxy(new Address("localhost", proxyPort()));
+        httpClient.start();
+
+        try
+        {
+            final AtomicReference<AbstractHttpConnection> connection = new AtomicReference<AbstractHttpConnection>();
+            final CountDownLatch connectionLatch = new CountDownLatch(1);
+            ContentExchange exchange1 = new ContentExchange(true)
+            {
+                @Override
+                protected void onRequestCommitted() throws IOException
+                {
+                    // Simulate the concurrent send of a second exchange which
+                    // triggers the opening of a second connection but then
+                    // it's "stolen" by the first connection, so that the
+                    // second connection is put into the idle connections.
+
+                    HttpDestination destination = httpClient.getDestination(new Address("localhost", serverConnector.getLocalPort()), true);
+                    destination.startNewConnection();
+
+                    // Wait until we have the new connection
+                    AbstractHttpConnection httpConnection = null;
+                    while (httpConnection == null)
+                    {
+                        try
+                        {
+                            Thread.sleep(10);
+                            httpConnection = destination.getIdleConnection();
+                        }
+                        catch (InterruptedException x)
+                        {
+                            throw new InterruptedIOException();
+                        }
+                    }
+
+                    connection.set(httpConnection);
+                    connectionLatch.countDown();
+                }
+            };
+            exchange1.setMethod(HttpMethods.GET);
+            String body1 = "BODY";
+            exchange1.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo?body=" + URLEncoder.encode(body1, "UTF-8"));
+
+            httpClient.send(exchange1);
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange1.waitForDone());
+            assertEquals(HttpStatus.OK_200, exchange1.getResponseStatus());
+            String content1 = exchange1.getResponseContent();
+            assertEquals(body1, content1);
+
+            Assert.assertTrue(connectionLatch.await(5, TimeUnit.SECONDS));
+
+            ContentExchange exchange2 = new ContentExchange(true);
+            exchange2.setMethod(HttpMethods.POST);
+            exchange2.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo");
+            exchange2.setRequestHeader(HttpHeaders.CONTENT_TYPE, MimeTypes.FORM_ENCODED);
+            String body2 = "body=" + body1;
+            exchange2.setRequestHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(body2.length()));
+            exchange2.setRequestContent(new ByteArrayBuffer(body2, "UTF-8"));
+
+            // Make sure the second connection can send the exchange via the tunnel
+            connection.get().send(exchange2);
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange2.waitForDone());
+            assertEquals(HttpStatus.OK_200, exchange2.getResponseStatus());
+            String content2 = exchange2.getResponseContent();
+            assertEquals(body1, content2);
         }
         finally
         {
