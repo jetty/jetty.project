@@ -26,6 +26,19 @@ import java.util.Set;
 /* ------------------------------------------------------------ */
 /** A Ternary Trie String lookup data structure.
  * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
+ * <p>
+ * The Trie is stored in 3 arrays:<dl>
+ * <dt>char[] _tree</dt><dd>This is semantically 2 dimensional array flattened into a 1 dimensional char array. The second dimension
+ * is that every 4 sequential elements represents a row of: character; hi index; eq index; low index, used to build a
+ * ternary trie of key strings.</dd>
+ * <dt>String[] _key<dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element 
+ * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.</dd>
+ * <dt>V[] _value</dt><dd>An array of values corresponding to the _key array</dd>
+ * </dl>
+ * <p>The lookup of a value will iterate through the _tree array matching characters. If the equal tree branch is followed,
+ * then the _key array is looked up to see if this is a complete match.  If a match is found then the _value array is looked up
+ * to return the matching value.
+ * </p>
  * @param <V>
  */
 public class ArrayTernaryTrie<V> extends AbstractTrie<V>
@@ -58,7 +71,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * A row may be a leaf, a node or both in the Trie tree.
      */
     private final Object[] _value;
-    
     
     /**
      * The number of rows allocated
@@ -183,7 +195,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break;
                 }
 
-                t=_tree[row+((diff<0)?LO:HI)];
+                t=_tree[row+hilo(diff)];
                 if (t==0)
                     return null;
             }
@@ -223,7 +235,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break;
                 }
 
-                t=_tree[row+((diff<0)?LO:HI)];
+                t=_tree[row+hilo(diff)];
                 if (t==0)
                     return null;
             }
@@ -279,7 +291,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break;
                 }
 
-                t=_tree[row+((diff<0)?LO:HI)];
+                t=_tree[row+hilo(diff)];
             }
         }
         return null;
@@ -328,7 +340,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break;
                 }
 
-                t=_tree[row+((diff<0)?LO:HI)];
+                t=_tree[row+hilo(diff)];
             }
         }
         return null;
@@ -369,7 +381,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break;
                 }
 
-                t=_tree[row+((diff<0)?LO:HI)];
+                t=_tree[row+hilo(diff)];
             }
         }
         return null;
@@ -418,6 +430,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return _rows+1==_key.length;
     }
     
+    public static int hilo(int diff)
+    {
+        // branchless equivalent to return ((diff<0)?LO:HI);
+        // return 3+2*((diff&Integer.MIN_VALUE)>>Integer.SIZE-1);
+        return 1+(diff|Integer.MAX_VALUE)/(Integer.MAX_VALUE/2);
+    }
     
     public void dump()
     {
