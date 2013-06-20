@@ -48,7 +48,8 @@ public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
         ClientEndpoint anno = websocket.getAnnotation(ClientEndpoint.class);
         if (anno == null)
         {
-            throw new InvalidWebSocketException("Unsupported WebSocket object, missing @" + ClientEndpoint.class + " annotation");
+            throw new InvalidWebSocketException(String.format("Unsupported WebSocket object [%s], missing @%s annotation",websocket.getName(),
+                    ClientEndpoint.class.getName()));
         }
 
         this.endpoint = anno;

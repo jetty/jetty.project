@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
@@ -34,6 +35,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -115,9 +117,30 @@ public class ClientContainer implements ContainerService
     {
         try
         {
-            JsrClientMetadata metadata = new JsrClientMetadata(this,annotatedEndpointClass);
-            Object websocket = annotatedEndpointClass.newInstance();
-            return connect(websocket,metadata.getEndpointConfigCopy(),path);
+            ClientEndpoint anno = annotatedEndpointClass.getAnnotation(ClientEndpoint.class);
+            if (anno != null)
+            {
+                // Annotated takes precedence here
+                JsrClientMetadata metadata = new JsrClientMetadata(this,annotatedEndpointClass);
+                Object websocket = annotatedEndpointClass.newInstance();
+                return connect(websocket,metadata.getEndpointConfigCopy(),path);
+            }
+            else if (Endpoint.class.isAssignableFrom(annotatedEndpointClass))
+            {
+                // Try if extends Endpoint (alternate use)
+                Object websocket = annotatedEndpointClass.newInstance();
+                ClientEndpointConfig cec = new JettyClientEndpointConfig();
+                return connect(websocket,cec,path);
+            }
+            else
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("Not a recognized websocket [");
+                err.append(annotatedEndpointClass.getName());
+                err.append("] does not extend @").append(ClientEndpoint.class.getName());
+                err.append(" or extend from ").append(Endpoint.class.getName());
+                throw new DeploymentException(err.toString());
+            }
         }
         catch (InstantiationException | IllegalAccessException e)
         {
