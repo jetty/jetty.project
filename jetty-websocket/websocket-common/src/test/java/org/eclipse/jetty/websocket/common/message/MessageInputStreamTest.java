@@ -41,7 +41,7 @@ public class MessageInputStreamTest
     @Rule
     public TestName testname = new TestName();
 
-    @Test
+    @Test(timeout=10000)
     public void testBasicAppendRead() throws IOException
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -64,7 +64,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test
+    @Test(timeout=10000)
     public void testBlockOnRead() throws IOException
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -108,7 +108,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test
+    @Test(timeout=10000)
     public void testBlockOnReadInitial() throws IOException
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -147,7 +147,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test
+    @Test(timeout=10000)
     public void testReadByteNoBuffersClosed() throws IOException
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
