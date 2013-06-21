@@ -44,20 +44,21 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     private volatile ISession session;
     private volatile boolean idle = false;
 
-
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,
+                          boolean executeOnFillable)
     {
-        this(endPoint, bufferPool, parser, executor, 8192);
+        this(endPoint, bufferPool, parser, executor, executeOnFillable, 8192);
     }
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, int bufferSize)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,
+                          boolean executeOnFillable, int bufferSize)
     {
         // Since SPDY is multiplexed, onFillable() must never block
         // while calling application code. In fact, onFillable()
         // always dispatches to a new thread when calling application
         // code, so here we can safely pass false as last parameter,
         // and avoid to dispatch to onFillable().
-        super(endPoint, executor, !EXECUTE_ONFILLABLE);
+        super(endPoint, executor, executeOnFillable);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
