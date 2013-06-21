@@ -1,4 +1,4 @@
-jetty-9.0.4.v20130621 21 June 2013
+jetty-9.0.4.v20130621 - 21 June 2013
  + 396706 CGI support parameters
  + 397051 Make JDBCLoginService data members protected to facilitate
    subclassing
