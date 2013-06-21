@@ -113,8 +113,6 @@
                 <npn.version>1.1.5.v20130313</npn.version>
             </properties>
         </profile>
-     </profiles>
-
     </profiles>
 
     <modules>
