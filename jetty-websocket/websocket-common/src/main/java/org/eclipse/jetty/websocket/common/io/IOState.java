@@ -230,9 +230,10 @@ public class IOState
         {
             notifyStateListeners(event);
 
-            // if SHUTDOWN, we don't expect an answer.
-            if (close.getStatusCode() == StatusCode.SHUTDOWN)
+            // if harsh, we don't expect an answer.
+            if (close.isHarsh())
             {
+                LOG.debug("Harsh close, disconnecting");
                 synchronized (this.state)
                 {
                     this.state = ConnectionState.CLOSED;
