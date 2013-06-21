@@ -141,6 +141,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return String.format("%s@%x",FlushInvoker.class.getSimpleName(),hashCode());
         }
     }
+    
+    public class OnDisconnectCallback implements WriteCallback
+    {
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            disconnect();
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            disconnect();
+        }
+    }
 
     public static class Stats
     {
@@ -233,6 +248,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void disconnect()
     {
+        LOG.debug("{} disconnect()", policy.getBehavior());
         synchronized (writeBytes)
         {
             if (!writeBytes.isClosed())
@@ -426,7 +442,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
-        LOG.debug("Connection State Change: {}",state);
+        LOG.debug("{} Connection State Change: {}",policy.getBehavior(),state);
         switch (state)
         {
             case OPEN:
@@ -439,7 +455,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
                 // append close frame
-                outgoingFrame(close.asFrame(),null);
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback());
             default:
                 break;
         }

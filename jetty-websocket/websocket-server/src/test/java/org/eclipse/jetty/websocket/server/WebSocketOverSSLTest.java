@@ -65,7 +65,9 @@ public class WebSocketOverSSLTest
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
-            Future<Session> fut = client.connect(clientSocket,server.getServerUri());
+            URI requestUri = server.getServerUri();
+            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
             Session session = fut.get(3,TimeUnit.SECONDS);

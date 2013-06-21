@@ -29,6 +29,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -125,10 +126,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     {
         Assert.assertThat("Websocket URI scheme",destWebsocketURI.getScheme(),anyOf(is("ws"),is("wss")));
         this.destWebsocketURI = destWebsocketURI;
-        String scheme = "http";
         if (destWebsocketURI.getScheme().equals("wss"))
         {
-            scheme = "https";
             throw new RuntimeException("Sorry, BlockheadClient does not support SSL");
         }
         this.destHttpURI = WSURI.toHttp(destWebsocketURI);
@@ -415,7 +414,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         switch (state)
         {
             case CLOSED:
-                this.disconnect();
+                // Per Spec, client should not initiate disconnect on its own
+                // this.disconnect();
                 break;
             case CLOSING:
                 if (ioState.wasRemoteCloseInitiated())
@@ -462,6 +462,36 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         if (frame.getType().getOpCode() == OpCode.CLOSE)
         {
             disconnect();
+        }
+    }
+
+    public void expectServerDisconnect()
+    {
+        if (eof)
+        {
+            return;
+        }
+
+        try
+        {
+            int len = in.read();
+            if (len == (-1))
+            {
+                // we are disconnected
+                eof = true;
+                return;
+            }
+
+            Assert.assertThat("Expecting no data and proper socket disconnect (issued from server)",len,is(-1));
+        }
+        catch (SocketTimeoutException e)
+        {
+            LOG.warn(e);
+            Assert.fail("Expected a server initiated disconnect, instead the read timed out");
+        }
+        catch (IOException e)
+        {
+            // acceptable path
         }
     }
 

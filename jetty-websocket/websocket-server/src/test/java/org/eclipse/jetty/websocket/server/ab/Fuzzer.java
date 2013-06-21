@@ -62,12 +62,17 @@ public class Fuzzer
         PER_FRAME,
         SLOW
     }
+    
+    public static enum DisconnectMode
+    {
+        /** Disconnect occurred after a proper close handshake */
+        CLEAN,
+        /** Disconnect occurred in a harsh manner, without a close handshake */
+        UNCLEAN
+    }
 
     private static final int KBYTE = 1024;
     private static final int MBYTE = KBYTE * KBYTE;
-
-    public static final boolean CLEAN_CLOSE = true;
-    public static final boolean NOT_CLEAN_CLOSE = false;
 
     private static final Logger LOG = Log.getLogger(Fuzzer.class);
 
@@ -88,6 +93,7 @@ public class Fuzzer
         int bigMessageSize = 20 * MBYTE;
 
         policy.setMaxMessageSize(bigMessageSize);
+        policy.setIdleTimeout(5000);
 
         this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();
@@ -183,35 +189,21 @@ public class Fuzzer
         // TODO Should test for no more frames. success if connection closed.
     }
 
-    public void expectServerClose(boolean wasClean) throws IOException, InterruptedException
+    public void expectServerDisconnect(DisconnectMode mode)
     {
-        // we expect that the close handshake to have occurred and the server should have closed the connection
-        try
-        {
-            ByteBuffer buf = ByteBuffer.wrap(new byte[]
-            { 0x00 });
-            BufferUtil.flipToFill(buf);
-            int len = client.read(buf);
-
-            Assert.assertThat("Server has not closed socket",len,lessThanOrEqualTo(0));
-        }
-        catch (IOException e)
-        {
-            // valid path
-        }
-
+        client.expectServerDisconnect();
         IOState ios = client.getIOState();
 
-        if (wasClean)
+        switch (mode)
         {
-            Assert.assertTrue(ios.wasRemoteCloseInitiated());
-            Assert.assertTrue(ios.wasCleanClose());
+            case CLEAN:
+                Assert.assertTrue(ios.wasRemoteCloseInitiated());
+                Assert.assertTrue(ios.wasCleanClose());
+                break;
+            case UNCLEAN:
+                Assert.assertTrue(ios.wasRemoteCloseInitiated());
+                break;
         }
-        else
-        {
-            Assert.assertTrue(ios.wasRemoteCloseInitiated());
-        }
-
     }
 
     public CloseState getCloseState()
@@ -339,20 +331,6 @@ public class Fuzzer
             // before it has a chance to finish writing out the
             // remaining frame octets
             Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
-        }
-    }
-
-    public void sendExpectingIOException(ByteBuffer part3)
-    {
-        try
-        {
-            send(part3);
-            Assert.fail("Expected a IOException on this send");
-        }
-        catch (IOException ignore)
-        {
-            // Send, but expect the send to fail with a IOException.
-            // Usually, this is a SocketException("Socket Closed") condition.
         }
     }
 

@@ -51,7 +51,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerClose(Fuzzer.CLEAN_CLOSE);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -83,6 +83,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -114,6 +115,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -145,6 +147,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -176,6 +179,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -207,6 +211,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -238,6 +243,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -275,6 +281,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -303,6 +310,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -334,6 +342,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -365,6 +374,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -396,6 +406,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -427,6 +438,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -458,6 +470,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -489,6 +502,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
@@ -526,6 +540,7 @@ public class TestABCase1 extends AbstractABCase
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
+            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
         }
         finally
         {
