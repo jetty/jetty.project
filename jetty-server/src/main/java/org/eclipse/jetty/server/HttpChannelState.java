@@ -549,9 +549,8 @@ public class HttpChannelState
     public boolean isAsyncStarted()
     {
         synchronized (this)
-        {            
-            // Either we are started, or we are still dispatched and async has been completed or dispatched
-            return _async==Async.STARTED || _async!=null && _state==State.DISPATCHED;
+        {    
+            return _async==Async.STARTED || _async==Async.EXPIRING;
         }
     }
 

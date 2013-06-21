@@ -29,6 +29,41 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+
+/* ------------------------------------------------------------ */
+/** A Parser for HTTP 0.9, 1.0 and 1.1
+ * <p>
+ * The is parser parses HTTP client and server messages from buffers
+ * passed in the {@link #parseNext(ByteBuffer)} method.  The parsed
+ * elements of the HTTP message are passed as event calls to the 
+ * {@link HttpHandler} instance the parser is constructed with.
+ * If the passed handler is a {@link RequestHandler} then server side
+ * parsing is performed and if it is a {@link ResponseHandler}, then 
+ * client side parsing is done.
+ * </p>
+ * <p>
+ * The contract of the {@link HttpHandler} API is that if a call returns 
+ * true then the call to {@link #parseNext(ByteBuffer)} will return as 
+ * soon as possible also with a true response.  Typically this indicates
+ * that the parsing has reached a stage where the caller should process 
+ * the events accumulated by the handler.    It is the preferred calling
+ * style that handling such as calling a servlet to process a request, 
+ * should be done after a true return from {@link #parseNext(ByteBuffer)}
+ * rather than from within the scope of a call like 
+ * {@link RequestHandler#messageComplete()}
+ * </p>
+ * <p>
+ * For performance, the parse is heavily dependent on the 
+ * {@link Trie#getBest(ByteBuffer, int, int)} method to look ahead in a
+ * single pass for both the structure ( : and CRLF ) and semantic (which
+ * header and value) of a header.  Specifically the static {@link HttpField#CACHE}
+ * is used to lookup common combinations of headers and values 
+ * (eg. "Connection: close"), or just header names (eg. "Connection:" ).
+ * For headers who's value is not known statically (eg. Host, COOKIE) then a
+ * per parser dynamic Trie of {@link HttpFields} from previous parsed messages
+ * is used to help the parsing of subsequent messages.
+ * </p>
+ */
 public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
